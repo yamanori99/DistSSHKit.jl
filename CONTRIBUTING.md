@@ -29,7 +29,7 @@ Then call `julia --project=. -m DistSSHKit …` from that app the same way as af
 ## Workflow
 
 - Branch from `main` (`feature/…`, `fix/…`, `docs/…`, `chore/…`).
-- **`main` is protected:** changes go through a PR (one approving review; CI `test (1.12)` and `test (~1.13.0-0)` must pass). Do not push to `main` directly.
+- **`main` is protected:** open a PR (CI `test (1.12)` and `test (~1.13.0-0)` must pass). Approving review is optional. Do not push to `main` directly.
 - Open a PR and fill [the template](.github/pull_request_template.md).
 - Breaking changes (CLI names, module name, driver contract `init_output_dir!` / `main`, …): bump `x` in `Project.toml` `0.x.y`. Patch `y` only for non-breaking changes.
 - Tags (`vX.Y.Z`) after merge are a maintainer decision.
