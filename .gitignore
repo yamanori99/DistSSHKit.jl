@@ -1,0 +1,38 @@
+# Julia / Pkg
+Manifest.toml
+docs/Manifest.toml
+docs/build/
+docs/site/
+
+# Local runs (src/runner.jl, demo.jl)
+data/
+runner_*.log
+.distsshkit/
+
+# Tests & CI artifacts
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+coverage/
+lcov.info
+# SSH E2E kept runs (see test/artifacts/README.md)
+test/artifacts/ssh-e2e/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*~
+
+# Secrets / local tooling (defense in depth; testenv also ignores mounted-keys)
+.env
+.env.*
+!.env.example
+*.pem
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+.cursor/
+
+# Local dev notes (not shared)
+ROADMAP.ja.local.md

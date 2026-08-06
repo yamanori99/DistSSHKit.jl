@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+# Cancel redundant runs on the same branch/PR.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+permissions:
+  contents: read
+  id-token: write # Codecov OIDC upload (see Upload coverage step)
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - "1.12"
+          # 1.13 is still a prerelease channel; ~1.13.0-0 picks the latest 1.13.x (including RCs).
+          - "~1.13.0-0"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: ${{ matrix.version }}
+      - uses: julia-actions/cache@v3
+      - uses: julia-actions/julia-buildpkg@v1
+      - uses: julia-actions/julia-runtest@v1
+        with:
+          coverage: ${{ matrix.version == '1.12' }}
+      - uses: julia-actions/julia-processcoverage@v1
+        if: matrix.version == '1.12'
+      # Public: OIDC. Private: upload fails quietly until the repo is public.
+      - name: Upload coverage to Codecov
+        if: matrix.version == '1.12'
+        uses: codecov/codecov-action@v5
+        with:
+          files: lcov.info
+          slug: ${{ github.repository }}
+          use_oidc: true
+          fail_ci_if_error: false
+      - name: Coverage summary
+        if: matrix.version == '1.12'
+        run: |
+          julia --color=no -e '
+          using Pkg
+          Pkg.add("Coverage")
+          using Coverage, Printf
+          files = process_folder("src")
+          for fc in files
+              c, t = get_summary(fc)
+              t == 0 && continue
+              @printf("%-32s %5.1f%%\n", basename(fc.filename), 100 * c / t)
+          end
+          c, t = get_summary(files)
+          @printf("%-32s %5.1f%%  (%d/%d lines)\n", "TOTAL", 100 * c / t, c, t)
+          '

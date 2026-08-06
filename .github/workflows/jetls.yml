@@ -1,0 +1,42 @@
+name: JETLS
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: jetls-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+permissions:
+  contents: read
+
+jobs:
+  jetls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: "1.12"
+      - uses: julia-actions/cache@v3
+      - name: Install jetls
+        run: |
+          if [ -x "$HOME/.julia/bin/jetls" ]; then
+            echo "jetls already installed (Julia cache hit)"
+          else
+            julia --startup-file=no -e '
+              using Pkg
+              Pkg.Registry.add("General")
+              Pkg.Apps.add(url="https://github.com/aviatesk/JETLS.jl", rev="release")'
+          fi
+          echo "$HOME/.julia/bin" >> "$GITHUB_PATH"
+      - name: jetls check
+        run: |
+          shopt -s nullglob
+          # Entry scripts only: jetls follows `include()` (do not list src/cli/*/*.jl or
+          # src/DistSSHKit/*.jl — those fragments are loaded by cli/*.jl / DistSSHKit.jl).
+          jetls --threads=auto -- check --exit-severity=error --progress=none \
+            demos/with_kit/*.jl demos/without_kit/*.jl \
+            src/DistSSHKit.jl src/cli/go.jl src/cli/drive.jl src/cli/setup.jl src/cli/size.jl \
+            test/runtests.jl test/aqua.jl test/fixtures/*.jl

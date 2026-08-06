@@ -1,0 +1,10 @@
+[deps]
+DistSSHKit = "ceec0504-c968-4be5-b215-667cae0e8f81"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+
+[sources]
+DistSSHKit = {path = ".."}
+
+[compat]
+Documenter = "1"
+julia = "1.12"

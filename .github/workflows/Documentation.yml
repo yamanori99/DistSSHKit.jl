@@ -1,0 +1,49 @@
+name: Documentation
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v*
+  pull_request:
+
+concurrency:
+  group: docs-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      statuses: write
+      actions: write
+      id-token: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: "1.12"
+      - uses: julia-actions/cache@v3
+      - name: Install docs dependencies
+        run: |
+          julia --project=docs -e '
+            using Pkg
+            Pkg.Registry.add("General")
+            Pkg.instantiate()
+          '
+      - name: Doctests
+        run: |
+          julia --project=docs -e '
+            using Documenter, DistSSHKit, Test
+            DocMeta.setdocmeta!(DistSSHKit, :DocTestSetup, :(using DistSSHKit); recursive=true)
+            doctest(DistSSHKit)
+          '
+      - name: Build and deploy
+        env:
+          # Deploy via HTTPS + contents:write (no DOCUMENTER_KEY SSH secret required).
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: julia --project=docs --color=yes docs/make.jl

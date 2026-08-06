@@ -1,0 +1,44 @@
+using Test
+
+@testset "with_kit drive local" begin
+    kit_root = _kit_root()
+    julia = _julia_exe()
+
+    _mktemp_host() do tmp
+        demos_dir = joinpath(tmp, "demos")
+        mkpath(demos_dir)
+        _stage_with_kit_demos!(demos_dir, kit_root)
+        with_kit = joinpath(demos_dir, "with_kit")
+
+        file_script = joinpath(with_kit, "square_file.jl")
+        file_proc, file_out = _run_kit_drive(;
+            julia=julia,
+            kit_root=kit_root,
+            script=file_script,
+            script_args=["3"],
+            host_root=tmp,
+        )
+        _assert_proc_ok(file_proc, file_out; label="square_file demo")
+        @test occursin("Results:", file_out)
+
+        file_csv = joinpath(with_kit, "output", "square_results.csv")
+        @test isfile(file_csv)
+        expected = join([
+            "param,result",
+            ("$n,$(n^2)" for n in 1:3)...,
+        ], '\n') * '\n'
+        @test read(file_csv, String) == expected
+        @test occursin("wrote ", file_out)
+
+        echo_script = joinpath(with_kit, "square_echo.jl")
+        echo_proc, echo_out = _run_kit_drive(;
+            julia=julia,
+            kit_root=kit_root,
+            script=echo_script,
+            script_args=["3"],
+            host_root=tmp,
+        )
+        _assert_proc_ok(echo_proc, echo_out; label="square_echo demo")
+        @test occursin("param^2:", echo_out)
+    end
+end

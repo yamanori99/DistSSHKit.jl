@@ -1,0 +1,76 @@
+name: SSH E2E
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "src/**"
+      - "test/**"
+      - "demos/**"
+      - "testenv/docker-ssh/**"
+      - ".github/workflows/ssh-e2e.yml"
+      - "Project.toml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "test/**"
+      - "demos/**"
+      - "testenv/docker-ssh/**"
+      - ".github/workflows/ssh-e2e.yml"
+      - "Project.toml"
+  workflow_dispatch:
+
+concurrency:
+  group: ssh-e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+permissions:
+  contents: read
+
+jobs:
+  ssh-e2e:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux controller → Linux Docker workers
+          - os: ubuntu-latest
+            label: linux-to-linux
+          # macOS controller → Linux workers (Colima + localhost ports).
+          # Apple Silicon macos-latest lacks nested virt; use Intel.
+          - os: macos-15-intel
+            label: macos-to-linux
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    name: ssh-e2e (${{ matrix.label }})
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Docker on macOS (Colima)
+        if: runner.os == 'macOS'
+        run: ./testenv/docker-ssh/scripts/setup-colima-ci.sh
+
+      - name: Start docker-ssh workers
+        run: |
+          cd testenv/docker-ssh
+          ./scripts/up.sh
+
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: "1.12"
+
+      - uses: julia-actions/cache@v3
+
+      - uses: julia-actions/julia-buildpkg@v1
+
+      - name: Run SSH E2E
+        env:
+          DISTSSHKIT_SSH_E2E: "1"
+        run: julia --project=. --color=yes test/integration/ssh/run.jl
+
+      - name: Teardown workers
+        if: always()
+        run: |
+          cd testenv/docker-ssh
+          ./scripts/down.sh || true

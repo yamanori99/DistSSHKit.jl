@@ -1,0 +1,26 @@
+using Test
+
+# Regression: `go` loads `cli/_common.jl` (defines `cli_project_root`) before
+# `setup.jl` is included. The setup `_using` guard must not key off
+# `cli_project_root`, or `resolve_remote_project_root` never lands.
+
+@testset "setup _using after cli_project_root" begin
+    m = Module(:SetupUsingAfterCli)
+    kit_src = abspath(joinpath(@__DIR__, "..", "..", "..", "..", "src"))
+    setup_jl = joinpath(kit_src, "cli", "setup.jl")
+    Core.eval(m, :(include(path) = Base.include($m, path)))
+    Core.eval(m, :(const DistSSHKit = $(DistSSHKit)))
+    Core.eval(
+        m,
+        quote
+            function cli_project_root(kit_src_dir::AbstractString)
+                get(ENV, "DISTRIBUTED_PROJECT_ROOT") do
+                    DistSSHKit.kit_project_root(kit_src_dir)
+                end
+            end
+        end,
+    )
+    Base.include(m, setup_jl)
+    @test m.resolve_remote_project_root("/tmp/App.jl") isa AbstractString
+    @test isdefined(m, :setup_main)
+end

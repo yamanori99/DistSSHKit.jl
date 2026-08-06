@@ -1,0 +1,25 @@
+# Linux SSH workers for DistSSHKit CI / local Docker E2E.
+services:
+  worker-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: local/linux-ssh-worker:latest
+    container_name: distsshkit-worker-1
+    ports:
+      - "2222:22"
+    volumes:
+      - ./mounted-keys:/mounted-keys:ro
+    restart: "no"
+
+  worker-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: local/linux-ssh-worker:latest
+    container_name: distsshkit-worker-2
+    ports:
+      - "2223:22"
+    volumes:
+      - ./mounted-keys:/mounted-keys:ro
+    restart: "no"

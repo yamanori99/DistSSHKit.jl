@@ -1,0 +1,112 @@
+# Tests
+
+How the DistSSHKit test suite is organized. For the full maintainer checklist, see [CONTRIBUTING.md](../CONTRIBUTING.md).
+
+## Run
+
+From the kit checkout root:
+
+```bash
+julia --project=. -e 'using Pkg; Pkg.test()'
+```
+
+Tests run sequentially (`Test.@testset` nesting). `Pkg.test()` activates `test/Project.toml` (Aqua, fixtures, path dependency on `..`).
+
+## Layout
+
+```text
+test/
+  runtests.jl          # entry point
+  aqua.jl              # Aqua.jl QA (loads DistSSHKit as a real package)
+  support.jl           # includes support/*.jl
+  support/             # shared helpers (subprocess, drive, staging, …)
+  unit/                # fast, in-process tests
+  integration/         # subprocess / drive smoke tests (slow)
+  fixtures/            # small driver scripts copied into temp host projects
+  Project.toml         # test environment
+```
+
+`unit/` mirrors `src/`:
+
+```text
+unit/
+  DistSSHKit/          # ↔ src/DistSSHKit/ (module API + setup cores)
+    cli/               # ↔ DistSSHKit/cli/
+    setup/             # ↔ DistSSHKit/setup/
+  cli/                 # ↔ src/cli/ (argv / help / exit)
+    drive/, go/, setup/, size/
+```
+
+`integration/` groups drive smokes and demo recipe runs.
+
+Real OpenSSH E2E lives under `integration/ssh/` (not part of `Pkg.test()`).
+How to run: [`testenv/docker-ssh/README.md`](../testenv/docker-ssh/README.md).
+
+## Layers
+
+| Layer | What it checks | Typical runtime |
+| --- | --- | --- |
+| **Aqua** (`aqua.jl`) | ambiguities, exports, compat, project consistency | ~5 s |
+| **unit** | parsing, display, module helpers, CLI arg tables | ~5 s |
+| **integration** | `julia -m DistSSHKit drive` end-to-end in child processes | ~2 min |
+| **ssh-e2e** (CI / opt-in) | Real SSH + rsync against Docker workers (`DISTSSHKIT_SSH_E2E=1`): setup, size, with_kit drive, go both remotes, collect | ~10–20 min |
+| **doctests** (docs CI) | docstring examples in `src/` (`Documentation.yml`) | ~5 s |
+
+Most of the wall time in `Pkg.test()` is integration (child Julia + local workers).
+Remote SSH is the separate **ssh-e2e** job. Doctests run in the Documentation workflow, not `Pkg.test()`.
+
+## Why only `setup` uses SSH/rsync fakes
+
+Commands differ in what their core work is:
+
+| Command | Core work | How `Pkg.test()` covers it | Real remote |
+| --- | --- | --- | --- |
+| **setup** | Shells out to `ssh` / `rsync` | Fake doubles (`DISTSSHKIT_TEST_SSH`, `DISTSSHKIT_TEST_RSYNC` in `test/fixtures/`) | ssh-e2e |
+| **drive** / **go** | Julia `Distributed` workers | Real **local** `addprocs` (no SSH fake) | ssh-e2e |
+| **size** | Plan math (+ optional remote RSS via `addprocs`) | Pure unit for planning; no SSH fake | ssh-e2e if needed |
+
+Local workers are a cheap real substitute for drive/go (same Julia worker path, no Docker).
+They cannot substitute for setup: copying/deleting a remote tree needs `ssh`/`rsync`, so unit tests swap those binaries for fakes. Do not add the same style of fake for drive/go/size; faking Julia SSH worker launch would be a different, heavier double, and local + ssh-e2e already split that coverage.
+
+Setup/go CLI subprocess helpers (`_run_kit_setup` / `_run_kit_go`) use an
+ephemeral project when `project_root` is omitted, so unit runs do not leave
+`.distsshkit/` logs in the kit checkout. SSH E2E keeps durable runs under
+`test/artifacts/ssh-e2e/` (gitignored).
+
+## Support helpers
+
+Loaded via `support.jl`:
+
+- `_child_julia_env` — child-process `ENV` (drops `JULIA_LOAD_PATH`, sets `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1`)
+- `_run_kit_drive` / `_run_host_drive` / `_run_kit_setup` / `_run_kit_go` / `_run_kit_size` — CLI subprocesses
+- `_mktemp_host`, `_with_tempdir`, `_stage_with_kit_demos!` — isolated temp host projects with bundled `with_kit` demos
+- `_with_ssh_e2e_suite`, `_stage_ssh_e2e_remote_host!` — SSH E2E suite + scratch projects
+- `_run_test_files!` — sequential test-file includes
+
+## Environment variables
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL` | `1` in test children (automatic) | Skip broad `pkill` in drive; each subprocess cleans up its own workers via `rmprocs` |
+| `DISTSSHKIT_SSH_E2E` | unset | Set to `1` to run `test/integration/ssh/run.jl` (requires `testenv/docker-ssh` workers) |
+
+SSH E2E keeps one suite dir under `test/artifacts/ssh-e2e/`. Open
+`SUMMARY.txt` only (see [`test/artifacts/README.md`](artifacts/README.md)).
+
+```bash
+open "$(cat test/artifacts/ssh-e2e/LATEST)/SUMMARY.txt"
+rm -rf test/artifacts/ssh-e2e
+```
+
+Kit CLI flags (drive / go / setup / size) also honor `DISTSSHKIT_QUIET`, `DISTSSHKIT_PROGRESS`, `DISTSSHKIT_YES`, and `DISTSSHKIT_HOSTS_FILE`; see `src/DistSSHKit/cli/session.jl`.
+
+## Adding tests
+
+1. Add a file under `unit/` or `integration/` (follow the existing directory naming).
+2. Register its path in `_unit_test_files()` or `_integration_test_files()` in `runtests.jl`.
+3. Reuse `support/` helpers for subprocess work; put one-off scripts in `fixtures/`.
+
+## Aqua note
+
+`runtests.jl` loads `DistSSHKit` via `include` for unit tests (`Main.DistSSHKit`).  
+`aqua.jl` uses `using DistSSHKit` (top-level package from `test/Project.toml`) because Aqua needs a real `Pkg` module. `stale_deps` is disabled: `Pkg` is used by `cli/drive.jl` / setup cores, not only inside the `DistSSHKit` module body.

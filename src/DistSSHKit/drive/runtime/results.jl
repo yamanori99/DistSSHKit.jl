@@ -1,0 +1,237 @@
+function place_drive_sentinels!(successful_hosts::Vector{String}, script_dir::String, skip_collect::Bool)::String
+    skip_collect || isempty(successful_hosts) && return ""
+    sentinel_name = ".drive_sentinel_$(getpid())_$(Dates.format(now(), "yyyymmddTHHMMSS"))"
+    repo_ra = DistSSHKit.canonical_local_path(PROJECT_ROOT)
+    collect_roots_sentinel = distributed_collect_root_dirs(script_dir, repo_ra)
+    for local_rd in collect_roots_sentinel
+        _early_local = DistSSHKit.canonical_local_path(local_rd)
+        for host in unique(successful_hosts)
+            try
+                remote_early = remote_path_for_ssh_collect(_early_local, repo_ra)
+                run(pipeline(Cmd(["ssh", ssh_opts()..., host, "mkdir", "-p", remote_early]),
+                    stdout=devnull, stderr=devnull))
+                run(pipeline(Cmd(["ssh", ssh_opts()..., host, "touch", joinpath(remote_early, sentinel_name)]),
+                    stdout=devnull, stderr=devnull))
+            catch; end
+        end
+    end
+    return sentinel_name
+end
+
+function run_driver_script!(enable_log::Bool, drive_atexit_cleanup)
+    writeln_both("Running script..."; color=:light_black)
+    writeln_both("")
+    call_main = () -> begin
+        Base.invokelatest() do
+            if isdefined(Main, :main)
+                main_fn = getfield(Main, :main)
+                if main_fn isa Function
+                    Base.invokelatest(Base.inferencebarrier(main_fn))
+                end
+            end
+        end
+    end
+    try
+        if enable_log && LOG_FILE_HANDLE[] !== nothing
+            orig_stdout = stdout
+            log_io = LOG_FILE_HANDLE[]
+            linebuf = UInt8[]
+            rd, wr = redirect_stdout()
+            reader = @async begin
+                try
+                    while true
+                        data = readavailable(rd)
+                        if !isempty(data)
+                            # `:verbose` only: keep driver lines on the terminal.
+                            # `:quiet` / `:progress` → kit log only.
+                            if DistSSHKit.kit_output_detail()
+                                write(orig_stdout, data)
+                            end
+                            for b in data
+                                if b == 0x0d
+                                    empty!(linebuf)
+                                elseif b == 0x0a
+                                    write(log_io, linebuf)
+                                    write(log_io, b)
+                                    flush(log_io)
+                                    empty!(linebuf)
+                                else
+                                    push!(linebuf, b)
+                                end
+                            end
+                        end
+                        # NOTE: no `yield()` here on an empty read — `readavailable` already
+                        # blocks until data or close, so spin-yielding instead of letting it
+                        # block starves libuv's notice of `wr` closing (observed ~30s stalls).
+                        isempty(data) && (eof(rd) || !isopen(wr)) && break
+                    end
+                    if !isempty(linebuf)
+                        write(log_io, linebuf)
+                        flush(log_io)
+                    end
+                catch e
+                    isa(e, Base.IOError) || rethrow()
+                end
+            end
+            try
+                call_main()
+            finally
+                flush(stdout)
+                close(wr)
+                # `rd` normally reaches EOF once `wr` closes, but local worker processes
+                # (spawned via `addprocs`) inherit our stdout fd and keep the underlying
+                # pipe open until they exit, so EOF may never arrive here. All real script
+                # output is already flushed to `rd` by this point (readavailable drains it
+                # as it's written), so a short grace period is enough before we force-close.
+                wait_ok = @async wait(reader)
+                for _ in 1:20
+                    istaskdone(wait_ok) && break
+                    sleep(0.05)
+                end
+                if !istaskdone(wait_ok)
+                    close(rd)
+                    wait(reader)
+                end
+                redirect_stdout(orig_stdout)
+            end
+        else
+            call_main()
+        end
+    catch e
+        if e isa InterruptException
+            writeln_both("\nInterrupted. Cleaning up workers...")
+            drive_atexit_cleanup()
+            exit(130)
+        end
+        rethrow()
+    end
+end
+
+function collect_drive_results!(
+    successful_hosts::Vector{String},
+    script_dir::String,
+    sentinel_name::String,
+    skip_collect::Bool,
+    path_anchor::String,
+)
+    results_dir = get(ENV, "DISTRIBUTED_OUTPUT_DIR", nothing)
+    if results_dir === nothing
+        results_dir = normpath(joinpath(script_dir, "..", "results"))
+    end
+    results_dir = DistSSHKit.canonical_local_path(results_dir)
+
+    if isempty(successful_hosts)
+        writeln_both("")
+        writeln_field("Results", display_path(results_dir, path_anchor))
+        return
+    end
+
+    writeln_both("")
+    if skip_collect
+        writeln_both("Results saved locally (no remote collection needed).")
+        writeln_field("Results", display_path(results_dir, path_anchor))
+        return
+    end
+
+    collect_roots = distributed_collect_root_dirs(script_dir, DistSSHKit.canonical_local_path(PROJECT_ROOT))
+    for local_rd in collect_roots
+        mkpath(local_rd)
+    end
+    writeln_both("Collecting results from remote hosts..."; color=:light_black)
+    repo_ra = DistSSHKit.canonical_local_path(PROJECT_ROOT)
+    for host in unique(successful_hosts)
+        write_both("  $host: ")
+        total_for_host = 0
+        host_err = nothing
+        try
+            ssh_cmd = DistSSHKit._host_sync_rsync_transport()
+            rsync_bin = DistSSHKit._host_sync_rsync_argv()
+            for local_rd in collect_roots
+                local_abs = DistSSHKit.canonical_local_path(local_rd)
+                remote_rd_collect = remote_path_for_ssh_collect(local_abs, repo_ra)
+                remote_sentinel = joinpath(remote_rd_collect, sentinel_name)
+                try
+                    remote_find_raw = try
+                        strip(
+                            read(
+                                pipeline(
+                                    Cmd([
+                                        "ssh",
+                                        ssh_opts()...,
+                                        host,
+                                        "find",
+                                        remote_rd_collect,
+                                        "-type",
+                                        "f",
+                                        "-newer",
+                                        remote_sentinel,
+                                        "!",
+                                        "-name",
+                                        sentinel_name,
+                                        "-print",
+                                    ]);
+                                    stderr=devnull,
+                                ),
+                                String,
+                            ),
+                        )
+                    catch
+                        ""
+                    end
+                    rroot = String(rstrip(String(remote_rd_collect), '/'))
+                    rel_lines = String[]
+                    for line in split(remote_find_raw, '\n')
+                        lp = strip(String(line))
+                        isempty(lp) && continue
+                        rel = if startswith(lp, rroot * "/")
+                            lp[(length(rroot) + 2):end]
+                        else
+                            continue
+                        end
+                        isempty(rel) && continue
+                        push!(rel_lines, rel)
+                    end
+                    file_list = join(unique(rel_lines), '\n')
+
+                    if !isempty(file_list)
+                        remote_uri = string(host, ":", remote_rd_collect, "/")
+                        rsync_part = Cmd(vcat(
+                            rsync_bin,
+                            ["-az", "-e", ssh_cmd, "--files-from=-", remote_uri, local_abs * "/"],
+                        ))
+                        buf = IOBuffer()
+                        print(buf, strip(file_list))
+                        write(buf, '\n')
+                        seekstart(buf)
+                        run(pipeline(rsync_part; stdin=buf, stderr=stderr))
+                        total_for_host +=
+                            count(!isempty(strip(l)) for l in split(file_list, '\n'))
+                    end
+                catch e
+                    host_err === nothing && (host_err = e)
+                finally
+                    try
+                        run(pipeline(Cmd(["ssh", ssh_opts()..., host, "rm", "-f", remote_sentinel]),
+                                     stdout=devnull, stderr=devnull))
+                    catch; end
+                end
+            end
+            if host_err !== nothing
+                print_progress_err("✗ ($host_err)")
+            elseif total_for_host == 0
+                print_progress_warn("(nothing to collect)")
+            else
+                print_ok("✓ ($total_for_host file$(total_for_host == 1 ? "" : "s"))")
+            end
+            writeln_both("")
+        catch e
+            print_progress_err("✗ ($e)")
+            writeln_both("")
+        end
+    end
+    coll_disp = join(
+        (display_path(String(p), path_anchor) for p in collect_roots),
+        ", ",
+    )
+    writeln_field("Results", coll_disp)
+end
