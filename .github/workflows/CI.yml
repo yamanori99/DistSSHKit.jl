@@ -42,7 +42,7 @@ jobs:
       # Public: OIDC. Private: upload fails quietly until the repo is public.
       - name: Upload coverage to Codecov
         if: matrix.version == '1.12'
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           files: lcov.info
           slug: ${{ github.repository }}
