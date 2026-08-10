@@ -46,22 +46,18 @@ julia docs/src/assets/bake.jl --png --gif  # + GIF (Chromium + ffmpeg)
 | `--png` | `rsvg-convert` preferred, else Chrome; social PNG is 2560×1280 (2× OG), logo PNG is 960×960 |
 | `--gif` | Chrome / Chromium (4 parallel workers) + `ffmpeg` |
 
-## Story (~6s, dynamic)
+CI (`.github/workflows/assets-bake.yml`) re-runs the default bake when `docs/src/assets/` changes and fails if SVG/symlink outputs drift. Bake `--png` / `--gif` locally before committing rasters.
 
-**Setup → run → collect.** Local (master) dots stay full strength from t=0.
-Remotes start faint. Run: three spin turns (ぐるん ×3); **one color per turn**
-(R→G→P), solidifying on arrival. Setup: remotes float more (~7px peak) then
-settle. Collect: one quiet data-dot returns per link; master sparkles.
+## Story (~8s, dynamic)
+
+Setup → send → run → collect. Master is full-strength from t=0; remotes start faint.
+Send: master spins (~3 turns), one color per turn (R→G→P); remotes stay still until all solid.
+Then master + remotes spin together (~3 turns). Collect: quiet data-dots return; master sparkles.
 `prefers-reduced-motion` hides packets.
 
 ## Layout notes
 
-- No ring; thin solid wires; size-aware fan
-- Each remote owns its wire (hub end inverse-tracks float)
-- Social: **1280×640** (GitHub OG). **50px inset** (= 40pt on the 1024×512
-  template). Kit lockup: mark beside a text column (name + tagline).
-  Tagline leads with “A Julia kit for …”. Keep detail out of the outer margin.
-- Nested logo `viewBox="0 26 240 240"` — small optical lift for the fan
-- Static and dynamic social share the same chrome; only the nested logo differs
-- Upload `social/social-preview-static.png` in GitHub → Settings → Social preview
-  (SVG alone is not used for the repo card)
+- No ring; thin wires; size-aware fan; each remote owns its wire
+- Social SVG **1280×640**, PNG **2560×1280** (2×); **50px** safe inset; kit lockup (mark | title + tagline)
+- Nested logo `viewBox="0 26 240 240"`; static/dynamic social share chrome
+- Upload `social/social-preview-static.png` under GitHub → Settings → Social preview
