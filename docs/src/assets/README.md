@@ -2,7 +2,7 @@
 
 Layout:
 
-```
+```text
 assets/
   bake.jl, README.md, custom.css
   logo.svg          → logo/logo-dynamic.svg          (Documenter)
