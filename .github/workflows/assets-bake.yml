@@ -1,0 +1,42 @@
+name: Assets bake
+
+# Regenerate vector derivatives via bake.jl when logo/social sources change.
+# PNG/GIF are not checked here (renderer/fonts differ across OS).
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/src/assets/**"
+      - ".github/workflows/assets-bake.yml"
+  pull_request:
+    paths:
+      - "docs/src/assets/**"
+      - ".github/workflows/assets-bake.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: assets-bake-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+permissions:
+  contents: read
+
+jobs:
+  bake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: "1.12"
+      - name: Bake SVG derivatives
+        run: julia docs/src/assets/bake.jl
+      - name: Check committed assets match bake
+        run: |
+          if ! git diff --exit-code -- docs/src/assets/; then
+            echo "::error::docs/src/assets/ is out of date. Run: julia docs/src/assets/bake.jl (and --png/--gif if needed), then commit."
+            exit 1
+          fi

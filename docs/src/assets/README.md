@@ -46,6 +46,8 @@ julia docs/src/assets/bake.jl --png --gif  # + GIF (Chromium + ffmpeg)
 | `--png` | `rsvg-convert` preferred, else Chrome; social PNG is 2560×1280 (2× OG), logo PNG is 960×960 |
 | `--gif` | Chrome / Chromium (4 parallel workers) + `ffmpeg` |
 
+CI (`.github/workflows/assets-bake.yml`) re-runs the default bake when `docs/src/assets/` changes and fails if SVG/symlink outputs drift. Bake `--png` / `--gif` locally before committing rasters.
+
 ## Story (~6s, dynamic)
 
 **Setup → run → collect.** Local (master) dots stay full strength from t=0.
