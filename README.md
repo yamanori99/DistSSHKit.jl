@@ -9,8 +9,12 @@
 [![Julia 1.12+](https://img.shields.io/badge/Julia-1.12+-blue.svg)](https://julialang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-DistSSHKit makes it easy to run your Julia project locally and over SSH, then
-collect the results. Distributed.jl processes (not threads). **macOS and Linux.**
+DistSSHKit makes it easy to run one Julia project locally and over SSH, then
+collect the results. It uses Distributed.jl processes (not threads). **macOS
+and Linux.**
+
+These days, even small labs and individuals often have several high-performance
+machines or workstations. DistSSHKit helps you put that hardware to work.
 
 > [!IMPORTANT]
 > **Under active development.** Prefer a release tag for `rev`. Use `rev="main"` only for the development tip.
@@ -39,6 +43,6 @@ Install, demo, `go` / `drive`, remote hosts, and API: **[Documentation](https://
 
 <!-- markdownlint-disable MD033 -->
 <p align="center">
-  <img src="docs/src/assets/logo-static.svg" width="180" alt="DistSSHKit.jl logo"/>
+  <img src="docs/src/assets/logo/logo-static.svg" width="180" alt="DistSSHKit.jl logo"/>
 </p>
 <!-- markdownlint-enable MD033 -->

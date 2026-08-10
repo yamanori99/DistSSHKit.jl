@@ -10,7 +10,7 @@ Layout (same idea as [DataFrames.jl](https://dataframes.juliadata.org/stable/)):
 - **API** — `api.md`
 
 Logos and social previews: see [`src/assets/README.md`](src/assets/README.md)
-(static / dynamic matrix; edit `logo-dynamic.svg` / `logo-static.svg`, then
+(`logo/` + `social/`; edit `logo/logo-dynamic.svg` / `logo/logo-static.svg`, then
 `julia docs/src/assets/bake.jl`).
 
 ```bash

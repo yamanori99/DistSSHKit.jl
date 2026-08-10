@@ -69,7 +69,13 @@ julia --project=docs -e 'using Pkg; Pkg.instantiate()'
 julia --project=docs --color=yes docs/make.jl
 ```
 
-Merge needs `CI` green (and `SSH E2E` when it runs). `jetls` runs on PRs but stays informational (not required). `Pkg.test()` covers bundled demos; remote SSH is **SSH E2E** only.
+Optional secret scan ([gitleaks](https://github.com/gitleaks/gitleaks); e.g. `brew install gitleaks`). CI also runs [`.github/workflows/gitleaks.yml`](.github/workflows/gitleaks.yml) on PRs / `main`:
+
+```bash
+gitleaks detect --source .
+```
+
+Merge needs `CI` green (and `SSH E2E` when it runs). `gitleaks` / `jetls` run on PRs but are informational unless required in branch protection. `Pkg.test()` covers bundled demos; remote SSH is **SSH E2E** only.
 
 ## Language and AI
 
