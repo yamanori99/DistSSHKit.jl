@@ -1,7 +1,7 @@
 name: Assets bake
 
 # Regenerate vector derivatives via bake.jl when logo/social sources change.
-# PNG/GIF are not checked here (renderer/fonts differ across OS).
+# PNG/GIF: warn when git history says rasters are older than sources (no cross-OS pixel compare).
 
 on:
   push:
@@ -29,14 +29,41 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Need full history so "last commit touching file" timestamps are correct.
+          fetch-depth: 0
       - uses: julia-actions/setup-julia@v3
         with:
           version: "1.12"
       - name: Bake SVG derivatives
         run: julia docs/src/assets/bake.jl
-      - name: Check committed assets match bake
+      - name: Check committed SVG assets match bake
         run: |
           if ! git diff --exit-code -- docs/src/assets/; then
             echo "::error::docs/src/assets/ is out of date. Run: julia docs/src/assets/bake.jl (and --png/--gif if needed), then commit."
             exit 1
           fi
+      - name: Warn if PNG/GIF look stale vs sources
+        working-directory: docs/src/assets
+        run: |
+          set -euo pipefail
+          commit_ts() {
+            git log -1 --format=%ct -- "$1" 2>/dev/null || echo 0
+          }
+          warn_if_stale() {
+            local raster="$1"
+            shift
+            local raster_ts sources_ts=0 t
+            raster_ts="$(commit_ts "$raster")"
+            for src in "$@"; do
+              t="$(commit_ts "$src")"
+              if (( t > sources_ts )); then sources_ts=$t; fi
+            done
+            if (( sources_ts > raster_ts )); then
+              echo "::warning file=docs/src/assets/${raster}::${raster} looks older than its sources. Run locally: julia docs/src/assets/bake.jl --png --gif"
+            fi
+          }
+          warn_if_stale logo/logo-static.png logo/logo-static.svg bake.jl
+          warn_if_stale social/social-preview-static.png logo/logo-static.svg bake.jl
+          warn_if_stale logo/logo-dynamic.gif logo/logo-dynamic.svg bake.jl
+          warn_if_stale social/social-preview-dynamic.gif logo/logo-dynamic.svg bake.jl

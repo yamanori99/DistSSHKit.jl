@@ -69,7 +69,7 @@ julia --project=docs -e 'using Pkg; Pkg.instantiate()'
 julia --project=docs --color=yes docs/make.jl
 ```
 
-Logo / social edits under `docs/src/assets/`: run `julia docs/src/assets/bake.jl` (plus `--png` / `--gif` for rasters). CI **Assets bake** fails if SVG derivatives drift.
+Logo / social edits under `docs/src/assets/`: run `julia docs/src/assets/bake.jl` (plus `--png` / `--gif` for rasters). CI **Assets bake** fails if SVG derivatives drift, and warns if PNG/GIF look stale vs sources.
 
 Optional secret scan ([gitleaks](https://github.com/gitleaks/gitleaks); e.g. `brew install gitleaks`). CI also runs [`.github/workflows/gitleaks.yml`](.github/workflows/gitleaks.yml) on PRs / `main`:
 
