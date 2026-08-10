@@ -1,9 +1,11 @@
 # [DistSSHKit.jl](@id DistSSHKit.jl)
 
-Many people now have several capable mini PCs or workstations. DistSSHKit makes
-it easy to put them to work from one Julia project — locally and over SSH —
-then bring results back. **macOS and Linux.** Distributed.jl processes (not
-threads).
+DistSSHKit makes it easy to run one Julia project locally and over SSH, then
+collect the results. It uses Distributed.jl processes (not threads). **macOS
+and Linux.**
+
+These days, even small labs and individuals often have several high-performance
+machines or workstations. DistSSHKit helps you put that hardware to work.
 
 ## What is DistSSHKit?
 
