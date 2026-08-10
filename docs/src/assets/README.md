@@ -46,21 +46,22 @@ julia docs/src/assets/bake.jl --png --gif  # + GIF (Chromium + ffmpeg)
 | `--png` | `rsvg-convert` preferred, else Chrome; social PNG is 2560×1280 (2× OG), logo PNG is 960×960 |
 | `--gif` | Chrome / Chromium (4 parallel workers) + `ffmpeg` |
 
-## Story (~6s, dynamic)
+## Story (~8s, dynamic)
 
-**Setup → run → collect.** Local (master) dots stay full strength from t=0.
-Remotes start faint. Run: three spin turns (ぐるん ×3); **one color per turn**
-(R→G→P), solidifying on arrival. Setup: remotes float more (~7px peak) then
-settle. Collect: one quiet data-dot returns per link; master sparkles.
+**Setup → send → run → collect.**
+
+- **Setup:** remotes float (~7px peak) then settle. Master Julia dots are full strength from t=0; remotes start faint.
+- **Send:** master spins (~3 turns); **one color per turn** (R→G→P). Remotes stay still and solidify on arrival. Packets travel rim→rim (not into screen centers).
+- **Run:** after all three colors are solid, master + remotes spin together (~3 turns).
+- **Collect:** one quiet data-dot returns per link; master sparkles.
+
 `prefers-reduced-motion` hides packets.
 
 ## Layout notes
 
 - No ring; thin solid wires; size-aware fan
 - Each remote owns its wire (hub end inverse-tracks float)
-- Social: **1280×640** (GitHub OG). **50px inset** (= 40pt on the 1024×512
-  template). Kit lockup: mark beside a text column (name + tagline).
-  Tagline leads with “A Julia kit for …”. Keep detail out of the outer margin.
+- Social SVG: **1280×640** (GitHub OG). Static PNG: **2560×1280** (2×). **50px inset** (= 40pt on the 1024×512 template). Kit lockup: mark beside a text column (name + tagline). Tagline leads with “A Julia kit for …”. Keep detail out of the outer margin.
 - Nested logo `viewBox="0 26 240 240"` — small optical lift for the fan
 - Static and dynamic social share the same chrome; only the nested logo differs
 - Upload `social/social-preview-static.png` in GitHub → Settings → Social preview
