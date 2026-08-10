@@ -53,7 +53,7 @@ julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_file.jl
 
 Remote SSH / sync / worker changes: CI runs **SSH E2E** when paths match. Locally, see [`testenv/docker-ssh/README.md`](testenv/docker-ssh/README.md). Optional Mac-only workers (not CI): [`testenv/apple-container-ssh`](testenv/apple-container-ssh).
 
-Optional static analysis (keep the file list in sync with [`.github/workflows/jetls.yml`](.github/workflows/jetls.yml)):
+Optional static analysis (runs on PRs; keep the file list in sync with [`.github/workflows/jetls.yml`](.github/workflows/jetls.yml)):
 
 ```bash
 jetls --threads=auto -- check --exit-severity=error --progress=none \
@@ -77,7 +77,7 @@ Optional secret scan ([gitleaks](https://github.com/gitleaks/gitleaks); e.g. `br
 gitleaks detect --source .
 ```
 
-Merge needs `CI` green (and `SSH E2E` when it runs). `gitleaks` / `jetls` are informational unless required in branch protection. `Pkg.test()` covers bundled demos; remote SSH is **SSH E2E** only.
+Merge needs `CI` green (and `SSH E2E` when it runs). `gitleaks` / `jetls` run on PRs but are informational unless required in branch protection. `Pkg.test()` covers bundled demos; remote SSH is **SSH E2E** only.
 
 ## Language and AI
 
