@@ -53,7 +53,8 @@ julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_file.jl
 
 Remote SSH / sync / worker changes: CI runs **SSH E2E** when paths match. Locally, see [`testenv/docker-ssh/README.md`](testenv/docker-ssh/README.md). Optional Mac-only workers (not CI): [`testenv/apple-container-ssh`](testenv/apple-container-ssh).
 
-Optional static analysis (runs on PRs; keep the file list in sync with [`.github/workflows/jetls.yml`](.github/workflows/jetls.yml)):
+Optional static analysis (runs on PRs; keep the file list in sync with [`.github/workflows/jetls.yml`](.github/workflows/jetls.yml)).
+CI fails on jetls **errors** only; **warnings** still appear as a Checks annotation and in the job Summary:
 
 ```bash
 jetls --threads=auto -- check --exit-severity=error --progress=none \
