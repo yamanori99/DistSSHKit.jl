@@ -30,27 +30,14 @@ permissions:
 
 jobs:
   ssh-e2e:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # Linux controller → Linux Docker workers (same suite as macOS job).
-          - os: ubuntu-latest
-            label: linux-to-linux
-          # macOS controller → Linux workers (Colima + localhost ports).
-          # Same E2E suite: controller path resolve on Darwin + remote auto on Linux.
-          # ARM runners lack nested virt; macos-15-intel is the free option (~2027).
-          - os: macos-15-intel
-            label: macos-to-linux
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
-    name: ssh-e2e (${{ matrix.label }})
+    # Linux controller → Linux Docker workers only.
+    # macOS controllers: run the same suite locally (`./scripts/up.sh --e2e`).
+    # Colima on macos-15-intel made PR feedback too slow (~25m+).
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    name: ssh-e2e (linux-to-linux)
     steps:
       - uses: actions/checkout@v7
-
-      - name: Setup Docker on macOS (Colima)
-        if: runner.os == 'macOS'
-        run: ./testenv/docker-ssh/scripts/setup-colima-ci.sh
 
       - uses: julia-actions/setup-julia@v3
         with:
