@@ -26,27 +26,30 @@ const SOCIAL_DIR = "social"
 const SOCIAL_W, SOCIAL_H = 1280, 640
 # Gentle lift only — 112/36 read high; 140/18.5 read low.
 const LOGO_VIEWBOX = "0 26 240 240"
-# GitHub repo card template (1024×512, 40pt inset) → 1280×640 ⇒ 50px margin.
-const SAFE = 50
+# Keep content near the usual GitHub-oriented safe zone (~960×480), but fill it.
+# Outer inset is a soft floor so edges are not flush to the crop.
+const SAFE_X, SAFE_Y = 100, 60
 # Kit lockup: mark beside a text column (title + tagline), column centered on mark.
-const MARK_SIZE = 184
-const MARK_GAP = 26
+const MARK_SIZE = 340
+const MARK_GAP = 40
 const TITLE = "DistSSHKit.jl"
-const TEXT_W = 560  # approx. longest tagline line
+const TEXT_W = 700  # approx. longest tagline line at tagline font size
 const GROUP_W = MARK_SIZE + MARK_GAP + TEXT_W
-const MARK_X = max(SAFE, (SOCIAL_W - GROUP_W) ÷ 2)
+const MARK_X = clamp((SOCIAL_W - GROUP_W) ÷ 2, SAFE_X, SOCIAL_W - SAFE_X - MARK_SIZE)
 const TEXT_X = MARK_X + MARK_SIZE + MARK_GAP
-const MARK_Y = (SOCIAL_H - MARK_SIZE) ÷ 2
+const MARK_Y = clamp((SOCIAL_H - MARK_SIZE) ÷ 2, SAFE_Y, SOCIAL_H - SAFE_Y - MARK_SIZE)
 const TAGLINE_1 = "A Julia kit for setup, execution, and result collection"
 const TAGLINE_2 = "across local and SSH hosts."
 # Vertically center title+taglines against the mark (not top-align).
-const TEXT_BLOCK_H = 118
+const TEXT_BLOCK_H = 168
 const TEXT_TOP = MARK_Y + (MARK_SIZE - TEXT_BLOCK_H) ÷ 2
-const TITLE_Y = TEXT_TOP + 28
-const TAGLINE_Y1 = TITLE_Y + 48
-const TAGLINE_Y2 = TAGLINE_Y1 + 30
+const TITLE_Y = TEXT_TOP + 40
+const TAGLINE_Y1 = TITLE_Y + 64
+const TAGLINE_Y2 = TAGLINE_Y1 + 38
 # Prefer concrete faces so rsvg/Pango (not just Chrome) can resolve them.
 const FONT = "'Helvetica Neue', Helvetica, Arial, sans-serif"
+const TITLE_SIZE = 76
+const TAGLINE_SIZE = 28
 
 const STORY_S = 8.0  # send (synced ぐるん) → joint spin → collect + hold
 const DELAY_MS = 40
@@ -104,14 +107,14 @@ function build_social(logo_svg::AbstractString, kind::AbstractString)
     src = kind == "static" ? logo_path("logo-static.svg") : logo_path("logo-dynamic.svg")
     return """<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="$(SOCIAL_W)" height="$(SOCIAL_H)" viewBox="0 0 $(SOCIAL_W) $(SOCIAL_H)">
-  <!-- social-preview-$(kind): 1280×640; $(SAFE)px inset; mark | title lockup; from $(src) -->
+  <!-- social-preview-$(kind): 1280×640; safe $(SAFE_X)×$(SAFE_Y); mark | title lockup; from $(src) -->
   <rect width="$(SOCIAL_W)" height="$(SOCIAL_H)" fill="#ffffff"/>
   <svg x="$(MARK_X)" y="$(MARK_Y)" width="$(MARK_SIZE)" height="$(MARK_SIZE)" viewBox="$(LOGO_VIEWBOX)">
 $(inner)
   </svg>
-  <text x="$(TEXT_X)" y="$(TITLE_Y)" dominant-baseline="middle" fill="#0f172a" font-family="$(FONT)" font-size="56" font-weight="800">$(TITLE)</text>
-  <text x="$(TEXT_X)" y="$(TAGLINE_Y1)" dominant-baseline="middle" fill="#475569" font-family="$(FONT)" font-size="22" font-weight="500">$(TAGLINE_1)</text>
-  <text x="$(TEXT_X)" y="$(TAGLINE_Y2)" dominant-baseline="middle" fill="#475569" font-family="$(FONT)" font-size="22" font-weight="500">$(TAGLINE_2)</text>
+  <text x="$(TEXT_X)" y="$(TITLE_Y)" dominant-baseline="middle" fill="#0f172a" font-family="$(FONT)" font-size="$(TITLE_SIZE)" font-weight="800">$(TITLE)</text>
+  <text x="$(TEXT_X)" y="$(TAGLINE_Y1)" dominant-baseline="middle" fill="#475569" font-family="$(FONT)" font-size="$(TAGLINE_SIZE)" font-weight="500">$(TAGLINE_1)</text>
+  <text x="$(TEXT_X)" y="$(TAGLINE_Y2)" dominant-baseline="middle" fill="#475569" font-family="$(FONT)" font-size="$(TAGLINE_SIZE)" font-weight="500">$(TAGLINE_2)</text>
 </svg>
 """
 end
@@ -261,6 +264,28 @@ function rsvg_png(
     return true
 end
 
+"""Kill a Chrome process and any helpers still bound to `user-data-dir`."""
+function kill_chrome_session!(proc, udir::AbstractString)
+    if proc !== nothing && !process_exited(proc)
+        try
+            kill(proc, Base.SIGKILL)
+        catch
+        end
+        timedwait(() -> process_exited(proc), 2.0)
+    end
+    # Headless Chrome spawns Helpers; killing the parent alone often leaves them.
+    # Match the unique temp profile path from this shot.
+    marker = abspath(udir)
+    if !isempty(marker) && isdir(marker) && Sys.isunix()
+        try
+            run(pipeline(`pkill -9 -f $marker`; stdout=devnull, stderr=devnull); wait=true)
+        catch
+        end
+        sleep(0.05)
+    end
+    return nothing
+end
+
 function chrome_screenshot(
     html_path::AbstractString,
     out_png::AbstractString;
@@ -306,13 +331,7 @@ function chrome_screenshot(
         catch
             # Chrome sometimes exits non-zero / signaled even after writing the shot.
         finally
-            if proc !== nothing && !process_exited(proc)
-                try
-                    kill(proc, Base.SIGKILL)
-                catch
-                end
-                timedwait(() -> process_exited(proc), 2.0)
-            end
+            kill_chrome_session!(proc, udir)
             try
                 rm(udir; recursive=true, force=true)
             catch
@@ -482,6 +501,13 @@ function bake_gif_from_html!(html::AbstractString, out_gif::AbstractString; w::I
     end
     println("  captured $n frames in $(round(time() - t0; digits=1))s")
     ffmpeg_gif!(seq, out_gif)
+    # Last-resort sweep if a worker crashed before finally ran.
+    if Sys.isunix()
+        try
+            run(pipeline(`pkill -9 -f distsshkit-chrome-`; stdout=devnull, stderr=devnull); wait=true)
+        catch
+        end
+    end
 end
 
 function bake_gifs!(arts)

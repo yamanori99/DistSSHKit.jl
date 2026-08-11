@@ -58,6 +58,6 @@ Then master + remotes spin together (~3 turns). Collect: quiet data-dots return;
 ## Layout notes
 
 - No ring; thin wires; size-aware fan; each remote owns its wire
-- Social SVG **1280×640**, PNG **2560×1280** (2×); **50px** safe inset; kit lockup (mark | title + tagline)
+- Social SVG **1280×640**, PNG **2560×1280** (2×); fill most of a ~**960×480** zone (soft ≈100×60 inset); kit lockup (mark | title + tagline)
 - Nested logo `viewBox="0 26 240 240"`; static/dynamic social share chrome
 - Upload `social/social-preview-static.png` under GitHub → Settings → Social preview
