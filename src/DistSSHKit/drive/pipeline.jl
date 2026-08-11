@@ -38,7 +38,7 @@ Build [`PipelineConfig`](@ref) from environment variables.
 
 | Variable | Role |
 |----------|------|
-| `DISTSSHKIT_HOSTS` | Comma-separated SSH hosts |
+| `DISTSSHKIT_HOSTS` | Comma-separated worker tokens (`host` / `host:N`) |
 | `DISTSSHKIT_HOSTS_FILE` | Hosts file (appended after `DISTSSHKIT_HOSTS`) |
 | `DISTRIBUTED_REMOTE_PROJECT_ROOT` | Remote repo root |
 | `DISTRIBUTED_PROJECT_ROOT` | Local project root |
@@ -46,6 +46,7 @@ Build [`PipelineConfig`](@ref) from environment variables.
 | `GB_PER_WORKER` | Skip RSS probe when set |
 | `DISTSSHKIT_SIZE_PROBE` | Optional warm-up script for peak RSS (see size `--probe`) |
 | `SYNC_MODE` | `rsync`, `sync`, or `off` |
+| `JULIA_DISTRIBUTED_EXE` | Remote Julia path (same as CLI `--julia`; `auto` / unset → detect) |
 | `DISTSSHKIT_YES` / `DISTSSHKIT_QUIET` / `DISTSSHKIT_PROGRESS` | Same as CLI `-y` / `-q` / `--progress` |
 """
 function pipeline_config_from_env(;
@@ -62,10 +63,10 @@ function pipeline_config_from_env(;
         throw(ArgumentError("cannot combine DISTSSHKIT_QUIET with DISTSSHKIT_PROGRESS"))
     return PipelineConfig(
         project=isempty(project_root) ? pwd() : String(project_root),
-        hosts=_parse_env_hosts(get(ENV, "DISTSSHKIT_HOSTS", "")),
-        remote_root=isempty(remote_raw) ? nothing : String(remote_raw),
+        workers=_parse_env_hosts(get(ENV, "DISTSSHKIT_HOSTS", "")),
+        remote=isempty(remote_raw) ? nothing : String(remote_raw),
         hosts_file=isempty(hf_raw) ? nothing : String(hf_raw),
-        yes=_env_flag("DISTSSHKIT_YES"),
+        yes=true,
         quiet=want_quiet,
         verbosity=want_progress ? :progress : nothing,
         driver=String(driver_path),
@@ -74,6 +75,9 @@ function pipeline_config_from_env(;
             isempty(p) ? nothing : String(p)
         end,
         sync=_parse_env_sync_mode(sync_raw),
+        julia=let j = strip(get(ENV, "JULIA_DISTRIBUTED_EXE", ""))
+            isempty(j) || lowercase(j) == "auto" ? nothing : String(j)
+        end,
     )
 end
 
@@ -81,13 +85,12 @@ end
 function kit_session_from_config(config::PipelineConfig)::KitSession
     return KitSession(
         project=config.project,
-        hosts=config.hosts,
-        remote_root=config.remote_root,
+        workers=config.tokens,
+        remote=config.remote,
         hosts_file=config.hosts_file,
         quiet=config.quiet,
         verbosity=config.verbosity,
         yes=config.yes,
-        include_local_for_size=config.include_local_for_size,
     )
 end
 
@@ -98,7 +101,6 @@ function resolve_pipeline_sync(
 )::Union{Symbol,Bool}
     config.sync === false && return false
     isempty(session.hosts) && return false
-    # Default: no pre-run sync (same as drive / go). Set SYNC_MODE or config.sync explicitly.
     return something(config.sync, false)
 end
 
@@ -160,21 +162,24 @@ function report_pipeline_errors(result::PipelineResult; io::IO=stderr)::Bool
 end
 
 """
+    pipeline!(driver, workers...; kwargs...) -> PipelineResult
+    pipeline!(driver, workers::AbstractVector; kwargs...) -> PipelineResult
     pipeline!(config::PipelineConfig) -> PipelineResult
-    pipeline!(; driver, hosts=[], ...) -> PipelineResult
 
 Run the usual remote workflow: optional sync, worker plan, driver, optional collect.
 
-Remote hosts default to **no** pre-run sync (same as `drive` / `go`); set
-`config.sync` or `SYNC_MODE` to `:sync` / `:rsync` explicitly. Collect defaults from
-`output_dir` / `DISTRIBUTED_OUTPUT_DIR` / else `dirname(driver)/output`. Local-only
-runs skip sync and collect unless overridden. Use `sync=:rsync` only onto a
-missing/empty remote path (or `setup --delete` first).
+Worker tokens match the CLI (`local:2`, `user@host:1`). Bare hosts are sized with
+[`size_plan`](@ref). Keyword `args` are passed to the driver; `remote` is the remote
+project path. Default `yes=true` skips confirm prompts.
 
-Pre-run sync here is the same idea as `drive --sync` / `--rsync`; `drive!` is not passed
-`sync=` (avoids a second sync). When pipeline collect is enabled, drive's automatic
-**post-run-new** collect is skipped (`DISTRIBUTED_SKIP_COLLECT=1`) so only pipeline's
-**collect-missing** / **collect-overwrite** runs.
+```julia
+pipeline!(driver, "local:2"; args=["8"])
+pipeline!(driver, "user@h1:1", "user@h2:1"; remote="/path/to/project", args=["8"], collect=true)
+```
+
+Remote hosts default to **no** pre-run sync; set `sync=:sync` / `:rsync` explicitly.
+Collect defaults on when remotes are present (`collect=false` to skip). Use
+`sync=:rsync` only onto a missing/empty remote path (or `setup --delete` first).
 
 Returns [`PipelineResult`](@ref); check `result.ok` or use [`report_pipeline_errors`](@ref).
 """
@@ -200,13 +205,12 @@ function pipeline!(config::PipelineConfig)::PipelineResult
         end
     end
 
-    plan = config.workers
-    need_size = plan === nothing && (
-        !isempty(session.hosts) || config.include_local_for_size
-    )
-    if need_size
-        plan = size_plan(
-            session;
+    plan = if isempty(session.tokens)
+        WorkerPlan()
+    else
+        worker_plan_from_tokens(
+            session.tokens;
+            session=session,
             gb_per_worker=config.gb_per_worker,
             probe=config.size_probe,
             mem_headroom=config.mem_headroom,
@@ -223,13 +227,14 @@ function pipeline!(config::PipelineConfig)::PipelineResult
         drive!(
             session,
             driver;
-            workers=plan,
-            script_args=config.script_args,
+            plan=plan,
+            args=config.args,
             skip_hash_check=pipeline_skip_hash_check(config),
             output_dir=config.output_dir,
             enable_log=config.enable_log,
             log_dir=config.log_dir,
             package=config.package,
+            julia=config.julia,
         )
     finally
         if do_collect
@@ -275,6 +280,23 @@ function pipeline!(config::PipelineConfig)::PipelineResult
     return PipelineResult(true, sync_result, plan, drive_result, collect_result, driver)
 end
 
-function pipeline!(; kwargs...)::PipelineResult
-    return pipeline!(PipelineConfig(; kwargs...))
+function pipeline!(
+    driver::AbstractString,
+    workers::AbstractVector{<:AbstractString};
+    kwargs...,
+)::PipelineResult
+    return pipeline!(PipelineConfig(; driver=driver, workers=workers, kwargs...))
+end
+
+function pipeline!(driver::AbstractString; kwargs...)::PipelineResult
+    return pipeline!(driver, String[]; kwargs...)
+end
+
+function pipeline!(
+    driver::AbstractString,
+    w1::AbstractString,
+    rest::AbstractString...;
+    kwargs...,
+)::PipelineResult
+    return pipeline!(driver, String[w1, rest...]; kwargs...)
 end

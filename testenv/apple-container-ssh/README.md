@@ -99,11 +99,27 @@ container exec -it -u dev worker-1 bash -l
 
 ### DistSSHKit (optional)
 
-From your Julia project on the Mac:
+From the DistSSHKit kit root on the Mac (after workers are up and you have SSH
+aliases or `dev@WORKER_IP`):
 
 ```bash
-julia --project=. -m DistSSHKit setup --check dev@WORKER_IP
+# Path resolve smoke (controller Darwin + remote Linux) — not CI.
+julia --project=. -e '
+using DistSSHKit
+ctrl = DistSSHKit.resolve_controller_julia("auto")
+@assert isabspath(ctrl) && isfile(ctrl)
+println("controller: ", ctrl)
+# Replace HOST with distsshkit-w1 or dev@WORKER_IP
+host = get(ENV, "DISTSSHKIT_APPLE_HOST", "dev@WORKER_IP")
+found = DistSSHKit.resolve_remote_julia(host, "auto")
+@assert found !== nothing && found != "julia"
+println("remote: ", found, " ", DistSSHKit.get_remote_julia_version(host, found))
+'
+
+julia --project=. -m DistSSHKit setup --check --julia auto HOST
 ```
+
+Do not treat this as CI coverage. Free GitHub runners cannot host Mac workers.
 
 ## Teardown
 

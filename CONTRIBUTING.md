@@ -32,7 +32,7 @@ Then call `julia --project=. -m DistSSHKit …` from that app the same way as af
 - **`main` is protected:** open a PR (CI `test (1.12)` and `test (~1.13.0-0)` must pass). Approving review is optional. Do not push to `main` directly.
 - Open a PR and fill [the template](.github/pull_request_template.md).
 - Breaking changes (CLI names, module name, driver contract `init_output_dir!` / `main`, …): bump `x` in `Project.toml` `0.x.y`. Patch `y` only for non-breaking changes.
-- Tags (`vX.Y.Z`) after merge are a maintainer decision.
+- Tags (`vX.Y.Z`) after merge are a maintainer decision (`git tag -a vX.Y.Z`). TagBot.yml is unused until a General-registry release.
 
 Remote safety: `setup --clone` / `--rsync` refuse a non-empty destination; redeploy needs `setup --delete` first. Recommended first deploy is `setup --rsync`; git updates use `setup --sync` / `--pull`. Do not weaken nonempty-path refusal without reason and tests.
 
@@ -51,9 +51,11 @@ julia --project=. -m DistSSHKit demo install
 julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_file.jl
 ```
 
-Remote SSH / sync / worker changes: CI runs **SSH E2E** when paths match. Locally, see [`testenv/docker-ssh/README.md`](testenv/docker-ssh/README.md). Optional Mac-only workers (not CI): [`testenv/apple-container-ssh`](testenv/apple-container-ssh).
+Remote SSH / sync / worker changes: CI runs **SSH E2E** (`linux-to-linux`) when paths match.
+Locally (including macOS controllers): `testenv/docker-ssh/scripts/up.sh --e2e` (see [`testenv/docker-ssh/README.md`](testenv/docker-ssh/README.md)). Optional Mac-only workers (not CI): [`testenv/apple-container-ssh`](testenv/apple-container-ssh).
 
-Optional static analysis (runs on PRs; keep the file list in sync with [`.github/workflows/jetls.yml`](.github/workflows/jetls.yml)):
+Optional static analysis (runs on PRs; keep the file list in sync with [`.github/workflows/jetls.yml`](.github/workflows/jetls.yml)).
+CI fails on jetls **errors** only; **warnings** still appear as a Checks annotation and in the job Summary:
 
 ```bash
 jetls --threads=auto -- check --exit-severity=error --progress=none \
@@ -77,7 +79,7 @@ Optional secret scan ([gitleaks](https://github.com/gitleaks/gitleaks); e.g. `br
 gitleaks detect --source .
 ```
 
-Merge needs `CI` green (and `SSH E2E` when it runs). `gitleaks` / `jetls` run on PRs but are informational unless required in branch protection. `Pkg.test()` covers bundled demos; remote SSH is **SSH E2E** only.
+Merge needs `CI` green (and `SSH E2E` when it runs). `jetls` / `gitleaks` / Assets bake also run on PRs: they fail the job on real problems, but merge gating follows whatever checks branch protection requires. `Pkg.test()` covers bundled demos; remote SSH is **SSH E2E** only.
 
 ## Language and AI
 

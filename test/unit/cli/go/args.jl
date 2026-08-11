@@ -27,6 +27,21 @@ using Test
             @test r.output_dir == "my_runs"
             @test r.script_path == "job.jl"
         end
+        let r = parse_go_args(["--julia", "/opt/julia/bin/julia", "job.jl"])
+            @test r.julia == "/opt/julia/bin/julia"
+            @test r.script_path == "job.jl"
+        end
+        let r = parse_go_args(["--julia", "auto", "job.jl"])
+            @test r.julia === nothing
+        end
+        withenv("JULIA_DISTRIBUTED_EXE" => "/env/julia") do
+            let r = parse_go_args(["job.jl"])
+                @test r.julia == "/env/julia"
+            end
+            let r = parse_go_args(["--julia", "auto", "job.jl"])
+                @test r.julia === nothing
+            end
+        end
     end
 
     @testset "sync flags" begin

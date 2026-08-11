@@ -29,7 +29,7 @@ Use it from the terminal (`julia -m DistSSHKit …`) or from Julia code / notebo
 In your Julia project (`Project.toml` at the project root), add the package:
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.add(url="https://github.com/yamanori99/DistSSHKit.jl.git", rev="v0.1.0")'
+julia --project=. -e 'using Pkg; Pkg.add(url="https://github.com/yamanori99/DistSSHKit.jl.git", rev="v0.2.0")'
 ```
 
 For the development tip, use `rev="main"` instead.

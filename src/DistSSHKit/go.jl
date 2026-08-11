@@ -163,6 +163,7 @@ function _go_assert_remote_ready!(host::AbstractString, remote_root::AbstractStr
             "Run setup first, e.g.:\n" *
             "  julia --project=. -m DistSSHKit setup --rsync $host\n" *
             "  julia --project=. -m DistSSHKit setup --instantiate $host\n" *
+            "Or from Julia: sync!(session; mode=:rsync); instantiate!(session)\n" *
             "Set DISTRIBUTED_REMOTE_PROJECT_ROOT if the remote path is not the default."
         !isempty(ssh_hint) && (msg *= "\n  $ssh_hint")
         throw(ArgumentError(msg))
@@ -172,7 +173,8 @@ function _go_assert_remote_ready!(host::AbstractString, remote_root::AbstractStr
     if deps_err !== nothing
         throw(ArgumentError(
             "remote project deps not ready on $host ($remote_root): $deps_err\n" *
-            "Fix: julia --project=. -m DistSSHKit setup --instantiate $host",
+            "Fix: julia --project=. -m DistSSHKit setup --instantiate $host\n" *
+            "  (or instantiate!(session) after sync!)",
         ))
     end
     return nothing
@@ -192,7 +194,39 @@ function _go_assert_remotes_ready!(hosts::AbstractVector{<:AbstractString}, remo
 end
 
 function _go_julia_exe()::String
-    return something(Base.julia_cmd().exec[1], "julia")
+    return resolve_controller_julia("auto")
+end
+
+"""Resolve Julia binary for `go!` (`nothing` / `"auto"` / empty → detect or local exe).
+
+Remote auto-detect failures throw (no bare `"julia"` PATH fallback).
+"""
+function _go_resolve_julia(
+    ::Nothing=nothing;
+    host::Union{Nothing,AbstractString}=nothing,
+)::String
+    host isa AbstractString || return _go_julia_exe()
+    found = resolve_remote_julia(String(host), "auto")
+    found === nothing && throw(ArgumentError(
+        "Julia not found on remote host $(host) (auto-detect failed)",
+    ))
+    return found
+end
+
+function _go_resolve_julia(
+    julia::AbstractString;
+    host::Union{Nothing,AbstractString}=nothing,
+)::String
+    s = strip(String(julia))
+    (isempty(s) || lowercase(s) == "auto") && return _go_resolve_julia(nothing; host=host)
+    if host isa AbstractString
+        found = resolve_remote_julia(String(host), s)
+        found === nothing && throw(ArgumentError(
+            "Julia not usable on remote host $(host) at $(s)",
+        ))
+        return found
+    end
+    return resolve_controller_julia(s)
 end
 
 function _go_write_batch_manifest!(
@@ -226,13 +260,15 @@ function _go_run_local_slot!(
     script_args::AbstractVector{<:AbstractString},
     slot_dir::AbstractString;
     quiet::Bool=false,
+    julia::Union{Nothing,AbstractString}=nothing,
 )::DriveResult
     mkpath(slot_dir)
     log_path = joinpath(slot_dir, "julia.stdout.log")
+    julia_bin = _go_resolve_julia(julia)
     cmd = ignorestatus(
         Cmd(
             vcat(
-                [_go_julia_exe(), "--project=$(project)", String(script)],
+                [julia_bin, "--project=$(project)", String(script)],
                 collect(String, script_args),
             ),
         ),
@@ -283,10 +319,11 @@ function _go_run_remote_slot!(
     slot_rel::AbstractString,
     slot_dir::AbstractString;
     quiet::Bool=false,
+    julia::Union{Nothing,AbstractString}=nothing,
 )::DriveResult
     mkpath(slot_dir)
     rel = _go_script_relpath(project, script)
-    julia_bin = something(detect_julia_path(String(host)), "julia")
+    julia_bin = _go_resolve_julia(julia; host=String(host))
     inner = _go_remote_slot_shell_inner(remote_root, slot_rel, rel, script_args, julia_bin)
     cmd = ignorestatus(Cmd(vcat(["ssh"], collect(ssh_opts()), [String(host), inner])))
     # Capture streams ourselves: piping to the parent's stdout can drop ssh exit codes.
@@ -350,45 +387,53 @@ function _go_pull_slot!(
 end
 
 """
-    go!(script; hosts=[], project=pwd(), ...)
+    go!(script, workers...; kwargs...)
+    go!(script, workers::AbstractVector; kwargs...)
 
 Run an as-is complete job on one or more slots (local and/or remote).
+
+```julia
+go!("job.jl")                          # one local slot
+go!("job.jl", "local:2"; args=["8"])
+go!("job.jl", "user@h1:1", "user@h2:1"; remote="/path/to/project")
+```
 
 Each slot gets `DISTRIBUTED_OUTPUT_DIR` pointing at
 `<project>/.distsshkit/go/<stem>_<UTC>/<slot>/`. Setup on remotes is assumed done.
 Override the batch root with `collect_spec::AbstractString` (CLI: `--output-dir`).
 
-Default `sync` is `false` (no pre-run sync; prepare remotes with `setup` first).
-Pass `sync=:sync` or `sync=:rsync` to sync before running. Use `sync=:rsync` only
-onto a missing/empty remote path (or `setup --delete` first).
+Default `sync` is `false` (no pre-run sync; prepare remotes with [`sync!`](@ref) /
+[`instantiate!`](@ref) or `setup` first). Pass `sync=:sync` or `sync=:rsync` to
+sync before running. Use `sync=:rsync` only onto a missing/empty remote path
+(or `setup --delete` first).
 
-Also accepts `hosts_file`, `quiet`, `verbosity`, `yes`, and `collect_spec`
-(`false` skips rsync-back; a path overrides the batch output dir).
+`julia` sets the Julia binary for each slot (`nothing` / `"auto"` → detect;
+same as CLI `--julia`).
 
 `local:N` and `host:N` mean N independent full-job runs (not Distributed workers).
 `path_anchor` shortens displayed paths (CLI passes kit project root).
 """
 function go!(
-    script::AbstractString;
-    hosts::AbstractVector{<:AbstractString}=String[],
+    script::AbstractString,
+    workers::AbstractVector{<:AbstractString};
     project::AbstractString=pwd(),
-    remote_root::Union{Nothing,AbstractString}=nothing,
+    remote::Union{Nothing,AbstractString}=nothing,
     hosts_file::Union{Nothing,AbstractString}=nothing,
     quiet::Bool=false,
     verbosity::Union{Nothing,Symbol}=nothing,
-    yes::Bool=false,
+    yes::Bool=true,
     sync::Union{Symbol,Bool,Nothing}=nothing,
     collect_spec::Union{Bool,AbstractString,Nothing}=nothing,
-    script_args::AbstractVector{<:AbstractString}=String[],
+    args::AbstractVector{<:AbstractString}=String[],
     path_anchor::Union{Nothing,AbstractString}=nothing,
+    julia::Union{Nothing,AbstractString}=nothing,
 )::GoResult
     script_path = canonical_local_path(script)
     isfile(script_path) || throw(ArgumentError("script not found: $script_path"))
     proj = canonical_local_path(project)
     anchor = something(path_anchor, proj)
 
-    # Plan slots from argv tokens and hosts_file lines (both may use host:N).
-    tokens = String[String(h) for h in hosts]
+    tokens = String[String(h) for h in workers]
     hf = hosts_file
     if hf === nothing
         env_hf = strip(get(ENV, "DISTSSHKIT_HOSTS_FILE", ""))
@@ -414,18 +459,18 @@ function go!(
         apply_session_env!(
             KitSession(
                 project=proj,
-                hosts=String[],
-                remote_root=remote_root,
+                workers=String[],
+                remote=remote,
                 quiet=quiet,
                 verbosity=verbosity,
                 yes=yes,
             ),
         )
-        rr = session_remote_root(
+        sess_rr = session_remote_root(
             KitSession(
                 project=proj,
-                hosts=String[],
-                remote_root=remote_root,
+                workers=String[],
+                remote=remote,
                 quiet=quiet,
                 verbosity=verbosity,
                 yes=yes,
@@ -433,15 +478,15 @@ function go!(
         )
 
         remote_hosts = unique(String[s.host for s in slots if s.kind === :remote])
-        _go_assert_remotes_ready!(remote_hosts, rr)
+        _go_assert_remotes_ready!(remote_hosts, sess_rr)
 
         sync_result = nothing
         sync_mode = something(sync, false)
         if !isempty(remote_hosts) && sync_mode !== false
             sync_session = KitSession(
                 project=proj,
-                hosts=remote_hosts,
-                remote_root=remote_root,
+                workers=remote_hosts,
+                remote=remote,
                 quiet=quiet,
                 verbosity=verbosity,
                 yes=yes,
@@ -459,7 +504,7 @@ function go!(
                 )
             end
             # Sync may refresh Manifest without installing; re-check deps before run.
-            _go_assert_remotes_ready!(remote_hosts, rr)
+            _go_assert_remotes_ready!(remote_hosts, sess_rr)
         end
 
         skip_collect = collect_spec === false
@@ -489,22 +534,25 @@ function go!(
             writeln_both("Running $(slot.label)...")
             writeln_both("")
             if slot.kind === :local
-                last_run = _go_run_local_slot!(proj, script_path, script_args, slot_dir; quiet=quiet)
+                last_run = _go_run_local_slot!(
+                    proj, script_path, args, slot_dir; quiet=quiet, julia=julia,
+                )
             else
                 host = slot.host::String
                 slot_rel = relpath(slot_dir, proj)
                 last_run = _go_run_remote_slot!(
                     host,
                     proj,
-                    rr,
+                    sess_rr,
                     script_path,
-                    script_args,
+                    args,
                     slot_rel,
                     slot_dir;
                     quiet=quiet,
+                    julia=julia,
                 )
                 if last_run.ok && !skip_collect
-                    ok_pull = _go_pull_slot!(host, rr, slot_rel, slot_dir)
+                    ok_pull = _go_pull_slot!(host, sess_rr, slot_rel, slot_dir)
                     if !ok_pull
                         any_collect_fail = true
                         last_collect = CollectResult(false, 1)
@@ -539,7 +587,8 @@ function go!(
             return GoResult(
                 false,
                 sync_result,
-                last_run,                last_collect,
+                last_run,
+                last_collect,
                 script_path,
                 batch_dir;
                 failed_step="collect",
@@ -554,6 +603,19 @@ function go!(
         kit_progress_done!(; ok=progress_ok)
         close_log_file()
     end
+end
+
+function go!(script::AbstractString; kwargs...)::GoResult
+    return go!(script, String[]; kwargs...)
+end
+
+function go!(
+    script::AbstractString,
+    w1::AbstractString,
+    rest::AbstractString...;
+    kwargs...,
+)::GoResult
+    return go!(script, String[w1, rest...]; kwargs...)
 end
 
 """

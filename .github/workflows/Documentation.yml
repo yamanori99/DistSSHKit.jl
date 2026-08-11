@@ -17,10 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
+      # Documenter hosting template: push docs + report documenter/deploy status.
       contents: write
       statuses: write
       actions: write
-      id-token: write
       pull-requests: read
     steps:
       - uses: actions/checkout@v7

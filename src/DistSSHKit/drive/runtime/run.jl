@@ -106,7 +106,7 @@ function run_drive_parsed!(
             writeln_both("Syncing to remotes ($(sync_mode))...")
             sync_session = DistSSHKit.KitSession(
                 project=proj_dir,
-                hosts=host_names,
+                workers=host_names,
                 quiet=parsed.cli_session.quiet,
                 verbosity=parsed.cli_session.verbosity,
                 yes=parsed.cli_session.yes || DistSSHKit.kit_noninteractive(),

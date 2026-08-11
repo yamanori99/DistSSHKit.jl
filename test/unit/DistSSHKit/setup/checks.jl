@@ -5,6 +5,9 @@ using Test
     @test DistSSHKit.julia_version_mismatch_kind(v"1.12.6", v"1.12.9") == :patch
     @test DistSSHKit.julia_version_mismatch_kind(v"1.12.6", v"1.11.6") == :minor
     @test DistSSHKit.julia_version_mismatch_kind(v"1.12.6", v"2.0.6") == :minor
+    # --check fails on :minor unless --ignore-julia-version (see check_prerequisites).
+    @test DistSSHKit.julia_version_mismatch_kind(VERSION, VersionNumber(VERSION.major, VERSION.minor + 1, 0)) ==
+        :minor
 
     expr = DistSSHKit._project_deps_probe_expr()
     @test occursin("locate_package", expr)

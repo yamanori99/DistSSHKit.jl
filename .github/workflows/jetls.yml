@@ -40,7 +40,33 @@ jobs:
           shopt -s nullglob
           # Entry scripts only: jetls follows `include()` (do not list src/cli/*/*.jl or
           # src/DistSSHKit/*.jl — those fragments are loaded by cli/*.jl / DistSSHKit.jl).
+          set +e
           jetls --threads=auto -- check --exit-severity=error --progress=none \
             demos/with_kit/*.jl demos/without_kit/*.jl \
             src/DistSSHKit.jl src/cli/go.jl src/cli/drive.jl src/cli/setup.jl src/cli/size.jl \
-            test/runtests.jl test/aqua.jl test/fixtures/*.jl
+            test/runtests.jl test/aqua.jl test/fixtures/*.jl \
+            2>&1 | tee jetls.out
+          status=${PIPESTATUS[0]}
+          set -e
+
+          # Surface warnings on the PR Checks / Summary tabs without failing the job.
+          if grep -qE 'Found [1-9][0-9]* diagnostic' jetls.out; then
+            echo "::warning::JETLS reported diagnostics (see job Summary). Warnings do not fail CI; errors still do."
+            {
+              echo "## JETLS diagnostics"
+              echo
+              echo 'Warnings are visible here; the job fails only when jetls exits non-zero (`--exit-severity=error`).'
+              echo
+              echo '```'
+              cat jetls.out
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "## JETLS"
+              echo
+              echo "No diagnostics found."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          exit "$status"

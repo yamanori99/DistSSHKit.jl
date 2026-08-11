@@ -164,27 +164,107 @@ function get_remote_julia_version(host::String, julia_path::AbstractString)::Uni
     end
 end
 
-"""Detect Julia path on remote host via SSH."""
-function detect_julia_path(host::String)
-    common_paths = [
-        "/opt/homebrew/bin/julia",
-        "/usr/local/bin/julia",
-        raw"$HOME/.juliaup/bin/julia",
-        "/usr/bin/julia",
-    ]
-    for path in common_paths
+"""
+Ordered remote Julia path candidates for `uname -s` output (Darwin vs Linux).
+
+Prefers juliaup, then platform paths. Homebrew only on Darwin. Callers still
+verify with `test -x` and `--version` before accepting a hit.
+"""
+function remote_julia_candidates(uname_s::AbstractString)::Vector{String}
+    os = lowercase(strip(String(uname_s)))
+    juliaup = raw"$HOME/.juliaup/bin/julia"
+    if startswith(os, "darwin")
+        return String[juliaup, "/opt/homebrew/bin/julia", "/usr/local/bin/julia", "/usr/bin/julia"]
+    end
+    return String[juliaup, "/usr/bin/julia", "/usr/local/bin/julia"]
+end
+
+"""Whether `path` looks like an auto-detect request (`nothing` / empty / `auto`)."""
+_julia_spec_is_auto(::Nothing)::Bool = true
+function _julia_spec_is_auto(spec::AbstractString)::Bool
+    s = strip(String(spec))
+    return isempty(s) || lowercase(s) == "auto"
+end
+
+"""
+Resolve the Julia binary on this controller (`nothing` / `"auto"` / empty →
+the running process). Explicit paths are kept as given after usability check.
+
+Throws `ArgumentError` when the binary is missing or `--version` does not parse.
+"""
+function resolve_controller_julia(spec::Union{Nothing,AbstractString}=nothing)::String
+    path = if _julia_spec_is_auto(spec)
+        String(something(Base.julia_cmd().exec[1], ""))
+    else
+        String(strip(String(spec::AbstractString)))
+    end
+    isempty(path) && throw(ArgumentError("Julia binary not resolved on controller"))
+    abs = isabspath(path) ? path : abspath(path)
+    try
+        out = read(pipeline(Cmd([abs, "--version"]); stderr=devnull), String)
+        parse_julia_version(out) === nothing && throw(ArgumentError(
+            "controller Julia at $(abs) did not report a parseable --version",
+        ))
+    catch e
+        e isa ArgumentError && rethrow()
+        throw(ArgumentError("controller Julia not usable at $(abs): $(sprint(showerror, e))"))
+    end
+    return abs
+end
+
+"""
+Resolve Julia on SSH `host`.
+
+`nothing` / `"auto"` / empty → [`detect_julia_path`](@ref). Explicit path must
+pass remote `--version`. Returns `nothing` when auto-detect fails (no bare
+`"julia"` fallback).
+"""
+function resolve_remote_julia(
+    host::AbstractString,
+    spec::Union{Nothing,AbstractString}=nothing,
+)::Union{Nothing,String}
+    h = String(host)
+    if _julia_spec_is_auto(spec)
+        return detect_julia_path(h)
+    end
+    path = String(strip(String(spec::AbstractString)))
+    isempty(path) && return nothing
+    get_remote_julia_version(h, path) === nothing && return nothing
+    return path
+end
+
+"""Detect Julia path on remote host via SSH (executable + parseable `--version`)."""
+function detect_julia_path(host::String)::Union{Nothing,String}
+    uname_s = try
+        strip(read(pipeline(Cmd(["ssh", ssh_opts()..., host, "uname", "-s"]); stderr=devnull), String))
+    catch
+        "Linux"
+    end
+    isempty(uname_s) && (uname_s = "Linux")
+
+    for path in remote_julia_candidates(uname_s)
         try
-            result = read(Cmd(["ssh", ssh_opts()..., host, "test -x $path && echo $path"]), String)
+            result = read(pipeline(
+                Cmd(["ssh", ssh_opts()..., host, "test -x $path && echo $path"]);
+                stderr=devnull,
+            ), String)
             found = strip(result)
-            isempty(found) || return String(found)
+            isempty(found) && continue
+            get_remote_julia_version(host, found) === nothing && continue
+            return String(found)
         catch
             continue
         end
     end
     try
-        result = read(Cmd(["ssh", ssh_opts()..., host, "which julia"]), String)
+        result = read(pipeline(
+            Cmd(["ssh", ssh_opts()..., host, "command -v julia || which julia"]);
+            stderr=devnull,
+        ), String)
         p = strip(result)
-        return isempty(p) ? nothing : String(p)
+        isempty(p) && return nothing
+        get_remote_julia_version(host, p) === nothing && return nothing
+        return String(p)
     catch
         return nothing
     end

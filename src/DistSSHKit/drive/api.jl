@@ -1,56 +1,56 @@
 # drive! — API entry for driver execution (same core as CLI `drive`).
 
 """
-    drive!(
-        session::KitSession,
-        script::AbstractString;
-        workers=nothing,
-        script_args=String[],
-        skip_hash_check=true,
-        output_dir=nothing,
-        enable_log=true,
-        log_dir=nothing,
-        package=nothing,
-        sync=nothing,
-    )
+    drive!(session::KitSession, script; plan=nothing, args=[], ...)
+    drive!(script, workers...; kwargs...)
+    drive!(script, workers::AbstractVector; kwargs...)
 
-Run a driver script on workers described by `session` and optional [`WorkerPlan`](@ref).
-Uses the Main-scoped drive runtime (`run_drive_parsed!`). Returns [`DriveResult`](@ref).
+Run a driver script on workers. Tokens match the CLI (`local:2`, `user@host:1`).
 
-Optional `sync=:sync` / `sync=:rsync` runs [`sync!`](@ref) before workers (same as CLI
-`--sync` / `--rsync`). Default is no pre-run sync. Git parity is off by default
-(`skip_hash_check=true`); pass `skip_hash_check=false` (CLI: `--require-git`) to
-require matching remote commits. With `sync=:rsync`, parity stays off even if
-`skip_hash_check=false` (no remote `.git/`).
+```julia
+drive!("job.jl", "local:2"; args=["8"])
+drive!(session, "job.jl")  # uses `session.tokens`
+```
 
-This is the drive step used by [`pipeline!`](@ref) (pipeline syncs separately and does
-not pass `sync=` into `drive!`).
+Optional `sync=:sync` / `sync=:rsync` runs [`sync!`](@ref) before workers.
+Git parity is off by default (`skip_hash_check=true`). With `sync=:rsync`, parity
+stays off even if `skip_hash_check=false` (no remote `.git/`).
+
+`julia` sets the remote Julia binary (`nothing` / `"auto"` → detect; same as
+CLI `--julia`). `plan` is an optional explicit [`WorkerPlan`](@ref).
+[`pipeline!`](@ref) syncs separately and does not pass `sync=` into `drive!`.
 """
 function drive!(
     session::KitSession,
     script::AbstractString;
-    workers::Union{Nothing,WorkerPlan}=nothing,
-    script_args::AbstractVector{<:AbstractString}=String[],
+    plan::Union{Nothing,WorkerPlan}=nothing,
+    args::AbstractVector{<:AbstractString}=String[],
     skip_hash_check::Bool=true,
     output_dir::Union{Nothing,AbstractString}=nothing,
     enable_log::Bool=true,
     log_dir::Union{Nothing,AbstractString}=nothing,
     package::Union{Nothing,AbstractString}=nothing,
     sync::Union{Nothing,Symbol,Bool}=nothing,
+    julia::Union{Nothing,AbstractString}=nothing,
 )::DriveResult
     apply_session_env!(session)
     _ensure_drive_fragments!(session.project)
+    resolved = plan
+    if resolved === nothing && !isempty(session.tokens)
+        resolved = worker_plan_from_tokens(session.tokens; session=session)
+    end
     parsed = drive_parsed_from_session(
         session,
         script;
-        workers=workers,
-        script_args=script_args,
+        workers=resolved,
+        script_args=args,
         skip_hash_check=skip_hash_check,
         output_dir=output_dir,
         enable_log=enable_log,
         log_dir=log_dir,
         package=package,
         sync=sync,
+        julia=julia,
     )
     apply_kit_cli_session!(parsed.cli_session)
     original_args = copy(ARGS)
@@ -62,4 +62,40 @@ function drive!(
         empty!(ARGS)
         append!(ARGS, original_args)
     end
+end
+
+function drive!(
+    script::AbstractString,
+    workers::AbstractVector{<:AbstractString};
+    project::AbstractString=pwd(),
+    remote::Union{Nothing,AbstractString}=nothing,
+    hosts_file::Union{Nothing,AbstractString}=nothing,
+    quiet::Bool=false,
+    verbosity::Union{Nothing,Symbol}=nothing,
+    yes::Bool=true,
+    kwargs...,
+)::DriveResult
+    session = KitSession(
+        project=project,
+        workers=workers,
+        remote=remote,
+        hosts_file=hosts_file,
+        quiet=quiet,
+        verbosity=verbosity,
+        yes=yes,
+    )
+    return drive!(session, script; kwargs...)
+end
+
+function drive!(script::AbstractString; kwargs...)::DriveResult
+    return drive!(script, String[]; kwargs...)
+end
+
+function drive!(
+    script::AbstractString,
+    w1::AbstractString,
+    rest::AbstractString...;
+    kwargs...,
+)::DriveResult
+    return drive!(script, String[w1, rest...]; kwargs...)
 end

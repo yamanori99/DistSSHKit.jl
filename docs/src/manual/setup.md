@@ -6,8 +6,10 @@ Prepare SSH hosts before [`go`](@ref Manual-go) / [`drive`](@ref Manual-drive).
 julia --project=. -m DistSSHKit setup [options] HOST...
 ```
 
-Also: [First Steps · Prepare](@ref Tutorial-Prepare), [Requirements](@ref),
-`setup --help`. Flag vocabulary: [User Guide](@ref Manual).
+From Julia, the same prep is [`sync!`](@ref) then [`instantiate!`](@ref)
+([API](@ref API), [First Steps · Prepare](@ref Tutorial-Prepare)).
+
+Also: [Requirements](@ref), `setup --help`. Flag vocabulary: [User Guide](@ref Manual).
 
 ## Flags
 

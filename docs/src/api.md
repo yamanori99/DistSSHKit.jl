@@ -13,7 +13,15 @@ REPL help also works
 
 The shape mirrors the CLI: **`go!`** for as-is scripts, **`drive!`** (and friends)
 for Distributed drivers. **`pipeline!`** is optional sugar that runs the usual
-remote order in one call.
+remote order in one call. Worker placement uses the same tokens as the CLI
+(`local:2`, `user@host:1`):
+
+```julia
+pipeline!(driver, "local:2"; args=["8"])
+pipeline!(driver, "user@h1:1", "user@h2:1"; remote="/path/to/project", args=["8"])
+go!("job.jl", "local:2"; args=["8"])
+drive!("job.jl", "local:2"; args=["8"])
+```
 
 ## Run a script as-is — `go!`
 
@@ -31,23 +39,35 @@ When the script is a **driver** (`init_output_dir!` / `main`, `pmap`, …), buil
 [`KitSession`](@ref), then call the steps you need:
 
 ```text
-(optional sync!)  →  size_plan  →  drive!  →  (optional collect!)
+(optional sync! / instantiate!)  →  size_plan  →  drive!  →  (optional collect!)
+```
+
+First-time remotes usually look like:
+
+```julia
+session = KitSession(workers=["user@h1"], remote="/path/to/project")
+sync!(session; mode=:rsync)
+instantiate!(session)   # julia="auto" by default; or julia="/path/to/julia"
 ```
 
 [`go!`](@ref) / [`drive!`](@ref) / [`pipeline!`](@ref) do **not** pre-run sync or
 require git parity by default (same as CLI). Pass `sync=:sync` / `:rsync`, or
 `skip_hash_check=false` on `drive!` / `PipelineConfig` (CLI: `--require-git`),
-when you want those.
+when you want those. Prefer positional worker tokens over building a
+[`WorkerPlan`](@ref) by hand (`WorkerPlan` remains the return type of
+[`size_plan`](@ref)). Pass `julia=` on `go!` / `drive!` / `pipeline!` to pin the
+remote Julia binary (same as CLI `--julia`).
 
 Or call [`pipeline!`](@ref) for that same order in one shot.
 [`pipeline_config_from_env`](@ref) reads `DISTSSHKIT_HOSTS` /
 `DISTSSHKIT_HOSTS_FILE`, `SYNC_MODE` (`rsync` / `sync` / `off`; unset → off for
-remotes too), and the usual quiet / progress / yes flags — same vocabulary as
-the CLI.
+remotes too), `JULIA_DISTRIBUTED_EXE` (same as CLI `--julia`), and the usual
+quiet / progress / yes flags — same vocabulary as the CLI.
 
 ```@docs
 KitSession
 sync!
+instantiate!
 HostResult
 SyncResult
 size_plan

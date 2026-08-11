@@ -41,6 +41,15 @@ using Dates
         end
     end
 
+    @testset "_go_resolve_julia" begin
+        real = DistSSHKit._go_julia_exe()
+        @test DistSSHKit._go_resolve_julia(nothing) == real
+        @test DistSSHKit._go_resolve_julia("auto") == real
+        @test DistSSHKit._go_resolve_julia(real) == real
+        @test_throws ArgumentError DistSSHKit._go_resolve_julia("/no/such/julia-bin")
+        @test_throws ArgumentError DistSSHKit._go_resolve_julia("auto"; host="no-such-host.invalid")
+    end
+
     @testset "_go_remote_slot_shell_inner" begin
         inner = DistSSHKit._go_remote_slot_shell_inner(
             "~/proj",
@@ -54,5 +63,14 @@ using Dates
         @test occursin(">demos/output/go_sim/root@192.0.2.10-1/julia.stdout.log", inner)
         @test occursin("go.exitcode", inner)
         @test occursin("echo \$ec >", inner)
+
+        spaced = DistSSHKit._go_remote_slot_shell_inner(
+            "~/proj",
+            "slot",
+            "job.jl",
+            String[],
+            "/opt/Julia 1.12/bin/julia",
+        )
+        @test occursin(Base.shell_escape("/opt/Julia 1.12/bin/julia"), spaced)
     end
 end

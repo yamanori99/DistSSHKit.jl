@@ -1,13 +1,32 @@
 using Test
 
 @testset "drive API" begin
+    @testset "parse_worker_tokens" begin
+        p = DistSSHKit.parse_worker_tokens(["local:2", "host-a:4", "host-b"])
+        @test p.local_workers == 2
+        @test !p.local_autosize
+        @test p.remote_fixed == Dict("host-a" => 4)
+        @test p.remote_auto == ["host-b"]
+        @test p.remote_hosts == ["host-a", "host-b"]
+        @test DistSSHKit.worker_tokens_fully_specified(p) == false
+
+        fixed = DistSSHKit.parse_worker_tokens(["local:2", "h1:1"])
+        @test DistSSHKit.worker_tokens_fully_specified(fixed)
+        plan = DistSSHKit.worker_plan_from_tokens(["local:2", "h1:1"])
+        @test plan.local_workers == 2
+        @test plan.remote_workers == Dict("h1" => 1)
+
+        @test_throws ArgumentError DistSSHKit.parse_worker_tokens(["local:1", "l:2"])
+    end
+
     @testset "KitSession" begin
         mktempdir() do tmp
             withenv("DISTSSHKIT_HOSTS_FILE" => "") do
-                session = DistSSHKit.KitSession(project=tmp, hosts=["host-a", "host-b:4"])
+                session = DistSSHKit.KitSession(project=tmp, workers=["host-a", "host-b:4"])
                 @test session.project == abspath(tmp)
                 @test session.hosts == ["host-a", "host-b"]
-                @test session.remote_root === nothing
+                @test session.tokens == ["host-a", "host-b:4"]
+                @test session.remote === nothing
             end
         end
     end
@@ -35,8 +54,8 @@ using Test
         mktempdir() do tmp
             session = DistSSHKit.KitSession(
                 project=tmp,
-                hosts=["host-a"],
-                remote_root="/remote/App.jl",
+                workers=["host-a"],
+                remote="/remote/App.jl",
                 quiet=true,
                 yes=true,
             )
@@ -55,7 +74,7 @@ using Test
     @testset "pipeline helpers" begin
         cfg = DistSSHKit.PipelineConfig(
             driver="job.jl",
-            hosts=["host-a"],
+            workers=["host-a"],
             sync=:rsync,
         )
         session = DistSSHKit.kit_session_from_config(cfg)
@@ -63,24 +82,24 @@ using Test
         @test DistSSHKit.resolve_pipeline_collect(cfg, session)
 
         # Git parity off by default; sync mode does not flip it.
-        default_cfg = DistSSHKit.PipelineConfig(driver="job.jl", hosts=["host-a"])
+        default_cfg = DistSSHKit.PipelineConfig(driver="job.jl", workers=["host-a"])
         default_session = DistSSHKit.kit_session_from_config(default_cfg)
         @test DistSSHKit.resolve_pipeline_sync(default_cfg, default_session) === false
         @test DistSSHKit.pipeline_skip_hash_check(default_cfg)
         @test DistSSHKit.pipeline_skip_hash_check(
-            DistSSHKit.PipelineConfig(driver="job.jl", hosts=["host-a"], sync=:sync),
+            DistSSHKit.PipelineConfig(driver="job.jl", workers=["host-a"], sync=:sync),
         )
         @test !DistSSHKit.pipeline_skip_hash_check(
             DistSSHKit.PipelineConfig(
                 driver="job.jl",
-                hosts=["host-a"],
+                workers=["host-a"],
                 skip_hash_check=false,
             ),
         )
 
         local_cfg = DistSSHKit.PipelineConfig(
             driver="job.jl",
-            include_local_for_size=true,
+            workers=["local:2"],
             sync=false,
             collect=false,
         )
@@ -110,18 +129,40 @@ using Test
         @test DistSSHKit._parse_env_sync_mode("off") === false
         @test_throws ArgumentError DistSSHKit._parse_env_sync_mode("true")
         @test_throws ArgumentError DistSSHKit._parse_env_sync_mode("1")
+
+        cfg_jl = DistSSHKit.PipelineConfig(
+            driver="job.jl",
+            workers=["host-a"],
+            julia="/opt/julia/bin/julia",
+        )
+        @test cfg_jl.julia == "/opt/julia/bin/julia"
+        @test DistSSHKit.PipelineConfig(driver="job.jl", julia="auto").julia === nothing
+        @test DistSSHKit.PipelineConfig(driver="job.jl", julia="").julia === nothing
     end
 
     @testset "drive_parsed_from_session sync / parity" begin
         mktempdir() do tmp
             script = joinpath(tmp, "job.jl")
             write(script, "")
-            session = DistSSHKit.KitSession(project=tmp, hosts=["host-a"])
+            session = DistSSHKit.KitSession(project=tmp, workers=["host-a"])
             DistSSHKit._ensure_drive_fragments!(tmp)
 
             parsed = DistSSHKit.drive_parsed_from_session(session, script)
             @test parsed.sync_mode === nothing
             @test parsed.skip_hash_check == true
+            @test parsed.julia === nothing
+
+            parsed_jl = DistSSHKit.drive_parsed_from_session(
+                session,
+                script;
+                julia="/opt/julia/bin/julia",
+            )
+            @test parsed_jl.julia == "/opt/julia/bin/julia"
+            @test DistSSHKit.drive_parsed_from_session(
+                session,
+                script;
+                julia="auto",
+            ).julia === nothing
 
             parsed_sync = DistSSHKit.drive_parsed_from_session(session, script; sync=:sync)
             @test parsed_sync.sync_mode === :sync
@@ -147,6 +188,13 @@ using Test
         end
     end
 
+    @testset "instantiate! requires SSH hosts" begin
+        mktempdir() do tmp
+            session = DistSSHKit.KitSession(project=tmp, workers=["local:2"])
+            @test_throws ArgumentError DistSSHKit.instantiate!(session)
+        end
+    end
+
     @testset "pipeline_config_from_env" begin
         withenv(
             "DISTSSHKIT_HOSTS" => "host-a, host-b",
@@ -155,13 +203,23 @@ using Test
             "SYNC_MODE" => "off",
             "GB_PER_WORKER" => "2.0",
             "DISTSSHKIT_HOSTS_FILE" => "",
+            "JULIA_DISTRIBUTED_EXE" => "/opt/julia/bin/julia",
         ) do
             cfg = DistSSHKit.pipeline_config_from_env()
-            @test cfg.hosts == ["host-a", "host-b"]
-            @test cfg.remote_root == "/remote/App"
+            @test cfg.tokens == ["host-a", "host-b"]
+            @test cfg.remote == "/remote/App"
             @test cfg.driver == "demos/job.jl"
             @test cfg.sync === false
             @test cfg.gb_per_worker == 2.0
+            @test cfg.julia == "/opt/julia/bin/julia"
+        end
+        withenv(
+            "DRIVER" => "demos/job.jl",
+            "DISTSSHKIT_HOSTS" => "",
+            "DISTSSHKIT_HOSTS_FILE" => "",
+            "JULIA_DISTRIBUTED_EXE" => "auto",
+        ) do
+            @test DistSSHKit.pipeline_config_from_env().julia === nothing
         end
     end
 end

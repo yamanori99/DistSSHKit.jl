@@ -67,6 +67,78 @@ end
 
 WorkerPlan() = WorkerPlan(0, Dict{String,Int}())
 
+"""Parsed drive/go worker tokens (counts may still need [`size_plan`](@ref))."""
+struct ParsedWorkerTokens
+    local_workers::Int
+    local_autosize::Bool
+    remote_fixed::Dict{String,Int}
+    remote_auto::Vector{String}
+    remote_hosts::Vector{String}
+    tokens::Vector{String}
+end
+
+"""
+    parse_worker_tokens(tokens) -> ParsedWorkerTokens
+
+Classify CLI-style tokens. Explicit `:N` is fixed; bare hosts are sized later.
+`local` / `l` / `localhost` are local; everything else is remote SSH.
+"""
+function parse_worker_tokens(
+    tokens::AbstractVector{<:AbstractString},
+)::ParsedWorkerTokens
+    local_workers = 0
+    local_seen = false
+    local_autosize = false
+    remote_fixed = Dict{String,Int}()
+    remote_auto = String[]
+    remote_hosts = String[]
+    seen_remote = Set{String}()
+    out_tokens = String[String(t) for t in tokens]
+
+    for raw in out_tokens
+        host, n = split_host_workers_spec(raw)
+        if is_local_host_name(host)
+            local_seen && throw(ArgumentError(
+                "duplicate local worker token; use one of l:N, local:N, or localhost:N",
+            ))
+            local_seen = true
+            if n === nothing
+                local_autosize = true
+            else
+                local_workers = Int(n)
+            end
+        else
+            if !(host in seen_remote)
+                push!(remote_hosts, host)
+                push!(seen_remote, host)
+            end
+            if n === nothing
+                push!(remote_auto, host)
+            else
+                remote_fixed[host] = Int(n)
+            end
+        end
+    end
+    return ParsedWorkerTokens(
+        local_workers,
+        local_autosize,
+        remote_fixed,
+        remote_auto,
+        remote_hosts,
+        out_tokens,
+    )
+end
+
+"""True when every token has an explicit worker/slot count (`:N`)."""
+function worker_tokens_fully_specified(parsed::ParsedWorkerTokens)::Bool
+    return !parsed.local_autosize && isempty(parsed.remote_auto)
+end
+
+"""SSH host names from tokens (local tokens omitted)."""
+function remote_hosts_from_tokens(tokens::AbstractVector{<:AbstractString})::Vector{String}
+    return parse_worker_tokens(tokens).remote_hosts
+end
+
 """
 Per-host RSS sample from [`measure_rss`](@ref).
 
@@ -102,26 +174,28 @@ end
 """
     PipelineConfig
 
-Settings for [`pipeline!`](@ref): sync, worker plan, driver run, and optional collect.
+Settings for [`pipeline!`](@ref): sync, worker tokens, driver run, and optional collect.
 
-Set `sync=false` to skip sync (local-only runs). Set `collect=false` to skip rsync-back
-(local outputs are already on disk). Git parity is off by default: when
-`skip_hash_check` is `nothing`, checks are skipped. Pass `skip_hash_check=false`
+Worker placement uses CLI-style tokens (`local:2`, `user@host:1`). Bare hosts are
+sized via [`size_plan`](@ref). Set `sync=false` to skip sync. Set `collect=false`
+to skip rsync-back. Git parity is off by default; pass `skip_hash_check=false`
 (or CLI `--require-git`) to require matching remote commits.
+
+`julia` sets the remote Julia binary (`nothing` / `"auto"` → detect; same as
+CLI `--julia`). Prefer [`pipeline!(driver, workers...; …)`](@ref pipeline!) for
+day-to-day use.
 """
 mutable struct PipelineConfig
     project::String
-    hosts::Vector{String}
-    remote_root::Union{Nothing,String}
+    tokens::Vector{String}
+    remote::Union{Nothing,String}
     hosts_file::Union{Nothing,String}
     quiet::Bool
     verbosity::Union{Nothing,Symbol}
     yes::Bool
-    include_local_for_size::Bool
     driver::String
-    script_args::Vector{String}
+    args::Vector{String}
     sync::Union{Symbol,Bool,Nothing}
-    workers::Union{Nothing,WorkerPlan}
     gb_per_worker::Union{Nothing,Float64}
     size_probe::Union{Nothing,String}
     mem_headroom::Float64
@@ -133,21 +207,20 @@ mutable struct PipelineConfig
     enable_log::Bool
     log_dir::Union{Nothing,String}
     package::Union{Nothing,String}
+    julia::Union{Nothing,String}
 end
 
 function PipelineConfig(;
     project::AbstractString=pwd(),
-    hosts::AbstractVector{<:AbstractString}=String[],
-    remote_root::Union{Nothing,AbstractString}=nothing,
+    workers::AbstractVector{<:AbstractString}=String[],
+    remote::Union{Nothing,AbstractString}=nothing,
     hosts_file::Union{Nothing,AbstractString}=nothing,
     quiet::Bool=false,
     verbosity::Union{Nothing,Symbol}=nothing,
-    yes::Bool=false,
-    include_local_for_size::Bool=false,
+    yes::Bool=true,
     driver::AbstractString,
-    script_args::AbstractVector{<:AbstractString}=String[],
+    args::AbstractVector{<:AbstractString}=String[],
     sync::Union{Symbol,Bool,Nothing}=nothing,
-    workers::Union{Nothing,WorkerPlan}=nothing,
     gb_per_worker::Union{Nothing,Real}=nothing,
     size_probe::Union{Nothing,AbstractString}=nothing,
     mem_headroom::Real=DEFAULT_MEM_HEADROOM,
@@ -159,8 +232,9 @@ function PipelineConfig(;
     enable_log::Bool=true,
     log_dir::Union{Nothing,AbstractString}=nothing,
     package::Union{Nothing,AbstractString}=nothing,
+    julia::Union{Nothing,AbstractString}=nothing,
 )
-    rr = remote_root === nothing ? nothing : String(strip(String(remote_root)))
+    rr = remote === nothing ? nothing : String(strip(String(remote)))
     rr !== nothing && isempty(rr) && (rr = nothing)
     hf = hosts_file === nothing ? nothing : String(strip(String(hosts_file)))
     hf !== nothing && isempty(hf) && (hf = nothing)
@@ -170,20 +244,23 @@ function PipelineConfig(;
     od = output_dir === nothing ? nothing : String(output_dir)
     ld = log_dir === nothing ? nothing : String(log_dir)
     pkg = package === nothing ? nothing : String(package)
-    script_args_vec = Base.collect(String, script_args)
+    jl = if julia === nothing || isempty(strip(String(julia))) ||
+            lowercase(strip(String(julia))) == "auto"
+        nothing
+    else
+        String(julia)
+    end
     return PipelineConfig(
         canonical_local_path(project),
-        [String(h) for h in hosts],
+        String[String(t) for t in workers],
         rr,
         hf,
         quiet,
         verbosity,
         yes,
-        include_local_for_size,
         String(driver),
-        script_args_vec,
+        Base.collect(String, args),
         sync,
-        workers,
         gbp,
         probe,
         Float64(mem_headroom),
@@ -195,6 +272,7 @@ function PipelineConfig(;
         enable_log,
         ld,
         pkg,
+        jl,
     )
 end
 

@@ -36,12 +36,19 @@ function _ssh_e2e_env(;
         "DISTSSHKIT_QUIET" => get(ENV, "DISTSSHKIT_QUIET", "1"),
         "DISTRIBUTED_SSH_OPTS" => "-F $(g.ssh_config)",
         "DISTRIBUTED_REMOTE_PROJECT_ROOT" => String(remote_project),
+        # setup --sync / git push use this; DistSSHKit's git_push_project! has no -F flag.
+        "GIT_SSH_COMMAND" => "ssh -F $(g.ssh_config)",
     )
     return merge(base, extra)
 end
 
 const _SSH_E2E_HOSTS = ("distsshkit-w1", "distsshkit-w2")
 const _SSH_E2E_REMOTE_ROOT = "/home/dev/distsshkit-e2e"
+# Separate tree for git clone/sync/--require-git (rsync excludes `.git/`).
+const _SSH_E2E_GIT_REMOTE_ROOT = "/home/dev/distsshkit-e2e-git"
+const _SSH_E2E_BARE_ORIGIN = "/home/dev/distsshkit-e2e-origin.git"
+# Compose DNS name of worker-1 (reachable from both workers via inter-worker keys).
+const _SSH_E2E_BARE_SSH_FROM_WORKERS = "dev@worker-1:$(_SSH_E2E_BARE_ORIGIN)"
 
 """Root for kept SSH E2E artifacts: `test/artifacts/ssh-e2e/` (gitignored)."""
 function _ssh_e2e_artifact_root()::String
@@ -78,11 +85,32 @@ function _ssh_e2e_write_summary!(suite::SshE2ESuite)
             end
         end
         println(io)
+        jp = joinpath(suite.dir, "JULIA_PATHS.txt")
+        if isfile(jp)
+            println(io, "Julia paths (see JULIA_PATHS.txt):")
+            for line in eachline(jp)
+                println(io, "  ", line)
+            end
+            println(io)
+        end
         println(io, "Log header:  === NN  name  [ok|FAIL]  exit=N ===")
         println(io, "Suite: $(suite.dir)")
     end
     write(joinpath(_ssh_e2e_artifact_root(), "LATEST"), suite.dir * "\n")
     return path
+end
+
+"""Append one controller/remote Julia resolution line for SUMMARY."""
+function _ssh_e2e_record_julia!(
+    suite::SshE2ESuite,
+    role::AbstractString,
+    path::AbstractString,
+    version::AbstractString,
+)
+    open(joinpath(suite.dir, "JULIA_PATHS.txt"), "a") do io
+        println(io, "$(role)\t$(path)\t$(version)")
+    end
+    return _ssh_e2e_write_summary!(suite)
 end
 
 """
@@ -170,6 +198,17 @@ function _ssh_e2e_record!(
     return path
 end
 
+"""Record an in-process API step (no subprocess). `ok` maps to exit 0/1."""
+function _assert_ssh_e2e_api_ok(
+    suite::SshE2ESuite,
+    slug::AbstractString,
+    ok::Bool,
+    detail::AbstractString="";
+)
+    body = isempty(detail) ? (ok ? "ok" : "FAIL") : detail
+    return _assert_ssh_e2e_ok(suite, slug, (; exitcode=ok ? 0 : 1), body)
+end
+
 """Record + `_assert_proc_ok` (expects exit 0)."""
 function _assert_ssh_e2e_ok(
     suite::SshE2ESuite,
@@ -233,8 +272,8 @@ function _stage_ssh_e2e_remote_host!(
     write(joinpath(proj, "src", "SshE2EApp.jl"), "module SshE2EApp\nend\n")
 
     for (subdir, names) in (
-        ("with_kit", ("square_echo.jl", "square_file.jl")),
-        ("without_kit", ("pi_echo.jl", "pi_file.jl")),
+        ("with_kit", ("square_echo.jl", "square_file.jl", "pipeline_square.jl")),
+        ("without_kit", ("pi_echo.jl", "pi_file.jl", "pipeline_pi.jl")),
     )
         dest = joinpath(proj, "demos", subdir)
         mkpath(dest)
@@ -245,6 +284,15 @@ function _stage_ssh_e2e_remote_host!(
         end
     end
     cp(_fixture("drive_local_smoke.jl"), joinpath(proj, "smoke.jl"); force=true)
+
+    # Kit logs / demo outputs must not dirty the tree: setup --sync requires clean git.
+    write(
+        joinpath(proj, ".gitignore"),
+        """
+        .distsshkit/
+        demos/**/output/
+        """,
+    )
 
     inst = setenv(
         `$julia --startup-file=no --project=$proj -e "using Pkg; Pkg.instantiate()"`,
@@ -264,6 +312,80 @@ function _ssh_e2e_latest_go_batch(proj::AbstractString)::Union{Nothing,String}
     batches = filter(isdir, readdir(root; join=true))
     isempty(batches) && return nothing
     return last(sort(batches; by=mtime))
+end
+
+"""Controller → bare URL using docker-ssh Host alias (`User`/`Port` from ssh_config)."""
+function _ssh_e2e_bare_origin_from_controller()::String
+    return "distsshkit-w1:$(_SSH_E2E_BARE_ORIGIN)"
+end
+
+"""
+Seed a bare origin on worker-1, point local `origin` at it, push HEAD.
+
+Workers clone via `$(_SSH_E2E_BARE_SSH_FROM_WORKERS)` (compose DNS + inter-worker key).
+"""
+function _ssh_e2e_seed_git_origin!(proj::AbstractString)
+    g = _docker_ssh_generated()
+    ssh_base = ["ssh", "-F", g.ssh_config]
+    bare = _SSH_E2E_BARE_ORIGIN
+    seed_host = _SSH_E2E_HOSTS[1]
+
+    # Fresh bare on w1.
+    proc, out = _run_subprocess(Cmd([
+        ssh_base..., seed_host,
+        "rm -rf $(bare) $(_SSH_E2E_GIT_REMOTE_ROOT) && git init --bare $(bare)",
+    ]))
+    _assert_proc_ok(proc, out; label="ssh-e2e git init --bare")
+
+    # Workers accept worker-1 host key once (git clone uses plain ssh).
+    for host in _SSH_E2E_HOSTS
+        proc, out = _run_subprocess(Cmd([
+            ssh_base..., host,
+            "ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 " *
+            "dev@worker-1 'echo ok'",
+        ]))
+        _assert_proc_ok(proc, out; label="ssh-e2e warm worker-1 hostkey from $host")
+    end
+
+    proj = abspath(proj)
+    # Detach any previous origin; set controller-reachable origin for push/sync.
+    try
+        run(pipeline(`git -C $proj remote remove origin`; stdout=devnull, stderr=devnull))
+    catch
+    end
+    origin = _ssh_e2e_bare_origin_from_controller()
+    run(`git -C $proj remote add origin $origin`)
+
+    # Prefer main; fall back to whatever HEAD is.
+    branch = try
+        strip(read(`git -C $proj rev-parse --abbrev-ref HEAD`, String))
+    catch
+        "master"
+    end
+    isempty(branch) && (branch = "master")
+
+    git_ssh = "ssh -F $(g.ssh_config)"
+    push_cmd = setenv(
+        `git -C $proj push -u origin HEAD:$(branch)`,
+        Dict("GIT_SSH_COMMAND" => git_ssh),
+    )
+    proc, out = _run_subprocess(push_cmd)
+    _assert_proc_ok(proc, out; label="ssh-e2e git push origin")
+    return (; origin_controller=origin, origin_workers=_SSH_E2E_BARE_SSH_FROM_WORKERS, branch)
+end
+
+"""Make a sync-test commit on `proj` and leave the working tree clean."""
+function _ssh_e2e_git_bump_commit!(proj::AbstractString; message::AbstractString="e2e-sync")
+    proj = abspath(proj)
+    marker = joinpath(proj, "e2e_sync_marker.txt")
+    write(marker, string(time()) * "\n")
+    run(pipeline(`git -C $proj add -A`; stdout=devnull, stderr=devnull))
+    run(pipeline(`git -C $proj commit -m $message`; stdout=devnull, stderr=devnull))
+    DistSSHKit.local_git_clean(proj) || error(
+        "e2e bump left a dirty tree:\n" *
+        read(pipeline(`git -C $proj status --porcelain`; stderr=devnull), String),
+    )
+    return DistSSHKit.get_local_git_hash(proj; short=12)
 end
 
 end
