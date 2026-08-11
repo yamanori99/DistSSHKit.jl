@@ -11,8 +11,8 @@
 #
 #   julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_file.jl
 #
-# Remotes (after `setup`): uncomment the remote `pipeline!` block below.
-# See also demos/README.md and the `pipeline!` docs.
+# Remotes: after you have exercised `pipeline!` on your own hosts/containers,
+# copy this file and set `hosts=` / `sync=` (see demos/README.md and `pipeline!`).
 
 using DistSSHKit
 
@@ -31,18 +31,5 @@ result = pipeline!(
     enable_log=false,
     yes=true,
 )
-
-# Remotes (after `setup --check YourHost…`). Uncomment and edit:
-# result = pipeline!(
-#     driver=driver,
-#     hosts=["user@YourHost1:4", "user@YourHost2:4"],  # SSH hosts; :N = workers
-#     # workers=WorkerPlan(2, Dict{String,Int}()),     # optional local workers too
-#     script_args=[n],
-#     sync=:rsync,   # or :sync — required onto empty remotes / after setup --delete
-#     collect=true,  # pull results into demos/with_kit/output/
-#     enable_log=false,
-#     yes=true,
-# )
-
 report_pipeline_errors(result) || exit(1)
 println("pipeline! ok  (driver=", basename(driver), ")")
