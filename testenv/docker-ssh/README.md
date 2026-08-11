@@ -52,10 +52,11 @@ DISTSSHKIT_SSH_E2E=1 julia --project=. test/integration/ssh/run.jl
 
 # Suite covers (see test/integration/ssh/run.jl):
 #   local with_kit square_echo / square_file
-#   remote: setup delete/rsync/instantiate/check, size,
+#   remote CLI: setup delete/rsync/instantiate/check, size,
 #           drive square_echo (2 remotes), drive mixed smoke,
 #           go pi_echo + pi_file (both remotes + collect),
 #           rsync refuse, inter-worker SSH
+#   remote Julian API: sync! + instantiate!(julia=auto) + go! + pipeline!
 #
 # Kept under (see test/artifacts/README.md):
 #   $(cat test/artifacts/ssh-e2e/LATEST)/SUMMARY.txt

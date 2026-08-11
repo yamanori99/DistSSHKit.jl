@@ -25,7 +25,7 @@ Layout under `demos/` after install:
 | Path | Role | Command |
 | --- | --- | --- |
 | `with_kit/` | Driver (`init` / `main`) | [`drive`](@ref Manual-drive) or `pipeline!` |
-| `without_kit/` | Standalone Julia | `julia …` or [`go`](@ref Manual-go) |
+| `without_kit/` | Standalone Julia | `julia …`, [`go`](@ref Manual-go), or `go!` |
 
 Refuses to install into the package's own `demos/` tree. Prefer
 `--dest DIR` when developing the kit itself.

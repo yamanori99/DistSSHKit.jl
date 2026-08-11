@@ -42,4 +42,11 @@ using Test
         )
         @test proc_go.exitcode == 0
     end
+
+    pipe_script = joinpath(kit_root, "demos", "without_kit", "pipeline_pi.jl")
+    @test isfile(pipe_script)
+    pipe_cmd = Cmd([julia, "--startup-file=no", "--project=$(kit_root)", pipe_script, "4"])
+    pipe_proc, pipe_out = _run_subprocess(setenv(pipe_cmd, env))
+    _assert_proc_ok(pipe_proc, pipe_out; label="pipeline_pi demo")
+    @test occursin("pipeline ok", pipe_out)
 end

@@ -170,6 +170,17 @@ function _ssh_e2e_record!(
     return path
 end
 
+"""Record an in-process API step (no subprocess). `ok` maps to exit 0/1."""
+function _assert_ssh_e2e_api_ok(
+    suite::SshE2ESuite,
+    slug::AbstractString,
+    ok::Bool,
+    detail::AbstractString="";
+)
+    body = isempty(detail) ? (ok ? "ok" : "FAIL") : detail
+    return _assert_ssh_e2e_ok(suite, slug, (; exitcode=ok ? 0 : 1), body)
+end
+
 """Record + `_assert_proc_ok` (expects exit 0)."""
 function _assert_ssh_e2e_ok(
     suite::SshE2ESuite,
@@ -234,7 +245,7 @@ function _stage_ssh_e2e_remote_host!(
 
     for (subdir, names) in (
         ("with_kit", ("square_echo.jl", "square_file.jl", "pipeline_square.jl")),
-        ("without_kit", ("pi_echo.jl", "pi_file.jl")),
+        ("without_kit", ("pi_echo.jl", "pi_file.jl", "pipeline_pi.jl")),
     )
         dest = joinpath(proj, "demos", subdir)
         mkpath(dest)

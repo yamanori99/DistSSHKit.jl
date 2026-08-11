@@ -24,7 +24,7 @@ machines or workstations. DistSSHKit helps you put that hardware to work.
 In your project (`Project.toml` at the project root):
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.add(url="https://github.com/yamanori99/DistSSHKit.jl.git", rev="v0.1.0")'
+julia --project=. -e 'using Pkg; Pkg.add(url="https://github.com/yamanori99/DistSSHKit.jl.git", rev="v0.2.0")'
 ```
 
 For the development tip, use `rev="main"` instead.

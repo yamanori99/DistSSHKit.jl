@@ -54,17 +54,18 @@ function go_main()::Cint
         end
     end
     result = go!(
-        parsed.script_path;
-        hosts=hosts,
+        parsed.script_path,
+        hosts;
         project=PROJECT_ROOT,
         quiet=parsed.cli_session.quiet,
         verbosity=parsed.cli_session.verbosity,
         yes=yes,
         sync=parsed.sync,
-        script_args=parsed.script_args,
+        args=parsed.script_args,
         path_anchor=_PATH_ANCHOR,
         collect_spec=parsed.output_dir,
         hosts_file=parsed.cli_session.hosts_file,
+        julia=parsed.julia,
     )
     report_go_errors(result)
     return result.ok ? 0 : 1

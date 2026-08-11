@@ -41,6 +41,14 @@ using Dates
         end
     end
 
+    @testset "_go_resolve_julia" begin
+        @test DistSSHKit._go_resolve_julia(nothing) == DistSSHKit._go_julia_exe()
+        @test DistSSHKit._go_resolve_julia("auto") == DistSSHKit._go_julia_exe()
+        @test DistSSHKit._go_resolve_julia("/opt/julia/bin/julia") == "/opt/julia/bin/julia"
+        @test DistSSHKit._go_resolve_julia("/opt/julia/bin/julia"; host="h1") ==
+            "/opt/julia/bin/julia"
+    end
+
     @testset "_go_remote_slot_shell_inner" begin
         inner = DistSSHKit._go_remote_slot_shell_inner(
             "~/proj",

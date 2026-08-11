@@ -21,6 +21,7 @@ function show_go_usage()
         "                      or `setup --delete` first)",
         "  --skip-sync         compat: no pre-run sync (already the default)",
         "  --skip-git-guard    $(DistSSHKit.GO_SKIP_GIT_GUARD_MEANING)",
+        "  --julia PATH        Julia on remotes (default: \$JULIA_DISTRIBUTED_EXE or auto-detect)",
         "  --output-dir PATH   batch root (default: <project>/.distsshkit/go/<stem>_<UTC>)",
         "  --hosts CSV         Comma-separated slot specs (same form as CLI tokens)",
     )
@@ -35,6 +36,7 @@ function show_go_usage()
     )
     print_help_blank()
     println("Environment (hosts): DISTSSHKIT_HOSTS (comma-separated, host:N OK), DISTSSHKIT_HOSTS_FILE")
+    println("Environment (Julia): JULIA_DISTRIBUTED_EXE (default remote Julia path)")
     print_help_blank()
     print_help_section("Typical after `setup --rsync`")
     print_help_lines(
@@ -71,6 +73,7 @@ function parse_go_args(args::AbstractVector{<:AbstractString})
     script_path = nothing
     script_args = String[]
     output_dir = nothing
+    julia_exe = nothing
     # nothing → go! default (false); :sync / :rsync / false (= skip)
     sync = nothing
     c = DistSSHKit.CliCursor(collect(String, rest))
@@ -83,6 +86,8 @@ function parse_go_args(args::AbstractVector{<:AbstractString})
             end
         elseif arg == "--output-dir"
             output_dir = DistSSHKit.cli_take_value!(c, arg)
+        elseif arg == "--julia"
+            julia_exe = DistSSHKit.cli_take_value!(c, arg)
         elseif arg == "--sync"
             DistSSHKit.cli_consume!(c)
             sync = _go_set_sync!(sync, :sync)
@@ -103,6 +108,7 @@ function parse_go_args(args::AbstractVector{<:AbstractString})
                 hosts=String[],
                 sync=nothing,
                 output_dir=nothing,
+                julia=nothing,
             )
         elseif endswith(arg, ".jl")
             script_path = arg
@@ -120,6 +126,12 @@ function parse_go_args(args::AbstractVector{<:AbstractString})
         end
     end
     append!(hosts, host_tokens)
+    if julia_exe === nothing
+        env_val = get(ENV, "JULIA_DISTRIBUTED_EXE", "auto")
+        julia_exe = env_val == "auto" ? nothing : env_val
+    elseif julia_exe == "auto"
+        julia_exe = nothing
+    end
     DistSSHKit.apply_kit_cli_session!(cli_session)
     return (
         help=false,
@@ -130,5 +142,6 @@ function parse_go_args(args::AbstractVector{<:AbstractString})
         hosts=hosts,
         sync=sync,
         output_dir=output_dir,
+        julia=julia_exe,
     )
 end

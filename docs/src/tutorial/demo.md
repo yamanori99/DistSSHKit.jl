@@ -19,10 +19,11 @@ demos/
   with_kit/          # driver scripts — use drive or pipeline!
     square_file.jl   # file: square_results.csv
     square_echo.jl   # stdout only
-    pipeline_square.jl  # pipeline!(driver=square_file.jl)
-  without_kit/       # standalone scripts — use julia or go
+    pipeline_square.jl  # pipeline!(driver, "local:2")
+  without_kit/       # standalone scripts — use julia, go, or go!
     pi_file.jl       # file: pi_results.txt
     pi_echo.jl       # stdout only
+    pipeline_pi.jl       # go!(script, "local:2") → pi_file.jl
 ```
 
 Each topic has a `*_file.jl` and `*_echo.jl` pair: same job, but `*_file.jl`
@@ -46,6 +47,12 @@ Two local slots:
 
 ```bash
 julia --project=. -m DistSSHKit go local:2 demos/without_kit/pi_file.jl
+```
+
+Same job through the API (`go!`):
+
+```bash
+julia --project=. demos/without_kit/pipeline_pi.jl
 ```
 
 With remotes (after [First-time remotes](@ref first-time-remotes)):

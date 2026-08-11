@@ -242,10 +242,12 @@ function instantiate_remotes(
 
     succeeded = 0
     failed = 0
+    host_results = HostResult[]
     for host in hosts
         if get(results, host, false)
             ok("$host: done")
             succeeded += 1
+            push!(host_results, HostResult(host, true, "done"))
         else
             fail("$host: failed")
             msg = get(fail_msgs, host, "")
@@ -257,9 +259,10 @@ function instantiate_remotes(
                 kit_println("          (JULIA_PKG_USE_CLI_GIT is already set for this step)")
             end
             failed += 1
+            push!(host_results, HostResult(host, false, isempty(msg) ? "failed" : msg))
         end
     end
-    return host_op_result(succeeded=succeeded, failed=failed)
+    return (; cancelled=false, succeeded, failed, hosts=host_results)
 end
 
 """Resolve clone URL: `--repo` wins, else local `origin` (HTTPS GitHub → SSH)."""

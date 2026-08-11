@@ -26,6 +26,14 @@ Skipping instantiate is a common cause of remote failures such as
 `go` / `drive` and `setup --check` probe remotes first and fail fast with an
 `--instantiate` hint when deps are missing.
 
+Same steps from Julia:
+
+```julia
+session = KitSession(workers=["YourHost1", "YourHost2"], remote="/path/to/project")
+sync!(session; mode=:rsync)
+instantiate!(session)
+```
+
 After rsync (no remote `.git/`), just run `go` / `drive` — neither pre-runs
 sync nor requires git parity by default. Optional: `go --sync` / `drive --sync`
 / `drive --rsync` for a one-shot deploy, or `drive --require-git` on

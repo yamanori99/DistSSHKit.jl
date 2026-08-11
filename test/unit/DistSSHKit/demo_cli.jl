@@ -5,6 +5,7 @@ using Test
     @test isdir(DistSSHKit.demos_dir())
     @test "with_kit/square_file" in demos
     @test "without_kit/pi_file" in demos
+    @test "without_kit/pipeline_pi" in demos
     @test DistSSHKit.demo_script("square_file") !== nothing
     @test DistSSHKit.demo_script("no_such_demo") === nothing
 
@@ -14,6 +15,7 @@ using Test
         @test isempty(result.skipped)
         @test isfile(joinpath(tmp, "demos", "with_kit", "square_file.jl"))
         @test isfile(joinpath(tmp, "demos", "with_kit", "pipeline_square.jl"))
+        @test isfile(joinpath(tmp, "demos", "without_kit", "pipeline_pi.jl"))
         @test isfile(joinpath(tmp, "demos", ".gitignore"))
         @test occursin("init_output_dir!", read(joinpath(tmp, "demos", "with_kit", "square_file.jl"), String))
 

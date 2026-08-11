@@ -44,6 +44,7 @@ function drive_parsed_from_session(
     log_dir::Union{Nothing,AbstractString}=nothing,
     package::Union{Nothing,AbstractString}=nothing,
     sync::Union{Nothing,Symbol,Bool}=nothing,
+    julia::Union{Nothing,AbstractString}=nothing,
 )
     local_workers = 0
     hosts = Tuple{String,Union{Int,Nothing}}[]
@@ -68,10 +69,16 @@ function drive_parsed_from_session(
     # Default skip=true; --require-git / skip_hash_check=false enables checks.
     # rsync never has remote .git/ parity.
     effective_skip = skip_hash_check || sync_mode === :rsync
+    julia_exe = if julia === nothing || strip(String(julia)) == "" ||
+            lowercase(strip(String(julia))) == "auto"
+        nothing
+    else
+        String(julia)
+    end
     return (
         local_workers=local_workers,
         default_workers=nothing,
-        julia=nothing,
+        julia=julia_exe,
         skip_hash_check=effective_skip,
         enable_log=enable_log,
         log_dir=log_dir === nothing ? nothing : String(log_dir),

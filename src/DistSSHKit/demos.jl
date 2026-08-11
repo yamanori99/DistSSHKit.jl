@@ -137,7 +137,7 @@ function show_demo_usage(io::IO=stdout)
     print_help_section("Layout"; io=io)
     print_help_lines(io,
         "  with_kit/     DistSSHKit drivers (drive / pipeline!)",
-        "  without_kit/  Kit-independent scripts (julia / go)",
+        "  without_kit/  Kit-independent scripts (julia / go / go!)",
     )
     print_help_blank(io)
     print_help_section("Demos (demo install)"; io=io)
@@ -156,6 +156,7 @@ function show_demo_usage(io::IO=stdout)
     print_help_lines(io,
         "  julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_file.jl",
         "  julia --project=. demos/with_kit/pipeline_square.jl",
+        "  julia --project=. demos/without_kit/pipeline_pi.jl",
         "  julia --project=. -m DistSSHKit go demos/without_kit/pi_file.jl",
     )
     return nothing
@@ -169,6 +170,7 @@ Install or list bundled demos. See [`(@main)`](@ref).
     julia --project=. -m DistSSHKit demo install
     julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_file.jl
     julia --project=. demos/with_kit/pipeline_square.jl
+    julia --project=. demos/without_kit/pipeline_pi.jl
 """
 function demo(args::Vector{String}=copy(ARGS))::Cint
     if isempty(args) || args[1] in ("-h", "--help", "help")
@@ -202,6 +204,7 @@ function demo(args::Vector{String}=copy(ARGS))::Cint
             println()
             println("Demos are in ", dest_demos, "; open and edit them, then run for example:")
             println("  julia --project=. -m DistSSHKit drive local:2 $rel_demos/with_kit/square_file.jl")
+            println("  julia --project=. $rel_demos/without_kit/pipeline_pi.jl")
             println("  julia --project=. -m DistSSHKit go $rel_demos/without_kit/pi_file.jl")
             return 0
         catch err

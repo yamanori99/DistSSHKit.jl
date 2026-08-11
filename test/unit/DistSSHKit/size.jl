@@ -68,7 +68,7 @@ using Test
         mktempdir() do tmp
             session = DistSSHKit.KitSession(
                 project=tmp,
-                hosts=String[],
+                workers=String[],
                 include_local_for_size=true,
             )
             plan = DistSSHKit.size_plan(session; gb_per_worker=2.0)
