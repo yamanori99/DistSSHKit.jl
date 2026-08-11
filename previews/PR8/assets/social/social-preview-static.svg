@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
-  <!-- social-preview-static: 1280×640; 50px inset; mark | title lockup; from logo/logo-static.svg -->
+  <!-- social-preview-static: 1280×640; safe 100×60; mark | title lockup; from logo/logo-static.svg -->
   <rect width="1280" height="640" fill="#ffffff"/>
-  <svg x="255" y="228" width="184" height="184" viewBox="0 26 240 240">
+  <svg x="100" y="150" width="340" height="340" viewBox="0 26 240 240">
 
   <!-- Static end-state (no SMIL). Same geometry as logo-dynamic.svg. -->
   <defs>
@@ -76,7 +76,7 @@
   </g>
 
   </svg>
-  <text x="465" y="289" dominant-baseline="middle" fill="#0f172a" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="56" font-weight="800">DistSSHKit.jl</text>
-  <text x="465" y="337" dominant-baseline="middle" fill="#475569" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="22" font-weight="500">A Julia kit for setup, execution, and result collection</text>
-  <text x="465" y="367" dominant-baseline="middle" fill="#475569" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="22" font-weight="500">across local and SSH hosts.</text>
+  <text x="480" y="276" dominant-baseline="middle" fill="#0f172a" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="76" font-weight="800">DistSSHKit.jl</text>
+  <text x="480" y="340" dominant-baseline="middle" fill="#475569" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="28" font-weight="500">A Julia kit for setup, execution, and result collection</text>
+  <text x="480" y="378" dominant-baseline="middle" fill="#475569" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="28" font-weight="500">across local and SSH hosts.</text>
 </svg>
