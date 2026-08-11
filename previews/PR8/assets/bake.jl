@@ -1,0 +1,521 @@
+#!/usr/bin/env julia
+#=
+Regenerate DistSSHKit logo / social-preview derivatives.
+
+Hand-edit sources (under logo/):
+  logo/logo-dynamic.svg, logo/logo-static.svg
+
+Derived:
+  logo/logo-dark-*.svg, logo/logo-static.png, logo/logo-dynamic.gif
+  social/social-preview-*.svg|.png|.gif
+
+Documenter looks for assets/logo.svg and assets/logo-dark.svg; bake makes
+**symlinks** to logo/logo-dynamic.svg and logo/logo-dark-dynamic.svg.
+
+  julia docs/src/assets/bake.jl
+  julia docs/src/assets/bake.jl --png
+  julia docs/src/assets/bake.jl --png --gif
+=#
+
+using Printf
+
+const ROOT = @__DIR__
+const LOGO_DIR = "logo"
+const SOCIAL_DIR = "social"
+
+const SOCIAL_W, SOCIAL_H = 1280, 640
+# Gentle lift only — 112/36 read high; 140/18.5 read low.
+const LOGO_VIEWBOX = "0 26 240 240"
+# GitHub repo card template (1024×512, 40pt inset) → 1280×640 ⇒ 50px margin.
+const SAFE = 50
+# Kit lockup: mark beside a text column (title + tagline), column centered on mark.
+const MARK_SIZE = 184
+const MARK_GAP = 26
+const TITLE = "DistSSHKit.jl"
+const TEXT_W = 560  # approx. longest tagline line
+const GROUP_W = MARK_SIZE + MARK_GAP + TEXT_W
+const MARK_X = max(SAFE, (SOCIAL_W - GROUP_W) ÷ 2)
+const TEXT_X = MARK_X + MARK_SIZE + MARK_GAP
+const MARK_Y = (SOCIAL_H - MARK_SIZE) ÷ 2
+const TAGLINE_1 = "A Julia kit for setup, execution, and result collection"
+const TAGLINE_2 = "across local and SSH hosts."
+# Vertically center title+taglines against the mark (not top-align).
+const TEXT_BLOCK_H = 118
+const TEXT_TOP = MARK_Y + (MARK_SIZE - TEXT_BLOCK_H) ÷ 2
+const TITLE_Y = TEXT_TOP + 28
+const TAGLINE_Y1 = TITLE_Y + 48
+const TAGLINE_Y2 = TAGLINE_Y1 + 30
+# Prefer concrete faces so rsvg/Pango (not just Chrome) can resolve them.
+const FONT = "'Helvetica Neue', Helvetica, Arial, sans-serif"
+
+const STORY_S = 8.0  # send (synced ぐるん) → joint spin → collect + hold
+const DELAY_MS = 40
+# Parallel Chrome workers for GIF frames (each frame is one headless launch).
+const GIF_WORKERS = 4
+# Static PNG supersample factor (render N× then downscale). Use 1 when exporting already-Retina sizes.
+const PNG_SCALE = 2
+# Deliverable PNG pixel sizes (Retina / 2× GitHub OG 1280×640).
+const LOGO_PNG = 960
+const SOCIAL_PNG_W, SOCIAL_PNG_H = SOCIAL_W * 2, SOCIAL_H * 2
+
+die(msg) = (println(stderr, "error: ", msg); exit(1))
+
+logo_path(name::AbstractString) = joinpath(LOGO_DIR, name)
+social_path(name::AbstractString) = joinpath(SOCIAL_DIR, name)
+
+function readfile(rel::AbstractString)
+    p = joinpath(ROOT, rel)
+    isfile(p) || die("missing source $p")
+    return read(p, String)
+end
+
+function writefile(rel::AbstractString, text::AbstractString)
+    p = joinpath(ROOT, rel)
+    mkpath(dirname(p))
+    write(p, text)
+    println("wrote $rel ($(sizeof(text)) bytes)")
+end
+
+to_dark(svg::AbstractString) =
+    replace(
+        replace(
+            replace(svg, "stroke: #1a1d21;" => "stroke: #eef0f3;"),
+            "fill: #1a1d21;" => "fill: #eef0f3;",
+        ),
+        "#a0a5ab" => "#7a8088",  # idle remote ring (light → dark surface)
+    )
+
+function strip_xml_decl(svg::AbstractString)
+    startswith(svg, "<?xml") || return svg
+    i = findfirst("?>", svg)
+    i === nothing && return svg
+    return lstrip(svg[last(i)+1:end])
+end
+
+function svg_inner(svg::AbstractString)
+    s = strip(strip_xml_decl(svg))
+    m = match(r"^<svg[^>]*>([\s\S]*)</svg>\s*$", s)
+    m === nothing && die("could not strip outer <svg>")
+    return m.captures[1]
+end
+
+function build_social(logo_svg::AbstractString, kind::AbstractString)
+    inner = svg_inner(logo_svg)
+    src = kind == "static" ? logo_path("logo-static.svg") : logo_path("logo-dynamic.svg")
+    return """<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="$(SOCIAL_W)" height="$(SOCIAL_H)" viewBox="0 0 $(SOCIAL_W) $(SOCIAL_H)">
+  <!-- social-preview-$(kind): 1280×640; $(SAFE)px inset; mark | title lockup; from $(src) -->
+  <rect width="$(SOCIAL_W)" height="$(SOCIAL_H)" fill="#ffffff"/>
+  <svg x="$(MARK_X)" y="$(MARK_Y)" width="$(MARK_SIZE)" height="$(MARK_SIZE)" viewBox="$(LOGO_VIEWBOX)">
+$(inner)
+  </svg>
+  <text x="$(TEXT_X)" y="$(TITLE_Y)" dominant-baseline="middle" fill="#0f172a" font-family="$(FONT)" font-size="56" font-weight="800">$(TITLE)</text>
+  <text x="$(TEXT_X)" y="$(TAGLINE_Y1)" dominant-baseline="middle" fill="#475569" font-family="$(FONT)" font-size="22" font-weight="500">$(TAGLINE_1)</text>
+  <text x="$(TEXT_X)" y="$(TAGLINE_Y2)" dominant-baseline="middle" fill="#475569" font-family="$(FONT)" font-size="22" font-weight="500">$(TAGLINE_2)</text>
+</svg>
+"""
+end
+
+html_wrap(body, w, h) = """<!DOCTYPE html><html><head><meta charset="utf-8"/>
+<style>html,body{margin:0;width:$(w)px;height:$(h)px;overflow:hidden;background:#fff}</style>
+<script>
+window.__seek = function (t) {
+  document.querySelectorAll("svg").forEach(function (s) {
+    // Seek then pause — pause-first can leave SMIL on a stale frame in headless Chrome.
+    if (s.unpauseAnimations) s.unpauseAnimations();
+    if (s.setCurrentTime) s.setCurrentTime(t);
+    if (s.pauseAnimations) s.pauseAnimations();
+  });
+};
+window.addEventListener("DOMContentLoaded", function () {
+  var t = parseFloat(new URLSearchParams(location.search).get("t") || "0");
+  if (!isNaN(t)) {
+    // Double-seek after a tick so begin= / freeze states resolve reliably.
+    window.__seek(t);
+    requestAnimationFrame(function () { window.__seek(t); });
+  }
+});
+</script>
+</head><body>$(body)</body></html>
+"""
+
+function which_bin(names)
+    for name in names
+        path = Sys.which(name)
+        path !== nothing && return path
+    end
+    return nothing
+end
+
+function find_chrome()
+    mac = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    isfile(mac) && return mac
+    mac_chr = "/Applications/Chromium.app/Contents/MacOS/Chromium"
+    isfile(mac_chr) && return mac_chr
+    return which_bin(("chromium", "chromium-browser", "google-chrome", "google-chrome-stable", "chrome"))
+end
+
+function remove_legacy!()
+    # Old flat layout leftovers at assets/ root.
+    for name in (
+        "logo.png",
+        "logo.gif",
+        "logo-dynamic.svg",
+        "logo-static.svg",
+        "logo-dark-dynamic.svg",
+        "logo-dark-static.svg",
+        "logo-static.png",
+        "logo-dynamic.gif",
+        "social-preview.svg",
+        "social-preview.png",
+        "social-preview.gif",
+        "social-preview-static.svg",
+        "social-preview-dynamic.svg",
+        "social-preview-static.png",
+        "social-preview-dynamic.gif",
+    )
+        p = joinpath(ROOT, name)
+        if isfile(p) || islink(p)
+            rm(p)
+            println("removed legacy $name")
+        end
+    end
+end
+
+"""Relative symlink under ROOT; replaces an existing file or link."""
+function ensure_symlink!(link_name::AbstractString, target_name::AbstractString)
+    link_path = joinpath(ROOT, link_name)
+    target_path = joinpath(ROOT, target_name)
+    isfile(target_path) || die("symlink target missing: $target_name")
+    if islink(link_path) || isfile(link_path) || isdir(link_path)
+        rm(link_path)
+    end
+    cd(ROOT) do
+        symlink(target_name, link_name)
+    end
+    println("linked $link_name → $target_name")
+end
+
+function bake_svgs!()
+    mkpath(joinpath(ROOT, LOGO_DIR))
+    mkpath(joinpath(ROOT, SOCIAL_DIR))
+
+    logo = readfile(logo_path("logo-dynamic.svg"))
+    logo_static = readfile(logo_path("logo-static.svg"))
+    logo_dark = to_dark(logo)
+
+    writefile(logo_path("logo-dark-dynamic.svg"), logo_dark)
+    writefile(logo_path("logo-dark-static.svg"), to_dark(logo_static))
+    # Documenter only discovers logo.svg / logo-dark.svg at assets/ root.
+    ensure_symlink!("logo.svg", logo_path("logo-dynamic.svg"))
+    ensure_symlink!("logo-dark.svg", logo_path("logo-dark-dynamic.svg"))
+
+    social_static = build_social(logo_static, "static")
+    social_dynamic = build_social(logo, "dynamic")
+    writefile(social_path("social-preview-static.svg"), social_static)
+    writefile(social_path("social-preview-dynamic.svg"), social_dynamic)
+
+    return (; logo, logo_static, social_static, social_dynamic)
+end
+
+function rsvg_png(
+    svg_path::AbstractString,
+    out_path::AbstractString;
+    width::Int,
+    height::Int,
+    scale::Int=1,
+)
+    candidates = String[]
+    w = which_bin(("rsvg-convert",))
+    w !== nothing && push!(candidates, w)
+    for p in ("/opt/homebrew/bin/rsvg-convert", "/usr/local/bin/rsvg-convert")
+        isfile(p) && push!(candidates, p)
+    end
+    isempty(candidates) && return false
+    rsvg = first(candidates)
+    scale = max(1, scale)
+    if scale == 1
+        try
+            run(`$rsvg -w $width -h $height -o $out_path $svg_path`)
+        catch
+            return false
+        end
+        isfile(out_path) || return false
+        println("wrote $(relpath(out_path, ROOT)) ($(filesize(out_path)) bytes) [rsvg-convert]")
+        return true
+    end
+    hi = joinpath(tempdir(), "distsshkit-rsvg-$(width)x$(height)-$(scale)x.png")
+    try
+        run(`$rsvg -w $(width * scale) -h $(height * scale) -o $hi $svg_path`)
+    catch
+        return false
+    end
+    (isfile(hi) && filesize(hi) > 0) || return false
+    if downscale_png!(hi, out_path; w=width, h=height)
+        println("wrote $(relpath(out_path, ROOT)) ($(filesize(out_path)) bytes) [rsvg-convert $(scale)×→1×]")
+        return true
+    end
+    cp(hi, out_path; force=true)
+    println(stderr, "warn: kept $(scale)× PNG for $(relpath(out_path, ROOT)) (no sips/ffmpeg downscale)")
+    println("wrote $(relpath(out_path, ROOT)) ($(filesize(out_path)) bytes) [rsvg-convert $(scale)×]")
+    return true
+end
+
+function chrome_screenshot(
+    html_path::AbstractString,
+    out_png::AbstractString;
+    w::Int,
+    h::Int,
+    t_s::Float64=0.0,
+    scale::Int=1,
+)
+    chrome = find_chrome()
+    chrome === nothing && return false
+    out_abs = abspath(out_png)
+    html_uri = "file://" * abspath(html_path) * "?t=" * string(t_s)
+
+    for attempt in 1:3
+        isfile(out_abs) && rm(out_abs)
+        udir = mktempdir(prefix="distsshkit-chrome-")
+        args = String[
+            chrome,
+            "--headless=new",
+            "--disable-gpu",
+            "--no-sandbox",
+            "--hide-scrollbars",
+            "--force-device-scale-factor=$(scale)",
+            "--window-size=$(w),$(h)",
+            "--default-background-color=ffffffff",
+            "--user-data-dir=$(udir)",
+            "--virtual-time-budget=1500",
+            "--screenshot=$(out_abs)",
+            html_uri,
+        ]
+        proc = nothing
+        try
+            proc = run(pipeline(Cmd(args); stdout=devnull, stderr=devnull); wait=false)
+            # Headless Chrome often writes the PNG then never exits; succeed on file, then kill.
+            deadline = time() + 12.0
+            while time() < deadline
+                if isfile(out_abs) && filesize(out_abs) > 0
+                    break
+                end
+                process_exited(proc) && break
+                sleep(0.05)
+            end
+        catch
+            # Chrome sometimes exits non-zero / signaled even after writing the shot.
+        finally
+            if proc !== nothing && !process_exited(proc)
+                try
+                    kill(proc, Base.SIGKILL)
+                catch
+                end
+                timedwait(() -> process_exited(proc), 2.0)
+            end
+            try
+                rm(udir; recursive=true, force=true)
+            catch
+            end
+        end
+        if isfile(out_abs) && filesize(out_abs) > 0
+            return true
+        end
+    end
+    return false
+end
+
+"""Downscale PNG to exactly w×h (Lanczos via sips or ffmpeg)."""
+function downscale_png!(src::AbstractString, dest::AbstractString; w::Int, h::Int)
+    sips = which_bin(("sips",))
+    if sips !== nothing
+        try
+            run(pipeline(`$sips -z $h $w $src --out $dest`; stdout=devnull, stderr=devnull))
+            return isfile(dest) && filesize(dest) > 0
+        catch
+        end
+    end
+    ffmpeg = which_bin(("ffmpeg",))
+    if ffmpeg === nothing
+        for p in ("/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg")
+            isfile(p) && (ffmpeg = p; break)
+        end
+    end
+    if ffmpeg !== nothing
+        try
+            run(pipeline(
+                `$ffmpeg -y -i $src -vf scale=$(w):$(h):flags=lanczos $dest`;
+                stdout=devnull,
+                stderr=devnull,
+            ))
+            return isfile(dest) && filesize(dest) > 0
+        catch
+        end
+    end
+    return false
+end
+
+"""Rasterize static SVG to PNG: prefer rsvg; else Chrome. Both can supersample via `scale`."""
+function bake_static_png!(
+    svg_rel::AbstractString,
+    out_rel::AbstractString,
+    html_body::AbstractString;
+    w::Int,
+    h::Int,
+    scale::Int=PNG_SCALE,
+)
+    out_path = joinpath(ROOT, out_rel)
+    svg_path = joinpath(ROOT, svg_rel)
+    if rsvg_png(svg_path, out_path; width=w, height=h, scale=scale)
+        return true
+    end
+
+    html = html_wrap(html_body, w, h)
+    html_path = joinpath(tempdir(), "distsshkit-$(replace(out_rel, "/" => "-")).html")
+    write(html_path, html)
+    if scale <= 1
+        if chrome_screenshot(html_path, out_path; w=w, h=h, scale=1)
+            println("wrote $out_rel ($(filesize(out_path)) bytes) [chromium]")
+            return true
+        end
+        return false
+    end
+
+    hi = joinpath(tempdir(), "distsshkit-$(replace(out_rel, "/" => "-"))-$(scale)x.png")
+    if !chrome_screenshot(html_path, hi; w=w, h=h, scale=scale)
+        return false
+    end
+    if downscale_png!(hi, out_path; w=w, h=h)
+        println("wrote $out_rel ($(filesize(out_path)) bytes) [chromium $(scale)×→1×]")
+        return true
+    end
+    # Fallback: keep the hi-res shot if downscale tools are missing.
+    cp(hi, out_path; force=true)
+    println(stderr, "warn: kept $(scale)× PNG for $out_rel (no sips/ffmpeg downscale)")
+    println("wrote $out_rel ($(filesize(out_path)) bytes) [chromium $(scale)×]")
+    return true
+end
+
+function bake_pngs!(arts)
+    ok_any = false
+    logo_svg = logo_path("logo-static.svg")
+    logo_png = logo_path("logo-static.png")
+    logo_html_body = replace(
+        strip_xml_decl(arts.logo_static),
+        "width=\"240\" height=\"240\"" => "width=\"$(LOGO_PNG)\" height=\"$(LOGO_PNG)\"",
+        count=1,
+    )
+    if bake_static_png!(logo_svg, logo_png, logo_html_body; w=LOGO_PNG, h=LOGO_PNG, scale=PNG_SCALE)
+        ok_any = true
+    else
+        println(stderr, "warn: skip logo-static.png (need rsvg-convert or Chromium)")
+    end
+
+    social_svg = social_path("social-preview-static.svg")
+    social_png = social_path("social-preview-static.png")
+    # Export at 2× OG pixels; no further supersample (already Retina).
+    social_html = replace(
+        strip_xml_decl(arts.social_static),
+        "width=\"$(SOCIAL_W)\" height=\"$(SOCIAL_H)\"" =>
+            "width=\"$(SOCIAL_PNG_W)\" height=\"$(SOCIAL_PNG_H)\"",
+        count=1,
+    )
+    if bake_static_png!(
+        social_svg,
+        social_png,
+        social_html;
+        w=SOCIAL_PNG_W,
+        h=SOCIAL_PNG_H,
+        scale=1,
+    )
+        ok_any = true
+    else
+        println(stderr, "warn: skip social-preview-static.png (need rsvg-convert or Chromium)")
+    end
+    return ok_any
+end
+
+function ffmpeg_gif!(seq_dir::AbstractString, out_gif::AbstractString)
+    candidates = String[]
+    w = which_bin(("ffmpeg",))
+    w !== nothing && push!(candidates, w)
+    for p in ("/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg")
+        isfile(p) && push!(candidates, p)
+    end
+    isempty(candidates) && die("ffmpeg not found (required for --gif)")
+    ffmpeg = first(candidates)
+    palette = joinpath(tempdir(), "distsshkit-$(basename(out_gif))-pal.png")
+    pattern = joinpath(seq_dir, "f%04d.png")
+    run(pipeline(`$ffmpeg -y -framerate 25 -i $pattern -vf palettegen=max_colors=128:stats_mode=diff $palette`; stdout=devnull, stderr=devnull))
+    run(pipeline(
+        `$ffmpeg -y -framerate 25 -i $pattern -i $palette -lavfi paletteuse=dither=bayer:bayer_scale=3 -loop -1 $out_gif`;
+        stdout=devnull,
+        stderr=devnull,
+    ))
+    println("wrote $(relpath(out_gif, ROOT)) ($(filesize(out_gif)) bytes)")
+end
+
+function bake_gif_from_html!(html::AbstractString, out_gif::AbstractString; w::Int, h::Int)
+    find_chrome() === nothing && die("Chromium/Chrome not found (required for --gif)")
+    ffmpeg_ok = which_bin(("ffmpeg",)) !== nothing ||
+        isfile("/opt/homebrew/bin/ffmpeg") || isfile("/usr/local/bin/ffmpeg")
+    ffmpeg_ok || die("ffmpeg not found (required for --gif)")
+
+    n = round(Int, STORY_S * 1000 / DELAY_MS)
+    seq = mktempdir(prefix="distsshkit-gif-")
+    html_path = joinpath(seq, "page.html")
+    write(html_path, html)
+
+    println("  capturing $n frames × $(GIF_WORKERS) Chrome workers…")
+    t0 = time()
+    done = Threads.Atomic{Int}(0)
+    asyncmap(0:(n - 1); ntasks=GIF_WORKERS) do i
+        t_s = i * DELAY_MS / 1000.0
+        frame = joinpath(seq, @sprintf("f%04d.png", i))
+        chrome_screenshot(html_path, frame; w=w, h=h, t_s=t_s) ||
+            error("chromium screenshot failed at t=$(t_s)s")
+        k = Threads.atomic_add!(done, 1) + 1
+        if k == 1 || k % 25 == 0 || k == n
+            println("  frame $k/$n")
+        end
+        return nothing
+    end
+    println("  captured $n frames in $(round(time() - t0; digits=1))s")
+    ffmpeg_gif!(seq, out_gif)
+end
+
+function bake_gifs!(arts)
+    logo_html = html_wrap(
+        replace(strip_xml_decl(arts.logo), "width=\"240\" height=\"240\"" => "width=\"480\" height=\"480\"", count=1),
+        480,
+        480,
+    )
+    bake_gif_from_html!(logo_html, joinpath(ROOT, logo_path("logo-dynamic.gif")); w=480, h=480)
+
+    social_html = html_wrap(arts.social_dynamic, SOCIAL_W, SOCIAL_H)
+    bake_gif_from_html!(social_html, joinpath(ROOT, social_path("social-preview-dynamic.gif")); w=SOCIAL_W, h=SOCIAL_H)
+end
+
+function main(args)
+    do_png = "--png" in args
+    do_gif = "--gif" in args
+
+    println("baking SVGs…")
+    arts = bake_svgs!()
+
+    if do_png
+        println("baking PNGs…")
+        bake_pngs!(arts)
+    end
+    if do_gif
+        println("baking GIFs (Chromium ×$(GIF_WORKERS) + ffmpeg)…")
+        bake_gifs!(arts)
+    end
+
+    remove_legacy!()
+    println("done")
+end
+
+if abspath(PROGRAM_FILE) == @__FILE__
+    main(ARGS)
+end
