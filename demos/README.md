@@ -40,6 +40,7 @@ julia --project=. -m DistSSHKit go demos/without_kit/pi_file.jl
 
 Drivers use `init_output_dir!` + `main` + `pmap`. Optional hooks: `drive --help`.
 `pipeline_square.jl` is the thin API entry (sync → drive → collect) over `square_file.jl`.
+For remotes, edit that file (or copy it) and set `hosts=` / `sync=:rsync` — see `pipeline!` in the API docs.
 
 ## without_kit/
 

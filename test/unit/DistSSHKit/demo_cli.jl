@@ -10,9 +10,10 @@ using Test
 
     mktempdir() do tmp
         result = DistSSHKit.install_demos(tmp)
-        @test length(result.installed) == 4
+        @test length(result.installed) == length(DistSSHKit.list_demos())
         @test isempty(result.skipped)
         @test isfile(joinpath(tmp, "demos", "with_kit", "square_file.jl"))
+        @test isfile(joinpath(tmp, "demos", "with_kit", "pipeline_square.jl"))
         @test isfile(joinpath(tmp, "demos", ".gitignore"))
         @test occursin("init_output_dir!", read(joinpath(tmp, "demos", "with_kit", "square_file.jl"), String))
 
@@ -20,7 +21,8 @@ using Test
         write(edited_path, "# edited by user\n")
         result2 = DistSSHKit.install_demos(tmp)
         @test isempty(result2.installed)
-        @test length(result2.skipped) == 5
+        # Existing demo scripts + demos/.gitignore are left untouched without --force.
+        @test length(result2.skipped) == length(result.installed) + 1
         @test read(edited_path, String) == "# edited by user\n"
 
         result3 = DistSSHKit.install_demos(tmp; force=true)
