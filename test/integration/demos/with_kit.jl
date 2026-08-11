@@ -40,5 +40,18 @@ using Test
         )
         _assert_proc_ok(echo_proc, echo_out; label="square_echo demo")
         @test occursin("param^2:", echo_out)
+
+        pipe_script = joinpath(with_kit, "pipeline_square.jl")
+        pipe_cmd = Cmd([julia, "--startup-file=no", "--project=$tmp", pipe_script, "3"])
+        pipe_env = _child_julia_env(Dict(
+            "DISTRIBUTED_INIT_DELAY_SEC" => "0",
+            "DISTRIBUTED_PROJECT_ROOT" => tmp,
+        ))
+        pipe_proc, pipe_out = _run_subprocess(setenv(pipe_cmd, pipe_env))
+        _assert_proc_ok(pipe_proc, pipe_out; label="pipeline_square demo")
+        @test occursin("pipeline! ok", pipe_out)
+        pipe_csv = joinpath(with_kit, "output", "square_results.csv")
+        @test isfile(pipe_csv)
+        @test read(pipe_csv, String) == expected
     end
 end

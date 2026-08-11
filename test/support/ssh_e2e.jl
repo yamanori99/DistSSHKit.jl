@@ -233,7 +233,7 @@ function _stage_ssh_e2e_remote_host!(
     write(joinpath(proj, "src", "SshE2EApp.jl"), "module SshE2EApp\nend\n")
 
     for (subdir, names) in (
-        ("with_kit", ("square_echo.jl", "square_file.jl")),
+        ("with_kit", ("square_echo.jl", "square_file.jl", "pipeline_square.jl")),
         ("without_kit", ("pi_echo.jl", "pi_file.jl")),
     )
         dest = joinpath(proj, "demos", subdir)

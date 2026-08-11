@@ -16,9 +16,10 @@ That copies:
 
 ```text
 demos/
-  with_kit/          # driver scripts — use drive
+  with_kit/          # driver scripts — use drive or pipeline!
     square_file.jl   # file: square_results.csv
     square_echo.jl   # stdout only
+    pipeline_square.jl  # pipeline!(driver=square_file.jl)
   without_kit/       # standalone scripts — use julia or go
     pi_file.jl       # file: pi_results.txt
     pi_echo.jl       # stdout only
@@ -63,6 +64,12 @@ over workers instead of N independent script runs, use `drive` (not `go`):
 
 ```bash
 julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_file.jl
+```
+
+Same driver through the API (`pipeline!` — local workers, no sync/collect):
+
+```bash
+julia --project=. demos/with_kit/pipeline_square.jl
 ```
 
 With remotes (after [First-time remotes](@ref first-time-remotes)):
