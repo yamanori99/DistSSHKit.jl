@@ -19,9 +19,11 @@ RUN useradd -m -s /bin/bash "${SSH_USER}" \
     && echo "${SSH_USER} ALL=(ALL) NOPASSWD:ALL" > "/etc/sudoers.d/${SSH_USER}" \
     && chmod 440 "/etc/sudoers.d/${SSH_USER}"
 
+# Pin major.minor to match CI controllers (ssh-e2e uses Julia 1.12). Patch floats
+# within 1.12; setup --check fails on major.minor mismatch without --ignore-julia-version.
 RUN su - "${SSH_USER}" -c \
     'curl --retry 5 --retry-delay 5 --retry-connrefused --connect-timeout 10 \
-        -fsSL https://install.julialang.org | sh -s -- --yes' \
+        -fsSL https://install.julialang.org | sh -s -- --yes --default-channel 1.12' \
     && ln -sf "/home/${SSH_USER}/.juliaup/bin/julia" /usr/local/bin/julia
 
 RUN mkdir -p /run/sshd /mounted-keys \

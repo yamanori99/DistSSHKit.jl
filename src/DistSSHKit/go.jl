@@ -194,16 +194,23 @@ function _go_assert_remotes_ready!(hosts::AbstractVector{<:AbstractString}, remo
 end
 
 function _go_julia_exe()::String
-    return something(Base.julia_cmd().exec[1], "julia")
+    return resolve_controller_julia("auto")
 end
 
-"""Resolve Julia binary for `go!` (`nothing` / `"auto"` / empty → detect or local exe)."""
+"""Resolve Julia binary for `go!` (`nothing` / `"auto"` / empty → detect or local exe).
+
+Remote auto-detect failures throw (no bare `"julia"` PATH fallback).
+"""
 function _go_resolve_julia(
     ::Nothing=nothing;
     host::Union{Nothing,AbstractString}=nothing,
 )::String
     host isa AbstractString || return _go_julia_exe()
-    return something(detect_julia_path(String(host)), "julia")
+    found = resolve_remote_julia(String(host), "auto")
+    found === nothing && throw(ArgumentError(
+        "Julia not found on remote host $(host) (auto-detect failed)",
+    ))
+    return found
 end
 
 function _go_resolve_julia(
@@ -212,7 +219,14 @@ function _go_resolve_julia(
 )::String
     s = strip(String(julia))
     (isempty(s) || lowercase(s) == "auto") && return _go_resolve_julia(nothing; host=host)
-    return s
+    if host isa AbstractString
+        found = resolve_remote_julia(String(host), s)
+        found === nothing && throw(ArgumentError(
+            "Julia not usable on remote host $(host) at $(s)",
+        ))
+        return found
+    end
+    return resolve_controller_julia(s)
 end
 
 function _go_write_batch_manifest!(

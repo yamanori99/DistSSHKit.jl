@@ -92,7 +92,11 @@ function measure_rss(
     if !isempty(hosts)
         sshflags_cmd = Cmd(ssh_opts())
         for host in hosts
-            julia_exe = something(detect_julia_path(host), "julia")
+            julia_exe = detect_julia_path(host)
+            if julia_exe === nothing
+                @warn "Worker on $host failed: Julia not found (auto-detect)"
+                continue
+            end
             remote_proj = resolve_host_project_abs(host, proj)
             if remote_proj === nothing
                 @warn "Worker on $host failed: remote project path not found" proj=proj

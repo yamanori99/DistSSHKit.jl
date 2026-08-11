@@ -127,7 +127,38 @@ using Test
     @test DistSSHKit.parse_julia_version("") === nothing
     @test DistSSHKit.parse_julia_version("not julia at all") === nothing
 
+    @testset "remote_julia_candidates" begin
+        darwin = DistSSHKit.remote_julia_candidates("Darwin")
+        @test darwin[1] == raw"$HOME/.juliaup/bin/julia"
+        @test "/opt/homebrew/bin/julia" in darwin
+        @test "/usr/local/bin/julia" in darwin
+        linux = DistSSHKit.remote_julia_candidates("Linux")
+        @test linux[1] == raw"$HOME/.juliaup/bin/julia"
+        @test "/usr/bin/julia" in linux
+        @test !("/opt/homebrew/bin/julia" in linux)
+    end
+
+    @testset "resolve_controller_julia" begin
+        p = DistSSHKit.resolve_controller_julia("auto")
+        @test isabspath(p)
+        @test isfile(p)
+        @test DistSSHKit.resolve_controller_julia(nothing) == p
+        @test DistSSHKit.resolve_controller_julia(p) == p
+        @test_throws ArgumentError DistSSHKit.resolve_controller_julia("/no/such/julia")
+    end
+
+    @testset "_remote_shell_path_word" begin
+        @test DistSSHKit._remote_shell_path_word("~/proj") == "~/proj"
+        spaced = "/opt/Julia 1.12/bin/julia"
+        @test DistSSHKit._remote_shell_path_word(spaced) == Base.shell_escape(spaced)
+        meta = "/tmp/j;rm -rf /"
+        @test DistSSHKit._remote_shell_path_word(meta) == Base.shell_escape(meta)
+        @test DistSSHKit._remote_shell_path_word(meta) != meta
+    end
+
     @test DistSSHKit.get_remote_julia_version("no-such-host.invalid", "/usr/bin/julia") === nothing
+    @test DistSSHKit.detect_julia_path("no-such-host.invalid") === nothing
+    @test DistSSHKit.resolve_remote_julia("no-such-host.invalid", "auto") === nothing
 
     @test DistSSHKit._remote_ssh_ok("no-such-host.invalid") == false
 end

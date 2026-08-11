@@ -238,15 +238,20 @@ function check_prerequisites(
             continue
         end
 
-        deps_err = probe_remote_project_deps(
-            host, remote_path; julia_path=String(something(host_julia, "julia")),
-        )
-        if deps_err === nothing
-            ok("Project dependencies resolvable")
-        else
-            fail(deps_err)
-            kit_println("    Fix: julia --project=. -m DistSSHKit setup --instantiate $host")
+        if host_julia === nothing || !julia_check.found
+            fail("Skipping dependency check (no usable remote Julia)")
             all_ok = false
+        else
+            deps_err = probe_remote_project_deps(
+                host, remote_path; julia_path=String(host_julia),
+            )
+            if deps_err === nothing
+                ok("Project dependencies resolvable")
+            else
+                fail(deps_err)
+                kit_println("    Fix: julia --project=. -m DistSSHKit setup --instantiate $host")
+                all_ok = false
+            end
         end
 
         remote_hash = get_remote_git_hash(host, remote_path; short=12)

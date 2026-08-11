@@ -1,3 +1,5 @@
+# Present for a future General-registry release. Until then, cut tags manually
+# after merge (see CONTRIBUTING.md). Do not rely on TagBot for DistSSHKit releases.
 name: TagBot
 on:
   issue_comment:

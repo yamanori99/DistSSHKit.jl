@@ -34,11 +34,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Linux controller → Linux Docker workers
+          # Linux controller → Linux Docker workers (same suite as macOS job).
           - os: ubuntu-latest
             label: linux-to-linux
           # macOS controller → Linux workers (Colima + localhost ports).
-          # Apple Silicon macos-latest lacks nested virt; use Intel.
+          # Same E2E suite: controller path resolve on Darwin + remote auto on Linux.
+          # ARM runners lack nested virt; macos-15-intel is the free option (~2027).
           - os: macos-15-intel
             label: macos-to-linux
     runs-on: ${{ matrix.os }}
@@ -51,11 +52,6 @@ jobs:
         if: runner.os == 'macOS'
         run: ./testenv/docker-ssh/scripts/setup-colima-ci.sh
 
-      - name: Start docker-ssh workers
-        run: |
-          cd testenv/docker-ssh
-          ./scripts/up.sh
-
       - uses: julia-actions/setup-julia@v3
         with:
           version: "1.12"
@@ -64,13 +60,9 @@ jobs:
 
       - uses: julia-actions/julia-buildpkg@v1
 
-      - name: Run SSH E2E
-        env:
-          DISTSSHKIT_SSH_E2E: "1"
-        run: julia --project=. --color=yes test/integration/ssh/run.jl
+      - name: docker-ssh up + SSH E2E
+        run: ./testenv/docker-ssh/scripts/up.sh --e2e
 
       - name: Teardown workers
         if: always()
-        run: |
-          cd testenv/docker-ssh
-          ./scripts/down.sh || true
+        run: ./testenv/docker-ssh/scripts/down.sh || true
