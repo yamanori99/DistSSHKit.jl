@@ -4,7 +4,7 @@
 # Convention:
 #   - each directory under src/cli/<area>/ → area:<area>
 #   - shared kit paths → area:kit
-#   - docs / markdown → docs
+#   - product docs → docs (docs/**, README.md, demos markdown — not CONTRIBUTING)
 #   - .github/** → ci
 # Manual-only (not generated): area:explain, area:demos — use for Issue triage;
 # path changes under those surfaces are covered by area:kit.
@@ -41,8 +41,8 @@ docs:
   - changed-files:
       - any-glob-to-any-file:
           - "docs/**"
-          - "*.md"
-          - "demos/*.md"
+          - "README.md"
+          - "demos/**/*.md"
 
 ci:
   - changed-files:

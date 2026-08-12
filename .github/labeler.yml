@@ -6,8 +6,8 @@ docs:
   - changed-files:
       - any-glob-to-any-file:
           - "docs/**"
-          - "*.md"
-          - "demos/*.md"
+          - "README.md"
+          - "demos/**/*.md"
 
 ci:
   - changed-files:
