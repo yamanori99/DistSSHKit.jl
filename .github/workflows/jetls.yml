@@ -40,8 +40,9 @@ jobs:
           shopt -s nullglob
           # Entry scripts only: jetls follows `include()` (do not list src/cli/*/*.jl or
           # src/DistSSHKit/*.jl — those fragments are loaded by cli/*.jl / DistSSHKit.jl).
+          # Fail on warning/error. Info alone does not fail; still annotate + Summary.
           set +e
-          jetls --threads=auto -- check --exit-severity=error --progress=none \
+          jetls --threads=auto -- check --exit-severity=warning --progress=none \
             demos/with_kit/*.jl demos/without_kit/*.jl \
             src/DistSSHKit.jl src/cli/go.jl src/cli/drive.jl src/cli/setup.jl src/cli/size.jl \
             test/runtests.jl test/aqua.jl test/fixtures/*.jl \
@@ -49,13 +50,16 @@ jobs:
           status=${PIPESTATUS[0]}
           set -e
 
-          # Surface warnings on the PR Checks / Summary tabs without failing the job.
           if grep -qE 'Found [1-9][0-9]* diagnostic' jetls.out; then
-            echo "::warning::JETLS reported diagnostics (see job Summary). Warnings do not fail CI; errors still do."
+            echo "::warning::JETLS reported diagnostics (see job Summary). Job fails on warning/error; info alone does not fail. Aim for zero diagnostics."
             {
               echo "## JETLS diagnostics"
               echo
-              echo 'Warnings are visible here; the job fails only when jetls exits non-zero (`--exit-severity=error`).'
+              if [ "$status" -ne 0 ]; then
+                echo 'Job **failed** (`--exit-severity=warning`: warning or error present).'
+              else
+                echo 'Job **passed** with info-only diagnostics (non-blocking). Prefer clearing these too.'
+              fi
               echo
               echo '```'
               cat jetls.out

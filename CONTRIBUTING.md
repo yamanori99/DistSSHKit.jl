@@ -54,11 +54,14 @@ julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_file.jl
 Remote SSH / sync / worker changes: CI runs **SSH E2E** (`linux-to-linux`) when paths match.
 Locally (including macOS controllers): `testenv/docker-ssh/scripts/up.sh --e2e` (see [`testenv/docker-ssh/README.md`](testenv/docker-ssh/README.md)). Optional Mac-only workers (not CI): [`testenv/apple-container-ssh`](testenv/apple-container-ssh).
 
-Optional static analysis (runs on PRs; keep the file list in sync with [`.github/workflows/jetls.yml`](.github/workflows/jetls.yml)).
-CI fails on jetls **errors** only; **warnings** still appear as a Checks annotation and in the job Summary:
+Static analysis runs on every PR via [`.github/workflows/jetls.yml`](.github/workflows/jetls.yml)
+(keep the file list there in sync with the command below). The job **fails on
+warning or error** (`--exit-severity=warning`). Info-only diagnostics do not fail
+the job, but still show as a Checks annotation and in the job Summary. Aim for
+zero diagnostics. jetls is not a branch-protection required check yet.
 
 ```bash
-jetls --threads=auto -- check --exit-severity=error --progress=none \
+jetls --threads=auto -- check --exit-severity=warning --progress=none \
   demos/with_kit/*.jl demos/without_kit/*.jl \
   src/DistSSHKit.jl src/cli/go.jl src/cli/drive.jl src/cli/setup.jl src/cli/size.jl \
   test/runtests.jl test/aqua.jl test/fixtures/*.jl
@@ -79,7 +82,10 @@ Optional secret scan ([gitleaks](https://github.com/gitleaks/gitleaks); e.g. `br
 gitleaks detect --source .
 ```
 
-Merge needs `CI` green (and `SSH E2E` when it runs). `jetls` / `gitleaks` / Assets bake also run on PRs: they fail the job on real problems, but merge gating follows whatever checks branch protection requires. `Pkg.test()` covers bundled demos; remote SSH is **SSH E2E** only.
+Merge needs `CI` green (and `SSH E2E` when it runs). `jetls` (warning+),
+`gitleaks`, and Assets bake also run on PRs; merge gating follows branch
+protection (currently the `test (…)` jobs). `Pkg.test()` covers bundled demos;
+remote SSH is **SSH E2E** only.
 
 ## Language and AI
 
