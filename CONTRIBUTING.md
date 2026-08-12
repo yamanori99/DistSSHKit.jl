@@ -122,12 +122,15 @@ issue/remedy type hierarchy until several domains share the same shape.
   labels on the issue when useful
 - `breaking` stays a PR concern (version-cut triage), not an Issue type
 
-**Discussions** ([open a discussion](https://github.com/yamanori99/DistSSHKit.jl/discussions)):
+**Discussions** ([open a discussion](https://github.com/yamanori99/DistSSHKit.jl/discussions))
+uses GitHub’s default categories:
 
+- **Announcements** — maintainer notices (releases, registry, …)
 - **Q&A** — usage / “how do I…?”
 - **Ideas** — early thoughts; promote to an Enhancement Issue when ready to track
-- **Announcements** — maintainer notices
 - **General** — everything else that is not a bug or tracked feature
+- **Show and tell** — demos / experiments with DistSSHKit
+- **Polls** — occasional votes
 
 Do not file usage questions as Issues. Do not use Discussions for confirmed bugs.
 
