@@ -133,6 +133,7 @@ uses GitHub’s default categories:
 - **Polls** — occasional votes
 
 Do not file usage questions as Issues. Do not use Discussions for confirmed bugs.
+Security-sensitive reports: see [SECURITY.md](SECURITY.md) (private advisory preferred).
 
 ## PR labels
 
