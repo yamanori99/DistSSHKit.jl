@@ -133,9 +133,60 @@ function _print_rsync_safety_banner!(
 end
 
 """
+Run rsync for one host. Returns
+`(; status=:ok|:busy|:mkdir_fail, message, dir_created)`.
+Throws on rsync command failure after setup.
+"""
+function _rsync_one_host!(
+    host::String,
+    local_root::AbstractString,
+    remote_path::AbstractString,
+    ssh_cmd_str::String,
+)
+    st = remote_dest_status(host, remote_path)
+    if st === :nonempty
+        return (;
+            status=:busy,
+            message=remote_dest_busy_message(host, remote_path),
+            dir_created=false,
+        )
+    end
+    dir_created = false
+    if st === :missing
+        if !_ensure_remote_dir(host, remote_path)
+            return (;
+                status=:mkdir_fail,
+                message="could not create remote directory",
+                dir_created=false,
+            )
+        end
+        dir_created = true
+    end
+    rsync_cmd = Cmd(
+        vcat(
+            _host_sync_rsync_argv(),
+            String[
+                "-az",
+                "--delete",
+                "-e",
+                ssh_cmd_str,
+                "--exclude",
+                ".git/",
+                "--filter",
+                ":- .gitignore",
+                local_root * "/",
+                string(host, ":", remote_path, "/"),
+            ],
+        ),
+    )
+    run(pipeline(rsync_cmd; stderr=stderr))
+    return (; status=:ok, message="", dir_created=dir_created)
+end
+
+"""
     rsync_project_to_hosts!(
         hosts, local_root, remote_path;
-        confirm=true, path_anchor=local_root,
+        confirm=true, report=false, path_anchor=local_root,
     )
 
 Rsync `local_root/` to `remote_path` on each SSH host. Returns
@@ -183,59 +234,26 @@ function rsync_project_to_hosts!(
     failed = 0
     for host in hosts
         dir_created = false
-        if report
-            kit_print("  $host: ")
-            flush(stdout)
-        end
         try
-            st = remote_dest_status(host, remote_path)
-            if st === :nonempty
-                msg = remote_dest_busy_message(host, remote_path)
+            outcome = if report
+                kit_spin!("  $host: ") do
+                    _rsync_one_host!(
+                        host, local_root, remote_path, ssh_cmd_str;
+                    )
+                end
+            else
+                _rsync_one_host!(host, local_root, remote_path, ssh_cmd_str)
+            end
+            if outcome.status === :busy || outcome.status === :mkdir_fail
                 if report
-                    print_progress_err("✗ $msg")
+                    print_progress_err("✗ $(outcome.message)")
                     kit_println()
                 end
-                push!(host_results, HostResult(host, false, msg))
+                push!(host_results, HostResult(host, false, outcome.message))
                 failed += 1
                 continue
             end
-            if st === :missing
-                if !_ensure_remote_dir(host, remote_path)
-                    if report
-                        print_progress_err("✗ could not create remote directory")
-                        kit_println()
-                    end
-                    push!(
-                        host_results,
-                        HostResult(host, false, "could not create remote directory"),
-                    )
-                    failed += 1
-                    continue
-                end
-                dir_created = true
-                if report
-                    kit_print("created remote path, rsyncing... ")
-                    flush(stdout)
-                end
-            end
-            rsync_cmd = Cmd(
-                vcat(
-                    _host_sync_rsync_argv(),
-                    String[
-                        "-az",
-                        "--delete",
-                        "-e",
-                        ssh_cmd_str,
-                        "--exclude",
-                        ".git/",
-                        "--filter",
-                        ":- .gitignore",
-                        local_root * "/",
-                        string(host, ":", remote_path, "/"),
-                    ],
-                ),
-            )
-            run(pipeline(rsync_cmd; stderr=stderr))
+            dir_created = outcome.dir_created
             if report
                 print_ok("✓")
                 kit_println()

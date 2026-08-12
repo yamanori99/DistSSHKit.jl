@@ -11,10 +11,11 @@ Run `Pkg.instantiate()` on each SSH host in `session` (parallel).
 Typical first-time remote prep:
 
 ```julia
-session = KitSession(workers=["user@h1"], remote="/path/to/project")
-sync!(session; mode=:rsync)
-instantiate!(session)
+session = KitSession(workers=["user@h1"], remote="/path/to/project", yes=true)
+setup!(session, :delete, :rsync, :instantiate)  # or sync!(…; mode=:rsync) then instantiate!
 ```
+
+Also available as [`setup!`](@ref)`(session, :instantiate; julia=…)`.
 """
 function instantiate!(
     session::KitSession;

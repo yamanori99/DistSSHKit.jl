@@ -7,7 +7,9 @@ Sync local project to SSH hosts (call explicitly; go/drive do not call this by d
 
 - `mode=:sync` — git push + pull on remotes (default when calling `sync!`)
 - `mode=:rsync` — rsync working tree (no git). Refuses nonempty remote paths;
-  use `setup --delete` first.
+  use `setup!(session, :delete)` / `setup --delete` first.
+
+Also available as `setup!(session, :rsync)` / `setup!(session, :sync)`.
 
 Returns [`SyncResult`](@ref).
 """

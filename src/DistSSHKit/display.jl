@@ -350,6 +350,54 @@ function print_ok(msg; io=stdout, bold=false)
     return nothing
 end
 
+# Wait spinner (`:verbose` TTY only)
+
+const SPINNER_FRAMES = ('⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏')
+
+_spinner_can_draw()::Bool =
+    kit_output_detail() && stdout isa Base.TTY && !haskey(ENV, "NO_COLOR")
+
+"""
+    kit_spin!(prefix, f) -> result of f()
+
+While `f` runs, animate a light spinner after `prefix` on the current TTY line
+(`:light_black`). On exit, clear the spinner and leave `prefix` so the caller
+can print `✓` / `✗`. Outside `:verbose` TTY (quiet / progress / pipe), just
+runs `f` with no animation.
+
+Call with a do-block: `kit_spin!("label: ") do ... end`.
+"""
+function kit_spin!(f, prefix::AbstractString)
+    if !_spinner_can_draw()
+        return f()
+    end
+    done = Ref(false)
+    prefix_s = String(prefix)
+    spinner_task = @async begin
+        i = 1
+        while !done[]
+            print(stdout, '\r', prefix_s)
+            if use_colors()
+                printstyled(stdout, SPINNER_FRAMES[i]; color=:light_black)
+            else
+                print(stdout, SPINNER_FRAMES[i])
+            end
+            print(stdout, "\e[K")
+            flush(stdout)
+            i = i == length(SPINNER_FRAMES) ? 1 : i + 1
+            sleep(0.08)
+        end
+    end
+    try
+        return f()
+    finally
+        done[] = true
+        wait(spinner_task)
+        print(stdout, '\r', prefix_s, "\e[K")
+        flush(stdout)
+    end
+end
+
 """Always-visible error text (terminal + kit log)."""
 function print_err(msg; io=stdout, bold=false)
     _print_colored(io, msg, :red, bold)
