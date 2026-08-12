@@ -112,6 +112,13 @@ Parse-only `ArgumentError`s (bad flags, typoes) may stay as plain strings. Prefe
 diagnose + explain when adding tip-bearing failures. Do **not** grow a large
 issue/remedy type hierarchy until several domains share the same shape.
 
+## Issues
+
+Use **Bug** or **Enhancement** issue forms (blank issues are off). The form
+applies `bug` or `enhancement`. Optional area picks in the form are for triage
+text — add matching `area:*` labels on the issue when useful. Prefer Issues over
+Discussions. `breaking` stays a PR concern (version-cut triage), not an Issue type.
+
 ## PR labels
 
 Path labels come from `.github/labeler.yml`, which is **generated**:
