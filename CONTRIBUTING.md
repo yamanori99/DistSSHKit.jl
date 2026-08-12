@@ -112,12 +112,24 @@ Parse-only `ArgumentError`s (bad flags, typoes) may stay as plain strings. Prefe
 diagnose + explain when adding tip-bearing failures. Do **not** grow a large
 issue/remedy type hierarchy until several domains share the same shape.
 
-## Issues
+## Issues and Discussions
 
-Use **Bug** or **Enhancement** issue forms (blank issues are off). The form
-applies `bug` or `enhancement`. Optional area picks in the form are for triage
-text — add matching `area:*` labels on the issue when useful. Prefer Issues over
-Discussions. `breaking` stays a PR concern (version-cut triage), not an Issue type.
+**Issues** (Bug / Enhancement forms only; blank issues are off):
+
+- `bug` — something is broken
+- `enhancement` — a feature or improvement you want tracked to done
+- Optional area picks in the form are triage text — add matching `area:*`
+  labels on the issue when useful
+- `breaking` stays a PR concern (version-cut triage), not an Issue type
+
+**Discussions** ([open a discussion](https://github.com/yamanori99/DistSSHKit.jl/discussions)):
+
+- **Q&A** — usage / “how do I…?”
+- **Ideas** — early thoughts; promote to an Enhancement Issue when ready to track
+- **Announcements** — maintainer notices
+- **General** — everything else that is not a bug or tracked feature
+
+Do not file usage questions as Issues. Do not use Discussions for confirmed bugs.
 
 ## PR labels
 
