@@ -8,7 +8,13 @@ julia --project=. -m DistSSHKit go [options] [local:N] [host:N...] SCRIPT.jl [sc
 ```
 
 Also: [First Steps · Demo](@ref Tutorial-Demo), [drive](@ref Manual-drive),
-`go --help`. Flag vocabulary: [User Guide](@ref Manual).
+`go --help`. Flag vocabulary and a short **go vs drive** table:
+[User Guide](@ref Manual).
+
+**vs drive:** each `host:N` is N full script runs (not Distributed workers).
+There is no `--require-git`; for commit parity use [`drive --require-git`](@ref Manual-drive).
+Prepare remotes with [`setup --rsync`](@ref Manual-setup) **or** `--clone`, then
+`--instantiate` (git updates later: `setup --sync` or `go --sync`).
 
 ## Flags
 
@@ -19,7 +25,7 @@ Also: [First Steps · Demo](@ref Tutorial-Demo), [drive](@ref Manual-drive),
 | `--skip-sync` | Compat: no pre-run sync (already the default) |
 | `--skip-git-guard` | Alias of `--skip-sync` (shared name with drive) |
 | `--julia PATH` | Julia on remotes (default: auto / `JULIA_DISTRIBUTED_EXE`) |
-| `--output-dir PATH` | **Batch root**; slots write under `PATH/<slot>/` (not `drive --output-dir`) |
+| `--output-dir PATH` | **Batch root**; slots write under `PATH/{slot}/` (not `drive --output-dir`) |
 | `--hosts CSV` | Comma-separated slot specs (same form as CLI tokens / `DISTSSHKIT_HOSTS`) |
 | `-q` / `--quiet` | Hide terminal detail; `go_*.log` and per-slot logs still written |
 | `--progress` | Thin phase bar (not with `-q`) |
@@ -37,7 +43,7 @@ prepare remotes with [`setup`](@ref Manual-setup), or pass `--sync` / `--rsync`.
 Default batch root:
 
 ```text
-<project>/.distsshkit/go/<stem>_<UTC>/<slot>/
+{project}/.distsshkit/go/{stem}_{UTC}/{slot}/
 ```
 
 `--output-dir PATH` replaces the **batch root**. Kit sets

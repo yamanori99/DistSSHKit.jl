@@ -557,7 +557,8 @@ Environment:
   DISTRIBUTED_PROJECT_ROOT          Local project root override (absolute path)
   DISTRIBUTED_OUTPUT_DIR            Result root; set by --output-dir or init_output_dir!
   DISTRIBUTED_COLLECT_DIRS          Colon-separated dirs to collect after runs (abs or repo-relative)
-  DISTRIBUTED_REMOTE_PROJECT_ROOT   Repo root on SSH hosts (git hash check, addprocs, collect).
+  DISTRIBUTED_REMOTE_PROJECT_ROOT   Repo root on SSH hosts (addprocs, collect; git hash
+                                    check only with --require-git).
                                     setup SSH: `~` OK per remote shell.
                                     drive collect / addprocs: prefer absolute remote path.
   DISTRIBUTED_SSH_OPTS              SSH options (space-separated; e.g. -o ProxyJump=bastion)

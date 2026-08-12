@@ -9,7 +9,11 @@ julia --project=. -m DistSSHKit drive [options] [local:N] [host:N...] SCRIPT.jl 
 
 Also: [First Steps · Demo](@ref Tutorial-Demo), [go](@ref Manual-go),
 [API](@ref API) (`drive!`, `pipeline!`), `drive --help`.
-Flag vocabulary: [User Guide](@ref Manual).
+Flag vocabulary and a short **go vs drive** table: [User Guide](@ref Manual).
+
+**vs go:** one master plus Distributed workers; `host:N` is worker count.
+Opt-in git parity is here only (`--require-git`). For a plain script with no
+driver contract, prefer [`go`](@ref Manual-go).
 
 ## Flags
 

@@ -46,17 +46,18 @@ First-time remotes usually look like:
 
 ```julia
 session = KitSession(workers=["user@h1"], remote="/path/to/project")
-sync!(session; mode=:rsync)
+sync!(session; mode=:rsync)   # or :sync after setup --clone / git remotes
 instantiate!(session)   # julia="auto" by default; or julia="/path/to/julia"
 ```
 
 [`go!`](@ref) / [`drive!`](@ref) / [`pipeline!`](@ref) do **not** pre-run sync or
-require git parity by default (same as CLI). Pass `sync=:sync` / `:rsync`, or
-`skip_hash_check=false` on `drive!` / `PipelineConfig` (CLI: `--require-git`),
-when you want those. Prefer positional worker tokens over building a
-[`WorkerPlan`](@ref) by hand (`WorkerPlan` remains the return type of
-[`size_plan`](@ref)). Pass `julia=` on `go!` / `drive!` / `pipeline!` to pin the
-remote Julia binary (same as CLI `--julia`).
+require git parity by default (same as CLI). Pass `sync=:sync` / `:rsync` when
+you want a one-shot deploy. Git parity (`skip_hash_check=false`, CLI:
+`drive --require-git`) is **drive** / **pipeline** only — `go!` stays simpler.
+Prefer positional worker tokens over building a [`WorkerPlan`](@ref) by hand
+(`WorkerPlan` remains the return type of [`size_plan`](@ref)). Pass `julia=` on
+`go!` / `drive!` / `pipeline!` to pin the remote Julia binary (same as CLI
+`--julia`).
 
 Or call [`pipeline!`](@ref) for that same order in one shot.
 [`pipeline_config_from_env`](@ref) reads `DISTSSHKIT_HOSTS` /
