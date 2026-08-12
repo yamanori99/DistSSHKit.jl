@@ -62,6 +62,10 @@ project tree and an instantiate. Prefer matching Julia **major.minor**.
 After `main()`: **post-run-new** collect. Standalone pull via the collect
 flags above. See [User Guide](@ref Manual) for mode names.
 
+Collect expands remote `~/…` roots on each host before `find` / rsync so the
+controller never `relpath`s against a tilde base (same ENV as
+[setup remote path](@ref Manual-setup)).
+
 ## Driver script
 
 Expects `init_output_dir!` / `main` (and optional hooks). Details and ENV:

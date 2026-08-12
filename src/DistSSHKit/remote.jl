@@ -442,10 +442,16 @@ end
 """
 List all files under `remote_root` on `host` recursively via SSH `find`, returning
 `(remote_abs_path, relative_path)` pairs (relative to `remote_root`).
+
+Tilde roots (`~/…`) are expanded **on the remote** before `find`. Matching must
+not use local `relpath`/`abspath` against a tilde base (that expands `~` to the
+controller home and yields bogus `../…` relatives).
 """
 function collect_tree_remote_files_ssh(host::AbstractString, remote_root::AbstractString)::Vector{Tuple{String,String}}
-    hp  = String(host)
-    rr  = String(remote_root)
+    hp = String(host)
+    rr = ensure_remote_abs_path(hp, remote_root)
+    rr === nothing && return Tuple{String,String}[]
+    rr = rr::String
     out = try
         read(
             pipeline(
@@ -464,19 +470,54 @@ function collect_tree_remote_files_ssh(host::AbstractString, remote_root::Abstra
         isempty(p) && continue
         rel = startswith(p, sep) ? p[length(sep)+1:end] : String(relpath(p, rr))
         isempty(rel) && continue
+        startswith(rel, "..") && continue
         push!(pairs, (p, rel))
     end
     return pairs
 end
 
-"""Map remote absolute path under `remote_repo` to the same repo-relative path under `local_repo`."""
+"""
+Absolute path for `remote_path` on `host` — the controller/remote path boundary.
+
+Use this before any controller-side join, compare, `relpath`, or rsync URI that
+involves a remote path. Already-absolute paths (`/` prefix) are returned
+unchanged. Paths starting with `~` are resolved **on the remote** via
+[`resolve_remote_abs_path_on_host`](@ref). Returns `nothing` when resolution fails.
+
+`~` may still be passed unquoted to remote shells ([`_remote_shell_path_word`](@ref));
+do not feed tilde strings into Julia's `expanduser` / `relpath` / `abspath`.
+"""
+function ensure_remote_abs_path(
+    host::AbstractString,
+    remote_path::AbstractString,
+)::Union{Nothing,String}
+    path = strip(String(remote_path))
+    isempty(path) && return nothing
+    startswith(path, "/") && return path
+    return resolve_remote_abs_path_on_host(String(host), path)
+end
+
+"""
+Map remote absolute path under `remote_repo` to the same repo-relative path under `local_repo`.
+
+`remote_abs` and `remote_repo` must already be absolute (`/` prefix). Pass
+[`ensure_remote_abs_path`](@ref) results — never `~/…` (controller `abspath` would
+expand tilde to the **local** home).
+"""
 function local_dir_from_remote_mirror(
     remote_abs::AbstractString,
     remote_repo::AbstractString,
     local_repo::AbstractString,
 )::String
-    ra = String(abspath(remote_abs))
-    rr = String(abspath(remote_repo))
+    ra = String(strip(String(remote_abs)))
+    rr = String(strip(String(remote_repo)))
+    if !(startswith(ra, "/") && startswith(rr, "/"))
+        throw(ArgumentError(
+            "local_dir_from_remote_mirror requires absolute remote paths; got $(repr(ra)) under $(repr(rr)). Expand ~ via ensure_remote_abs_path first.",
+        ))
+    end
+    ra = String(abspath(ra))
+    rr = String(abspath(rr))
     lr = String(abspath(local_repo))
     rel = String(relpath(ra, rr))
     startswith(rel, "..") &&
@@ -499,7 +540,8 @@ Resolve the repository root path **on SSH worker hosts** for setup / git checks.
 Priority:
 1. `cli_override` if non-empty (e.g. `setup.jl --remote-path`)
 2. `ENV["DISTRIBUTED_REMOTE_PROJECT_ROOT"]` if set (prefer an absolute path on the remote;
-   `~` is OK for setup SSH shell commands, but drive collect remapping expands `~` locally)
+   `~` is OK for setup SSH shell commands; drive collect expands `~` on each host before
+   `find` / rsync so controller `relpath` never sees a tilde base)
 3. `default_remote_project_path(local_project_root)`
 
 Does not force `abspath` on tilde paths so remote shells can expand `~` per host.
@@ -569,8 +611,10 @@ remote repo root from [`resolve_remote_project_root`](@ref) (same default as `se
 
 Paths outside the local repo root fall back to `local_abs_dir` unchanged.
 
-Note: default remote roots use `~` for remote-shell expansion. For collect / `addprocs`, an
-absolute path on the SSH host is more reliable if tilde expansion is ambiguous.
+Returns a **layout** path (may still start with `~`). Callers that build find lists,
+rsync URIs, or `relpath` on the controller must pass the result through
+[`ensure_remote_abs_path`](@ref) per host first. Prefer an absolute
+`DISTRIBUTED_REMOTE_PROJECT_ROOT` when possible; `~` is sugar for remote shells.
 """
 function remote_path_for_ssh_collect(
     local_abs_dir::AbstractString,

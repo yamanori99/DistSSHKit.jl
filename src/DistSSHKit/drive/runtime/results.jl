@@ -8,9 +8,12 @@ function place_drive_sentinels!(successful_hosts::Vector{String}, script_dir::St
         for host in unique(successful_hosts)
             try
                 remote_early = remote_path_for_ssh_collect(_early_local, repo_ra)
-                run(pipeline(Cmd(["ssh", ssh_opts()..., host, "mkdir", "-p", remote_early]),
+                remote_early_abs = ensure_remote_abs_path(host, remote_early)
+                remote_early_abs === nothing && continue
+                remote_early_abs = remote_early_abs::String
+                run(pipeline(Cmd(["ssh", ssh_opts()..., host, "mkdir", "-p", remote_early_abs]),
                     stdout=devnull, stderr=devnull))
-                run(pipeline(Cmd(["ssh", ssh_opts()..., host, "touch", joinpath(remote_early, sentinel_name)]),
+                run(pipeline(Cmd(["ssh", ssh_opts()..., host, "touch", joinpath(remote_early_abs, sentinel_name)]),
                     stdout=devnull, stderr=devnull))
             catch; end
         end
@@ -149,7 +152,10 @@ function collect_drive_results!(
             for local_rd in collect_roots
                 local_abs = DistSSHKit.canonical_local_path(local_rd)
                 remote_rd_collect = remote_path_for_ssh_collect(local_abs, repo_ra)
-                remote_sentinel = joinpath(remote_rd_collect, sentinel_name)
+                remote_rd_abs = ensure_remote_abs_path(host, remote_rd_collect)
+                remote_rd_abs === nothing && continue
+                remote_rd_abs = remote_rd_abs::String
+                remote_sentinel = joinpath(remote_rd_abs, sentinel_name)
                 try
                     remote_find_raw = try
                         strip(
@@ -160,7 +166,7 @@ function collect_drive_results!(
                                         ssh_opts()...,
                                         host,
                                         "find",
-                                        remote_rd_collect,
+                                        remote_rd_abs,
                                         "-type",
                                         "f",
                                         "-newer",
@@ -178,7 +184,7 @@ function collect_drive_results!(
                     catch
                         ""
                     end
-                    rroot = String(rstrip(String(remote_rd_collect), '/'))
+                    rroot = String(rstrip(String(remote_rd_abs), '/'))
                     rel_lines = String[]
                     for line in split(remote_find_raw, '\n')
                         lp = strip(String(line))
@@ -189,12 +195,13 @@ function collect_drive_results!(
                             continue
                         end
                         isempty(rel) && continue
+                        startswith(rel, "..") && continue
                         push!(rel_lines, rel)
                     end
                     file_list = join(unique(rel_lines), '\n')
 
                     if !isempty(file_list)
-                        remote_uri = string(host, ":", remote_rd_collect, "/")
+                        remote_uri = string(host, ":", remote_rd_abs, "/")
                         rsync_part = Cmd(vcat(
                             rsync_bin,
                             ["-az", "-e", ssh_cmd, "--files-from=-", remote_uri, local_abs * "/"],

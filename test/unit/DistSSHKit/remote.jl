@@ -36,6 +36,16 @@ using Test
             "/Volumes/r/MyRepo",
             "/Users/z/MyRepo",
         ) == joinpath("/Users/z/MyRepo", "data", "sweep", "slug", "20260101_120000") |> abspath
+    @test_throws ArgumentError DistSSHKit.local_dir_from_remote_mirror(
+        "~/r/MyRepo/data",
+        "~/r/MyRepo",
+        "/Users/z/MyRepo",
+    )
+    @test_throws ArgumentError DistSSHKit.local_dir_from_remote_mirror(
+        "/Volumes/r/MyRepo/data",
+        "~/r/MyRepo",
+        "/Users/z/MyRepo",
+    )
 
     @test DistSSHKit.resolve_remote_abs_path_on_host("host", "/data/MyRepo") == "/data/MyRepo"
     # Public path helpers cover the ~ case; avoid asserting on private shell snippets.
@@ -55,6 +65,12 @@ using Test
                 "/Users/z/MyRepo/demos/with_kit",
                 "/Users/z/MyRepo",
             ) == joinpath("~/work/MyRepo", "demos", "with_kit")
+    end
+
+    @testset "ensure_remote_abs_path" begin
+        @test DistSSHKit.ensure_remote_abs_path("host", "/home/dev/App") == "/home/dev/App"
+        @test DistSSHKit.ensure_remote_abs_path("host", "") === nothing
+        @test DistSSHKit.ensure_remote_abs_path("host", "   ") === nothing
     end
 
     @testset "resolve_host_path_abs" begin

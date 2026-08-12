@@ -35,16 +35,23 @@ function drive_collect_tree(local_root::AbstractString, host_names::Vector{Strin
     for host in host_names
         write_both("  $host: ")
         try
+            host_remote = ensure_remote_abs_path(host, remote_root)
+            if host_remote === nothing
+                writeln_both("(skip: cannot resolve remote root $(repr(remote_root)))")
+                writeln_both("      hint: export DISTRIBUTED_REMOTE_PROJECT_ROOT=<abs path on SSH host>")
+                continue
+            end
+            host_remote = host_remote::String
             if !success(pipeline(
-                    Cmd(["ssh", ssh_opts()..., host, "test", "-d", remote_root]);
+                    Cmd(["ssh", ssh_opts()..., host, "test", "-d", host_remote]);
                     stderr=devnull, stdout=devnull,
                 ))
-                writeln_both("(skip: no directory on host at $remote_root)")
+                writeln_both("(skip: no directory on host at $host_remote)")
                 writeln_both("      hint: export DISTRIBUTED_REMOTE_PROJECT_ROOT=<repo root on SSH host>")
                 continue
             end
 
-            remote_files = collect_tree_remote_files_ssh(host, remote_root)
+            remote_files = collect_tree_remote_files_ssh(host, host_remote)
             if isempty(remote_files)
                 writeln_both("(remote root empty or no files found)")
                 continue
@@ -54,7 +61,7 @@ function drive_collect_tree(local_root::AbstractString, host_names::Vector{Strin
                 # No `--mkpath`: macOS ships BSD rsync without that flag (GNU rsync 3.2.3+).
                 rsync_cmd = Cmd(vcat(
                     rsync_bin,
-                    ["-az", "-e", transport, string(host, ":", remote_root, "/"), local_root * "/"],
+                    ["-az", "-e", transport, string(host, ":", host_remote, "/"), local_root * "/"],
                 ))
                 run(pipeline(rsync_cmd; stderr=stderr))
                 n = length(remote_files)
@@ -70,6 +77,7 @@ function drive_collect_tree(local_root::AbstractString, host_names::Vector{Strin
                 sort!(need)
                 # `--files-from` does not create parents on BSD rsync; pre-create (GNU rsync `--mkpath` unavailable).
                 for rel in need
+                    startswith(rel, "..") && continue
                     d = dirname(joinpath(local_root, rel))
                     !isempty(d) && mkpath(d)
                 end
@@ -80,7 +88,7 @@ function drive_collect_tree(local_root::AbstractString, host_names::Vector{Strin
                         "-e",
                         transport,
                         "--files-from=-",
-                        string(host, ":", remote_root, "/"),
+                        string(host, ":", host_remote, "/"),
                         local_root * "/",
                     ],
                 ))

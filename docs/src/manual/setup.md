@@ -45,6 +45,10 @@ Default: `~/Parent/RepoName` from the local tree. Override with
 `--remote-path` or `DISTRIBUTED_REMOTE_PROJECT_ROOT` (same ENV for `go` /
 `drive`).
 
+`~` is fine for setup shell ops (`rsync` / `clone` / `check`). Before
+controller-side collect / path math, DistSSHKit expands `~` **on each SSH
+host** to an absolute path. Prefer an absolute remote root when you can.
+
 ## After `--rsync`
 
 No remote `.git/` — that is fine. `go` / `drive` do not pre-run sync or
