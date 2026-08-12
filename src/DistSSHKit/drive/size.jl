@@ -68,7 +68,9 @@ function size_plan(
 )::WorkerPlan
     apply_session_env!(session)
     all_hosts, remote_hosts = session_size_hosts(session)
-    isempty(all_hosts) && throw(ArgumentError("KitSession has no hosts for size_plan"))
+    isempty(all_hosts) && throw(ArgumentError(
+        explain_no_hosts(; surface=hint_surface(session), kind=:size),
+    ))
 
     per_worker_gb = Dict{String,Float64}()
     if gb_per_worker !== nothing
@@ -82,6 +84,7 @@ function size_plan(
             remote_hosts;
             include_local=session.include_local_for_size,
             probe=probe,
+            hint_surface=hint_surface(session),
         )
         isempty(measured) && throw(
             ErrorException("per-worker memory measurement failed; pass gb_per_worker=..."),

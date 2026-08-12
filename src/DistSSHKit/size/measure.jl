@@ -48,7 +48,7 @@ function _size_probe_rss_expr(
 end
 
 """
-    measure_rss(project, hosts; include_local=false, probe=nothing)
+    measure_rss(project, hosts; include_local=false, probe=nothing, hint_surface=:api)
 
 Add one probe worker per host, load the project package, measure RSS.
 
@@ -65,11 +65,12 @@ function measure_rss(
     hosts::Vector{String};
     include_local::Bool=false,
     probe::Union{Nothing,AbstractString}=nothing,
+    hint_surface::Symbol=:api,
 )::Dict{String,WorkerMemorySample}
     proj = canonical_local_path(project)
     probe_local = probe === nothing ? nothing : resolve_size_probe_path(proj, probe)
     if probe_local !== nothing && !isfile(probe_local)
-        throw(ArgumentError("size probe not found: $(probe_local)"))
+        throw(ArgumentError(explain_size_probe_not_found(probe_local; surface=hint_surface)))
     end
 
     worker_to_host = Dict{Int,String}()

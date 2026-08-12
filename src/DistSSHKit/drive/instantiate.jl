@@ -23,7 +23,7 @@ function instantiate!(
 )::SyncResult
     apply_session_env!(session)
     isempty(session.hosts) && throw(ArgumentError(
-        "KitSession has no SSH hosts; pass workers= with remote tokens",
+        explain_no_hosts(; surface=hint_surface(session), kind=:ssh),
     ))
     validate_setup_hosts(session.hosts)
     preflight_setup_ssh(session.hosts) || return SyncResult(

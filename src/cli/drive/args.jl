@@ -207,6 +207,7 @@ function parse_drive_args(args::Vector{String})
                 help=false,
                 show_version=cli_session.show_version,
                 cli_session=cli_session,
+                hint_surface=:cli,
             )
         elseif arg == "--help" || arg == "-h"
             return (
@@ -228,6 +229,7 @@ function parse_drive_args(args::Vector{String})
                 help=true,
                 show_version=cli_session.show_version,
                 cli_session=cli_session,
+                hint_surface=:cli,
             )
         elseif endswith(arg, ".jl")
             script_path = arg
@@ -269,7 +271,7 @@ function parse_drive_args(args::Vector{String})
 
     hosts_file = cli_session.hosts_file
     if hosts_file !== nothing
-        for line in DistSSHKit.read_hosts_file_lines(hosts_file)
+        for line in DistSSHKit.read_hosts_file_lines(hosts_file; surface=:cli)
             host_name, host_workers = _parse_host_workers_spec(line)
             local_workers, absorbed = _drive_absorb_local_worker_spec(
                 local_workers,
@@ -323,6 +325,7 @@ function parse_drive_args(args::Vector{String})
         help=false,
         show_version=cli_session.show_version,
         cli_session=cli_session,
+        hint_surface=:cli,
     )
 end
 

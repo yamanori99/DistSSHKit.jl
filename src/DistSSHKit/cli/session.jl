@@ -72,6 +72,7 @@ mutable struct KitCliSession
     yes::Bool
     hosts_file::Union{Nothing,String}
     show_version::Bool
+    hint_surface::Symbol
 end
 
 function KitCliSession(;
@@ -80,10 +81,12 @@ function KitCliSession(;
     yes::Bool=false,
     hosts_file::Union{Nothing,AbstractString}=nothing,
     show_version::Bool=false,
+    hint_surface::Symbol=:cli,
 )
     v = _resolve_kit_verbosity(; quiet=quiet, verbosity=verbosity)
     hf = hosts_file === nothing ? nothing : String(hosts_file)
-    return KitCliSession(v === :quiet, v, yes, hf, show_version)
+    surface = _normalize_hint_surface(hint_surface)
+    return KitCliSession(v === :quiet, v, yes, hf, show_version, surface)
 end
 
 function _env_flag(name::AbstractString)::Bool
@@ -209,28 +212,34 @@ function split_host_workers_spec(spec::AbstractString)::Tuple{String,Union{Nothi
 end
 
 """Non-comment host entries from a hosts file (may include `host:N` for drive/go)."""
-function read_hosts_file_lines(path::AbstractString)::Vector{String}
+function read_hosts_file_lines(
+    path::AbstractString;
+    surface::Symbol=:cli,
+)::Vector{String}
     p = canonical_local_path(path)
-    isfile(p) || throw(ArgumentError("hosts file not found: $p"))
+    isfile(p) || throw(ArgumentError(explain_hosts_file_not_found(p; surface=surface)))
     hosts = String[]
     for line in readlines(p)
         s = strip(line)
         (isempty(s) || startswith(s, '#')) && continue
         push!(hosts, s)
     end
-    isempty(hosts) && throw(ArgumentError("hosts file has no hosts: $p"))
+    isempty(hosts) && throw(ArgumentError(explain_hosts_file_empty(p; surface=surface)))
     return hosts
 end
 
 """SSH host names from a hosts file (`host:N` → `host` only; for setup / KitSession)."""
-function read_hosts_file(path::AbstractString)::Vector{String}
-    return [split_host_workers_spec(line)[1] for line in read_hosts_file_lines(path)]
+function read_hosts_file(
+    path::AbstractString;
+    surface::Symbol=:cli,
+)::Vector{String}
+    return [split_host_workers_spec(line)[1] for line in read_hosts_file_lines(path; surface=surface)]
 end
 
 function append_hosts_file!(hosts::Vector{String}, session::KitCliSession)
     hosts_file = session.hosts_file
     hosts_file === nothing && return hosts
-    append!(hosts, read_hosts_file(hosts_file))
+    append!(hosts, read_hosts_file(hosts_file; surface=session.hint_surface))
     return hosts
 end
 

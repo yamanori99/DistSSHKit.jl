@@ -97,8 +97,7 @@ function _setup_one!(
         return sync!(session; mode=:rsync)
     elseif mode === :clone
         repo === nothing && throw(ArgumentError(
-            "setup!(session, :clone) requires repo=\"git-url\" " *
-            "(no silent origin lookup; clone runs on the remote)",
+            explain_clone_repo_required(; surface=hint_surface(session)),
         ))
         url = strip(String(repo))
         isempty(url) && throw(ArgumentError("setup! :clone repo= must be a non-empty git URL"))
@@ -151,7 +150,7 @@ end
 function _setup_bang_hosts!(session::KitSession)
     apply_session_env!(session)
     isempty(session.hosts) && throw(ArgumentError(
-        "KitSession has no SSH hosts; pass workers= with remote tokens",
+        explain_no_hosts(; surface=hint_surface(session), kind=:ssh),
     ))
     validate_setup_hosts(session.hosts)
     return session.hosts

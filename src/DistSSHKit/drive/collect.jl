@@ -25,7 +25,9 @@ function collect!(
 )::CollectResult
     apply_session_env!(session)
     host_list = hosts === nothing ? session.hosts : collect(String, hosts)
-    isempty(host_list) && throw(ArgumentError("collect! needs hosts in session or hosts= keyword"))
+    isempty(host_list) && throw(ArgumentError(
+        explain_no_hosts(; surface=hint_surface(session), kind=:collect),
+    ))
     _ensure_drive_fragments!(session.project)
     collect_fn = Main.eval(:(drive_collect_tree))
     ok = Base.invokelatest(

@@ -431,10 +431,18 @@ function go!(
     args::AbstractVector{<:AbstractString}=String[],
     path_anchor::Union{Nothing,AbstractString}=nothing,
     julia::Union{Nothing,AbstractString}=nothing,
+    hint_surface::Symbol=:api,
 )::GoResult
     script_path = canonical_local_path(script)
-    isfile(script_path) || throw(ArgumentError("script not found: $script_path"))
     proj = canonical_local_path(project)
+    if !isfile(script_path)
+        throw(ArgumentError(explain_script_not_found(
+            script_path,
+            proj;
+            surface=hint_surface,
+            headline="script not found: $script_path",
+        )))
+    end
     anchor = something(path_anchor, proj)
 
     tokens = String[String(h) for h in workers]
@@ -444,7 +452,7 @@ function go!(
         !isempty(env_hf) && (hf = env_hf)
     end
     if hf !== nothing && !isempty(strip(String(hf)))
-        for line in read_hosts_file_lines(hf)
+        for line in read_hosts_file_lines(hf; surface=hint_surface)
             push!(tokens, line)
         end
     end

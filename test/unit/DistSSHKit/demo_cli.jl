@@ -10,6 +10,43 @@ using Test
     @test DistSSHKit.demo_script("no_such_demo") === nothing
 
     mktempdir() do tmp
+        missing_kit = joinpath(tmp, "demos", "with_kit", "square_file.jl")
+        diag = DistSSHKit.diagnose_missing_script(missing_kit, tmp)
+        @test diag !== nothing
+        @test diag.kind === :install_bundled
+        @test occursin("demo install", DistSSHKit.explain_missing_script_hint(diag; surface=:cli))
+        @test occursin(
+            "DistSSHKit.install_demos()",
+            DistSSHKit.explain_missing_script_hint(diag; surface=:api),
+        )
+
+        @test occursin(
+            "demo install",
+            something(DistSSHKit.missing_script_demo_hint(missing_kit, tmp; surface=:cli), ""),
+        )
+        @test occursin(
+            "./demos/ is missing",
+            something(DistSSHKit.missing_script_demo_hint(
+                joinpath(tmp, "demos", "with_kit", "rho_sweep.jl"),
+                tmp,
+            ), ""),
+        )
+        @test DistSSHKit.missing_script_demo_hint(joinpath(tmp, "jobs", "x.jl"), tmp) === nothing
+
+        api_msg = DistSSHKit.explain_script_not_found(
+            joinpath(tmp, "demos", "with_kit", "rho_sweep.jl"),
+            tmp;
+            surface=:api,
+            headline="script not found: x",
+        )
+        @test startswith(api_msg, "script not found: x")
+        @test occursin("DistSSHKit.install_demos()", api_msg)
+
+        @test DistSSHKit.join_explained_message("head", nothing) == "head"
+        @test DistSSHKit.join_explained_message("head", "Hint: x") == "head\nHint: x"
+    end
+
+    mktempdir() do tmp
         result = DistSSHKit.install_demos(tmp)
         @test length(result.installed) == length(DistSSHKit.list_demos())
         @test isempty(result.skipped)
@@ -32,7 +69,26 @@ using Test
         @test occursin("init_output_dir!", read(edited_path, String))
     end
 
-    @test_throws ArgumentError DistSSHKit.install_demos(_kit_root())
+    let err = try
+            DistSSHKit.install_demos(_kit_root(); surface=:api)
+            nothing
+        catch e
+            e
+        end
+        @test err isa ArgumentError
+        @test occursin("install_demos(dest=", sprint(showerror, err))
+        @test occursin("list_demos()", sprint(showerror, err))
+    end
+    let err = try
+            DistSSHKit.install_demos(_kit_root(); surface=:cli)
+            nothing
+        catch e
+            e
+        end
+        @test err isa ArgumentError
+        @test occursin("demo install --dest", sprint(showerror, err))
+        @test occursin("demo list", sprint(showerror, err))
+    end
 
     # CLI wiring smoke (install path covered by install_demos above).
     DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(quiet=true, yes=true))

@@ -64,6 +64,7 @@ function drive_parsed_from_session(
         yes=session.yes,
         show_version=false,
         hosts_file=session.cli_session.hosts_file,
+        hint_surface=hint_surface(session),
     )
     sync_mode = sync isa Symbol ? sync : nothing
     # Default skip=true; --require-git / skip_hash_check=false enables checks.
@@ -94,5 +95,6 @@ function drive_parsed_from_session(
         help=false,
         show_version=false,
         cli_session=cli_session,
+        hint_surface=hint_surface(session),
     )
 end
