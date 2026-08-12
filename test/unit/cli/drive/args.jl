@@ -7,10 +7,42 @@ using Test
     isdefined(Main, :check_memory_capacity) || include(joinpath(_runtime_dir, "checks.jl"))
     isdefined(Main, :drive_script_not_found_message) || include(joinpath(_runtime_dir, "_common.jl"))
 
-    @test occursin("demo install", drive_script_not_found_message(
-        joinpath(_kit_root(), "demos", "square_file.jl"),
-        _kit_root(),
-    ))
+    @testset "missing script hints" begin
+        # Wrong layout under kit root: demos/foo.jl vs demos/with_kit/foo.jl
+        @test occursin("demos/with_kit/square_file.jl", drive_script_not_found_message(
+            joinpath(_kit_root(), "demos", "square_file.jl"),
+            _kit_root(),
+        ))
+
+        mktempdir() do tmp
+            missing_kit = joinpath(tmp, "demos", "with_kit", "square_file.jl")
+            msg = drive_script_not_found_message(missing_kit, tmp; surface=:cli)
+            @test occursin("Script not found", msg)
+            @test occursin("demo install", msg)
+            @test occursin("demos/with_kit/square_file.jl", msg)
+            @test !occursin("install_demos()", msg)
+
+            msg_api = drive_script_not_found_message(missing_kit, tmp; surface=:api)
+            @test occursin("DistSSHKit.install_demos()", msg_api)
+            @test !occursin("demo install", msg_api)
+
+            missing_custom = joinpath(tmp, "demos", "with_kit", "rho_sweep.jl")
+            msg2 = drive_script_not_found_message(missing_custom, tmp)
+            @test occursin("Script not found", msg2)
+            @test occursin("./demos/ is missing", msg2)
+            @test occursin("demo install", msg2)
+
+            mkpath(joinpath(tmp, "demos", "with_kit"))
+            msg3 = drive_script_not_found_message(missing_custom, tmp; surface=:api)
+            @test occursin("no such file under ./demos/", msg3)
+            @test occursin("DistSSHKit.install_demos()", msg3)
+            @test occursin("DistSSHKit.list_demos()", msg3)
+        end
+
+        let r = parse_drive_args(["s.jl"])
+            @test r.hint_surface === :cli
+        end
+    end
 
     @testset "collect modes" begin
         @test_throws ArgumentError parse_drive_args(["--collect", "h"])

@@ -28,7 +28,7 @@ function _pipeline_config_driver_path(driver::Union{Nothing,AbstractString})::St
     end
     env_driver = String(strip(get(ENV, "DRIVER", "")))
     !isempty(env_driver) && return env_driver
-    throw(ArgumentError("set DRIVER=path/to/driver.jl or pass driver= keyword"))
+    throw(ArgumentError(explain_pipeline_driver_missing(; surface=:api)))
 end
 
 """
@@ -186,7 +186,14 @@ Returns [`PipelineResult`](@ref); check `result.ok` or use [`report_pipeline_err
 function pipeline!(config::PipelineConfig)::PipelineResult
     session = kit_session_from_config(config)
     driver = abspath(config.driver)
-    isfile(driver) || throw(ArgumentError("driver not found: $driver"))
+    if !isfile(driver)
+        throw(ArgumentError(explain_script_not_found(
+            driver,
+            session.project;
+            surface=hint_surface(session),
+            headline="driver not found: $driver",
+        )))
+    end
 
     sync_mode = resolve_pipeline_sync(config, session)
     sync_result = nothing

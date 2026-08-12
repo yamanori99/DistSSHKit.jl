@@ -47,6 +47,7 @@ export drive
 # Implementation
 
 include("DistSSHKit/display.jl")
+include("DistSSHKit/explain.jl")
 include("DistSSHKit/cli/args.jl")
 include("DistSSHKit/cli/session.jl")
 include("DistSSHKit/hosts.jl")

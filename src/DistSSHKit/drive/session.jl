@@ -49,10 +49,11 @@ function KitSession(;
         verbosity=verbosity,
         yes=yes,
         hosts_file=hf_path,
+        hint_surface=:api,
     )
     tokens = String[String(h) for h in workers]
     if hf_path !== nothing
-        for line in read_hosts_file_lines(hf_path)
+        for line in read_hosts_file_lines(hf_path; surface=:api)
             push!(tokens, line)
         end
     end
@@ -91,6 +92,9 @@ end
 function session_remote_root(session::KitSession)::String
     return resolve_remote_project_root(session.project; cli_override=session.remote)
 end
+
+"""Explain surface for this session (`:cli` or `:api`)."""
+hint_surface(session::KitSession)::Symbol = session.cli_session.hint_surface
 
 """SSH host names used for [`size_plan`](@ref) (`localhost` first when `include_local_for_size`)."""
 function session_size_hosts(session::KitSession)::Tuple{Vector{String},Vector{String}}

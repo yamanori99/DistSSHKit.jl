@@ -45,6 +45,109 @@ function demo_script(name::AbstractString)::Union{Nothing,String}
     return nothing
 end
 
+"""Relative path under `project_root/demos/`, or `nothing` if outside that tree."""
+function _relpath_under_project_demos(
+    script_path::AbstractString,
+    project_root::AbstractString,
+)::Union{Nothing,String}
+    root = abspath(String(project_root))
+    path = abspath(String(script_path))
+    demos = joinpath(root, "demos")
+    path == demos && return "."
+    prefix = demos * Base.Filesystem.path_separator
+    startswith(path, prefix) || return nothing
+    return relpath(path, demos)
+end
+
+# Demo-domain diagnose/explain (shared surface helpers: `explain.jl`).
+
+function _demo_install_phrase(surface::Symbol)::String
+    _normalize_hint_surface(surface) === :api && return "`DistSSHKit.install_demos()`"
+    return "`julia --project=. -m DistSSHKit demo install`"
+end
+
+function _demo_list_phrase(surface::Symbol)::String
+    _normalize_hint_surface(surface) === :api && return "`DistSSHKit.list_demos()`"
+    return "`julia --project=. -m DistSSHKit demo list`"
+end
+
+"""
+Facts about a missing script path when a demo-related tip applies.
+
+Returns `nothing`, or a NamedTuple with `kind`:
+- `:use_path` — file already at `demos/<group>/<name>`
+- `:install_bundled` — basename matches a package demo
+- `:demos_tree_missing` — path under `./demos/` but that tree is absent
+- `:demos_file_missing` — under `./demos/` but this file is absent
+
+Keep diagnosis free of CLI/API wording; [`explain_missing_script_hint`](@ref) formats.
+"""
+function diagnose_missing_script(
+    script_path::AbstractString,
+    project_root::AbstractString,
+)::Union{Nothing,@NamedTuple{kind::Symbol, group::Union{Nothing,String}, name::Union{Nothing,String}}}
+    path = String(script_path)
+    root = String(project_root)
+    base = basename(path)
+    if endswith(base, ".jl")
+        for group in _DEMO_GROUPS
+            installed = joinpath(root, "demos", group, base)
+            if isfile(installed)
+                return (kind=:use_path, group=String(group), name=base)
+            end
+        end
+        bundled = demo_script(base)
+        if bundled !== nothing
+            group = basename(dirname(bundled))
+            return (kind=:install_bundled, group=group, name=base)
+        end
+    end
+    under = _relpath_under_project_demos(path, root)
+    under === nothing && return nothing
+    demos_dir = joinpath(abspath(root), "demos")
+    if !isdir(demos_dir)
+        return (kind=:demos_tree_missing, group=nothing, name=endswith(base, ".jl") ? base : nothing)
+    end
+    return (kind=:demos_file_missing, group=nothing, name=endswith(base, ".jl") ? base : nothing)
+end
+
+"""Render a [`diagnose_missing_script`](@ref) result for `:cli` or `:api`."""
+function explain_missing_script_hint(
+    diag::NamedTuple;
+    surface::Symbol=:cli,
+)::String
+    surface = _normalize_hint_surface(surface)
+    install = _demo_install_phrase(surface)
+    list = _demo_list_phrase(surface)
+    kind = diag.kind
+    if kind === :use_path
+        return "Hint: use demos/$(diag.group)/$(diag.name)"
+    elseif kind === :install_bundled
+        return "Hint: run $install to copy demos into ./demos/, then use demos/$(diag.group)/$(diag.name)"
+    elseif kind === :demos_tree_missing
+        return "Hint: ./demos/ is missing — run $install first, or create this script under demos/"
+    elseif kind === :demos_file_missing
+        return "Hint: no such file under ./demos/ — run $install / $list, or check the script name"
+    end
+    throw(ArgumentError("unknown missing-script diagnosis kind: $(repr(kind))"))
+end
+
+"""
+Optional one-line hint when a script path is missing (forgot demo install,
+wrong `demos/` layout, etc.). Returns `nothing` when no demo-related tip applies.
+
+`surface` is `:cli` (default) or `:api` — only the suggested next command changes.
+"""
+function missing_script_demo_hint(
+    script_path::AbstractString,
+    project_root::AbstractString;
+    surface::Symbol=:cli,
+)::Union{Nothing,String}
+    diag = diagnose_missing_script(script_path, project_root)
+    diag === nothing && return nothing
+    return explain_missing_script_hint(diag; surface=surface)
+end
+
 """
     install_demos(dest=pwd(); force=false) -> (installed=Vector{String}, skipped=Vector{String})
 
@@ -55,18 +158,28 @@ By default, existing files at the destination are left alone — pass `force=tru
 overwrite them.
 
 Refuses to install into this package's own `demos/` tree (would overwrite the kit).
-Use `demo list` or `demo install --dest DIR` instead.
+Use [`list_demos`](@ref) / `demo list`, or install with an explicit `dest` / `--dest`.
 """
-function install_demos(dest::AbstractString=pwd(); force::Bool=false)
+function install_demos(
+    dest::AbstractString=pwd();
+    force::Bool=false,
+    surface::Symbol=:api,
+)
     src_root::String = demos_root()
     isdir(src_root) || return (installed=String[], skipped=String[])
     dest_root = canonical_local_path(dest)
     dest_demos = joinpath(dest_root, "demos")
     kit_demos = abspath(src_root)
     if abspath(dest_demos) == kit_demos
+        list = _demo_list_phrase(surface)
+        install = if _normalize_hint_surface(surface) === :api
+            "`DistSSHKit.install_demos(dest=...)`"
+        else
+            "`julia --project=. -m DistSSHKit demo install --dest DIR`"
+        end
         throw(ArgumentError(
             "destination would be the package's bundled demos tree ($kit_demos); " *
-            "use `demo list` to see paths, or `demo install --dest DIR` to copy elsewhere",
+            "use $list to see paths, or $install to copy elsewhere",
         ))
     end
     mkpath(dest_demos)
@@ -192,7 +305,7 @@ function demo(args::Vector{String}=copy(ARGS))::Cint
                 print_cli_error("No demo scripts found in package ($(demos_dir()))")
                 return 1
             end
-            result = install_demos(dest; force=force)
+            result = install_demos(dest; force=force, surface=:cli)
             for path in result.installed
                 println("wrote ", path)
             end

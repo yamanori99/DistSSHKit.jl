@@ -50,6 +50,29 @@ using Dates
         @test_throws ArgumentError DistSSHKit._go_resolve_julia("auto"; host="no-such-host.invalid")
     end
 
+    @testset "script not found surfaces" begin
+        mktempdir() do tmp
+            missing = joinpath(tmp, "demos", "with_kit", "rho_sweep.jl")
+            err_api = try
+                DistSSHKit.go!(missing, String[]; project=tmp)
+                nothing
+            catch e
+                e
+            end
+            @test err_api isa ArgumentError
+            @test occursin("DistSSHKit.install_demos()", sprint(showerror, err_api))
+
+            err_cli = try
+                DistSSHKit.go!(missing, String[]; project=tmp, hint_surface=:cli)
+                nothing
+            catch e
+                e
+            end
+            @test err_cli isa ArgumentError
+            @test occursin("demo install", sprint(showerror, err_cli))
+        end
+    end
+
     @testset "_go_remote_slot_shell_inner" begin
         inner = DistSSHKit._go_remote_slot_shell_inner(
             "~/proj",

@@ -99,6 +99,7 @@ function resolve_worker_memory_samples(
         hosts;
         include_local=opts.include_local,
         probe=opts.probe,
+        hint_surface=:cli,
     )
     if isempty(measured)
         DistSSHKit.print_err("Measurement failed. Use --gb-per-worker N.")

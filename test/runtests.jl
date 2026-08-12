@@ -26,6 +26,7 @@ include(joinpath(@__DIR__, "aqua.jl"))
 function _unit_test_files()
     return (
         joinpath("DistSSHKit", "display.jl"),
+        joinpath("DistSSHKit", "explain.jl"),
         joinpath("DistSSHKit", "remote.jl"),
         joinpath("DistSSHKit", "distributed.jl"),
         joinpath("DistSSHKit", "drive.jl"),

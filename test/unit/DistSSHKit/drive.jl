@@ -150,6 +150,7 @@ using Test
             parsed = DistSSHKit.drive_parsed_from_session(session, script)
             @test parsed.sync_mode === nothing
             @test parsed.skip_hash_check == true
+            @test parsed.hint_surface === :api
             @test parsed.julia === nothing
 
             parsed_jl = DistSSHKit.drive_parsed_from_session(
@@ -192,6 +193,22 @@ using Test
         mktempdir() do tmp
             session = DistSSHKit.KitSession(project=tmp, workers=["local:2"])
             @test_throws ArgumentError DistSSHKit.instantiate!(session)
+        end
+    end
+
+    @testset "pipeline! missing driver surfaces" begin
+        mktempdir() do tmp
+            missing = joinpath(tmp, "demos", "with_kit", "rho_sweep.jl")
+            cfg = DistSSHKit.PipelineConfig(project=tmp, driver=missing, workers=String[])
+            err = try
+                DistSSHKit.pipeline!(cfg)
+                nothing
+            catch e
+                e
+            end
+            @test err isa ArgumentError
+            @test occursin("driver not found", sprint(showerror, err))
+            @test occursin("DistSSHKit.install_demos()", sprint(showerror, err))
         end
     end
 

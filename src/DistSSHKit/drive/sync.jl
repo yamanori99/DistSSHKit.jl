@@ -17,7 +17,7 @@ function sync!(session::KitSession; mode::Union{Symbol,Bool}=:sync)::SyncResult
     mode === false && throw(ArgumentError("sync!: mode=false means skip sync; do not call sync!"))
     apply_session_env!(session)
     isempty(session.hosts) && throw(ArgumentError(
-        "KitSession has no SSH hosts; pass workers= with remote tokens, or hosts_file=",
+        explain_no_hosts(; surface=hint_surface(session), kind=:ssh),
     ))
     remote_path = session_remote_root(session)
 

@@ -312,10 +312,11 @@ function instantiate_remotes(
     return (; cancelled=false, succeeded, failed, hosts=host_results)
 end
 
-"""Resolve clone URL: `--repo` wins, else local `origin` (HTTPS GitHub → SSH)."""
+"""Resolve clone URL: `--repo` / `repo=` wins, else local `origin` (HTTPS GitHub → SSH)."""
 function resolve_clone_url(
     repo_override::Union{Nothing,String},
-    project::AbstractString,
+    project::AbstractString;
+    surface::Symbol=:cli,
 )
     if repo_override isa String
         repo = repo_override::String
@@ -325,6 +326,6 @@ function resolve_clone_url(
         end
     end
     url = clone_url_from_local_origin(project)
-    url === nothing && error("Could not read git remote `origin`; pass --repo URL")
+    url === nothing && error(explain_clone_origin_missing(; surface=surface))
     return url
 end

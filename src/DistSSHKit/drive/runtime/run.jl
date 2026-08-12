@@ -49,7 +49,8 @@ function run_drive_parsed!(
     host_names = [h[1] for h in hosts]
 
     if !isfile(script_path)
-        error(drive_script_not_found_message(script_path, _PATH_ANCHOR))
+        surface = hasproperty(parsed, :hint_surface) ? parsed.hint_surface::Symbol : :cli
+        error(drive_script_not_found_message(script_path, _PATH_ANCHOR; surface=surface))
     end
 
     script_dir = dirname(script_path)

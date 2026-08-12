@@ -66,6 +66,7 @@ function go_main()::Cint
         collect_spec=parsed.output_dir,
         hosts_file=parsed.cli_session.hosts_file,
         julia=parsed.julia,
+        hint_surface=:cli,
     )
     report_go_errors(result)
     return result.ok ? 0 : 1
