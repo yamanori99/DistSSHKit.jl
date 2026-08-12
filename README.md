@@ -22,15 +22,16 @@ machines or workstations. DistSSHKit helps you put that hardware to work.
 
 ## Install
 
-In your project (`Project.toml` at the project root), either:
+In your project (`Project.toml` at the project root). If that environment is
+already active, pkg mode is enough:
 
 ```julia
-julia> # press ] to enter pkg mode
-(@v1.12) pkg> activate .
 (MyProject) pkg> add DistSSHKit
 ```
 
-or:
+(`]` enters pkg mode; backspace returns to the Julia prompt.)
+
+Or from the shell:
 
 ```bash
 julia --project=. -e 'using Pkg; Pkg.add("DistSSHKit")'

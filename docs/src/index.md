@@ -27,15 +27,16 @@ Use it from the terminal (`julia -m DistSSHKit …`) or from Julia code / notebo
     **Under active development.** Prefer a released version from General. Use
     `rev="main"` only for the development tip.
 
-In your Julia project (`Project.toml` at the project root), either:
+In your Julia project (`Project.toml` at the project root). If that environment
+is already active, pkg mode is enough:
 
 ```julia
-julia> # press ] to enter pkg mode
-(@v1.12) pkg> activate .
 (MyProject) pkg> add DistSSHKit
 ```
 
-or:
+(`]` enters pkg mode; backspace returns to the Julia prompt.)
+
+Or from the shell:
 
 ```bash
 julia --project=. -e 'using Pkg; Pkg.add("DistSSHKit")'
