@@ -8,6 +8,10 @@
 #   - .github/** → ci
 # No catch-all area:kit — shared paths are typed via type labels only.
 #
+# When the package layout changes substantially (new CLI area, rename/move of
+# DistSSHKit modules, demos tree, docs roots, …), update this script’s globs /
+# area discovery, regenerate labeler.yml, and commit both.
+#
 # Usage:
 #   ./.github/gen-labeler.sh           # write .github/labeler.yml
 #   ./.github/gen-labeler.sh --check   # exit 1 if committed file is stale
