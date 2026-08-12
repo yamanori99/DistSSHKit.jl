@@ -8,7 +8,13 @@ julia --project=. -m DistSSHKit go [options] [local:N] [host:N...] SCRIPT.jl [sc
 ```
 
 Also: [First Steps · Demo](@ref Tutorial-Demo), [drive](@ref Manual-drive),
-`go --help`. Flag vocabulary: [User Guide](@ref Manual).
+`go --help`. Flag vocabulary and a short **go vs drive** table:
+[User Guide](@ref Manual).
+
+**vs drive:** each `host:N` is N full script runs (not Distributed workers).
+There is no `--require-git`; for commit parity use [`drive --require-git`](@ref Manual-drive).
+Prepare remotes with [`setup --rsync`](@ref Manual-setup) **or** `--clone`, then
+`--instantiate` (git updates later: `setup --sync` or `go --sync`).
 
 ## Flags
 

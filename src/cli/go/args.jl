@@ -4,7 +4,7 @@ function show_go_usage()
     print_help_chrome("DistSSHKit go")
     print_help_lines(
         "Run an as-is complete job (no Kit APIs in the script).",
-        "Setup on remotes is assumed done (`setup --rsync` / `--clone` once).",
+        "Setup on remotes is assumed done (`setup --rsync` or `--clone`, then `--instantiate`).",
     )
     print_help_blank()
     print_help_section("Usage")
@@ -38,10 +38,11 @@ function show_go_usage()
     println("Environment (hosts): DISTSSHKIT_HOSTS (comma-separated, host:N OK), DISTSSHKIT_HOSTS_FILE")
     println("Environment (Julia): JULIA_DISTRIBUTED_EXE (default remote Julia path)")
     print_help_blank()
-    print_help_section("Typical after `setup --rsync`")
+    print_help_section("Typical after setup (`--rsync` or `--clone`, then `--instantiate`)")
     print_help_lines(
         "  julia --project=. -m DistSSHKit go \\",
         "    local:1 host1:2 host2:2 SCRIPT.jl",
+        "  # Git updates later: setup --sync …, or go --sync …",
     )
     print_help_blank()
     print_help_lines(

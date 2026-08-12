@@ -14,6 +14,22 @@ Each command page starts with a **Flags** table for that command.
 | [size](@ref Manual-size) | Estimate worker counts from RAM / CPU |
 | [demo](@ref Manual-demo) | Install or list bundled example scripts |
 
+## go vs drive (pick one)
+
+Both share host tokens (`local:N`, `host:N`) and optional `--sync` / `--rsync`.
+The difference is **what the script is**:
+
+| | [go](@ref Manual-go) | [drive](@ref Manual-drive) |
+| --- | --- | --- |
+| Script | Ordinary `.jl` (no Kit APIs) | Driver with `init_output_dir!` / `main` |
+| `host:N` means | N **full script runs** | N **Distributed workers** |
+| Collect | Slot-overwrite after remotes | Post-run-new after `main()`; optional collect-only flags |
+| Git parity | No `--require-git` | Opt-in `--require-git` |
+| `--output-dir` | Batch root (`PATH/<slot>/`) | Result root (`DISTRIBUTED_OUTPUT_DIR`) |
+
+If you want “run this job on a few machines,” start with **go**.
+If you want one master farming work with `pmap` (and friends), use **drive**.
+
 ## Flag consistency (read once)
 
 Same **names** are shared on purpose; a few meanings differ by command:
