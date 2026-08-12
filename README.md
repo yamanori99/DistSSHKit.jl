@@ -31,7 +31,7 @@ For the development tip, use `rev="main"` instead.
 
 Install, demo, `go` / `drive`, remote hosts, and API: **[Documentation](https://yamanori99.github.io/DistSSHKit.jl/stable/)**.
 
-## Links
+## Documentation
 
 | | |
 | --- | --- |
@@ -40,10 +40,15 @@ Install, demo, `go` / `drive`, remote hosts, and API: **[Documentation](https://
 | User Guide | [User Guide](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/) |
 | API | [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/) |
 
+## Contributing and support
+
+How we take patches, labels, and review notes:
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
 | | |
 | --- | --- |
-| Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| Support | [Issues](https://github.com/yamanori99/DistSSHKit.jl/issues) (bugs / features) · [Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions) (Q&A / ideas) |
+| Issues | [Open an issue](https://github.com/yamanori99/DistSSHKit.jl/issues) for bugs and features you want tracked to done |
+| Discussions | [Start a discussion](https://github.com/yamanori99/DistSSHKit.jl/discussions) for Q&A, early ideas, and general talk |
 
 <!-- markdownlint-disable MD033 -->
 <p align="center">
