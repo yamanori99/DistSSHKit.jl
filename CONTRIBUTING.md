@@ -31,7 +31,9 @@ Then call `julia --project=. -m DistSSHKit …` from that app the same way as af
 - Branch from `main` (`feature/…`, `fix/…`, `docs/…`, `chore/…`).
 - Solo dev: push to `main` directly is fine. Before sharing or tagging, run `Pkg.test()` locally on Julia 1.12+ (and `~1.13.0-0` when available).
 - Breaking changes (CLI names, module name, driver contract `init_output_dir!` / `main`, …): bump `x` in `Project.toml` `0.x.y`. Patch `y` only for non-breaking changes.
-- Tags (`vX.Y.Z`) after merge are a maintainer decision (`git tag -a vX.Y.Z`). TagBot.yml is unused until a General-registry release.
+- Tags (`vX.Y.Z`) after a registry release are normally cut by TagBot
+  ([`.github/workflows/TagBot.yml`](.github/workflows/TagBot.yml)). Maintainers
+  may still `git tag -a vX.Y.Z` when needed.
 
 Remote safety: `setup --clone` / `--rsync` refuse a non-empty destination; redeploy needs `setup --delete` first. Recommended first deploy is `setup --rsync`; git updates use `setup --sync` / `--pull`. Do not weaken nonempty-path refusal without reason and tests.
 

@@ -9,7 +9,7 @@ machines or workstations. DistSSHKit helps you put that hardware to work.
 
 ## What is DistSSHKit?
 
-Two ways to run:
+Two ways to run (job shape):
 
 - **Same script on each machine** (`go`) — each host runs your `.jl` from start
   to finish. No rewrite needed. Prefer this when every run is already a complete
@@ -19,20 +19,29 @@ Two ways to run:
   ([Distributed.jl](https://docs.julialang.org/en/v1/manual/distributed-computing/)).
 
 Around that, the kit handles remote project setup, sync, and collecting outputs.
-Use it from the terminal (`julia -m DistSSHKit …`) or from Julia code / notebooks.
+
+How you call it is a separate choice:
+
+- **CLI** — `julia -m DistSSHKit go …` / `drive …` (and `setup`, `demo`, …)
+- **Julia API** — `setup!` for remotes, `go!` / `drive!` to run, or
+  `pipeline!` for the usual size! → drive! → collect! order in one call
+
+Same host tokens either way (`local:2`, `user@host:1`). Details: [API](@ref API),
+[User Guide](@ref Manual).
 
 ## Installation
 
-!!! important
-    **Under active development.** Prefer a release tag for `rev`. Use `rev="main"` only for the development tip.
+From the Julia REPL, type `]` to enter the Pkg REPL mode and run:
 
-In your Julia project (`Project.toml` at the project root), add the package:
-
-```bash
-julia --project=. -e 'using Pkg; Pkg.add(url="https://github.com/yamanori99/DistSSHKit.jl.git", rev="v0.2.0")'
+```julia
+pkg> add DistSSHKit
 ```
 
-For the development tip, use `rev="main"` instead.
+Or, equivalently, via the `Pkg` API:
+
+```julia
+julia> import Pkg; Pkg.add("DistSSHKit")
+```
 
 There is no separate binary — use `julia --project=. -m DistSSHKit …`.
 

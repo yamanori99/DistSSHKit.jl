@@ -4,9 +4,9 @@ module TestAqua
 # across all loaded packages) require a real, top-level package module — not
 # the `Main.DistSSHKit` produced by `include`ing `src/DistSSHKit.jl` directly.
 # This file therefore `using DistSSHKit` instead of reusing the module already
-# loaded by `runtests.jl`. This resolves under both `Pkg.test()` and plain
-# `--project=test` activation (e.g. jetls) via the `[sources]` entry in
-# `test/Project.toml` (DistSSHKit isn't a registered package).
+# loaded by `runtests.jl`. That resolves under both `Pkg.test()` and plain
+# `--project=test` activation (e.g. jetls) via the `[sources]` path entry in
+# `test/Project.toml` (the checkout under test).
 
 using Aqua
 using DistSSHKit
