@@ -1,5 +1,5 @@
-# Present for a future General-registry release. Until then, cut tags manually
-# after merge (see CONTRIBUTING.md). Do not rely on TagBot for DistSSHKit releases.
+# Creates git tags when JuliaTagBot comments after a General registry merge
+# (see CONTRIBUTING.md). Manual tags remain fine for exceptional cases.
 name: TagBot
 on:
   issue_comment:

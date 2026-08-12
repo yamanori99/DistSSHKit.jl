@@ -32,7 +32,7 @@ Then call `julia --project=. -m DistSSHKit …` from that app the same way as af
 - **`main` is protected:** open a PR (CI `test (1.12)` and `test (~1.13.0-0)` must pass). Approving review is optional. Do not push to `main` directly.
 - Open a PR and fill [the template](.github/pull_request_template.md).
 - Breaking changes (CLI names, module name, driver contract `init_output_dir!` / `main`, …): bump `x` in `Project.toml` `0.x.y`. Patch `y` only for non-breaking changes.
-- Tags (`vX.Y.Z`) after merge are a maintainer decision (`git tag -a vX.Y.Z`). TagBot.yml is unused until a General-registry release.
+- Tags (`vX.Y.Z`): after a new version is merged in General, [TagBot](.github/workflows/TagBot.yml) usually creates the git tag. Manual `git tag -a vX.Y.Z` remains fine for exceptional cases.
 
 Remote safety: `setup --clone` / `--rsync` refuse a non-empty destination; redeploy needs `setup --delete` first. Recommended first deploy is `setup --rsync`; git updates use `setup --sync` / `--pull`. Do not weaken nonempty-path refusal without reason and tests.
 

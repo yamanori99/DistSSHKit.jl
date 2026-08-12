@@ -17,17 +17,22 @@ These days, even small labs and individuals often have several high-performance
 machines or workstations. DistSSHKit helps you put that hardware to work.
 
 > [!IMPORTANT]
-> **Under active development.** Prefer a release tag for `rev`. Use `rev="main"` only for the development tip.
+> **Under active development.** Prefer a released version from General. Use
+> `rev="main"` only for the development tip.
 
 ## Install
 
 In your project (`Project.toml` at the project root):
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.add(url="https://github.com/yamanori99/DistSSHKit.jl.git", rev="v0.2.0")'
+julia --project=. -e 'using Pkg; Pkg.add("DistSSHKit")'
 ```
 
-For the development tip, use `rev="main"` instead.
+For the development tip (not a release):
+
+```bash
+julia --project=. -e 'using Pkg; Pkg.add(url="https://github.com/yamanori99/DistSSHKit.jl.git", rev="main")'
+```
 
 Install, demo, `go` / `drive`, remote hosts, and API: **[Documentation](https://yamanori99.github.io/DistSSHKit.jl/stable/)**.
 

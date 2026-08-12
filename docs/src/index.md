@@ -24,15 +24,20 @@ Use it from the terminal (`julia -m DistSSHKit …`) or from Julia code / notebo
 ## Installation
 
 !!! important
-    **Under active development.** Prefer a release tag for `rev`. Use `rev="main"` only for the development tip.
+    **Under active development.** Prefer a released version from General. Use
+    `rev="main"` only for the development tip.
 
 In your Julia project (`Project.toml` at the project root), add the package:
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.add(url="https://github.com/yamanori99/DistSSHKit.jl.git", rev="v0.2.0")'
+julia --project=. -e 'using Pkg; Pkg.add("DistSSHKit")'
 ```
 
-For the development tip, use `rev="main"` instead.
+For the development tip (not a release):
+
+```bash
+julia --project=. -e 'using Pkg; Pkg.add(url="https://github.com/yamanori99/DistSSHKit.jl.git", rev="main")'
+```
 
 There is no separate binary — use `julia --project=. -m DistSSHKit …`.
 
