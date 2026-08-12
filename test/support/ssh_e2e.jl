@@ -42,13 +42,15 @@ function _ssh_e2e_env(;
     return merge(base, extra)
 end
 
-const _SSH_E2E_HOSTS = ("distsshkit-w1", "distsshkit-w2")
-const _SSH_E2E_REMOTE_ROOT = "/home/dev/distsshkit-e2e"
+_ssh_e2e_hosts() = ("distsshkit-w1", "distsshkit-w2")
+_ssh_e2e_remote_root() = "/home/dev/distsshkit-e2e"
 # Separate tree for git clone/sync/--require-git (rsync excludes `.git/`).
-const _SSH_E2E_GIT_REMOTE_ROOT = "/home/dev/distsshkit-e2e-git"
-const _SSH_E2E_BARE_ORIGIN = "/home/dev/distsshkit-e2e-origin.git"
+_ssh_e2e_git_remote_root() = "/home/dev/distsshkit-e2e-git"
+# Tilde layout for collect path-boundary coverage (`dev` → `/home/dev/…`).
+_ssh_e2e_tilde_remote_root() = "~/distsshkit-e2e-tilde"
+_ssh_e2e_bare_origin() = "/home/dev/distsshkit-e2e-origin.git"
 # Compose DNS name of worker-1 (reachable from both workers via inter-worker keys).
-const _SSH_E2E_BARE_SSH_FROM_WORKERS = "dev@worker-1:$(_SSH_E2E_BARE_ORIGIN)"
+_ssh_e2e_bare_ssh_from_workers() = "dev@worker-1:/home/dev/distsshkit-e2e-origin.git"
 
 """Root for kept SSH E2E artifacts: `test/artifacts/ssh-e2e/` (gitignored)."""
 function _ssh_e2e_artifact_root()::String
@@ -316,34 +318,38 @@ end
 
 """Controller → bare URL using docker-ssh Host alias (`User`/`Port` from ssh_config)."""
 function _ssh_e2e_bare_origin_from_controller()::String
-    return "distsshkit-w1:$(_SSH_E2E_BARE_ORIGIN)"
+    return "distsshkit-w1:" * _ssh_e2e_bare_origin()
 end
 
 """
 Seed a bare origin on worker-1, point local `origin` at it, push HEAD.
 
-Workers clone via `$(_SSH_E2E_BARE_SSH_FROM_WORKERS)` (compose DNS + inter-worker key).
+Workers clone via `_ssh_e2e_bare_ssh_from_workers()` (compose DNS + inter-worker key).
 """
 function _ssh_e2e_seed_git_origin!(proj::AbstractString)
     g = _docker_ssh_generated()
-    ssh_base = ["ssh", "-F", g.ssh_config]
-    bare = _SSH_E2E_BARE_ORIGIN
-    seed_host = _SSH_E2E_HOSTS[1]
+    ssh_base = String["ssh", "-F", String(g.ssh_config)]
+    bare = _ssh_e2e_bare_origin()
+    seed_host = String(_ssh_e2e_hosts()[1])
+    git_remote = _ssh_e2e_git_remote_root()
 
     # Fresh bare on w1.
-    proc, out = _run_subprocess(Cmd([
-        ssh_base..., seed_host,
-        "rm -rf $(bare) $(_SSH_E2E_GIT_REMOTE_ROOT) && git init --bare $(bare)",
-    ]))
+    proc, out = _run_subprocess(Cmd(vcat(
+        ssh_base,
+        String[seed_host, "rm -rf $(bare) $(git_remote) && git init --bare $(bare)"],
+    )))
     _assert_proc_ok(proc, out; label="ssh-e2e git init --bare")
 
     # Workers accept worker-1 host key once (git clone uses plain ssh).
-    for host in _SSH_E2E_HOSTS
-        proc, out = _run_subprocess(Cmd([
-            ssh_base..., host,
-            "ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 " *
-            "dev@worker-1 'echo ok'",
-        ]))
+    for host in _ssh_e2e_hosts()
+        proc, out = _run_subprocess(Cmd(vcat(
+            ssh_base,
+            String[
+                String(host),
+                "ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 " *
+                "dev@worker-1 'echo ok'",
+            ],
+        )))
         _assert_proc_ok(proc, out; label="ssh-e2e warm worker-1 hostkey from $host")
     end
 
@@ -371,7 +377,7 @@ function _ssh_e2e_seed_git_origin!(proj::AbstractString)
     )
     proc, out = _run_subprocess(push_cmd)
     _assert_proc_ok(proc, out; label="ssh-e2e git push origin")
-    return (; origin_controller=origin, origin_workers=_SSH_E2E_BARE_SSH_FROM_WORKERS, branch)
+    return (; origin_controller=origin, origin_workers=_ssh_e2e_bare_ssh_from_workers(), branch)
 end
 
 """Make a sync-test commit on `proj` and leave the working tree clean."""

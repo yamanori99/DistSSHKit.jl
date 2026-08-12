@@ -23,8 +23,8 @@ if !isfile(g.ssh_config) || !isfile(g.hosts_file)
     error("docker-ssh not ready: missing $(g.ssh_config). Run testenv/docker-ssh/scripts/up.sh")
 end
 
-hosts = collect(String, _SSH_E2E_HOSTS)
-remote_root = _SSH_E2E_REMOTE_ROOT
+hosts = collect(String, _ssh_e2e_hosts())
+remote_root = _ssh_e2e_remote_root()
 e2e_env = _ssh_e2e_env(; remote_project=remote_root)
 remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
 
@@ -186,6 +186,49 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
             end
         end
 
+        # Path boundary: `~/…` remote root must still collect absolute find paths.
+        @testset "drive square_file collect with tilde remote root" begin
+            tilde_root = _ssh_e2e_tilde_remote_root()
+            tilde_env = _ssh_e2e_env(; remote_project=tilde_root)
+            square_file = joinpath(proj, "demos", "with_kit", "square_file.jl")
+            out_csv = joinpath(proj, "demos", "with_kit", "output", "square_results.csv")
+            isfile(out_csv) && rm(out_csv)
+
+            proc, out = _run_kit_setup(;
+                setup_args=["--delete", "--remote-path", tilde_root, hosts...],
+                project_root=proj,
+                extra_env=tilde_env,
+            )
+            _assert_ssh_e2e_ok(suite, "tilde_delete", proc, out; project=proj, kit=:setup)
+
+            proc, out = _run_kit_setup(;
+                setup_args=["--rsync", "--remote-path", tilde_root, hosts...],
+                project_root=proj,
+                extra_env=tilde_env,
+            )
+            _assert_ssh_e2e_ok(suite, "tilde_rsync", proc, out; project=proj, kit=:setup)
+
+            proc, out = _run_kit_setup(;
+                setup_args=["--instantiate", "--remote-path", tilde_root, hosts...],
+                project_root=proj,
+                extra_env=tilde_env,
+            )
+            _assert_ssh_e2e_ok(suite, "tilde_instantiate", proc, out; project=proj, kit=:setup)
+
+            proc, out = _run_kit_drive(;
+                script=square_file,
+                host_root=proj,
+                local_workers=0,
+                remote_hosts=remote_tokens,
+                script_args=["4"],
+                drive_flags=["-y", "-q"],
+                extra_env=tilde_env,
+            )
+            _assert_ssh_e2e_ok(suite, "tilde_drive_square_file", proc, out)
+            @test isfile(out_csv)
+            @test occursin("param,result", read(out_csv, String))
+        end
+
         # Julian API path (same remotes): delete → sync! → instantiate! → go! / pipeline!
         @testset "Julian API sync! + instantiate! + go!/pipeline!" begin
             proc, out = _run_kit_setup(;
@@ -272,7 +315,7 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
 
         # Git path (separate remote root): bare on w1 → clone → check hash → sync → --require-git.
         @testset "git clone + sync + require-git" begin
-            git_root = _SSH_E2E_GIT_REMOTE_ROOT
+            git_root = _ssh_e2e_git_remote_root()
             git_env = _ssh_e2e_env(; remote_project=git_root)
             seed = nothing
             withenv(git_env...) do

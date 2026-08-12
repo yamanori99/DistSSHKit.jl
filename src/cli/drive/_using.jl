@@ -7,6 +7,7 @@ using .DistSSHKit:
     display_path,
     dist_ssh_kit_version,
     distributed_collect_root_dirs,
+    ensure_remote_abs_path,
     get_local_git_hash,
     init_log_file,
     julia_env_record,
