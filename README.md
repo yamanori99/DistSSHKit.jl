@@ -22,13 +22,25 @@ machines or workstations. DistSSHKit helps you put that hardware to work.
 
 ## Install
 
-In your project (`Project.toml` at the project root):
+In your project (`Project.toml` at the project root), either:
+
+```julia
+julia> # press ] to enter pkg mode
+(@v1.12) pkg> activate .
+(MyProject) pkg> add DistSSHKit
+```
+
+or:
 
 ```bash
 julia --project=. -e 'using Pkg; Pkg.add("DistSSHKit")'
 ```
 
 For the development tip (not a release):
+
+```julia
+(MyProject) pkg> add https://github.com/yamanori99/DistSSHKit.jl.git#main
+```
 
 ```bash
 julia --project=. -e 'using Pkg; Pkg.add(url="https://github.com/yamanori99/DistSSHKit.jl.git", rev="main")'
