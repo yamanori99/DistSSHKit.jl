@@ -39,7 +39,7 @@ When the script is a **driver** (`init_output_dir!` / `main`, `pmap`, …), buil
 [`KitSession`](@ref), then call the steps you need:
 
 ```text
-(optional sync! / instantiate!)  →  size_plan  →  drive!  →  (optional collect!)
+(optional sync! / instantiate!)  →  size!  →  drive!  →  (optional collect!)
 ```
 
 First-time remotes usually look like:
@@ -55,9 +55,9 @@ require git parity by default (same as CLI). Pass `sync=:sync` / `:rsync` when
 you want a one-shot deploy. Git parity (`skip_hash_check=false`, CLI:
 `drive --require-git`) is **drive** / **pipeline** only — `go!` stays simpler.
 Prefer positional worker tokens over building a [`WorkerPlan`](@ref) by hand
-(`WorkerPlan` remains the return type of [`size_plan`](@ref)). Pass `julia=` on
-`go!` / `drive!` / `pipeline!` to pin the remote Julia binary (same as CLI
-`--julia`).
+(`WorkerPlan` remains the return type of [`size!`](@ref) / [`size_plan`](@ref)).
+Pass `julia=` on `go!` / `drive!` / `pipeline!` to pin the remote Julia binary
+(same as CLI `--julia`).
 
 Or call [`pipeline!`](@ref) for that same order in one shot.
 [`pipeline_config_from_env`](@ref) reads `DISTSSHKIT_HOSTS` /
@@ -71,6 +71,7 @@ sync!
 instantiate!
 HostResult
 SyncResult
+size!
 size_plan
 WorkerPlan
 WorkerMemorySample

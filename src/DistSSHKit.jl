@@ -12,8 +12,9 @@ using Distributed
 
 # Public surface for application / driver authors.
 # Prefer `julia -m DistSSHKit …` for day-to-day CLI.
-#   go! / drive! / sync! / instantiate! / collect! / size_plan — steps
-#   pipeline! — optional sugar (sync → size_plan → drive → collect)
+#   go! / drive! / sync! / instantiate! / collect! / size! — steps
+#   size_plan — same as size! (kept name)
+#   pipeline! — optional sugar (sync → size! → drive → collect)
 #   go / drive — same argv as the CLI (thin wrappers)
 #   worker_pmap — world-age escape hatch inside drivers
 export worker_pmap
@@ -28,6 +29,7 @@ export PipelineResult
 export sync!
 export instantiate!
 export size_plan
+export size!
 export drive!
 export collect!
 export pipeline!

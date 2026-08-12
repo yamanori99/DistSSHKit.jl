@@ -57,7 +57,7 @@ Estimate worker counts for hosts in `session`. When `gb_per_worker` is omitted,
 probes each host via [`measure_rss`](@ref) (package-load baseline, optional
 warm-up `probe` script for peak RSS). Counts use [`effective_worker_gb`](@ref).
 
-Returns [`WorkerPlan`](@ref).
+Returns [`WorkerPlan`](@ref). Prefer [`size!`](@ref) for the bang-style name.
 """
 function size_plan(
     session::KitSession;
@@ -102,4 +102,14 @@ function size_plan(
         mem_headroom=mem_headroom,
         master_gb=master_gb,
     )
+end
+
+"""
+    size!(session::KitSession; kwargs...)
+
+Alias for [`size_plan`](@ref). Prefer this name to match `sync!` / `drive!` /
+`collect!`. Same arguments and [`WorkerPlan`](@ref) return.
+"""
+function size!(session::KitSession; kwargs...)
+    return size_plan(session; kwargs...)
 end

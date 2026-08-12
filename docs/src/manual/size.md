@@ -31,9 +31,10 @@ Remote project paths use the same resolution as [`drive`](@ref Manual-drive)
 Measurement is a **hint**, not a job peak: baseline is package-load RSS; with
 `--probe`, peak is after that script runs. Worker counts use
 `max(baseline, peak)`. Prefer an explicit `host:N` (CLI / API tokens) or
-`--gb-per-worker` when you know the workload. [`size_plan`](@ref) returns a
-[`WorkerPlan`](@ref) for `drive!(session, …; plan=…)`; day-to-day runs usually
-use tokens instead (`drive!("job.jl", "local:2"; …)`).
+`--gb-per-worker` when you know the workload. [`size!`](@ref) (alias
+[`size_plan`](@ref)) returns a [`WorkerPlan`](@ref) for
+`drive!(session, …; plan=…)`; day-to-day runs usually use tokens instead
+(`drive!("job.jl", "local:2"; …)`).
 
 ```bash
 julia --project=. -m DistSSHKit size --local host1 host2
