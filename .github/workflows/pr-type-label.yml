@@ -1,0 +1,33 @@
+# Require a type label on every PR: bug | enhancement | breaking | chore.
+name: PR type label
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review, labeled, unlabeled]
+
+concurrency:
+  group: pr-type-label-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  require-type:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const required = new Set(["bug", "enhancement", "breaking", "chore"]);
+            const labels = context.payload.pull_request.labels.map((l) => l.name);
+            const found = labels.filter((n) => required.has(n));
+            if (found.length === 0) {
+              core.setFailed(
+                `Add one type label: bug, enhancement, breaking, or chore (have: ${labels.join(", ") || "none"})`,
+              );
+              return;
+            }
+            core.info(`Type label(s): ${found.join(", ")}`);

@@ -112,6 +112,34 @@ Parse-only `ArgumentError`s (bad flags, typoes) may stay as plain strings. Prefe
 diagnose + explain when adding tip-bearing failures. Do **not** grow a large
 issue/remedy type hierarchy until several domains share the same shape.
 
+## PR labels
+
+Path labels come from `.github/labeler.yml`, which is **generated**:
+
+```bash
+./.github/gen-labeler.sh          # rewrite labeler.yml
+./.github/gen-labeler.sh --check  # CI drift check
+```
+
+Convention: each `src/cli/<area>/` directory becomes `area:<area>`; shared kit
+paths use `area:kit`. After adding a new CLI area directory, regenerate and
+commit `labeler.yml` (and create the GitHub label if needed).
+
+`area:explain` and `area:demos` are **manual-only** (Issue triage). Path labeling
+folds those into `area:kit` so multi-path PRs do not collect too many labels.
+
+Every PR must also carry **one** type label (enforced by CI):
+
+- `bug` — fix
+- `enhancement` — feature / improvement
+- `chore` — CI, repo hygiene, deps, docs-only, refactor/test-only, and similar
+- `breaking` — this PR includes a breaking change (may be combined with
+  `bug` / `enhancement` / `chore`)
+
+`breaking` marks work that should factor into when to cut the next version
+(for this kit: bump `x` in `0.x.y`, or major after `1.0`). Apply it on the
+change PR itself; the version bump in `Project.toml` is a separate decision.
+
 ## Language and AI
 
 - `.jl` sources (comments, docstrings, errors): English
