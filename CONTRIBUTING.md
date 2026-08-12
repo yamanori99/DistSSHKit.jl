@@ -112,6 +112,56 @@ Parse-only `ArgumentError`s (bad flags, typoes) may stay as plain strings. Prefe
 diagnose + explain when adding tip-bearing failures. Do **not** grow a large
 issue/remedy type hierarchy until several domains share the same shape.
 
+## Issues and Discussions
+
+**Issues** (Bug / Enhancement forms only; blank issues are off):
+
+- `bug` — something is broken
+- `enhancement` — a feature or improvement you want tracked to done
+- Optional area picks in the form are triage text — add matching `area:*`
+  labels on the issue when useful
+- `breaking` stays a PR concern (version-cut triage), not an Issue type
+
+**Discussions** ([open a discussion](https://github.com/yamanori99/DistSSHKit.jl/discussions))
+uses GitHub’s default categories:
+
+- **Announcements** — maintainer notices (releases, registry, …)
+- **Q&A** — usage / “how do I…?”
+- **Ideas** — early thoughts; promote to an Enhancement Issue when ready to track
+- **General** — everything else that is not a bug or tracked feature
+- **Show and tell** — demos / experiments with DistSSHKit
+- **Polls** — occasional votes
+
+Do not file usage questions as Issues. Do not use Discussions for confirmed bugs.
+Security-sensitive reports: see [SECURITY.md](SECURITY.md) (private advisory preferred).
+
+## PR labels
+
+Path labels come from `.github/labeler.yml`, which is **generated**:
+
+```bash
+./.github/gen-labeler.sh          # rewrite labeler.yml
+./.github/gen-labeler.sh --check  # CI drift check
+```
+
+Convention: each `src/cli/<area>/` directory becomes `area:<area>`; kit modules
+`explain` / `demos` are also path-auto `area:*`. There is no catch-all
+`area:kit` — shared-only changes rely on type labels. After adding a new CLI
+area directory, regenerate and commit `labeler.yml` (and create the GitHub
+label if needed).
+
+Every PR must also carry **one** type label (enforced by CI):
+
+- `bug` — fix
+- `enhancement` — feature / improvement
+- `chore` — CI, repo hygiene, deps, docs-only, refactor/test-only, and similar
+- `breaking` — this PR includes a breaking change (may be combined with
+  `bug` / `enhancement` / `chore`)
+
+`breaking` marks work that should factor into when to cut the next version
+(for this kit: bump `x` in `0.x.y`, or major after `1.0`). Apply it on the
+change PR itself; the version bump in `Project.toml` is a separate decision.
+
 ## Language and AI
 
 - `.jl` sources (comments, docstrings, errors): English

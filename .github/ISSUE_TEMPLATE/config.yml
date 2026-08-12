@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Q&A / usage help
+    url: https://github.com/yamanori99/DistSSHKit.jl/discussions/new?category=q-a
+    about: Ask how to use DistSSHKit. Bugs and committed features stay in Issues.
+  - name: Ideas
+    url: https://github.com/yamanori99/DistSSHKit.jl/discussions/new?category=ideas
+    about: Early ideas before they become tracked Enhancement Issues.
