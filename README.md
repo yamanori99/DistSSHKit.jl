@@ -9,27 +9,100 @@
 [Julia 1.12+](https://julialang.org/)
 [License: MIT](LICENSE)
 
-DistSSHKit makes it easy to run one Julia project locally and over SSH, then
-collect the results. It uses Distributed.jl processes (not threads). **macOS
-and Linux.**
+## What does DistSSHKit do?
 
-These days, even small labs and individuals often have several high-performance
-machines or workstations. DistSSHKit helps you put that hardware to work.
-
-> [!IMPORTANT]
-> **Under active development.** Prefer a release tag for `rev`. Use `rev="main"` only for the development tip.
+DistSSHKit makes it easy to run a Julia project on local and/or SSH hosts with
+Distributed.jl processes (not threads), including remote setup, sync, and
+collecting outputs. macOS and Linux.
 
 ## Install
 
-In your project (`Project.toml` at the project root):
+From the Julia REPL, type `]` to enter the Pkg REPL mode and run:
 
-```bash
-julia --project=. -e 'using Pkg; Pkg.add(url="https://github.com/yamanori99/DistSSHKit.jl.git", rev="v0.2.0")'
+```julia
+pkg> add DistSSHKit
 ```
 
-For the development tip, use `rev="main"` instead.
+Or, equivalently, via the `Pkg` API:
 
-Install, demo, `go` / `drive`, remote hosts, and API: **[Documentation](https://yamanori99.github.io/DistSSHKit.jl/stable/)**.
+```julia
+julia> import Pkg; Pkg.add("DistSSHKit")
+```
+
+Setup, demos, `go` / `drive`, and the Julia API:
+**[Documentation](https://yamanori99.github.io/DistSSHKit.jl/stable/)**.
+
+---
+
+## Jobs and launchers
+
+DistSSHKit has **two job shapes** and **two ways to launch** them.
+Host tokens are the same everywhere (`local:2`, `user@host:1`).
+
+Job shapes:
+
+- **go** — each host runs your `.jl` from start to finish
+- **drive** — one master farms work to Distributed.jl workers
+
+Launchers:
+
+- **CLI** — `julia -m DistSSHKit …` (`setup`, `go`, `drive`, …)
+- **Julia** — `setup!`, `go!` / `drive!`, … from a script or the REPL
+  (`setup!` mirrors `setup --…`)
+
+CLI — go (first deploy with rsync):
+
+```bash
+julia --project=. -m DistSSHKit setup --rsync --instantiate user@host1
+julia --project=. -m DistSSHKit go user@host1:1 user@host2:1 path/to/script.jl
+```
+
+CLI — drive (git remotes; first deploy with `--clone`, later `--sync`):
+
+```bash
+julia --project=. -m DistSSHKit setup --clone --instantiate user@host1
+julia --project=. -m DistSSHKit drive local:2 user@host1:4 path/to/driver.jl
+# later updates: setup --sync user@host1
+```
+
+Julia — go:
+
+```julia
+using DistSSHKit
+
+session = KitSession(workers=["user@host1"], remote="~/proj", yes=true)
+setup!(session, :rsync, :instantiate)
+go!("path/to/script.jl", "user@host1:1")
+```
+
+Julia — drive:
+
+```julia
+using DistSSHKit
+
+session = KitSession(workers=["user@host1"], remote="~/proj", yes=true)
+setup!(session, :clone; repo="https://github.com/org/proj.git")
+setup!(session, :instantiate)
+drive!("path/to/driver.jl", "local:2", "user@host1:4")
+# later: setup!(session, :sync)
+```
+
+`pipeline!` is optional sugar around drive (size! → drive! → collect!).
+Details: [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/).
+
+### Try a demo
+
+Bundled examples so you can try the kit without writing a job first:
+
+```bash
+julia --project=. -m DistSSHKit demo install
+```
+
+```bash
+julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_file.jl
+```
+
+Walkthrough: [Demo](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/demo/).
 
 ## Documentation
 
@@ -48,5 +121,8 @@ Bugs and features to track: [Issues](https://github.com/yamanori99/DistSSHKit.jl
 Questions, ideas, and other chat: [Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions).
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to contribute.
 
-
-
+<!-- markdownlint-disable MD033 -->
+<p align="center">
+  <img src="docs/src/assets/logo/logo-static.svg" width="180" alt="DistSSHKit.jl logo"/>
+</p>
+<!-- markdownlint-enable MD033 -->

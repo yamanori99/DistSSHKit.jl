@@ -19,14 +19,15 @@ n = length(ARGS) >= 1 ? ARGS[1] : "8"
 # Local-only: two Distributed workers on this machine (collect off — outputs stay local).
 result = pipeline!(driver, "local:2"; args=[n], collect=false, enable_log=false)
 
-# First-time remotes: sync + instantiate, then pipeline! (or drive!).
+# First-time remotes: setup!, then pipeline! (or drive!).
 #
 #   session = KitSession(
 #       workers=["user@host1", "user@host2"],
 #       remote="/path/to/project",
+#       yes=true,
 #   )
-#   sync!(session; mode=:rsync)
-#   instantiate!(session)                 # or instantiate!(session; julia="/path/to/julia")
+#   setup!(session, :rsync, :instantiate)
+#   # or: setup!(session, :clone; repo="https://…"); setup!(session, :instantiate)
 #   result = pipeline!(
 #       driver,
 #       "user@host1:1",

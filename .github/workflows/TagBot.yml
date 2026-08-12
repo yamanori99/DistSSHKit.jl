@@ -1,5 +1,6 @@
-# Present for a future General-registry release. Until then, cut tags manually
-# after merge (see CONTRIBUTING.md). Do not rely on TagBot for DistSSHKit releases.
+# TagBot creates `vX.Y.Z` tags after General-registry releases (JuliaTagBot /
+# workflow_dispatch). Manual `git tag -a` remains fine for maintainer overrides;
+# see CONTRIBUTING.md.
 name: TagBot
 on:
   issue_comment:

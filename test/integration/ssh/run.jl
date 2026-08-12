@@ -229,15 +229,8 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
             @test occursin("param,result", read(out_csv, String))
         end
 
-        # Julian API path (same remotes): delete → sync! → instantiate! → go! / pipeline!
-        @testset "Julian API sync! + instantiate! + go!/pipeline!" begin
-            proc, out = _run_kit_setup(;
-                setup_args=["--delete", "--remote-path", remote_root, hosts...],
-                project_root=proj,
-                extra_env=e2e_env,
-            )
-            _assert_ssh_e2e_ok(suite, "api_delete", proc, out; project=proj, kit=:setup)
-
+        # Julian API path (same remotes): setup! → go! / pipeline!
+        @testset "Julian API setup! + go!/pipeline!" begin
             withenv(e2e_env...) do
                 session = KitSession(
                     project=proj,
@@ -246,20 +239,17 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
                     yes=true,
                     quiet=true,
                 )
-                sync_res = sync!(session; mode=:rsync)
-                _assert_ssh_e2e_api_ok(suite, "api_sync", sync_res.ok)
-                @test sync_res.ok
-
-                inst_res = instantiate!(session; julia="auto")
+                prep = setup!(session, :delete, :rsync, :instantiate)
                 _assert_ssh_e2e_api_ok(
                     suite,
-                    "api_instantiate",
-                    inst_res.ok,
-                    "hosts=$(length(inst_res.hosts))",
+                    "api_setup",
+                    prep.ok,
+                    "hosts=$(length(prep.hosts))",
                 )
-                @test inst_res.ok
-                @test length(inst_res.hosts) == length(hosts)
-                @test all(h -> h.ok, inst_res.hosts)
+                @test prep.ok
+                @test !prep.cancelled
+                @test length(prep.hosts) == length(hosts)
+                @test all(h -> h.ok, prep.hosts)
 
                 go_res = go!(
                     pi_file,
