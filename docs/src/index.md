@@ -27,14 +27,12 @@ Use it from the terminal (`julia -m DistSSHKit …`) or from Julia code / notebo
     **Under active development.** Prefer a released version from General. Use
     `rev="main"` only for the development tip.
 
-In your Julia project (`Project.toml` at the project root). If that environment
-is already active, pkg mode is enough:
+In your Julia project (`Project.toml` at the project root). With that
+environment already active, press `]` and run:
 
-```julia
-(MyProject) pkg> add DistSSHKit
+```text
+add DistSSHKit
 ```
-
-(`]` enters pkg mode; backspace returns to the Julia prompt.)
 
 Or from the shell:
 
@@ -44,8 +42,8 @@ julia --project=. -e 'using Pkg; Pkg.add("DistSSHKit")'
 
 For the development tip (not a release):
 
-```julia
-(MyProject) pkg> add https://github.com/yamanori99/DistSSHKit.jl.git#main
+```text
+add https://github.com/yamanori99/DistSSHKit.jl.git#main
 ```
 
 ```bash
