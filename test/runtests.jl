@@ -38,6 +38,7 @@ function _unit_test_files()
         joinpath("DistSSHKit", "main_dispatch.jl"),
         joinpath("DistSSHKit", "demo_cli.jl"),
         joinpath("DistSSHKit", "host_project_toml.jl"),
+        joinpath("DistSSHKit", "setup_api.jl"),
         joinpath("DistSSHKit", "setup", "checks.jl"),
         joinpath("DistSSHKit", "setup", "hosts.jl"),
         joinpath("DistSSHKit", "setup", "rsync.jl"),

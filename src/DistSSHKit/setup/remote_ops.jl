@@ -46,10 +46,15 @@ end
 """
 Delete remote repositories.
 
-Returns `(cancelled, succeeded, failed)`. Caller should use
+Returns `(cancelled, succeeded, failed, hosts)`. Caller should use
 [`finish_host_op!`](@ref) so partial failure is not reported as success.
+Pass `confirm=false` to skip the typed `delete` prompt (CLI `-y` / API `session.yes`).
 """
-function delete_remotes(hosts::Vector{String}, remote_path::String)::NamedTuple
+function delete_remotes(
+    hosts::Vector{String},
+    remote_path::String;
+    confirm::Bool=true,
+)::NamedTuple
     kit_print("  ")
     print_progress_err("This will DELETE repositories on all hosts via SSH.")
     kit_println()
@@ -57,46 +62,63 @@ function delete_remotes(hosts::Vector{String}, remote_path::String)::NamedTuple
     kit_println("  Hosts: $(join(hosts, ", "))")
     kit_println("  Note: setup hosts are SSH targets only (not drive/go `local`).")
     kit_println()
-    kit_confirm("Type 'delete' to confirm: "; keyword="delete") || begin
-        kit_println("Cancelled.")
-        return host_op_result(cancelled=true)
+    if confirm
+        kit_confirm("Type 'delete' to confirm: "; keyword="delete") || begin
+            kit_println("Cancelled.")
+            return (; cancelled=true, succeeded=0, failed=0, hosts=HostResult[])
+        end
+        kit_println()
     end
-    kit_println()
 
     pq = _remote_shell_path_word(remote_path)
     succeeded = 0
     failed = 0
+    host_results = HostResult[]
     for host in hosts
-        kit_print("  $host: ")
-        flush(stdout)
         err_buf = IOBuffer()
         try
-            # Try rm -rf first; if path still exists (e.g. permission/lock), retry with chmod
-            cmd = """
-                rm -rf $pq 2>/dev/null
-                if [ -e $pq ]; then
-                  chmod -R u+rwX $pq 2>/dev/null
-                  rm -rf $pq
-                fi
-            """
-            read(pipeline(_host_sync_remote_shell_cmd(host, cmd); stderr=err_buf), String)
+            kit_spin!("  $host: ") do
+                # Try rm -rf first; if path still exists (e.g. permission/lock), retry with chmod
+                cmd = """
+                    rm -rf $pq 2>/dev/null
+                    if [ -e $pq ]; then
+                      chmod -R u+rwX $pq 2>/dev/null
+                      rm -rf $pq
+                    fi
+                """
+                read(pipeline(_host_sync_remote_shell_cmd(host, cmd); stderr=err_buf), String)
+                return nothing
+            end
             print_ok("✓")
             kit_println()
             succeeded += 1
+            push!(host_results, HostResult(host, true, "deleted"))
         catch e
-            report_remote_failure(e; stderr=String(take!(err_buf)))
+            detail = strip(String(take!(err_buf)))
+            report_remote_failure(e; stderr=detail)
             failed += 1
+            msg = isempty(detail) ? sprint(showerror, e) : detail
+            push!(host_results, HostResult(host, false, msg))
         end
     end
-    return host_op_result(succeeded=succeeded, failed=failed)
+    return (; host_op_result(succeeded=succeeded, failed=failed)..., hosts=host_results)
 end
 
 """
 Clone repository on remote hosts. Refuses if remote_path already has files.
 
-Returns `(cancelled, succeeded, failed)`.
+Returns `(cancelled, succeeded, failed, hosts)`.
+Pass `confirm=false` to skip the proceed prompt (CLI `-y` / API `session.yes`).
+
+Runs `git clone` **on each remote**. Private URLs need credentials **on that host**
+(deploy key, HTTPS token, or agent forward) — not the controller's agent alone.
 """
-function clone_to_remotes(hosts::Vector{String}, remote_path::String, clone_url::String)::NamedTuple
+function clone_to_remotes(
+    hosts::Vector{String},
+    remote_path::String,
+    clone_url::String;
+    confirm::Bool=true,
+)::NamedTuple
     kit_println("  Repository: $clone_url")
     kit_println("  Remote path: $remote_path")
     kit_println("  Hosts: $(join(hosts, ", "))")
@@ -106,75 +128,96 @@ function clone_to_remotes(hosts::Vector{String}, remote_path::String, clone_url:
     kit_println()
     kit_println("  To replace an existing tree, run `setup --delete` first, then `--clone`.")
     kit_println()
-    kit_confirm("Proceed? [y/N]: ") || begin
-        kit_println("Cancelled.")
-        return host_op_result(cancelled=true)
+    if confirm
+        kit_confirm("Proceed? [y/N]: ") || begin
+            kit_println("Cancelled.")
+            return (; cancelled=true, succeeded=0, failed=0, hosts=HostResult[])
+        end
+        kit_println()
     end
-    kit_println()
 
     pq = _remote_shell_path_word(remote_path)
     uq = Base.shell_escape(String(clone_url))
     succeeded = 0
     failed = 0
+    host_results = HostResult[]
     for host in hosts
-        kit_print("  $host: ")
-        flush(stdout)
         err_buf = IOBuffer()
         try
-            st = remote_dest_status(host, remote_path)
-            if st === :nonempty
-                print_progress_err("✗ $(remote_dest_busy_message(host, remote_path))")
+            outcome = kit_spin!("  $host: ") do
+                st = remote_dest_status(host, remote_path)
+                if st === :nonempty
+                    return (:busy, remote_dest_busy_message(host, remote_path))
+                end
+                read(
+                    pipeline(
+                        _host_sync_remote_shell_cmd(host, "git clone $uq $pq 2>&1");
+                        stderr=err_buf,
+                    ),
+                    String,
+                )
+                return (:ok, "")
+            end
+            if outcome[1] === :busy
+                print_progress_err("✗ $(outcome[2])")
                 kit_println()
                 failed += 1
+                push!(host_results, HostResult(host, false, outcome[2]))
                 continue
             end
-            read(
-                pipeline(
-                    _host_sync_remote_shell_cmd(host, "git clone $uq $pq 2>&1");
-                    stderr=err_buf,
-                ),
-                String,
-            )
             print_ok("✓")
             kit_println()
             succeeded += 1
+            push!(host_results, HostResult(host, true, "cloned"))
         catch e
-            report_remote_failure(e; stderr=String(take!(err_buf)))
+            detail = strip(String(take!(err_buf)))
+            report_remote_failure(e; stderr=detail)
             failed += 1
+            msg = isempty(detail) ? sprint(showerror, e) : detail
+            push!(host_results, HostResult(host, false, msg))
         end
     end
-    return host_op_result(succeeded=succeeded, failed=failed)
+    return (; host_op_result(succeeded=succeeded, failed=failed)..., hosts=host_results)
 end
 
 """
 Kill stale Julia worker processes on localhost and remote hosts.
 
-Returns `(cancelled=false, succeeded, failed)` for the SSH hosts only
+Returns `(cancelled=false, succeeded, failed, hosts)` for the SSH hosts only
 (localhost cleanup is always attempted and not counted as a remote failure).
 """
 function cleanup_remote_workers(hosts::Vector{String})::NamedTuple
-    kit_print("  localhost: ")
-    _pkill_local_julia_workers!()
+    kit_spin!("  localhost: ") do
+        _pkill_local_julia_workers!()
+        return nothing
+    end
     print_ok("✓")
     kit_println()
 
     results = Dict{String,Bool}()
-    @sync for host in hosts
-        @async results[host] = _pkill_remote_julia_workers!(host)
+    kit_spin!("  Cleaning remotes ($(length(hosts))) ") do
+        @sync for host in hosts
+            @async results[host] = _pkill_remote_julia_workers!(host)
+        end
+        return nothing
     end
+    kit_println()
 
     succeeded = 0
     failed = 0
+    host_results = HostResult[]
     for host in hosts
         if get(results, host, false)
             ok("$host: done")
             succeeded += 1
+            push!(host_results, HostResult(host, true, "cleaned"))
         else
             fail("$host: SSH unreachable")
             failed += 1
+            push!(host_results, HostResult(host, false, "SSH unreachable"))
         end
     end
-    return host_op_result(succeeded=succeeded, failed=failed)
+    return (; host_op_result(succeeded=succeeded, failed=failed)..., hosts=host_results)
 end
 
 """
@@ -196,49 +239,53 @@ function instantiate_remotes(
     kit_println()
 
     for host in hosts
-        kit_println("  $host: instantiating...")
+        kit_println("  $host: queued")
     end
 
     pq = _remote_shell_path_word(remote_path)
     results = Dict{String,Bool}()
     fail_msgs = Dict{String,String}()
-    @sync for host in hosts
-        @async begin
-            host_julia = julia_path == "auto" ? detect_julia_path(host) : julia_path
-            if host_julia === nothing
-                results[host] = false
-                fail_msgs[host] = "Julia not found"
-            else
-                jb = _remote_shell_path_word(host_julia)
-                # Prefer git CLI (ssh-agent / SSH config) over LibGit2 credentials UI.
-                cmd = "JULIA_PKG_USE_CLI_GIT=true $jb --project=$pq --startup-file=no " *
-                    "-e 'using Pkg; Pkg.instantiate()'"
-                out = IOBuffer()
-                err = IOBuffer()
-                try
-                    proc = run(
-                        pipeline(
-                            ignorestatus(_host_sync_remote_shell_cmd(host, cmd));
-                            stdout=out,
-                            stderr=err,
-                        );
-                        wait=true,
-                    )
-                    if proc.exitcode == 0
-                        results[host] = true
-                    else
-                        results[host] = false
-                        msg = strip(String(take!(err)))
-                        isempty(msg) && (msg = strip(String(take!(out))))
-                        fail_msgs[host] = isempty(msg) ? "exit $(proc.exitcode)" : first(split(msg, '\n'))
-                    end
-                catch e
+    kit_spin!("  Instantiating ($(length(hosts)) hosts) ") do
+        @sync for host in hosts
+            @async begin
+                host_julia = julia_path == "auto" ? detect_julia_path(host) : julia_path
+                if host_julia === nothing
                     results[host] = false
-                    fail_msgs[host] = sprint(showerror, e)
+                    fail_msgs[host] = "Julia not found"
+                else
+                    jb = _remote_shell_path_word(host_julia)
+                    # Prefer git CLI (ssh-agent / SSH config) over LibGit2 credentials UI.
+                    cmd = "JULIA_PKG_USE_CLI_GIT=true $jb --project=$pq --startup-file=no " *
+                        "-e 'using Pkg; Pkg.instantiate()'"
+                    out = IOBuffer()
+                    err = IOBuffer()
+                    try
+                        proc = run(
+                            pipeline(
+                                ignorestatus(_host_sync_remote_shell_cmd(host, cmd));
+                                stdout=out,
+                                stderr=err,
+                            );
+                            wait=true,
+                        )
+                        if proc.exitcode == 0
+                            results[host] = true
+                        else
+                            results[host] = false
+                            msg = strip(String(take!(err)))
+                            isempty(msg) && (msg = strip(String(take!(out))))
+                            fail_msgs[host] = isempty(msg) ? "exit $(proc.exitcode)" : first(split(msg, '\n'))
+                        end
+                    catch e
+                        results[host] = false
+                        fail_msgs[host] = sprint(showerror, e)
+                    end
                 end
             end
         end
+        return nothing
     end
+    kit_println()
 
     succeeded = 0
     failed = 0

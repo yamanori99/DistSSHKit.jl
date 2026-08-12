@@ -97,7 +97,8 @@ end
                     [host], remote_path, "git@example.com:org/App.jl.git",
                 )
             end
-            @test result == DistSSHKit.host_op_result(succeeded=0, failed=1)
+            @test !result.cancelled && result.succeeded == 0 && result.failed == 1
+            @test length(result.hosts) == 1 && !result.hosts[1].ok
             @test occursin("refusing to overwrite", out)
             @test isfile(joinpath(tree, "keepme.txt"))
         end

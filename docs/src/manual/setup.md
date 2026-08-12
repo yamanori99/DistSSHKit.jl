@@ -6,8 +6,11 @@ Prepare SSH hosts before [`go`](@ref Manual-go) / [`drive`](@ref Manual-drive).
 julia --project=. -m DistSSHKit setup [options] HOST...
 ```
 
-From Julia, the same prep is [`sync!`](@ref) then [`instantiate!`](@ref)
+From Julia, use [`setup!`](@ref) for the same modes as this CLI
+(`:delete`, `:rsync`, `:clone`, `:instantiate`, `:check`, …), or the shorter
+[`sync!`](@ref) / [`instantiate!`](@ref) aliases
 ([API](@ref API), [First Steps · Prepare](@ref Tutorial-Prepare)).
+`setup!(session, :clone)` requires an explicit `repo=` URL (clone runs on the remote).
 
 Also: [Requirements](@ref), `setup --help`. Flag vocabulary: [User Guide](@ref Manual).
 

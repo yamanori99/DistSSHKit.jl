@@ -40,7 +40,8 @@ using Test
                 seekstart(stdin_io)
                 DistSSHKit.delete_remotes(["host1"], "~/App.jl")
             end
-            @test result == DistSSHKit.host_op_result(cancelled=true)
+            @test result.cancelled && result.succeeded == 0 && result.failed == 0
+            @test isempty(result.hosts)
             @test occursin("Cancelled.", out)
         end
 
@@ -50,8 +51,9 @@ using Test
             tree = joinpath(state_dir, slot, "tree")
             mkpath(tree)
             touch(joinpath(tree, "keepme.txt"))
-            result = DistSSHKit.delete_remotes([host], "~/App.jl")
-            @test result == DistSSHKit.host_op_result(succeeded=1, failed=0)
+            result = DistSSHKit.delete_remotes([host], "~/App.jl"; confirm=false)
+            @test !result.cancelled && result.succeeded == 1 && result.failed == 0
+            @test length(result.hosts) == 1 && result.hosts[1].ok
             @test !isdir(joinpath(state_dir, slot))
         end
     end
@@ -59,9 +61,11 @@ using Test
     @testset "clone_to_remotes" begin
         _with_fake_remotes() do _
             result = DistSSHKit.clone_to_remotes(
-                ["host1"], "~/App.jl", "git@example.com:org/App.jl.git",
+                ["host1"], "~/App.jl", "git@example.com:org/App.jl.git";
+                confirm=false,
             )
-            @test result == DistSSHKit.host_op_result(succeeded=1, failed=0)
+            @test !result.cancelled && result.succeeded == 1 && result.failed == 0
+            @test length(result.hosts) == 1 && result.hosts[1].ok
         end
         # Nonempty refuse: return value here; message text in setup/rsync.jl.
         _with_fake_remotes() do state_dir
@@ -71,9 +75,11 @@ using Test
             mkpath(tree)
             touch(joinpath(tree, "keepme.txt"))
             result = DistSSHKit.clone_to_remotes(
-                [host], "~/App.jl", "git@example.com:org/App.jl.git",
+                [host], "~/App.jl", "git@example.com:org/App.jl.git";
+                confirm=false,
             )
-            @test result == DistSSHKit.host_op_result(succeeded=0, failed=1)
+            @test !result.cancelled && result.succeeded == 0 && result.failed == 1
+            @test length(result.hosts) == 1 && !result.hosts[1].ok
         end
     end
 end

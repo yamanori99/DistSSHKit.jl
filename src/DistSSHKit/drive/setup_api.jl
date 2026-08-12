@@ -1,0 +1,167 @@
+# setup! — Julian mirror of `julia -m DistSSHKit setup --<mode>`.
+
+const _SETUP_BANG_MODES = (
+    :delete,
+    :rsync,
+    :clone,
+    :sync,
+    :pull,
+    :instantiate,
+    :check,
+    :cleanup,
+)
+
+"""
+    setup!(session::KitSession, mode::Symbol; kwargs...) -> SyncResult
+    setup!(session::KitSession, modes::Symbol...) -> SyncResult
+
+Prepare SSH hosts — same jobs as `julia -m DistSSHKit setup --…`.
+
+| `mode` | CLI | Notes |
+| --- | --- | --- |
+| `:delete` | `--delete` | Destructive; confirm unless `session.yes` |
+| `:rsync` | `--rsync` | Refuses nonempty remote; delete first to replace |
+| `:clone` | `--clone` | Requires `repo=`; clone runs **on the remote** |
+| `:sync` | `--sync` | Local push + remote pull (git remotes) |
+| `:pull` | `--pull` | Local pull then remote pull |
+| `:instantiate` | `--instantiate` | `julia=` (default `"auto"`) |
+| `:check` | `--check` | `ignore_julia_version=`, `check_code_sync=` |
+| `:cleanup` | `--cleanup` | Kill stale workers (no confirm) |
+
+Confirmations follow `session.yes` (CLI `-y`). Multiple modes run in order and
+stop on the first failure:
+
+```julia
+session = KitSession(workers=["user@h1"], remote="~/proj", yes=true)
+setup!(session, :delete, :rsync, :instantiate)
+setup!(session, :check; ignore_julia_version=true)
+```
+
+[`sync!`](@ref) / [`instantiate!`](@ref) remain as thin aliases for the common
+deploy steps. Prefer `setup!` when you want the full CLI vocabulary in one place.
+"""
+function setup!(
+    session::KitSession,
+    mode::Symbol;
+    repo::Union{Nothing,AbstractString}=nothing,
+    julia::AbstractString="auto",
+    ignore_julia_version::Bool=false,
+    check_code_sync::Bool=true,
+)::SyncResult
+    return _setup_one!(
+        session,
+        mode;
+        repo=repo,
+        julia=julia,
+        ignore_julia_version=ignore_julia_version,
+        check_code_sync=check_code_sync,
+    )
+end
+
+function setup!(session::KitSession, mode::Symbol, more::Symbol...; kwargs...)
+    modes = (mode, more...)
+    if !isempty(kwargs) && length(modes) > 1
+        throw(ArgumentError(
+            "setup! with multiple modes does not take keyword arguments; " *
+            "call setup!(session, mode; …) per step, or pass modes that need no kwargs",
+        ))
+    end
+    local result = SyncResult(false, HostResult[]; ok=true)
+    for m in modes
+        result = setup!(session, m; kwargs...)
+        result.ok || return result
+    end
+    return result
+end
+
+function _setup_one!(
+    session::KitSession,
+    mode::Symbol;
+    repo::Union{Nothing,AbstractString}=nothing,
+    julia::AbstractString="auto",
+    ignore_julia_version::Bool=false,
+    check_code_sync::Bool=true,
+)::SyncResult
+    mode in _SETUP_BANG_MODES || throw(ArgumentError(
+        "setup! mode must be one of $(_SETUP_BANG_MODES), got $(repr(mode))",
+    ))
+    hosts = _setup_bang_hosts!(session)
+    remote_path = session_remote_root(session)
+    julia_path = isempty(strip(String(julia))) ? "auto" : String(julia)
+
+    if mode === :delete
+        preflight_setup_ssh(hosts) || return SyncResult(true, HostResult[]; ok=false)
+        raw = delete_remotes(hosts, remote_path; confirm=!session.yes)
+        return _sync_result_from_host_op(raw)
+    elseif mode === :rsync
+        return sync!(session; mode=:rsync)
+    elseif mode === :clone
+        repo === nothing && throw(ArgumentError(
+            "setup!(session, :clone) requires repo=\"git-url\" " *
+            "(no silent origin lookup; clone runs on the remote)",
+        ))
+        url = strip(String(repo))
+        isempty(url) && throw(ArgumentError("setup! :clone repo= must be a non-empty git URL"))
+        url = normalize_git_clone_url(url)
+        preflight_setup_ssh(hosts) || return SyncResult(true, HostResult[]; ok=false)
+        raw = clone_to_remotes(hosts, remote_path, url; confirm=!session.yes)
+        return _sync_result_from_host_op(raw)
+    elseif mode === :sync
+        return sync!(session; mode=:sync)
+    elseif mode === :pull
+        apply_session_env!(session)
+        raw = git_sync_project_to_hosts!(
+            hosts,
+            session.project,
+            remote_path;
+            do_push=false,
+            do_pull=true,
+            do_local_pull=true,
+        )
+        return SyncResult(false, raw.host_results; ok=raw.ok)
+    elseif mode === :instantiate
+        return instantiate!(session; julia=julia_path)
+    elseif mode === :check
+        result = check_prerequisites(
+            hosts,
+            julia_path,
+            remote_path,
+            session.project;
+            path_anchor=session.project,
+            require_clean_git=false,
+            check_code_sync=check_code_sync,
+            ignore_julia_version=ignore_julia_version,
+        )
+        if result.ok
+            print_ok("All prerequisites met.")
+            kit_println()
+        else
+            print_err("Prerequisites not met. Fix issues above and retry.")
+            kit_println()
+        end
+        return SyncResult(false, HostResult[]; ok=result.ok)
+    elseif mode === :cleanup
+        raw = cleanup_remote_workers(hosts)
+        return _sync_result_from_host_op(raw)
+    end
+    # Unreachable when `_SETUP_BANG_MODES` stays in sync with branches above.
+    throw(ArgumentError("setup! mode $(repr(mode)) is not implemented"))
+end
+
+function _setup_bang_hosts!(session::KitSession)
+    apply_session_env!(session)
+    isempty(session.hosts) && throw(ArgumentError(
+        "KitSession has no SSH hosts; pass workers= with remote tokens",
+    ))
+    validate_setup_hosts(session.hosts)
+    return session.hosts
+end
+
+function _sync_result_from_host_op(raw)::SyncResult
+    hrs = hasproperty(raw, :hosts) ? collect(HostResult, raw.hosts) : HostResult[]
+    return SyncResult(
+        raw.cancelled,
+        hrs;
+        ok=!raw.cancelled && raw.failed == 0,
+    )
+end

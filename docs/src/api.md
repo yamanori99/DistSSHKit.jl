@@ -39,16 +39,23 @@ When the script is a **driver** (`init_output_dir!` / `main`, `pmap`, …), buil
 [`KitSession`](@ref), then call the steps you need:
 
 ```text
-(optional sync! / instantiate!)  →  size!  →  drive!  →  (optional collect!)
+(optional setup! / sync! / instantiate!)  →  size!  →  drive!  →  (optional collect!)
 ```
 
 First-time remotes usually look like:
 
 ```julia
-session = KitSession(workers=["user@h1"], remote="/path/to/project")
-sync!(session; mode=:rsync)   # or :sync after setup --clone / git remotes
-instantiate!(session)   # julia="auto" by default; or julia="/path/to/julia"
+session = KitSession(workers=["user@h1"], remote="/path/to/project", yes=true)
+setup!(session, :delete, :rsync, :instantiate)
+setup!(session, :check; ignore_julia_version=true)  # optional
+# git trees: setup!(session, :clone; repo="https://…") instead of :rsync
 ```
+
+[`setup!`](@ref) mirrors `julia -m DistSSHKit setup --…` (`:delete`, `:rsync`,
+`:clone`, `:sync`, `:pull`, `:instantiate`, `:check`, `:cleanup`). Confirmations
+follow `session.yes`. **`:clone` requires `repo=`** (no silent `origin` lookup;
+clone runs on the remote). [`sync!`](@ref) / [`instantiate!`](@ref) remain as
+short aliases for the common deploy steps.
 
 [`go!`](@ref) / [`drive!`](@ref) / [`pipeline!`](@ref) do **not** pre-run sync or
 require git parity by default (same as CLI). Pass `sync=:sync` / `:rsync` when
@@ -67,6 +74,7 @@ quiet / progress / yes flags — same vocabulary as the CLI.
 
 ```@docs
 KitSession
+setup!
 sync!
 instantiate!
 HostResult

@@ -154,5 +154,31 @@ using Test
                 end
             end
         end
+
+        @testset "kit_spin! skips animation off verbose TTY" begin
+            with_kit_verbosity(:quiet) do
+                @test DistSSHKit._spinner_can_draw() == false
+                @test DistSSHKit.kit_spin!("x: ") do
+                    sleep(0.05)
+                    42
+                end == 42
+            end
+            with_kit_verbosity(:progress) do
+                @test DistSSHKit._spinner_can_draw() == false
+                @test DistSSHKit.kit_spin!("x: ") do
+                    sleep(0.05)
+                    42
+                end == 42
+            end
+            with_kit_verbosity(:verbose) do
+                withenv("NO_COLOR" => "1") do
+                    @test DistSSHKit._spinner_can_draw() == false
+                    @test DistSSHKit.kit_spin!("x: ") do
+                        sleep(0.05)
+                        42
+                    end == 42
+                end
+            end
+        end
     end
 end

@@ -58,8 +58,10 @@ function git_sync_project_to_hosts!(
     host_results = HostResult[]
 
     if do_local_pull
-        kit_print("  localhost git pull: ")
-        if git_pull_local_project!(proj)
+        ok_local = kit_spin!("  localhost git pull: ") do
+            git_pull_local_project!(proj)
+        end
+        if ok_local
             print_ok("✓")
             kit_println()
         else
@@ -70,8 +72,10 @@ function git_sync_project_to_hosts!(
     end
 
     if do_push
-        kit_print("  git push: ")
-        if git_push_project!(proj)
+        ok_push = kit_spin!("  git push: ") do
+            git_push_project!(proj)
+        end
+        if ok_push
             print_ok("✓")
             kit_println()
         else
@@ -95,8 +99,10 @@ function git_sync_project_to_hosts!(
 
     if do_pull
         for host in hosts
-            kit_print("  $host git pull: ")
-            if git_pull_remote_host!(host, remote)
+            ok_host = kit_spin!("  $host git pull: ") do
+                git_pull_remote_host!(host, remote)
+            end
+            if ok_host
                 print_ok("✓")
                 kit_println()
                 push!(host_results, HostResult(host, true, "git pull ok"))

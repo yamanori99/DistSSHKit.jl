@@ -13,6 +13,7 @@ using Distributed
 # Public surface for application / driver authors.
 # Prefer `julia -m DistSSHKit …` for day-to-day CLI.
 #   go! / drive! / sync! / instantiate! / collect! / size! — steps
+#   setup! — Julian mirror of `setup --delete|--rsync|…`
 #   size_plan — same as size! (kept name)
 #   pipeline! — optional sugar (sync → size! → drive → collect)
 #   go / drive — same argv as the CLI (thin wrappers)
@@ -28,6 +29,7 @@ export PipelineConfig
 export PipelineResult
 export sync!
 export instantiate!
+export setup!
 export size_plan
 export size!
 export drive!
