@@ -3,10 +3,10 @@
 #
 # Convention:
 #   - each directory under src/cli/<area>/ → area:<area>
-#   - kit-only modules explain / demos → area:explain, area:demos (path auto)
-#   - shared kit paths → area:kit
+#   - kit modules explain / demos → area:explain, area:demos (path auto)
 #   - product docs → docs (docs/**, README.md, demos markdown — not CONTRIBUTING)
 #   - .github/** → ci
+# No catch-all area:kit — shared paths are typed via type labels only.
 #
 # Usage:
 #   ./.github/gen-labeler.sh           # write .github/labeler.yml
@@ -71,27 +71,6 @@ EOF
           - "test/integration/demos/**"
 EOF
     fi
-  done
-
-  cat <<'EOF'
-
-# Shared kit surface (top-level modules, harness). Area stems excluded below.
-"area:kit":
-  - changed-files:
-      - any-glob-to-any-file:
-          - "src/DistSSHKit/*"
-          - "src/DistSSHKit/cli/**"
-          - "test/support/**"
-          - "test/fixtures/**"
-          - "test/artifacts/**"
-          - "test/*"
-          - "test/unit/DistSSHKit/cli/**"
-          - "test/integration/ssh/**"
-          - "testenv/**"
-EOF
-
-  for area in "${areas_sorted[@]:-}"; do
-    printf '          - "!src/DistSSHKit/%s.*"\n' "$area"
   done
 } >"$tmp"
 
