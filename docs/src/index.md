@@ -47,6 +47,6 @@ Later: [`setup`](@ref Manual-setup), [`go`](@ref Manual-go),
 
 ## Contributing
 
-Bug reports and feature requests: [Issues](https://github.com/yamanori99/DistSSHKit.jl/issues).
-Questions and ideas: [Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions).
+Bugs and features to track: [Issues](https://github.com/yamanori99/DistSSHKit.jl/issues).
+Questions, ideas, and other chat: [Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions).
 See [CONTRIBUTING.md](https://github.com/yamanori99/DistSSHKit.jl/blob/main/CONTRIBUTING.md) for how to contribute.
