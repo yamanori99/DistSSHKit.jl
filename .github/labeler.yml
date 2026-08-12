@@ -14,6 +14,18 @@ ci:
       - any-glob-to-any-file:
           - ".github/**"
 
+"area:demos":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/DistSSHKit/demos/**"
+          - "src/DistSSHKit/demos.*"
+          - "src/cli/demos/**"
+          - "src/cli/demos.*"
+          - "test/**/demos/**"
+          - "test/**/demos.*"
+          - "demos/**"
+          - "test/integration/demos/**"
+
 "area:drive":
   - changed-files:
       - any-glob-to-any-file:
@@ -23,6 +35,16 @@ ci:
           - "src/cli/drive.*"
           - "test/**/drive/**"
           - "test/**/drive.*"
+
+"area:explain":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/DistSSHKit/explain/**"
+          - "src/DistSSHKit/explain.*"
+          - "src/cli/explain/**"
+          - "src/cli/explain.*"
+          - "test/**/explain/**"
+          - "test/**/explain.*"
 
 "area:go":
   - changed-files:
@@ -54,22 +76,22 @@ ci:
           - "test/**/size/**"
           - "test/**/size.*"
 
-# Shared kit surface (top-level modules, demos, harness). Area stems excluded below.
+# Shared kit surface (top-level modules, harness). Area stems excluded below.
 "area:kit":
   - changed-files:
       - any-glob-to-any-file:
           - "src/DistSSHKit/*"
           - "src/DistSSHKit/cli/**"
-          - "demos/**"
           - "test/support/**"
           - "test/fixtures/**"
           - "test/artifacts/**"
           - "test/*"
           - "test/unit/DistSSHKit/cli/**"
-          - "test/integration/demos/**"
           - "test/integration/ssh/**"
           - "testenv/**"
+          - "!src/DistSSHKit/demos.*"
           - "!src/DistSSHKit/drive.*"
+          - "!src/DistSSHKit/explain.*"
           - "!src/DistSSHKit/go.*"
           - "!src/DistSSHKit/setup.*"
           - "!src/DistSSHKit/size.*"

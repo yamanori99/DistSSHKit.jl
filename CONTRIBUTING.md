@@ -121,12 +121,10 @@ Path labels come from `.github/labeler.yml`, which is **generated**:
 ./.github/gen-labeler.sh --check  # CI drift check
 ```
 
-Convention: each `src/cli/<area>/` directory becomes `area:<area>`; shared kit
-paths use `area:kit`. After adding a new CLI area directory, regenerate and
-commit `labeler.yml` (and create the GitHub label if needed).
-
-`area:explain` and `area:demos` are **manual-only** (Issue triage). Path labeling
-folds those into `area:kit` so multi-path PRs do not collect too many labels.
+Convention: each `src/cli/<area>/` directory becomes `area:<area>`; kit modules
+`explain` / `demos` are also path-auto `area:*`; remaining shared kit paths use
+`area:kit`. After adding a new CLI area directory, regenerate and commit
+`labeler.yml` (and create the GitHub label if needed).
 
 Every PR must also carry **one** type label (enforced by CI):
 

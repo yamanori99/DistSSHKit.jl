@@ -3,11 +3,10 @@
 #
 # Convention:
 #   - each directory under src/cli/<area>/ → area:<area>
+#   - kit-only modules explain / demos → area:explain, area:demos (path auto)
 #   - shared kit paths → area:kit
 #   - product docs → docs (docs/**, README.md, demos markdown — not CONTRIBUTING)
 #   - .github/** → ci
-# Manual-only (not generated): area:explain, area:demos — use for Issue triage;
-# path changes under those surfaces are covered by area:kit.
 #
 # Usage:
 #   ./.github/gen-labeler.sh           # write .github/labeler.yml
@@ -24,6 +23,8 @@ for dir in "${ROOT}/src/cli"/*/; do
   [[ "$name" == _* ]] && continue
   areas+=("$name")
 done
+# Modules without src/cli/<area>/ — still first-class path areas.
+areas+=(explain demos)
 
 IFS=$'\n' areas_sorted=($(printf '%s\n' "${areas[@]:-}" | LC_ALL=C sort -u))
 unset IFS
@@ -63,23 +64,28 @@ EOF
           - "test/**/${area}/**"
           - "test/**/${area}.*"
 EOF
+    # Bundled demos live under repo-root demos/ (not only DistSSHKit/demos.jl).
+    if [[ "$area" == "demos" ]]; then
+      cat <<'EOF'
+          - "demos/**"
+          - "test/integration/demos/**"
+EOF
+    fi
   done
 
   cat <<'EOF'
 
-# Shared kit surface (top-level modules, demos, harness). Area stems excluded below.
+# Shared kit surface (top-level modules, harness). Area stems excluded below.
 "area:kit":
   - changed-files:
       - any-glob-to-any-file:
           - "src/DistSSHKit/*"
           - "src/DistSSHKit/cli/**"
-          - "demos/**"
           - "test/support/**"
           - "test/fixtures/**"
           - "test/artifacts/**"
           - "test/*"
           - "test/unit/DistSSHKit/cli/**"
-          - "test/integration/demos/**"
           - "test/integration/ssh/**"
           - "testenv/**"
 EOF
