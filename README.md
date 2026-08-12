@@ -40,6 +40,7 @@ Install, demo, `go` / `drive`, remote hosts, and API: **[Documentation](https://
 | User Guide | [User Guide](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/) |
 | API | [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/) |
 | Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Support | [Issues](https://github.com/yamanori99/DistSSHKit.jl/issues) (bugs / features) · [Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions) (Q&A / ideas) |
 
 <!-- markdownlint-disable MD033 -->
 <p align="center">
