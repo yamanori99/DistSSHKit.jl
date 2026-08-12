@@ -3,7 +3,7 @@
 Command reference. For a hands-on path, use
 [First Steps](@ref Tutorial-Prepare) (Requirements → Prepare → Demo).
 
-Full flag lists: `julia --project=. -m DistSSHKit <cmd> --help`.
+Full flag lists: `julia --project=. -m DistSSHKit {cmd} --help`.
 Each command page starts with a **Flags** table for that command.
 
 | | |
@@ -25,7 +25,7 @@ The difference is **what the script is**:
 | `host:N` means | N **full script runs** | N **Distributed workers** |
 | Collect | Slot-overwrite after remotes | Post-run-new after `main()`; optional collect-only flags |
 | Git parity | No `--require-git` | Opt-in `--require-git` |
-| `--output-dir` | Batch root (`PATH/<slot>/`) | Result root (`DISTRIBUTED_OUTPUT_DIR`) |
+| `--output-dir` | Batch root (`PATH/{slot}/`) | Result root (`DISTRIBUTED_OUTPUT_DIR`) |
 
 If you want “run this job on a few machines,” start with **go**.
 If you want one master farming work with `pmap` (and friends), use **drive**.
@@ -40,7 +40,7 @@ Same **names** are shared on purpose; a few meanings differ by command:
 | Default pre-run sync | **`go`** and **`drive`**: **none** (run `setup` yourself, or pass `--sync` / `--rsync`). |
 | Git parity (drive) | **Off** by default. Opt-in: `--require-git`. Compat: `--skip-git-guard` (no-op; may combine with `--sync` / `--rsync`). |
 | Skip pre-run (go) | Compat: `--skip-sync` / `--skip-git-guard` (already the default; exclusive with `--sync` / `--rsync` on go). |
-| `--output-dir` | **`go`**: batch root (`PATH/<slot>/`). **`drive`**: result root (`DISTRIBUTED_OUTPUT_DIR`). Different on purpose. |
+| `--output-dir` | **`go`**: batch root (`PATH/{slot}/`). **`drive`**: result root (`DISTRIBUTED_OUTPUT_DIR`). Different on purpose. |
 | `-l` / `--local` | **`drive`**: `local:N` worker count. **`size`**: include localhost (boolean). |
 | `--hosts-file` | `setup` / `size` strip `:N`. `go` / `drive` keep `host:N` for slots / workers. |
 | Shared peel | `-q` / `--quiet`, `--progress`, `-y` / `--yes`, `--hosts-file`, `-v` / `--version` on setup / go / drive / size. |

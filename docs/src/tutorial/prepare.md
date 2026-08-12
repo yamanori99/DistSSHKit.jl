@@ -41,7 +41,7 @@ After setup, just run `go` / `drive` — neither pre-runs sync nor requires git
 parity by default. Optional one-shot: `go --sync` / `go --rsync` /
 `drive --sync` / `drive --rsync`. Commit parity is drive-only:
 `drive --require-git` on git-managed remotes. Kit logs for setup land under
-`<project>/.distsshkit/setup/`.
+`{project}/.distsshkit/setup/`.
 
 Verify when ready:
 

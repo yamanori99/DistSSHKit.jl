@@ -25,7 +25,7 @@ Prepare remotes with [`setup --rsync`](@ref Manual-setup) **or** `--clone`, then
 | `--skip-sync` | Compat: no pre-run sync (already the default) |
 | `--skip-git-guard` | Alias of `--skip-sync` (shared name with drive) |
 | `--julia PATH` | Julia on remotes (default: auto / `JULIA_DISTRIBUTED_EXE`) |
-| `--output-dir PATH` | **Batch root**; slots write under `PATH/<slot>/` (not `drive --output-dir`) |
+| `--output-dir PATH` | **Batch root**; slots write under `PATH/{slot}/` (not `drive --output-dir`) |
 | `--hosts CSV` | Comma-separated slot specs (same form as CLI tokens / `DISTSSHKIT_HOSTS`) |
 | `-q` / `--quiet` | Hide terminal detail; `go_*.log` and per-slot logs still written |
 | `--progress` | Thin phase bar (not with `-q`) |
@@ -43,7 +43,7 @@ prepare remotes with [`setup`](@ref Manual-setup), or pass `--sync` / `--rsync`.
 Default batch root:
 
 ```text
-<project>/.distsshkit/go/<stem>_<UTC>/<slot>/
+{project}/.distsshkit/go/{stem}_{UTC}/{slot}/
 ```
 
 `--output-dir PATH` replaces the **batch root**. Kit sets
