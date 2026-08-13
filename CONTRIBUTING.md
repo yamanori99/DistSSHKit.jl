@@ -150,8 +150,16 @@ Convention: each `src/cli/<area>/` directory becomes `area:<area>`; kit modules
 area directory, regenerate and commit `labeler.yml` (and create the GitHub
 label if needed).
 
-Every PR must also carry **one** type label. CI fails the check **and**
-posts a sticky comment on the PR until one of these is present:
+Every PR must also carry **one** type label. CI applies it from the branch
+prefix when missing:
+
+- `feat/` / `feature/` → `enhancement`
+- `fix/` / `bug/` / `hotfix/` → `bug`
+- `chore/` / `docs/` / `ci/` / `build/` / `test/` / `refactor/` → `chore`
+- `breaking/` / `break/` → `breaking`
+
+If the branch does not match, the check fails until you rename it or add a
+label by hand.
 
 - `bug` — fix
 - `enhancement` — feature / improvement
