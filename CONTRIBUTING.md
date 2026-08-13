@@ -150,7 +150,8 @@ Convention: each `src/cli/<area>/` directory becomes `area:<area>`; kit modules
 area directory, regenerate and commit `labeler.yml` (and create the GitHub
 label if needed).
 
-Every PR must also carry **one** type label (enforced by CI):
+Every PR must also carry **one** type label. CI fails the check **and**
+posts a sticky comment on the PR until one of these is present:
 
 - `bug` — fix
 - `enhancement` — feature / improvement

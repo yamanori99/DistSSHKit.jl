@@ -1,5 +1,6 @@
 # Require a type label on every PR: bug | enhancement | breaking | chore.
 # Dependabot PRs are exempt (bot marker: `dependencies` only).
+# Missing labels fail the check and leave a sticky comment on the PR.
 name: PR type label
 
 on:
@@ -12,7 +13,7 @@ concurrency:
 
 permissions:
   contents: read
-  pull-requests: read
+  pull-requests: write
 
 jobs:
   require-type:
@@ -27,13 +28,80 @@ jobs:
               core.info("Skipping type label check for Dependabot");
               return;
             }
-            const required = new Set(["bug", "enhancement", "breaking", "chore"]);
+
+            const marker = "<!-- distsshkit-pr-type-label -->";
+            const required = ["bug", "enhancement", "breaking", "chore"];
+            const requiredSet = new Set(required);
+            const n = context.issue.number;
             const labels = context.payload.pull_request.labels.map((l) => l.name);
-            const found = labels.filter((n) => required.has(n));
+            const found = labels.filter((name) => requiredSet.has(name));
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number: n, per_page: 100 },
+            );
+            const existing = comments.find((c) => (c.body || "").includes(marker));
+
+            async function upsertNag() {
+              const have = labels.join(", ") || "none";
+              const body = [
+                marker,
+                "## Type label required",
+                "",
+                "This PR **cannot merge** until it has a type label. Path labels (`area:*`, `docs`, `ci`) are automatic. Type labels are **not**.",
+                "",
+                "Add **one** of:",
+                "",
+                "- `bug` — fix",
+                "- `enhancement` — feature / improvement",
+                "- `chore` — CI, docs-only, refactor, repo hygiene",
+                "- `breaking` — this PR breaks callers (may combine with the others)",
+                "",
+                "Current labels: `" + have + "`",
+                "",
+                "```bash",
+                `gh pr edit ${n} --add-label enhancement`,
+                "```",
+                "",
+                "This comment is removed once a type label is present.",
+              ].join("\n");
+              if (existing) {
+                await github.rest.issues.updateComment({
+                  owner,
+                  repo,
+                  comment_id: existing.id,
+                  body,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: n,
+                  body,
+                });
+              }
+            }
+
+            async function clearNag() {
+              if (!existing) {
+                return;
+              }
+              await github.rest.issues.deleteComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+              });
+            }
+
             if (found.length === 0) {
+              await upsertNag();
               core.setFailed(
-                `Add one type label: bug, enhancement, breaking, or chore (have: ${labels.join(", ") || "none"})`,
+                `Add one type label: ${required.join(", ")} (have: ${labels.join(", ") || "none"})`,
               );
               return;
             }
+
+            await clearNag();
             core.info(`Type label(s): ${found.join(", ")}`);
