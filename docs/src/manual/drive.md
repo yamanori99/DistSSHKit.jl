@@ -36,6 +36,7 @@ driver contract, prefer [`go`](@ref Manual-go).
 | `--progress` | Live status (TTY default) |
 | `--verbose` | Full detail (non-TTY default) |
 | `-y` / `--yes` | Auto-accept memory-pressure and other prompts |
+| `--hosts CSV` | Comma-separated worker specs (same form as CLI tokens / `DISTSSHKIT_HOSTS`) |
 | `--hosts-file PATH` | Append worker specs (`host:N` preserved) |
 | `-v` / `--version` | Print DistSSHKit version and exit |
 | `-h` / `--help` | Full help |

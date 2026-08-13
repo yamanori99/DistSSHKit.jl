@@ -25,12 +25,16 @@ const KIT_PROGRESS_FLAG_HELP =
     "--progress          live status (TTY default)"
 const KIT_VERBOSE_FLAG_HELP =
     "--verbose           full detail (non-TTY default)"
+const KIT_HOSTS_FLAG_HELP =
+    "--hosts CSV         comma-separated tokens (host:N OK)"
 const KIT_QUIET_ENV_HELP =
     "DISTSSHKIT_QUIET                  Same as --quiet"
 const KIT_PROGRESS_ENV_HELP =
     "DISTSSHKIT_PROGRESS               Same as --progress"
 const KIT_VERBOSE_ENV_HELP =
     "DISTSSHKIT_VERBOSE                Same as --verbose"
+const KIT_HOSTS_ENV_HELP =
+    "DISTSSHKIT_HOSTS                  Same as --hosts"
 
 """CLI default when no verbosity flag/env is set: live bar on a TTY, else verbose."""
 kit_cli_auto_verbosity(; live::Union{Nothing,Bool}=nothing)::Symbol =
@@ -96,6 +100,7 @@ mutable struct KitCliSession
     show_version::Bool
     hint_surface::Symbol
     verbosity_explicit::Bool
+    hosts_flag::Vector{String}
 end
 
 function KitCliSession(;
@@ -106,12 +111,22 @@ function KitCliSession(;
     show_version::Bool=false,
     hint_surface::Symbol=:cli,
     verbosity_explicit::Bool=false,
+    hosts_flag::AbstractVector{<:AbstractString}=String[],
 )
     v = _resolve_kit_verbosity(; quiet=quiet, verbosity=verbosity)
     hf = hosts_file === nothing ? nothing : String(hosts_file)
     surface = _normalize_hint_surface(hint_surface)
     explicit = verbosity_explicit || quiet || verbosity !== nothing
-    return KitCliSession(v === :quiet, v, yes, hf, show_version, surface, explicit)
+    return KitCliSession(
+        v === :quiet,
+        v,
+        yes,
+        hf,
+        show_version,
+        surface,
+        explicit,
+        String[String(h) for h in hosts_flag],
+    )
 end
 
 function _env_flag(name::AbstractString)::Bool
@@ -156,6 +171,7 @@ const _KIT_CLI_FLAGS = (
     verbose = ("--verbose",),
     yes = ("-y", "--yes"),
     hosts_file = ("--hosts-file",),
+    hosts = ("--hosts",),
     version = ("--version", "-v", "-V"),  # -V kept as deprecated alias
 )
 
@@ -204,6 +220,9 @@ function consume_kit_cli_flag!(c::CliCursor, session::KitCliSession)::Bool
     elseif _flag_match(arg, _KIT_CLI_FLAGS.hosts_file)
         session.hosts_file = cli_take_value!(c, arg)
         return true
+    elseif _flag_match(arg, _KIT_CLI_FLAGS.hosts)
+        append!(session.hosts_flag, split_hosts_csv(cli_take_value!(c, arg)))
+        return true
     end
     return false
 end
@@ -212,7 +231,7 @@ end
 Split leading shared flags from `args`.
 
 Returns `(session, rest)` where `rest` is every non-flag token (and tokens
-following flags that take values other than `--hosts-file`).
+following flags that take values other than `--hosts-file` / `--hosts`).
 """
 function peel_kit_cli_flags(args::AbstractVector{<:AbstractString})::Tuple{KitCliSession,Vector{String}}
     session = default_kit_cli_session()
@@ -226,6 +245,16 @@ function peel_kit_cli_flags(args::AbstractVector{<:AbstractString})::Tuple{KitCl
         cli_consume!(c)
     end
     return session, rest
+end
+
+"""Split a `--hosts` / `DISTSSHKIT_HOSTS` CSV into tokens (empty pieces dropped)."""
+function split_hosts_csv(raw::AbstractString)::Vector{String}
+    out = String[]
+    for h in split(String(raw), ',')
+        s = strip(h)
+        !isempty(s) && push!(out, s)
+    end
+    return out
 end
 
 """
@@ -266,6 +295,43 @@ function read_hosts_file(
     surface::Symbol=:cli,
 )::Vector{String}
     return [split_host_workers_spec(line)[1] for line in read_hosts_file_lines(path; surface=surface)]
+end
+
+function _kit_host_token(tok::AbstractString, keep_counts::Bool)::String
+    keep_counts && return String(tok)
+    return split_host_workers_spec(tok)[1]
+end
+
+"""`--hosts`, `DISTSSHKIT_HOSTS`, then `--hosts-file` / `DISTSSHKIT_HOSTS_FILE`.
+
+`keep_counts=true` (go / drive) keeps `host:N`. `false` (setup / size) keeps names.
+"""
+function kit_host_source_tokens(
+    session::KitCliSession;
+    keep_counts::Bool=true,
+)::Vector{String}
+    out = String[_kit_host_token(t, keep_counts) for t in session.hosts_flag]
+    for t in split_hosts_csv(get(ENV, "DISTSSHKIT_HOSTS", ""))
+        push!(out, _kit_host_token(t, keep_counts))
+    end
+    hosts_file = session.hosts_file
+    if hosts_file !== nothing
+        if keep_counts
+            append!(out, read_hosts_file_lines(hosts_file; surface=session.hint_surface))
+        else
+            append!(out, read_hosts_file(hosts_file; surface=session.hint_surface))
+        end
+    end
+    return out
+end
+
+function append_kit_host_sources!(
+    hosts::Vector{String},
+    session::KitCliSession;
+    keep_counts::Bool=true,
+)
+    append!(hosts, kit_host_source_tokens(session; keep_counts=keep_counts))
+    return hosts
 end
 
 function append_hosts_file!(hosts::Vector{String}, session::KitCliSession)

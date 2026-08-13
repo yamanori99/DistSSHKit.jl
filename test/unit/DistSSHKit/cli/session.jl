@@ -22,9 +22,9 @@ using Test
                 @test rest == ["host1"]
             end
 
-            let (session, rest) = DistSSHKit.peel_kit_cli_flags(["host1", "s.jl"])
-                @test session.verbosity === DistSSHKit.kit_cli_auto_verbosity()
-                @test rest == ["host1", "s.jl"]
+            let (session, rest) = DistSSHKit.peel_kit_cli_flags(["--hosts", "a:1, b", "s.jl"])
+                @test session.hosts_flag == ["a:1", "b"]
+                @test rest == ["s.jl"]
             end
 
             for flag in ("--version", "-v", "-V")
@@ -101,7 +101,8 @@ using Test
         @test occursin("--verbose", DistSSHKit.KIT_VERBOSE_FLAG_HELP)
         @test occursin("DISTSSHKIT_PROGRESS", DistSSHKit.KIT_PROGRESS_ENV_HELP)
         @test occursin("DISTSSHKIT_VERBOSE", DistSSHKit.KIT_VERBOSE_ENV_HELP)
-        @test occursin("-q, --quiet", DistSSHKit.KIT_QUIET_FLAG_HELP)
+        @test occursin("--hosts", DistSSHKit.KIT_HOSTS_FLAG_HELP)
+        @test occursin("DISTSSHKIT_HOSTS", DistSSHKit.KIT_HOSTS_ENV_HELP)
     end
 
     @testset "hosts file" begin
@@ -115,6 +116,14 @@ using Test
             slots = DistSSHKit._go_plan_slots(lines)
             @test length(slots) == 5  # host-a + host-b:4
             @test count(s -> s.host == "host-b", slots) == 4
+        end
+
+        withenv("DISTSSHKIT_HOSTS" => "env-a:2, env-b", "DISTSSHKIT_HOSTS_FILE" => nothing) do
+            session = DistSSHKit.KitCliSession(hosts_flag=["flag:3"], hosts_file=hosts_file)
+            @test DistSSHKit.kit_host_source_tokens(session; keep_counts=true) ==
+                ["flag:3", "env-a:2", "env-b", "host-a", "host-b:4"]
+            @test DistSSHKit.kit_host_source_tokens(session; keep_counts=false) ==
+                ["flag", "env-a", "env-b", "host-a", "host-b"]
         end
     end
 end

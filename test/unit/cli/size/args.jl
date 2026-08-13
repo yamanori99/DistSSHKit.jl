@@ -13,6 +13,14 @@ using Test
             @test r.mem_headroom == DistSSHKit.DEFAULT_MEM_HEADROOM
             @test r.master_gb == DistSSHKit.DEFAULT_MASTER_GB
         end
+        let r = parse_size_args(["--hosts", "h1:4,h2", "host-cli"])
+            @test r.hosts == ["host-cli", "h1", "h2"]
+        end
+        withenv("DISTSSHKIT_HOSTS" => "env-h:2") do
+            let r = parse_size_args(["host-cli"])
+                @test r.hosts == ["host-cli", "env-h"]
+            end
+        end
         let r = parse_size_args(["--gb-per-worker", "1.5", "host1"])
             @test r.gb_per_worker == 1.5
             @test r.hosts == ["host1"]
@@ -48,6 +56,7 @@ using Test
             @test occursin("DistSSHKit size", help)
             @test occursin("--gb-per-worker", help)
             @test occursin("--probe", help)
+            @test occursin("--hosts", help)
             @test !occursin("#!/usr/bin/env julia", help)
             @test !occursin("function size_main", help)
         end

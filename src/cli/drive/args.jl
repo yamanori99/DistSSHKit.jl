@@ -72,6 +72,25 @@ function _drive_absorb_local_worker_spec(
     return count, true
 end
 
+function _drive_push_host_token!(
+    hosts::Vector{Tuple{String,Union{Int,Nothing}}},
+    local_workers::Int,
+    token::AbstractString,
+    default_workers,
+)::Int
+    host_name, host_workers = _parse_host_workers_spec(String(token))
+    local_workers, absorbed = _drive_absorb_local_worker_spec(
+        local_workers,
+        host_name,
+        host_workers,
+        default_workers,
+    )
+    if !absorbed
+        push!(hosts, (host_name, host_workers))
+    end
+    return local_workers
+end
+
 function parse_drive_args(args::Vector{String})
     cli_session, args = DistSSHKit.peel_kit_cli_flags(args)
     local_workers = 0
@@ -240,16 +259,12 @@ function parse_drive_args(args::Vector{String})
                 "unknown or incomplete drive option: $arg (use host:N form, e.g. l:2 local:2 host1:4)",
             ))
         else
-            host_name, host_workers = _parse_host_workers_spec(arg)
-            local_workers, absorbed = _drive_absorb_local_worker_spec(
+            local_workers = _drive_push_host_token!(
+                hosts,
                 local_workers,
-                host_name,
-                host_workers,
+                arg,
                 default_workers,
             )
-            if !absorbed
-                push!(hosts, (host_name, host_workers))
-            end
             i += 1
         end
     end
@@ -269,39 +284,13 @@ function parse_drive_args(args::Vector{String})
         skip_hash_check = true
     end
 
-    hosts_file = cli_session.hosts_file
-    if hosts_file !== nothing
-        for line in DistSSHKit.read_hosts_file_lines(hosts_file; surface=:cli)
-            host_name, host_workers = _parse_host_workers_spec(line)
-            local_workers, absorbed = _drive_absorb_local_worker_spec(
-                local_workers,
-                host_name,
-                host_workers,
-                default_workers,
-            )
-            if !absorbed
-                push!(hosts, (host_name, host_workers))
-            end
-        end
-    end
-
-    # Same ENV as go / pipeline_config_from_env (always append; host:N OK).
-    raw_hosts_env = strip(get(ENV, "DISTSSHKIT_HOSTS", ""))
-    if !isempty(raw_hosts_env)
-        for h in split(raw_hosts_env, ',')
-            s = strip(h)
-            isempty(s) && continue
-            host_name, host_workers = _parse_host_workers_spec(s)
-            local_workers, absorbed = _drive_absorb_local_worker_spec(
-                local_workers,
-                host_name,
-                host_workers,
-                default_workers,
-            )
-            if !absorbed
-                push!(hosts, (host_name, host_workers))
-            end
-        end
+    for tok in DistSSHKit.kit_host_source_tokens(cli_session; keep_counts=true)
+        local_workers = _drive_push_host_token!(
+            hosts,
+            local_workers,
+            tok,
+            default_workers,
+        )
     end
 
     DistSSHKit.apply_kit_cli_session!(cli_session)
@@ -348,6 +337,7 @@ function show_drive_requirements(; io::IO=stdout)
         "  host:N / local:N    N Distributed workers (not go slots)",
         "  l:N                 same as local:N",
         "  host                1 worker, or --workers default",
+        "  $(DistSSHKit.KIT_HOSTS_FLAG_HELP)",
         "  --hosts-file PATH   one token per line (host:N kept)",
     )
     print_help_blank(io)

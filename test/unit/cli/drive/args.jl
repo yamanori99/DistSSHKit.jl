@@ -115,6 +115,9 @@ using Test
             let r = parse_drive_args(["--hosts-file", hosts_file, "host-cli:2", "s.jl"])
                 @test r.hosts == [("host-cli", 2), ("host-a", nothing), ("host-b", 4)]
             end
+            let r = parse_drive_args(["--hosts", "h-csv:2,h-csv-b", "s.jl"])
+                @test r.hosts == [("h-csv", 2), ("h-csv-b", nothing)]
+            end
             let r = parse_drive_args(["-q", "-y", "s.jl"])
                 @test r.cli_session.quiet == true
                 @test r.cli_session.yes == true
@@ -182,6 +185,7 @@ using Test
         @test occursin("Usage", txt)
         @test occursin("--collect-missing", txt)
         @test occursin("--quiet", txt)
+        @test occursin("--hosts", txt)
         @test occursin("--require-git", txt)
         @test occursin("--sync", txt)
         @test occursin("--rsync", txt)

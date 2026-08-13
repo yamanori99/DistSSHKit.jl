@@ -42,14 +42,17 @@ Same **names** are shared on purpose; a few meanings differ by command:
 | Skip pre-run (go) | Compat: `--skip-sync` / `--skip-git-guard` (already the default; exclusive with `--sync` / `--rsync` on go). |
 | `--output-dir` | **`go`**: batch root (`PATH/{slot}/`). **`drive`**: result root (`DISTRIBUTED_OUTPUT_DIR`). Different on purpose. |
 | `-l` / `--local` | **`drive`**: `local:N` worker count. **`size`**: include localhost (boolean). |
+| `--hosts` | CSV tokens. `setup` / `size` strip `:N`. `go` / `drive` keep `host:N`. |
 | `--hosts-file` | `setup` / `size` strip `:N`. `go` / `drive` keep `host:N` for slots / workers. |
-| Shared peel | `-q` / `--quiet`, `--progress`, `--verbose`, `-y` / `--yes`, `--hosts-file`, `-v` / `--version` on setup / go / drive / size. |
+| Shared peel | `-q` / `--quiet`, `--progress`, `--verbose`, `-y` / `--yes`, `--hosts`, `--hosts-file`, `-v` / `--version` on setup / go / drive / size. |
 
 ## Shared concepts
 
-**Hosts.** CLI tokens (`local:N`, `host:N`), `--hosts-file`, and/or `DISTSSHKIT_HOSTS`
-(comma-separated; go / drive). `DISTSSHKIT_HOSTS_FILE` sets the default hosts-file
-path. `setup` strips `:N` and uses host names only.
+**Hosts.** CLI tokens (`local:N`, `host:N`), `--hosts` (CSV), `--hosts-file`,
+and/or `DISTSSHKIT_HOSTS` (comma-separated) on setup / go / drive / size.
+`DISTSSHKIT_HOSTS_FILE` sets the default hosts-file path. `setup` / `size`
+strip `:N` and use host names only. Extra sources append after positional
+tokens, in order: `--hosts`, `DISTSSHKIT_HOSTS`, then the hosts file.
 
 **Quiet / progress.** On a TTY the default is `--progress` (live status). Piped or
 `NO_COLOR` sessions default to full detail. `-q` hides terminal detail;

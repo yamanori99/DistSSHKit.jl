@@ -22,6 +22,7 @@ Flag vocabulary: [User Guide](@ref Manual).
 | `--progress` | Live status (TTY default) |
 | `--verbose` | Full detail (non-TTY default) |
 | `-y` / `--yes` | Reserved (no prompts today; accepted for shared peel) |
+| `--hosts CSV` | Comma-separated SSH hosts (`host:N` → host name only) |
 | `--hosts-file PATH` | Append SSH hosts (`host:N` → host name only) |
 | `-v` / `--version` | Print DistSSHKit version and exit |
 | `-h` / `--help` | Full help |

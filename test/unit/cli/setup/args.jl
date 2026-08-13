@@ -23,9 +23,20 @@ using Test
         @test r.hosts == ["host-cli", "host-a", "host-b"]
     end
 
+    let r = parse_setup_args(["--check", "--hosts", "h1:9,h2", "host-cli"])
+        @test r.hosts == ["host-cli", "h1", "h2"]
+    end
+
+    withenv("DISTSSHKIT_HOSTS" => "env-h:3") do
+        let r = parse_setup_args(["--check", "host-cli"])
+            @test r.hosts == ["host-cli", "env-h"]
+        end
+    end
+
     @testset "help smoke (rsync-first)" begin
         txt = setup_help_text()
         @test occursin("--rsync", txt)
+        @test occursin("--hosts", txt)
         @test occursin("Workflow (recommended)", txt) || occursin("recommended", lowercase(txt))
         @test occursin("--require-git", txt) || occursin("git parity", lowercase(txt))
         @test !occursin("day-to-day default", lowercase(txt))
