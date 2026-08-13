@@ -49,12 +49,12 @@ How to run: [`testenv/docker-ssh/README.md`](../testenv/docker-ssh/README.md).
 | **Aqua** (`aqua.jl`) | ambiguities, exports, compat, project consistency | ~5 s |
 | **unit** | parsing, display, module helpers, CLI arg tables | ~5 s |
 | **integration** | `julia -m DistSSHKit drive` end-to-end in child processes | ~2 min |
-| **boot** (`Test / boot macOS|Windows`) | `using DistSSHKit` + `-h` on **macOS** and **Windows** (Julia 1.12). **main / dispatch** only (PR skips). Not `Pkg.test()` | ~2–5 min |
-| **ssh-e2e** (`E2E / SSH`) | Real SSH + rsync against Docker workers (`DISTSSHKIT_SSH_E2E=1`). CI: Linux only; macOS controllers: `testenv/docker-ssh/scripts/up.sh --e2e` | ~10–20 min |
-| **doctests** (`Docs / Documenter`) | docstring examples in `src/` (`Documentation.yml`) | ~5 s |
+| **boot** (`CI / macOS`, `CI / Windows`) | `using DistSSHKit` + `-h` on **macOS** and **Windows** (Julia 1.12). **main / dispatch** only (PR skips). Not `Pkg.test()` | ~2–5 min |
+| **ssh-e2e** (`CI / SSH E2E`) | Real SSH + rsync against Docker workers (`DISTSSHKIT_SSH_E2E=1`). CI: Linux only; macOS controllers: `testenv/docker-ssh/scripts/up.sh --e2e` | ~10–20 min |
+| **doctests** (`CI / docs`) | docstring examples in `src/` (`Documentation.yml`) | ~5 s |
 
 Most of the wall time in `Pkg.test()` is integration (child Julia + local workers).
-Remote SSH is the separate **E2E / SSH** check. Doctests run in **Docs / Documenter**, not `Pkg.test()`.
+Remote SSH is the separate **CI / SSH E2E** check. Doctests run in **CI / docs**, not `Pkg.test()`.
 
 ## Why only `setup` uses SSH/rsync fakes
 

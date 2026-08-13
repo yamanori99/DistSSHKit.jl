@@ -1,4 +1,4 @@
-name: Docs
+name: CI
 
 on:
   push:
@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   build:
-    name: Documenter
+    name: docs
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
