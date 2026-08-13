@@ -17,9 +17,10 @@ permissions:
   id-token: write # Codecov OIDC upload (see Upload coverage step)
 
 jobs:
-  # Cheap load + `--help` on macOS/Windows. Full `Pkg.test()` stays Linux-only
-  # (integration is slow; ssh-e2e is already linux-to-linux).
+  # Cheap load + `--help` on macOS/Windows after merge (and on dispatch).
+  # Full `Pkg.test()` stays Linux-only; PRs do not wait on macOS/Windows runners.
   boot:
+    if: github.event_name != 'pull_request'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
