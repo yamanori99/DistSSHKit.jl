@@ -9,7 +9,7 @@ pieces when you SSH to other hosts.
 Applies to the machine where you run `julia -m DistSSHKit` **and** each SSH
 host that runs jobs.
 
-- **macOS and Linux**
+- **macOS and Linux** (WSL2 Ubuntu is Linux; CI runs `Pkg.test()` there)
 - **Julia 1.12+** — prefer the same **major.minor** on SSH hosts (`setup --check`
   fails on a major.minor mismatch unless you pass `--ignore-julia-version`;
   patch-only differences warn). On SSH hosts, path is auto-detected, or set

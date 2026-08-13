@@ -4,7 +4,7 @@ How to work on this repository. End-user usage: [Documenter](https://yamanori99.
 
 ## Requirements
 
-- macOS and Linux
+- macOS and Linux (WSL2 Ubuntu: CI `Pkg.test()`)
 - Julia 1.12+ (test locally on `1.12` and `~1.13.0-0` when available)
 - For SSH-related changes: Git, OpenSSH (`ssh`), rsync; Julia 1.12+ on each remote
 

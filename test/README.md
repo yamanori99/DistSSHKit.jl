@@ -50,6 +50,7 @@ How to run: [`testenv/docker-ssh/README.md`](../testenv/docker-ssh/README.md).
 | **unit** | parsing, display, module helpers, CLI arg tables | ~5 s |
 | **integration** | `julia -m DistSSHKit drive` end-to-end in child processes | ~2 min |
 | **boot** (`Test / boot macOS|Windows`) | `using DistSSHKit` + `-h` on **macOS** and **Windows** (Julia 1.12). **main / dispatch** only (PR skips). Not `Pkg.test()` | ~2–5 min |
+| **WSL** (`Test / WSL2 (Windows)`) | `Pkg.test()` in **WSL2 Ubuntu** on `windows-latest` (Linux FS, not `/mnt/c`). Not native Windows; not SSH E2E | ~15–40 min |
 | **ssh-e2e** (`E2E / SSH`) | Real SSH + rsync against Docker workers (`DISTSSHKIT_SSH_E2E=1`). CI: Linux only; macOS controllers: `testenv/docker-ssh/scripts/up.sh --e2e` | ~10–20 min |
 | **doctests** (`Docs / Documenter`) | docstring examples in `src/` (`Documentation.yml`) | ~5 s |
 

@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   # Cheap load + `--help` on macOS/Windows after merge (and on dispatch).
-  # Full `Pkg.test()` stays Linux-only; PRs do not wait on macOS/Windows runners.
+  # Full `Pkg.test()` is Linux and WSL2; PRs do not wait on macOS/Windows boot.
   boot-macos:
     if: github.event_name != 'pull_request'
     runs-on: macos-latest
@@ -62,6 +62,32 @@ jobs:
           julia --project=. -m DistSSHKit go -h
           julia --project=. -m DistSSHKit setup -h
           julia --project=. -m DistSSHKit size -h
+
+  # WSL2 Ubuntu on windows-latest. Copy onto the Linux filesystem (not /mnt/c).
+  # Pkg.test as a Linux controller on WSL; not native Windows, not SSH E2E.
+  wsl:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    name: WSL2 (Windows)
+    steps:
+      - uses: actions/checkout@v7
+      - uses: Vampire/setup-wsl@v7
+        with:
+          distribution: Ubuntu-24.04
+          wsl-version: 2
+          additional-packages: ca-certificates curl git
+      - name: Pkg.test in WSL2
+        shell: wsl-bash {0}
+        run: |
+          src="$(pwd)"
+          dest="$HOME/DistSSHKit.jl"
+          rm -rf "$dest"
+          git clone "$src" "$dest"
+          curl --retry 5 --retry-delay 5 --retry-connrefused --connect-timeout 10 \
+            -fsSL https://install.julialang.org | sh -s -- --yes --default-channel 1.12
+          export PATH="$HOME/.juliaup/bin:$PATH"
+          cd "$dest"
+          julia --project=. -e 'using Pkg; Pkg.test()'
 
   test:
     runs-on: ubuntu-latest
