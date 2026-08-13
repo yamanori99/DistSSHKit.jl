@@ -819,7 +819,8 @@ function _kit_progress_step!(
             end
             state.active = true
         else
-            state.done = clamp(Int(done), 0, state.steps)
+            d = done::Int
+            state.done = clamp(d, 0, state.steps)
             state.active = true
         end
         state.label = String(label)
@@ -908,7 +909,7 @@ function _kit_progress_done!(
                 print(stdout, "\e[?25h")
                 state.cursor_hidden = false
             end
-            if footer !== nothing && !isempty(String(footer))
+            if footer isa AbstractString && !isempty(String(footer))
                 note = "     $(String(footer))"
                 println(stdout, note)
                 _kit_log_writeln(rstrip(note))
