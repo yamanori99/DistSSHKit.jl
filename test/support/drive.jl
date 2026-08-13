@@ -1,17 +1,14 @@
 if !isdefined(Main, :_run_kit_drive)
 
 """Normalize a host project path for drive subprocesses."""
-function _drive_host_root(path::Union{AbstractString, Base.Filesystem.DirEntry})::String
-    if path isa Base.Filesystem.DirEntry
-        return abspath(joinpath(path.dir, path.name))
-    end
+function _drive_host_root(path::AbstractString)::String
     return abspath(String(path))
 end
 
 """Run the kit `drive` CLI with a host `DISTRIBUTED_PROJECT_ROOT`."""
 function _run_kit_drive(;
     script::AbstractString,
-    host_root::Union{AbstractString, Base.Filesystem.DirEntry},
+    host_root::AbstractString,
     local_workers::Int=1,
     remote_hosts::Vector{String}=String[],
     log_dir::Union{Nothing,String}=nothing,
@@ -45,7 +42,7 @@ end
 """Run `drive.jl` with `--project` set to a host package."""
 function _run_host_drive(;
     script::AbstractString,
-    host_project::Union{AbstractString, Base.Filesystem.DirEntry},
+    host_project::AbstractString,
     local_workers::Int=2,
     log_dir::Union{Nothing,String}=nothing,
     kit_root::AbstractString=_kit_root(),
