@@ -19,7 +19,8 @@ permissions:
 jobs:
   # Job names are fixed before steps run. Resolve majors.minor from the same
   # versions.json + semver rules as julia-actions/setup-julia, then use that
-  # in `name:` so checks stay `Test / Julia 1.12` even if the spec is `"1"`.
+  # in `name:` so full tests stay `Test / Julia 1.12` even if the spec is `"1"`.
+  # Compat smokes are `Test / compat Julia 1.10` so they are not mistaken for Pkg.test.
   resolve:
     runs-on: ubuntu-latest
     timeout-minutes: 3
@@ -111,7 +112,7 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 15
     # Skipped jobs do not interpolate `needs.*.outputs` in `name`.
-    name: boot macOS
+    name: boot macOS (Julia 1.12)
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
@@ -136,7 +137,7 @@ jobs:
     if: github.event_name != 'pull_request'
     runs-on: windows-latest
     timeout-minutes: 15
-    name: boot Windows
+    name: boot Windows (Julia 1.12)
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
@@ -165,7 +166,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.resolve.outputs.compat) }}
-    name: Julia ${{ matrix.minor }}
+    name: compat Julia ${{ matrix.minor }}
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
