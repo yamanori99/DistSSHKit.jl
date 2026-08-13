@@ -24,6 +24,6 @@ jobs:
       - name: Check labeler.yml is generated
         run: ./.github/gen-labeler.sh --check
 
-      - uses: actions/labeler@v5
+      - uses: actions/labeler@v7
         with:
           sync-labels: true
