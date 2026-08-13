@@ -1,4 +1,4 @@
-name: CI
+name: Test
 
 on:
   push:
@@ -19,14 +19,33 @@ permissions:
 jobs:
   # Cheap load + `--help` on macOS/Windows after merge (and on dispatch).
   # Full `Pkg.test()` stays Linux-only; PRs do not wait on macOS/Windows runners.
-  boot:
+  boot-macos:
     if: github.event_name != 'pull_request'
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-latest
     timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, windows-latest]
+    name: boot macOS
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: "1.12"
+      - uses: julia-actions/cache@v3
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: Load package
+        run: julia --project=. -e "using DistSSHKit"
+      - name: CLI help
+        run: |
+          julia --project=. -m DistSSHKit -h
+          julia --project=. -m DistSSHKit drive -h
+          julia --project=. -m DistSSHKit go -h
+          julia --project=. -m DistSSHKit setup -h
+          julia --project=. -m DistSSHKit size -h
+
+  boot-windows:
+    if: github.event_name != 'pull_request'
+    runs-on: windows-latest
+    timeout-minutes: 15
+    name: boot Windows
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
@@ -47,13 +66,16 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    name: ${{ matrix.label }}
     strategy:
       fail-fast: false
       matrix:
-        version:
-          - "1.12"
+        include:
+          - version: "1.12"
+            label: "Julia 1.12"
           # 1.13 is still a prerelease channel; ~1.13.0-0 picks the latest 1.13.x (including RCs).
-          - "~1.13.0-0"
+          - version: "~1.13.0-0"
+            label: "Julia 1.13"
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
