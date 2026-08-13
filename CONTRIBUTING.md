@@ -4,11 +4,12 @@ How to work on this repository. End-user usage: [Documenter](https://yamanori99.
 
 ## Requirements
 
-- macOS and Linux (merge-only SSH E2E: macOS to Linux, WSL2 to Linux)
+- macOS, Linux, and WSL2 Ubuntu (not native Windows)
 - Julia 1.12+ (test locally on `1.12` and `~1.13.0-0` when available)
 - For SSH-related changes: Git, OpenSSH (`ssh`), rsync; Julia 1.12+ on each remote
 
-The kit shells out to `ssh` / `rsync` / POSIX tools. Remotes: macOS and Linux.
+The kit shells out to `ssh` / `rsync` / POSIX tools. Controllers: macOS, Linux,
+WSL2. Remotes: macOS and Linux.
 
 ## Setup
 

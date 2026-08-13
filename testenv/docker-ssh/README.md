@@ -46,9 +46,10 @@ SSH Host aliases (written to `.generated/ssh_config`):
 - `distsshkit-w1` → `127.0.0.1:2222` user `dev`
 - `distsshkit-w2` → `127.0.0.1:2223` user `dev`
 
-## Local use (macOS or Linux)
+## Local use (macOS, Linux, or WSL2)
 
-Requires Docker Compose (Docker Desktop on Mac is fine):
+Requires Docker Compose (Docker Desktop on Mac is fine; on WSL2, Docker must be
+visible from the distro). Keep a WSL tree under `~/…`, not `/mnt/c/…`.
 
 ```bash
 ./scripts/up.sh --e2e    # workers + suite (always from kit root)
@@ -56,7 +57,7 @@ Requires Docker Compose (Docker Desktop on Mac is fine):
 ./scripts/down.sh
 ```
 
-On a Mac this is how you cover **Darwin controller** path resolve against Linux workers.
+On a Mac or in WSL2 this is how you cover that controller against Linux workers.
 Suite coverage / artifacts: see `test/integration/ssh/run.jl` and
 `test/artifacts/README.md` (`$(cat test/artifacts/ssh-e2e/LATEST)/SUMMARY.txt`,
 plus `JULIA_PATHS.txt`).
