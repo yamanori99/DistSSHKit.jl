@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# Optional Colima bootstrap for macOS Intel (not used by default SSH E2E CI).
-# Default CI is ubuntu-only; Mac controllers run `./scripts/up.sh --e2e` locally.
-# Apple Silicon GitHub runners lack nested virt — use macos-*-intel if re-enabled.
+# Colima on macOS Intel GitHub runners (SSH E2E after merge).
+# Apple Silicon GitHub runners lack nested virt — this script requires x86_64.
 # Replaces douglascamata/setup-docker-macos-action with curl retries so Lima
 # downloads do not pipe a truncated tarball into tar.
 set -euo pipefail

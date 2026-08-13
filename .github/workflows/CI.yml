@@ -17,30 +17,8 @@ permissions:
   id-token: write # Codecov OIDC upload (see Upload coverage step)
 
 jobs:
-  # Cheap load + `--help` on macOS after merge (and on dispatch).
-  # Full `Pkg.test()` stays Linux-only. Windows native boot is omitted: WSL2 SSH E2E
-  # after merge covers Windows-hosted Linux. PRs do not wait on macOS boot.
-  boot-macos:
-    if: github.event_name != 'pull_request'
-    runs-on: macos-latest
-    timeout-minutes: 15
-    name: boot macOS
-    steps:
-      - uses: actions/checkout@v7
-      - uses: julia-actions/setup-julia@v3
-        with:
-          version: "1.12"
-      - uses: julia-actions/cache@v3
-      - uses: julia-actions/julia-buildpkg@v1
-      - name: Load package
-        run: julia --project=. -e "using DistSSHKit"
-      - name: CLI help
-        run: |
-          julia --project=. -m DistSSHKit -h
-          julia --project=. -m DistSSHKit drive -h
-          julia --project=. -m DistSSHKit go -h
-          julia --project=. -m DistSSHKit setup -h
-          julia --project=. -m DistSSHKit size -h
+  # Full `Pkg.test()` stays Linux-only. Darwin and WSL controllers are merge-only
+  # SSH E2E (`E2E / macOS to Linux`, `E2E / WSL2 (Windows)`).
 
   test:
     runs-on: ubuntu-latest
