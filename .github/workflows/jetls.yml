@@ -37,15 +37,9 @@ jobs:
           echo "$HOME/.julia/bin" >> "$GITHUB_PATH"
       - name: jetls check
         run: |
-          shopt -s nullglob
-          # Entry scripts only: jetls follows `include()` (do not list src/cli/*/*.jl or
-          # src/DistSSHKit/*.jl — those fragments are loaded by cli/*.jl / DistSSHKit.jl).
           # Fail on warning/error. Info alone does not fail; still annotate + Summary.
           set +e
-          jetls --threads=auto -- check --exit-severity=warning --progress=none \
-            demos/with_kit/*.jl demos/without_kit/*.jl \
-            src/DistSSHKit.jl src/cli/go.jl src/cli/drive.jl src/cli/setup.jl src/cli/size.jl \
-            test/runtests.jl test/aqua.jl test/fixtures/*.jl \
+          ./.github/jetls-check.sh --progress=none \
             2>&1 | tee jetls.out
           status=${PIPESTATUS[0]}
           set -e
