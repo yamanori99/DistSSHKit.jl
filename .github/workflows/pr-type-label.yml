@@ -41,13 +41,6 @@ jobs:
 
             const branch = String(context.payload.pull_request.head.ref || "");
             const inferred = inferType(branch);
-            if (inferred === null) {
-              core.setFailed(
-                `No type label and branch "${branch}" does not match feat/ fix/ chore/ docs/ ci/ breaking/. ` +
-                  `Rename the branch or add one of: ${required.join(", ")}.`,
-              );
-              return;
-            }
 
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
@@ -68,15 +61,6 @@ jobs:
               if (b.startsWith("fix/") || b.startsWith("bug/") || b.startsWith("hotfix/")) {
                 return "bug";
               }
-              if (
-                b.startsWith("chore/") ||
-                b.startsWith("docs/") ||
-                b.startsWith("ci/") ||
-                b.startsWith("build/") ||
-                b.startsWith("test/") ||
-                b.startsWith("refactor/")
-              ) {
-                return "chore";
-              }
-              return null;
+              // Known prefixes, and anything else (demos/, wip/, unprefixed).
+              return "chore";
             }

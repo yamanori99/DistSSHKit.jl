@@ -4,7 +4,7 @@
 
 <!-- What / why -->
 <!-- Type label is automatic from the branch prefix (feat/ → enhancement, fix/ → bug,
-     chore|docs|ci/ → chore, breaking/ → breaking). Override with gh pr edit if needed. -->
+     otherwise chore). Override with gh pr edit if needed. -->
 
 ## Checklist
 

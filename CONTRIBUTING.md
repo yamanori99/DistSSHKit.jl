@@ -157,9 +157,10 @@ prefix when missing:
 - `fix/` / `bug/` / `hotfix/` → `bug`
 - `chore/` / `docs/` / `ci/` / `build/` / `test/` / `refactor/` → `chore`
 - `breaking/` / `break/` → `breaking`
+- anything else (`demos/`, `wip/`, no prefix) → `chore`
 
-If the branch does not match, the check fails until you rename it or add a
-label by hand.
+Override with `gh pr edit N --add-label …` if the guess is wrong. The check
+does not fail for an unknown prefix.
 
 - `bug` — fix
 - `enhancement` — feature / improvement
