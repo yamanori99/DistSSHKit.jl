@@ -17,6 +17,32 @@ permissions:
   id-token: write # Codecov OIDC upload (see Upload coverage step)
 
 jobs:
+  # Cheap load + `--help` on macOS/Windows. Full `Pkg.test()` stays Linux-only
+  # (integration is slow; ssh-e2e is already linux-to-linux).
+  boot:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: "1.12"
+      - uses: julia-actions/cache@v3
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: Load package
+        run: julia --project=. -e "using DistSSHKit"
+      - name: CLI help
+        run: |
+          julia --project=. -m DistSSHKit -h
+          julia --project=. -m DistSSHKit drive -h
+          julia --project=. -m DistSSHKit go -h
+          julia --project=. -m DistSSHKit setup -h
+          julia --project=. -m DistSSHKit size -h
+
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
