@@ -9,7 +9,7 @@ pieces when you SSH to other hosts.
 Applies to the machine where you run the kit **and** each SSH host that runs
 jobs.
 
-- **macOS and Linux** (WSL2 Ubuntu is Linux; CI SSH E2E after merge for macOS and WSL)
+- **macOS, Linux, and WSL2 Ubuntu** (not native Windows)
 - **Julia**
   - Library (`Pkg.add` / `using` / `go!` / `drive!`): **1.10+**
   - Terminal CLI (`julia -m DistSSHKit`): **1.12+** (no `-m` before 1.12; use
@@ -18,6 +18,11 @@ jobs.
     on a mismatch unless `--ignore-julia-version`; patch-only differences warn)
   - On SSH hosts, the `julia` path is auto-detected, or set `--julia` /
     `JULIA_DISTRIBUTED_EXE`
+
+WSL2 is Linux. Run the kit **inside** the distro (not PowerShell). Keep the
+project on the Linux filesystem (`~/…`), not `/mnt/c/…`. Install `ssh` /
+`rsync` / Julia in WSL. SSH E2E: same `./testenv/docker-ssh/scripts/up.sh --e2e`
+as Linux (Docker Compose must be visible from WSL).
 
 ## Remotes
 

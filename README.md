@@ -11,8 +11,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 DistSSHKit makes it easy to run one Julia project locally and over SSH, then
-collect the results. It uses Distributed.jl processes (not threads). **macOS
-and Linux.**
+collect the results. It uses Distributed.jl processes (not threads). **macOS,
+Linux, and WSL2 Ubuntu** (not native Windows).
 
 These days, even small labs and individuals often have several high-performance
 machines or workstations. DistSSHKit helps you put that hardware to work.
