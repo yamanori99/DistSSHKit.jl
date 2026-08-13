@@ -1,6 +1,4 @@
-name: gitleaks
-
-on:
+name: secrets
   push:
     branches:
       - main

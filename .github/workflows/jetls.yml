@@ -1,4 +1,4 @@
-name: JETLS
+name: jetls
 
 on:
   push:
@@ -16,6 +16,7 @@ permissions:
 
 jobs:
   jetls:
+    name: check
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

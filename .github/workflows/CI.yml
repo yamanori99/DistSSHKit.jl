@@ -1,4 +1,4 @@
-name: CI
+name: test
 
 on:
   push:
@@ -23,10 +23,15 @@ jobs:
     if: github.event_name != 'pull_request'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
+    name: boot ${{ matrix.label }}
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest]
+        include:
+          - os: macos-latest
+            label: macos
+          - os: windows-latest
+            label: windows
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
@@ -47,13 +52,16 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    name: ${{ matrix.label }}
     strategy:
       fail-fast: false
       matrix:
-        version:
-          - "1.12"
+        include:
+          - version: "1.12"
+            label: "1.12"
           # 1.13 is still a prerelease channel; ~1.13.0-0 picks the latest 1.13.x (including RCs).
-          - "~1.13.0-0"
+          - version: "~1.13.0-0"
+            label: "1.13"
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
