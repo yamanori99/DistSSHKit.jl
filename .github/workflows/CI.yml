@@ -17,18 +17,105 @@ permissions:
   id-token: write # Codecov OIDC upload (see Upload coverage step)
 
 jobs:
+  # Job names are fixed before steps run. Resolve majors.minor from the same
+  # versions.json + semver rules as julia-actions/setup-julia, then use that
+  # in `name:` so checks stay `Test / Pkg.test Julia 1.12` even if the spec is `"1"`.
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    name: resolve Julia
+    outputs:
+      test: ${{ steps.resolve.outputs.test }}
+    steps:
+      - name: Resolve channel minors
+        id: resolve
+        working-directory: ${{ runner.temp }}
+        run: |
+          npm install --silent semver@7
+          node <<'NODE'
+          const fs = require('fs');
+          const semver = require('semver');
+
+          const LTS_VERSION = '1.10';
+          const MAJOR_VERSION = '1';
+
+          async function main() {
+            const res = await fetch('https://julialang-s3.julialang.org/bin/versions.json');
+            if (!res.ok) throw new Error(`versions.json HTTP ${res.status}`);
+            const available = Object.keys(await res.json());
+
+            function getJuliaVersion(versionInput, includePrerelease = false) {
+              let version;
+              if (versionInput === 'lts') {
+                version = semver.maxSatisfying(available, LTS_VERSION, { includePrerelease: false });
+              } else if (versionInput === 'pre') {
+                version = semver.maxSatisfying(available, MAJOR_VERSION, { includePrerelease: true });
+              } else {
+                version = semver.maxSatisfying(available, versionInput, { includePrerelease });
+              }
+              if (!version) throw new Error(`no Julia release matches ${versionInput}`);
+              return String(version).replace(/^v/, '');
+            }
+
+            function minorOf(full) {
+              const p = semver.parse(full);
+              if (!p) throw new Error(`unparseable ${full}`);
+              return `${p.major}.${p.minor}`;
+            }
+
+            const channels = [
+              { spec: '1.10', includePrerelease: false, coverage: false },
+              { spec: '1.11', includePrerelease: false, coverage: false },
+              { spec: '1.12', includePrerelease: false, coverage: true },
+              // Prerelease channel; ~1.13.0-0 matches latest 1.13.x including RCs.
+              { spec: '~1.13.0-0', includePrerelease: true, coverage: false },
+            ];
+
+            const resolved = channels.map((c) => {
+              const full = getJuliaVersion(c.spec, c.includePrerelease);
+              return {
+                spec: c.spec,
+                full,
+                minor: minorOf(full),
+                coverage: c.coverage,
+              };
+            });
+
+            const minors = resolved.map((r) => r.minor);
+            if (new Set(minors).size !== minors.length) {
+              throw new Error(`duplicate resolved minors: ${minors.join(', ')}`);
+            }
+
+            const test = { include: resolved };
+            for (const row of resolved) {
+              console.log(`${row.spec} -> ${row.full} (Julia ${row.minor})`);
+            }
+
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `test=${JSON.stringify(test)}\n`);
+          }
+
+          main().catch((err) => {
+            console.error(err);
+            process.exit(1);
+          });
+          NODE
+
   # Cheap load + `--help` on macOS/Windows after merge (and on dispatch).
   # Full `Pkg.test()` stays Linux-only; PRs do not wait on macOS/Windows runners.
   boot-macos:
     if: github.event_name != 'pull_request'
     runs-on: macos-latest
     timeout-minutes: 15
-    name: boot macOS
+    # Skipped jobs do not interpolate `needs.*.outputs` in `name`.
+    name: boot macOS (Julia 1.12)
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
+        id: julia
         with:
           version: "1.12"
+      - name: Julia ${{ steps.julia.outputs.julia-version }}
+        run: julia --version
       - uses: julia-actions/cache@v3
       - uses: julia-actions/julia-buildpkg@v1
       - name: Load package
@@ -45,12 +132,15 @@ jobs:
     if: github.event_name != 'pull_request'
     runs-on: windows-latest
     timeout-minutes: 15
-    name: boot Windows
+    name: boot Windows (Julia 1.12)
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
+        id: julia
         with:
           version: "1.12"
+      - name: Julia ${{ steps.julia.outputs.julia-version }}
+        run: julia --version
       - uses: julia-actions/cache@v3
       - uses: julia-actions/julia-buildpkg@v1
       - name: Load package
@@ -63,54 +153,33 @@ jobs:
           julia --project=. -m DistSSHKit setup -h
           julia --project=. -m DistSSHKit size -h
 
-  # Load + `main(["-h"])` on LTS. Full `Pkg.test()` / `-m` stay on 1.12+.
-  compat:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    name: Julia 1.10
-    steps:
-      - uses: actions/checkout@v7
-      - uses: julia-actions/setup-julia@v3
-        with:
-          version: "1.10"
-      - name: using + main -h
-        run: |
-          julia -e '
-            using Pkg
-            Pkg.activate(; temp=true)
-            Pkg.develop(path=".")
-            using DistSSHKit
-            DistSSHKit.main(["-h"]) == 0 || error("main -h")
-          '
-
+  # Full `Pkg.test()` on Linux. `-m` subprocesses run only on 1.12+ inside the suite.
   test:
+    needs: resolve
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    name: ${{ matrix.label }}
+    timeout-minutes: 20
+    name: Pkg.test Julia ${{ matrix.minor }}
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - version: "1.12"
-            label: "Julia 1.12"
-          # 1.13 is still a prerelease channel; ~1.13.0-0 picks the latest 1.13.x (including RCs).
-          - version: "~1.13.0-0"
-            label: "Julia 1.13"
+      matrix: ${{ fromJSON(needs.resolve.outputs.test) }}
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
+        id: julia
         with:
-          version: ${{ matrix.version }}
+          version: ${{ matrix.spec }}
+      - name: Julia ${{ steps.julia.outputs.julia-version }}
+        run: julia --version
       - uses: julia-actions/cache@v3
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
         with:
-          coverage: ${{ matrix.version == '1.12' }}
+          coverage: ${{ matrix.coverage }}
       - uses: julia-actions/julia-processcoverage@v1
-        if: matrix.version == '1.12'
+        if: matrix.coverage
       # Public: OIDC. Private: upload fails quietly until the repo is public.
       - name: Upload coverage to Codecov
-        if: matrix.version == '1.12'
+        if: matrix.coverage
         uses: codecov/codecov-action@v7
         with:
           files: lcov.info
@@ -118,7 +187,7 @@ jobs:
           use_oidc: true
           fail_ci_if_error: false
       - name: Coverage summary
-        if: matrix.version == '1.12'
+        if: matrix.coverage
         run: |
           julia --color=no -e '
           using Pkg

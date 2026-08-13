@@ -1,6 +1,6 @@
 using Test
 
-@testset "drive log via -m DistSSHKit" begin
+@testset "drive log via kit module CLI" begin
     fixture = _fixture("drive_local_smoke.jl")
     julia = _julia_exe()
 
@@ -13,7 +13,11 @@ using Test
 
         _develop_kit!(proj; julia=julia)
 
-        cmd = `$julia --project=$proj -m DistSSHKit drive local:2 --log-dir $log_dir $script`
+        cmd = _kit_cli_cmd(
+            ["drive", "local:2", "--log-dir", log_dir, script];
+            julia=julia,
+            project=proj,
+        )
         _assert_drive_log_output(;
             cmd=setenv(
                 cmd,
