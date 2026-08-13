@@ -9,7 +9,8 @@ Real OpenSSH + rsync Linux workers. CI remote SSH coverage uses this stack
 
 | Controller | Worker | Where |
 | --- | --- | --- |
-| Linux (`ubuntu-latest`) | Linux ×2 (this compose) | **CI** — full suite (path resolve, rsync, git clone/sync/`--require-git`, drive/go/API) |
+| Linux (`ubuntu-latest`) | Linux ×2 (this compose) | **CI** — every PR |
+| WSL2 Ubuntu (`windows-latest`) | Linux ×2 (same compose) | **CI after merge** — `E2E / WSL2 (Windows)` |
 | macOS (Docker Desktop / Colima) | Linux ×2 (same image) | **Local only** — same `./scripts/up.sh --e2e` (exercises Darwin controller Julia resolve) |
 | Either | `local:N` | Mixed smoke inside the same suite |
 
@@ -70,6 +71,7 @@ ssh -F .generated/ssh_config distsshkit-w1 'echo ok; julia --version'
 ## CI
 
 [`.github/workflows/ssh-e2e.yml`](../../.github/workflows/ssh-e2e.yml) runs
-`./scripts/up.sh --e2e` on `ubuntu-latest` only (`linux-to-linux`).
+`./scripts/up.sh --e2e` on `ubuntu-latest` for every PR (`linux-to-linux`), and
+on WSL2 Ubuntu after merge (`E2E / WSL2 (Windows)`).
 
 Usual `Pkg.test()` does **not** start Docker and does **not** run this suite.
