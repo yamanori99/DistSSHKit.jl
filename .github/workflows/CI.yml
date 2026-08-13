@@ -21,7 +21,7 @@ jobs:
   # versions.json + semver rules as julia-actions/setup-julia, then use that
   # in `name:` so checks stay `Test / Pkg.test Julia 1.12` even if the spec is `"1"`.
   # Full `Pkg.test()` stays Linux-only. Darwin and WSL controllers are merge-only
-  # SSH E2E (`E2E / macOS to Linux`, `E2E / WSL2 to Linux`).
+  # SSH E2E (`E2E / macOS to Linux`, `E2E / WSL2 to Linux`). PRs run `E2E / Linux to Linux`.
   resolve:
     runs-on: ubuntu-latest
     timeout-minutes: 3
