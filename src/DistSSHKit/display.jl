@@ -502,6 +502,11 @@ end
 const KIT_PROGRESS = Ref{Union{Nothing,KitProgressState}}(nothing)
 const KIT_PROGRESS_LOCK = ReentrantLock()
 
+function _progress_is_current(state::KitProgressState)::Bool
+    cur = KIT_PROGRESS[]
+    return cur isa KitProgressState && objectid(cur) === objectid(state)
+end
+
 function _progress_filled(done::Int, total::Int; width::Int=PROGRESS_BAR_WIDTH)::Int
     t = max(total, 1)
     return round(Int, width * clamp(done, 0, t) / t)
@@ -545,16 +550,16 @@ function _progress_current(state::KitProgressState)::Int
     return state.done >= state.steps ? state.steps : state.done + 1
 end
 
-function _progress_fit_label(s::AbstractString; width::Int=PROGRESS_LABEL_WIDTH)::String
-    raw = String(s)
-    tw = textwidth(raw)
-    tw == width && return raw
-    tw < width && return raw * " "^(width - tw)
+function _progress_fit_label(raw::String; width::Int=PROGRESS_LABEL_WIDTH)::String
+    tw::Int = textwidth(raw)
+    extra = width - tw
+    extra == 0 && return raw
+    extra > 0 && return raw * " "^extra
     out = Char[]
     w = 0
-    ell = textwidth("…")
+    ell::Int = textwidth("…")
     for c in raw
-        cw = textwidth(c)
+        cw::Int = textwidth(c)
         w + cw + ell > width && break
         push!(out, c)
         w += cw
@@ -668,7 +673,6 @@ end
 function _progress_draw!(
     state::KitProgressState;
     newline::Bool=false,
-    color::Symbol=:normal,
     finished::Bool=false,
     ok::Bool=true,
 )
@@ -703,19 +707,25 @@ function _progress_stop_spinner!(state::KitProgressState)
     return nothing
 end
 
+function _progress_spinner_tick!(state::KitProgressState)
+    state.spinning || return nothing
+    _progress_is_current(state) || return nothing
+    state.tick += 1
+    for it in state.items
+        it.status === :running && (it.tick += 1)
+    end
+    _progress_draw!(state)
+    return nothing
+end
+
 function _progress_start_spinner!(state::KitProgressState)
     (_progress_can_draw() && !state.spinning) || return nothing
     state.spinning = true
     state.spinner_task = @async begin
-        while state.spinning && KIT_PROGRESS[] === state
+        while state.spinning
+            _progress_is_current(state) || break
             lock(KIT_PROGRESS_LOCK) do
-                state.spinning || return
-                KIT_PROGRESS[] === state || return
-                state.tick += 1
-                for it in state.items
-                    it.status === :running && (it.tick += 1)
-                end
-                _progress_draw!(state)
+                _progress_spinner_tick!(state)
             end
             sleep(0.08)
         end
@@ -763,7 +773,7 @@ function kit_progress_begin!(
 )
     steps < 1 && throw(ArgumentError("kit_progress_begin!: steps must be ≥ 1"))
     prev = KIT_PROGRESS[]
-    prev !== nothing && _progress_stop_spinner!(prev)
+    prev isa KitProgressState && _progress_stop_spinner!(prev)
     state = KitProgressState(String(title), steps, 0, String(title))
     for name in items
         push!(state.items, KitProgressItem(String(name), :running, 0))
@@ -790,10 +800,19 @@ complete (`done += 1`) then switch the label. Pass `done` to set completed
 count absolutely (in-progress is still `done + 1` until [`kit_progress_done!`](@ref)).
 """
 function kit_progress_step!(label::AbstractString; done::Union{Nothing,Int}=nothing)
-    state = KIT_PROGRESS[]
-    state === nothing && return nothing
+    raw = KIT_PROGRESS[]
+    raw isa KitProgressState || return nothing
+    _kit_progress_step!(raw, label; done)
+    return nothing
+end
+
+function _kit_progress_step!(
+    state::KitProgressState,
+    label::AbstractString;
+    done::Union{Nothing,Int},
+)
     lock(KIT_PROGRESS_LOCK) do
-        KIT_PROGRESS[] === state || return nothing
+        _progress_is_current(state) || return nothing
         if done === nothing
             if state.active
                 state.done = min(state.done + 1, state.steps)
@@ -820,24 +839,42 @@ Update one concurrent item (`:running` / `:ok` / `:fail`). Completing an item
 function kit_progress_item!(label::AbstractString; status::Symbol)
     status in (:pending, :running, :ok, :fail) ||
         throw(ArgumentError("kit_progress_item!: status must be :pending, :running, :ok, or :fail"))
-    state = KIT_PROGRESS[]
-    state === nothing && return nothing
+    raw = KIT_PROGRESS[]
+    raw isa KitProgressState || return nothing
+    _kit_progress_item!(raw, label, status)
+    return nothing
+end
+
+function _kit_progress_apply_item!(
+    item::KitProgressItem,
+    state::KitProgressState,
+    status::Symbol,
+)
+    prev = item.status
+    item.status = status
+    if (status === :ok || status === :fail) && prev !== :ok && prev !== :fail
+        state.done = min(state.done + 1, state.steps)
+    end
+    if kit_output_progress()
+        _kit_log_writeln(
+            "progress: $(item.label) $status ($(state.done)/$(state.steps) done)",
+        )
+        _progress_draw!(state)
+    end
+    return nothing
+end
+
+function _kit_progress_item!(state::KitProgressState, label::AbstractString, status::Symbol)
     lock(KIT_PROGRESS_LOCK) do
-        KIT_PROGRESS[] === state || return nothing
-        idx = findfirst(it -> it.label == String(label), state.items)
-        idx === nothing && return nothing
-        item = state.items[idx]
-        prev = item.status
-        item.status = status
-        if status in (:ok, :fail) && prev !== :ok && prev !== :fail
-            state.done = min(state.done + 1, state.steps)
+        _progress_is_current(state) || return nothing
+        target = String(label)
+        for it in state.items
+            if it.label == target
+                _kit_progress_apply_item!(it, state, status)
+                break
+            end
         end
-        if kit_output_progress()
-            _kit_log_writeln(
-                "progress: $(item.label) $status ($(state.done)/$(state.steps) done)",
-            )
-            _progress_draw!(state)
-        end
+        return nothing
     end
     kit_output_progress() && _progress_start_spinner!(state)
     return nothing
@@ -848,11 +885,20 @@ Finish the status line (newline, ✓/✗, elapsed; no track). Optional `footer`
 prints under the line (`:progress` only; also kit log). Clears progress state.
 """
 function kit_progress_done!(; ok::Bool=true, footer::Union{Nothing,AbstractString}=nothing)
-    state = KIT_PROGRESS[]
-    state === nothing && return nothing
+    raw = KIT_PROGRESS[]
+    raw isa KitProgressState || return nothing
+    _kit_progress_done!(raw; ok=ok, footer=footer)
+    return nothing
+end
+
+function _kit_progress_done!(
+    state::KitProgressState;
+    ok::Bool,
+    footer::Union{Nothing,AbstractString},
+)
     _progress_stop_spinner!(state)
     lock(KIT_PROGRESS_LOCK) do
-        KIT_PROGRESS[] === state || return nothing
+        _progress_is_current(state) || return nothing
         state.done = state.steps
         state.label = state.title
         if kit_output_progress()

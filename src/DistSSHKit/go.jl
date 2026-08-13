@@ -573,10 +573,10 @@ function go!(
         end
 
         skip_collect = collect_spec === false
-        any_run_fail = false
-        any_collect_fail = false
-        last_run = DriveResult(true, 0)
-        last_collect = nothing
+        any_run_fail = Ref(false)
+        any_collect_fail = Ref(false)
+        last_run = Ref(DriveResult(true, 0))
+        last_collect = Ref{Union{Nothing,CollectResult}}(nothing)
 
         print_header("DistSSHKit go")
         writeln_both("")
@@ -620,21 +620,21 @@ function go!(
                     )
                 end
                 lock(_GO_IO_LOCK) do
-                    last_run = outcome.run
+                    last_run[] = outcome.run
                     if outcome.collect !== nothing
-                        last_collect = outcome.collect
+                        last_collect[] = outcome.collect
                     end
                     if outcome.collect_fail
-                        any_collect_fail = true
+                        any_collect_fail[] = true
                     end
                     if err !== nothing
-                        any_run_fail = true
+                        any_run_fail[] = true
                         kit_progress_item!(slot.label; status=:fail)
                         write(stderr, "  ")
                         print_err("✗ $(slot.label): $(sprint(showerror, err))"; io=stderr)
                         println(stderr)
                     elseif !outcome.run.ok
-                        any_run_fail = true
+                        any_run_fail[] = true
                         kit_progress_item!(slot.label; status=:fail)
                         write(stderr, "  ")
                         print_err("✗ $(slot.label) (exit $(outcome.run.exit_code))"; io=stderr)
@@ -647,23 +647,23 @@ function go!(
             end
         end
 
-        if any_run_fail
+        if any_run_fail[]
             return GoResult(
                 false,
                 sync_result,
-                last_run,
-                last_collect,
+                last_run[],
+                last_collect[],
                 script_path,
                 batch_dir;
                 failed_step="run",
             )
         end
-        if any_collect_fail
+        if any_collect_fail[]
             return GoResult(
                 false,
                 sync_result,
-                last_run,
-                last_collect,
+                last_run[],
+                last_collect[],
                 script_path,
                 batch_dir;
                 failed_step="collect",
@@ -673,7 +673,7 @@ function go!(
         writeln_both("")
         writeln_both("Results: $(display_path(batch_dir, anchor))")
         progress_ok = true
-        return GoResult(true, sync_result, last_run, last_collect, script_path, batch_dir)
+        return GoResult(true, sync_result, last_run[], last_collect[], script_path, batch_dir)
     finally
         footer = progress_ok ? display_path(batch_dir, anchor) : nothing
         kit_progress_done!(; ok=progress_ok, footer=footer)
