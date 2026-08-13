@@ -12,13 +12,13 @@ host that runs jobs.
 - **macOS and Linux**
 - **Julia** — library (`Pkg.add` / `using` / `go!` / `drive!`): **1.10+**. CLI
   (`julia -m DistSSHKit`), tests, and docs: **1.12+**. `@main` / compile entry:
-  **1.12+** (no such entry on 1.10). Prefer the same **major.minor** on SSH hosts
+  **1.12+** (no `-m` on 1.10–1.11). Prefer the same **major.minor** on SSH hosts
   (`setup --check` fails on a major.minor mismatch unless you pass
   `--ignore-julia-version`; patch-only differences warn). On SSH hosts, path is
   auto-detected, or set `--julia` / `JULIA_DISTRIBUTED_EXE`.
 
 When you run the kit with `-m`, treat every machine as **1.12+**. API-only on
-1.10: still match major.minor between controller and SSH hosts.
+1.10–1.11: still match major.minor between controller and SSH hosts.
 
 ## Remotes
 
