@@ -1,4 +1,6 @@
-name: secrets
+name: Scan
+
+on:
   push:
     branches:
       - main
@@ -15,7 +17,7 @@ permissions:
 
 jobs:
   scan:
-    name: gitleaks
+    name: Gitleaks
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

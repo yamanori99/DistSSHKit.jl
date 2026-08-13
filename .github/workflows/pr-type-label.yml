@@ -1,7 +1,7 @@
 # Require a type label on every PR: bug | enhancement | breaking | chore.
 # If missing, infer from the branch prefix and apply it (feat/ → enhancement, …).
 # Dependabot PRs are exempt (bot marker: `dependencies` only).
-name: type
+name: Type
 
 on:
   pull_request:
@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   require-type:
-    name: required
+    name: require label
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

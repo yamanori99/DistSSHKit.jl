@@ -1,4 +1,4 @@
-name: jetls
+name: Lint
 
 on:
   push:
@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   jetls:
-    name: check
+    name: JETLS
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

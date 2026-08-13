@@ -1,4 +1,4 @@
-name: e2e
+name: E2E
 
 on:
   push:
@@ -35,7 +35,7 @@ jobs:
     # Colima on macos-15-intel made PR feedback too slow (~25m+).
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    name: ssh
+    name: SSH
     steps:
       - uses: actions/checkout@v7
 
