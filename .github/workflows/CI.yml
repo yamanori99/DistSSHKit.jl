@@ -19,8 +19,8 @@ permissions:
 jobs:
   # Job names are fixed before steps run. Resolve majors.minor from the same
   # versions.json + semver rules as julia-actions/setup-julia, then use that
-  # in `name:` so full tests stay `Test / Julia 1.12` even if the spec is `"1"`.
-  # Compat smokes are `Test / compat Julia 1.10` so they are not mistaken for Pkg.test.
+  # in `name:` so full tests stay `Test / Pkg.test Julia 1.12` even if the spec is `"1"`.
+  # Smokes are `Test / smoke Julia 1.10` so they are not mistaken for Pkg.test.
   resolve:
     runs-on: ubuntu-latest
     timeout-minutes: 3
@@ -166,7 +166,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.resolve.outputs.compat) }}
-    name: compat Julia ${{ matrix.minor }}
+    name: smoke Julia ${{ matrix.minor }}
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
@@ -189,7 +189,7 @@ jobs:
     needs: resolve
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    name: Julia ${{ matrix.minor }}
+    name: Pkg.test Julia ${{ matrix.minor }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.resolve.outputs.test) }}
