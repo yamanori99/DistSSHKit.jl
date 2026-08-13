@@ -11,7 +11,7 @@ Real OpenSSH + rsync Linux workers. CI remote SSH coverage uses this stack
 | --- | --- | --- |
 | Linux (`ubuntu-latest`) | Linux ×2 (this compose) | **CI** — every PR |
 | macOS Intel (`macos-15-intel` + Colima) | Linux ×2 (same compose) | **CI after merge** — `E2E / macOS to Linux` |
-| WSL2 Ubuntu (`windows-latest`) | Linux ×2 (same compose) | **CI after merge** — `E2E / WSL2 (Windows)` |
+| WSL2 Ubuntu (`windows-latest`) | Linux ×2 (same compose) | **CI after merge** — `E2E / WSL2 to Linux` |
 | Either | `local:N` | Mixed smoke inside the same suite |
 
 ### Honest limits
@@ -73,6 +73,6 @@ ssh -F .generated/ssh_config distsshkit-w1 'echo ok; julia --version'
 [`.github/workflows/ssh-e2e.yml`](../../.github/workflows/ssh-e2e.yml) runs
 `./scripts/up.sh --e2e` on `ubuntu-latest` for every PR (`linux-to-linux`), and
 after merge on macOS Intel (`E2E / macOS to Linux`) and WSL2 Ubuntu
-(`E2E / WSL2 (Windows)`).
+(`E2E / WSL2 to Linux`).
 
 Usual `Pkg.test()` does **not** start Docker and does **not** run this suite.

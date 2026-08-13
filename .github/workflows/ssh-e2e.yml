@@ -79,7 +79,7 @@ jobs:
     if: github.event_name != 'pull_request'
     runs-on: windows-latest
     timeout-minutes: 60
-    name: WSL2 (Windows)
+    name: WSL2 to Linux
     steps:
       - uses: actions/checkout@v7
       - uses: Vampire/setup-wsl@v7

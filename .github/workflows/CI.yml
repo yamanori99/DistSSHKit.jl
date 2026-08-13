@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   # Full `Pkg.test()` stays Linux-only. Darwin and WSL controllers are merge-only
-  # SSH E2E (`E2E / macOS to Linux`, `E2E / WSL2 (Windows)`).
+  # SSH E2E (`E2E / macOS to Linux`, `E2E / WSL2 to Linux`).
 
   test:
     runs-on: ubuntu-latest

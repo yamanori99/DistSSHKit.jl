@@ -51,7 +51,7 @@ How to run: [`testenv/docker-ssh/README.md`](../testenv/docker-ssh/README.md).
 | **integration** | `julia -m DistSSHKit drive` end-to-end in child processes | ~2 min |
 | **ssh-e2e** (`E2E / SSH`) | Real SSH + rsync against Docker workers (`DISTSSHKIT_SSH_E2E=1`). CI: Linux on every PR | ~10–20 min |
 | **ssh-e2e macOS** (`E2E / macOS to Linux`) | Same suite from **macOS Intel** + Colima. **main / dispatch** only | ~25–50 min |
-| **ssh-e2e WSL** (`E2E / WSL2 (Windows)`) | Same suite from **WSL2 Ubuntu** on `windows-latest`. **main / dispatch** only. Not native Windows | ~20–45 min |
+| **ssh-e2e WSL** (`E2E / WSL2 to Linux`) | Same suite from **WSL2 Ubuntu** (controller) to Linux Docker workers. **main / dispatch** only. Not native Windows | ~20–45 min |
 | **doctests** (`Docs / Documenter`) | docstring examples in `src/` (`Documentation.yml`) | ~5 s |
 
 Most of the wall time in `Pkg.test()` is integration (child Julia + local workers).
