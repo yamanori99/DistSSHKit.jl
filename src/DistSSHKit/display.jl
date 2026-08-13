@@ -267,6 +267,18 @@ function Base.write(io::TeeIO, b::AbstractVector{UInt8})
     return _teeio_write_vector!(io, b)
 end
 
+# 1.10: `write(::IO, ::Array)` / `write(::IO, ::SubArray{<:Array})` vs the
+# AbstractVector method above. 1.12 already needed StridedVector (below).
+# Concrete `where` / `Vector{UInt8}(b)` keeps LanguageServer from IncorrectCallArgs.
+function Base.write(io::TeeIO, b::Vector{UInt8})
+    bv::AbstractVector{UInt8} = b
+    return _teeio_write_vector!(io, bv)
+end
+
+function Base.write(io::TeeIO, b::SubArray{UInt8,1,A}) where {A<:Array}
+    return _teeio_write_vector!(io, Vector{UInt8}(b))
+end
+
 # `AbstractVector{UInt8}` alone is ambiguous with Base's `write(::IO, ::StridedArray)`
 # for `Vector{UInt8}` / other strided inputs; this narrower method disambiguates.
 function Base.write(io::TeeIO, b::StridedVector{UInt8})
