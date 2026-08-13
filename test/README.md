@@ -49,7 +49,6 @@ How to run: [`testenv/docker-ssh/README.md`](../testenv/docker-ssh/README.md).
 | **Aqua** (`aqua.jl`) | ambiguities, exports, compat, project consistency | ~5 s |
 | **unit** | parsing, display, module helpers, CLI arg tables | ~5 s |
 | **integration** | kit CLI `drive` / `go` in child processes (`-m` on 1.12+; `main` on 1.10–1.11) | ~2 min |
-| **boot** (`Test / boot macOS (Julia 1.12)`) | `using DistSSHKit` + `-h` on **macOS**. **main / dispatch** only (PR skips). Native Windows boot is not used | ~2–5 min |
 | **ssh-e2e** (`E2E / SSH (Julia 1.12)`) | Real SSH + rsync against Docker workers (`DISTSSHKIT_SSH_E2E=1`). CI: Linux on every PR | ~10–20 min |
 | **ssh-e2e macOS** (`E2E / macOS to Linux`) | Same suite from **macOS Intel** + Colima. **main / dispatch** only | ~25–50 min |
 | **ssh-e2e WSL** (`E2E / WSL2 to Linux`) | Same suite from **WSL2 Ubuntu** to Linux Docker workers. **main / dispatch** only. Not native Windows | ~20–45 min |
