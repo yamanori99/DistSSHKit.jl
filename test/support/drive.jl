@@ -1,17 +1,14 @@
 if !isdefined(Main, :_run_kit_drive)
 
 """Normalize a host project path for drive subprocesses."""
-function _drive_host_root(path::Union{AbstractString, Base.Filesystem.DirEntry})::String
-    if path isa Base.Filesystem.DirEntry
-        return abspath(joinpath(path.dir, path.name))
-    end
+function _drive_host_root(path::AbstractString)::String
     return abspath(String(path))
 end
 
-"""Run `julia -m DistSSHKit drive` with a host `DISTRIBUTED_PROJECT_ROOT`."""
+"""Run the kit `drive` CLI with a host `DISTRIBUTED_PROJECT_ROOT`."""
 function _run_kit_drive(;
     script::AbstractString,
-    host_root::Union{AbstractString, Base.Filesystem.DirEntry},
+    host_root::AbstractString,
     local_workers::Int=1,
     remote_hosts::Vector{String}=String[],
     log_dir::Union{Nothing,String}=nothing,
@@ -30,14 +27,11 @@ function _run_kit_drive(;
     local_workers > 0 && push!(worker_tokens, "local:$(local_workers)")
     append!(worker_tokens, remote_hosts)
     isempty(worker_tokens) && error("_run_kit_drive: need local_workers > 0 or remote_hosts")
-    cmd = Cmd(vcat(
-        [julia, "--startup-file=no", "--project=$kit_root", "-m", "DistSSHKit", "drive"],
-        drive_flags,
-        worker_tokens,
-        log_flags,
-        [script],
-        script_args,
-    ))
+    cmd = _kit_cli_cmd(
+        vcat(["drive"], drive_flags, worker_tokens, log_flags, [script], script_args);
+        julia=julia,
+        project=kit_root,
+    )
     env = _child_julia_env(merge(Dict(
         "DISTRIBUTED_INIT_DELAY_SEC" => "0",
         "DISTRIBUTED_PROJECT_ROOT" => host_root,
@@ -48,7 +42,7 @@ end
 """Run `drive.jl` with `--project` set to a host package."""
 function _run_host_drive(;
     script::AbstractString,
-    host_project::Union{AbstractString, Base.Filesystem.DirEntry},
+    host_project::AbstractString,
     local_workers::Int=2,
     log_dir::Union{Nothing,String}=nothing,
     kit_root::AbstractString=_kit_root(),

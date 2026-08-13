@@ -1,6 +1,6 @@
 if !isdefined(Main, :_run_kit_setup)
 
-"""Run `julia -m DistSSHKit setup` as a subprocess (for CLI exit-code tests).
+"""Run the kit `setup` CLI as a subprocess (for CLI exit-code tests).
 
 Kit logs land under `<project>/.distsshkit/setup/`. When `project_root` is
 omitted, use an ephemeral host so unit tests never write into the kit checkout.
@@ -14,10 +14,7 @@ function _run_kit_setup(;
     extra_env::Dict{String,String}=Dict{String,String}(),
 )
     function _run(proj::String)
-        cmd = Cmd(vcat(
-            [julia, "--startup-file=no", "--project=$kit_root", "-m", "DistSSHKit", "setup"],
-            setup_args,
-        ))
+        cmd = _kit_cli_cmd(vcat(["setup"], setup_args); julia=julia, project=kit_root)
         base = Dict{String,String}(
             "DISTSSHKIT_YES" => "1",
             "DISTRIBUTED_PROJECT_ROOT" => proj,
@@ -68,7 +65,7 @@ function _capture_stdio(f::Function)
     end
 end
 
-"""Run `julia -m DistSSHKit go` as a subprocess.
+"""Run the kit `go` CLI as a subprocess.
 
 Same project-root rule as [`_run_kit_setup`](@ref): omit `project_root` only for
 ephemeral unit hosts; SSH E2E passes a kept host explicitly.
@@ -84,13 +81,11 @@ function _run_kit_go(;
     extra_env::Dict{String,String}=Dict{String,String}(),
 )
     function _run(proj::String)
-        cmd = Cmd(vcat(
-            [julia, "--startup-file=no", "--project=$kit_root", "-m", "DistSSHKit", "go"],
-            go_flags,
-            hosts,
-            [String(script)],
-            script_args,
-        ))
+        cmd = _kit_cli_cmd(
+            vcat(["go"], go_flags, hosts, [String(script)], script_args);
+            julia=julia,
+            project=kit_root,
+        )
         base = Dict{String,String}(
             "DISTSSHKIT_YES" => "1",
             "DISTRIBUTED_PROJECT_ROOT" => proj,
@@ -107,7 +102,7 @@ function _run_kit_go(;
     end
 end
 
-"""Run `julia -m DistSSHKit size` as a subprocess.
+"""Run the kit `size` CLI as a subprocess.
 
 Same project-root rule as [`_run_kit_setup`](@ref).
 """
@@ -119,10 +114,7 @@ function _run_kit_size(;
     extra_env::Dict{String,String}=Dict{String,String}(),
 )
     function _run(proj::String)
-        cmd = Cmd(vcat(
-            [julia, "--startup-file=no", "--project=$kit_root", "-m", "DistSSHKit", "size"],
-            size_args,
-        ))
+        cmd = _kit_cli_cmd(vcat(["size"], size_args); julia=julia, project=kit_root)
         base = Dict{String,String}(
             "DISTSSHKIT_YES" => "1",
             "DISTRIBUTED_PROJECT_ROOT" => proj,

@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   build:
-    name: Documenter
+    name: Documenter (Julia 1.12)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:

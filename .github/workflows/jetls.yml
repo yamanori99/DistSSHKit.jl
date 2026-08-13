@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   jetls:
-    name: JETLS
+    name: JETLS (Julia 1.12)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
