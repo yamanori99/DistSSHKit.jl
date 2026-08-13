@@ -6,26 +6,33 @@ pieces when you SSH to other hosts.
 
 ## All machines
 
-Applies to the machine where you run `julia -m DistSSHKit` **and** each SSH
-host that runs jobs.
+Applies to the machine where you run the kit **and** each SSH host that runs
+jobs.
 
 - **macOS and Linux**
-- **Julia** — library (`Pkg.add` / `using` / `go!` / `drive!`) and `Pkg.test()`:
-  **1.10+**. CLI `julia -m DistSSHKit` and docs: **1.12+**. `@main` / compile
-  entry: **1.12+** (on 1.10–1.11 the suite calls `DistSSHKit.main`, not `-m`).
+- **Julia 1.10+** on every machine. The library (`Pkg.add` / `using` / `go!` /
+  `drive!`) works there. **Prefer 1.12+** for the terminal CLI
+  (`julia -m DistSSHKit`). That `-m` entry is 1.12+ only; 1.10–1.11 can still
+  run the same subcommands from Julia (`go!` / `drive!`) or:
+
+  ```bash
+  julia --project=. -e 'using DistSSHKit; exit(Int(DistSSHKit.main(ARGS)))' -- drive local:2 script.jl
+  ```
+
+  Arguments after `--` match `julia -m DistSSHKit …`. Docs build on 1.12+.
   Prefer the same **major.minor** on SSH hosts
   (`setup --check` fails on a major.minor mismatch unless you pass
   `--ignore-julia-version`; patch-only differences warn). On SSH hosts, path is
   auto-detected, or set `--julia` / `JULIA_DISTRIBUTED_EXE`.
 
-When you run the kit with `-m`, treat every machine as **1.12+**. API-only on
-1.10–1.11: still match major.minor between controller and SSH hosts.
+When you use `-m`, treat every machine as **1.12+**. On 1.10–1.11, still match
+major.minor between controller and SSH hosts.
 
 ## Remotes
 
 When you use SSH hosts (not just `local:N`):
 
-**Where you run `julia -m DistSSHKit`** — also install:
+**Where you run the kit** — also install:
 
 - **`ssh`** — passwordless login to each host
 - **`rsync`** — collect results (`go` / `drive`); push the project tree only

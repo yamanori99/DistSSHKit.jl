@@ -206,14 +206,18 @@ run_size(args::Vector{String}=copy(ARGS))::Cint = _run_kit_cli_script("size.jl",
 """
     main(args::Vector{String}=copy(ARGS))
 
-CLI entry. On Julia 1.12+, `julia -m DistSSHKit SUBCOMMAND …` binds this via `@main`:
+Prefer Julia **1.12+** and `julia -m DistSSHKit SUBCOMMAND …` (`@main`):
 
     julia --project=. -m DistSSHKit go SCRIPT.jl
     julia --project=. -m DistSSHKit drive local:2 script.jl
     julia --project=. -m DistSSHKit setup --clone host1 host2
     julia --project=. -m DistSSHKit size --local host1
 
-On 1.10–1.11 call `DistSSHKit.main(args)` (no `-m`).
+On 1.10–1.11 `-m` is unavailable. The same argv still works via
+`DistSSHKit.main(args)`, or:
+
+    julia --project=. -e 'using DistSSHKit; exit(Int(DistSSHKit.main(ARGS)))' -- drive local:2 script.jl
+
 """
 function main(args::Vector{String}=copy(ARGS))::Cint
     known_subcommands = (

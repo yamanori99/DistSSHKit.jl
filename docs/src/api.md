@@ -5,9 +5,12 @@ CurrentModule = DistSSHKit
 ```
 
 Julia entry points when you embed DistSSHKit in a notebook or your own package.
-Day-to-day work stays on the CLI (`julia --project=. -m DistSSHKit …`); see
+Day-to-day work stays on the CLI (`julia --project=. -m DistSSHKit …`, Julia
+**1.12+** preferred); see
 [Introduction](@ref DistSSHKit.jl),
 [First Steps](@ref Tutorial-Prepare), and the [User Guide](@ref Manual).
+On 1.10–1.11 use the functions here, or `DistSSHKit.main` as in
+[Requirements](@ref).
 REPL help also works
 (`?DistSSHKit.go!`).
 
