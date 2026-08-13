@@ -23,16 +23,7 @@ using Test
         proc_go = run(
             pipeline(
                 setenv(
-                    Cmd(vcat([
-                        julia,
-                        "--project=$(kit_root)",
-                        "-m",
-                        "DistSSHKit",
-                        "go",
-                        "-q",
-                        "-y",
-                        script,
-                    ], args)),
+                    _kit_cli_cmd(vcat(["go", "-q", "-y", script], args); julia=julia, project=kit_root),
                     env,
                 );
                 stdout=devnull,

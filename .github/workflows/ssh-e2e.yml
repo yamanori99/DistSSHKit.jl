@@ -33,13 +33,16 @@ jobs:
     # Linux controller → Linux Docker workers. Runs on PRs.
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    name: SSH
+    name: SSH (Julia 1.12)
     steps:
       - uses: actions/checkout@v7
 
       - uses: julia-actions/setup-julia@v3
+        id: julia
         with:
           version: "1.12"
+      - name: Julia ${{ steps.julia.outputs.julia-version }}
+        run: julia --version
 
       - uses: julia-actions/cache@v3
 
