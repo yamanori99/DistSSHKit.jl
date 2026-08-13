@@ -1,6 +1,10 @@
 using Test
 
 @testset "drive log via -m DistSSHKit" begin
+    if VERSION < v"1.12"
+        @test_skip "julia -m DistSSHKit needs 1.12"
+        return
+    end
     fixture = _fixture("drive_local_smoke.jl")
     julia = _julia_exe()
 

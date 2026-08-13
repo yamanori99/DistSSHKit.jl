@@ -48,13 +48,13 @@ How to run: [`testenv/docker-ssh/README.md`](../testenv/docker-ssh/README.md).
 | --- | --- | --- |
 | **Aqua** (`aqua.jl`) | ambiguities, exports, compat, project consistency | ~5 s |
 | **unit** | parsing, display, module helpers, CLI arg tables | ~5 s |
-| **integration** | `julia -m DistSSHKit drive` end-to-end in child processes | ~2 min |
+| **integration** | kit CLI `drive` / `go` in child processes (`-m` on 1.12+; `main` on 1.10–1.11) | ~2 min |
 | **boot** (`Test / boot macOS|Windows (Julia 1.12)`) | `using DistSSHKit` + `-h` on **macOS** and **Windows**. **main / dispatch** only (PR skips). Not `Pkg.test()` | ~2–5 min |
 | **ssh-e2e** (`E2E / SSH (Julia 1.12)`) | Real SSH + rsync against Docker workers (`DISTSSHKIT_SSH_E2E=1`). CI: Linux only; macOS controllers: `testenv/docker-ssh/scripts/up.sh --e2e` | ~10–20 min |
 | **doctests** (`Docs / Documenter (Julia 1.12)`) | docstring examples in `src/` (`Documentation.yml`) | ~5 s |
 
 Most of the wall time in `Pkg.test()` is integration (child Julia + local workers).
-Remote SSH is the separate **E2E / SSH (Julia 1.12)** check. Doctests run in **Docs / Documenter (Julia 1.12)**, not `Pkg.test()`. 1.10/1.11 CI is **Test / smoke Julia 1.10|1.11** (`main(["-h"])` only). Full suite is **Test / Pkg.test Julia 1.12|1.13**.
+Remote SSH is the separate **E2E / SSH (Julia 1.12)** check. Doctests run in **Docs / Documenter (Julia 1.12)**, not `Pkg.test()`. **Test / Pkg.test Julia 1.10|1.11** runs the suite except `julia -m` (that entry is 1.12+).
 
 ## Why only `setup` uses SSH/rsync fakes
 

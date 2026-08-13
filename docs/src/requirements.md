@@ -10,9 +10,10 @@ Applies to the machine where you run `julia -m DistSSHKit` **and** each SSH
 host that runs jobs.
 
 - **macOS and Linux**
-- **Julia** — library (`Pkg.add` / `using` / `go!` / `drive!`): **1.10+**. CLI
-  (`julia -m DistSSHKit`), tests, and docs: **1.12+**. `@main` / compile entry:
-  **1.12+** (no `-m` on 1.10–1.11). Prefer the same **major.minor** on SSH hosts
+- **Julia** — library (`Pkg.add` / `using` / `go!` / `drive!`) and `Pkg.test()`:
+  **1.10+**. CLI `julia -m DistSSHKit` and docs: **1.12+**. `@main` / compile
+  entry: **1.12+** (on 1.10–1.11 the suite calls `DistSSHKit.main`, not `-m`).
+  Prefer the same **major.minor** on SSH hosts
   (`setup --check` fails on a major.minor mismatch unless you pass
   `--ignore-julia-version`; patch-only differences warn). On SSH hosts, path is
   auto-detected, or set `--julia` / `JULIA_DISTRIBUTED_EXE`.

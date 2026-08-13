@@ -5,7 +5,7 @@ How to work on this repository. End-user usage: [Documenter](https://yamanori99.
 ## Requirements
 
 - macOS and Linux
-- Julia 1.12+ (test locally on `1.12` and `~1.13.0-0` when available)
+- Julia 1.10+ (`Pkg.test()`). Exercise `-m` / docs on 1.12+ (`~1.13.0-0` when available)
 - For SSH-related changes: Git, OpenSSH (`ssh`), rsync; Julia 1.12+ on each remote
 
 The kit shells out to `ssh` / `rsync` / POSIX tools. Remotes: macOS and Linux.
@@ -29,7 +29,7 @@ Then call `julia --project=. -m DistSSHKit …` from that app the same way as af
 ## Workflow
 
 - Branch from `main` (`feature/…`, `fix/…`, `docs/…`, `chore/…`).
-- Solo dev: push to `main` directly is fine. Before sharing or tagging, run `Pkg.test()` locally on Julia 1.12+ (and `~1.13.0-0` when available).
+- Solo dev: push to `main` directly is fine. Before sharing or tagging, run `Pkg.test()` locally on Julia 1.10+ (and 1.12 / `~1.13.0-0` when available).
 - Breaking changes (CLI names, module name, driver contract `init_output_dir!` / `main`, …): bump `x` in `Project.toml` `0.x.y`. Patch `y` only for non-breaking changes.
 - Tags (`vX.Y.Z`) after merge are a maintainer decision (`git tag -a vX.Y.Z`). TagBot.yml is unused until a General-registry release.
 

@@ -19,14 +19,12 @@ permissions:
 jobs:
   # Job names are fixed before steps run. Resolve majors.minor from the same
   # versions.json + semver rules as julia-actions/setup-julia, then use that
-  # in `name:` so full tests stay `Test / Pkg.test Julia 1.12` even if the spec is `"1"`.
-  # Smokes are `Test / smoke Julia 1.10` so they are not mistaken for Pkg.test.
+  # in `name:` so checks stay `Test / Pkg.test Julia 1.12` even if the spec is `"1"`.
   resolve:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     name: resolve Julia
     outputs:
-      compat: ${{ steps.resolve.outputs.compat }}
       test: ${{ steps.resolve.outputs.test }}
     steps:
       - name: Resolve channel minors
@@ -66,11 +64,11 @@ jobs:
             }
 
             const channels = [
-              { spec: '1.10', includePrerelease: false, group: 'compat', coverage: false },
-              { spec: '1.11', includePrerelease: false, group: 'compat', coverage: false },
-              { spec: '1.12', includePrerelease: false, group: 'test', coverage: true },
+              { spec: '1.10', includePrerelease: false, coverage: false },
+              { spec: '1.11', includePrerelease: false, coverage: false },
+              { spec: '1.12', includePrerelease: false, coverage: true },
               // Prerelease channel; ~1.13.0-0 matches latest 1.13.x including RCs.
-              { spec: '~1.13.0-0', includePrerelease: true, group: 'test', coverage: false },
+              { spec: '~1.13.0-0', includePrerelease: true, coverage: false },
             ];
 
             const resolved = channels.map((c) => {
@@ -80,7 +78,6 @@ jobs:
                 full,
                 minor: minorOf(full),
                 coverage: c.coverage,
-                group: c.group,
               };
             });
 
@@ -89,13 +86,11 @@ jobs:
               throw new Error(`duplicate resolved minors: ${minors.join(', ')}`);
             }
 
-            const compat = { include: resolved.filter((r) => r.group === 'compat') };
-            const test = { include: resolved.filter((r) => r.group === 'test') };
+            const test = { include: resolved };
             for (const row of resolved) {
               console.log(`${row.spec} -> ${row.full} (Julia ${row.minor})`);
             }
 
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `compat=${JSON.stringify(compat)}\n`);
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `test=${JSON.stringify(test)}\n`);
           }
 
@@ -158,37 +153,11 @@ jobs:
           julia --project=. -m DistSSHKit setup -h
           julia --project=. -m DistSSHKit size -h
 
-  # Load + `main(["-h"])` on 1.10/1.11. Full `Pkg.test()` / `-m` stay on 1.12+.
-  compat:
-    needs: resolve
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.resolve.outputs.compat) }}
-    name: smoke Julia ${{ matrix.minor }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: julia-actions/setup-julia@v3
-        id: julia
-        with:
-          version: ${{ matrix.spec }}
-      - name: Julia ${{ steps.julia.outputs.julia-version }}
-        run: julia --version
-      - name: using + main -h
-        run: |
-          julia -e '
-            using Pkg
-            Pkg.activate(; temp=true)
-            Pkg.develop(path=".")
-            using DistSSHKit
-            DistSSHKit.main(["-h"]) == 0 || error("main -h")
-          '
-
+  # Full `Pkg.test()` on Linux. `-m` subprocesses run only on 1.12+ inside the suite.
   test:
     needs: resolve
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     name: Pkg.test Julia ${{ matrix.minor }}
     strategy:
       fail-fast: false
