@@ -27,7 +27,6 @@ jobs:
     outputs:
       compat: ${{ steps.resolve.outputs.compat }}
       test: ${{ steps.resolve.outputs.test }}
-      boot_minor: ${{ steps.resolve.outputs.boot_minor }}
     steps:
       - name: Resolve channel minors
         id: resolve
@@ -68,7 +67,7 @@ jobs:
             const channels = [
               { spec: '1.10', includePrerelease: false, group: 'compat', coverage: false },
               { spec: '1.11', includePrerelease: false, group: 'compat', coverage: false },
-              { spec: '1.12', includePrerelease: false, group: 'test', coverage: true, boot: true },
+              { spec: '1.12', includePrerelease: false, group: 'test', coverage: true },
               // Prerelease channel; ~1.13.0-0 matches latest 1.13.x including RCs.
               { spec: '~1.13.0-0', includePrerelease: true, group: 'test', coverage: false },
             ];
@@ -81,7 +80,6 @@ jobs:
                 minor: minorOf(full),
                 coverage: c.coverage,
                 group: c.group,
-                boot: Boolean(c.boot),
               };
             });
 
@@ -89,9 +87,6 @@ jobs:
             if (new Set(minors).size !== minors.length) {
               throw new Error(`duplicate resolved minors: ${minors.join(', ')}`);
             }
-
-            const boot = resolved.find((r) => r.boot);
-            if (!boot) throw new Error('no boot channel');
 
             const compat = { include: resolved.filter((r) => r.group === 'compat') };
             const test = { include: resolved.filter((r) => r.group === 'test') };
@@ -101,7 +96,6 @@ jobs:
 
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `compat=${JSON.stringify(compat)}\n`);
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `test=${JSON.stringify(test)}\n`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `boot_minor=${boot.minor}\n`);
           }
 
           main().catch((err) => {
@@ -114,10 +108,10 @@ jobs:
   # Full `Pkg.test()` stays Linux-only; PRs do not wait on macOS/Windows runners.
   boot-macos:
     if: github.event_name != 'pull_request'
-    needs: resolve
     runs-on: macos-latest
     timeout-minutes: 15
-    name: boot macOS · Julia ${{ needs.resolve.outputs.boot_minor }}
+    # Skipped jobs do not interpolate `needs.*.outputs` in `name`.
+    name: boot macOS
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
@@ -140,10 +134,9 @@ jobs:
 
   boot-windows:
     if: github.event_name != 'pull_request'
-    needs: resolve
     runs-on: windows-latest
     timeout-minutes: 15
-    name: boot Windows · Julia ${{ needs.resolve.outputs.boot_minor }}
+    name: boot Windows
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
