@@ -2,7 +2,7 @@
 DistSSHKit — local + SSH Julia runs (`go` / `drive` / `setup`) and a small API
 (`go!`, `drive!`, `pipeline!`, …).
 
-Package entry: exports, version, `include`s, `(@main)` for `julia -m DistSSHKit …`.
+Package entry: exports, version, `include`s, `main` (`@main` on Julia 1.12+).
 CLI lives under `src/cli/`.
 """
 module DistSSHKit
@@ -204,16 +204,18 @@ shadow `Base.size`. Prefer `julia -m DistSSHKit size …` day-to-day.
 run_size(args::Vector{String}=copy(ARGS))::Cint = _run_kit_cli_script("size.jl", args)
 
 """
-    (@main)(args::Vector{String}=copy(ARGS))
+    main(args::Vector{String}=copy(ARGS))
 
-`julia -m DistSSHKit SUBCOMMAND …` (Julia 1.12+):
+CLI entry. On Julia 1.12+, `julia -m DistSSHKit SUBCOMMAND …` binds this via `@main`:
 
     julia --project=. -m DistSSHKit go SCRIPT.jl
     julia --project=. -m DistSSHKit drive local:2 script.jl
     julia --project=. -m DistSSHKit setup --clone host1 host2
     julia --project=. -m DistSSHKit size --local host1
+
+On 1.10–1.11 call `DistSSHKit.main(args)` (no `-m`).
 """
-function (@main)(args::Vector{String}=copy(ARGS))::Cint
+function main(args::Vector{String}=copy(ARGS))::Cint
     known_subcommands = (
         "drive",
         "go",
@@ -266,6 +268,10 @@ function (@main)(args::Vector{String}=copy(ARGS))::Cint
         print_kit_root_usage()
         return 1
     end
+end
+
+if VERSION >= v"1.12"
+    Base.eval(@__MODULE__, :(@main))
 end
 
 end # module DistSSHKit

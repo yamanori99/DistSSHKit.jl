@@ -63,6 +63,26 @@ jobs:
           julia --project=. -m DistSSHKit setup -h
           julia --project=. -m DistSSHKit size -h
 
+  # Load + `main(["-h"])` on LTS. Full `Pkg.test()` / `-m` stay on 1.12+.
+  compat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    name: Julia 1.10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: "1.10"
+      - name: using + main -h
+        run: |
+          julia -e '
+            using Pkg
+            Pkg.activate(; temp=true)
+            Pkg.develop(path=".")
+            using DistSSHKit
+            DistSSHKit.main(["-h"]) == 0 || error("main -h")
+          '
+
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
