@@ -64,7 +64,7 @@ function delete_remotes(
     kit_println()
     if confirm
         kit_confirm("Type 'delete' to confirm: "; keyword="delete") || begin
-            kit_println("Cancelled.")
+            println_fatal("Cancelled.")
             return (; cancelled=true, succeeded=0, failed=0, hosts=HostResult[])
         end
         kit_println()
@@ -130,7 +130,7 @@ function clone_to_remotes(
     kit_println()
     if confirm
         kit_confirm("Proceed? [y/N]: ") || begin
-            kit_println("Cancelled.")
+            println_fatal("Cancelled.")
             return (; cancelled=true, succeeded=0, failed=0, hosts=HostResult[])
         end
         kit_println()
@@ -159,8 +159,8 @@ function clone_to_remotes(
                 return (:ok, "")
             end
             if outcome[1] === :busy
-                print_progress_err("✗ $(outcome[2])")
-                kit_println()
+                print_err("✗ $(outcome[2])")
+                println()
                 failed += 1
                 push!(host_results, HostResult(host, false, outcome[2]))
                 continue
