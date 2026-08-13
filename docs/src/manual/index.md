@@ -22,7 +22,7 @@ The difference is **what the script is**:
 | | [go](@ref Manual-go) | [drive](@ref Manual-drive) |
 | --- | --- | --- |
 | Script | Ordinary `.jl` (no Kit APIs) | Driver with `init_output_dir!` / `main` |
-| `host:N` means | N **full script runs** | N **Distributed workers** |
+| `host:N` means | N **concurrent full script runs** | N **Distributed workers** |
 | Collect | Slot-overwrite after remotes | Post-run-new after `main()`; optional collect-only flags |
 | Git parity | No `--require-git` | Opt-in `--require-git` |
 | `--output-dir` | Batch root (`PATH/{slot}/`) | Result root (`DISTRIBUTED_OUTPUT_DIR`) |
@@ -43,7 +43,7 @@ Same **names** are shared on purpose; a few meanings differ by command:
 | `--output-dir` | **`go`**: batch root (`PATH/{slot}/`). **`drive`**: result root (`DISTRIBUTED_OUTPUT_DIR`). Different on purpose. |
 | `-l` / `--local` | **`drive`**: `local:N` worker count. **`size`**: include localhost (boolean). |
 | `--hosts-file` | `setup` / `size` strip `:N`. `go` / `drive` keep `host:N` for slots / workers. |
-| Shared peel | `-q` / `--quiet`, `--progress`, `-y` / `--yes`, `--hosts-file`, `-v` / `--version` on setup / go / drive / size. |
+| Shared peel | `-q` / `--quiet`, `--progress`, `--verbose`, `-y` / `--yes`, `--hosts-file`, `-v` / `--version` on setup / go / drive / size. |
 
 ## Shared concepts
 
@@ -51,9 +51,11 @@ Same **names** are shared on purpose; a few meanings differ by command:
 (comma-separated; go / drive). `DISTSSHKIT_HOSTS_FILE` sets the default hosts-file
 path. `setup` strips `:N` and uses host names only.
 
-**Quiet / progress.** `-q` hides terminal detail; `--progress` shows a thin phase bar
-instead (`DISTSSHKIT_QUIET` / `DISTSSHKIT_PROGRESS`; not together). Kit / slot logs
-still write. Fatals stay on the terminal.
+**Quiet / progress.** On a TTY the default is `--progress` (live status). Piped or
+`NO_COLOR` sessions default to full detail. `-q` hides terminal detail;
+`--verbose` forces the old chatter (`DISTSSHKIT_QUIET` / `DISTSSHKIT_PROGRESS` /
+`DISTSSHKIT_VERBOSE`; at most one). Kit / slot logs still write. Fatals stay on
+the terminal.
 
 **Collect modes:**
 

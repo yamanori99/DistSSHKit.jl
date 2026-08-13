@@ -28,6 +28,8 @@ GoResult(
     failed_step::Union{Nothing,String}=nothing,
 ) = GoResult(ok, sync, run, collect, script, output_dir, failed_step)
 
+const _GO_IO_LOCK = ReentrantLock()
+
 _go_is_local_host(host_name::AbstractString)::Bool = is_local_host_name(host_name)
 
 """Sanitize a host name for use as a directory component."""
@@ -267,23 +269,26 @@ function _go_run_local_slot!(
     mkpath(slot_dir)
     log_path = joinpath(slot_dir, "julia.stdout.log")
     julia_bin = _go_resolve_julia(julia)
-    cmd = ignorestatus(
-        Cmd(
-            vcat(
-                [julia_bin, "--project=$(project)", String(script)],
-                collect(String, script_args),
+    cmd = addenv(
+        ignorestatus(
+            Cmd(
+                vcat(
+                    [julia_bin, "--project=$(project)", String(script)],
+                    collect(String, script_args),
+                ),
             ),
         ),
+        "DISTRIBUTED_OUTPUT_DIR" => String(slot_dir),
     )
-    proc = withenv("DISTRIBUTED_OUTPUT_DIR" => slot_dir) do
-        open(log_path, "w") do log
-            return run(pipeline(cmd; stdout=log, stderr=log); wait=true)
-        end
+    proc = open(log_path, "w") do log
+        return run(pipeline(cmd; stdout=log, stderr=log); wait=true)
     end
     # Mirror script stdout in `:verbose` only (quiet/progress own the TTY).
     if !quiet && kit_output_detail() && isfile(log_path)
-        _go_echo_script_log!(log_path)
-        writeln_both("")
+        lock(_GO_IO_LOCK) do
+            _go_echo_script_log!(log_path)
+            writeln_both("")
+        end
     end
     code = proc.exitcode isa Integer ? Int(proc.exitcode) : 1
     return DriveResult(code == 0, code)
@@ -334,7 +339,9 @@ function _go_run_remote_slot!(
     out = String(take!(buf))
     # `:verbose` only: quiet/progress suppress script echo (still in slot logs).
     if !quiet && kit_output_detail() && !isempty(out)
-        write(stdout, out)
+        lock(_GO_IO_LOCK) do
+            write(stdout, out)
+        end
     end
     code = proc.exitcode isa Integer ? Int(proc.exitcode) : 1
     # Prefer the remote-written exit file when ssh status is unreliable.
@@ -388,6 +395,52 @@ function _go_pull_slot!(
     end
 end
 
+"""Run one slot (local process or remote SSH) and optional collect. Isolated env per slot."""
+function _go_exec_slot!(
+    slot::GoSlot,
+    proj::AbstractString,
+    script_path::AbstractString,
+    args::AbstractVector{<:AbstractString},
+    batch_dir::AbstractString,
+    sess_rr::AbstractString,
+    skip_collect::Bool;
+    quiet::Bool=false,
+    julia::Union{Nothing,AbstractString}=nothing,
+)
+    slot_dir = joinpath(batch_dir, slot.label)
+    mkpath(slot_dir)
+    collect_res = nothing
+    collect_fail = false
+    if slot.kind === :local
+        run_res = _go_run_local_slot!(
+            proj, script_path, args, slot_dir; quiet=quiet, julia=julia,
+        )
+    else
+        host = slot.host::String
+        slot_rel = relpath(slot_dir, proj)
+        run_res = _go_run_remote_slot!(
+            host,
+            proj,
+            sess_rr,
+            script_path,
+            args,
+            slot_rel,
+            slot_dir;
+            quiet=quiet,
+            julia=julia,
+        )
+        if run_res.ok && !skip_collect
+            if _go_pull_slot!(host, sess_rr, slot_rel, slot_dir)
+                collect_res = CollectResult(true, 0)
+            else
+                collect_fail = true
+                collect_res = CollectResult(false, 1)
+            end
+        end
+    end
+    return (run=run_res, collect=collect_res, collect_fail=collect_fail)
+end
+
 """
     go!(script, workers...; kwargs...)
     go!(script, workers::AbstractVector; kwargs...)
@@ -414,8 +467,8 @@ first). `go!` has no git-parity gate; use [`drive!`](@ref) with
 `julia` sets the Julia binary for each slot (`nothing` / `"auto"` → detect;
 same as CLI `--julia`).
 
-`local:N` and `host:N` mean N independent full-job runs (not Distributed workers).
-`path_anchor` shortens displayed paths (CLI passes kit project root).
+`local:N` and `host:N` mean N independent full-job runs (not Distributed workers),
+started together. `path_anchor` shortens displayed paths (CLI passes kit project root).
 """
 function go!(
     script::AbstractString,
@@ -520,10 +573,10 @@ function go!(
         end
 
         skip_collect = collect_spec === false
-        any_run_fail = false
-        any_collect_fail = false
-        last_run = DriveResult(true, 0)
-        last_collect = nothing
+        any_run_fail = Ref(false)
+        any_collect_fail = Ref(false)
+        last_run = Ref(DriveResult(true, 0))
+        last_collect = Ref{Union{Nothing,CollectResult}}(nothing)
 
         print_header("DistSSHKit go")
         writeln_both("")
@@ -537,70 +590,80 @@ function go!(
 
         n_slots = length(slots)
         if n_slots > 0
-            kit_progress_begin!("go"; steps=n_slots)
+            kit_progress_begin!(
+                "go";
+                steps=n_slots,
+                items=String[s.label for s in slots],
+            )
         end
-        for (slot_i, slot) in enumerate(slots)
-            kit_progress_step!("Running slot"; done=slot_i)
-            slot_dir = joinpath(batch_dir, slot.label)
-            mkpath(slot_dir)
-            writeln_both("Running $(slot.label)...")
-            writeln_both("")
-            if slot.kind === :local
-                last_run = _go_run_local_slot!(
-                    proj, script_path, args, slot_dir; quiet=quiet, julia=julia,
-                )
-            else
-                host = slot.host::String
-                slot_rel = relpath(slot_dir, proj)
-                last_run = _go_run_remote_slot!(
-                    host,
-                    proj,
-                    sess_rr,
-                    script_path,
-                    args,
-                    slot_rel,
-                    slot_dir;
-                    quiet=quiet,
-                    julia=julia,
-                )
-                if last_run.ok && !skip_collect
-                    ok_pull = _go_pull_slot!(host, sess_rr, slot_rel, slot_dir)
-                    if !ok_pull
-                        any_collect_fail = true
-                        last_collect = CollectResult(false, 1)
+        @sync for slot in slots
+            @async begin
+                err = nothing
+                outcome = try
+                    _go_exec_slot!(
+                        slot,
+                        proj,
+                        script_path,
+                        args,
+                        batch_dir,
+                        sess_rr,
+                        skip_collect;
+                        quiet=quiet,
+                        julia=julia,
+                    )
+                catch e
+                    err = e
+                    (
+                        run=DriveResult(false, 1),
+                        collect=nothing,
+                        collect_fail=false,
+                    )
+                end
+                lock(_GO_IO_LOCK) do
+                    last_run[] = outcome.run
+                    if outcome.collect !== nothing
+                        last_collect[] = outcome.collect
+                    end
+                    if outcome.collect_fail
+                        any_collect_fail[] = true
+                    end
+                    if err !== nothing
+                        any_run_fail[] = true
+                        kit_progress_item!(slot.label; status=:fail)
+                        write(stderr, "  ")
+                        print_err("✗ $(slot.label): $(sprint(showerror, err))"; io=stderr)
+                        println(stderr)
+                    elseif !outcome.run.ok
+                        any_run_fail[] = true
+                        kit_progress_item!(slot.label; status=:fail)
+                        write(stderr, "  ")
+                        print_err("✗ $(slot.label) (exit $(outcome.run.exit_code))"; io=stderr)
+                        println(stderr)
                     else
-                        last_collect = CollectResult(true, 0)
+                        kit_progress_item!(slot.label; status=:ok)
+                        ok(slot.label)
                     end
                 end
             end
-            if !last_run.ok
-                any_run_fail = true
-                # Fatal: always on terminal.
-                write(stderr, "  ")
-                print_err("✗ $(slot.label) (exit $(last_run.exit_code))"; io=stderr)
-                println(stderr)
-            else
-                ok(slot.label)
-            end
         end
 
-        if any_run_fail
+        if any_run_fail[]
             return GoResult(
                 false,
                 sync_result,
-                last_run,
-                last_collect,
+                last_run[],
+                last_collect[],
                 script_path,
                 batch_dir;
                 failed_step="run",
             )
         end
-        if any_collect_fail
+        if any_collect_fail[]
             return GoResult(
                 false,
                 sync_result,
-                last_run,
-                last_collect,
+                last_run[],
+                last_collect[],
                 script_path,
                 batch_dir;
                 failed_step="collect",
@@ -610,9 +673,10 @@ function go!(
         writeln_both("")
         writeln_both("Results: $(display_path(batch_dir, anchor))")
         progress_ok = true
-        return GoResult(true, sync_result, last_run, last_collect, script_path, batch_dir)
+        return GoResult(true, sync_result, last_run[], last_collect[], script_path, batch_dir)
     finally
-        kit_progress_done!(; ok=progress_ok)
+        footer = progress_ok ? display_path(batch_dir, anchor) : nothing
+        kit_progress_done!(; ok=progress_ok, footer=footer)
         close_log_file()
     end
 end

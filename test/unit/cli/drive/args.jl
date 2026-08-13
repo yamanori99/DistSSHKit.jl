@@ -69,6 +69,9 @@ using Test
             let r = parse_drive_args(["--help"])
                 @test r.help == true
             end
+            let r = parse_drive_args(["-h"])
+                @test r.help == true
+            end
             let r = parse_drive_args(["--local", "4", "myscript.jl", "a", "b"])
                 @test r.local_workers == 4
                 @test r.script_path == "myscript.jl"
@@ -176,7 +179,7 @@ using Test
 
     @testset "help smoke" begin
         txt = drive_help_text()
-        @test occursin("Usage:", txt)
+        @test occursin("Usage", txt)
         @test occursin("--collect-missing", txt)
         @test occursin("--quiet", txt)
         @test occursin("--require-git", txt)

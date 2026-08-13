@@ -53,13 +53,12 @@ julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_file.jl
 Remote SSH / sync / worker changes: run **SSH E2E** locally when paths match.
 Locally (including macOS controllers): `testenv/docker-ssh/scripts/up.sh --e2e` (see [`testenv/docker-ssh/README.md`](testenv/docker-ssh/README.md)). Optional Mac-only workers (not CI): [`testenv/apple-container-ssh`](testenv/apple-container-ssh).
 
-Optional static analysis (install [jetls](https://github.com/JuliaLang/jetls.jl) locally):
+Optional static analysis (install [jetls](https://github.com/JuliaLang/jetls.jl) locally).
+Entry files are globbed by [`.github/jetls-check.sh`](.github/jetls-check.sh)
+(same list as CI; new `src/cli/*.jl` / demo / fixture files are included automatically):
 
 ```bash
-jetls --threads=auto -- check --exit-severity=warning --progress=none \
-  demos/with_kit/*.jl demos/without_kit/*.jl \
-  src/DistSSHKit.jl src/cli/go.jl src/cli/drive.jl src/cli/setup.jl src/cli/size.jl \
-  test/runtests.jl test/aqua.jl test/fixtures/*.jl
+./.github/jetls-check.sh
 ```
 
 Optional docs build:
@@ -150,7 +149,17 @@ Convention: each `src/cli/<area>/` directory becomes `area:<area>`; kit modules
 area directory, regenerate and commit `labeler.yml` (and create the GitHub
 label if needed).
 
-Every PR must also carry **one** type label (enforced by CI):
+Every PR must also carry **one** type label. CI applies it from the branch
+prefix when missing:
+
+- `feat/` / `feature/` → `enhancement`
+- `fix/` / `bug/` / `hotfix/` → `bug`
+- `chore/` / `docs/` / `ci/` / `build/` / `test/` / `refactor/` → `chore`
+- `breaking/` / `break/` → `breaking`
+- anything else (`demos/`, `wip/`, no prefix) → `chore`
+
+Override with `gh pr edit N --add-label …` if the guess is wrong. The check
+does not fail for an unknown prefix.
 
 - `bug` — fix
 - `enhancement` — feature / improvement

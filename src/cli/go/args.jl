@@ -3,62 +3,54 @@
 function show_go_usage()
     print_help_chrome("DistSSHKit go")
     print_help_lines(
-        "Run an as-is complete job (no Kit APIs in the script).",
-        "Setup on remotes is assumed done (`setup --rsync` or `--clone`, then `--instantiate`).",
+        "Standalone script. One full run per slot; slots start together.",
+        "Remotes: setup --rsync or --clone, then --instantiate.",
     )
     print_help_blank()
     print_help_section("Usage")
     print_help_lines(
-        "  julia --project=. -m DistSSHKit go SCRIPT.jl [script_args...]",
-        "  julia --project=. -m DistSSHKit go local:2 user@h1 user@h2:2 SCRIPT.jl",
-        "  julia --project=. -m DistSSHKit SCRIPT.jl",
+        "  julia --project=. -m DistSSHKit go [slots...] SCRIPT.jl",
+        "  go local:2 SCRIPT.jl",
+        "  go local:1 host1:2 host2:2 SCRIPT.jl",
     )
     print_help_blank()
-    print_help_section("Optional pre-run sync (default: none — run setup yourself)")
+    print_help_section("Slots")
     print_help_lines(
-        "  --sync              git push/pull — same as `setup --sync`",
-        "  --rsync             rsync working tree first (missing/empty remote only;",
-        "                      or `setup --delete` first)",
-        "  --skip-sync         compat: no pre-run sync (already the default)",
-        "  --skip-git-guard    $(DistSSHKit.GO_SKIP_GIT_GUARD_MEANING)",
-        "  --julia PATH        Julia on remotes (default: \$JULIA_DISTRIBUTED_EXE or auto-detect)",
-        "  --output-dir PATH   batch root (default: <project>/.distsshkit/go/<stem>_<UTC>)",
-        "  --hosts CSV         Comma-separated slot specs (same form as CLI tokens)",
+        "  local:N / host:N    N full-script runs (not drive workers)",
+        "  local:0             skip local when remotes are listed",
+        "  --hosts CSV         same tokens, comma-separated",
+        "  --hosts-file PATH   one token per line (host:N kept)",
     )
     print_help_blank()
-    print_help_section("Shared kit flags (also on drive / setup)")
+    print_help_section("Options")
     print_help_lines(
+        "  --sync / --rsync    optional pre-run (default: none)",
+        "  --julia PATH        remote Julia (ENV or auto)",
+        "  --output-dir PATH   batch root; slots are PATH/<slot>/",
         "  $(DistSSHKit.KIT_QUIET_FLAG_HELP)",
         "  $(DistSSHKit.KIT_PROGRESS_FLAG_HELP)",
-        "  -y, --yes           Non-interactive confirmations",
-        "  --hosts-file PATH   Append hosts from a line-oriented file (host:N kept for slots)",
-        "  --version, -v       Print DistSSHKit version and exit",
+        "  $(DistSSHKit.KIT_VERBOSE_FLAG_HELP)",
+        "  -y, --yes           skip confirmations",
+        "  --version, -v       print version and exit",
+        "  -h, --help          this help",
     )
     print_help_blank()
-    println("Environment (hosts): DISTSSHKIT_HOSTS (comma-separated, host:N OK), DISTSSHKIT_HOSTS_FILE")
-    println("Environment (Julia): JULIA_DISTRIBUTED_EXE (default remote Julia path)")
-    print_help_blank()
-    print_help_section("Typical after setup (`--rsync` or `--clone`, then `--instantiate`)")
+    print_help_section("Output")
     print_help_lines(
-        "  julia --project=. -m DistSSHKit go \\",
-        "    local:1 host1:2 host2:2 SCRIPT.jl",
-        "  # Git updates later: setup --sync …, or go --sync …",
+        "  .distsshkit/go/<stem>_<UTC>/<slot>/",
+        "  DISTRIBUTED_OUTPUT_DIR → that slot dir",
+        "  --output-dir is the batch root (not drive's result root)",
+    )
+    print_help_blank()
+    print_help_section("Environment")
+    print_help_lines(
+        "  DISTSSHKIT_HOSTS[, FILE]    hosts (host:N OK)",
+        "  JULIA_DISTRIBUTED_EXE       default remote Julia",
+        "  DISTSSHKIT_QUIET / PROGRESS / VERBOSE / YES",
     )
     print_help_blank()
     print_help_lines(
-        "Each slot runs the full script once. Default batch root:",
-        "",
-        "  <project>/.distsshkit/go/<stem>_<UTC>/<slot>/",
-        "",
-        "Override with --output-dir PATH (becomes the batch root; slots are PATH/<slot>/).",
-        "Unlike drive --output-dir (result root / DISTRIBUTED_OUTPUT_DIR), go's flag is the",
-        "batch directory that contains per-slot dirs.",
-        "Kit sets DISTRIBUTED_OUTPUT_DIR to that slot directory (scripts may use it;",
-        "standalone scripts can keep writing under their own output/).",
-        "`local:N` / `host:N` = N full-job runs (not Distributed workers; use drive for those).",
-        "`local:0` skips local slots when remotes are listed.",
-        "",
-        "See also: setup --help, drive --help",
+        "Details: docs (manual/go). See also: setup, drive.",
     )
 end
 

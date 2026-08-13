@@ -49,6 +49,7 @@ How to run: [`testenv/docker-ssh/README.md`](../testenv/docker-ssh/README.md).
 | **Aqua** (`aqua.jl`) | ambiguities, exports, compat, project consistency | ~5 s |
 | **unit** | parsing, display, module helpers, CLI arg tables | ~5 s |
 | **integration** | `julia -m DistSSHKit drive` end-to-end in child processes | ~2 min |
+| **boot** (CI) | `using DistSSHKit` + `-h` on **macOS** and **Windows** (Julia 1.12). **main / dispatch** only (PR skips). Not `Pkg.test()` | ~2–5 min |
 | **ssh-e2e** (CI / opt-in) | Real SSH + rsync against Docker workers (`DISTSSHKIT_SSH_E2E=1`). CI: **linux-to-linux** only; macOS controllers: `testenv/docker-ssh/scripts/up.sh --e2e` | ~10–20 min |
 | **doctests** (docs CI) | docstring examples in `src/` (`Documentation.yml`) | ~5 s |
 
@@ -98,7 +99,7 @@ open "$(cat test/artifacts/ssh-e2e/LATEST)/SUMMARY.txt"
 rm -rf test/artifacts/ssh-e2e
 ```
 
-Kit CLI flags (drive / go / setup / size) also honor `DISTSSHKIT_QUIET`, `DISTSSHKIT_PROGRESS`, `DISTSSHKIT_YES`, and `DISTSSHKIT_HOSTS_FILE`; see `src/DistSSHKit/cli/session.jl`.
+Kit CLI flags (drive / go / setup / size) also honor `DISTSSHKIT_QUIET`, `DISTSSHKIT_PROGRESS`, `DISTSSHKIT_VERBOSE`, `DISTSSHKIT_YES`, and `DISTSSHKIT_HOSTS_FILE`; see `src/DistSSHKit/cli/session.jl`.
 
 ## Adding tests
 

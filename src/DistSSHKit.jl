@@ -224,7 +224,7 @@ function (@main)(args::Vector{String}=copy(ARGS))::Cint
     # Shorthand: hosts… SCRIPT.jl → go (as-is complete job)
     if length(args) >= 1 &&
        !(args[1] in known_subcommands) &&
-       !(args[1] in ("--version", "-v", "-V")) &&
+       !(args[1] in ("--version", "-v", "-V", "-h", "--help", "help")) &&
        any(endswith(String(a), ".jl") for a in args)
         _mark_kit_cli_subcommand_done!()
         return go(collect(String, args))
@@ -234,6 +234,10 @@ function (@main)(args::Vector{String}=copy(ARGS))::Cint
     end
     if length(args) == 1 && args[1] in ("--version", "-v", "-V")
         println_kit_version()
+        return 0
+    end
+    if length(args) == 1 && args[1] in ("-h", "--help", "help")
+        print_kit_root_usage()
         return 0
     end
     if isempty(args)

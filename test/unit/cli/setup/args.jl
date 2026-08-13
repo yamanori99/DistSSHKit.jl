@@ -4,6 +4,9 @@ using Test
     _setup_dir = joinpath(_kit_root(), "src", "cli", "setup")
     isdefined(Main, :parse_setup_args) || include(joinpath(_setup_dir, "args.jl"))
 
+    @test parse_setup_args(["--help"]).show_help
+    @test parse_setup_args(["-h"]).show_help
+
     let r = parse_setup_args(["--check", "host1"])
         @test r.ignore_julia_version == false
     end

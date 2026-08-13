@@ -1,4 +1,5 @@
 # Require a type label on every PR: bug | enhancement | breaking | chore.
+# If missing, infer from the branch prefix and apply it (feat/ → enhancement, …).
 # Dependabot PRs are exempt (bot marker: `dependencies` only).
 name: PR type label
 
@@ -12,7 +13,7 @@ concurrency:
 
 permissions:
   contents: read
-  pull-requests: read
+  pull-requests: write
 
 jobs:
   require-type:
@@ -27,13 +28,39 @@ jobs:
               core.info("Skipping type label check for Dependabot");
               return;
             }
-            const required = new Set(["bug", "enhancement", "breaking", "chore"]);
+
+            const required = ["bug", "enhancement", "breaking", "chore"];
+            const requiredSet = new Set(required);
+            const n = context.issue.number;
             const labels = context.payload.pull_request.labels.map((l) => l.name);
-            const found = labels.filter((n) => required.has(n));
-            if (found.length === 0) {
-              core.setFailed(
-                `Add one type label: bug, enhancement, breaking, or chore (have: ${labels.join(", ") || "none"})`,
-              );
+            let found = labels.filter((name) => requiredSet.has(name));
+            if (found.length > 0) {
+              core.info(`Type label(s): ${found.join(", ")}`);
               return;
             }
-            core.info(`Type label(s): ${found.join(", ")}`);
+
+            const branch = String(context.payload.pull_request.head.ref || "");
+            const inferred = inferType(branch);
+
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: n,
+              labels: [inferred],
+            });
+            core.info(`Applied type label "${inferred}" from branch "${branch}"`);
+
+            function inferType(ref) {
+              const b = ref.toLowerCase();
+              if (b.startsWith("breaking/") || b.startsWith("break/")) {
+                return "breaking";
+              }
+              if (b.startsWith("feat/") || b.startsWith("feature/")) {
+                return "enhancement";
+              }
+              if (b.startsWith("fix/") || b.startsWith("bug/") || b.startsWith("hotfix/")) {
+                return "bug";
+              }
+              // Known prefixes, and anything else (demos/, wip/, unprefixed).
+              return "chore";
+            }

@@ -7,7 +7,7 @@
 #   julia --project=. test/runtests.jl
 #
 # Maintainer checks: CONTRIBUTING.md ("Before opening a PR").
-#   jetls --threads=auto -- check ... demos/with_kit/*.jl demos/without_kit/*.jl ...
+#   ./.github/jetls-check.sh
 
 using Test
 

@@ -1,13 +1,10 @@
 # Shared CLI session flags for drive / setup / size / go.
 
 """One-line meaning of `--require-git` (drive opt-in git parity)."""
-const REQUIRE_GIT_MEANING =
-    "Opt-in git parity: dirty local tree warns; remote commits must match local. " *
-    "Default is off."
+const REQUIRE_GIT_MEANING = "opt-in git parity (off by default)"
 
 """Drive `--skip-git-guard`: compat no-op (parity already off)."""
-const SKIP_GIT_GUARD_MEANING =
-    "Compat no-op: git parity is already off. Prefer omitting; use --require-git to enable."
+const SKIP_GIT_GUARD_MEANING = "compat no-op (parity already off)"
 
 """Go `--skip-git-guard`: alias of `--skip-sync`."""
 const GO_SKIP_GIT_GUARD_MEANING =
@@ -23,13 +20,36 @@ Collect modes:
 """
 
 const KIT_QUIET_FLAG_HELP =
-    "-q, --quiet         Suppress terminal detail (kit log still written)"
+    "-q, --quiet         hide terminal detail"
 const KIT_PROGRESS_FLAG_HELP =
-    "--progress         Thin single-line phase bar (not with -q)"
+    "--progress          live status (TTY default)"
+const KIT_VERBOSE_FLAG_HELP =
+    "--verbose           full detail (non-TTY default)"
 const KIT_QUIET_ENV_HELP =
     "DISTSSHKIT_QUIET                  Same as --quiet"
 const KIT_PROGRESS_ENV_HELP =
     "DISTSSHKIT_PROGRESS               Same as --progress"
+const KIT_VERBOSE_ENV_HELP =
+    "DISTSSHKIT_VERBOSE                Same as --verbose"
+
+"""CLI default when no verbosity flag/env is set: live bar on a TTY, else verbose."""
+kit_cli_auto_verbosity(; live::Union{Nothing,Bool}=nothing)::Symbol =
+    something(live, kit_stdout_is_live()) ? :progress : :verbose
+
+"""Read exclusive verbosity from env (`DISTSSHKIT_QUIET` / `_PROGRESS` / `_VERBOSE`)."""
+function _env_verbosity()::Union{Nothing,Symbol}
+    want_quiet = _env_flag("DISTSSHKIT_QUIET")
+    want_progress = _env_flag("DISTSSHKIT_PROGRESS")
+    want_verbose = _env_flag("DISTSSHKIT_VERBOSE")
+    n = count(identity, (want_quiet, want_progress, want_verbose))
+    n > 1 && throw(ArgumentError(
+        "cannot combine DISTSSHKIT_QUIET, DISTSSHKIT_PROGRESS, and DISTSSHKIT_VERBOSE",
+    ))
+    want_quiet && return :quiet
+    want_progress && return :progress
+    want_verbose && return :verbose
+    return nothing
+end
 
 """Set exclusive sync mode (`:sync` / `:rsync` / `false`); throw if conflicting."""
 function _kit_set_sync_mode!(
@@ -48,7 +68,7 @@ function _kit_set_sync_mode!(
     return next
 end
 
-"""Resolve verbosity; `quiet=true` maps to `:quiet`. Rejects quiet+progress."""
+"""Resolve verbosity; `quiet=true` maps to `:quiet`. Rejects quiet+progress/verbose."""
 function _resolve_kit_verbosity(;
     quiet::Bool=false,
     verbosity::Union{Nothing,Symbol}=nothing,
@@ -58,11 +78,13 @@ function _resolve_kit_verbosity(;
             throw(ArgumentError("verbosity must be :verbose, :progress, or :quiet"))
         quiet && verbosity === :progress &&
             throw(ArgumentError("cannot combine --quiet (-q) with --progress"))
+        quiet && verbosity === :verbose &&
+            throw(ArgumentError("cannot combine --quiet (-q) with --verbose"))
         quiet && verbosity !== :quiet &&
             throw(ArgumentError("quiet=true conflicts with verbosity=$verbosity"))
         return quiet ? :quiet : verbosity
     end
-    return quiet ? :quiet : :verbose
+    return quiet ? :quiet : kit_cli_auto_verbosity()
 end
 
 """Runtime CLI session: verbosity, non-interactive mode, shared host list."""
@@ -73,6 +95,7 @@ mutable struct KitCliSession
     hosts_file::Union{Nothing,String}
     show_version::Bool
     hint_surface::Symbol
+    verbosity_explicit::Bool
 end
 
 function KitCliSession(;
@@ -82,11 +105,13 @@ function KitCliSession(;
     hosts_file::Union{Nothing,AbstractString}=nothing,
     show_version::Bool=false,
     hint_surface::Symbol=:cli,
+    verbosity_explicit::Bool=false,
 )
     v = _resolve_kit_verbosity(; quiet=quiet, verbosity=verbosity)
     hf = hosts_file === nothing ? nothing : String(hosts_file)
     surface = _normalize_hint_surface(hint_surface)
-    return KitCliSession(v === :quiet, v, yes, hf, show_version, surface)
+    explicit = verbosity_explicit || quiet || verbosity !== nothing
+    return KitCliSession(v === :quiet, v, yes, hf, show_version, surface, explicit)
 end
 
 function _env_flag(name::AbstractString)::Bool
@@ -94,22 +119,23 @@ function _env_flag(name::AbstractString)::Bool
     return v in ("1", "true", "yes", "on")
 end
 
-"""Default session; honors `DISTSSHKIT_QUIET`, `DISTSSHKIT_PROGRESS`, `DISTSSHKIT_YES`, `DISTSSHKIT_HOSTS_FILE`."""
+"""Default session; honors `DISTSSHKIT_QUIET`, `DISTSSHKIT_PROGRESS`, `DISTSSHKIT_VERBOSE`, `DISTSSHKIT_YES`, `DISTSSHKIT_HOSTS_FILE`."""
 function default_kit_cli_session()::KitCliSession
     hosts_file = let raw = strip(get(ENV, "DISTSSHKIT_HOSTS_FILE", ""))
         isempty(raw) ? nothing : String(raw)
     end
-    want_quiet = _env_flag("DISTSSHKIT_QUIET")
-    want_progress = _env_flag("DISTSSHKIT_PROGRESS")
-    want_quiet && want_progress &&
-        throw(ArgumentError("cannot combine DISTSSHKIT_QUIET with DISTSSHKIT_PROGRESS"))
-    verbosity = want_quiet ? :quiet : (want_progress ? :progress : :verbose)
-    return KitCliSession(
-        quiet=want_quiet,
-        verbosity=verbosity,
+    env_v = _env_verbosity()
+    hosts_kw = (;
         yes=_env_flag("DISTSSHKIT_YES"),
         hosts_file=hosts_file,
         show_version=false,
+    )
+    env_v === nothing && return KitCliSession(; hosts_kw...)
+    return KitCliSession(;
+        quiet=env_v === :quiet,
+        verbosity=env_v,
+        verbosity_explicit=true,
+        hosts_kw...,
     )
 end
 
@@ -127,6 +153,7 @@ end
 const _KIT_CLI_FLAGS = (
     quiet = ("-q", "--quiet"),
     progress = ("--progress",),
+    verbose = ("--verbose",),
     yes = ("-y", "--yes"),
     hosts_file = ("--hosts-file",),
     version = ("--version", "-v", "-V"),  # -V kept as deprecated alias
@@ -141,11 +168,12 @@ function _flag_match(arg::AbstractString, names::Tuple{Vararg{String}})::Bool
 end
 
 function _set_session_verbosity!(session::KitCliSession, v::Symbol)
-    if session.verbosity !== :verbose && session.verbosity !== v
-        throw(ArgumentError("cannot combine --quiet (-q) with --progress"))
+    if session.verbosity_explicit && session.verbosity !== v
+        throw(ArgumentError("cannot combine --quiet (-q), --progress, and --verbose"))
     end
     session.verbosity = v
     session.quiet = v === :quiet
+    session.verbosity_explicit = true
     return session
 end
 
@@ -159,6 +187,10 @@ function consume_kit_cli_flag!(c::CliCursor, session::KitCliSession)::Bool
         return true
     elseif _flag_match(arg, _KIT_CLI_FLAGS.progress)
         _set_session_verbosity!(session, :progress)
+        cli_consume!(c)
+        return true
+    elseif _flag_match(arg, _KIT_CLI_FLAGS.verbose)
+        _set_session_verbosity!(session, :verbose)
         cli_consume!(c)
         return true
     elseif _flag_match(arg, _KIT_CLI_FLAGS.yes)
