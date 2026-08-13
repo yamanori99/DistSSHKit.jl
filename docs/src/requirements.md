@@ -9,8 +9,7 @@ pieces when you SSH to other hosts.
 Applies to the machine where you run the kit **and** each SSH host that runs
 jobs.
 
-- **macOS and Linux**
-- **macOS and Linux**
+- **macOS and Linux** (WSL2 Ubuntu is Linux; CI SSH E2E after merge for macOS and WSL)
 - **Julia**
   - Library (`Pkg.add` / `using` / `go!` / `drive!`): **1.10+**
   - Terminal CLI (`julia -m DistSSHKit`): **1.12+** (no `-m` before 1.12; use

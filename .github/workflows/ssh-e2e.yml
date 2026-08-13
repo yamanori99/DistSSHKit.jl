@@ -30,12 +30,10 @@ permissions:
 
 jobs:
   ssh-e2e:
-    # Linux controller → Linux Docker workers only.
-    # macOS controllers: run the same suite locally (`./scripts/up.sh --e2e`).
-    # Colima on macos-15-intel made PR feedback too slow (~25m+).
+    # Linux controller → Linux Docker workers. Runs on PRs.
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    name: SSH (Julia 1.12)
+    name: Linux to Linux
     steps:
       - uses: actions/checkout@v7
 
@@ -56,3 +54,76 @@ jobs:
       - name: Teardown workers
         if: always()
         run: ./testenv/docker-ssh/scripts/down.sh || true
+
+  # Darwin controller → Linux Docker workers via Colima. Merge / dispatch only
+  # (Colima on macos-15-intel is too slow for PR feedback, ~25m+).
+  macos-e2e:
+    if: github.event_name != 'pull_request'
+    runs-on: macos-15-intel
+    timeout-minutes: 60
+    name: macOS to Linux
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: "1.12"
+      - uses: julia-actions/cache@v3
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: Colima
+        run: ./testenv/docker-ssh/scripts/setup-colima-ci.sh
+      - name: docker-ssh up + SSH E2E
+        run: ./testenv/docker-ssh/scripts/up.sh --e2e
+      - name: Teardown workers
+        if: always()
+        run: ./testenv/docker-ssh/scripts/down.sh || true
+
+  # WSL2 Ubuntu controller → Linux Docker workers. Merge / dispatch only.
+  wsl-e2e:
+    if: github.event_name != 'pull_request'
+    runs-on: windows-latest
+    timeout-minutes: 60
+    name: WSL2 to Linux
+    steps:
+      - uses: actions/checkout@v7
+      - uses: Vampire/setup-wsl@v7
+        with:
+          distribution: Ubuntu-24.04
+          wsl-version: 2
+          additional-packages: >-
+            ca-certificates curl git rsync openssh-client
+            docker.io docker-compose-v2 iptables
+      - name: docker-ssh up + SSH E2E in WSL2
+        shell: wsl-bash {0}
+        run: |
+          src="$(pwd)"
+          dest="$HOME/DistSSHKit.jl"
+          rm -rf "$dest"
+          git clone "$src" "$dest"
+          if ! docker info >/dev/null 2>&1; then
+            dockerd >/tmp/dockerd.log 2>&1 &
+            ok=0
+            for _ in $(seq 1 60); do
+              if docker info >/dev/null 2>&1; then
+                ok=1
+                break
+              fi
+              sleep 2
+            done
+            if [[ "$ok" -ne 1 ]]; then
+              cat /tmp/dockerd.log
+              exit 1
+            fi
+          fi
+          curl --retry 5 --retry-delay 5 --retry-connrefused --connect-timeout 10 \
+            -fsSL https://install.julialang.org | sh -s -- --yes --default-channel 1.12
+          export PATH="$HOME/.juliaup/bin:$PATH"
+          cd "$dest"
+          ./testenv/docker-ssh/scripts/up.sh --e2e
+      - name: Teardown workers
+        if: always()
+        shell: wsl-bash {0}
+        run: |
+          dest="$HOME/DistSSHKit.jl"
+          if [[ -d "$dest" ]]; then
+            (cd "$dest" && ./testenv/docker-ssh/scripts/down.sh) || true
+          fi

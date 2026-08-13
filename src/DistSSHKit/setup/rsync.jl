@@ -216,7 +216,7 @@ function rsync_project_to_hosts!(
         _print_rsync_safety_banner!(local_root, remote_path, hosts, path_anchor)
         if !kit_noninteractive()
             if !kit_confirm("Type 'rsync' to confirm: "; keyword="rsync")
-                kit_println("Cancelled.")
+                println_fatal("Cancelled.")
                 return (
                     cancelled=true,
                     succeeded=0,
@@ -246,8 +246,8 @@ function rsync_project_to_hosts!(
             end
             if outcome.status === :busy || outcome.status === :mkdir_fail
                 if report
-                    print_progress_err("✗ $(outcome.message)")
-                    kit_println()
+                    print_err("✗ $(outcome.message)")
+                    println()
                 end
                 push!(host_results, HostResult(host, false, outcome.message))
                 failed += 1
@@ -270,11 +270,11 @@ function rsync_project_to_hosts!(
             end
             if report
                 if dir_created
-                    print_progress_err("✗ rsync failed after creating directory: $(sprint(showerror, e))")
+                    print_err("✗ rsync failed after creating directory: $(sprint(showerror, e))")
                 else
-                    print_progress_err("✗ $(sprint(showerror, e))")
+                    print_err("✗ $(sprint(showerror, e))")
                 end
-                kit_println()
+                println()
             end
             push!(host_results, HostResult(host, false, msg))
             failed += 1

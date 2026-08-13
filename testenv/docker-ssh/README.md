@@ -9,13 +9,14 @@ Real OpenSSH + rsync Linux workers. CI remote SSH coverage uses this stack
 
 | Controller | Worker | Where |
 | --- | --- | --- |
-| Linux (`ubuntu-latest`) | Linux ×2 (this compose) | **CI** — full suite (path resolve, rsync, git clone/sync/`--require-git`, drive/go/API) |
-| macOS (Docker Desktop / Colima) | Linux ×2 (same image) | **Local only** — same `./scripts/up.sh --e2e` (exercises Darwin controller Julia resolve) |
+| Linux (`ubuntu-latest`) | Linux ×2 (this compose) | **CI** — every PR |
+| macOS Intel (`macos-15-intel` + Colima) | Linux ×2 (same compose) | **CI after merge** — `E2E / macOS to Linux` |
+| WSL2 Ubuntu (`windows-latest`) | Linux ×2 (same compose) | **CI after merge** — `E2E / WSL2 to Linux` |
 | Either | `local:N` | Mixed smoke inside the same suite |
 
 ### Honest limits
 
-- CI does **not** run a macOS controller job (Colima on `macos-15-intel` was too slow for PRs).
+- CI macOS controller is **after merge** (`macos-15-intel` + Colima). Apple Silicon GitHub runners cannot nest VMs.
 - Remote Julia detection is exercised on **Linux workers**.
 - **Not covered (no free CI):** Linux controller → macOS worker; Mac workers (use apple-container locally).
 - **Git parity (`--require-git`):** covered in the suite via a separate git remote root
@@ -37,7 +38,7 @@ Network Privacy does not block SSH from the controller.
 | [`scripts/up.sh`](scripts/up.sh) | Keys → compose up → wait (`--e2e` also runs the suite) |
 | [`scripts/wait-ready.sh`](scripts/wait-ready.sh) | BatchMode SSH + Julia probe |
 | [`scripts/down.sh`](scripts/down.sh) | Compose down |
-| [`scripts/setup-colima-ci.sh`](scripts/setup-colima-ci.sh) | Optional: Colima on Intel Mac CI (not used by default workflow) |
+| [`scripts/setup-colima-ci.sh`](scripts/setup-colima-ci.sh) | Colima on `macos-15-intel` (merge-only E2E) |
 | `.generated/` | gitignored SSH config / keys (created by scripts) |
 
 SSH Host aliases (written to `.generated/ssh_config`):
@@ -70,6 +71,8 @@ ssh -F .generated/ssh_config distsshkit-w1 'echo ok; julia --version'
 ## CI
 
 [`.github/workflows/ssh-e2e.yml`](../../.github/workflows/ssh-e2e.yml) runs
-`./scripts/up.sh --e2e` on `ubuntu-latest` only (`linux-to-linux`).
+`./scripts/up.sh --e2e` on `ubuntu-latest` for every PR (`linux-to-linux`), and
+after merge on macOS Intel (`E2E / macOS to Linux`) and WSL2 Ubuntu
+(`E2E / WSL2 to Linux`).
 
 Usual `Pkg.test()` does **not** start Docker and does **not** run this suite.
