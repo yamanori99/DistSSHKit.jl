@@ -19,7 +19,7 @@ Two ways to run:
   ([Distributed.jl](https://docs.julialang.org/en/v1/manual/distributed-computing/)).
 
 Around that, the kit handles remote project setup, sync, and collecting outputs.
-Use it from the terminal (`julia -m DistSSHKit …`) or from Julia code / notebooks.
+Use it from the terminal or from Julia code / notebooks.
 
 ## Installation
 
@@ -34,8 +34,10 @@ julia --project=. -e 'using Pkg; Pkg.add(url="https://github.com/yamanori99/Dist
 
 For the development tip, use `rev="main"` instead.
 
-There is no separate binary — use `julia --project=. -m DistSSHKit …`
-(Julia 1.12+ recommended). See [Requirements](@ref) for 1.10–1.11.
+!!! note "CLI"
+    These pages assume Julia **1.12+** and `julia --project=. -m DistSSHKit …`.
+    There is no separate binary. On 1.10–1.11 use `go!` / `drive!`; see
+    [Requirements](@ref).
 
 ## Next
 

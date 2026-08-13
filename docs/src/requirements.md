@@ -10,16 +10,15 @@ Applies to the machine where you run the kit **and** each SSH host that runs
 jobs.
 
 - **macOS and Linux**
-- **Julia 1.10+** — `Pkg.add` / `using` / `go!` / `drive!`. **1.12+ recommended**
-  for the terminal CLI (`julia -m DistSSHKit`); that entry does not exist
-  before 1.12. You can still pass the same argv to [`main`](@ref) or use the
-  [API](@ref API). Prefer the same **major.minor** on SSH hosts
-  (`setup --check` fails on a major.minor mismatch unless you pass
-  `--ignore-julia-version`; patch-only differences warn). On SSH hosts, path is
-  auto-detected, or set `--julia` / `JULIA_DISTRIBUTED_EXE`.
-
-When every machine is 1.12+, use `-m`. On mixed 1.10–1.11 controllers, still
-match major.minor with SSH hosts.
+- **macOS and Linux**
+- **Julia**
+  - Library (`Pkg.add` / `using` / `go!` / `drive!`): **1.10+**
+  - Terminal CLI (`julia -m DistSSHKit`): **1.12+** (no `-m` before 1.12; use
+    the [API](@ref API) or [`main`](@ref))
+  - Same **major.minor** on the controller and SSH hosts (`setup --check` fails
+    on a mismatch unless `--ignore-julia-version`; patch-only differences warn)
+  - On SSH hosts, the `julia` path is auto-detected, or set `--julia` /
+    `JULIA_DISTRIBUTED_EXE`
 
 ## Remotes
 
@@ -66,12 +65,10 @@ config `Host` alias — not the literal string `USER@HOST`.
 
 ### Where you run the kit
 
-```bash
-julia --version
-uname -s          # Darwin or Linux
-which rsync       # remotes / collect
-which git         # git deploy path only
-```
+- `julia --version`
+- `uname -s` — Darwin or Linux
+- `which rsync` — remotes / collect
+- `which git` — git deploy path only
 
 ### Each SSH host
 
@@ -85,11 +82,9 @@ Julia (prefer the same major.minor as the kit machine). Log in, find the binary,
 then check with that **full path** (non-interactive `ssh` often has no login
 `PATH`, so bare `julia` fails):
 
-```bash
-ssh USER@HOST
-which julia
-exit
-```
+- `ssh USER@HOST`
+- `which julia`
+- `exit`
 
 ```bash
 ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=accept-new USER@HOST '/path/from/which/julia --version'
