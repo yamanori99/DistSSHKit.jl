@@ -1,4 +1,5 @@
 # Require a type label on every PR: bug | enhancement | breaking | chore.
+# Dependabot PRs are exempt (bot marker: `dependencies` only).
 name: PR type label
 
 on:
@@ -21,6 +22,11 @@ jobs:
       - uses: actions/github-script@v7
         with:
           script: |
+            const login = context.payload.pull_request.user.login;
+            if (login === "dependabot[bot]") {
+              core.info("Skipping type label check for Dependabot");
+              return;
+            }
             const required = new Set(["bug", "enhancement", "breaking", "chore"]);
             const labels = context.payload.pull_request.labels.map((l) => l.name);
             const found = labels.filter((n) => required.has(n));
