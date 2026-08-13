@@ -56,7 +56,7 @@ Locally (including macOS controllers): `testenv/docker-ssh/scripts/up.sh --e2e` 
 Optional static analysis (install [jetls](https://github.com/JuliaLang/jetls.jl) locally):
 
 ```bash
-jetls --threads=auto -- check --exit-severity=warning --progress=none \
+jetls --threads=auto -- check --exit-severity=warning \
   demos/with_kit/*.jl demos/without_kit/*.jl \
   src/DistSSHKit.jl src/cli/go.jl src/cli/drive.jl src/cli/setup.jl src/cli/size.jl \
   test/runtests.jl test/aqua.jl test/fixtures/*.jl
