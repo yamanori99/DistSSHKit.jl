@@ -909,14 +909,20 @@ function _kit_progress_done!(
                 print(stdout, "\e[?25h")
                 state.cursor_hidden = false
             end
-            if footer isa AbstractString && !isempty(String(footer))
-                note = "     $(String(footer))"
-                println(stdout, note)
-                _kit_log_writeln(rstrip(note))
-            end
+            _progress_print_footer(footer)
         end
         KIT_PROGRESS[] = nothing
     end
+    return nothing
+end
+
+_progress_print_footer(::Nothing) = nothing
+function _progress_print_footer(footer::AbstractString)
+    s = String(footer)
+    isempty(s) && return nothing
+    note = "     $s"
+    println(stdout, note)
+    _kit_log_writeln(rstrip(note))
     return nothing
 end
 
