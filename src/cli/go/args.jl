@@ -18,7 +18,7 @@ function show_go_usage()
     print_help_lines(
         "  local:N / host:N    N full-script runs (not drive workers)",
         "  local:0             skip local when remotes are listed",
-        "  --hosts CSV         same tokens, comma-separated",
+        "  $(DistSSHKit.KIT_HOSTS_FLAG_HELP)",
         "  --hosts-file PATH   one token per line (host:N kept)",
     )
     print_help_blank()
@@ -44,7 +44,7 @@ function show_go_usage()
     print_help_blank()
     print_help_section("Environment")
     print_help_lines(
-        "  DISTSSHKIT_HOSTS[, FILE]    hosts (host:N OK)",
+        "  $(DistSSHKit.KIT_HOSTS_ENV_HELP)",
         "  JULIA_DISTRIBUTED_EXE       default remote Julia",
         "  DISTSSHKIT_QUIET / PROGRESS / VERBOSE / YES",
     )
@@ -72,12 +72,7 @@ function parse_go_args(args::AbstractVector{<:AbstractString})
     c = DistSSHKit.CliCursor(collect(String, rest))
     while !DistSSHKit.cli_at_end(c)
         arg = DistSSHKit.cli_current(c)::String
-        if arg == "--hosts"
-            for h in split(DistSSHKit.cli_take_value!(c, arg), ',')
-                s = strip(h)
-                !isempty(s) && push!(hosts, s)
-            end
-        elseif arg == "--output-dir"
+        if arg == "--output-dir"
             output_dir = DistSSHKit.cli_take_value!(c, arg)
         elseif arg == "--julia"
             julia_exe = DistSSHKit.cli_take_value!(c, arg)
@@ -119,6 +114,7 @@ function parse_go_args(args::AbstractVector{<:AbstractString})
         end
     end
     append!(hosts, host_tokens)
+    DistSSHKit.append_kit_host_sources!(hosts, cli_session; keep_counts=true)
     if julia_exe === nothing
         env_val = get(ENV, "JULIA_DISTRIBUTED_EXE", "auto")
         julia_exe = env_val == "auto" ? nothing : env_val

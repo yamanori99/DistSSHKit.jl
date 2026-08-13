@@ -55,5 +55,5 @@ Collect after remote slots: **slot-overwrite** (rsync whole slot dir).
 
 ## Hosts
 
-CLI tokens, `--hosts-file`, and/or `DISTSSHKIT_HOSTS`. `local:0` skips local
+CLI tokens, `--hosts`, `--hosts-file`, and/or `DISTSSHKIT_HOSTS`. `local:0` skips local
 slots when remotes are listed.

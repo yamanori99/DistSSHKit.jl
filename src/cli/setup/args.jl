@@ -34,6 +34,7 @@ function show_requirements(; io::IO=stdout)
         "  $(DistSSHKit.KIT_PROGRESS_FLAG_HELP)",
         "  $(DistSSHKit.KIT_VERBOSE_FLAG_HELP)",
         "  -y, --yes            skip confirmations",
+        "  --hosts CSV         comma-separated hosts (`:N` stripped)",
         "  --hosts-file PATH    one host per line (`:N` stripped)",
         "  --version, -v        print version and exit",
         "  -h, --help           this help",
@@ -102,7 +103,7 @@ function parse_setup_args(args::Vector{String})
         end
     end
 
-    DistSSHKit.append_hosts_file!(hosts, cli_session)
+    DistSSHKit.append_kit_host_sources!(hosts, cli_session; keep_counts=false)
     DistSSHKit.apply_kit_cli_session!(cli_session)
 
     return (

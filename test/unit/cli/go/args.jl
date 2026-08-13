@@ -19,8 +19,8 @@ using Test
             @test r.script_path == "job.jl"
             @test r.hosts == ["user@lab"]
         end
-        let r = parse_go_args(["--hosts", "host-a", "job.jl"])
-            @test r.hosts == ["host-a"]
+        let r = parse_go_args(["--hosts", "host-a,host-b:2", "job.jl"])
+            @test r.hosts == ["host-a", "host-b:2"]
             @test r.script_path == "job.jl"
         end
         let r = parse_go_args(["local:2", "h1", "job.jl", "4"])

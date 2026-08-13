@@ -19,6 +19,7 @@ function show_size_usage()
         "  --probe PATH        warm-up script; peak RSS",
         "  --mem-headroom N    RAM fraction (default $(DistSSHKit.DEFAULT_MEM_HEADROOM))",
         "  --master-gb N       master reserve (default $(DistSSHKit.DEFAULT_MASTER_GB))",
+        "  --hosts CSV         comma-separated hosts (`:N` stripped)",
         "  --hosts-file PATH   one host per line (`:N` stripped)",
         "  $(DistSSHKit.KIT_QUIET_FLAG_HELP)",
         "  $(DistSSHKit.KIT_PROGRESS_FLAG_HELP)",
@@ -78,7 +79,7 @@ function parse_size_args(args::Vector{String})
         end
     end
 
-    DistSSHKit.append_hosts_file!(hosts, cli_session)
+    DistSSHKit.append_kit_host_sources!(hosts, cli_session; keep_counts=false)
     DistSSHKit.apply_kit_cli_session!(cli_session)
 
     if probe === nothing

@@ -36,6 +36,7 @@ Pick **one mode** per invocation (except shared options).
 | `--progress` | Live status (TTY default) |
 | `--verbose` | Full detail (non-TTY default) |
 | `-y` / `--yes` | Accept confirmation prompts non-interactively |
+| `--hosts CSV` | Comma-separated SSH hosts (`host:N` → host name only) |
 | `--hosts-file PATH` | Append SSH hosts (`host:N` → host name only) |
 | `-v` / `--version` | Print DistSSHKit version and exit |
 | `-h` / `--help` | Full help |
