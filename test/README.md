@@ -54,7 +54,7 @@ How to run: [`testenv/docker-ssh/README.md`](../testenv/docker-ssh/README.md).
 | **doctests** (`Docs / Documenter (Julia 1.12)`) | docstring examples in `src/` (`Documentation.yml`) | ~5 s |
 
 Most of the wall time in `Pkg.test()` is integration (child Julia + local workers).
-Remote SSH is the separate **E2E / SSH (Julia 1.12)** check. Doctests run in **Docs / Documenter (Julia 1.12)**, not `Pkg.test()`. **Test / Pkg.test Julia 1.10|1.11** runs the suite except `julia -m` (that entry is 1.12+).
+Remote SSH is the separate **E2E / SSH (Julia 1.12)** check. Doctests run in **Docs / Documenter (Julia 1.12)**, not `Pkg.test()`. **Test / Pkg.test** on 1.10/1.11 uses `DistSSHKit.main` for CLI children (`-m` is 1.12+).
 
 ## Why only `setup` uses SSH/rsync fakes
 
