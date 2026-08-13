@@ -1,4 +1,4 @@
-name: CI
+name: Test
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 # Cancel redundant runs on the same branch/PR.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
 permissions:
@@ -23,7 +23,7 @@ jobs:
     if: github.event_name != 'pull_request'
     runs-on: macos-latest
     timeout-minutes: 15
-    name: macOS
+    name: boot macOS
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
@@ -45,7 +45,7 @@ jobs:
     if: github.event_name != 'pull_request'
     runs-on: windows-latest
     timeout-minutes: 15
-    name: Windows
+    name: boot Windows
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
