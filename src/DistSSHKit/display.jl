@@ -448,117 +448,428 @@ end
 """Help / requirements title text only (no newline). Prefer [`print_help_chrome`](@ref)."""
 print_help_title(msg; io=stdout) = _print_colored(io, msg, :cyan, true)
 
-# Thin phase progress (`--progress`)
+# Live phase progress (`--progress`)
+#
+# Phase mode (drive): one line. `done` is completed phases; the in-progress
+# phase is `done + 1`.
+# Item mode (go slots): header + one line per slot, all live. Header `done/steps`
+# is completed slots; running slots keep their own spinner.
 
-const PROGRESS_BAR_WIDTH = 16
-const PROGRESS_FILL_CHAR = '━'
+const PROGRESS_BAR_WIDTH = 20
+const PROGRESS_LABEL_WIDTH = 14
+const PROGRESS_FILL_CHAR = '─'
+const PROGRESS_HEAD_CHAR = '╶'
 const PROGRESS_EMPTY_CHAR = '─'
+
+mutable struct KitProgressItem
+    label::String
+    status::Symbol
+    tick::Int
+end
 
 mutable struct KitProgressState
     title::String
     steps::Int
     done::Int
     label::String
+    active::Bool
+    t0::Float64
+    tick::Int
+    spinning::Bool
+    spinner_task::Union{Task,Nothing}
+    items::Vector{KitProgressItem}
+    drawn::Int
+    cursor_hidden::Bool
+end
+
+function KitProgressState(title::AbstractString, steps::Int, done::Int, label::AbstractString)
+    return KitProgressState(
+        String(title),
+        steps,
+        done,
+        String(label),
+        false,
+        time(),
+        0,
+        false,
+        nothing,
+        KitProgressItem[],
+        0,
+        false,
+    )
 end
 
 const KIT_PROGRESS = Ref{Union{Nothing,KitProgressState}}(nothing)
+const KIT_PROGRESS_LOCK = ReentrantLock()
 
-function _progress_bar_string(done::Int, total::Int; width::Int=PROGRESS_BAR_WIDTH)::String
+function _progress_filled(done::Int, total::Int; width::Int=PROGRESS_BAR_WIDTH)::Int
     t = max(total, 1)
-    d = clamp(done, 0, t)
-    filled = round(Int, width * d / t)
-    return string(PROGRESS_FILL_CHAR)^filled * string(PROGRESS_EMPTY_CHAR)^(width - filled)
+    return round(Int, width * clamp(done, 0, t) / t)
 end
 
-function _progress_line(state::KitProgressState)::String
-    bar = _progress_bar_string(state.done, state.steps)
-    return "  $bar  $(state.label) · $(state.done)/$(state.steps)"
+"""1-based index of the walking tip in the unfilled region, or `0` when full."""
+function _progress_head_index(
+    done::Int,
+    total::Int,
+    tick::Int;
+    width::Int=PROGRESS_BAR_WIDTH,
+)::Int
+    filled = _progress_filled(done, total; width=width)
+    filled >= width && return 0
+    remaining = width - filled
+    return filled + 1 + mod(max(tick, 0), remaining)
 end
 
-_progress_can_draw()::Bool =
-    kit_output_progress() && stdout isa Base.TTY && !haskey(ENV, "NO_COLOR")
+function _progress_bar_string(
+    done::Int,
+    total::Int;
+    width::Int=PROGRESS_BAR_WIDTH,
+    tick::Int=0,
+)::String
+    chars = fill(PROGRESS_FILL_CHAR, width)
+    h = _progress_head_index(done, total, tick; width=width)
+    h > 0 && (chars[h] = PROGRESS_HEAD_CHAR)
+    return join(chars)
+end
 
-function _progress_draw!(state::KitProgressState; newline::Bool=false, color::Symbol=:normal)
-    !_progress_can_draw() && return nothing
-    bar = _progress_bar_string(state.done, state.steps)
-    suffix = "  $(state.label) · $(state.done)/$(state.steps)"
-    print(stdout, '\r', "  ")
-    if color === :normal
-        print(stdout, bar)
-        if use_colors()
-            printstyled(stdout, suffix; color=:light_black)
-        else
-            print(stdout, suffix)
-        end
-    else
-        line = bar * suffix
-        if use_colors()
-            printstyled(stdout, line; color=color)
-        else
-            print(stdout, line)
-        end
+function _progress_elapsed(t0::Float64)::String
+    s = max(0, round(Int, time() - t0))
+    m, r = divrem(s, 60)
+    m < 60 && return string(m, ":", lpad(r, 2, '0'))
+    h, m2 = divrem(m, 60)
+    return string(h, ":", lpad(m2, 2, '0'), ":", lpad(r, 2, '0'))
+end
+
+function _progress_current(state::KitProgressState)::Int
+    isempty(state.items) || return state.done
+    return state.done >= state.steps ? state.steps : state.done + 1
+end
+
+function _progress_fit_label(s::AbstractString; width::Int=PROGRESS_LABEL_WIDTH)::String
+    raw = String(s)
+    tw = textwidth(raw)
+    tw == width && return raw
+    tw < width && return raw * " "^(width - tw)
+    out = Char[]
+    w = 0
+    ell = textwidth("…")
+    for c in raw
+        cw = textwidth(c)
+        w + cw + ell > width && break
+        push!(out, c)
+        w += cw
     end
+    return join(out) * "…" * " "^(max(0, width - w - ell))
+end
+
+function _progress_item_glyph(item::KitProgressItem)::String
+    item.status === :ok && return "✓"
+    item.status === :fail && return "✗"
+    item.status === :running &&
+        return string(SPINNER_FRAMES[mod1(item.tick, length(SPINNER_FRAMES))])
+    return "·"
+end
+
+function _progress_item_color(item::KitProgressItem)::Symbol
+    item.status === :ok && return :green
+    item.status === :fail && return :red
+    return :cyan
+end
+
+function _progress_header_label(state::KitProgressState; finished::Bool=false)::String
+    use_title = finished || !isempty(state.items)
+    return _progress_fit_label(use_title ? state.title : state.label)
+end
+
+function _progress_glyph(state::KitProgressState; finished::Bool=false, ok::Bool=true)::String
+    finished && return ok ? "✓" : "✗"
+    return string(SPINNER_FRAMES[mod1(state.tick, length(SPINNER_FRAMES))])
+end
+
+function _progress_line(
+    state::KitProgressState;
+    finished::Bool=false,
+    ok::Bool=true,
+)::String
+    glyph = _progress_glyph(state; finished=finished, ok=ok)
+    label = _progress_header_label(state; finished=finished)
+    cur = _progress_current(state)
+    elapsed = _progress_elapsed(state.t0)
+    counts = "$cur/$(state.steps)"
+    if finished
+        return "  $glyph  $label  $counts  $elapsed"
+    end
+    bar = _progress_bar_string(state.done, state.steps; tick=state.tick)
+    return "  $glyph  $label  $bar  $counts  $elapsed"
+end
+
+function _progress_print_header!(
+    io::IO,
+    state::KitProgressState;
+    finished::Bool=false,
+    ok::Bool=true,
+)
+    glyph = _progress_glyph(state; finished=finished, ok=ok)
+    label = _progress_header_label(state; finished=finished)
+    cur = _progress_current(state)
+    counts = "$cur/$(state.steps)"
+    elapsed = _progress_elapsed(state.t0)
+    glyph_color = finished ? (ok ? :green : :red) : :cyan
+    print(io, "  ")
+    if use_colors()
+        printstyled(io, glyph; color=glyph_color)
+        print(io, "  ", label, "  ")
+        if !finished
+            _progress_print_bar!(io, state.done, state.steps, state.tick)
+            print(io, "  ")
+        end
+        printstyled(io, counts; color=:light_black)
+        print(io, "  ")
+        printstyled(io, elapsed; color=:light_black)
+    else
+        print(io, glyph, "  ", label, "  ")
+        if !finished
+            print(io, _progress_bar_string(state.done, state.steps; tick=state.tick), "  ")
+        end
+        print(io, counts, "  ", elapsed)
+    end
+    return nothing
+end
+
+function _progress_draw_items!(
+    state::KitProgressState;
+    finished::Bool=false,
+    ok::Bool=true,
+)
+    n = 1 + length(state.items)
+    if state.drawn > 0
+        print(stdout, "\e[$(state.drawn)A")
+    elseif !state.cursor_hidden
+        print(stdout, "\e[?25l")
+        state.cursor_hidden = true
+    end
+    _progress_print_header!(stdout, state; finished=finished, ok=ok)
+    print(stdout, "\e[K\n")
+    for it in state.items
+        g = _progress_item_glyph(it)
+        print(stdout, "     ")
+        if use_colors()
+            printstyled(stdout, g; color=_progress_item_color(it))
+        else
+            print(stdout, g)
+        end
+        print(stdout, "  ", it.label, "\e[K\n")
+    end
+    state.drawn = n
+    flush(stdout)
+    return nothing
+end
+
+function _progress_draw!(
+    state::KitProgressState;
+    newline::Bool=false,
+    color::Symbol=:normal,
+    finished::Bool=false,
+    ok::Bool=true,
+)
+    !_progress_can_draw() && return nothing
+    if !isempty(state.items)
+        _progress_draw_items!(state; finished=finished, ok=ok)
+        return nothing
+    end
+    print(stdout, '\r')
+    _progress_print_header!(stdout, state; finished=finished, ok=ok)
     print(stdout, "\e[K")
     newline && println(stdout)
     flush(stdout)
     return nothing
 end
 
-function _progress_log!(state::KitProgressState)
-    _kit_log_writeln("progress: $(state.label) ($(state.done)/$(state.steps))")
-    return nothing
-end
+"""Whether stdout can host a live bar (TTY and color allowed)."""
+kit_stdout_is_live()::Bool = stdout isa Base.TTY && !haskey(ENV, "NO_COLOR")
 
-"""
-Start a thin phase bar for `--progress` mode.
+_progress_can_draw()::Bool = kit_output_progress() && kit_stdout_is_live()
 
-`steps` is the total number of phases. Outside `:progress`, updates state only
-(no terminal bar / progress log lines).
-"""
-function kit_progress_begin!(title::AbstractString; steps::Int)
-    steps < 1 && throw(ArgumentError("kit_progress_begin!: steps must be ≥ 1"))
-    state = KitProgressState(String(title), steps, 0, String(title))
-    KIT_PROGRESS[] = state
-    if kit_output_progress()
-        _progress_log!(state)
-        _progress_draw!(state)
+function _progress_stop_spinner!(state::KitProgressState)
+    state.spinning || return nothing
+    state.spinning = false
+    t = state.spinner_task
+    state.spinner_task = nothing
+    t === nothing && return nothing
+    task = t::Task
+    if istaskstarted(task) && !istaskdone(task)
+        wait(task)
     end
     return nothing
 end
 
+function _progress_start_spinner!(state::KitProgressState)
+    (_progress_can_draw() && !state.spinning) || return nothing
+    state.spinning = true
+    state.spinner_task = @async begin
+        while state.spinning && KIT_PROGRESS[] === state
+            lock(KIT_PROGRESS_LOCK) do
+                state.spinning || return
+                KIT_PROGRESS[] === state || return
+                state.tick += 1
+                for it in state.items
+                    it.status === :running && (it.tick += 1)
+                end
+                _progress_draw!(state)
+            end
+            sleep(0.08)
+        end
+    end
+    return nothing
+end
+
+function _progress_print_bar!(io::IO, done::Int, total::Int, tick::Int)
+    width = PROGRESS_BAR_WIDTH
+    filled = _progress_filled(done, total; width=width)
+    head = _progress_head_index(done, total, tick; width=width)
+    for i in 1:width
+        if i == head
+            ch = string(PROGRESS_HEAD_CHAR)
+            use_colors() ? printstyled(io, ch; color=:cyan) : print(io, ch)
+        elseif i <= filled
+            ch = string(PROGRESS_FILL_CHAR)
+            use_colors() ? printstyled(io, ch; color=:cyan) : print(io, ch)
+        else
+            ch = string(PROGRESS_EMPTY_CHAR)
+            use_colors() ? printstyled(io, ch; color=:light_black) : print(io, ch)
+        end
+    end
+    return nothing
+end
+
+function _progress_log!(state::KitProgressState)
+    cur = _progress_current(state)
+    _kit_log_writeln(
+        "progress: $(state.label) ($(state.done)/$(state.steps) done, $(cur)/$(state.steps))",
+    )
+    return nothing
+end
+
 """
-Advance the thin phase bar. Pass `done` to set an absolute step count; otherwise
-increments by one. `label` is shown after the bar.
+Start a live status line for `--progress` mode.
+
+`steps` is the total number of phases or slots. Pass `items` for concurrent
+slots (header + one live line each). Outside `:progress`, updates state only.
+"""
+function kit_progress_begin!(
+    title::AbstractString;
+    steps::Int,
+    items::AbstractVector{<:AbstractString}=String[],
+)
+    steps < 1 && throw(ArgumentError("kit_progress_begin!: steps must be ≥ 1"))
+    prev = KIT_PROGRESS[]
+    prev !== nothing && _progress_stop_spinner!(prev)
+    state = KitProgressState(String(title), steps, 0, String(title))
+    for name in items
+        push!(state.items, KitProgressItem(String(name), :running, 0))
+    end
+    lock(KIT_PROGRESS_LOCK) do
+        KIT_PROGRESS[] = state
+        if kit_output_progress()
+            _progress_log!(state)
+            isempty(state.items) || _kit_log_writeln(
+                "progress: items $(join((it.label for it in state.items), ","))",
+            )
+            _progress_draw!(state)
+        end
+    end
+    kit_output_progress() && _progress_start_spinner!(state)
+    return nothing
+end
+
+"""
+Set the in-progress label.
+
+The first call does not increment `done`. Later calls mark the previous phase
+complete (`done += 1`) then switch the label. Pass `done` to set completed
+count absolutely (in-progress is still `done + 1` until [`kit_progress_done!`](@ref)).
 """
 function kit_progress_step!(label::AbstractString; done::Union{Nothing,Int}=nothing)
     state = KIT_PROGRESS[]
     state === nothing && return nothing
-    if done === nothing
-        state.done = min(state.done + 1, state.steps)
-    else
-        state.done = clamp(Int(done), 0, state.steps)
+    lock(KIT_PROGRESS_LOCK) do
+        KIT_PROGRESS[] === state || return nothing
+        if done === nothing
+            if state.active
+                state.done = min(state.done + 1, state.steps)
+            end
+            state.active = true
+        else
+            state.done = clamp(Int(done), 0, state.steps)
+            state.active = true
+        end
+        state.label = String(label)
+        if kit_output_progress()
+            _progress_log!(state)
+            _progress_draw!(state)
+        end
     end
-    state.label = String(label)
-    if kit_output_progress()
-        _progress_log!(state)
-        _progress_draw!(state)
-    end
+    kit_output_progress() && _progress_start_spinner!(state)
     return nothing
 end
 
-"""Finish the thin phase bar (newline + final color). Clears progress state."""
-function kit_progress_done!(; ok::Bool=true)
+"""
+Update one concurrent item (`:running` / `:ok` / `:fail`). Completing an item
+(`:ok` or `:fail`) increments `done` once.
+"""
+function kit_progress_item!(label::AbstractString; status::Symbol)
+    status in (:pending, :running, :ok, :fail) ||
+        throw(ArgumentError("kit_progress_item!: status must be :pending, :running, :ok, or :fail"))
     state = KIT_PROGRESS[]
     state === nothing && return nothing
-    state.done = state.steps
-    if isempty(state.label)
+    lock(KIT_PROGRESS_LOCK) do
+        KIT_PROGRESS[] === state || return nothing
+        idx = findfirst(it -> it.label == String(label), state.items)
+        idx === nothing && return nothing
+        item = state.items[idx]
+        prev = item.status
+        item.status = status
+        if status in (:ok, :fail) && prev !== :ok && prev !== :fail
+            state.done = min(state.done + 1, state.steps)
+        end
+        if kit_output_progress()
+            _kit_log_writeln(
+                "progress: $(item.label) $status ($(state.done)/$(state.steps) done)",
+            )
+            _progress_draw!(state)
+        end
+    end
+    kit_output_progress() && _progress_start_spinner!(state)
+    return nothing
+end
+
+"""
+Finish the status line (newline, ✓/✗, elapsed; no track). Optional `footer`
+prints under the line (`:progress` only; also kit log). Clears progress state.
+"""
+function kit_progress_done!(; ok::Bool=true, footer::Union{Nothing,AbstractString}=nothing)
+    state = KIT_PROGRESS[]
+    state === nothing && return nothing
+    _progress_stop_spinner!(state)
+    lock(KIT_PROGRESS_LOCK) do
+        KIT_PROGRESS[] === state || return nothing
+        state.done = state.steps
         state.label = state.title
+        if kit_output_progress()
+            _progress_log!(state)
+            _progress_draw!(state; newline=true, finished=true, ok=ok)
+            if state.cursor_hidden
+                print(stdout, "\e[?25h")
+                state.cursor_hidden = false
+            end
+            if footer !== nothing && !isempty(String(footer))
+                note = "     $(String(footer))"
+                println(stdout, note)
+                _kit_log_writeln(rstrip(note))
+            end
+        end
+        KIT_PROGRESS[] = nothing
     end
-    if kit_output_progress()
-        _progress_log!(state)
-        _progress_draw!(state; newline=true, color=ok ? :green : :red)
-    end
-    KIT_PROGRESS[] = nothing
     return nothing
 end
 
@@ -663,7 +974,7 @@ function print_kit_root_usage(io::IO=stderr)
         "  julia --project=. -m DistSSHKit setup --check host1",
     )
     print_help_blank(io)
-    println(io, "Run `julia -m DistSSHKit <command> --help` for details.")
+    println(io, "Run `julia -m DistSSHKit <command> -h` for flags.")
     return nothing
 end
 

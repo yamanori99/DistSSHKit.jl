@@ -19,7 +19,8 @@ Flag vocabulary: [User Guide](@ref Manual).
 | `--mem-headroom N` | Fraction of RAM usable for workers (default `0.75`) |
 | `--master-gb N` | GB to reserve for the master process (default `0.4`) |
 | `-q` / `--quiet` | Hide terminal detail during measurement |
-| `--progress` | Thin phase bar (not with `-q`) |
+| `--progress` | Live status (TTY default) |
+| `--verbose` | Full detail (non-TTY default) |
 | `-y` / `--yes` | Reserved (no prompts today; accepted for shared peel) |
 | `--hosts-file PATH` | Append SSH hosts (`host:N` → host name only) |
 | `-v` / `--version` | Print DistSSHKit version and exit |

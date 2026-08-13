@@ -47,7 +47,7 @@ Build [`PipelineConfig`](@ref) from environment variables.
 | `DISTSSHKIT_SIZE_PROBE` | Optional warm-up script for peak RSS (see size `--probe`) |
 | `SYNC_MODE` | `rsync`, `sync`, or `off` |
 | `JULIA_DISTRIBUTED_EXE` | Remote Julia path (same as CLI `--julia`; `auto` / unset → detect) |
-| `DISTSSHKIT_YES` / `DISTSSHKIT_QUIET` / `DISTSSHKIT_PROGRESS` | Same as CLI `-y` / `-q` / `--progress` |
+| `DISTSSHKIT_YES` / `DISTSSHKIT_QUIET` / `DISTSSHKIT_PROGRESS` / `DISTSSHKIT_VERBOSE` | Same as CLI `-y` / `-q` / `--progress` / `--verbose` |
 """
 function pipeline_config_from_env(;
     driver::Union{Nothing,AbstractString}=nothing,
@@ -59,8 +59,11 @@ function pipeline_config_from_env(;
     project_root = strip(get(ENV, "DISTRIBUTED_PROJECT_ROOT", ""))
     want_quiet = _env_flag("DISTSSHKIT_QUIET")
     want_progress = _env_flag("DISTSSHKIT_PROGRESS")
-    want_quiet && want_progress &&
-        throw(ArgumentError("cannot combine DISTSSHKIT_QUIET with DISTSSHKIT_PROGRESS"))
+    want_verbose = _env_flag("DISTSSHKIT_VERBOSE")
+    n = count(identity, (want_quiet, want_progress, want_verbose))
+    n > 1 &&
+        throw(ArgumentError("cannot combine DISTSSHKIT_QUIET, DISTSSHKIT_PROGRESS, and DISTSSHKIT_VERBOSE"))
+    verbosity = want_quiet ? :quiet : want_progress ? :progress : want_verbose ? :verbose : nothing
     return PipelineConfig(
         project=isempty(project_root) ? pwd() : String(project_root),
         workers=_parse_env_hosts(get(ENV, "DISTSSHKIT_HOSTS", "")),
@@ -68,7 +71,7 @@ function pipeline_config_from_env(;
         hosts_file=isempty(hf_raw) ? nothing : String(hf_raw),
         yes=true,
         quiet=want_quiet,
-        verbosity=want_progress ? :progress : nothing,
+        verbosity=verbosity,
         driver=String(driver_path),
         gb_per_worker=_optional_env_float("GB_PER_WORKER"),
         size_probe=let p = strip(get(ENV, "DISTSSHKIT_SIZE_PROBE", ""))

@@ -1,7 +1,8 @@
 # [go](@id Manual-go)
 
 Run a **standalone** script as-is (no Kit APIs in the job file). Each
-`local:N` / `host:N` slot is one full script run — not Distributed workers.
+`local:N` / `host:N` slot is one full script run, started **concurrently** —
+not Distributed workers.
 
 ```bash
 julia --project=. -m DistSSHKit go [options] [local:N] [host:N...] SCRIPT.jl [script_args...]
@@ -28,7 +29,8 @@ Prepare remotes with [`setup --rsync`](@ref Manual-setup) **or** `--clone`, then
 | `--output-dir PATH` | **Batch root**; slots write under `PATH/{slot}/` (not `drive --output-dir`) |
 | `--hosts CSV` | Comma-separated slot specs (same form as CLI tokens / `DISTSSHKIT_HOSTS`) |
 | `-q` / `--quiet` | Hide terminal detail; `go_*.log` and per-slot logs still written |
-| `--progress` | Thin phase bar (not with `-q`) |
+| `--progress` | Live status (TTY default) |
+| `--verbose` | Full detail (non-TTY default) |
 | `-y` / `--yes` | Non-interactive confirmations |
 | `--hosts-file PATH` | Append slot specs (`host:N` preserved) |
 | `-v` / `--version` | Print DistSSHKit version and exit |

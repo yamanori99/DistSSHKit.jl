@@ -37,6 +37,7 @@ using Test
         let path = tempname()
             r = parse_size_args(["--help"])
             @test r.show_help == true
+            @test parse_size_args(["-h"]).show_help == true
             open(path, "w") do io
                 redirect_stdout(io) do
                     show_size_usage()

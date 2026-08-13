@@ -4,6 +4,11 @@ using Test
     _go_dir = joinpath(_kit_root(), "src", "cli", "go")
     isdefined(Main, :parse_go_args) || include(joinpath(_go_dir, "args.jl"))
 
+    @testset "help flags" begin
+        @test parse_go_args(["--help"]).help
+        @test parse_go_args(["-h"]).help
+    end
+
     @testset "script and hosts" begin
         let r = parse_go_args(["demos/foo.jl", "8"])
             @test r.script_path == "demos/foo.jl"

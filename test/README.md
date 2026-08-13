@@ -98,7 +98,7 @@ open "$(cat test/artifacts/ssh-e2e/LATEST)/SUMMARY.txt"
 rm -rf test/artifacts/ssh-e2e
 ```
 
-Kit CLI flags (drive / go / setup / size) also honor `DISTSSHKIT_QUIET`, `DISTSSHKIT_PROGRESS`, `DISTSSHKIT_YES`, and `DISTSSHKIT_HOSTS_FILE`; see `src/DistSSHKit/cli/session.jl`.
+Kit CLI flags (drive / go / setup / size) also honor `DISTSSHKIT_QUIET`, `DISTSSHKIT_PROGRESS`, `DISTSSHKIT_VERBOSE`, `DISTSSHKIT_YES`, and `DISTSSHKIT_HOSTS_FILE`; see `src/DistSSHKit/cli/session.jl`.
 
 ## Adding tests
 

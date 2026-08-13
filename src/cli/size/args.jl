@@ -1,36 +1,34 @@
 function show_size_usage()
     print_help_chrome("DistSSHKit size")
     print_help_lines(
-        "Measure per-worker memory on hosts and estimate worker counts from RAM and CPU limits.",
-        "Baseline = package load RSS; optional --probe script runs a warm-up then records peak RSS.",
-        "Worker counts use max(baseline, peak).",
+        "Estimate worker counts from RAM and CPU.",
+        "RSS = max(package load, optional --probe peak).",
     )
     print_help_blank()
     print_help_section("Usage")
     print_help_lines(
-        "  julia --project=. -m DistSSHKit size [options] [--local] [hosts...]",
+        "  julia --project=. -m DistSSHKit size [--local] [hosts...]",
+        "  size --local host1 host2",
+        "  size --gb-per-worker 1.5 host1",
     )
     print_help_blank()
     print_help_section("Options")
     print_help_lines(
-        "  -l, --local         Include localhost in sizing (omit for remote-only)",
-        "  --gb-per-worker N   Skip measurement, assume N GB per worker",
-        "  --probe PATH        Warm-up script (include after package load; peak RSS)",
-        "  --mem-headroom N    Memory cap fraction (default: $(DistSSHKit.DEFAULT_MEM_HEADROOM))",
-        "  --master-gb N       Reserve for master process (default: $(DistSSHKit.DEFAULT_MASTER_GB))",
-        "  -q, --quiet         Suppress terminal detail (kit log / size table still shown)",
+        "  -l, --local         include localhost",
+        "  --gb-per-worker N   skip measure; assume N GB each",
+        "  --probe PATH        warm-up script; peak RSS",
+        "  --mem-headroom N    RAM fraction (default $(DistSSHKit.DEFAULT_MEM_HEADROOM))",
+        "  --master-gb N       master reserve (default $(DistSSHKit.DEFAULT_MASTER_GB))",
+        "  --hosts-file PATH   one host per line (`:N` stripped)",
+        "  $(DistSSHKit.KIT_QUIET_FLAG_HELP)",
         "  $(DistSSHKit.KIT_PROGRESS_FLAG_HELP)",
-        "  -y, --yes           Non-interactive (reserved; no prompts today)",
-        "  --hosts-file PATH   Append hosts from a line-oriented file",
-        "  --version, -v       Print DistSSHKit version and exit",
-        "  -h, --help",
+        "  $(DistSSHKit.KIT_VERBOSE_FLAG_HELP)",
+        "  --version, -v       print version and exit",
+        "  -h, --help          this help",
     )
     print_help_blank()
-    print_help_section("Examples")
     print_help_lines(
-        "  julia --project=. -m DistSSHKit size --local host1 host2",
-        "  julia --project=. -m DistSSHKit size --probe warmup.jl --local",
-        "  julia --project=. -m DistSSHKit size --gb-per-worker 1.5 host1",
+        "Details: docs (manual/size). See also: drive, setup.",
     )
     return nothing
 end
