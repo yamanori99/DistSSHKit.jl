@@ -1,5 +1,5 @@
 # Require a type label on every PR: bug | enhancement | breaking | chore.
-# Dependabot PRs are exempt (also get `chore` via dependabot.yml).
+# Dependabot PRs are exempt (bot marker: `dependencies` only).
 name: PR type label
 
 on:

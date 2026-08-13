@@ -158,8 +158,9 @@ Every PR must also carry **one** type label (enforced by CI):
 - `breaking` — this PR includes a breaking change (may be combined with
   `bug` / `enhancement` / `chore`)
 
-Dependabot PRs are exempt from the type-label check; new ones also get
-`chore` (and ecosystem labels) from `.github/dependabot.yml`.
+Dependabot PRs are exempt from the type-label check. They get only the
+`dependencies` bot label from `.github/dependabot.yml` (path labels like
+`ci` still apply when `.github/` changes). Do not put type labels on them.
 
 `breaking` marks work that should factor into when to cut the next version
 (for this kit: bump `x` in `0.x.y`, or major after `1.0`). Apply it on the
