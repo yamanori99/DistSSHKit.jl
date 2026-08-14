@@ -1,4 +1,4 @@
-name: JETLS
+name: Lint
 
 on:
   push:
