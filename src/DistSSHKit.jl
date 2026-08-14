@@ -10,6 +10,7 @@ module DistSSHKit
 using Dates
 using Distributed
 using Pkg
+using TOML
 
 # Public surface for application / driver authors.
 # Prefer `julia -m DistSSHKit …` for day-to-day CLI.
@@ -76,7 +77,7 @@ function _project_toml_version(path::AbstractString)::Union{Nothing,VersionNumbe
     p = String(path)
     isfile(p) || return nothing
     try
-        raw = get(Pkg.TOML.parsefile(p), "version", nothing)
+        raw = get(TOML.parsefile(p), "version", nothing)
         raw isa AbstractString || return nothing
         return VersionNumber(String(raw))
     catch
