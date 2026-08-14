@@ -11,7 +11,7 @@
 #   test/runtests.jl test/aqua.jl
 #   test/fixtures/*.jl
 #
-# Extra jetls check flags: ./.github/jetls-check.sh --progress=none
+# Fail on any diagnostic (hint and up). Extra flags: ./.github/jetls-check.sh --progress=none
 #
 # Usage (repo root):
 #   ./.github/jetls-check.sh
@@ -33,4 +33,4 @@ if ((${#files[@]} == 0)); then
     exit 1
 fi
 
-exec jetls --threads=auto -- check --exit-severity=warning "$@" "${files[@]}"
+exec jetls --threads=auto -- check --exit-severity=hint "$@" "${files[@]}"
