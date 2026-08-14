@@ -23,7 +23,7 @@ Real OpenSSH + rsync Linux workers. CI remote SSH coverage uses this stack
   (`clone` from a bare on worker-1 → `--sync` → `drive --require-git`).
   The rsync path still excludes `.git/` and does not claim parity.
 
-Worker image pins Julia **1.12** (juliaup `--default-channel 1.12`) to match CI controllers so `--check` can run **without** `--ignore-julia-version`.
+Worker image pins Julia **1.12** (juliaup `--default-channel 1.12`) to match CI controllers so `--check` can run **without** `--ignore-julia-version`. Install policy: [Requirements](https://yamanori99.github.io/DistSSHKit.jl/dev/requirements/).
 
 On macOS, publish ports on `127.0.0.1` (Docker Desktop / Colima defaults) so macOS 15 Local
 Network Privacy does not block SSH from the controller.
@@ -75,5 +75,12 @@ ssh -F .generated/ssh_config distsshkit-w1 'echo ok; julia --version'
 `./scripts/up.sh --e2e` on `ubuntu-latest` for every PR (`linux-to-linux`), and
 after merge on macOS Intel (`E2E / macOS to Linux`) and WSL2 Ubuntu
 (`E2E / WSL2 to Linux`).
+
+On `main` / `workflow_dispatch`, the Linux job builds the worker image and
+pushes `ghcr.io/<owner>/distsshkit-linux-ssh-worker:<sha>`. macOS and WSL pull
+that tag (retry until Linux has pushed) instead of building Julia-in-Docker on
+Colima / WSL `dockerd`. Local `./scripts/up.sh` still builds unless you set
+`DISTSSHKIT_WORKER_IMAGE`. Colima on Intel runners uses `--cpu 3 --memory 8`
+so the Darwin controller keeps RAM.
 
 Usual `Pkg.test()` does **not** start Docker and does **not** run this suite.
