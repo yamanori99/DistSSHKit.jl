@@ -17,12 +17,16 @@ runs:
       id: filter
       with:
         predicate-quantifier: some-with-excludes
+        # Named skip files only. A new root `*.md` stays heavy until listed here.
         filters: |
           heavy:
             - "**"
-            - "!*.md"
+            - "!README.md"
+            - "!CONTRIBUTING.md"
+            - "!NEWS.md"
+            - "!SECURITY.md"
             - "!LICENSE"
-            - "!.github/**/*.md"
+            - "!.github/pull_request_template.md"
     - id: out
       shell: bash
       env:
