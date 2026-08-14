@@ -1,8 +1,9 @@
 # News
 
-User-facing changes. GitHub Releases may copy these sections.
+User-facing changes. Date a section `YYYY-MM-DD` (UTC) when that version is tagged.
+GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator register`).
 
-## 0.2.1
+## 0.2.1 (2026-08-14)
 
 Patch after the first General registration (`0.2.0`).
 
@@ -13,6 +14,6 @@ Patch after the first General registration (`0.2.0`).
 - `drive` collect works with remote `~` roots.
 - Controllers: macOS, Linux, and WSL2 Ubuntu (not native Windows).
 
-## 0.2.0
+## 0.2.0 (2026-08-11)
 
-First release on General (2026-08-11).
+First release on General.
