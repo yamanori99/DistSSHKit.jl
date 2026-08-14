@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# Run `jetls check` on entry scripts only. JetLS follows `include()`, so do not
-# pass src/cli/<cmd>/*.jl or src/DistSSHKit/*.jl (those are loaded by the
-# entries below).
+# Entry files for `jetls check`. JetLS follows `include()`, so do not pass
+# src/cli/<cmd>/*.jl or src/DistSSHKit/*.jl (those are loaded by the entries).
 #
 # Globs (new files under these dirs are picked up automatically):
 #   src/DistSSHKit.jl
@@ -11,10 +10,11 @@
 #   test/runtests.jl test/aqua.jl
 #   test/fixtures/*.jl
 #
-# Fail on any diagnostic (hint and up). Extra flags: ./.github/jetls-check.sh --progress=none
-#
-# Usage (repo root):
+# Local (same files / hint gate as CI):
 #   ./.github/jetls-check.sh
+#   ./.github/jetls-check.sh --progress=none
+# CI uses aviatesk/JETLS.jl/.github/actions/check@release with:
+#   ./.github/jetls-check.sh --print-files
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -33,4 +33,19 @@ if ((${#files[@]} == 0)); then
     exit 1
 fi
 
-exec jetls --threads=auto -- check --exit-severity=hint "$@" "${files[@]}"
+print_files=false
+jetls_args=()
+for arg in "$@"; do
+    if [[ "$arg" == "--print-files" ]]; then
+        print_files=true
+    else
+        jetls_args+=("$arg")
+    fi
+done
+
+if [[ "$print_files" == true ]]; then
+    printf '%s\n' "${files[*]}"
+    exit 0
+fi
+
+exec jetls --threads=auto -- check --exit-severity=hint "${jetls_args[@]}" "${files[@]}"

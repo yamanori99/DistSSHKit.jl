@@ -37,56 +37,15 @@ jobs:
         run: echo "Root markdown only; JETLS skipped."
       - uses: actions/checkout@v7
         if: needs.filter.outputs.heavy == 'true'
-      - uses: julia-actions/setup-julia@v3
+      - id: files
+        if: needs.filter.outputs.heavy == 'true'
+        run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
+      # Official check action: https://aviatesk.github.io/JETLS.jl/dev/cli-check/#cli-check/github-actions
+      # julia-version default is 1.12; 1.13 is supported (1.12.2–1.13). Same channel as Pkg.test.
+      - uses: aviatesk/JETLS.jl/.github/actions/check@release
         if: needs.filter.outputs.heavy == 'true'
         with:
-          # Same 1.13 channel as Pkg.test (includes RCs until 1.13 is stable).
-          version: "~1.13.0-0"
-      - uses: julia-actions/cache@v3
-        if: needs.filter.outputs.heavy == 'true'
-      - name: Install jetls
-        if: needs.filter.outputs.heavy == 'true'
-        run: |
-          if [ -x "$HOME/.julia/bin/jetls" ]; then
-            echo "jetls already installed (Julia cache hit)"
-          else
-            julia --startup-file=no -e '
-              using Pkg
-              Pkg.Registry.add("General")
-              Pkg.Apps.add(url="https://github.com/aviatesk/JETLS.jl", rev="release")'
-          fi
-          echo "$HOME/.julia/bin" >> "$GITHUB_PATH"
-      - name: jetls check
-        if: needs.filter.outputs.heavy == 'true'
-        run: |
-          # Fail on any diagnostic, including hints.
-          set +e
-          ./.github/jetls-check.sh --progress=none \
-            2>&1 | tee jetls.out
-          status=${PIPESTATUS[0]}
-          set -e
-
-          if grep -qE 'Found [1-9][0-9]* diagnostic' jetls.out; then
-            echo "::warning::JETLS reported diagnostics (see job Summary). Job fails on hint and up."
-            {
-              echo "## JETLS diagnostics"
-              echo
-              if [ "$status" -ne 0 ]; then
-                echo 'Job **failed** (`--exit-severity=hint`).'
-              else
-                echo 'Job **passed** (unexpected: diagnostics present but exit 0).'
-              fi
-              echo
-              echo '```'
-              cat jetls.out
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-          else
-            {
-              echo "## JETLS"
-              echo
-              echo "No diagnostics found."
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-          exit "$status"
+          files: ${{ steps.files.outputs.list }}
+          julia-version: "~1.13.0-0"
+          exit-severity: hint
+          progress: none

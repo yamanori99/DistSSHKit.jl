@@ -47,7 +47,7 @@ CI (fast on every PR, slow OS on a timer):
 - **Daily 04:00 JST / Run workflow `E2E daily`:** `ubuntu-latest (image)`, `macos-15-intel → ubuntu-24.04`, `windows-latest (WSL2) → ubuntu-24.04`.
 - **Assets path:** `Assets / bake SVG`.
 
-Optional: [`.github/jetls-check.sh`](.github/jetls-check.sh) ([jetls](https://github.com/JuliaLang/jetls.jl); same glob as CI), docs (`julia --project=docs -e 'using Pkg; Pkg.instantiate()'` then `julia --project=docs --color=yes docs/make.jl`), logo bake (`julia docs/src/assets/bake.jl`, plus `--png` / `--gif`), [gitleaks](https://github.com/gitleaks/gitleaks) (`gitleaks detect --source .`).
+Optional: [`.github/jetls-check.sh`](.github/jetls-check.sh) ([JETLS](https://github.com/aviatesk/JETLS.jl); same files as CI, fails on hint+). CI uses `aviatesk/JETLS.jl/.github/actions/check@release` on Julia 1.13. Docs (`julia --project=docs -e 'using Pkg; Pkg.instantiate()'` then `julia --project=docs --color=yes docs/make.jl`), logo bake (`julia docs/src/assets/bake.jl`, plus `--png` / `--gif`), [gitleaks](https://github.com/gitleaks/gitleaks) (`gitleaks detect --source .`).
 
 Language Server `IncorrectCallArgs` is not CI (JETLS is). Do not add `.vscode/settings.json` to silence it.
 
