@@ -78,7 +78,9 @@ echo "::group::Install Docker CLI (Homebrew)"
 export HOMEBREW_NO_AUTO_UPDATE=1
 export HOMEBREW_NO_INSTALL_UPGRADE=1
 export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
-retry brew install docker docker-compose docker-buildx
+export HOMEBREW_NO_ENV_HINTS=1
+# Runner brew prints GitHub workflow warnings (env hints, aws/tap trust). Not kit issues.
+retry env -u GITHUB_ACTIONS brew install docker docker-compose docker-buildx
 mkdir -p "${HOME}/.docker/cli-plugins"
 ln -sfn "$(brew --prefix docker-compose)/bin/docker-compose" "${HOME}/.docker/cli-plugins/docker-compose"
 ln -sfn "$(brew --prefix docker-buildx)/bin/docker-buildx" "${HOME}/.docker/cli-plugins/docker-buildx"
