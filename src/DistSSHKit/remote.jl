@@ -167,8 +167,9 @@ end
 """
 Ordered remote Julia path candidates for `uname -s` output (Darwin vs Linux).
 
-Prefers juliaup, then platform paths. Homebrew only on Darwin. Callers still
-verify with `test -x` and `--version` before accepting a hit.
+Prefers juliaup (`\$HOME/.juliaup/bin/julia`), then platform paths. Homebrew
+only on Darwin. Callers still verify with `test -x` and `--version` before
+accepting a hit.
 """
 function remote_julia_candidates(uname_s::AbstractString)::Vector{String}
     os = lowercase(strip(String(uname_s)))

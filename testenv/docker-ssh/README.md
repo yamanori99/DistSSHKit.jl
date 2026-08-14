@@ -9,21 +9,21 @@ Real OpenSSH + rsync Linux workers. CI remote SSH coverage uses this stack
 
 | Controller | Worker | Where |
 | --- | --- | --- |
-| Linux (`ubuntu-latest`) | Linux ×2 (this compose) | **CI** — every PR |
-| macOS Intel (`macos-15-intel` + Colima) | Linux ×2 (same compose) | **CI after merge** — `E2E / macOS to Linux` |
-| WSL2 Ubuntu (`windows-latest`) | Linux ×2 (same compose) | **CI after merge** — `E2E / WSL2 to Linux` |
+| Linux (`ubuntu-latest`) | `ubuntu:24.04` ×2 | **CI** — PR and main — `E2E / ubuntu-latest → ubuntu-24.04` |
+| macOS Intel (`macos-15-intel` + Colima) | same image | **CI daily** — `E2E daily / macos-15-intel → ubuntu-24.04` |
+| WSL2 (`windows-latest`) | same image | **CI daily** — `E2E daily / windows-latest (WSL2) → ubuntu-24.04` |
 | Either | `local:N` | Mixed smoke inside the same suite |
 
 ### Honest limits
 
-- CI macOS controller is **after merge** (`macos-15-intel` + Colima). Apple Silicon GitHub runners cannot nest VMs.
+- CI macOS controller is **daily / dispatch** (`macos-15-intel` + Colima). Apple Silicon GitHub runners cannot nest VMs.
 - Remote Julia detection is exercised on **Linux workers**.
 - **Not covered (no free CI):** Linux controller → macOS worker; Mac workers (use apple-container locally).
 - **Git parity (`--require-git`):** covered in the suite via a separate git remote root
   (`clone` from a bare on worker-1 → `--sync` → `drive --require-git`).
   The rsync path still excludes `.git/` and does not claim parity.
 
-Worker image pins Julia **1.12** (juliaup `--default-channel 1.12`) to match CI controllers so `--check` can run **without** `--ignore-julia-version`.
+Worker image pins Julia **1.12** (juliaup `--default-channel 1.12`) to match CI controllers so `--check` can run **without** `--ignore-julia-version`. Install policy: [Requirements](https://yamanori99.github.io/DistSSHKit.jl/dev/requirements/).
 
 On macOS, publish ports on `127.0.0.1` (Docker Desktop / Colima defaults) so macOS 15 Local
 Network Privacy does not block SSH from the controller.
@@ -38,7 +38,7 @@ Network Privacy does not block SSH from the controller.
 | [`scripts/up.sh`](scripts/up.sh) | Keys → compose up → wait (`--e2e` also runs the suite) |
 | [`scripts/wait-ready.sh`](scripts/wait-ready.sh) | BatchMode SSH + Julia probe |
 | [`scripts/down.sh`](scripts/down.sh) | Compose down |
-| [`scripts/setup-colima-ci.sh`](scripts/setup-colima-ci.sh) | Colima on `macos-15-intel` (merge-only E2E) |
+| [`scripts/setup-colima-ci.sh`](scripts/setup-colima-ci.sh) | Colima on `macos-15-intel` (schedule / dispatch E2E) |
 | `.generated/` | gitignored SSH config / keys (created by scripts) |
 
 SSH Host aliases (written to `.generated/ssh_config`):
@@ -72,8 +72,17 @@ ssh -F .generated/ssh_config distsshkit-w1 'echo ok; julia --version'
 ## CI
 
 [`.github/workflows/ssh-e2e.yml`](../../.github/workflows/ssh-e2e.yml) runs
-`./scripts/up.sh --e2e` on `ubuntu-latest` for every PR (`linux-to-linux`), and
-after merge on macOS Intel (`E2E / macOS to Linux`) and WSL2 Ubuntu
-(`E2E / WSL2 to Linux`).
+`./scripts/up.sh --e2e` on `ubuntu-latest` for every PR and `main`
+(`E2E / ubuntu-latest → ubuntu-24.04`).
+[`.github/workflows/ssh-e2e-daily.yml`](../../.github/workflows/ssh-e2e-daily.yml)
+(`E2E daily`) runs at 04:00 JST or via Run workflow: bake
+`ubuntu-latest (image)` to GHCR, then `macos-15-intel` and
+`windows-latest (WSL2)` pull that tag.
+
+macOS and WSL pull `ghcr.io/<owner>/distsshkit-linux-ssh-worker:<sha>` (retry
+until the image job has pushed) instead of building Julia-in-Docker on Colima /
+WSL `dockerd`. Local `./scripts/up.sh` still builds unless you set
+`DISTSSHKIT_WORKER_IMAGE`. Colima on Intel runners uses `--cpu 3 --memory 8`
+so the Darwin controller keeps RAM.
 
 Usual `Pkg.test()` does **not** start Docker and does **not** run this suite.

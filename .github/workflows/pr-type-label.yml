@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   require-type:
-    name: require label
+    name: PR label
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

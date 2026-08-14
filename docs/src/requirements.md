@@ -16,8 +16,10 @@ jobs.
     the [API](@ref API) or [`main`](@ref))
   - Same **major.minor** on the controller and SSH hosts (`setup --check` fails
     on a mismatch unless `--ignore-julia-version`; patch-only differences warn)
-  - On SSH hosts, the `julia` path is auto-detected, or set `--julia` /
-    `JULIA_DISTRIBUTED_EXE`
+  - Prefer **[juliaup](https://github.com/JuliaLang/juliaup)**
+    (`$HOME/.juliaup/bin/julia`): E2E workers and remote auto-detect start
+    there. `--julia` / `JULIA_DISTRIBUTED_EXE` override. Missing path or a
+    related bug: [open an Issue](https://github.com/yamanori99/DistSSHKit.jl/issues).
 
 WSL2 is Linux. Run the kit **inside** the distro (not PowerShell). Keep the
 project on the Linux filesystem (`~/…`), not `/mnt/c/…`. Install `ssh` /
@@ -82,12 +84,12 @@ Passwordless login (once per host):
 ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=accept-new USER@HOST echo ok
 ```
 
-Julia (prefer the same major.minor as the kit machine). Log in, find the binary,
-then check with that **full path** (non-interactive `ssh` often has no login
-`PATH`, so bare `julia` fails):
+Julia (prefer the same major.minor as the kit machine, via juliaup). Log in,
+find the binary, then check with that **full path** (non-interactive `ssh`
+often has no login `PATH`, so bare `julia` fails):
 
 - `ssh USER@HOST`
-- `which julia`
+- `which julia` (often `$HOME/.juliaup/bin/julia`)
 - `exit`
 
 ```bash

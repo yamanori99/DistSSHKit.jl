@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   label:
-    name: from paths
+    name: area labels
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

@@ -13,6 +13,7 @@ results/
 .distsshkit/
 
 # Tests & CI artifacts
+.ci-cache/
 *.jl.cov
 *.jl.*.cov
 *.jl.mem

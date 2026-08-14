@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   filter:
-    name: filter
+    name: detect code changes
     runs-on: ubuntu-latest
     timeout-minutes: 3
     outputs:
@@ -28,7 +28,7 @@ jobs:
 
   jetls:
     needs: filter
-    name: JETLS (Julia 1.12)
+    name: JETLS - Julia 1.12 - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

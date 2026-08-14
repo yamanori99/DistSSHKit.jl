@@ -17,11 +17,11 @@ permissions:
   id-token: write # Codecov OIDC upload (see Upload coverage step)
 
 jobs:
-  # Full `Pkg.test()` stays Linux-only. Darwin and WSL controllers are merge-only
-  # SSH E2E (`E2E / macOS to Linux`, `E2E / WSL2 to Linux`). PRs run `E2E / Linux to Linux`.
+  # Full `Pkg.test()` stays Linux-only. Slow SSH E2E controllers are `E2E daily`.
+  # PRs run `E2E / ubuntu-latest → ubuntu-24.04`.
   # Root-markdown PRs still run this job (required check names) but skip the suite.
   filter:
-    name: filter
+    name: detect code changes
     runs-on: ubuntu-latest
     timeout-minutes: 3
     outputs:
@@ -35,7 +35,7 @@ jobs:
     needs: filter
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    name: Pkg.test Julia ${{ matrix.minor }}
+    name: Pkg.test - Julia ${{ matrix.minor }} - ubuntu-latest
     strategy:
       fail-fast: false
       matrix:

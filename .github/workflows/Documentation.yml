@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   filter:
-    name: filter
+    name: detect code changes
     runs-on: ubuntu-latest
     timeout-minutes: 3
     outputs:
@@ -26,7 +26,7 @@ jobs:
 
   build:
     needs: filter
-    name: Documenter (Julia 1.12)
+    name: Documenter - Julia 1.12 - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
