@@ -55,29 +55,32 @@ Launchers:
 - **Julia** — `setup!`, `go!` / `drive!`, … from a script or the REPL
   (`setup!` mirrors `setup --…`)
 
-CLI — go (first deploy with rsync):
+CLI — go (first deploy with rsync; one setup mode per invocation):
 
 ```bash
-julia --project=. -m DistSSHKit setup --rsync --instantiate user@host1
+julia --project=. -m DistSSHKit setup --rsync user@host1
+julia --project=. -m DistSSHKit setup --instantiate user@host1
 julia --project=. -m DistSSHKit go user@host1:1 user@host2:1 path/to/script.jl
 ```
 
 CLI — drive (git remotes; first deploy with `--clone`, later `--sync`):
 
 ```bash
-julia --project=. -m DistSSHKit setup --clone --instantiate user@host1
+julia --project=. -m DistSSHKit setup --clone user@host1
+julia --project=. -m DistSSHKit setup --instantiate user@host1
 julia --project=. -m DistSSHKit drive local:2 user@host1:4 path/to/driver.jl
 # later updates: setup --sync user@host1
 ```
 
-Julia — go:
+Julia — go (`remote=` must match `setup!`; omit both to use the default path):
 
 ```julia
 using DistSSHKit
 
-session = KitSession(workers=["user@host1"], remote="~/proj", yes=true)
+remote = "/path/to/project"
+session = KitSession(workers=["user@host1"], remote=remote, yes=true)
 setup!(session, :rsync, :instantiate)
-go!("path/to/script.jl", "user@host1:1")
+go!("path/to/script.jl", "user@host1:1"; remote=remote)
 ```
 
 Julia — drive:
@@ -85,14 +88,16 @@ Julia — drive:
 ```julia
 using DistSSHKit
 
-session = KitSession(workers=["user@host1"], remote="~/proj", yes=true)
+remote = "/path/to/project"
+session = KitSession(workers=["user@host1"], remote=remote, yes=true)
 setup!(session, :clone; repo="https://github.com/org/proj.git")
 setup!(session, :instantiate)
-drive!("path/to/driver.jl", "local:2", "user@host1:4")
+drive!("path/to/driver.jl", "local:2", "user@host1:4"; remote=remote)
 # later: setup!(session, :sync)
 ```
 
-`pipeline!` is optional sugar around drive (size! → drive! → collect!).
+`pipeline!` is optional sugar: optional sync → `size!` → `drive!` → optional
+collect. It does not run `setup!`; prepare remotes first.
 Details: [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/).
 
 ### Try a demo

@@ -169,10 +169,11 @@ end
     pipeline!(driver, workers::AbstractVector; kwargs...) -> PipelineResult
     pipeline!(config::PipelineConfig) -> PipelineResult
 
-Run the usual remote workflow: optional sync, worker plan, driver, optional collect.
+Run the usual remote workflow: optional sync, [`size!`](@ref), driver, optional collect.
+Does not call [`setup!`](@ref); prepare remotes first.
 
 Worker tokens match the CLI (`local:2`, `user@host:1`). Bare hosts are sized with
-[`size_plan`](@ref). Keyword `args` are passed to the driver; `remote` is the remote
+[`size!`](@ref). Keyword `args` are passed to the driver; `remote` is the remote
 project path. Default `yes=true` skips confirm prompts.
 
 ```julia
@@ -182,7 +183,8 @@ pipeline!(driver, "user@h1:1", "user@h2:1"; remote="/path/to/project", args=["8"
 
 Remote hosts default to **no** pre-run sync; set `sync=:sync` / `:rsync` explicitly.
 Collect defaults on when remotes are present (`collect=false` to skip). Use
-`sync=:rsync` only onto a missing/empty remote path (or `setup --delete` first).
+`sync=:rsync` only onto a missing/empty remote path (or `setup --delete` /
+`setup!(session, :delete)` first).
 
 Returns [`PipelineResult`](@ref); check `result.ok` or use [`report_pipeline_errors`](@ref).
 """

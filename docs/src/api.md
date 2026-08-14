@@ -66,7 +66,8 @@ Prefer positional worker tokens over building a [`WorkerPlan`](@ref) by hand
 Pass `julia=` on `go!` / `drive!` / `pipeline!` to pin the remote Julia binary
 (same as CLI `--julia`).
 
-Or call [`pipeline!`](@ref) for that same order in one shot.
+Or call [`pipeline!`](@ref) for optional sync → [`size!`](@ref) → [`drive!`](@ref)
+→ collect in one shot (`pipeline!` does not call [`setup!`](@ref)).
 [`pipeline_config_from_env`](@ref) reads `DISTSSHKIT_HOSTS` /
 `DISTSSHKIT_HOSTS_FILE`, `SYNC_MODE` (`rsync` / `sync` / `off`; unset → off for
 remotes too), `JULIA_DISTRIBUTED_EXE` (same as CLI `--julia`), and the usual

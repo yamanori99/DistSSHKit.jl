@@ -1,6 +1,6 @@
 #!/usr/bin/env julia
 # DistSSHKit API demo: run square_file.jl through `pipeline!`
-# (the usual sync → workers → drive → collect flow) instead of the `drive` CLI.
+# (optional sync → size! → drive! → collect) instead of the `drive` CLI.
 #
 # Local (this script):
 #

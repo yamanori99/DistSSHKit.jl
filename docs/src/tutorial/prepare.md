@@ -32,15 +32,15 @@ Skipping instantiate is a common cause of remote failures such as
 Same steps from Julia:
 
 ```julia
-session = KitSession(
-    workers=["YourHost1", "YourHost2"],
-    remote="/path/to/project",
-    yes=true,
-)
+session = KitSession(workers=["YourHost1", "YourHost2"], yes=true)
 setup!(session, :rsync, :instantiate)
 # git remotes: setup!(session, :clone; repo="https://…") then :instantiate
 # later updates: setup!(session, :sync)
 ```
+
+CLI and API share the default remote root (`~/Parent/RepoName`). If you override
+it (`setup --remote-path` / `KitSession(; remote=…)`), pass the same path to
+`go` / `drive` / `go!` / `drive!` / `pipeline!`.
 
 After setup, just run `go` / `drive` — neither pre-runs sync nor requires git
 parity by default. Optional one-shot: `go --sync` / `go --rsync` /

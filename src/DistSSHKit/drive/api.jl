@@ -12,7 +12,9 @@ drive!("job.jl", "local:2"; args=["8"])
 drive!(session, "job.jl")  # uses `session.tokens`
 ```
 
-Optional `sync=:sync` / `sync=:rsync` runs [`sync!`](@ref) before workers.
+Prepare remotes with [`setup!`](@ref) or CLI `setup` first. Optional
+`sync=:sync` / `sync=:rsync` runs [`sync!`](@ref) (same as `setup!(session, :sync)`
+/ `:rsync`) immediately before workers.
 Git parity is off by default (`skip_hash_check=true`). With `sync=:rsync`, parity
 stays off even if `skip_hash_check=false` (no remote `.git/`).
 

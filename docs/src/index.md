@@ -25,7 +25,7 @@ How you call it is a separate choice:
 
 - **CLI** — `julia -m DistSSHKit go …` / `drive …` (and `setup`, `demo`, …)
 - **Julia API** — `setup!` for remotes, `go!` / `drive!` to run, or
-  `pipeline!` for the usual size! → drive! → collect! order in one call
+  `pipeline!` for optional sync → size! → drive! → collect (not `setup!`)
 
 Same host tokens either way (`local:2`, `user@host:1`). Details: [API](@ref API),
 [User Guide](@ref Manual).

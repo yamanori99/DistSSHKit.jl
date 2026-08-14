@@ -41,7 +41,8 @@ julia --project=. demos/without_kit/pipeline_pi.jl
 | `pipeline_square.jl` | same CSV via `pipeline!` |
 
 Drivers use `init_output_dir!` + `main` + `pmap`. Optional hooks: `drive --help`.
-`pipeline_square.jl` is the thin API entry (sync → drive → collect) over `square_file.jl`.
+`pipeline_square.jl` is the thin API entry (optional sync → size! → drive! →
+collect) over `square_file.jl`.
 Same tokens as the CLI: `pipeline!(driver, "local:2"; args=[…])`. A commented remote
 example is at the bottom of that file (`setup!` first, or CLI `setup`).
 
