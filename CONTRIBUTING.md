@@ -1,6 +1,6 @@
 # Contributing
 
-How to work on this repository. Users: [Documenter](https://yamanori99.github.io/DistSSHKit.jl/stable/) (`docs/`) and [README.md](README.md). Dev docs: [dev](https://yamanori99.github.io/DistSSHKit.jl/dev/).
+How to work on this repository. Users: [Documenter](https://yamanori99.github.io/DistSSHKit.jl/stable/) (`docs/`), [README.md](README.md), and [NEWS.md](NEWS.md). Dev docs: [dev](https://yamanori99.github.io/DistSSHKit.jl/dev/).
 
 ## Requirements
 
@@ -91,4 +91,4 @@ Dependabot is exempt from the type-label check (`dependencies` only; path labels
 
 ## Language and AI
 
-`.jl` sources (comments, docstrings, errors): English. User-facing docs: update `docs/src/*.md` and [README.md](README.md) when install or Docs links change. Generative AI is allowed; understand and verify what you submit. Keep docs plain; avoid hype.
+`.jl` sources (comments, docstrings, errors): English. User-facing docs: update `docs/src/*.md` and [README.md](README.md) when install or Docs links change; user-visible behavior in [NEWS.md](NEWS.md). Generative AI is allowed; understand and verify what you submit. Keep docs plain; avoid hype.
