@@ -19,14 +19,15 @@ n = length(ARGS) >= 1 ? ARGS[1] : "1000"
 # Local-only: two concurrent full-job slots on this machine (not Distributed workers).
 result = go!(script, "local:2"; args=[n])
 
-# First-time remotes: sync + instantiate, then go!.
+# First-time remotes: setup!, then go!.
 #
 #   session = KitSession(
 #       workers=["user@host1", "user@host2"],
 #       remote="/path/to/project",
+#       yes=true,
 #   )
-#   sync!(session; mode=:rsync)
-#   instantiate!(session)          # or instantiate!(session; julia="/path/to/julia")
+#   setup!(session, :rsync, :instantiate)
+#   # or: setup!(session, :clone; repo="https://…"); setup!(session, :instantiate)
 #   result = go!(
 #       script,
 #       "user@host1:1",

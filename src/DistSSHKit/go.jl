@@ -167,7 +167,8 @@ function _go_assert_remote_ready!(host::AbstractString, remote_root::AbstractStr
             "  git:    julia --project=. -m DistSSHKit setup --clone $host\n" *
             "          (later updates: setup --sync $host)\n" *
             "  then:   julia --project=. -m DistSSHKit setup --instantiate $host\n" *
-            "Or from Julia: sync!(session; mode=:rsync) or mode=:sync; then instantiate!(session)\n" *
+            "Or from Julia: setup!(session, :rsync, :instantiate)\n" *
+            "  (or :clone; repo=\"…\" then :instantiate; later :sync)\n" *
             "Set DISTRIBUTED_REMOTE_PROJECT_ROOT if the remote path is not the default."
         !isempty(ssh_hint) && (msg *= "\n  $ssh_hint")
         throw(ArgumentError(msg))
@@ -178,7 +179,7 @@ function _go_assert_remote_ready!(host::AbstractString, remote_root::AbstractStr
         throw(ArgumentError(
             "remote project deps not ready on $host ($remote_root): $deps_err\n" *
             "Fix: julia --project=. -m DistSSHKit setup --instantiate $host\n" *
-            "  (or instantiate!(session) after sync! / setup --rsync or --clone)",
+            "  (or setup!(session, :instantiate) after :rsync / :clone)",
         ))
     end
     return nothing
@@ -461,12 +462,13 @@ Each slot gets `DISTRIBUTED_OUTPUT_DIR` pointing at
 `<project>/.distsshkit/go/<stem>_<UTC>/<slot>/`. Setup on remotes is assumed done.
 Override the batch root with `collect_spec::AbstractString` (CLI: `--output-dir`).
 
-Default `sync` is `false` (no pre-run sync; prepare remotes with [`sync!`](@ref) /
-[`instantiate!`](@ref) or `setup` first — `setup --rsync` or `--clone`, then
-`--instantiate`). Pass `sync=:sync` or `sync=:rsync` to sync before running.
-Use `sync=:rsync` only onto a missing/empty remote path (or `setup --delete`
-first). `go!` has no git-parity gate; use [`drive!`](@ref) with
-`skip_hash_check=false` (CLI: `drive --require-git`) when you need that.
+Default `sync` is `false` (no pre-run sync; prepare remotes with [`setup!`](@ref)
+or CLI `setup` first — `:rsync` / `--rsync` or `:clone` / `--clone`, then
+`:instantiate` / `--instantiate`). Pass `sync=:sync` or `sync=:rsync` to sync
+before running. Use `sync=:rsync` only onto a missing/empty remote path (or
+`setup --delete` / `setup!(session, :delete)` first). `go!` has no git-parity
+gate; use [`drive!`](@ref) with `skip_hash_check=false` (CLI: `drive --require-git`)
+when you need that.
 
 `julia` sets the Julia binary for each slot (`nothing` / `"auto"` → detect;
 same as CLI `--julia`).

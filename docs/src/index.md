@@ -1,15 +1,15 @@
 # [DistSSHKit.jl](@id DistSSHKit.jl)
 
 DistSSHKit makes it easy to run one Julia project locally and over SSH, then
-collect the results. It uses Distributed.jl processes (not threads). **macOS
-and Linux.**
+collect the results. It uses Distributed.jl processes (not threads). **macOS,
+Linux, and WSL2 Ubuntu** (not native Windows).
 
 These days, even small labs and individuals often have several high-performance
 machines or workstations. DistSSHKit helps you put that hardware to work.
 
 ## What is DistSSHKit?
 
-Two ways to run:
+Two ways to run (job shape):
 
 - **Same script on each machine** (`go`) — each host runs your `.jl` from start
   to finish. No rewrite needed. Prefer this when every run is already a complete
@@ -21,18 +21,32 @@ Two ways to run:
 Around that, the kit handles remote project setup, sync, and collecting outputs.
 Use it from the terminal or from Julia code / notebooks.
 
+How you call it is a separate choice:
+
+- **CLI** — `julia -m DistSSHKit go …` / `drive …` (and `setup`, `demo`, …)
+- **Julia API** — `setup!` for remotes, `go!` / `drive!` to run, or
+  `pipeline!` for optional sync → size! → drive! → collect (not `setup!`)
+
+Same host tokens either way (`local:2`, `user@host:1`). Details: [API](@ref API),
+[User Guide](@ref Manual).
+
 ## Installation
 
 !!! important
-    **Under active development.** Prefer a release tag for `rev`. Use `rev="main"` only for the development tip.
+    **Under active development.** Prefer a registered release (`pkg> add DistSSHKit`).
+    Use `pkg> add DistSSHKit#main` only for the development tip.
 
-In your Julia project (`Project.toml` at the project root), add the package:
+From the Julia REPL, type `]` to enter the Pkg REPL mode and run:
 
-```bash
-julia --project=. -e 'using Pkg; Pkg.add(url="https://github.com/yamanori99/DistSSHKit.jl.git", rev="v0.2.0")'
+```julia
+pkg> add DistSSHKit
 ```
 
-For the development tip, use `rev="main"` instead.
+Or, equivalently, via the `Pkg` API:
+
+```julia
+julia> import Pkg; Pkg.add("DistSSHKit")
+```
 
 !!! note "CLI"
     These pages assume Julia **1.12+** and `julia --project=. -m DistSSHKit …`.

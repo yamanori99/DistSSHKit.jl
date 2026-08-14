@@ -54,7 +54,7 @@ Language Server `IncorrectCallArgs` is not CI (JETLS is). Do not add `.vscode/se
 ## Workflow
 
 - Branch from `main` (`feature/…`, `fix/…`, `docs/…`, `chore/…`). Open a PR; `main` is squash-merge only. Keep each PR one reviewable change — split unless `main` would be broken in between. Large plans: Discussion / Enhancement Issue first, then small PRs.
-- Breaking (CLI names, module name, driver `init_output_dir!` / `main`, …): bump `x` in `0.x.y`. Patch `y` only otherwise. Tags (`vX.Y.Z`) are a maintainer decision after merge. TagBot.yml waits for a General-registry release.
+- Breaking (CLI names, module name, driver `init_output_dir!` / `main`, …): bump `x` in `0.x.y`. Patch `y` only otherwise. Tags (`vX.Y.Z`) after a registry release are normally cut by TagBot ([`.github/workflows/TagBot.yml`](.github/workflows/TagBot.yml)). Repo Settings → Actions → Workflow permissions must be **Read and write** (`GITHUB_TOKEN`). Maintainers may still `git tag -a` when needed.
 - `setup --clone` / `--rsync` refuse a non-empty destination; redeploy with `setup --delete`. Prefer first deploy `--rsync`; git updates `--sync` / `--pull`. Do not weaken that refusal without tests.
 
 ## Errors: diagnose then explain
