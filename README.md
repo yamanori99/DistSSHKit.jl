@@ -18,10 +18,6 @@ Linux, and WSL2 Ubuntu** (not native Windows).
 These days, even small labs and individuals often have several high-performance
 machines or workstations. DistSSHKit helps you put that hardware to work.
 
-> [!IMPORTANT]
-> **Under active development.** Prefer a registered release. Use
-> `pkg> add DistSSHKit#main` only for the development tip.
-
 ## Install
 
 From the Julia REPL, type `]` to enter the Pkg REPL mode and run:
