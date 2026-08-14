@@ -57,6 +57,15 @@ visible from the distro). Keep a WSL tree under `~/…`, not `/mnt/c/…`.
 ./scripts/down.sh
 ```
 
+Skip the Julia-in-Docker build (macOS / WSL) by pulling the public image from
+`main`'s last successful `E2E daily`. If you changed `Dockerfile` / `compose.yml`,
+build locally instead (omit `DISTSSHKIT_WORKER_IMAGE`).
+
+```bash
+export DISTSSHKIT_WORKER_IMAGE=ghcr.io/yamanori99/distsshkit-linux-ssh-worker:latest
+./scripts/up.sh --e2e
+```
+
 On a Mac or in WSL2 this is how you cover that controller against Linux workers.
 Suite coverage / artifacts: see `test/integration/ssh/run.jl` and
 `test/artifacts/README.md` (`$(cat test/artifacts/ssh-e2e/LATEST)/SUMMARY.txt`,
@@ -81,8 +90,10 @@ ssh -F .generated/ssh_config distsshkit-w1 'echo ok; julia --version'
 
 macOS and WSL pull `ghcr.io/<owner>/distsshkit-linux-ssh-worker:<sha>` (retry
 until the image job has pushed) instead of building Julia-in-Docker on Colima /
-WSL `dockerd`. Local `./scripts/up.sh` still builds unless you set
-`DISTSSHKIT_WORKER_IMAGE`. Colima on Intel runners uses `--cpu 3 --memory 8`
-so the Darwin controller keeps RAM.
+WSL `dockerd`. The same job also pushes `:latest` for local pull. The package
+is meant to be **public** (one-time: package Settings → Change visibility).
+Local `./scripts/up.sh` still builds unless you set `DISTSSHKIT_WORKER_IMAGE`.
+Colima on Intel runners uses `--cpu 3 --memory 8` so the Darwin controller
+keeps RAM.
 
 Usual `Pkg.test()` does **not** start Docker and does **not** run this suite.
