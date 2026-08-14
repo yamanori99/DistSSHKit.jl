@@ -305,8 +305,12 @@ function _go_remote_slot_shell_inner(
     rr = _remote_shell_path_word(remote_root)
     rel_q = _remote_shell_path_word(script_rel)
     slot_q = _remote_shell_path_word(slot_rel)
-    arg_parts = [_remote_shell_path_word(a) for a in script_args]
-    args_s = isempty(arg_parts) ? "" : " " * join(arg_parts, " ")
+    # `join(xs, delim)` infers `Union{String,Nothing}` (IO method) on 1.13.
+    args_s = sprint() do io
+        for a in script_args
+            print(io, ' ', _remote_shell_path_word(a))
+        end
+    end
     jb = _remote_shell_path_word(julia_bin)
     log_q = _remote_shell_path_word(joinpath(slot_rel, "julia.stdout.log"))
     return string(
