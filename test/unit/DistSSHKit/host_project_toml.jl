@@ -24,5 +24,6 @@ using Test
         @test haskey(kit_deps, "Distributed")
         @test haskey(kit_deps, "Pkg")
         @test haskey(kit_deps, "Dates")
+        @test haskey(kit_deps, "TOML")
     end
 end
