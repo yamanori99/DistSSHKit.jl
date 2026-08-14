@@ -15,22 +15,36 @@ permissions:
   contents: read
 
 jobs:
-  scope:
-    uses: ./.github/workflows/ci-scope.yml
+  filter:
+    name: filter
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      heavy: ${{ steps.detect.outputs.heavy }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/ci-heavy
+        id: detect
 
   jetls:
-    needs: scope
-    if: needs.scope.outputs.heavy == 'true'
+    needs: filter
     name: JETLS (Julia 1.12)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Skip
+        if: needs.filter.outputs.heavy != 'true'
+        run: echo "Root markdown only; JETLS skipped."
       - uses: actions/checkout@v7
+        if: needs.filter.outputs.heavy == 'true'
       - uses: julia-actions/setup-julia@v3
+        if: needs.filter.outputs.heavy == 'true'
         with:
           version: "1.12"
       - uses: julia-actions/cache@v3
+        if: needs.filter.outputs.heavy == 'true'
       - name: Install jetls
+        if: needs.filter.outputs.heavy == 'true'
         run: |
           if [ -x "$HOME/.julia/bin/jetls" ]; then
             echo "jetls already installed (Julia cache hit)"
@@ -42,6 +56,7 @@ jobs:
           fi
           echo "$HOME/.julia/bin" >> "$GITHUB_PATH"
       - name: jetls check
+        if: needs.filter.outputs.heavy == 'true'
         run: |
           # Fail on warning/error. Info alone does not fail; still annotate + Summary.
           set +e
@@ -74,12 +89,3 @@ jobs:
           fi
 
           exit "$status"
-
-  jetls-skip:
-    needs: scope
-    if: github.event_name == 'pull_request' && needs.scope.outputs.heavy != 'true'
-    name: JETLS (Julia 1.12)
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    steps:
-      - run: echo "Root markdown only; JETLS skipped."

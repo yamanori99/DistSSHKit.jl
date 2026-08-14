@@ -1,0 +1,30 @@
+name: ci-heavy
+description: Whether Pkg.test / JETLS / Documenter should run
+
+outputs:
+  heavy:
+    description: true when heavy CI should run
+    value: ${{ steps.out.outputs.heavy }}
+
+runs:
+  using: composite
+  steps:
+    - uses: dorny/paths-filter@v3
+      if: github.event_name == 'pull_request'
+      id: filter
+      with:
+        filters: |
+          heavy:
+            - "**"
+            - "!CONTRIBUTING.md"
+            - "!README.md"
+            - "!SECURITY.md"
+            - "!LICENSE"
+    - id: out
+      shell: bash
+      run: |
+        if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
+          echo "heavy=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "heavy=${{ steps.filter.outputs.heavy }}" >> "$GITHUB_OUTPUT"
+        fi
