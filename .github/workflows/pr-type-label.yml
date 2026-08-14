@@ -7,8 +7,10 @@ on:
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review, labeled, unlabeled]
 
+# Include event.action so labeled/unlabeled (from path Labels) do not
+# cancel an in-flight opened/synchronize job that is applying the type.
 concurrency:
-  group: pr-type-label-${{ github.event.pull_request.number }}
+  group: pr-type-label-${{ github.event.pull_request.number }}-${{ github.event.action }}
   cancel-in-progress: true
 
 permissions:
@@ -33,7 +35,12 @@ jobs:
             const required = ["bug", "enhancement", "breaking", "chore"];
             const requiredSet = new Set(required);
             const n = context.issue.number;
-            const labels = context.payload.pull_request.labels.map((l) => l.name);
+            const { data: current } = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: n,
+            });
+            const labels = current.map((l) => l.name);
             let found = labels.filter((name) => requiredSet.has(name));
             if (found.length > 0) {
               core.info(`Type label(s): ${found.join(", ")}`);
