@@ -40,6 +40,13 @@ jobs:
         env:
           DISTSSHKIT_PUSH_IMAGE: ghcr.io/${{ github.repository_owner }}/distsshkit-linux-ssh-worker:${{ github.sha }}
         run: ./testenv/docker-ssh/scripts/up.sh --e2e
+      # SHA for daily macOS/WSL; latest for local pull (package should be public).
+      - name: Push latest
+        env:
+          IMAGE: ghcr.io/${{ github.repository_owner }}/distsshkit-linux-ssh-worker
+        run: |
+          docker tag "${IMAGE}:${{ github.sha }}" "${IMAGE}:latest"
+          docker push "${IMAGE}:latest"
       - name: Teardown workers
         if: always()
         run: ./testenv/docker-ssh/scripts/down.sh || true
@@ -96,17 +103,15 @@ jobs:
           key: wsl-julia-1.12-${{ hashFiles('Project.toml', 'test/Project.toml') }}
           restore-keys: |
             wsl-julia-1.12-
+      # wsl-bash does not inherit Actions env (set -u → unbound GITHUB_TOKEN).
       - name: docker-ssh up + SSH E2E in WSL2
         shell: wsl-bash {0}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          DISTSSHKIT_WORKER_IMAGE: ghcr.io/${{ github.repository_owner }}/distsshkit-linux-ssh-worker:${{ github.sha }}
-          DISTSSHKIT_WORKER_PULL_RETRIES: "40"
         run: |
           src="$(pwd)"
           dest="$HOME/DistSSHKit.jl"
           cache="$src/.ci-cache/wsl-julia"
+          export DISTSSHKIT_WORKER_IMAGE="ghcr.io/${{ github.repository_owner }}/distsshkit-linux-ssh-worker:${{ github.sha }}"
+          export DISTSSHKIT_WORKER_PULL_RETRIES="40"
           mkdir -p "$cache"
           rm -rf "$dest"
           git clone "$src" "$dest"
@@ -125,7 +130,7 @@ jobs:
               exit 1
             fi
           fi
-          echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
           if [[ -f "$cache/julia.tgz" ]]; then
             tar -xzf "$cache/julia.tgz" -C "$HOME"
           else
@@ -147,4 +152,35 @@ jobs:
           dest="$HOME/DistSSHKit.jl"
           if [[ -d "$dest" ]]; then
             (cd "$dest" && ./testenv/docker-ssh/scripts/down.sh) || true
+          fi
+
+  # Schedule runs are not PR checks, and github-actions[bot] does not email.
+  notify:
+    needs: [linux-image, macos-e2e, wsl-e2e]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    name: notify
+    permissions:
+      issues: write
+    steps:
+      - name: Open or close tracking issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FAILED: ${{ contains(join(needs.*.result, ','), 'failure') }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title='E2E daily failed'
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label ci --search "in:title $title" --json number --jq '.[0].number // empty')"
+          if [ "$FAILED" = "true" ]; then
+            body="Latest run: $RUN_URL
+
+          Not a PR check (macOS / WSL are schedule-only). Re-run **E2E daily** after a fix."
+            if [ -n "$existing" ]; then
+              gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+            else
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label ci --body "$body"
+            fi
+          elif [ -n "$existing" ]; then
+            gh issue close "$existing" --repo "$GITHUB_REPOSITORY" --reason completed --comment "Latest run succeeded: $RUN_URL"
           fi
