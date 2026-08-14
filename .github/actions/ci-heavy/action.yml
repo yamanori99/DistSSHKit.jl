@@ -10,9 +10,9 @@ outputs:
 runs:
   using: composite
   steps:
-    # Default predicate is `some`: `**` matches README.md and `!README.md` is
-    # ignored. `some-with-excludes` applies the `!` patterns (dorny/paths-filter).
-    - uses: dorny/paths-filter@v3
+    # v3 only allows `some` / `every`. `some` ignores `!` after `**`.
+    # `some-with-excludes` is v4 (Node 24).
+    - uses: dorny/paths-filter@v4
       if: github.event_name == 'pull_request'
       id: filter
       with:
