@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   filter:
-    name: skip if root markdown
+    name: detect code changes
     runs-on: ubuntu-latest
     timeout-minutes: 3
     outputs:
