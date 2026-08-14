@@ -26,21 +26,13 @@ jobs:
       - uses: ./.github/actions/ci-heavy
         id: detect
 
-  jetls:
+  # Literal names: skipped matrix jobs leave ${{ matrix.minor }} unexpanded.
+  jetls-1-12:
     needs: filter
     if: needs.filter.outputs.heavy == 'true'
-    name: JETLS - Julia ${{ matrix.minor }} - ubuntu-latest
+    name: JETLS - Julia 1.12 - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - spec: "1.12"
-            minor: "1.12"
-          # Same 1.13 channel as Pkg.test (includes RCs until 1.13 is stable).
-          - spec: "~1.13.0-0"
-            minor: "1.13"
     steps:
       - uses: actions/checkout@v7
       - id: files
@@ -50,6 +42,24 @@ jobs:
       - uses: aviatesk/JETLS.jl/.github/actions/check@release
         with:
           files: ${{ steps.files.outputs.list }}
-          julia-version: ${{ matrix.spec }}
+          julia-version: "1.12"
+          exit-severity: hint
+          progress: none
+
+  jetls-1-13:
+    needs: filter
+    if: needs.filter.outputs.heavy == 'true'
+    name: JETLS - Julia 1.13 - ubuntu-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - id: files
+        run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
+      - uses: aviatesk/JETLS.jl/.github/actions/check@release
+        with:
+          files: ${{ steps.files.outputs.list }}
+          # Same 1.13 channel as Pkg.test (includes RCs until 1.13 is stable).
+          julia-version: "~1.13.0-0"
           exit-severity: hint
           progress: none
