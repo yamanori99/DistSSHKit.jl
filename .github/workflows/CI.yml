@@ -19,7 +19,8 @@ permissions:
 jobs:
   # Full `Pkg.test()` stays Linux-only. Slow SSH E2E controllers are `E2E daily`.
   # PRs run `E2E / ubuntu-latest → ubuntu-24.04`.
-  # Root-markdown PRs skip this job (Skipped, not a green pass). Required checks still succeed.
+  # Root-markdown PRs skip these jobs (Skipped, not a green pass). Required
+  # check names must be literal: skipped matrix jobs do not expand ${{ matrix.* }}.
   filter:
     name: detect code changes
     runs-on: ubuntu-latest
@@ -31,66 +32,52 @@ jobs:
       - uses: ./.github/actions/ci-heavy
         id: detect
 
-  test:
+  test-1-10:
     needs: filter
     if: needs.filter.outputs.heavy == 'true'
+    name: Pkg.test - Julia 1.10 - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    name: Pkg.test - Julia ${{ matrix.minor }} - ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - spec: "1.10"
-            minor: "1.10"
-            coverage: false
-          - spec: "1.11"
-            minor: "1.11"
-            coverage: false
-          - spec: "1.12"
-            minor: "1.12"
-            coverage: true
-          # Prerelease channel; ~1.13.0-0 picks the latest 1.13.x (including RCs).
-          - spec: "~1.13.0-0"
-            minor: "1.13"
-            coverage: false
     steps:
       - uses: actions/checkout@v7
-      - uses: julia-actions/setup-julia@v3
-        id: julia
+      - uses: ./.github/actions/pkg-test
         with:
-          version: ${{ matrix.spec }}
-      - name: Julia ${{ steps.julia.outputs.julia-version }}
-        run: julia --version
-      - uses: julia-actions/cache@v3
-      - uses: julia-actions/julia-buildpkg@v1
-      - uses: julia-actions/julia-runtest@v1
+          version: "1.10"
+
+  test-1-11:
+    needs: filter
+    if: needs.filter.outputs.heavy == 'true'
+    name: Pkg.test - Julia 1.11 - ubuntu-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/pkg-test
         with:
-          coverage: ${{ matrix.coverage }}
-      - uses: julia-actions/julia-processcoverage@v1
-        if: matrix.coverage
-      # Public: OIDC. Private: upload fails quietly until the repo is public.
-      - name: Upload coverage to Codecov
-        if: matrix.coverage
-        uses: codecov/codecov-action@v7
+          version: "1.11"
+
+  test-1-12:
+    needs: filter
+    if: needs.filter.outputs.heavy == 'true'
+    name: Pkg.test - Julia 1.12 - ubuntu-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/pkg-test
         with:
-          files: lcov.info
-          slug: ${{ github.repository }}
-          use_oidc: true
-          fail_ci_if_error: false
-      - name: Coverage summary
-        if: matrix.coverage
-        run: |
-          julia --color=no -e '
-          using Pkg
-          Pkg.add("Coverage")
-          using Coverage, Printf
-          files = process_folder("src")
-          for fc in files
-              c, t = get_summary(fc)
-              t == 0 && continue
-              @printf("%-32s %5.1f%%\n", basename(fc.filename), 100 * c / t)
-          end
-          c, t = get_summary(files)
-          @printf("%-32s %5.1f%%  (%d/%d lines)\n", "TOTAL", 100 * c / t, c, t)
-          '
+          version: "1.12"
+          coverage: "true"
+
+  test-1-13:
+    needs: filter
+    if: needs.filter.outputs.heavy == 'true'
+    name: Pkg.test - Julia 1.13 - ubuntu-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/pkg-test
+        with:
+          # Prerelease channel; ~1.13.0-0 picks the latest 1.13.x (including RCs).
+          version: "~1.13.0-0"
