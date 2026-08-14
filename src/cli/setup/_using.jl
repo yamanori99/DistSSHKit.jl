@@ -13,10 +13,9 @@ using .DistSSHKit:
     preflight_setup_ssh,
     print_err,
     print_header,
-    print_help_blank,
-    print_help_chrome,
-    print_help_lines,
-    print_help_section,
+    parse_setup_args,
+    show_requirements,
+    show_usage,
     print_ok,
     println_fatal,
     resolve_clone_url,
@@ -24,5 +23,3 @@ using .DistSSHKit:
     rsync_push_to_remotes,
     validate_setup_hosts,
     writeln_field
-
-include(joinpath(@__DIR__, "..", "_common.jl"))

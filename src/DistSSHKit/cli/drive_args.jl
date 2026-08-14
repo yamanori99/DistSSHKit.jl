@@ -1,7 +1,7 @@
-# Runner CLI argument parsing and help text.
+# Drive CLI argument parsing and help (module-owned; Main CLI re-exports).
 
 function _parse_host_workers_spec(spec::AbstractString)
-    return DistSSHKit.split_host_workers_spec(String(spec))
+    return split_host_workers_spec(String(spec))
 end
 
 """Parse `--flag:N` / `-f:N` into `N`; return `nothing` if `arg` is not that form."""
@@ -31,7 +31,7 @@ function _parse_drive_flag_count(flag::String, args::Vector, i::Int)::Int
             "$flag requires a worker count before the script (e.g. $flag 2 script.jl)",
         ))
     end
-  try
+    try
         return parse(Int, value)
     catch
         throw(ArgumentError("$flag worker count must be an integer, got $(repr(value))"))
@@ -39,7 +39,7 @@ function _parse_drive_flag_count(flag::String, args::Vector, i::Int)::Int
 end
 
 """Whether `host` / `host:N` denotes local worker processes (not SSH)."""
-_drive_local_host_name(host_name::String)::Bool = DistSSHKit.is_local_host_name(host_name)
+_drive_local_host_name(host_name::String)::Bool = is_local_host_name(host_name)
 
 function _drive_set_local_workers!(
     local_workers::Int,
@@ -92,7 +92,7 @@ function _drive_push_host_token!(
 end
 
 function parse_drive_args(args::Vector{String})
-    cli_session, args = DistSSHKit.peel_kit_cli_flags(args)
+    cli_session, args = peel_kit_cli_flags(args)
     local_workers = 0
     default_workers = nothing
     julia_exe = nothing
@@ -135,13 +135,13 @@ function parse_drive_args(args::Vector{String})
             julia_exe = args[i+1]
             i += 2
         elseif arg == "--sync"
-            sync_mode = DistSSHKit._kit_set_sync_mode!(sync_mode, :sync; source="drive")
+            sync_mode = _kit_set_sync_mode!(sync_mode, :sync; source="drive")
             i += 1
         elseif arg == "--rsync"
             require_git && throw(ArgumentError(
                 "drive: --require-git cannot be combined with --rsync",
             ))
-            sync_mode = DistSSHKit._kit_set_sync_mode!(sync_mode, :rsync; source="drive")
+            sync_mode = _kit_set_sync_mode!(sync_mode, :rsync; source="drive")
             i += 1
         elseif arg == "--require-git"
             sync_mode === :rsync && throw(ArgumentError(
@@ -198,7 +198,7 @@ function parse_drive_args(args::Vector{String})
                         "`$(flag)` arguments cannot include options like $(repr(a)); put flags before $(flag)"))
                 end
             end
-            tree_root = DistSSHKit.canonical_local_path(tail[1])
+            tree_root = canonical_local_path(tail[1])
             tree_hosts = String[_parse_host_workers_spec(String(x))[1] for x in tail[2:end]]
             isempty(tree_hosts) && throw(ArgumentError("`$(flag)` requires at least one HOST after ROOT"))
             if julia_exe === nothing
@@ -284,7 +284,7 @@ function parse_drive_args(args::Vector{String})
         skip_hash_check = true
     end
 
-    for tok in DistSSHKit.kit_host_source_tokens(cli_session; keep_counts=true)
+    for tok in kit_host_source_tokens(cli_session; keep_counts=true)
         local_workers = _drive_push_host_token!(
             hosts,
             local_workers,
@@ -293,7 +293,7 @@ function parse_drive_args(args::Vector{String})
         )
     end
 
-    DistSSHKit.apply_kit_cli_session!(cli_session)
+    apply_kit_cli_session!(cli_session)
 
     return (
         local_workers=local_workers,
@@ -337,7 +337,7 @@ function show_drive_requirements(; io::IO=stdout)
         "  host:N / local:N    N Distributed workers (not go slots)",
         "  l:N                 same as local:N",
         "  host                1 worker, or --workers default",
-        "  $(DistSSHKit.KIT_HOSTS_FLAG_HELP)",
+        "  $(KIT_HOSTS_FLAG_HELP)",
         "  --hosts-file PATH   one token per line (host:N kept)",
     )
     print_help_blank(io)
@@ -345,13 +345,13 @@ function show_drive_requirements(; io::IO=stdout)
     print_help_lines(io,
         "  -w, --workers N     default when host has no :N",
         "  --sync / --rsync    optional pre-run (default: none)",
-        "  --require-git       $(DistSSHKit.REQUIRE_GIT_MEANING)",
+        "  --require-git       $(REQUIRE_GIT_MEANING)",
         "  --output-dir PATH   result root (DISTRIBUTED_OUTPUT_DIR)",
         "  --julia PATH        remote Julia",
         "  --no-log            skip drive_*.log",
-        "  $(DistSSHKit.KIT_QUIET_FLAG_HELP)",
-        "  $(DistSSHKit.KIT_PROGRESS_FLAG_HELP)",
-        "  $(DistSSHKit.KIT_VERBOSE_FLAG_HELP)",
+        "  $(KIT_QUIET_FLAG_HELP)",
+        "  $(KIT_PROGRESS_FLAG_HELP)",
+        "  $(KIT_VERBOSE_FLAG_HELP)",
         "  -y, --yes           skip confirmations",
         "  --version, -v       print version and exit",
         "  -h, --help          this help",

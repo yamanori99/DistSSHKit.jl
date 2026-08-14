@@ -109,6 +109,13 @@ function kit_project_root(kit_dir::AbstractString)::String
     return root
 end
 
+"""Local project root for kit CLI scripts (`ENV[DISTRIBUTED_PROJECT_ROOT]` or [`kit_project_root`](@ref))."""
+function cli_project_root(kit_src_dir::AbstractString)
+    get(ENV, "DISTRIBUTED_PROJECT_ROOT") do
+        kit_project_root(kit_src_dir)
+    end
+end
+
 # Output formatting
 
 const OUTPUT_WIDTH = 64

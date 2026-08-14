@@ -27,8 +27,6 @@ include(joinpath(@__DIR__, "go", "_using.jl"))
 const PROJECT_ROOT = cli_project_root(@__DIR__)
 const _PATH_ANCHOR = DistSSHKit.canonical_local_path(PROJECT_ROOT)
 
-include(joinpath(@__DIR__, "go", "args.jl"))
-
 function go_main()::Cint
     parsed = parse_go_args(ARGS)
     if parsed.show_version

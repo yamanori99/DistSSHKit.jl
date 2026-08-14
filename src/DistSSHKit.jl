@@ -9,6 +9,7 @@ module DistSSHKit
 
 using Dates
 using Distributed
+using Pkg
 
 # Public surface for application / driver authors.
 # Prefer `julia -m DistSSHKit …` for day-to-day CLI.
@@ -57,7 +58,12 @@ include("DistSSHKit/distributed.jl")
 include("DistSSHKit/drive/types.jl")
 include("DistSSHKit/size/measure.jl")
 include("DistSSHKit/setup.jl")
+include("DistSSHKit/cli/drive_args.jl")
+include("DistSSHKit/cli/go_args.jl")
+include("DistSSHKit/cli/setup_args.jl")
+include("DistSSHKit/cli/size_args.jl")
 include("DistSSHKit/drive.jl")
+include("DistSSHKit/cli/size_report.jl")
 include("DistSSHKit/go.jl")
 
 const _KIT_ROOT = dirname(@__DIR__)
@@ -65,15 +71,14 @@ const _KIT_ROOT = dirname(@__DIR__)
 # Kit version (from Project.toml).
 # `@__DIR__` is `src/` — keep path resolution here, not in included files.
 
-"""Read `version = "x.y.z"` from `path` (`Project.toml`); return `nothing` if missing or invalid."""
+"""Read `version` from `path` (`Project.toml`); return `nothing` if missing or invalid."""
 function _project_toml_version(path::AbstractString)::Union{Nothing,VersionNumber}
     p = String(path)
     isfile(p) || return nothing
     try
-        m = match(r"version\s*=\s*\"([^\"]+)\"", read(p, String))
-        m === nothing && return nothing
-        cap = m.captures[1]
-        return cap isa AbstractString ? VersionNumber(String(cap)) : nothing
+        raw = get(Pkg.TOML.parsefile(p), "version", nothing)
+        raw isa AbstractString || return nothing
+        return VersionNumber(String(raw))
     catch
         return nothing
     end

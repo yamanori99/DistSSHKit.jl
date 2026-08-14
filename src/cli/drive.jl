@@ -9,10 +9,6 @@
 See `--help`.
 """
 
-using Distributed
-using Dates
-using Pkg
-
 # Prefer package DistSSHKit; fall back to vendored include.
 if !isdefined(@__MODULE__, :DistSSHKit)
     if get(ENV, "DIST_SSH_KIT_CLI_INCLUDE", "") == "1"
@@ -30,7 +26,6 @@ include(joinpath(@__DIR__, "drive", "_using.jl"))
 const PROJECT_ROOT = cli_project_root(@__DIR__)
 const _PATH_ANCHOR = DistSSHKit.canonical_local_path(PROJECT_ROOT)
 
-include(joinpath(@__DIR__, "drive", "args.jl"))
 # Execution core lives under DistSSHKit/drive/runtime/ (Main-scoped for Distributed).
 include(joinpath(@__DIR__, "..", "DistSSHKit", "drive", "_load_runtime.jl"))
 

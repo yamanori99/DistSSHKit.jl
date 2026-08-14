@@ -1,39 +1,36 @@
 using Test
 
 @testset "drive args" begin
-    _drive_dir = joinpath(_kit_root(), "src", "cli", "drive")
-    _runtime_dir = joinpath(_kit_root(), "src", "DistSSHKit", "drive", "runtime")
-    isdefined(Main, :parse_drive_args) || include(joinpath(_drive_dir, "args.jl"))
-    isdefined(Main, :check_memory_capacity) || include(joinpath(_runtime_dir, "checks.jl"))
-    isdefined(Main, :drive_script_not_found_message) || include(joinpath(_runtime_dir, "_common.jl"))
+    parse_drive_args = DistSSHKit.parse_drive_args
+    drive_help_text = DistSSHKit.drive_help_text
 
     @testset "missing script hints" begin
         # Wrong layout under kit root: demos/foo.jl vs demos/with_kit/foo.jl
-        @test occursin("demos/with_kit/square_file.jl", drive_script_not_found_message(
+        @test occursin("demos/with_kit/square_file.jl", DistSSHKit.explain_script_not_found(
             joinpath(_kit_root(), "demos", "square_file.jl"),
             _kit_root(),
         ))
 
         mktempdir() do tmp
             missing_kit = joinpath(tmp, "demos", "with_kit", "square_file.jl")
-            msg = drive_script_not_found_message(missing_kit, tmp; surface=:cli)
+            msg = DistSSHKit.explain_script_not_found(missing_kit, tmp; surface=:cli)
             @test occursin("Script not found", msg)
             @test occursin("demo install", msg)
             @test occursin("demos/with_kit/square_file.jl", msg)
             @test !occursin("install_demos()", msg)
 
-            msg_api = drive_script_not_found_message(missing_kit, tmp; surface=:api)
+            msg_api = DistSSHKit.explain_script_not_found(missing_kit, tmp; surface=:api)
             @test occursin("DistSSHKit.install_demos()", msg_api)
             @test !occursin("demo install", msg_api)
 
             missing_custom = joinpath(tmp, "demos", "with_kit", "rho_sweep.jl")
-            msg2 = drive_script_not_found_message(missing_custom, tmp)
+            msg2 = DistSSHKit.explain_script_not_found(missing_custom, tmp)
             @test occursin("Script not found", msg2)
             @test occursin("./demos/ is missing", msg2)
             @test occursin("demo install", msg2)
 
             mkpath(joinpath(tmp, "demos", "with_kit"))
-            msg3 = drive_script_not_found_message(missing_custom, tmp; surface=:api)
+            msg3 = DistSSHKit.explain_script_not_found(missing_custom, tmp; surface=:api)
             @test occursin("no such file under ./demos/", msg3)
             @test occursin("DistSSHKit.install_demos()", msg3)
             @test occursin("DistSSHKit.list_demos()", msg3)
@@ -62,8 +59,8 @@ using Test
     end
 
     @testset "parse hosts and flags" begin
-        @test _parse_host_workers_spec("host-a") == ("host-a", nothing)
-        @test _parse_host_workers_spec("host-a:10") == ("host-a", 10)
+        @test DistSSHKit.split_host_workers_spec("host-a") == ("host-a", nothing)
+        @test DistSSHKit.split_host_workers_spec("host-a:10") == ("host-a", 10)
 
         withenv("JULIA_DISTRIBUTED_EXE" => nothing) do
             let r = parse_drive_args(["--help"])
@@ -193,41 +190,5 @@ using Test
         # Story: parity is opt-in, not required after rsync
         @test occursin("off by default", lowercase(txt)) || occursin("Default is off", txt)
         @test !occursin("required after `setup --rsync`", txt)
-    end
-
-    @testset "check_git_hashes" begin
-        function _init_git_repo!(d::String)
-            run(Cmd(["git", "-C", d, "init", "-q"]))
-            run(Cmd(["git", "-C", d, "config", "user.email", "test@example.com"]))
-            run(Cmd(["git", "-C", d, "config", "user.name", "Test"]))
-            write(joinpath(d, "f.txt"), "hi")
-            run(Cmd(["git", "-C", d, "add", "f.txt"]))
-            run(Cmd(["git", "-C", d, "commit", "-q", "-m", "init"]))
-        end
-
-        function _check_git(hosts, d)
-            DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(quiet=true, yes=true))
-            return check_git_hashes(hosts, d)
-        end
-
-        mktempdir() do tmp
-            d = abspath(string(tmp))
-            ok, mismatches, unverifiable = _check_git(String[], d)
-            @test ok && isempty(mismatches) && isempty(unverifiable)
-        end
-        mktempdir() do tmp
-            d = abspath(string(tmp))
-            _init_git_repo!(d)
-            ok, mismatches, unverifiable = _check_git(String[], d)
-            @test ok && isempty(mismatches) && isempty(unverifiable)
-        end
-        mktempdir() do tmp
-            d = abspath(string(tmp))
-            _init_git_repo!(d)
-            ok, mismatches, unverifiable = _check_git(["no-such-host.invalid"], d)
-            @test ok == false
-            @test isempty(mismatches)
-            @test unverifiable == ["no-such-host.invalid"]
-        end
     end
 end

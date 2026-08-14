@@ -17,10 +17,9 @@ using .DistSSHKit:
     local_git_clean,
     print_err,
     print_header,
-    print_help_blank,
-    print_help_chrome,
-    print_help_lines,
-    print_help_section,
+    parse_drive_args,
+    show_drive_requirements,
+    show_drive_usage,
     print_info,
     print_ok,
     print_progress_err,
@@ -34,6 +33,6 @@ using .DistSSHKit:
     subcommand_args_record,
     write_both,
     writeln_both,
-    writeln_field
-
-include(joinpath(@__DIR__, "..", "_common.jl"))
+    writeln_field,
+    cli_project_root,
+    cli_project_disp

@@ -5,7 +5,7 @@
 #
 # Globs (new files under these dirs are picked up automatically):
 #   src/DistSSHKit.jl
-#   src/cli/*.jl          except _*.jl fragments (_common.jl)
+#   src/cli/*.jl          except _*.jl fragments
 #   demos/with_kit/*.jl
 #   demos/without_kit/*.jl
 #   test/runtests.jl test/aqua.jl

@@ -1,53 +1,53 @@
-function show_size_usage()
-    print_help_chrome("DistSSHKit size")
-    print_help_lines(
+function show_size_usage(; io::IO=stdout)
+    print_help_chrome("DistSSHKit size"; io=io)
+    print_help_lines(io,
         "Estimate worker counts from RAM and CPU.",
         "RSS = max(package load, optional --probe peak).",
     )
-    print_help_blank()
-    print_help_section("Usage")
-    print_help_lines(
+    print_help_blank(io)
+    print_help_section("Usage"; io=io)
+    print_help_lines(io,
         "  julia --project=. -m DistSSHKit size [--local] [hosts...]",
         "  size --local host1 host2",
         "  size --gb-per-worker 1.5 host1",
     )
-    print_help_blank()
-    print_help_section("Options")
-    print_help_lines(
+    print_help_blank(io)
+    print_help_section("Options"; io=io)
+    print_help_lines(io,
         "  -l, --local         include localhost",
         "  --gb-per-worker N   skip measure; assume N GB each",
         "  --probe PATH        warm-up script; peak RSS",
-        "  --mem-headroom N    RAM fraction (default $(DistSSHKit.DEFAULT_MEM_HEADROOM))",
-        "  --master-gb N       master reserve (default $(DistSSHKit.DEFAULT_MASTER_GB))",
+        "  --mem-headroom N    RAM fraction (default $(DEFAULT_MEM_HEADROOM))",
+        "  --master-gb N       master reserve (default $(DEFAULT_MASTER_GB))",
         "  --hosts CSV         comma-separated hosts (`:N` stripped)",
         "  --hosts-file PATH   one host per line (`:N` stripped)",
-        "  $(DistSSHKit.KIT_QUIET_FLAG_HELP)",
-        "  $(DistSSHKit.KIT_PROGRESS_FLAG_HELP)",
-        "  $(DistSSHKit.KIT_VERBOSE_FLAG_HELP)",
+        "  $(KIT_QUIET_FLAG_HELP)",
+        "  $(KIT_PROGRESS_FLAG_HELP)",
+        "  $(KIT_VERBOSE_FLAG_HELP)",
         "  --version, -v       print version and exit",
         "  -h, --help          this help",
     )
-    print_help_blank()
-    print_help_lines(
+    print_help_blank(io)
+    print_help_lines(io,
         "Details: docs (manual/size). See also: drive, setup.",
     )
     return nothing
 end
 
 function parse_size_args(args::Vector{String})
-    cli_session, args = DistSSHKit.peel_kit_cli_flags(args)
+    cli_session, args = peel_kit_cli_flags(args)
     gb_per_worker = nothing
     probe         = nothing
-    mem_headroom  = DistSSHKit.DEFAULT_MEM_HEADROOM
-    master_gb     = DistSSHKit.DEFAULT_MASTER_GB
+    mem_headroom  = DEFAULT_MEM_HEADROOM
+    master_gb     = DEFAULT_MASTER_GB
     include_local = false
     hosts         = String[]
 
-    c = DistSSHKit.CliCursor(args)
-    while !DistSSHKit.cli_at_end(c)
-        arg = DistSSHKit.cli_current(c)::String
-        if DistSSHKit.cli_match(c, ["-h", "--help"])
-            DistSSHKit.cli_consume!(c)
+    c = CliCursor(args)
+    while !cli_at_end(c)
+        arg = cli_current(c)::String
+        if cli_match(c, ["-h", "--help"])
+            cli_consume!(c)
             return (
                 show_help=true,
                 show_version=cli_session.show_version,
@@ -59,28 +59,28 @@ function parse_size_args(args::Vector{String})
                 include_local=include_local,
                 hosts=hosts,
             )
-        elseif DistSSHKit.cli_match(c, ["--local", "-l"])
+        elseif cli_match(c, ["--local", "-l"])
             include_local = true
-            DistSSHKit.cli_consume!(c)
+            cli_consume!(c)
         elseif arg == "--gb-per-worker"
-            gb_per_worker = parse(Float64, DistSSHKit.cli_take_value!(c, arg))
+            gb_per_worker = parse(Float64, cli_take_value!(c, arg))
         elseif arg == "--probe"
-            probe = String(DistSSHKit.cli_take_value!(c, arg))
+            probe = String(cli_take_value!(c, arg))
         elseif arg == "--mem-headroom"
-            mem_headroom = parse(Float64, DistSSHKit.cli_take_value!(c, arg))
+            mem_headroom = parse(Float64, cli_take_value!(c, arg))
         elseif arg == "--master-gb"
-            master_gb = parse(Float64, DistSSHKit.cli_take_value!(c, arg))
+            master_gb = parse(Float64, cli_take_value!(c, arg))
         elseif !startswith(arg, "-")
-            push!(hosts, DistSSHKit.split_host_workers_spec(arg)[1])
-            DistSSHKit.cli_consume!(c)
+            push!(hosts, split_host_workers_spec(arg)[1])
+            cli_consume!(c)
         else
             @warn "Unknown option: $arg (ignored)"
-            DistSSHKit.cli_consume!(c)
+            cli_consume!(c)
         end
     end
 
-    DistSSHKit.append_kit_host_sources!(hosts, cli_session; keep_counts=false)
-    DistSSHKit.apply_kit_cli_session!(cli_session)
+    append_kit_host_sources!(hosts, cli_session; keep_counts=false)
+    apply_kit_cli_session!(cli_session)
 
     if probe === nothing
         env_probe = strip(get(ENV, "DISTSSHKIT_SIZE_PROBE", ""))
