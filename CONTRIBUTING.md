@@ -45,7 +45,7 @@ Optional: [`.github/jetls-check.sh`](.github/jetls-check.sh) ([jetls](https://gi
 
 ## Workflow
 
-- Branch from `main` (`feature/…`, `fix/…`, `docs/…`, `chore/…`). Solo: push to `main` is fine.
+- Branch from `main` (`feature/…`, `fix/…`, `docs/…`, `chore/…`). Open a PR; `main` is squash-merge only. Keep each PR one reviewable change — split unless `main` would be broken in between. Large plans: Discussion / Enhancement Issue first, then small PRs.
 - Breaking (CLI names, module name, driver `init_output_dir!` / `main`, …): bump `x` in `0.x.y`. Patch `y` only otherwise. Tags (`vX.Y.Z`) are a maintainer decision after merge. TagBot.yml waits for a General-registry release.
 - `setup --clone` / `--rsync` refuse a non-empty destination; redeploy with `setup --delete`. Prefer first deploy `--rsync`; git updates `--sync` / `--pull`. Do not weaken that refusal without tests.
 
