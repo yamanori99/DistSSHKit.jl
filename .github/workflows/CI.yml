@@ -19,7 +19,7 @@ permissions:
 jobs:
   # Full `Pkg.test()` stays Linux-only. Slow SSH E2E controllers are `E2E daily`.
   # PRs run `E2E / ubuntu-latest → ubuntu-24.04`.
-  # Root-markdown PRs still run this job (required check names) but skip the suite.
+  # Root-markdown PRs skip this job (Skipped, not a green pass). Required checks still succeed.
   filter:
     name: detect code changes
     runs-on: ubuntu-latest
@@ -33,6 +33,7 @@ jobs:
 
   test:
     needs: filter
+    if: needs.filter.outputs.heavy == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     name: Pkg.test - Julia ${{ matrix.minor }} - ubuntu-latest
@@ -54,32 +55,23 @@ jobs:
             minor: "1.13"
             coverage: false
     steps:
-      - name: Skip suite
-        if: needs.filter.outputs.heavy != 'true'
-        run: echo "Root markdown only; Pkg.test skipped."
       - uses: actions/checkout@v7
-        if: needs.filter.outputs.heavy == 'true'
       - uses: julia-actions/setup-julia@v3
-        if: needs.filter.outputs.heavy == 'true'
         id: julia
         with:
           version: ${{ matrix.spec }}
       - name: Julia ${{ steps.julia.outputs.julia-version }}
-        if: needs.filter.outputs.heavy == 'true'
         run: julia --version
       - uses: julia-actions/cache@v3
-        if: needs.filter.outputs.heavy == 'true'
       - uses: julia-actions/julia-buildpkg@v1
-        if: needs.filter.outputs.heavy == 'true'
       - uses: julia-actions/julia-runtest@v1
-        if: needs.filter.outputs.heavy == 'true'
         with:
           coverage: ${{ matrix.coverage }}
       - uses: julia-actions/julia-processcoverage@v1
-        if: needs.filter.outputs.heavy == 'true' && matrix.coverage
+        if: matrix.coverage
       # Public: OIDC. Private: upload fails quietly until the repo is public.
       - name: Upload coverage to Codecov
-        if: needs.filter.outputs.heavy == 'true' && matrix.coverage
+        if: matrix.coverage
         uses: codecov/codecov-action@v7
         with:
           files: lcov.info
@@ -87,7 +79,7 @@ jobs:
           use_oidc: true
           fail_ci_if_error: false
       - name: Coverage summary
-        if: needs.filter.outputs.heavy == 'true' && matrix.coverage
+        if: matrix.coverage
         run: |
           julia --color=no -e '
           using Pkg
