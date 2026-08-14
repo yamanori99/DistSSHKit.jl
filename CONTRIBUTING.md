@@ -6,7 +6,7 @@ How to work on this repository. Users: [Documenter](https://yamanori99.github.io
 
 - macOS / Linux / WSL2 Ubuntu (not native Windows; the kit shells out to `ssh` / `rsync` / POSIX tools)
 - Julia **1.10+** for the library and `Pkg.test()`; **1.12+** for `julia -m DistSSHKit` and docs (`~1.13.0-0` when available). Prefer [juliaup](https://github.com/JuliaLang/juliaup); details in [Requirements](https://yamanori99.github.io/DistSSHKit.jl/dev/requirements/).
-- SSH work: Git, OpenSSH, rsync. Match **major.minor** with remotes (CI E2E workers are 1.12). Daily / dispatch SSH E2E: `E2E / macOS → Linux - schedule`, `E2E / WSL2 → Linux - schedule` (dispatch uses `workflow_dispatch` in the title)
+- SSH work: Git, OpenSSH, rsync. Match **major.minor** with remotes (CI E2E workers are 1.12). Daily / dispatch SSH E2E: `E2E / macOS → Linux`, `E2E / WSL2 → Linux`
 
 ## Setup
 
@@ -44,7 +44,7 @@ SSH / sync / worker changes: [`testenv/docker-ssh/scripts/up.sh --e2e`](testenv/
 CI (Julia-style: fast on every PR, slow OS on a timer):
 
 - **PR / `main`:** `Test / Pkg.test - Julia *`, `Lint / JETLS - Julia 1.12`, `Docs / Documenter - Julia 1.12`, `Scan / Gitleaks`. Root-markdown-only PRs keep those check names but skip the suite. `E2E / Linux → Linux` always appears; the suite runs when `src/`, `test/`, `demos/`, `testenv/`, `Project.toml`, or the E2E workflow change.
-- **Daily 04:00 JST / Run workflow:** also `E2E / macOS → Linux - schedule` and `E2E / WSL2 → Linux - schedule` (manual title uses `workflow_dispatch`).
+- **Daily 04:00 JST / Run workflow:** also `E2E / macOS → Linux` and `E2E / WSL2 → Linux`.
 - **Assets path:** `Assets / bake SVG`.
 
 Optional: [`.github/jetls-check.sh`](.github/jetls-check.sh) ([jetls](https://github.com/JuliaLang/jetls.jl); same glob as CI), docs (`julia --project=docs -e 'using Pkg; Pkg.instantiate()'` then `julia --project=docs --color=yes docs/make.jl`), logo bake (`julia docs/src/assets/bake.jl`, plus `--png` / `--gif`), [gitleaks](https://github.com/gitleaks/gitleaks) (`gitleaks detect --source .`).

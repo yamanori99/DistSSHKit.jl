@@ -50,12 +50,12 @@ How to run: [`testenv/docker-ssh/README.md`](../testenv/docker-ssh/README.md).
 | **unit** | parsing, display, module helpers, CLI arg tables | ~5 s |
 | **integration** | kit CLI `drive` / `go` in child processes (`-m` on 1.12+; `main` on 1.10–1.11) | ~2 min |
 | **ssh-e2e** (`E2E / Linux → Linux`) | Real SSH + rsync against Docker workers (`DISTSSHKIT_SSH_E2E=1`). CI: every PR | ~10–20 min |
-| **ssh-e2e macOS** (`E2E / macOS → Linux - schedule`) | Same suite from **macOS Intel** + Colima. Daily 04:00 JST (`workflow_dispatch` in the title when run manually). Pulls the worker image the Linux job pushed | ~25–50 min |
-| **ssh-e2e WSL** (`E2E / WSL2 → Linux - schedule`) | Same suite from **WSL2 Ubuntu**. Daily / dispatch. Not native Windows | ~20–45 min |
+| **ssh-e2e macOS** (`E2E / macOS → Linux`) | Same suite from **macOS Intel** + Colima. Daily 04:00 JST or Run workflow. Pulls the worker image the Linux job pushed | ~25–50 min |
+| **ssh-e2e WSL** (`E2E / WSL2 → Linux`) | Same suite from **WSL2 Ubuntu**. Daily / dispatch. Not native Windows | ~20–45 min |
 | **doctests** (`Docs / Documenter - Julia 1.12`) | docstring examples in `src/` (`Documentation.yml`) | ~5 s |
 
 Most of the wall time in `Pkg.test()` is integration (child Julia + local workers).
-Remote SSH on PRs and main is **E2E / Linux → Linux**. Daily: **E2E / macOS → Linux - schedule** and **E2E / WSL2 → Linux - schedule**. Doctests run in **Docs / Documenter - Julia 1.12**, not `Pkg.test()`. **Test / Pkg.test - Julia 1.10** / **1.11** uses `DistSSHKit.main` for CLI children (`-m` is 1.12+).
+Remote SSH on PRs and main is **E2E / Linux → Linux**. Daily / dispatch: **E2E / macOS → Linux** and **E2E / WSL2 → Linux**. Doctests run in **Docs / Documenter - Julia 1.12**, not `Pkg.test()`. **Test / Pkg.test - Julia 1.10** / **1.11** uses `DistSSHKit.main` for CLI children (`-m` is 1.12+).
 
 ## Why only `setup` uses SSH/rsync fakes
 

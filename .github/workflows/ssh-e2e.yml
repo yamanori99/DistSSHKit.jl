@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   paths:
-    name: paths
+    name: E2E paths
     runs-on: ubuntu-latest
     timeout-minutes: 3
     outputs:
@@ -104,7 +104,7 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: macos-15-intel
     timeout-minutes: 60
-    name: macOS → Linux - ${{ github.event_name }}
+    name: macOS → Linux
     permissions:
       contents: read
       packages: read
@@ -136,7 +136,7 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: windows-latest
     timeout-minutes: 60
-    name: WSL2 → Linux - ${{ github.event_name }}
+    name: WSL2 → Linux
     permissions:
       contents: read
       packages: read

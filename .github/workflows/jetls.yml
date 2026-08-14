@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   filter:
-    name: paths
+    name: JETLS paths
     runs-on: ubuntu-latest
     timeout-minutes: 3
     outputs:
