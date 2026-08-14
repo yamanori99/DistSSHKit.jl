@@ -44,6 +44,9 @@ Or, equivalently, via the `Pkg` API:
 julia> import Pkg; Pkg.add("DistSSHKit")
 ```
 
+Also needs **`ssh`**, **`rsync`**, and **`git`** (git deploy only);
+`pkg> add` does not install them. [Requirements](@ref).
+
 !!! note "CLI"
     These pages assume Julia **1.12+** and `julia --project=. -m DistSSHKit …`.
     There is no separate binary. On 1.10–1.11 use `go!` / `drive!`; see
