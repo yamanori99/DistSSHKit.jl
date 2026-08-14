@@ -9,9 +9,9 @@ Real OpenSSH + rsync Linux workers. CI remote SSH coverage uses this stack
 
 | Controller | Worker | Where |
 | --- | --- | --- |
-| Linux (`ubuntu-latest`) | Linux ×2 (this compose) | **CI** — PR and main — `E2E / Linux → Linux` |
-| macOS Intel (`macos-15-intel` + Colima) | Linux ×2 (same compose) | **CI daily / dispatch** — `E2E / macOS → Linux` |
-| WSL2 Ubuntu (`windows-latest`) | Linux ×2 (same compose) | **CI daily / dispatch** — `E2E / WSL2 → Linux` |
+| Linux (`ubuntu-latest`) | `ubuntu:24.04` ×2 | **CI** — PR and main — `E2E / ubuntu-latest → ubuntu-24.04` |
+| macOS Intel (`macos-15-intel` + Colima) | same image | **CI daily** — `E2E daily / macos-15-intel → ubuntu-24.04` |
+| WSL2 (`windows-latest`) | same image | **CI daily** — `E2E daily / windows-latest (WSL2) → ubuntu-24.04` |
 | Either | `local:N` | Mixed smoke inside the same suite |
 
 ### Honest limits
@@ -72,15 +72,16 @@ ssh -F .generated/ssh_config distsshkit-w1 'echo ok; julia --version'
 ## CI
 
 [`.github/workflows/ssh-e2e.yml`](../../.github/workflows/ssh-e2e.yml) runs
-`./scripts/up.sh --e2e` on `ubuntu-latest` for every PR and `main` (`E2E / Linux → Linux`).
-macOS Intel (`E2E / macOS → Linux`) and WSL2 Ubuntu
-(`E2E / WSL2 → Linux`) run daily at 04:00 JST, or via
-`workflow_dispatch`.
+`./scripts/up.sh --e2e` on `ubuntu-latest` for every PR and `main`
+(`E2E / ubuntu-latest → ubuntu-24.04`).
+[`.github/workflows/ssh-e2e-daily.yml`](../../.github/workflows/ssh-e2e-daily.yml)
+(`E2E daily`) runs at 04:00 JST or via Run workflow: bake
+`ubuntu-latest (image)` to GHCR, then `macos-15-intel` and
+`windows-latest (WSL2)` pull that tag.
 
-On `schedule` / `workflow_dispatch`, the Linux job builds the worker image and
-pushes `ghcr.io/<owner>/distsshkit-linux-ssh-worker:<sha>`. macOS and WSL pull
-that tag (retry until Linux has pushed) instead of building Julia-in-Docker on
-Colima / WSL `dockerd`. Local `./scripts/up.sh` still builds unless you set
+macOS and WSL pull `ghcr.io/<owner>/distsshkit-linux-ssh-worker:<sha>` (retry
+until the image job has pushed) instead of building Julia-in-Docker on Colima /
+WSL `dockerd`. Local `./scripts/up.sh` still builds unless you set
 `DISTSSHKIT_WORKER_IMAGE`. Colima on Intel runners uses `--cpu 3 --memory 8`
 so the Darwin controller keeps RAM.
 

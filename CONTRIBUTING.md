@@ -6,7 +6,7 @@ How to work on this repository. Users: [Documenter](https://yamanori99.github.io
 
 - macOS / Linux / WSL2 Ubuntu (not native Windows; the kit shells out to `ssh` / `rsync` / POSIX tools)
 - Julia **1.10+** for the library and `Pkg.test()`; **1.12+** for `julia -m DistSSHKit` and docs (`~1.13.0-0` when available). Prefer [juliaup](https://github.com/JuliaLang/juliaup); details in [Requirements](https://yamanori99.github.io/DistSSHKit.jl/dev/requirements/).
-- SSH work: Git, OpenSSH, rsync. Match **major.minor** with remotes (CI E2E workers are 1.12). Daily / dispatch SSH E2E: `E2E / macOS → Linux`, `E2E / WSL2 → Linux`
+- SSH work: Git, OpenSSH, rsync. Match **major.minor** with remotes (CI E2E workers are 1.12). Daily / Run workflow: `E2E daily` (`macos-15-intel` / WSL2 → `ubuntu-24.04`)
 
 ## Setup
 
@@ -41,10 +41,10 @@ julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_file.jl
 
 SSH / sync / worker changes: [`testenv/docker-ssh/scripts/up.sh --e2e`](testenv/docker-ssh/README.md) (macOS controllers included). Optional Mac-only workers (not CI): [`testenv/apple-container-ssh`](testenv/apple-container-ssh).
 
-CI (Julia-style: fast on every PR, slow OS on a timer):
+CI (fast on every PR, slow OS on a timer):
 
-- **PR / `main`:** `Test / Pkg.test - Julia *`, `Lint / JETLS - Julia 1.12`, `Docs / Documenter - Julia 1.12`, `Scan / Gitleaks`. Root-markdown-only PRs keep those check names but skip the suite. `E2E / Linux → Linux` always appears; the suite runs when `src/`, `test/`, `demos/`, `testenv/`, `Project.toml`, or the E2E workflow change.
-- **Daily 04:00 JST / Run workflow:** also `E2E / macOS → Linux` and `E2E / WSL2 → Linux`.
+- **PR / `main`:** `Test / Pkg.test - Julia * - ubuntu-latest`, `Lint / JETLS - Julia 1.12 - ubuntu-latest`, `Docs / Documenter - Julia 1.12 - ubuntu-latest`, `Scan / Gitleaks`. Root-markdown-only PRs keep those check names but skip the suite. `E2E / ubuntu-latest → ubuntu-24.04` always appears; the suite runs when `src/`, `test/`, `demos/`, `testenv/`, `Project.toml`, or the E2E workflow change.
+- **Daily 04:00 JST / Run workflow `E2E daily`:** `ubuntu-latest (image)`, `macos-15-intel → ubuntu-24.04`, `windows-latest (WSL2) → ubuntu-24.04`.
 - **Assets path:** `Assets / bake SVG`.
 
 Optional: [`.github/jetls-check.sh`](.github/jetls-check.sh) ([jetls](https://github.com/JuliaLang/jetls.jl); same glob as CI), docs (`julia --project=docs -e 'using Pkg; Pkg.instantiate()'` then `julia --project=docs --color=yes docs/make.jl`), logo bake (`julia docs/src/assets/bake.jl`, plus `--png` / `--gif`), [gitleaks](https://github.com/gitleaks/gitleaks) (`gitleaks detect --source .`).
