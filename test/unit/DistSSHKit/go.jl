@@ -122,5 +122,14 @@ using Dates
             "/opt/Julia 1.12/bin/julia",
         )
         @test occursin(Base.shell_escape("/opt/Julia 1.12/bin/julia"), spaced)
+
+        with_args = DistSSHKit._go_remote_slot_shell_inner(
+            "~/proj",
+            "slot",
+            "job.jl",
+            ["8", "a b"],
+            "julia",
+        )
+        @test occursin("julia --project=. job.jl 8 " * Base.shell_escape("a b"), with_args)
     end
 end

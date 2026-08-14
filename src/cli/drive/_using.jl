@@ -1,6 +1,8 @@
 # Runner CLI: kit-internal names in `Main` (see `drive.jl`).
 using .DistSSHKit:
     LOG_FILE_HANDLE,
+    cli_project_disp,
+    cli_project_root,
     close_log_file,
     collect_tree_remote_files_ssh,
     detect_julia_path,
@@ -15,11 +17,9 @@ using .DistSSHKit:
     kit_progress_done!,
     kit_progress_step!,
     local_git_clean,
+    parse_drive_args,
     print_err,
     print_header,
-    parse_drive_args,
-    show_drive_requirements,
-    show_drive_usage,
     print_info,
     print_ok,
     print_progress_err,
@@ -29,10 +29,10 @@ using .DistSSHKit:
     remote_path_for_ssh_collect,
     resolve_host_path_abs,
     resolve_pkg_project_dir,
+    show_drive_requirements,
+    show_drive_usage,
     ssh_opts,
     subcommand_args_record,
     write_both,
     writeln_both,
-    writeln_field,
-    cli_project_root,
-    cli_project_disp
+    writeln_field
