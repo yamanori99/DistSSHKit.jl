@@ -28,7 +28,7 @@ jobs:
 
   jetls:
     needs: filter
-    name: JETLS - Julia 1.12 - ubuntu-latest
+    name: JETLS - Julia 1.13 - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -40,7 +40,8 @@ jobs:
       - uses: julia-actions/setup-julia@v3
         if: needs.filter.outputs.heavy == 'true'
         with:
-          version: "1.12"
+          # Same 1.13 channel as Pkg.test (includes RCs until 1.13 is stable).
+          version: "~1.13.0-0"
       - uses: julia-actions/cache@v3
         if: needs.filter.outputs.heavy == 'true'
       - name: Install jetls

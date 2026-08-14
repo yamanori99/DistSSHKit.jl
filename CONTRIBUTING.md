@@ -43,7 +43,7 @@ SSH / sync / worker changes: [`testenv/docker-ssh/scripts/up.sh --e2e`](testenv/
 
 CI (fast on every PR, slow OS on a timer):
 
-- **PR / `main`:** `Test / Pkg.test - Julia * - ubuntu-latest`, `Lint / JETLS - Julia 1.12 - ubuntu-latest`, `Docs / Documenter - Julia 1.12 - ubuntu-latest`, `Scan / Gitleaks`. Root-markdown-only PRs keep those check names but skip the suite. `E2E / ubuntu-latest → ubuntu-24.04` always appears; the suite runs when `src/`, `test/`, `demos/`, `testenv/`, `Project.toml`, or the E2E workflow change.
+- **PR / `main`:** `Test / Pkg.test - Julia * - ubuntu-latest`, `Lint / JETLS - Julia 1.13 - ubuntu-latest`, `Docs / Documenter - Julia 1.12 - ubuntu-latest`, `Scan / Gitleaks`. Root-markdown-only PRs keep those check names but skip the suite. `E2E / ubuntu-latest → ubuntu-24.04` always appears; the suite runs when `src/`, `test/`, `demos/`, `testenv/`, `Project.toml`, or the E2E workflow change.
 - **Daily 04:00 JST / Run workflow `E2E daily`:** `ubuntu-latest (image)`, `macos-15-intel → ubuntu-24.04`, `windows-latest (WSL2) → ubuntu-24.04`.
 - **Assets path:** `Assets / bake SVG`.
 
