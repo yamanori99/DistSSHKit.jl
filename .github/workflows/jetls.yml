@@ -28,9 +28,18 @@ jobs:
 
   jetls:
     needs: filter
-    name: JETLS - Julia 1.13 - ubuntu-latest
+    name: JETLS - Julia ${{ matrix.minor }} - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - spec: "1.12"
+            minor: "1.12"
+          # Same 1.13 channel as Pkg.test (includes RCs until 1.13 is stable).
+          - spec: "~1.13.0-0"
+            minor: "1.13"
     steps:
       - name: Skip
         if: needs.filter.outputs.heavy != 'true'
@@ -41,11 +50,11 @@ jobs:
         if: needs.filter.outputs.heavy == 'true'
         run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
       # Official check action: https://aviatesk.github.io/JETLS.jl/dev/cli-check/#cli-check/github-actions
-      # julia-version default is 1.12; 1.13 is supported (1.12.2–1.13). Same channel as Pkg.test.
+      # Supported runtimes: Julia 1.12.2–1.13. Action default julia-version is 1.12.
       - uses: aviatesk/JETLS.jl/.github/actions/check@release
         if: needs.filter.outputs.heavy == 'true'
         with:
           files: ${{ steps.files.outputs.list }}
-          julia-version: "~1.13.0-0"
+          julia-version: ${{ matrix.spec }}
           exit-severity: hint
           progress: none
