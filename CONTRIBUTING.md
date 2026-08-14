@@ -49,6 +49,8 @@ CI (fast on every PR, slow OS on a timer):
 
 Optional: [`.github/jetls-check.sh`](.github/jetls-check.sh) ([jetls](https://github.com/JuliaLang/jetls.jl); same glob as CI), docs (`julia --project=docs -e 'using Pkg; Pkg.instantiate()'` then `julia --project=docs --color=yes docs/make.jl`), logo bake (`julia docs/src/assets/bake.jl`, plus `--png` / `--gif`), [gitleaks](https://github.com/gitleaks/gitleaks) (`gitleaks detect --source .`).
 
+Language Server `IncorrectCallArgs` is not CI (JETLS is). Do not add `.vscode/settings.json` to silence it.
+
 ## Workflow
 
 - Branch from `main` (`feature/…`, `fix/…`, `docs/…`, `chore/…`). Open a PR; `main` is squash-merge only. Keep each PR one reviewable change — split unless `main` would be broken in between. Large plans: Discussion / Enhancement Issue first, then small PRs.
