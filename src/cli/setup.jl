@@ -13,8 +13,8 @@ Recommended workflow:
 See `--help`.
 """
 
-# Guard on a setup-only import — not `cli_project_root`, which `go`/`drive`
-# may already have defined via `cli/_common.jl` before `setup.jl` is included.
+# Guard on a setup-only import — not names `go`/`drive` may already have
+# bound from DistSSHKit (e.g. `cli_project_root`) before `setup.jl` is included.
 if !isdefined(@__MODULE__, :DistSSHKit)
     if get(ENV, "DIST_SSH_KIT_CLI_INCLUDE", "") == "1"
         import DistSSHKit
@@ -31,13 +31,7 @@ if !isdefined(@__MODULE__, :resolve_remote_project_root)
     include(joinpath(@__DIR__, "setup", "_using.jl"))
 end
 
-if !isdefined(@__MODULE__, :_setup_local_root)
-    include(joinpath(@__DIR__, "setup", "_locals.jl"))
-end
-
-if !isdefined(@__MODULE__, :parse_setup_args)
-    include(joinpath(@__DIR__, "setup", "args.jl"))
-
+if !isdefined(@__MODULE__, :setup_main)
     function setup_main()::Cint
         opts = parse_setup_args(ARGS)
 
@@ -68,8 +62,8 @@ if !isdefined(@__MODULE__, :parse_setup_args)
             return 1
         end
 
-        project = _setup_local_root()
-        path_anchor = _setup_path_anchor()
+        project = String(DistSSHKit.cli_project_root(@__DIR__))
+        path_anchor = DistSSHKit.canonical_local_path(project)
         remote_path = resolve_remote_project_root(
             project;
             cli_override=opts.remote_path_override,
@@ -203,7 +197,7 @@ if !isdefined(@__MODULE__, :parse_setup_args)
             close_log_file()
         end
     end
-end # parse_setup_args guard
+end # setup_main guard
 
 if get(ENV, "DIST_SSH_KIT_CLI_INCLUDE", "") != "1" &&
    !isempty(PROGRAM_FILE) &&

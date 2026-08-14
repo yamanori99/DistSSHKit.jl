@@ -30,9 +30,9 @@ function show_requirements(; io::IO=stdout)
         "  --repo URL           clone URL (default: origin)",
         "  --remote-path PATH   remote project root",
         "  --julia PATH         remote Julia",
-        "  $(DistSSHKit.KIT_QUIET_FLAG_HELP)",
-        "  $(DistSSHKit.KIT_PROGRESS_FLAG_HELP)",
-        "  $(DistSSHKit.KIT_VERBOSE_FLAG_HELP)",
+        "  $(KIT_QUIET_FLAG_HELP)",
+        "  $(KIT_PROGRESS_FLAG_HELP)",
+        "  $(KIT_VERBOSE_FLAG_HELP)",
         "  -y, --yes            skip confirmations",
         "  --hosts CSV         comma-separated hosts (`:N` stripped)",
         "  --hosts-file PATH    one host per line (`:N` stripped)",
@@ -46,7 +46,7 @@ function show_requirements(; io::IO=stdout)
 end
 
 function parse_setup_args(args::Vector{String})
-    cli_session, args = DistSSHKit.peel_kit_cli_flags(args)
+    cli_session, args = peel_kit_cli_flags(args)
     mode = nothing
     julia_path = get(ENV, "JULIA_DISTRIBUTED_EXE", "auto")  # default to env or auto-detect
     repo_url = nothing
@@ -55,56 +55,56 @@ function parse_setup_args(args::Vector{String})
     show_help = false
     ignore_julia_version = false
 
-    c = DistSSHKit.CliCursor(args)
-    while !DistSSHKit.cli_at_end(c)
-        arg = DistSSHKit.cli_current(c)::String
+    c = CliCursor(args)
+    while !cli_at_end(c)
+        arg = cli_current(c)::String
         if arg == "--check"
             mode = :check
-            DistSSHKit.cli_consume!(c)
+            cli_consume!(c)
         elseif arg == "--pull"
             mode = :pull
-            DistSSHKit.cli_consume!(c)
+            cli_consume!(c)
         elseif arg == "--sync"
             mode = :sync
-            DistSSHKit.cli_consume!(c)
+            cli_consume!(c)
         elseif arg == "--instantiate"
             mode = :instantiate
-            DistSSHKit.cli_consume!(c)
+            cli_consume!(c)
         elseif arg == "--cleanup"
             mode = :cleanup
-            DistSSHKit.cli_consume!(c)
+            cli_consume!(c)
         elseif arg == "--clone"
             mode = :clone
-            DistSSHKit.cli_consume!(c)
+            cli_consume!(c)
         elseif arg == "--delete"
             mode = :delete
-            DistSSHKit.cli_consume!(c)
+            cli_consume!(c)
         elseif arg == "--rsync"
             mode = :rsync_push
-            DistSSHKit.cli_consume!(c)
+            cli_consume!(c)
         elseif arg == "--requirements"
             mode = :requirements
-            DistSSHKit.cli_consume!(c)
+            cli_consume!(c)
         elseif arg == "--julia"
-            julia_path = DistSSHKit.cli_take_value!(c, arg)
+            julia_path = cli_take_value!(c, arg)
         elseif arg == "--repo"
-            repo_url = String(strip(DistSSHKit.cli_take_value!(c, arg)))
+            repo_url = String(strip(cli_take_value!(c, arg)))
         elseif arg in ("--remote-path", "--remote-dir")
-            remote_path_override = String(strip(DistSSHKit.cli_take_value!(c, arg)))
+            remote_path_override = String(strip(cli_take_value!(c, arg)))
         elseif arg == "--ignore-julia-version"
             ignore_julia_version = true
-            DistSSHKit.cli_consume!(c)
-        elseif DistSSHKit.cli_match(c, ["-h", "--help"])
+            cli_consume!(c)
+        elseif cli_match(c, ["-h", "--help"])
             show_help = true
-            DistSSHKit.cli_consume!(c)
+            cli_consume!(c)
         else
-            push!(hosts, DistSSHKit.split_host_workers_spec(arg)[1])
-            DistSSHKit.cli_consume!(c)
+            push!(hosts, split_host_workers_spec(arg)[1])
+            cli_consume!(c)
         end
     end
 
-    DistSSHKit.append_kit_host_sources!(hosts, cli_session; keep_counts=false)
-    DistSSHKit.apply_kit_cli_session!(cli_session)
+    append_kit_host_sources!(hosts, cli_session; keep_counts=false)
+    apply_kit_cli_session!(cli_session)
 
     return (
         mode=mode,

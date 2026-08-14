@@ -17,7 +17,7 @@ Tests run sequentially (`Test.@testset` nesting). `Pkg.test()` activates `test/P
 ```text
 test/
   runtests.jl          # entry point
-  aqua.jl              # Aqua.jl QA (loads DistSSHKit as a real package)
+  aqua.jl              # Aqua.jl QA
   support.jl           # includes support/*.jl
   support/             # shared helpers (subprocess, drive, staging, …)
   unit/                # fast, in-process tests
@@ -30,11 +30,11 @@ test/
 
 ```text
 unit/
-  DistSSHKit/          # ↔ src/DistSSHKit/ (module API + setup cores)
+  DistSSHKit/          # ↔ src/DistSSHKit/ (module API + setup cores + argv parsers)
     cli/               # ↔ DistSSHKit/cli/
     setup/             # ↔ DistSSHKit/setup/
-  cli/                 # ↔ src/cli/ (argv / help / exit)
-    drive/, go/, setup/, size/
+  cli/                 # ↔ src/cli/ (CLI entry wiring: using_guard, setup exit)
+    drive/, go/, setup/, size/   # argv / help tests call DistSSHKit.parse_*
 ```
 
 `integration/` groups drive smokes and demo recipe runs.
@@ -110,5 +110,4 @@ Kit CLI flags (drive / go / setup / size) also honor `DISTSSHKIT_QUIET`, `DISTSS
 
 ## Aqua note
 
-`runtests.jl` loads `DistSSHKit` via `include` for unit tests (`Main.DistSSHKit`).  
-`aqua.jl` uses `using DistSSHKit` (top-level package from `test/Project.toml`) because Aqua needs a real `Pkg` module. `stale_deps` is disabled: `Pkg` is used by `cli/drive.jl` / setup cores, not only inside the `DistSSHKit` module body.
+`runtests.jl` and `aqua.jl` both `using DistSSHKit` as the package (root project or `test/Project.toml` `[sources]`). `Pkg` is a module dependency (`using Pkg` in `src/DistSSHKit.jl`) so Aqua's `stale_deps` can run.

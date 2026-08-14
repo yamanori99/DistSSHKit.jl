@@ -1,7 +1,7 @@
 using Test
 
 @testset "size args" begin
-    isdefined(Main, :size_main) || include(joinpath(_kit_root(), "src", "cli", "size.jl"))
+    parse_size_args = DistSSHKit.parse_size_args
 
     @testset "parse_size_args" begin
         let r = parse_size_args(["--local", "host1", "host2"])
@@ -47,9 +47,7 @@ using Test
             @test r.show_help == true
             @test parse_size_args(["-h"]).show_help == true
             open(path, "w") do io
-                redirect_stdout(io) do
-                    show_size_usage()
-                end
+                DistSSHKit.show_size_usage(; io=io)
             end
             help = read(path, String)
             rm(path; force=true)
@@ -86,7 +84,7 @@ using Test
         path = tempname()
         open(path, "w") do io
             redirect_stdout(io) do
-                print_size_report(["localhost"], String[], samples, opts)
+                DistSSHKit.print_size_report(["localhost"], String[], samples, opts)
             end
         end
         out = read(path, String)
@@ -115,7 +113,7 @@ using Test
         path = tempname()
         open(path, "w") do io
             redirect_stdout(io) do
-                print_size_report(["localhost"], String[], samples, opts; show_peak=true)
+                DistSSHKit.print_size_report(["localhost"], String[], samples, opts; show_peak=true)
             end
         end
         out = read(path, String)

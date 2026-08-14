@@ -1,8 +1,7 @@
 using Test
 
 @testset "setup args" begin
-    _setup_dir = joinpath(_kit_root(), "src", "cli", "setup")
-    isdefined(Main, :parse_setup_args) || include(joinpath(_setup_dir, "args.jl"))
+    parse_setup_args = DistSSHKit.parse_setup_args
 
     @test parse_setup_args(["--help"]).show_help
     @test parse_setup_args(["-h"]).show_help
@@ -34,7 +33,7 @@ using Test
     end
 
     @testset "help smoke (rsync-first)" begin
-        txt = setup_help_text()
+        txt = DistSSHKit.setup_help_text()
         @test occursin("--rsync", txt)
         @test occursin("--hosts", txt)
         @test occursin("Workflow (recommended)", txt) || occursin("recommended", lowercase(txt))

@@ -31,7 +31,11 @@ using Test
             src = joinpath(d, "src")
             mkpath(src)
             @test DistSSHKit.kit_project_root(src) == d
+            @test DistSSHKit.cli_project_root(src) == d
             @test DistSSHKit.resolve_pkg_project_dir(d) == d
+        end
+        withenv("DISTRIBUTED_PROJECT_ROOT" => "/override/root") do
+            @test DistSSHKit.cli_project_root("/unused") == "/override/root"
         end
         mktempdir() do tmp
             d = abspath(string(tmp))

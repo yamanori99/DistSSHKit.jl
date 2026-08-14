@@ -1,8 +1,7 @@
 using Test
 
 @testset "go args" begin
-    _go_dir = joinpath(_kit_root(), "src", "cli", "go")
-    isdefined(Main, :parse_go_args) || include(joinpath(_go_dir, "args.jl"))
+    parse_go_args = DistSSHKit.parse_go_args
 
     @testset "help flags" begin
         @test parse_go_args(["--help"]).help

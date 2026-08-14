@@ -1,7 +1,5 @@
 #!/usr/bin/env julia
 # DistSSHKit unit tests (optional; not required in every host application).
-# From the application repo root (when this tree lives under `DistSSHKit/`):
-#   julia --project=. DistSSHKit/test/runtests.jl
 # From a standalone kit checkout (this directory as the active project):
 #   julia --project=. -e 'using Pkg; Pkg.test()'
 #   julia --project=. test/runtests.jl
@@ -10,16 +8,10 @@
 #   ./.github/jetls-check.sh
 
 using Test
-
-isdefined(@__MODULE__, :DistSSHKit) || include(joinpath(@__DIR__, "..", "src", "DistSSHKit.jl"))
-using .DistSSHKit
+using DistSSHKit
 
 include(joinpath(@__DIR__, "support.jl"))
 
-# Runs first, and separately from unit/integration batches: unlike those files (which
-# reuse the `Main.DistSSHKit` module loaded above via relative `include`), `aqua.jl`
-# needs `using DistSSHKit` to resolve to a real, top-level package module (see comment
-# in that file).
 println("▸ aqua.jl")
 include(joinpath(@__DIR__, "aqua.jl"))
 
