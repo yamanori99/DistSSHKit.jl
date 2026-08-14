@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   filter:
-    name: paths
+    name: skip if root markdown
     runs-on: ubuntu-latest
     timeout-minutes: 3
     outputs:
