@@ -34,7 +34,7 @@ jobs:
     # pushes the worker image so macOS / WSL can pull instead of building.
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    name: Linux to Linux
+    name: Linux controller
     permissions:
       contents: read
       packages: write
@@ -74,7 +74,7 @@ jobs:
     if: github.event_name != 'pull_request'
     runs-on: macos-15-intel
     timeout-minutes: 60
-    name: macOS to Linux
+    name: macOS controller
     permissions:
       contents: read
       packages: read
@@ -106,7 +106,7 @@ jobs:
     if: github.event_name != 'pull_request'
     runs-on: windows-latest
     timeout-minutes: 60
-    name: WSL2 to Linux
+    name: WSL2 controller
     permissions:
       contents: read
       packages: read

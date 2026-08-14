@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   # Full `Pkg.test()` stays Linux-only. Darwin and WSL controllers are merge-only
-  # SSH E2E (`E2E / macOS to Linux`, `E2E / WSL2 to Linux`). PRs run `E2E / Linux to Linux`.
+  # SSH E2E (`E2E / macOS controller`, `E2E / WSL2 controller`). PRs run `E2E / Linux controller`.
   # Root-markdown PRs still run this job (required check names) but skip the suite.
   filter:
     name: filter
