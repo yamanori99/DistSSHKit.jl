@@ -15,15 +15,15 @@ permissions:
   contents: read
 
 jobs:
-  ssh-e2e:
-    # Always listed on PR/main so a missed glob cannot hide the check.
-    # Suite runs when kit paths change, or on workflow_dispatch.
+  filter:
+    name: detect e2e paths
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    name: ubuntu-latest → ubuntu-24.04
+    timeout-minutes: 3
+    outputs:
+      e2e: ${{ steps.gate.outputs.e2e }}
     steps:
       - uses: actions/checkout@v7
-
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
       - uses: dorny/paths-filter@v3
         if: github.event_name == 'pull_request' || github.event_name == 'push'
         id: filter
@@ -36,7 +36,6 @@ jobs:
               - "testenv/**"
               - "Project.toml"
               - ".github/workflows/ssh-e2e.yml"
-
       - id: gate
         run: |
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
@@ -45,29 +44,29 @@ jobs:
             echo "e2e=${{ steps.filter.outputs.e2e }}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Skip suite
-        if: steps.gate.outputs.e2e != 'true'
-        run: echo "No kit/E2E paths; suite skipped."
+  ssh-e2e:
+    needs: filter
+    if: needs.filter.outputs.e2e == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    name: ubuntu-latest → ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
 
       - uses: julia-actions/setup-julia@v3
-        if: steps.gate.outputs.e2e == 'true'
         id: julia
         with:
           version: "1.12"
       - name: Julia ${{ steps.julia.outputs.julia-version }}
-        if: steps.gate.outputs.e2e == 'true'
         run: julia --version
 
       - uses: julia-actions/cache@v3
-        if: steps.gate.outputs.e2e == 'true'
 
       - uses: julia-actions/julia-buildpkg@v1
-        if: steps.gate.outputs.e2e == 'true'
 
       - name: docker-ssh up + SSH E2E
-        if: steps.gate.outputs.e2e == 'true'
         run: ./testenv/docker-ssh/scripts/up.sh --e2e
 
       - name: Teardown workers
-        if: always() && steps.gate.outputs.e2e == 'true'
+        if: always()
         run: ./testenv/docker-ssh/scripts/down.sh || true

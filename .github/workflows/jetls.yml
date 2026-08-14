@@ -28,6 +28,7 @@ jobs:
 
   jetls:
     needs: filter
+    if: needs.filter.outputs.heavy == 'true'
     name: JETLS - Julia ${{ matrix.minor }} - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -41,18 +42,12 @@ jobs:
           - spec: "~1.13.0-0"
             minor: "1.13"
     steps:
-      - name: Skip
-        if: needs.filter.outputs.heavy != 'true'
-        run: echo "Root markdown only; JETLS skipped."
       - uses: actions/checkout@v7
-        if: needs.filter.outputs.heavy == 'true'
       - id: files
-        if: needs.filter.outputs.heavy == 'true'
         run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
       # Official check action: https://aviatesk.github.io/JETLS.jl/dev/cli-check/#cli-check/github-actions
       # Supported runtimes: Julia 1.12.2–1.13. Action default julia-version is 1.12.
       - uses: aviatesk/JETLS.jl/.github/actions/check@release
-        if: needs.filter.outputs.heavy == 'true'
         with:
           files: ${{ steps.files.outputs.list }}
           julia-version: ${{ matrix.spec }}
