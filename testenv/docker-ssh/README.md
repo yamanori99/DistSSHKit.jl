@@ -74,7 +74,7 @@ ssh -F .generated/ssh_config distsshkit-w1 'echo ok; julia --version'
 [`.github/workflows/ssh-e2e.yml`](../../.github/workflows/ssh-e2e.yml) runs
 `./scripts/up.sh --e2e` on `ubuntu-latest` for every PR and `main` (`E2E / Linux → Linux`).
 macOS Intel (`E2E / macOS → Linux - schedule`) and WSL2 Ubuntu
-(`E2E / WSL2 → Linux - schedule`) run daily at 06:00 JST, or via
+(`E2E / WSL2 → Linux - schedule`) run daily at 04:00 JST, or via
 `workflow_dispatch` (title then ends with `workflow_dispatch`).
 
 On `schedule` / `workflow_dispatch`, the Linux job builds the worker image and

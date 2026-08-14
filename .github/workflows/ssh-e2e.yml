@@ -4,25 +4,12 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "src/**"
-      - "test/**"
-      - "demos/**"
-      - "testenv/docker-ssh/**"
-      - ".github/workflows/ssh-e2e.yml"
-      - "Project.toml"
   pull_request:
-    paths:
-      - "src/**"
-      - "test/**"
-      - "demos/**"
-      - "testenv/docker-ssh/**"
-      - ".github/workflows/ssh-e2e.yml"
-      - "Project.toml"
   workflow_dispatch:
-  # 06:00 JST (UTC 21:00). macOS / WSL run here, not on every main push.
+  # 04:00 JST (UTC 19:00). GitHub often delays cron; start early so it still
+  # finishes before morning. macOS / WSL run here, not on every main push.
   schedule:
-    - cron: "0 21 * * *"
+    - cron: "0 19 * * *"
 
 concurrency:
   group: ssh-e2e-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
@@ -32,9 +19,39 @@ permissions:
   contents: read
 
 jobs:
+  paths:
+    name: paths
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      e2e: ${{ steps.out.outputs.e2e }}
+    steps:
+      - uses: actions/checkout@v7
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
+      - uses: dorny/paths-filter@v3
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
+        id: filter
+        with:
+          filters: |
+            e2e:
+              - "src/**"
+              - "test/**"
+              - "demos/**"
+              - "testenv/**"
+              - "Project.toml"
+              - ".github/workflows/ssh-e2e.yml"
+      - id: out
+        run: |
+          case "$GITHUB_EVENT_NAME" in
+            schedule|workflow_dispatch) echo "e2e=true" >> "$GITHUB_OUTPUT" ;;
+            *) echo "e2e=${{ steps.filter.outputs.e2e }}" >> "$GITHUB_OUTPUT" ;;
+          esac
+
   ssh-e2e:
-    # Linux controller → Linux Docker workers. PRs and main. On schedule /
-    # dispatch, also pushes the worker image so macOS / WSL can pull.
+    # Linux controller → Linux Docker workers. Always listed on PR/main so a
+    # missed glob cannot hide the check. Suite runs when `paths` says kit code.
+    # On schedule / dispatch, also pushes the worker image for macOS / WSL.
+    needs: paths
     runs-on: ubuntu-latest
     timeout-minutes: 30
     name: Linux → Linux
@@ -42,33 +59,43 @@ jobs:
       contents: read
       packages: write
     steps:
+      - name: Skip suite
+        if: needs.paths.outputs.e2e != 'true'
+        run: echo "No kit/E2E paths; Linux SSH E2E skipped."
+
       - uses: actions/checkout@v7
+        if: needs.paths.outputs.e2e == 'true'
 
       - uses: julia-actions/setup-julia@v3
+        if: needs.paths.outputs.e2e == 'true'
         id: julia
         with:
           version: "1.12"
       - name: Julia ${{ steps.julia.outputs.julia-version }}
+        if: needs.paths.outputs.e2e == 'true'
         run: julia --version
 
       - uses: julia-actions/cache@v3
+        if: needs.paths.outputs.e2e == 'true'
 
       - uses: julia-actions/julia-buildpkg@v1
+        if: needs.paths.outputs.e2e == 'true'
 
       - name: Log in to GHCR
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        if: needs.paths.outputs.e2e == 'true' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
         run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
 
       - name: docker-ssh up + SSH E2E
+        if: needs.paths.outputs.e2e == 'true'
         env:
           DISTSSHKIT_PUSH_IMAGE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && format('ghcr.io/{0}/distsshkit-linux-ssh-worker:{1}', github.repository_owner, github.sha) || '' }}
         run: ./testenv/docker-ssh/scripts/up.sh --e2e
 
       - name: Teardown workers
-        if: always()
+        if: always() && needs.paths.outputs.e2e == 'true'
         run: ./testenv/docker-ssh/scripts/down.sh || true
 
   # Darwin controller → Linux Docker workers via Colima. Daily schedule /
