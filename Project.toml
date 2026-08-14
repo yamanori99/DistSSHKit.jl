@@ -1,6 +1,6 @@
 name = "DistSSHKit"
 uuid = "ceec0504-c968-4be5-b215-667cae0e8f81"
-version = "0.2.0"
+version = "0.2.1"
 authors = [
     "Yamamoto, Takanori <takanori.yamamoto.99@gmail.com>",
     "Ampuku, Honoka <ampk.hono@gmail.com>",

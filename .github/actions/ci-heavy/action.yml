@@ -10,22 +10,32 @@ outputs:
 runs:
   using: composite
   steps:
-    - uses: dorny/paths-filter@v3
+    # v3 only allows `some` / `every`. `some` ignores `!` after `**`.
+    # `some-with-excludes` is v4 (Node 24).
+    - uses: dorny/paths-filter@v4
       if: github.event_name == 'pull_request'
       id: filter
       with:
+        predicate-quantifier: some-with-excludes
+        # Named skip files only. A new root `*.md` stays heavy until listed here.
         filters: |
           heavy:
             - "**"
-            - "!CONTRIBUTING.md"
             - "!README.md"
+            - "!CONTRIBUTING.md"
+            - "!NEWS.md"
             - "!SECURITY.md"
             - "!LICENSE"
+            - "!.github/pull_request_template.md"
     - id: out
       shell: bash
+      env:
+        HEAVY: ${{ steps.filter.outputs.heavy }}
       run: |
         if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
           echo "heavy=true" >> "$GITHUB_OUTPUT"
+          echo "non-PR: heavy=true"
         else
-          echo "heavy=${{ steps.filter.outputs.heavy }}" >> "$GITHUB_OUTPUT"
+          echo "heavy=${HEAVY}" >> "$GITHUB_OUTPUT"
+          echo "PR: heavy=${HEAVY}"
         fi

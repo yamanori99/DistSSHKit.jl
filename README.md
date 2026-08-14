@@ -122,6 +122,7 @@ Walkthrough: [Demo](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/d
 | First Steps | [First Steps](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/) |
 | User Guide | [User Guide](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/) |
 | API | [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/) |
+| News | [NEWS.md](NEWS.md) |
 
 ## Contributing
 
