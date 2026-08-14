@@ -9,9 +9,9 @@ Real OpenSSH + rsync Linux workers. CI remote SSH coverage uses this stack
 
 | Controller | Worker | Where |
 | --- | --- | --- |
-| Linux (`ubuntu-latest`) | Linux ×2 (this compose) | **CI** — every PR — `E2E / Linux controller` |
-| macOS Intel (`macos-15-intel` + Colima) | Linux ×2 (same compose) | **CI after merge** — `E2E / macOS controller` |
-| WSL2 Ubuntu (`windows-latest`) | Linux ×2 (same compose) | **CI after merge** — `E2E / WSL2 controller` |
+| Linux (`ubuntu-latest`) | Linux ×2 (this compose) | **CI** — every PR — `E2E / Linux → Linux` |
+| macOS Intel (`macos-15-intel` + Colima) | Linux ×2 (same compose) | **CI after merge** — `E2E / macOS → Linux (skipped on PR)` |
+| WSL2 Ubuntu (`windows-latest`) | Linux ×2 (same compose) | **CI after merge** — `E2E / WSL2 → Linux (skipped on PR)` |
 | Either | `local:N` | Mixed smoke inside the same suite |
 
 ### Honest limits
@@ -72,9 +72,9 @@ ssh -F .generated/ssh_config distsshkit-w1 'echo ok; julia --version'
 ## CI
 
 [`.github/workflows/ssh-e2e.yml`](../../.github/workflows/ssh-e2e.yml) runs
-`./scripts/up.sh --e2e` on `ubuntu-latest` for every PR (`E2E / Linux controller`), and
-after merge on macOS Intel (`E2E / macOS controller`) and WSL2 Ubuntu
-(`E2E / WSL2 controller`).
+`./scripts/up.sh --e2e` on `ubuntu-latest` for every PR (`E2E / Linux → Linux`), and
+after merge on macOS Intel (`E2E / macOS → Linux (skipped on PR)`) and WSL2 Ubuntu
+(`E2E / WSL2 → Linux (skipped on PR)`).
 
 On `main` / `workflow_dispatch`, the Linux job builds the worker image and
 pushes `ghcr.io/<owner>/distsshkit-linux-ssh-worker:<sha>`. macOS and WSL pull
