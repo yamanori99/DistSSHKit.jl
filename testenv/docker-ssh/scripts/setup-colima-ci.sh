@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# Optional Colima bootstrap for macOS Intel (not used by default SSH E2E CI).
-# Default CI is ubuntu-only; Mac controllers run `./scripts/up.sh --e2e` locally.
-# Apple Silicon GitHub runners lack nested virt — use macos-*-intel if re-enabled.
+# Colima on macOS Intel GitHub runners (SSH E2E on schedule / dispatch).
+# Apple Silicon GitHub runners lack nested virt — this script requires x86_64.
 # Replaces douglascamata/setup-docker-macos-action with curl retries so Lima
 # downloads do not pipe a truncated tarball into tar.
 set -euo pipefail
@@ -79,16 +78,20 @@ echo "::group::Install Docker CLI (Homebrew)"
 export HOMEBREW_NO_AUTO_UPDATE=1
 export HOMEBREW_NO_INSTALL_UPGRADE=1
 export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
-retry brew install docker docker-compose docker-buildx
+export HOMEBREW_NO_ENV_HINTS=1
+# Runner brew prints GitHub workflow warnings (env hints, aws/tap trust). Not kit issues.
+retry env -u GITHUB_ACTIONS brew install docker docker-compose docker-buildx
 mkdir -p "${HOME}/.docker/cli-plugins"
 ln -sfn "$(brew --prefix docker-compose)/bin/docker-compose" "${HOME}/.docker/cli-plugins/docker-compose"
 ln -sfn "$(brew --prefix docker-buildx)/bin/docker-buildx" "${HOME}/.docker/cli-plugins/docker-buildx"
 echo "::endgroup::"
 
-cpu_count="$(sysctl -n hw.ncpu)"
-memory_gb="$(sysctl hw.memsize | awk '{print int($2/1024/1024/1024)}')"
+# Cap the VM so host Julia (Darwin controller) keeps RAM. Full-host Colima
+# swaps on 14 GB macos-*-intel runners. Override with COLIMA_CPU / COLIMA_MEMORY_GB.
+COLIMA_CPU="${COLIMA_CPU:-3}"
+COLIMA_MEMORY_GB="${COLIMA_MEMORY_GB:-8}"
 # localhost port publish is enough for our compose stack (macOS 15 LNP).
-colima_args=(--cpu "$cpu_count" --memory "$memory_gb" --arch x86_64 --vm-type=vz --mount-type=virtiofs)
+colima_args=(--cpu "$COLIMA_CPU" --memory "$COLIMA_MEMORY_GB" --arch x86_64 --vm-type=vz --mount-type=virtiofs)
 
 echo "::group::Start Colima ${colima_args[*]}"
 colima start "${colima_args[@]}"

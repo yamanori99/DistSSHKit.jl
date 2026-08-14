@@ -20,6 +20,9 @@ using Test
     @test _main_quiet(["go", "--help"]) == 0
     @test _main_quiet(["setup", "--help"]) == 0
     @test _main_quiet(["size", "--help"]) == 0
+    @test _main_quiet(["-h"]) == 0
+    @test _main_quiet(["--help"]) == 0
+    @test _main_quiet(["drive", "-h"]) == 0
     @test _main_quiet(["--version"]) == 0
     @test _main_quiet(["drive", "--version"]) == 0
 end

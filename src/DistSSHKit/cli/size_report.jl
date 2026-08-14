@@ -1,7 +1,7 @@
 function print_size_report(
     all_hosts::Vector{String},
     hosts::Vector{String},
-    samples::Dict{String,DistSSHKit.WorkerMemorySample},
+    samples::Dict{String,WorkerMemorySample},
     opts;
     show_peak::Bool=false,
 )
@@ -16,8 +16,8 @@ function print_size_report(
         )
     end
 
-    per_worker_gb = DistSSHKit.per_worker_gb_dict(samples)
-    plan = DistSSHKit.compute_worker_plan(
+    per_worker_gb = per_worker_gb_dict(samples)
+    plan = compute_worker_plan(
         all_hosts,
         hosts,
         per_worker_gb;
@@ -33,7 +33,7 @@ function print_size_report(
         header = "Host           RAM      Cores   Per-worker  Workers"
     end
     println(header)
-    println(DistSSHKit.rule_line(length(header)))
+    println(rule_line(length(header)))
     for host in all_hosts
         res = host_resources[host]
         s = samples[host]
@@ -46,7 +46,7 @@ function print_size_report(
         else
             println(
                 "  $(lpad(host, host_col))  $(round(res.total_gb, digits=1)) GB   $(res.nproc)      ",
-                "$(DistSSHKit.effective_worker_gb(s)) GB     $n",
+                "$(effective_worker_gb(s)) GB     $n",
             )
         end
     end
@@ -69,66 +69,67 @@ function print_size_report(
         println("    $(rstrip(worker_args)) \\")
         println("    <script.jl> <args>")
     end
-    println(DistSSHKit.rule_line())
+    println(rule_line())
 end
 
 function resolve_worker_memory_samples(
+    project::AbstractString,
     all_hosts::Vector{String},
     hosts::Vector{String},
     opts,
-)::Union{Dict{String,DistSSHKit.WorkerMemorySample},Nothing}
+)::Union{Dict{String,WorkerMemorySample},Nothing}
     if opts.gb_per_worker !== nothing
         g = Float64(opts.gb_per_worker)
-        samples = Dict{String,DistSSHKit.WorkerMemorySample}()
+        samples = Dict{String,WorkerMemorySample}()
         for h in all_hosts
-            samples[h] = DistSSHKit.WorkerMemorySample(g, g)
+            samples[h] = WorkerMemorySample(g, g)
         end
-        DistSSHKit.kit_println("Per-worker: $(opts.gb_per_worker) GB (manual)")
+        kit_println("Per-worker: $(opts.gb_per_worker) GB (manual)")
         return samples
     end
 
     if opts.probe !== nothing
-        DistSSHKit.kit_println("Measuring per-worker memory (package load + probe)...")
-        DistSSHKit.kit_println("  Probe: $(opts.probe)")
+        kit_println("Measuring per-worker memory (package load + probe)...")
+        kit_println("  Probe: $(opts.probe)")
     else
-        DistSSHKit.kit_println("Measuring per-worker memory (package load)...")
+        kit_println("Measuring per-worker memory (package load)...")
     end
-    DistSSHKit.kit_println()
-    measured = DistSSHKit.measure_rss(
-        PROJECT_ROOT,
+    kit_println()
+    measured = measure_rss(
+        project,
         hosts;
         include_local=opts.include_local,
         probe=opts.probe,
         hint_surface=:cli,
     )
     if isempty(measured)
-        DistSSHKit.print_err("Measurement failed. Use --gb-per-worker N.")
+        print_err("Measurement failed. Use --gb-per-worker N.")
         println()
         return nothing
     end
     failed = [h for h in all_hosts if !haskey(measured, h)]
     if !isempty(failed)
-        DistSSHKit.print_progress_warn("  Connection failed: $(join(failed, ", "))")
-        DistSSHKit.kit_println()
+        print_progress_warn("  Connection failed: $(join(failed, ", "))")
+        kit_println()
     end
-    samples = Dict{String,DistSSHKit.WorkerMemorySample}()
+    samples = Dict{String,WorkerMemorySample}()
     for h in all_hosts
         if haskey(measured, h)
             s = measured[h]
             samples[h] = s
-            DistSSHKit.kit_print("  $h: ")
+            kit_print("  $h: ")
             if opts.probe !== nothing
-                DistSSHKit.print_ok("baseline $(s.baseline_gb) GB, peak $(s.peak_gb) GB")
+                print_ok("baseline $(s.baseline_gb) GB, peak $(s.peak_gb) GB")
             else
-                DistSSHKit.print_ok("$(s.baseline_gb) GB")
+                print_ok("$(s.baseline_gb) GB")
             end
-            DistSSHKit.kit_println()
+            kit_println()
         else
-            fb = DistSSHKit.WORKER_MEMORY_GB_FALLBACK
-            samples[h] = DistSSHKit.WorkerMemorySample(fb, fb)
-            DistSSHKit.kit_print("  $h: ")
-            DistSSHKit.print_progress_warn("$fb GB (probe failed, using default)")
-            DistSSHKit.kit_println()
+            fb = WORKER_MEMORY_GB_FALLBACK
+            samples[h] = WorkerMemorySample(fb, fb)
+            kit_print("  $h: ")
+            print_progress_warn("$fb GB (probe failed, using default)")
+            kit_println()
         end
     end
     return samples

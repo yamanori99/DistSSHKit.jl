@@ -33,8 +33,10 @@ driver contract, prefer [`go`](@ref Manual-go).
 | `--collect-missing ROOT HOST...` | Collect-only: remote files absent locally |
 | `--collect-overwrite ROOT HOST...` | Collect-only: merge remote tree (overwrite same names) |
 | `-q` / `--quiet` | Hide terminal detail; kit log still written when logging is on |
-| `--progress` | Thin phase bar (not with `-q`) |
+| `--progress` | Live status (TTY default) |
+| `--verbose` | Full detail (non-TTY default) |
 | `-y` / `--yes` | Auto-accept memory-pressure and other prompts |
+| `--hosts CSV` | Comma-separated worker specs (same form as CLI tokens / `DISTSSHKIT_HOSTS`) |
 | `--hosts-file PATH` | Append worker specs (`host:N` preserved) |
 | `-v` / `--version` | Print DistSSHKit version and exit |
 | `-h` / `--help` | Full help |

@@ -2,13 +2,14 @@
 DistSSHKit — local + SSH Julia runs (`go` / `drive` / `setup`) and a small API
 (`go!`, `drive!`, `pipeline!`, …).
 
-Package entry: exports, version, `include`s, `(@main)` for `julia -m DistSSHKit …`.
+Package entry: exports, version, `include`s, `main` (`@main` on Julia 1.12+).
 CLI lives under `src/cli/`.
 """
 module DistSSHKit
 
 using Dates
 using Distributed
+using Pkg
 
 # Public surface for application / driver authors.
 # Prefer `julia -m DistSSHKit …` for day-to-day CLI.
@@ -57,7 +58,12 @@ include("DistSSHKit/distributed.jl")
 include("DistSSHKit/drive/types.jl")
 include("DistSSHKit/size/measure.jl")
 include("DistSSHKit/setup.jl")
+include("DistSSHKit/cli/drive_args.jl")
+include("DistSSHKit/cli/go_args.jl")
+include("DistSSHKit/cli/setup_args.jl")
+include("DistSSHKit/cli/size_args.jl")
 include("DistSSHKit/drive.jl")
+include("DistSSHKit/cli/size_report.jl")
 include("DistSSHKit/go.jl")
 
 const _KIT_ROOT = dirname(@__DIR__)
@@ -65,15 +71,14 @@ const _KIT_ROOT = dirname(@__DIR__)
 # Kit version (from Project.toml).
 # `@__DIR__` is `src/` — keep path resolution here, not in included files.
 
-"""Read `version = "x.y.z"` from `path` (`Project.toml`); return `nothing` if missing or invalid."""
+"""Read `version` from `path` (`Project.toml`); return `nothing` if missing or invalid."""
 function _project_toml_version(path::AbstractString)::Union{Nothing,VersionNumber}
     p = String(path)
     isfile(p) || return nothing
     try
-        m = match(r"version\s*=\s*\"([^\"]+)\"", read(p, String))
-        m === nothing && return nothing
-        cap = m.captures[1]
-        return cap isa AbstractString ? VersionNumber(String(cap)) : nothing
+        raw = get(Pkg.TOML.parsefile(p), "version", nothing)
+        raw isa AbstractString || return nothing
+        return VersionNumber(String(raw))
     catch
         return nothing
     end
@@ -204,16 +209,18 @@ shadow `Base.size`. Prefer `julia -m DistSSHKit size …` day-to-day.
 run_size(args::Vector{String}=copy(ARGS))::Cint = _run_kit_cli_script("size.jl", args)
 
 """
-    (@main)(args::Vector{String}=copy(ARGS))
+    main(args::Vector{String}=copy(ARGS))
 
-`julia -m DistSSHKit SUBCOMMAND …` (Julia 1.12+):
+CLI entry. Prefer Julia 1.12+ and `julia -m DistSSHKit SUBCOMMAND …`:
 
     julia --project=. -m DistSSHKit go SCRIPT.jl
     julia --project=. -m DistSSHKit drive local:2 script.jl
     julia --project=. -m DistSSHKit setup --clone host1 host2
     julia --project=. -m DistSSHKit size --local host1
+
+On 1.10–1.11 there is no `-m`; pass the same argv to `main`.
 """
-function (@main)(args::Vector{String}=copy(ARGS))::Cint
+function main(args::Vector{String}=copy(ARGS))::Cint
     known_subcommands = (
         "drive",
         "go",
@@ -224,7 +231,7 @@ function (@main)(args::Vector{String}=copy(ARGS))::Cint
     # Shorthand: hosts… SCRIPT.jl → go (as-is complete job)
     if length(args) >= 1 &&
        !(args[1] in known_subcommands) &&
-       !(args[1] in ("--version", "-v", "-V")) &&
+       !(args[1] in ("--version", "-v", "-V", "-h", "--help", "help")) &&
        any(endswith(String(a), ".jl") for a in args)
         _mark_kit_cli_subcommand_done!()
         return go(collect(String, args))
@@ -234,6 +241,10 @@ function (@main)(args::Vector{String}=copy(ARGS))::Cint
     end
     if length(args) == 1 && args[1] in ("--version", "-v", "-V")
         println_kit_version()
+        return 0
+    end
+    if length(args) == 1 && args[1] in ("-h", "--help", "help")
+        print_kit_root_usage()
         return 0
     end
     if isempty(args)
@@ -262,6 +273,10 @@ function (@main)(args::Vector{String}=copy(ARGS))::Cint
         print_kit_root_usage()
         return 1
     end
+end
+
+if VERSION >= v"1.12"
+    Base.eval(@__MODULE__, :(@main))
 end
 
 end # module DistSSHKit

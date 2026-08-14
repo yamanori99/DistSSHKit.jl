@@ -1,7 +1,7 @@
 using Test
 
 @testset "size args" begin
-    isdefined(Main, :size_main) || include(joinpath(_kit_root(), "src", "cli", "size.jl"))
+    parse_size_args = DistSSHKit.parse_size_args
 
     @testset "parse_size_args" begin
         let r = parse_size_args(["--local", "host1", "host2"])
@@ -12,6 +12,14 @@ using Test
             @test r.probe === nothing
             @test r.mem_headroom == DistSSHKit.DEFAULT_MEM_HEADROOM
             @test r.master_gb == DistSSHKit.DEFAULT_MASTER_GB
+        end
+        let r = parse_size_args(["--hosts", "h1:4,h2", "host-cli"])
+            @test r.hosts == ["host-cli", "h1", "h2"]
+        end
+        withenv("DISTSSHKIT_HOSTS" => "env-h:2") do
+            let r = parse_size_args(["host-cli"])
+                @test r.hosts == ["host-cli", "env-h"]
+            end
         end
         let r = parse_size_args(["--gb-per-worker", "1.5", "host1"])
             @test r.gb_per_worker == 1.5
@@ -37,16 +45,16 @@ using Test
         let path = tempname()
             r = parse_size_args(["--help"])
             @test r.show_help == true
+            @test parse_size_args(["-h"]).show_help == true
             open(path, "w") do io
-                redirect_stdout(io) do
-                    show_size_usage()
-                end
+                DistSSHKit.show_size_usage(; io=io)
             end
             help = read(path, String)
             rm(path; force=true)
             @test occursin("DistSSHKit size", help)
             @test occursin("--gb-per-worker", help)
             @test occursin("--probe", help)
+            @test occursin("--hosts", help)
             @test !occursin("#!/usr/bin/env julia", help)
             @test !occursin("function size_main", help)
         end
@@ -76,7 +84,7 @@ using Test
         path = tempname()
         open(path, "w") do io
             redirect_stdout(io) do
-                print_size_report(["localhost"], String[], samples, opts)
+                DistSSHKit.print_size_report(["localhost"], String[], samples, opts)
             end
         end
         out = read(path, String)
@@ -105,7 +113,7 @@ using Test
         path = tempname()
         open(path, "w") do io
             redirect_stdout(io) do
-                print_size_report(["localhost"], String[], samples, opts; show_peak=true)
+                DistSSHKit.print_size_report(["localhost"], String[], samples, opts; show_peak=true)
             end
         end
         out = read(path, String)

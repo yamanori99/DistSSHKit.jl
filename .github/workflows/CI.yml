@@ -1,4 +1,4 @@
-name: CI
+name: Test
 
 on:
   push:
@@ -17,31 +17,69 @@ permissions:
   id-token: write # Codecov OIDC upload (see Upload coverage step)
 
 jobs:
-  test:
+  # Full `Pkg.test()` stays Linux-only. Slow SSH E2E controllers are `E2E daily`.
+  # PRs run `E2E / ubuntu-latest → ubuntu-24.04`.
+  # Root-markdown PRs still run this job (required check names) but skip the suite.
+  filter:
+    name: detect code changes
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 3
+    outputs:
+      heavy: ${{ steps.detect.outputs.heavy }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/ci-heavy
+        id: detect
+
+  test:
+    needs: filter
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    name: Pkg.test - Julia ${{ matrix.minor }} - ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        version:
-          - "1.12"
-          # 1.13 is still a prerelease channel; ~1.13.0-0 picks the latest 1.13.x (including RCs).
-          - "~1.13.0-0"
+        include:
+          - spec: "1.10"
+            minor: "1.10"
+            coverage: false
+          - spec: "1.11"
+            minor: "1.11"
+            coverage: false
+          - spec: "1.12"
+            minor: "1.12"
+            coverage: true
+          # Prerelease channel; ~1.13.0-0 picks the latest 1.13.x (including RCs).
+          - spec: "~1.13.0-0"
+            minor: "1.13"
+            coverage: false
     steps:
+      - name: Skip suite
+        if: needs.filter.outputs.heavy != 'true'
+        run: echo "Root markdown only; Pkg.test skipped."
       - uses: actions/checkout@v7
+        if: needs.filter.outputs.heavy == 'true'
       - uses: julia-actions/setup-julia@v3
+        if: needs.filter.outputs.heavy == 'true'
+        id: julia
         with:
-          version: ${{ matrix.version }}
+          version: ${{ matrix.spec }}
+      - name: Julia ${{ steps.julia.outputs.julia-version }}
+        if: needs.filter.outputs.heavy == 'true'
+        run: julia --version
       - uses: julia-actions/cache@v3
+        if: needs.filter.outputs.heavy == 'true'
       - uses: julia-actions/julia-buildpkg@v1
+        if: needs.filter.outputs.heavy == 'true'
       - uses: julia-actions/julia-runtest@v1
+        if: needs.filter.outputs.heavy == 'true'
         with:
-          coverage: ${{ matrix.version == '1.12' }}
+          coverage: ${{ matrix.coverage }}
       - uses: julia-actions/julia-processcoverage@v1
-        if: matrix.version == '1.12'
+        if: needs.filter.outputs.heavy == 'true' && matrix.coverage
       # Public: OIDC. Private: upload fails quietly until the repo is public.
       - name: Upload coverage to Codecov
-        if: matrix.version == '1.12'
+        if: needs.filter.outputs.heavy == 'true' && matrix.coverage
         uses: codecov/codecov-action@v7
         with:
           files: lcov.info
@@ -49,7 +87,7 @@ jobs:
           use_oidc: true
           fail_ci_if_error: false
       - name: Coverage summary
-        if: matrix.version == '1.12'
+        if: needs.filter.outputs.heavy == 'true' && matrix.coverage
         run: |
           julia --color=no -e '
           using Pkg

@@ -25,7 +25,7 @@ drive!("job.jl", "local:2"; args=["8"])
 
 ## Run a script as-is — `go!`
 
-No Kit imports in the job file. Each `local:N` / `host:N` slot is one full run.
+No Kit imports in the job file. Each `local:N` / `host:N` slot is one full run, concurrent.
 
 ```@docs
 go!

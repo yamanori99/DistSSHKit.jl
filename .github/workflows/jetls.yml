@@ -1,4 +1,4 @@
-name: JETLS
+name: Lint
 
 on:
   push:
@@ -15,16 +15,36 @@ permissions:
   contents: read
 
 jobs:
+  filter:
+    name: detect code changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      heavy: ${{ steps.detect.outputs.heavy }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/ci-heavy
+        id: detect
+
   jetls:
+    needs: filter
+    name: JETLS - Julia 1.12 - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Skip
+        if: needs.filter.outputs.heavy != 'true'
+        run: echo "Root markdown only; JETLS skipped."
       - uses: actions/checkout@v7
+        if: needs.filter.outputs.heavy == 'true'
       - uses: julia-actions/setup-julia@v3
+        if: needs.filter.outputs.heavy == 'true'
         with:
           version: "1.12"
       - uses: julia-actions/cache@v3
+        if: needs.filter.outputs.heavy == 'true'
       - name: Install jetls
+        if: needs.filter.outputs.heavy == 'true'
         run: |
           if [ -x "$HOME/.julia/bin/jetls" ]; then
             echo "jetls already installed (Julia cache hit)"
@@ -36,16 +56,11 @@ jobs:
           fi
           echo "$HOME/.julia/bin" >> "$GITHUB_PATH"
       - name: jetls check
+        if: needs.filter.outputs.heavy == 'true'
         run: |
-          shopt -s nullglob
-          # Entry scripts only: jetls follows `include()` (do not list src/cli/*/*.jl or
-          # src/DistSSHKit/*.jl — those fragments are loaded by cli/*.jl / DistSSHKit.jl).
           # Fail on warning/error. Info alone does not fail; still annotate + Summary.
           set +e
-          jetls --threads=auto -- check --exit-severity=warning --progress=none \
-            demos/with_kit/*.jl demos/without_kit/*.jl \
-            src/DistSSHKit.jl src/cli/go.jl src/cli/drive.jl src/cli/setup.jl src/cli/size.jl \
-            test/runtests.jl test/aqua.jl test/fixtures/*.jl \
+          ./.github/jetls-check.sh --progress=none \
             2>&1 | tee jetls.out
           status=${PIPESTATUS[0]}
           set -e

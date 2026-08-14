@@ -1,8 +1,10 @@
 using Test
 
 @testset "setup args" begin
-    _setup_dir = joinpath(_kit_root(), "src", "cli", "setup")
-    isdefined(Main, :parse_setup_args) || include(joinpath(_setup_dir, "args.jl"))
+    parse_setup_args = DistSSHKit.parse_setup_args
+
+    @test parse_setup_args(["--help"]).show_help
+    @test parse_setup_args(["-h"]).show_help
 
     let r = parse_setup_args(["--check", "host1"])
         @test r.ignore_julia_version == false
@@ -20,9 +22,20 @@ using Test
         @test r.hosts == ["host-cli", "host-a", "host-b"]
     end
 
+    let r = parse_setup_args(["--check", "--hosts", "h1:9,h2", "host-cli"])
+        @test r.hosts == ["host-cli", "h1", "h2"]
+    end
+
+    withenv("DISTSSHKIT_HOSTS" => "env-h:3") do
+        let r = parse_setup_args(["--check", "host-cli"])
+            @test r.hosts == ["host-cli", "env-h"]
+        end
+    end
+
     @testset "help smoke (rsync-first)" begin
-        txt = setup_help_text()
+        txt = DistSSHKit.setup_help_text()
         @test occursin("--rsync", txt)
+        @test occursin("--hosts", txt)
         @test occursin("Workflow (recommended)", txt) || occursin("recommended", lowercase(txt))
         @test occursin("--require-git", txt) || occursin("git parity", lowercase(txt))
         @test !occursin("day-to-day default", lowercase(txt))

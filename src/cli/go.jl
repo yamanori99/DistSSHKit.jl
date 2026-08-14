@@ -27,8 +27,6 @@ include(joinpath(@__DIR__, "go", "_using.jl"))
 const PROJECT_ROOT = cli_project_root(@__DIR__)
 const _PATH_ANCHOR = DistSSHKit.canonical_local_path(PROJECT_ROOT)
 
-include(joinpath(@__DIR__, "go", "args.jl"))
-
 function go_main()::Cint
     parsed = parse_go_args(ARGS)
     if parsed.show_version
@@ -45,17 +43,9 @@ function go_main()::Cint
         return 0
     end
     yes = parsed.cli_session.yes || kit_noninteractive()
-    hosts = copy(parsed.hosts)
-    raw = strip(get(ENV, "DISTSSHKIT_HOSTS", ""))
-    if !isempty(raw)
-        for h in split(raw, ',')
-            s = strip(h)
-            !isempty(s) && push!(hosts, s)
-        end
-    end
     result = go!(
         parsed.script_path,
-        hosts;
+        parsed.hosts;
         project=PROJECT_ROOT,
         quiet=parsed.cli_session.quiet,
         verbosity=parsed.cli_session.verbosity,
@@ -64,7 +54,7 @@ function go_main()::Cint
         args=parsed.script_args,
         path_anchor=_PATH_ANCHOR,
         collect_spec=parsed.output_dir,
-        hosts_file=parsed.cli_session.hosts_file,
+        hosts_file=nothing,
         julia=parsed.julia,
         hint_surface=:cli,
     )

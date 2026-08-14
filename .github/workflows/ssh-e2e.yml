@@ -1,28 +1,14 @@
-name: SSH E2E
+name: E2E
 
 on:
   push:
     branches:
       - main
-    paths:
-      - "src/**"
-      - "test/**"
-      - "demos/**"
-      - "testenv/docker-ssh/**"
-      - ".github/workflows/ssh-e2e.yml"
-      - "Project.toml"
   pull_request:
-    paths:
-      - "src/**"
-      - "test/**"
-      - "demos/**"
-      - "testenv/docker-ssh/**"
-      - ".github/workflows/ssh-e2e.yml"
-      - "Project.toml"
   workflow_dispatch:
 
 concurrency:
-  group: ssh-e2e-${{ github.workflow }}-${{ github.ref }}
+  group: ssh-e2e-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
 permissions:
@@ -30,26 +16,58 @@ permissions:
 
 jobs:
   ssh-e2e:
-    # Linux controller → Linux Docker workers only.
-    # macOS controllers: run the same suite locally (`./scripts/up.sh --e2e`).
-    # Colima on macos-15-intel made PR feedback too slow (~25m+).
+    # Always listed on PR/main so a missed glob cannot hide the check.
+    # Suite runs when kit paths change, or on workflow_dispatch.
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    name: ssh-e2e (linux-to-linux)
+    name: ubuntu-latest → ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
 
+      - uses: dorny/paths-filter@v3
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
+        id: filter
+        with:
+          filters: |
+            e2e:
+              - "src/**"
+              - "test/**"
+              - "demos/**"
+              - "testenv/**"
+              - "Project.toml"
+              - ".github/workflows/ssh-e2e.yml"
+
+      - id: gate
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "e2e=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "e2e=${{ steps.filter.outputs.e2e }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip suite
+        if: steps.gate.outputs.e2e != 'true'
+        run: echo "No kit/E2E paths; suite skipped."
+
       - uses: julia-actions/setup-julia@v3
+        if: steps.gate.outputs.e2e == 'true'
+        id: julia
         with:
           version: "1.12"
+      - name: Julia ${{ steps.julia.outputs.julia-version }}
+        if: steps.gate.outputs.e2e == 'true'
+        run: julia --version
 
       - uses: julia-actions/cache@v3
+        if: steps.gate.outputs.e2e == 'true'
 
       - uses: julia-actions/julia-buildpkg@v1
+        if: steps.gate.outputs.e2e == 'true'
 
       - name: docker-ssh up + SSH E2E
+        if: steps.gate.outputs.e2e == 'true'
         run: ./testenv/docker-ssh/scripts/up.sh --e2e
 
       - name: Teardown workers
-        if: always()
+        if: always() && steps.gate.outputs.e2e == 'true'
         run: ./testenv/docker-ssh/scripts/down.sh || true

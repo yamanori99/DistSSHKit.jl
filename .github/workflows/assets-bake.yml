@@ -1,4 +1,4 @@
-name: Assets bake
+name: Assets
 
 # Regenerate vector derivatives via bake.jl when logo/social sources change.
 # PNG/GIF: warn when git history says rasters are older than sources (no cross-OS pixel compare).
@@ -25,6 +25,7 @@ permissions:
 
 jobs:
   bake:
+    name: bake SVG
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

@@ -1,0 +1,150 @@
+name: E2E daily
+
+# Not on pull_request: skipped macOS/WSL jobs would show on every PR, and
+# job-name expressions do not expand when skipped.
+on:
+  workflow_dispatch:
+  # 04:00 JST (UTC 19:00). GitHub often delays cron; start early so it still
+  # finishes before morning.
+  schedule:
+    - cron: "0 19 * * *"
+
+concurrency:
+  group: ssh-e2e-daily-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  linux-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    name: ubuntu-latest (image)
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: "1.12"
+      - uses: julia-actions/cache@v3
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: Log in to GHCR
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+      - name: docker-ssh up + SSH E2E
+        env:
+          DISTSSHKIT_PUSH_IMAGE: ghcr.io/${{ github.repository_owner }}/distsshkit-linux-ssh-worker:${{ github.sha }}
+        run: ./testenv/docker-ssh/scripts/up.sh --e2e
+      - name: Teardown workers
+        if: always()
+        run: ./testenv/docker-ssh/scripts/down.sh || true
+
+  macos-e2e:
+    runs-on: macos-15-intel
+    timeout-minutes: 60
+    name: macos-15-intel → ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: "1.12"
+      - uses: julia-actions/cache@v3
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: Colima
+        run: ./testenv/docker-ssh/scripts/setup-colima-ci.sh
+      - name: Log in to GHCR
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+      - name: docker-ssh up + SSH E2E
+        env:
+          DISTSSHKIT_WORKER_IMAGE: ghcr.io/${{ github.repository_owner }}/distsshkit-linux-ssh-worker:${{ github.sha }}
+          DISTSSHKIT_WORKER_PULL_RETRIES: "40"
+        run: ./testenv/docker-ssh/scripts/up.sh --e2e
+      - name: Teardown workers
+        if: always()
+        run: ./testenv/docker-ssh/scripts/down.sh || true
+
+  wsl-e2e:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    name: windows-latest (WSL2) → ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: Vampire/setup-wsl@v7
+        with:
+          distribution: Ubuntu-24.04
+          wsl-version: 2
+          additional-packages: >-
+            ca-certificates curl git rsync openssh-client
+            docker.io docker-compose-v2 iptables
+      - uses: actions/cache@v4
+        with:
+          path: .ci-cache/wsl-julia
+          key: wsl-julia-1.12-${{ hashFiles('Project.toml', 'test/Project.toml') }}
+          restore-keys: |
+            wsl-julia-1.12-
+      - name: docker-ssh up + SSH E2E in WSL2
+        shell: wsl-bash {0}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          DISTSSHKIT_WORKER_IMAGE: ghcr.io/${{ github.repository_owner }}/distsshkit-linux-ssh-worker:${{ github.sha }}
+          DISTSSHKIT_WORKER_PULL_RETRIES: "40"
+        run: |
+          src="$(pwd)"
+          dest="$HOME/DistSSHKit.jl"
+          cache="$src/.ci-cache/wsl-julia"
+          mkdir -p "$cache"
+          rm -rf "$dest"
+          git clone "$src" "$dest"
+          if ! docker info >/dev/null 2>&1; then
+            dockerd >/tmp/dockerd.log 2>&1 &
+            ok=0
+            for _ in $(seq 1 60); do
+              if docker info >/dev/null 2>&1; then
+                ok=1
+                break
+              fi
+              sleep 2
+            done
+            if [[ "$ok" -ne 1 ]]; then
+              cat /tmp/dockerd.log
+              exit 1
+            fi
+          fi
+          echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          if [[ -f "$cache/julia.tgz" ]]; then
+            tar -xzf "$cache/julia.tgz" -C "$HOME"
+          else
+            curl --retry 5 --retry-delay 5 --retry-connrefused --connect-timeout 10 \
+              -fsSL https://install.julialang.org | sh -s -- --yes --default-channel 1.12
+          fi
+          export PATH="$HOME/.juliaup/bin:$PATH"
+          cd "$dest"
+          ./testenv/docker-ssh/scripts/up.sh --e2e
+          if [[ -d "$HOME/.julia" ]]; then
+            tar -czf "$cache/julia.tgz" -C "$HOME" .juliaup .julia
+          else
+            tar -czf "$cache/julia.tgz" -C "$HOME" .juliaup
+          fi
+      - name: Teardown workers
+        if: always()
+        shell: wsl-bash {0}
+        run: |
+          dest="$HOME/DistSSHKit.jl"
+          if [[ -d "$dest" ]]; then
+            (cd "$dest" && ./testenv/docker-ssh/scripts/down.sh) || true
+          fi

@@ -68,16 +68,19 @@ using Test
             @test length(result.hosts) == 1 && result.hosts[1].ok
         end
         # Nonempty refuse: return value here; message text in setup/rsync.jl.
+        # `_capture_stdio`: `print_err` ignores quiet, so otherwise a red ✗ leaks.
         _with_fake_remotes() do state_dir
             host = "host1"
             slot = replace(host, r"[@:/]" => "_")
             tree = joinpath(state_dir, slot, "tree")
             mkpath(tree)
             touch(joinpath(tree, "keepme.txt"))
-            result = DistSSHKit.clone_to_remotes(
-                [host], "~/App.jl", "git@example.com:org/App.jl.git";
-                confirm=false,
-            )
+            _, result = _capture_stdio() do _, _
+                DistSSHKit.clone_to_remotes(
+                    [host], "~/App.jl", "git@example.com:org/App.jl.git";
+                    confirm=false,
+                )
+            end
             @test !result.cancelled && result.succeeded == 0 && result.failed == 1
             @test length(result.hosts) == 1 && !result.hosts[1].ok
         end

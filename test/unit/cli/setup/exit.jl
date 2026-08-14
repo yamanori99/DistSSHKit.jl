@@ -1,6 +1,6 @@
 using Test
 
-# Subprocess wiring for `julia -m DistSSHKit setup` (1 sad + 1 happy per mode).
+# Subprocess wiring for the kit `setup` CLI (1 sad + 1 happy per mode).
 # Module-level validate / op outcomes live under DistSSHKit/setup/.
 
 @testset "setup CLI exit codes" begin

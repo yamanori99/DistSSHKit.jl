@@ -31,7 +31,11 @@ using Test
             src = joinpath(d, "src")
             mkpath(src)
             @test DistSSHKit.kit_project_root(src) == d
+            @test DistSSHKit.cli_project_root(src) == d
             @test DistSSHKit.resolve_pkg_project_dir(d) == d
+        end
+        withenv("DISTRIBUTED_PROJECT_ROOT" => "/override/root") do
+            @test DistSSHKit.cli_project_root("/unused") == "/override/root"
         end
         mktempdir() do tmp
             d = abspath(string(tmp))
@@ -117,19 +121,31 @@ using Test
         end
 
         @testset "thin progress bar" begin
-            half = DistSSHKit._progress_bar_string(3, 6)
+            empty = DistSSHKit._progress_bar_string(0, 1; tick=0)
+            @test length(empty) == DistSSHKit.PROGRESS_BAR_WIDTH
+            @test startswith(empty, string(DistSSHKit.PROGRESS_HEAD_CHAR))
+            @test count(==(DistSSHKit.PROGRESS_HEAD_CHAR), empty) == 1
+
+            full = DistSSHKit._progress_bar_string(1, 1)
+            @test full == string(DistSSHKit.PROGRESS_FILL_CHAR)^DistSSHKit.PROGRESS_BAR_WIDTH
+            @test !occursin(string(DistSSHKit.PROGRESS_HEAD_CHAR), full)
+
+            half = DistSSHKit._progress_bar_string(3, 6; tick=0)
             @test length(half) == DistSSHKit.PROGRESS_BAR_WIDTH
-            @test occursin("━", half)
-            @test occursin("─", half)
-            @test half ==
-                string(DistSSHKit.PROGRESS_FILL_CHAR)^8 *
-                string(DistSSHKit.PROGRESS_EMPTY_CHAR)^8
+            @test occursin(string(DistSSHKit.PROGRESS_FILL_CHAR), half)
+            @test occursin(string(DistSSHKit.PROGRESS_HEAD_CHAR), half)
+            @test collect(half)[DistSSHKit._progress_head_index(3, 6, 0)] ==
+                DistSSHKit.PROGRESS_HEAD_CHAR
 
             st = DistSSHKit.KitProgressState("drive", 6, 3, "workers")
             line = DistSSHKit._progress_line(st)
             @test startswith(line, "  ")
-            @test occursin("workers · 3/6", line)
+            @test occursin("workers", line)
+            @test occursin("4/6", line)  # in-progress is done+1
             @test occursin(half, line)
+            done_line = DistSSHKit._progress_line(st; finished=true, ok=true)
+            @test occursin("drive", done_line)
+            @test !occursin(half, done_line)
 
             @test DistSSHKit._progress_can_draw() == false  # not :progress yet
             with_kit_verbosity(:progress) do
@@ -144,13 +160,44 @@ using Test
                     redirect_stdout(devnull) do
                         DistSSHKit.kit_progress_begin!("drive"; steps=2)
                         DistSSHKit.kit_progress_step!("sync")
-                        DistSSHKit.kit_progress_done!(; ok=true)
+                        DistSSHKit.kit_progress_step!("run")
+                        DistSSHKit.kit_progress_done!(; ok=true, footer="out/batch")
                     end
                     DistSSHKit.close_log_file()
                     body = read(log_path, String)
-                    @test occursin("progress: drive (0/2)", body)
-                    @test occursin("progress: sync (1/2)", body)
-                    @test occursin("progress: sync (2/2)", body)
+                    @test occursin("progress: drive (0/2 done, 1/2)", body)
+                    @test occursin("progress: sync (0/2 done, 1/2)", body)
+                    @test occursin("progress: run (1/2 done, 2/2)", body)
+                    @test occursin("progress: drive (2/2 done, 2/2)", body)
+                    @test occursin("out/batch", body)
+                    @test !occursin("→", body)
+                end
+            end
+
+            mktempdir() do tmp
+                with_kit_verbosity(:progress) do
+                    log_path = DistSSHKit.init_log_file(tmp; prefix="progress_items")
+                    redirect_stdout(devnull) do
+                        DistSSHKit.kit_progress_begin!(
+                            "go";
+                            steps=2,
+                            items=["local-1", "local-2"],
+                        )
+                        DistSSHKit.kit_progress_item!("local-1"; status=:ok)
+                        DistSSHKit.kit_progress_item!("local-2"; status=:ok)
+                        DistSSHKit.kit_progress_done!(; ok=true, footer="out/batch")
+                    end
+                    DistSSHKit.close_log_file()
+                    body = read(log_path, String)
+                    @test occursin("progress: items local-1,local-2", body)
+                    @test occursin("progress: local-1 ok (1/2 done)", body)
+                    @test occursin("progress: local-2 ok (2/2 done)", body)
+                    st = DistSSHKit.KitProgressState("go", 2, 0, "go")
+                    push!(st.items, DistSSHKit.KitProgressItem("local-1", :running, 0))
+                    push!(st.items, DistSSHKit.KitProgressItem("local-2", :running, 0))
+                    @test DistSSHKit._progress_current(st) == 0
+                    st.done = 1
+                    @test DistSSHKit._progress_current(st) == 1
                 end
             end
         end

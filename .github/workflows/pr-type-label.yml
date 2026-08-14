@@ -1,33 +1,74 @@
 # Require a type label on every PR: bug | enhancement | breaking | chore.
-name: PR type label
+# If missing, infer from the branch prefix and apply it (feat/ → enhancement, …).
+# Dependabot PRs are exempt (bot marker: `dependencies` only).
+name: Type
 
 on:
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review, labeled, unlabeled]
 
+# Include event.action so labeled/unlabeled (from path Labels) do not
+# cancel an in-flight opened/synchronize job that is applying the type.
 concurrency:
-  group: pr-type-label-${{ github.event.pull_request.number }}
+  group: pr-type-label-${{ github.event.pull_request.number }}-${{ github.event.action }}
   cancel-in-progress: true
 
 permissions:
   contents: read
-  pull-requests: read
+  pull-requests: write
 
 jobs:
   require-type:
+    name: PR label
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v9
         with:
           script: |
-            const required = new Set(["bug", "enhancement", "breaking", "chore"]);
-            const labels = context.payload.pull_request.labels.map((l) => l.name);
-            const found = labels.filter((n) => required.has(n));
-            if (found.length === 0) {
-              core.setFailed(
-                `Add one type label: bug, enhancement, breaking, or chore (have: ${labels.join(", ") || "none"})`,
-              );
+            const login = context.payload.pull_request.user.login;
+            if (login === "dependabot[bot]") {
+              core.info("Skipping type label check for Dependabot");
               return;
             }
-            core.info(`Type label(s): ${found.join(", ")}`);
+
+            const required = ["bug", "enhancement", "breaking", "chore"];
+            const requiredSet = new Set(required);
+            const n = context.issue.number;
+            const { data: current } = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: n,
+            });
+            const labels = current.map((l) => l.name);
+            let found = labels.filter((name) => requiredSet.has(name));
+            if (found.length > 0) {
+              core.info(`Type label(s): ${found.join(", ")}`);
+              return;
+            }
+
+            const branch = String(context.payload.pull_request.head.ref || "");
+            const inferred = inferType(branch);
+
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: n,
+              labels: [inferred],
+            });
+            core.info(`Applied type label "${inferred}" from branch "${branch}"`);
+
+            function inferType(ref) {
+              const b = ref.toLowerCase();
+              if (b.startsWith("breaking/") || b.startsWith("break/")) {
+                return "breaking";
+              }
+              if (b.startsWith("feat/") || b.startsWith("feature/")) {
+                return "enhancement";
+              }
+              if (b.startsWith("fix/") || b.startsWith("bug/") || b.startsWith("hotfix/")) {
+                return "bug";
+              }
+              // Known prefixes, and anything else (demos/, wip/, unprefixed).
+              return "chore";
+            }

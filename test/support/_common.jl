@@ -14,6 +14,24 @@ end
 _julia_exe()::String = joinpath(Sys.BINDIR, Base.julia_exename())
 _fixture(name::AbstractString) = joinpath(_test_root(), "fixtures", name)
 
+"""Kit CLI as a child `julia`. Uses `-m DistSSHKit` on 1.12+; `main(ARGS)` before that."""
+function _kit_cli_cmd(
+    args::AbstractVector{<:AbstractString};
+    julia::AbstractString=_julia_exe(),
+    project::AbstractString=_kit_root(),
+)::Cmd
+    prefix = String[String(julia), "--startup-file=no", "--project=$(project)"]
+    argv = String[String(a) for a in args]
+    if VERSION >= v"1.12"
+        return Cmd(vcat(prefix, ["-m", "DistSSHKit"], argv))
+    end
+    return Cmd(vcat(
+        prefix,
+        ["-e", "using DistSSHKit; exit(Int(DistSSHKit.main(ARGS)))", "--"],
+        argv,
+    ))
+end
+
 """Temp hosts file: comment line, `host-a`, and `host-b:4`."""
 function _sample_hosts_file()::String
     path, io = mktemp()

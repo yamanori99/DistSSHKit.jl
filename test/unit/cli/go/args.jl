@@ -1,8 +1,12 @@
 using Test
 
 @testset "go args" begin
-    _go_dir = joinpath(_kit_root(), "src", "cli", "go")
-    isdefined(Main, :parse_go_args) || include(joinpath(_go_dir, "args.jl"))
+    parse_go_args = DistSSHKit.parse_go_args
+
+    @testset "help flags" begin
+        @test parse_go_args(["--help"]).help
+        @test parse_go_args(["-h"]).help
+    end
 
     @testset "script and hosts" begin
         let r = parse_go_args(["demos/foo.jl", "8"])
@@ -14,8 +18,8 @@ using Test
             @test r.script_path == "job.jl"
             @test r.hosts == ["user@lab"]
         end
-        let r = parse_go_args(["--hosts", "host-a", "job.jl"])
-            @test r.hosts == ["host-a"]
+        let r = parse_go_args(["--hosts", "host-a,host-b:2", "job.jl"])
+            @test r.hosts == ["host-a", "host-b:2"]
             @test r.script_path == "job.jl"
         end
         let r = parse_go_args(["local:2", "h1", "job.jl", "4"])

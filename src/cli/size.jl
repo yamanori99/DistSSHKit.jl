@@ -24,9 +24,6 @@ include(joinpath(@__DIR__, "size", "_using.jl"))
 const PROJECT_ROOT = cli_project_root(@__DIR__)
 const _PATH_ANCHOR = DistSSHKit.canonical_local_path(PROJECT_ROOT)
 
-include(joinpath(@__DIR__, "size", "args.jl"))
-include(joinpath(@__DIR__, "size", "report.jl"))
-
 function size_main()::Cint
     opts = parse_size_args(ARGS)
     if opts.show_help
@@ -49,7 +46,7 @@ function size_main()::Cint
     DistSSHKit.writeln_field("Project", cli_project_disp(PROJECT_ROOT, _PATH_ANCHOR))
     DistSSHKit.kit_println()
 
-    samples = resolve_worker_memory_samples(all_hosts, hosts, opts)
+    samples = resolve_worker_memory_samples(PROJECT_ROOT, all_hosts, hosts, opts)
     samples === nothing && return 1
     DistSSHKit.kit_println()
 

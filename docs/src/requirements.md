@@ -6,20 +6,31 @@ pieces when you SSH to other hosts.
 
 ## All machines
 
-Applies to the machine where you run `julia -m DistSSHKit` **and** each SSH
-host that runs jobs.
+Applies to the machine where you run the kit **and** each SSH host that runs
+jobs.
 
-- **macOS and Linux**
-- **Julia 1.12+** — prefer the same **major.minor** on SSH hosts (`setup --check`
-  fails on a major.minor mismatch unless you pass `--ignore-julia-version`;
-  patch-only differences warn). On SSH hosts, path is auto-detected, or set
-  `--julia` / `JULIA_DISTRIBUTED_EXE`.
+- **macOS, Linux, and WSL2 Ubuntu** (not native Windows)
+- **Julia**
+  - Library (`Pkg.add` / `using` / `go!` / `drive!`): **1.10+**
+  - Terminal CLI (`julia -m DistSSHKit`): **1.12+** (no `-m` before 1.12; use
+    the [API](@ref API) or [`main`](@ref))
+  - Same **major.minor** on the controller and SSH hosts (`setup --check` fails
+    on a mismatch unless `--ignore-julia-version`; patch-only differences warn)
+  - Prefer **[juliaup](https://github.com/JuliaLang/juliaup)**
+    (`$HOME/.juliaup/bin/julia`): E2E workers and remote auto-detect start
+    there. `--julia` / `JULIA_DISTRIBUTED_EXE` override. Missing path or a
+    related bug: [open an Issue](https://github.com/yamanori99/DistSSHKit.jl/issues).
+
+WSL2 is Linux. Run the kit **inside** the distro (not PowerShell). Keep the
+project on the Linux filesystem (`~/…`), not `/mnt/c/…`. Install `ssh` /
+`rsync` / Julia in WSL. SSH E2E: same `./testenv/docker-ssh/scripts/up.sh --e2e`
+as Linux (Docker Compose must be visible from WSL).
 
 ## Remotes
 
 When you use SSH hosts (not just `local:N`):
 
-**Where you run `julia -m DistSSHKit`** — also install:
+**Where you run the kit** — also install:
 
 - **`ssh`** — passwordless login to each host
 - **`rsync`** — collect results (`go` / `drive`); push the project tree only
@@ -60,12 +71,10 @@ config `Host` alias — not the literal string `USER@HOST`.
 
 ### Where you run the kit
 
-```bash
-julia --version
-uname -s          # Darwin or Linux
-which rsync       # remotes / collect
-which git         # git deploy path only
-```
+- `julia --version`
+- `uname -s` — Darwin or Linux
+- `which rsync` — remotes / collect
+- `which git` — git deploy path only
 
 ### Each SSH host
 
@@ -75,15 +84,13 @@ Passwordless login (once per host):
 ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=accept-new USER@HOST echo ok
 ```
 
-Julia (prefer the same major.minor as the kit machine). Log in, find the binary,
-then check with that **full path** (non-interactive `ssh` often has no login
-`PATH`, so bare `julia` fails):
+Julia (prefer the same major.minor as the kit machine, via juliaup). Log in,
+find the binary, then check with that **full path** (non-interactive `ssh`
+often has no login `PATH`, so bare `julia` fails):
 
-```bash
-ssh USER@HOST
-which julia
-exit
-```
+- `ssh USER@HOST`
+- `which julia` (often `$HOME/.juliaup/bin/julia`)
+- `exit`
 
 ```bash
 ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=accept-new USER@HOST '/path/from/which/julia --version'

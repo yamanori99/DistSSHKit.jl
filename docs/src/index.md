@@ -1,8 +1,8 @@
 # [DistSSHKit.jl](@id DistSSHKit.jl)
 
 DistSSHKit makes it easy to run one Julia project locally and over SSH, then
-collect the results. It uses Distributed.jl processes (not threads). **macOS
-and Linux.**
+collect the results. It uses Distributed.jl processes (not threads). **macOS,
+Linux, and WSL2 Ubuntu** (not native Windows).
 
 These days, even small labs and individuals often have several high-performance
 machines or workstations. DistSSHKit helps you put that hardware to work.
@@ -19,6 +19,7 @@ Two ways to run (job shape):
   ([Distributed.jl](https://docs.julialang.org/en/v1/manual/distributed-computing/)).
 
 Around that, the kit handles remote project setup, sync, and collecting outputs.
+Use it from the terminal or from Julia code / notebooks.
 
 How you call it is a separate choice:
 
@@ -30,6 +31,10 @@ Same host tokens either way (`local:2`, `user@host:1`). Details: [API](@ref API)
 [User Guide](@ref Manual).
 
 ## Installation
+
+!!! important
+    **Under active development.** Prefer a registered release (`pkg> add DistSSHKit`).
+    Use `pkg> add DistSSHKit#main` only for the development tip.
 
 From the Julia REPL, type `]` to enter the Pkg REPL mode and run:
 
@@ -43,7 +48,10 @@ Or, equivalently, via the `Pkg` API:
 julia> import Pkg; Pkg.add("DistSSHKit")
 ```
 
-There is no separate binary — use `julia --project=. -m DistSSHKit …`.
+!!! note "CLI"
+    These pages assume Julia **1.12+** and `julia --project=. -m DistSSHKit …`.
+    There is no separate binary. On 1.10–1.11 use `go!` / `drive!`; see
+    [Requirements](@ref).
 
 ## Next
 

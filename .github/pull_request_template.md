@@ -3,9 +3,8 @@
 ## Summary
 
 <!-- What / why -->
-<!-- Type label required (CI): bug | enhancement | breaking | chore
-     e.g. gh pr edit N --add-label chore
-     breaking = this PR breaks callers; use for release / version-cut triage -->
+<!-- Type label is automatic from the branch prefix (feat/ → enhancement, fix/ → bug,
+     otherwise chore). Override with gh pr edit if needed. -->
 
 ## Checklist
 

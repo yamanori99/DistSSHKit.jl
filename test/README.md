@@ -17,7 +17,7 @@ Tests run sequentially (`Test.@testset` nesting). `Pkg.test()` activates `test/P
 ```text
 test/
   runtests.jl          # entry point
-  aqua.jl              # Aqua.jl QA (loads DistSSHKit as a real package)
+  aqua.jl              # Aqua.jl QA
   support.jl           # includes support/*.jl
   support/             # shared helpers (subprocess, drive, staging, …)
   unit/                # fast, in-process tests
@@ -30,11 +30,11 @@ test/
 
 ```text
 unit/
-  DistSSHKit/          # ↔ src/DistSSHKit/ (module API + setup cores)
+  DistSSHKit/          # ↔ src/DistSSHKit/ (module API + setup cores + argv parsers)
     cli/               # ↔ DistSSHKit/cli/
     setup/             # ↔ DistSSHKit/setup/
-  cli/                 # ↔ src/cli/ (argv / help / exit)
-    drive/, go/, setup/, size/
+  cli/                 # ↔ src/cli/ (CLI entry wiring: using_guard, setup exit)
+    drive/, go/, setup/, size/   # argv / help tests call DistSSHKit.parse_*
 ```
 
 `integration/` groups drive smokes and demo recipe runs.
@@ -48,12 +48,14 @@ How to run: [`testenv/docker-ssh/README.md`](../testenv/docker-ssh/README.md).
 | --- | --- | --- |
 | **Aqua** (`aqua.jl`) | ambiguities, exports, compat, project consistency | ~5 s |
 | **unit** | parsing, display, module helpers, CLI arg tables | ~5 s |
-| **integration** | `julia -m DistSSHKit drive` end-to-end in child processes | ~2 min |
-| **ssh-e2e** (CI / opt-in) | Real SSH + rsync against Docker workers (`DISTSSHKIT_SSH_E2E=1`). CI: **linux-to-linux** only; macOS controllers: `testenv/docker-ssh/scripts/up.sh --e2e` | ~10–20 min |
-| **doctests** (docs CI) | docstring examples in `src/` (`Documentation.yml`) | ~5 s |
+| **integration** | kit CLI `drive` / `go` in child processes (`-m` on 1.12+; `main` on 1.10–1.11) | ~2 min |
+| **ssh-e2e** (`E2E / ubuntu-latest → ubuntu-24.04`) | Real SSH + rsync against Docker workers (`DISTSSHKIT_SSH_E2E=1`). CI: every PR | ~10–20 min |
+| **ssh-e2e macOS** (`E2E daily / macos-15-intel → ubuntu-24.04`) | Same suite from **macOS Intel** + Colima. Daily 04:00 JST or Run workflow `E2E daily`. Pulls the worker image | ~25–50 min |
+| **ssh-e2e WSL** (`E2E daily / windows-latest (WSL2) → ubuntu-24.04`) | Same suite from WSL2. Daily / Run workflow. Not native Windows | ~20–45 min |
+| **doctests** (`Docs / Documenter - Julia 1.12 - ubuntu-latest`) | docstring examples in `src/` (`Documentation.yml`) | ~5 s |
 
 Most of the wall time in `Pkg.test()` is integration (child Julia + local workers).
-Remote SSH is the separate **ssh-e2e** job. Doctests run in the Documentation workflow, not `Pkg.test()`.
+Remote SSH on PRs and main is **E2E / ubuntu-latest → ubuntu-24.04**. Daily / Run workflow `E2E daily`: **macos-15-intel** and **WSL2** against `ubuntu-24.04` workers. Doctests run in **Docs / Documenter - Julia 1.12 - ubuntu-latest**, not `Pkg.test()`. **Test / Pkg.test - Julia 1.10 - ubuntu-latest** / **1.11** uses `DistSSHKit.main` for CLI children (`-m` is 1.12+).
 
 ## Why only `setup` uses SSH/rsync fakes
 
@@ -98,7 +100,7 @@ open "$(cat test/artifacts/ssh-e2e/LATEST)/SUMMARY.txt"
 rm -rf test/artifacts/ssh-e2e
 ```
 
-Kit CLI flags (drive / go / setup / size) also honor `DISTSSHKIT_QUIET`, `DISTSSHKIT_PROGRESS`, `DISTSSHKIT_YES`, and `DISTSSHKIT_HOSTS_FILE`; see `src/DistSSHKit/cli/session.jl`.
+Kit CLI flags (drive / go / setup / size) also honor `DISTSSHKIT_QUIET`, `DISTSSHKIT_PROGRESS`, `DISTSSHKIT_VERBOSE`, `DISTSSHKIT_YES`, `DISTSSHKIT_HOSTS`, and `DISTSSHKIT_HOSTS_FILE`; see `src/DistSSHKit/cli/session.jl`.
 
 ## Adding tests
 
@@ -108,5 +110,4 @@ Kit CLI flags (drive / go / setup / size) also honor `DISTSSHKIT_QUIET`, `DISTSS
 
 ## Aqua note
 
-`runtests.jl` loads `DistSSHKit` via `include` for unit tests (`Main.DistSSHKit`).  
-`aqua.jl` uses `using DistSSHKit` (top-level package from `test/Project.toml`) because Aqua needs a real `Pkg` module. `stale_deps` is disabled: `Pkg` is used by `cli/drive.jl` / setup cores, not only inside the `DistSSHKit` module body.
+`runtests.jl` and `aqua.jl` both `using DistSSHKit` as the package (root project or `test/Project.toml` `[sources]`). `Pkg` is a module dependency (`using Pkg` in `src/DistSSHKit.jl`) so Aqua's `stale_deps` can run.

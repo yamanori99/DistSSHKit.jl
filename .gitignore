@@ -4,12 +4,16 @@ docs/Manifest.toml
 docs/build/
 docs/site/
 
-# Local runs (src/runner.jl, demo.jl)
+# Local runs (drive/go logs default to <script-dir>/results/)
 data/
 runner_*.log
+drive_*.log
+go_*.log
+results/
 .distsshkit/
 
 # Tests & CI artifacts
+.ci-cache/
 *.jl.cov
 *.jl.*.cov
 *.jl.mem

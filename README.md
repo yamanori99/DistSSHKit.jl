@@ -6,14 +6,20 @@
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://yamanori99.github.io/DistSSHKit.jl/stable/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://yamanori99.github.io/DistSSHKit.jl/dev/)
-[![Julia 1.12+](https://img.shields.io/badge/Julia-1.12+-blue.svg)](https://julialang.org/)
+[![Julia (API) 1.10+](https://img.shields.io/badge/Julia_(API)-1.10+-blue.svg)](https://yamanori99.github.io/DistSSHKit.jl/stable/api/)
+[![Julia (CLI) 1.12+](https://img.shields.io/badge/Julia_(CLI)-1.12+-blue.svg)](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## What does DistSSHKit do?
+DistSSHKit makes it easy to run one Julia project locally and over SSH, then
+collect the results. It uses Distributed.jl processes (not threads). **macOS,
+Linux, and WSL2 Ubuntu** (not native Windows).
 
-DistSSHKit makes it easy to run a Julia project on local and/or SSH hosts with
-Distributed.jl processes (not threads), including remote setup, sync, and
-collecting outputs. macOS and Linux.
+These days, even small labs and individuals often have several high-performance
+machines or workstations. DistSSHKit helps you put that hardware to work.
+
+> [!IMPORTANT]
+> **Under active development.** Prefer a registered release. Use
+> `pkg> add DistSSHKit#main` only for the development tip.
 
 ## Install
 
@@ -29,15 +35,13 @@ Or, equivalently, via the `Pkg` API:
 julia> import Pkg; Pkg.add("DistSSHKit")
 ```
 
-Setup, demos, `go` / `drive`, and the Julia API:
-**[Documentation](https://yamanori99.github.io/DistSSHKit.jl/stable/)**.
-
----
+Install, demo, `go` / `drive`, remote hosts, and API: **[Documentation](https://yamanori99.github.io/DistSSHKit.jl/stable/)**.
 
 ## Jobs and launchers
 
-DistSSHKit has **two job shapes** and **two ways to launch** them.
-Host tokens are the same everywhere (`local:2`, `user@host:1`).
+Two job shapes and two launchers. Host tokens are the same everywhere
+(`local:2`, `user@host:1`). CLI needs Julia **1.12+** (`julia -m DistSSHKit …`).
+The library API works on **1.10+**.
 
 Job shapes:
 
