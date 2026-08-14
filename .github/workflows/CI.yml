@@ -17,9 +17,9 @@ permissions:
   id-token: write # Codecov OIDC upload (see Upload coverage step)
 
 jobs:
-  # Full `Pkg.test()` stays Linux-only. Darwin and WSL controllers are merge-only
-  # SSH E2E (`E2E / macOS → Linux (main / dispatch)`, `E2E / WSL2 → Linux (main / dispatch)`).
-  # PRs run `E2E / Linux → Linux`.
+  # Full `Pkg.test()` stays Linux-only. Darwin and WSL controllers are
+  # schedule / dispatch SSH E2E (`E2E / macOS → Linux (schedule / dispatch)`,
+  # `E2E / WSL2 → Linux (schedule / dispatch)`). PRs run `E2E / Linux → Linux`.
   # Root-markdown PRs still run this job (required check names) but skip the suite.
   filter:
     name: filter

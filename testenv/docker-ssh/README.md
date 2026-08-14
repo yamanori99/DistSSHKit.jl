@@ -9,14 +9,14 @@ Real OpenSSH + rsync Linux workers. CI remote SSH coverage uses this stack
 
 | Controller | Worker | Where |
 | --- | --- | --- |
-| Linux (`ubuntu-latest`) | Linux ×2 (this compose) | **CI** — every PR — `E2E / Linux → Linux` |
-| macOS Intel (`macos-15-intel` + Colima) | Linux ×2 (same compose) | **CI after merge** — `E2E / macOS → Linux (main / dispatch)` |
-| WSL2 Ubuntu (`windows-latest`) | Linux ×2 (same compose) | **CI after merge** — `E2E / WSL2 → Linux (main / dispatch)` |
+| Linux (`ubuntu-latest`) | Linux ×2 (this compose) | **CI** — PR and main — `E2E / Linux → Linux` |
+| macOS Intel (`macos-15-intel` + Colima) | Linux ×2 (same compose) | **CI daily / dispatch** — `E2E / macOS → Linux (schedule / dispatch)` |
+| WSL2 Ubuntu (`windows-latest`) | Linux ×2 (same compose) | **CI daily / dispatch** — `E2E / WSL2 → Linux (schedule / dispatch)` |
 | Either | `local:N` | Mixed smoke inside the same suite |
 
 ### Honest limits
 
-- CI macOS controller is **after merge** (`macos-15-intel` + Colima). Apple Silicon GitHub runners cannot nest VMs.
+- CI macOS controller is **daily / dispatch** (`macos-15-intel` + Colima). Apple Silicon GitHub runners cannot nest VMs.
 - Remote Julia detection is exercised on **Linux workers**.
 - **Not covered (no free CI):** Linux controller → macOS worker; Mac workers (use apple-container locally).
 - **Git parity (`--require-git`):** covered in the suite via a separate git remote root
@@ -38,7 +38,7 @@ Network Privacy does not block SSH from the controller.
 | [`scripts/up.sh`](scripts/up.sh) | Keys → compose up → wait (`--e2e` also runs the suite) |
 | [`scripts/wait-ready.sh`](scripts/wait-ready.sh) | BatchMode SSH + Julia probe |
 | [`scripts/down.sh`](scripts/down.sh) | Compose down |
-| [`scripts/setup-colima-ci.sh`](scripts/setup-colima-ci.sh) | Colima on `macos-15-intel` (merge-only E2E) |
+| [`scripts/setup-colima-ci.sh`](scripts/setup-colima-ci.sh) | Colima on `macos-15-intel` (schedule / dispatch E2E) |
 | `.generated/` | gitignored SSH config / keys (created by scripts) |
 
 SSH Host aliases (written to `.generated/ssh_config`):
@@ -72,11 +72,12 @@ ssh -F .generated/ssh_config distsshkit-w1 'echo ok; julia --version'
 ## CI
 
 [`.github/workflows/ssh-e2e.yml`](../../.github/workflows/ssh-e2e.yml) runs
-`./scripts/up.sh --e2e` on `ubuntu-latest` for every PR (`E2E / Linux → Linux`), and
-after merge on macOS Intel (`E2E / macOS → Linux (main / dispatch)`) and WSL2 Ubuntu
-(`E2E / WSL2 → Linux (main / dispatch)`).
+`./scripts/up.sh --e2e` on `ubuntu-latest` for every PR and `main` (`E2E / Linux → Linux`).
+macOS Intel (`E2E / macOS → Linux (schedule / dispatch)`) and WSL2 Ubuntu
+(`E2E / WSL2 → Linux (schedule / dispatch)`) run daily at 06:00 JST, or via
+`workflow_dispatch`.
 
-On `main` / `workflow_dispatch`, the Linux job builds the worker image and
+On `schedule` / `workflow_dispatch`, the Linux job builds the worker image and
 pushes `ghcr.io/<owner>/distsshkit-linux-ssh-worker:<sha>`. macOS and WSL pull
 that tag (retry until Linux has pushed) instead of building Julia-in-Docker on
 Colima / WSL `dockerd`. Local `./scripts/up.sh` still builds unless you set

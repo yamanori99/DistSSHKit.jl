@@ -20,9 +20,12 @@ on:
       - ".github/workflows/ssh-e2e.yml"
       - "Project.toml"
   workflow_dispatch:
+  # 06:00 JST (UTC 21:00). macOS / WSL run here, not on every main push.
+  schedule:
+    - cron: "0 21 * * *"
 
 concurrency:
-  group: ssh-e2e-${{ github.workflow }}-${{ github.ref }}
+  group: ssh-e2e-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
 permissions:
@@ -30,8 +33,8 @@ permissions:
 
 jobs:
   ssh-e2e:
-    # Linux controller → Linux Docker workers. Runs on PRs. On main / dispatch,
-    # pushes the worker image so macOS / WSL can pull instead of building.
+    # Linux controller → Linux Docker workers. PRs and main. On schedule /
+    # dispatch, also pushes the worker image so macOS / WSL can pull.
     runs-on: ubuntu-latest
     timeout-minutes: 30
     name: Linux → Linux
@@ -53,7 +56,7 @@ jobs:
       - uses: julia-actions/julia-buildpkg@v1
 
       - name: Log in to GHCR
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -61,20 +64,20 @@ jobs:
 
       - name: docker-ssh up + SSH E2E
         env:
-          DISTSSHKIT_PUSH_IMAGE: ${{ github.event_name != 'pull_request' && format('ghcr.io/{0}/distsshkit-linux-ssh-worker:{1}', github.repository_owner, github.sha) || '' }}
+          DISTSSHKIT_PUSH_IMAGE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && format('ghcr.io/{0}/distsshkit-linux-ssh-worker:{1}', github.repository_owner, github.sha) || '' }}
         run: ./testenv/docker-ssh/scripts/up.sh --e2e
 
       - name: Teardown workers
         if: always()
         run: ./testenv/docker-ssh/scripts/down.sh || true
 
-  # Darwin controller → Linux Docker workers via Colima. Merge / dispatch only
-  # (Colima on macos-15-intel is too slow for PR feedback, ~25m+).
+  # Darwin controller → Linux Docker workers via Colima. Daily schedule /
+  # dispatch only (Colima on macos-15-intel is too slow for PR / merge wait).
   macos-e2e:
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: macos-15-intel
     timeout-minutes: 60
-    name: macOS → Linux (main / dispatch)
+    name: macOS → Linux (schedule / dispatch)
     permissions:
       contents: read
       packages: read
@@ -101,12 +104,12 @@ jobs:
         if: always()
         run: ./testenv/docker-ssh/scripts/down.sh || true
 
-  # WSL2 Ubuntu controller → Linux Docker workers. Merge / dispatch only.
+  # WSL2 Ubuntu controller → Linux Docker workers. Daily schedule / dispatch only.
   wsl-e2e:
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: windows-latest
     timeout-minutes: 60
-    name: WSL2 → Linux (main / dispatch)
+    name: WSL2 → Linux (schedule / dispatch)
     permissions:
       contents: read
       packages: read

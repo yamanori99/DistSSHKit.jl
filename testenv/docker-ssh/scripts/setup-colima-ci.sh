@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Colima on macOS Intel GitHub runners (SSH E2E after merge).
+# Colima on macOS Intel GitHub runners (SSH E2E on schedule / dispatch).
 # Apple Silicon GitHub runners lack nested virt — this script requires x86_64.
 # Replaces douglascamata/setup-docker-macos-action with curl retries so Lima
 # downloads do not pipe a truncated tarball into tar.
