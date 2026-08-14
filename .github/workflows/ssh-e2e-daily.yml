@@ -97,7 +97,7 @@ jobs:
           additional-packages: >-
             ca-certificates curl git rsync openssh-client
             docker.io docker-compose-v2 iptables
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: .ci-cache/wsl-julia
           key: wsl-julia-1.12-${{ hashFiles('Project.toml', 'test/Project.toml') }}
