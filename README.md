@@ -41,6 +41,7 @@ Install, demo, `go` / `drive`, remote hosts, and API: **[Documentation](https://
 | First Steps | [First Steps](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/) |
 | User Guide | [User Guide](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/) |
 | API | [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/) |
+| News | [NEWS.md](NEWS.md) |
 
 ## Contributing
 
