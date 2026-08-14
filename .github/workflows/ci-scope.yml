@@ -1,0 +1,43 @@
+# Shared "does this PR need heavy CI?" signal.
+# Root markdown-only PRs must still report the required check names.
+name: CI scope
+
+on:
+  workflow_call:
+    outputs:
+      heavy:
+        description: "true when Pkg.test / JETLS / Documenter should run"
+        value: ${{ jobs.scope.outputs.heavy }}
+
+permissions:
+  contents: read
+
+jobs:
+  scope:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      heavy: ${{ steps.out.outputs.heavy }}
+    steps:
+      - uses: actions/checkout@v7
+        if: github.event_name == 'pull_request'
+      - uses: dorny/paths-filter@v3
+        if: github.event_name == 'pull_request'
+        id: filter
+        with:
+          # Any path outside this list → heavy CI.
+          # docs/src stays heavy (Documenter).
+          filters: |
+            heavy:
+              - "**"
+              - "!CONTRIBUTING.md"
+              - "!README.md"
+              - "!SECURITY.md"
+              - "!LICENSE"
+      - id: out
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
+            echo "heavy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "heavy=${{ steps.filter.outputs.heavy }}" >> "$GITHUB_OUTPUT"
+          fi

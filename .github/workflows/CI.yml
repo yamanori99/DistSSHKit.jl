@@ -22,7 +22,12 @@ jobs:
   # in `name:` so checks stay `Test / Pkg.test Julia 1.12` even if the spec is `"1"`.
   # Full `Pkg.test()` stays Linux-only. Darwin and WSL controllers are merge-only
   # SSH E2E (`E2E / macOS to Linux`, `E2E / WSL2 to Linux`). PRs run `E2E / Linux to Linux`.
+  scope:
+    uses: ./.github/workflows/ci-scope.yml
+
   resolve:
+    needs: scope
+    if: needs.scope.outputs.heavy == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 3
     name: resolve Julia
@@ -104,7 +109,8 @@ jobs:
 
   # Full `Pkg.test()` on Linux. `-m` subprocesses run only on 1.12+ inside the suite.
   test:
-    needs: resolve
+    needs: [scope, resolve]
+    if: needs.scope.outputs.heavy == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     name: Pkg.test Julia ${{ matrix.minor }}
@@ -151,3 +157,17 @@ jobs:
           c, t = get_summary(files)
           @printf("%-32s %5.1f%%  (%d/%d lines)\n", "TOTAL", 100 * c / t, c, t)
           '
+
+  # Same check names as `test`, so required status checks go green on root-md PRs.
+  test-skip:
+    needs: scope
+    if: github.event_name == 'pull_request' && needs.scope.outputs.heavy != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    name: Pkg.test Julia ${{ matrix.minor }}
+    strategy:
+      fail-fast: false
+      matrix:
+        minor: ["1.10", "1.11", "1.12", "1.13"]
+    steps:
+      - run: echo "Root markdown only; Pkg.test skipped."

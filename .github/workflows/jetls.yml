@@ -15,7 +15,12 @@ permissions:
   contents: read
 
 jobs:
+  scope:
+    uses: ./.github/workflows/ci-scope.yml
+
   jetls:
+    needs: scope
+    if: needs.scope.outputs.heavy == 'true'
     name: JETLS (Julia 1.12)
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -69,3 +74,12 @@ jobs:
           fi
 
           exit "$status"
+
+  jetls-skip:
+    needs: scope
+    if: github.event_name == 'pull_request' && needs.scope.outputs.heavy != 'true'
+    name: JETLS (Julia 1.12)
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - run: echo "Root markdown only; JETLS skipped."

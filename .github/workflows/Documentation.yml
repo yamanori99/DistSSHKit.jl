@@ -13,7 +13,12 @@ concurrency:
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
 jobs:
+  scope:
+    uses: ./.github/workflows/ci-scope.yml
+
   build:
+    needs: scope
+    if: needs.scope.outputs.heavy == 'true'
     name: Documenter (Julia 1.12)
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -48,3 +53,14 @@ jobs:
           # Deploy via HTTPS + contents:write (no DOCUMENTER_KEY SSH secret required).
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: julia --project=docs --color=yes docs/make.jl
+
+  build-skip:
+    needs: scope
+    if: github.event_name == 'pull_request' && needs.scope.outputs.heavy != 'true'
+    name: Documenter (Julia 1.12)
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    steps:
+      - run: echo "Root markdown only; Documenter skipped."
