@@ -53,8 +53,8 @@ Language Server `IncorrectCallArgs` is not CI (JETLS is). Do not add `.vscode/se
 
 ## Workflow
 
-- Branch from `main` (`feature/…`, `fix/…`, `docs/…`, `chore/…`). Open a PR; `main` is squash-merge only. Keep each PR one reviewable change — split unless `main` would be broken in between. Large plans: Discussion / Enhancement Issue first, then small PRs.
-- Breaking (CLI names, module name, driver `init_output_dir!` / `main`, …): bump `x` in `0.x.y`. Patch `y` only otherwise. Tags (`vX.Y.Z`) after a registry release are normally cut by TagBot ([`.github/workflows/TagBot.yml`](.github/workflows/TagBot.yml)). Repo Settings → Actions → Workflow permissions must be **Read and write** (`GITHUB_TOKEN`). Maintainers may still `git tag -a` when needed.
+- Branch from `main` (`feature/…`, `fix/…`, `docs/…`, `chore/…`). Open a PR; `main` is squash-merge only. Keep each PR one reviewable change — split unless `main` would be broken in between. Large plans: Discussion / Enhancement Issue first, then small PRs. Merged head branches are deleted automatically (repo Settings).
+- Breaking (CLI names, module name, driver `init_output_dir!` / `main`, …): bump `x` in `0.x.y`. Patch `y` only otherwise. Tags (`vX.Y.Z`) after a registry release are normally cut by TagBot ([`.github/workflows/TagBot.yml`](.github/workflows/TagBot.yml)). Repo Settings → Actions → Workflow permissions must be **Read and write** (`GITHUB_TOKEN`). Maintainers may still `git tag -a` when needed. Date the matching [NEWS.md](NEWS.md) section `YYYY-MM-DD` UTC on the tag day. On `@JuliaRegistrator register`, paste that section under `Release notes:` so the GitHub Release matches (TagBot's PR list is the default if you skip this).
 - `setup --clone` / `--rsync` refuse a non-empty destination; redeploy with `setup --delete`. Prefer first deploy `--rsync`; git updates `--sync` / `--pull`. Do not weaken that refusal without tests.
 
 ## Errors: diagnose then explain
@@ -70,7 +70,7 @@ Helpers: `src/DistSSHKit/explain.jl`. Surface lives on `KitCliSession` / `hint_s
 
 **Issues** (Bug / Enhancement forms only): `bug` or `enhancement`. Form area picks are triage text — add `area:*` when useful. `breaking` is a PR label, not an Issue type. Usage questions are not Issues.
 
-**Discussions**: Q&A, Ideas (promote to an Enhancement Issue when tracking), General, Show and tell, Polls, Announcements. Confirmed bugs are not Discussions. Security: [SECURITY.md](SECURITY.md).
+**Discussions**: Q&A, Ideas (promote to an Enhancement Issue when tracking), General, Show and tell, Polls, Announcements. Confirmed bugs are not Discussions. Registry cuts do not need an Announcements post; the GitHub Release is enough. Direction: [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26). Security: [SECURITY.md](SECURITY.md).
 
 ## PR labels
 
@@ -91,4 +91,4 @@ Dependabot is exempt from the type-label check (`dependencies` only; path labels
 
 ## Language and AI
 
-`.jl` sources (comments, docstrings, errors): English. User-facing docs: update `docs/src/*.md` and [README.md](README.md) when install or Docs links change; user-visible behavior in [NEWS.md](NEWS.md). Generative AI is allowed; understand and verify what you submit. Keep docs plain; avoid hype.
+`.jl` sources (comments, docstrings, errors): English. User-facing docs: update `docs/src/*.md` and [README.md](README.md) when install or Docs links change; user-visible behavior in [NEWS.md](NEWS.md) (date the section when tagged). Generative AI is allowed; understand and verify what you submit. Keep docs plain; avoid hype.

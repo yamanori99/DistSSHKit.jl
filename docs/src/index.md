@@ -32,10 +32,6 @@ Same host tokens either way (`local:2`, `user@host:1`). Details: [API](@ref API)
 
 ## Installation
 
-!!! important
-    **Under active development.** Prefer a registered release (`pkg> add DistSSHKit`).
-    Use `pkg> add DistSSHKit#main` only for the development tip.
-
 From the Julia REPL, type `]` to enter the Pkg REPL mode and run:
 
 ```julia
