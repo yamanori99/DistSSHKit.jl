@@ -10,8 +10,8 @@ Real OpenSSH + rsync Linux workers. CI remote SSH coverage uses this stack
 | Controller | Worker | Where |
 | --- | --- | --- |
 | Linux (`ubuntu-latest`) | Linux ×2 (this compose) | **CI** — PR and main — `E2E / Linux → Linux` |
-| macOS Intel (`macos-15-intel` + Colima) | Linux ×2 (same compose) | **CI daily / dispatch** — `E2E / macOS → Linux (schedule / dispatch)` |
-| WSL2 Ubuntu (`windows-latest`) | Linux ×2 (same compose) | **CI daily / dispatch** — `E2E / WSL2 → Linux (schedule / dispatch)` |
+| macOS Intel (`macos-15-intel` + Colima) | Linux ×2 (same compose) | **CI daily / dispatch** — `E2E / macOS → Linux - schedule` |
+| WSL2 Ubuntu (`windows-latest`) | Linux ×2 (same compose) | **CI daily / dispatch** — `E2E / WSL2 → Linux - schedule` |
 | Either | `local:N` | Mixed smoke inside the same suite |
 
 ### Honest limits
@@ -73,9 +73,9 @@ ssh -F .generated/ssh_config distsshkit-w1 'echo ok; julia --version'
 
 [`.github/workflows/ssh-e2e.yml`](../../.github/workflows/ssh-e2e.yml) runs
 `./scripts/up.sh --e2e` on `ubuntu-latest` for every PR and `main` (`E2E / Linux → Linux`).
-macOS Intel (`E2E / macOS → Linux (schedule / dispatch)`) and WSL2 Ubuntu
-(`E2E / WSL2 → Linux (schedule / dispatch)`) run daily at 06:00 JST, or via
-`workflow_dispatch`.
+macOS Intel (`E2E / macOS → Linux - schedule`) and WSL2 Ubuntu
+(`E2E / WSL2 → Linux - schedule`) run daily at 06:00 JST, or via
+`workflow_dispatch` (title then ends with `workflow_dispatch`).
 
 On `schedule` / `workflow_dispatch`, the Linux job builds the worker image and
 pushes `ghcr.io/<owner>/distsshkit-linux-ssh-worker:<sha>`. macOS and WSL pull

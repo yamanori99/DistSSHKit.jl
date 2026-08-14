@@ -18,11 +18,11 @@ permissions:
 
 jobs:
   # Full `Pkg.test()` stays Linux-only. Darwin and WSL controllers are
-  # schedule / dispatch SSH E2E (`E2E / macOS → Linux (schedule / dispatch)`,
-  # `E2E / WSL2 → Linux (schedule / dispatch)`). PRs run `E2E / Linux → Linux`.
+  # schedule / dispatch SSH E2E (`E2E / macOS → Linux - schedule`, etc.).
+  # PRs run `E2E / Linux → Linux`.
   # Root-markdown PRs still run this job (required check names) but skip the suite.
   filter:
-    name: filter
+    name: paths
     runs-on: ubuntu-latest
     timeout-minutes: 3
     outputs:
@@ -36,7 +36,7 @@ jobs:
     needs: filter
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    name: Pkg.test Julia ${{ matrix.minor }}
+    name: Pkg.test - Julia ${{ matrix.minor }}
     strategy:
       fail-fast: false
       matrix:
