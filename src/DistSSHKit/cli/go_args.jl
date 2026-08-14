@@ -54,7 +54,10 @@ function show_go_usage(; io::IO=stdout)
     )
 end
 
-function _go_set_sync!(current, next)
+function _go_set_sync!(
+    current::Union{Nothing,Symbol,Bool},
+    next::Union{Symbol,Bool},
+)
     return _kit_set_sync_mode!(current, next; source="go")
 end
 
@@ -68,7 +71,7 @@ function parse_go_args(args::AbstractVector{<:AbstractString})
     output_dir = nothing
     julia_exe = nothing
     # nothing → go! default (false); :sync / :rsync / false (= skip)
-    sync = nothing
+    sync::Union{Nothing,Symbol,Bool} = nothing
     c = CliCursor(collect(String, rest))
     while !cli_at_end(c)
         arg = cli_current(c)::String

@@ -9,14 +9,16 @@ license = "MIT"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
-Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 
 [compat]
 Dates = "1.10"
-Pkg = "1.10"
-julia = "1.10"
 Distributed = "1.10"
+Pkg = "1.10"
+TOML = "1"
+julia = "1.10"
 
 [workspace]
 projects = ["test", "docs"]
