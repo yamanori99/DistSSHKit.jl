@@ -10,22 +10,28 @@ outputs:
 runs:
   using: composite
   steps:
+    # Default predicate is `some`: `**` matches README.md and `!README.md` is
+    # ignored. `some-with-excludes` applies the `!` patterns (dorny/paths-filter).
     - uses: dorny/paths-filter@v3
       if: github.event_name == 'pull_request'
       id: filter
       with:
+        predicate-quantifier: some-with-excludes
         filters: |
           heavy:
             - "**"
-            - "!CONTRIBUTING.md"
-            - "!README.md"
-            - "!SECURITY.md"
+            - "!*.md"
             - "!LICENSE"
+            - "!.github/**/*.md"
     - id: out
       shell: bash
+      env:
+        HEAVY: ${{ steps.filter.outputs.heavy }}
       run: |
         if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
           echo "heavy=true" >> "$GITHUB_OUTPUT"
+          echo "non-PR: heavy=true"
         else
-          echo "heavy=${{ steps.filter.outputs.heavy }}" >> "$GITHUB_OUTPUT"
+          echo "heavy=${HEAVY}" >> "$GITHUB_OUTPUT"
+          echo "PR: heavy=${HEAVY}"
         fi
