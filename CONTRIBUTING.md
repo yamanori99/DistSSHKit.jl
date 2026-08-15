@@ -49,7 +49,9 @@ CI (fast on every PR, slow OS on a timer):
 
 Optional: [`.github/jetls-check.sh`](.github/jetls-check.sh) ([JETLS](https://github.com/aviatesk/JETLS.jl); same files as CI, fails on hint+). CI uses `aviatesk/JETLS.jl/.github/actions/check@release` on Julia 1.12 and 1.13 — that tag moves, so after a JETLS CLI/action bump re-read [`cli-check`](https://aviatesk.github.io/JETLS.jl/dev/cli-check/) and confirm `--exit-severity=hint` still fails on hint+ and that hints still print (`--show-severity` defaults to `hint` today; the script does not pin it). Docs (`julia --project=docs -e 'using Pkg; Pkg.instantiate()'` then `julia --project=docs --color=yes docs/make.jl`), logo bake (`julia docs/src/assets/bake.jl`, plus `--png` / `--gif`), [gitleaks](https://github.com/gitleaks/gitleaks) (`gitleaks detect --source .`).
 
-Language Server `IncorrectCallArgs` is not CI (JETLS is). Do not add `.vscode/settings.json` to silence it.
+Language Server `IncorrectCallArgs` is not CI (JETLS is). `.vscode/settings.json` is gitignored; do not commit it to silence the LS.
+
+Optional: [Fatou](https://fatou.dev) (formatter / lint / LSP locally; no Julia runtime). Not CI — JETLS stays the gate. Style and parser are still moving; after a Fatou bump, check it did not rewrite files you did not mean to touch. Do not add `fatou.toml` or Fatou to `.vscode/extensions.json`.
 
 ## Workflow
 

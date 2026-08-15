@@ -26,6 +26,7 @@ test/artifacts/ssh-e2e/
 .DS_Store
 Thumbs.db
 *~
+.vscode/settings.json
 
 # Secrets / local tooling (defense in depth; testenv also ignores mounted-keys)
 .env
