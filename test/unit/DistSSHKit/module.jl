@@ -1,8 +1,8 @@
 using Test
 
 @testset "DistSSHKit module" begin
-    _with_tempdir() do tmp::String
-        d = abspath(string(tmp))
+    _with_tempdir() do tmp
+        d = tmp
         @test DistSSHKit._project_toml_version(joinpath(d, "Project.toml")) === nothing
         write(joinpath(d, "Project.toml"), "name = \"Foo\"\n")
         @test DistSSHKit._project_toml_version(joinpath(d, "Project.toml")) === nothing
@@ -28,7 +28,7 @@ using Test
             end
         end
 
-        _with_tempdir() do tmp::String
+        _with_tempdir() do tmp
             mktemp() do args_file, _
                 withenv(
                     "DISTRIBUTED_PROJECT_ROOT" => nothing,

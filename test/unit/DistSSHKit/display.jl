@@ -2,7 +2,7 @@ using Test
 
 @testset "display" begin
     @testset "paths" begin
-        _with_tempdir() do tmp::String
+        _with_tempdir() do tmp
             rel = joinpath(tmp, "nested")
             mkpath(rel)
             @test DistSSHKit.canonical_local_path(rel) == abspath(rel)
@@ -14,8 +14,8 @@ using Test
             @test DistSSHKit.short_path(joinpath(home, "foo", "bar")) == joinpath("~", "foo", "bar")
         end
 
-        _with_tempdir() do tmp::String
-            d = abspath(string(tmp))
+        _with_tempdir() do tmp
+            d = tmp
             nested = joinpath(d, "a", "b.txt")
             mkpath(dirname(nested))
             write(nested, "")
@@ -26,8 +26,8 @@ using Test
     @testset "project layout" begin
         # Standalone kit vs host-app embedding (the two layouts that matter).
         withenv("DISTRIBUTED_PROJECT_ROOT" => nothing) do
-        _with_tempdir() do tmp::String
-            d = abspath(string(tmp))
+        _with_tempdir() do tmp
+            d = tmp
             write(joinpath(d, "Project.toml"), "name = \"DistSSHKit\"\n")
             src = joinpath(d, "src")
             mkpath(src)
@@ -41,8 +41,8 @@ using Test
         withenv("DISTRIBUTED_PROJECT_ROOT" => "/override/root") do
             @test DistSSHKit.cli_project_root("/unused") == "/override/root"
         end
-        _with_tempdir() do tmp::String
-            d = abspath(string(tmp))
+        _with_tempdir() do tmp
+            d = tmp
             app = joinpath(d, "MyApp")
             kit = joinpath(app, "DistSSHKit")
             scripts = joinpath(app, "scripts", "jobs")
@@ -54,15 +54,15 @@ using Test
             @test DistSSHKit.cli_project_root(joinpath(kit, "src")) == app
             @test DistSSHKit.resolve_pkg_project_dir(scripts) == app
         end
-        _with_tempdir() do tmp::String
-            d = abspath(string(tmp))
+        _with_tempdir() do tmp
+            d = tmp
             @test DistSSHKit.project_package_name(d) === nothing
             write(joinpath(d, "Project.toml"), "name = \"FooBar\"\n")
             @test DistSSHKit.project_package_name(d) == "FooBar"
         end
         # Loaded DistSSHKit is not the host Project.toml (Pkg.add / apps).
-        _with_tempdir() do tmp::String
-            d = abspath(string(tmp))
+        _with_tempdir() do tmp
+            d = tmp
             pkg = joinpath(d, "packages", "DistSSHKit", "XXXX")
             mkpath(joinpath(pkg, "src"))
             write(joinpath(pkg, "Project.toml"), "name = \"DistSSHKit\"\n")
@@ -114,7 +114,7 @@ using Test
         end
 
         @testset "writeln_both: verbose terminal, quiet log-only" begin
-            _with_tempdir() do tmp::String
+            _with_tempdir() do tmp
                 with_kit_verbosity(:quiet) do
                     out, _ = _capture_stdio() do _, _
                         DistSSHKit.init_log_file(tmp; prefix="gate_quiet")
@@ -136,7 +136,7 @@ using Test
         end
 
         @testset "quiet keeps kit log" begin
-            _with_tempdir() do tmp::String
+            _with_tempdir() do tmp
                 with_kit_verbosity(:quiet) do
                     out, log_path = _capture_stdio() do _, _
                         path = DistSSHKit.init_log_file(tmp; prefix="quiet_test")
@@ -156,7 +156,7 @@ using Test
         end
 
         @testset "progress keeps kit log, suppresses detail" begin
-            _with_tempdir() do tmp::String
+            _with_tempdir() do tmp
                 with_kit_verbosity(:progress) do
                     @test DistSSHKit.kit_output_progress()
                     @test !DistSSHKit.kit_output_detail()
@@ -207,7 +207,7 @@ using Test
                 end
             end
 
-            _with_tempdir() do tmp::String
+            _with_tempdir() do tmp
                 with_kit_verbosity(:progress) do
                     log_path = DistSSHKit.init_log_file(tmp; prefix="progress_bar")
                     redirect_stdout(devnull) do
@@ -227,7 +227,7 @@ using Test
                 end
             end
 
-            _with_tempdir() do tmp::String
+            _with_tempdir() do tmp
                 with_kit_verbosity(:progress) do
                     log_path = DistSSHKit.init_log_file(tmp; prefix="progress_items")
                     redirect_stdout(devnull) do

@@ -10,7 +10,7 @@ using Test
     pipe_script = joinpath(kit_root, "demos", "without_kit", "pipeline_pi.jl")
     env = _child_julia_env()
 
-    _with_tempdir() do tmp::String
+    _with_tempdir() do tmp
         solo_echo_proc, solo_echo_out = _run_subprocess(setenv(
             Cmd([julia, "--startup-file=no", "--project=$kit_root", echo, "4"]),
             env,
@@ -47,7 +47,8 @@ using Test
         _assert_proc_ok(go_file_proc, go_file_out; label="pi_file go")
         file_batch = _ssh_e2e_latest_go_batch(tmp)
         @test file_batch !== nothing
-        @test read(joinpath(file_batch::String, "local", "pi_results.txt"), String) == solo_body
+        file_batch === nothing && error("expected go batch for pi_file")
+        @test read(joinpath(file_batch, "local", "pi_results.txt"), String) == solo_body
 
         pipe_proc, pipe_out = _run_subprocess(setenv(
             Cmd(Cmd([julia, "--startup-file=no", "--project=$kit_root", pipe_script, "4"]); dir=tmp),
@@ -57,8 +58,9 @@ using Test
         @test occursin("pipeline ok", pipe_out)
         pipe_batch = _ssh_e2e_latest_go_batch(tmp)
         @test pipe_batch !== nothing
-        a = read(joinpath(pipe_batch::String, "local-1", "pi_results.txt"), String)
-        b = read(joinpath(pipe_batch::String, "local-2", "pi_results.txt"), String)
+        pipe_batch === nothing && error("expected go batch for pipeline_pi")
+        a = read(joinpath(pipe_batch, "local-1", "pi_results.txt"), String)
+        b = read(joinpath(pipe_batch, "local-2", "pi_results.txt"), String)
         @test occursin("pi=", a)
         @test a == b
     end

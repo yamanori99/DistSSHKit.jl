@@ -4,7 +4,7 @@ using Test
 
 @testset "setup hosts safety" begin
     function _with_fake_remotes(f::Function; extra_env=Dict{String,String}())
-        _with_tempdir() do state_dir::String
+        _with_tempdir() do state_dir
             withenv(merge(_fake_setup_remote_env(state_dir), extra_env)...) do
                 _apply_quiet_setup_session!()
                 return f(state_dir)

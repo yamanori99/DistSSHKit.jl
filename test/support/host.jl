@@ -2,11 +2,12 @@ if !isdefined(Main, :_write_host_project!)
 
 """Write a minimal loadable host package (`Project.toml` + `src/Name.jl`)."""
 function _write_host_project!(
-    proj::String,
+    proj,
     name::String;
     uuid::Union{Nothing,String}=nothing,
     extra_toml::String="",
 )
+    proj = abspath(string(proj))
     uuid_line = uuid === nothing ? "" : "uuid = \"$(uuid)\"\n"
     write(
         joinpath(proj, "Project.toml"),
@@ -18,25 +19,21 @@ function _write_host_project!(
     return nothing
 end
 
-"""Isolated temp directory removed after `f(path::String)` returns."""
+"""Isolated temp directory removed after `f(path)` returns."""
 function _with_tempdir(f::Function)
-    path::String = abspath(String(mktempdir()))
+    path = abspath(string(mktempdir()))
     try
-        return _invoke_tempdir(f, path)
+        return f(path)
     finally
         rm(path; recursive=true, force=true)
     end
 end
 
-_invoke_tempdir(f::Function, path::String) = f(path)
-
 function _mktemp_host(f::Function)
-    return _with_tempdir() do path::String
-        return _invoke_mktemp_host(f, abspath(path))
+    return _with_tempdir() do path
+        f(path)
     end
 end
-
-_invoke_mktemp_host(f::Function, path::String) = f(path)
 
 function _develop_kit!(host_project::String; kit_root::String=_kit_root(), julia::String=_julia_exe())
     cmd = setenv(

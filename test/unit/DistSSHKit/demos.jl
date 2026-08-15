@@ -12,11 +12,11 @@ using Test
     @test DistSSHKit.demo_script("square_file") !== nothing
     @test DistSSHKit.demo_script("no_such_demo") === nothing
 
-    _with_tempdir() do tmp::String
+    _with_tempdir() do tmp
         missing_kit = joinpath(tmp, "demos", "with_kit", "square_file.jl")
         diag = DistSSHKit.diagnose_missing_script(missing_kit, tmp)
         @test diag !== nothing
-        diag = something(diag)
+        diag === nothing && error("diagnose_missing_script returned nothing")
         @test diag.kind === :install_bundled
         @test occursin("demo install", DistSSHKit.explain_missing_script_hint(diag; surface=:cli))
         @test occursin(
@@ -50,7 +50,7 @@ using Test
         @test DistSSHKit.join_explained_message("head", "Hint: x") == "head\nHint: x"
     end
 
-    _with_tempdir() do tmp::String
+    _with_tempdir() do tmp
         result = DistSSHKit.install_demos(tmp)
         @test length(result.installed) == length(DistSSHKit.list_demos())
         @test isempty(result.skipped)
