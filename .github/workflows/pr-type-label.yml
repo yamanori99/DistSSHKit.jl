@@ -1,6 +1,7 @@
 # Require a type label on every PR: bug | enhancement | breaking | chore.
 # If missing: unique type on a closing issue (`Fixes #N`) first, else branch prefix
 # (`feat/` → enhancement, `fix/` → bug, …). Dependabot is exempt (`dependencies`).
+# Also add `breaking` when Project.toml version is a cut (0.x.y bump x, or major ≥ 1).
 name: Type
 
 on:
@@ -44,24 +45,24 @@ jobs:
             let found = labels.filter((name) => requiredSet.has(name));
             if (found.length > 0) {
               core.info(`Type label(s): ${found.join(", ")}`);
-              return;
-            }
-
-            const fromIssue = await typeFromClosingIssues(n);
-            const branch = String(context.payload.pull_request.head.ref || "");
-            const inferred = fromIssue !== null ? fromIssue : inferType(branch);
-
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: n,
-              labels: [inferred],
-            });
-            if (fromIssue !== null) {
-              core.info(`Applied type label "${inferred}" from a closing issue`);
             } else {
-              core.info(`Applied type label "${inferred}" from branch "${branch}"`);
+              const fromIssue = await typeFromClosingIssues(n);
+              const branch = String(context.payload.pull_request.head.ref || "");
+              const inferred = fromIssue !== null ? fromIssue : inferType(branch);
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: n,
+                labels: [inferred],
+              });
+              if (fromIssue !== null) {
+                core.info(`Applied type label "${inferred}" from a closing issue`);
+              } else {
+                core.info(`Applied type label "${inferred}" from branch "${branch}"`);
+              }
             }
+
+            await applyBreakingIfVersionCut(labels);
 
             async function typeFromClosingIssues(num) {
               const query = `query($owner: String!, $name: String!, $n: Int!) {
@@ -92,6 +93,71 @@ jobs:
                 return [...types][0];
               }
               return null;
+            }
+
+            async function applyBreakingIfVersionCut(existing) {
+              if (existing.includes("breaking")) {
+                core.info("breaking already present");
+                return;
+              }
+              const base = context.payload.pull_request.base.sha;
+              const head = context.payload.pull_request.head.sha;
+              const oldV = await versionAt(base);
+              const newV = await versionAt(head);
+              if (!isVersionCut(oldV, newV)) {
+                core.info(
+                  `No version cut (${fmtVer(oldV)} → ${fmtVer(newV)})`,
+                );
+                return;
+              }
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: n,
+                labels: ["breaking"],
+              });
+              core.info(
+                `Applied breaking (${fmtVer(oldV)} → ${fmtVer(newV)})`,
+              );
+            }
+
+            async function versionAt(ref) {
+              try {
+                const { data } = await github.rest.repos.getContent({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  path: "Project.toml",
+                  ref,
+                });
+                if (data.encoding !== "base64" || typeof data.content !== "string") {
+                  return null;
+                }
+                const text = Buffer.from(data.content, "base64").toString("utf8");
+                const m = text.match(/^version\s*=\s*"([^"]+)"/m);
+                return m ? parseVer(m[1]) : null;
+              } catch (err) {
+                core.info(`Project.toml at ${ref}: ${err.message}`);
+                return null;
+              }
+            }
+
+            function parseVer(s) {
+              const m = String(s).match(/^(\d+)\.(\d+)\.(\d+)/);
+              if (!m) return null;
+              return { major: Number(m[1]), minor: Number(m[2]), patch: Number(m[3]) };
+            }
+
+            function fmtVer(v) {
+              return v ? `${v.major}.${v.minor}.${v.patch}` : "?";
+            }
+
+            function isVersionCut(oldV, newV) {
+              if (!oldV || !newV) return false;
+              if (newV.major > oldV.major) return true;
+              if (oldV.major === 0 && newV.major === 0 && newV.minor > oldV.minor) {
+                return true;
+              }
+              return false;
             }
 
             function inferType(ref) {

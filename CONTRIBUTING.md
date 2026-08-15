@@ -87,7 +87,7 @@ Path labels come from generated `.github/labeler.yml`:
 
 Every PR needs **one** type label. CI infers, in order: a unique `bug` / `enhancement` / `chore` on a closing issue (`Fixes #N`); else the branch prefix (`feat/`/`feature/` → `enhancement`; `fix/`/`bug/`/`hotfix/` → `bug`; `breaking/`/`break/` → `breaking`; `chore/`/`docs/`/`ci/`/`build/`/`test/`/`refactor/` and anything else → `chore`). `fix/` plus `Fixes` an enhancement issue gets `enhancement`. Override with `gh pr edit N --add-label …`. Unknown prefixes do not fail the check.
 
-`breaking` may combine with `bug` / `enhancement` / `chore`. It flags a version cut (`0.x.y` bump `x`, or major after `1.0`); the `Project.toml` bump is a separate decision.
+`breaking` may combine with `bug` / `enhancement` / `chore`. It flags a version cut (`0.x.y` bump `x`, or major after `1.0`); the `Project.toml` bump is still a separate commit when you choose. CI also adds `breaking` when the PR's `Project.toml` `version` is that cut (not a `y` patch, not an unrelated `Project.toml` edit).
 
 Dependabot is exempt from the type-label check (`dependencies` only; path labels like `ci` still apply). Do not add type labels there.
 
