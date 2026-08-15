@@ -26,6 +26,7 @@ runs:
             - "!NEWS.md"
             - "!SECURITY.md"
             - "!LICENSE"
+            - "!.gitignore"
             - "!.github/pull_request_template.md"
     - id: out
       shell: bash
