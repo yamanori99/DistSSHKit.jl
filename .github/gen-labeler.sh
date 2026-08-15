@@ -3,6 +3,7 @@
 #
 # Convention:
 #   - each directory under src/cli/<area>/ → area:<area>
+#   - src/DistSSHKit/argv/<area>* → same area (drive_args.jl, size_report.jl, …)
 #   - kit modules explain / demos → area:explain, area:demos (path auto)
 #   - product docs → docs (docs/**, README.md, demos markdown — not CONTRIBUTING)
 #   - .github/** → ci
@@ -63,6 +64,7 @@ EOF
       - any-glob-to-any-file:
           - "src/DistSSHKit/${area}/**"
           - "src/DistSSHKit/${area}.*"
+          - "src/DistSSHKit/argv/${area}*"
           - "src/cli/${area}/**"
           - "src/cli/${area}.*"
           - "test/**/${area}/**"

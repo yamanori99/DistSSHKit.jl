@@ -3,7 +3,7 @@ DistSSHKit — local + SSH Julia runs (`go` / `drive` / `setup`) and a small API
 (`go!`, `drive!`, `pipeline!`, …).
 
 Package entry: exports, version, `include`s, `main` (`@main` on Julia 1.12+).
-CLI lives under `src/cli/`.
+CLI entries live under `src/cli/`; argv parsers under `src/DistSSHKit/argv/`.
 """
 module DistSSHKit
 
@@ -50,8 +50,8 @@ export drive
 
 include("DistSSHKit/display.jl")
 include("DistSSHKit/explain.jl")
-include("DistSSHKit/cli/args.jl")
-include("DistSSHKit/cli/session.jl")
+include("DistSSHKit/argv/args.jl")
+include("DistSSHKit/argv/session.jl")
 include("DistSSHKit/hosts.jl")
 include("DistSSHKit/remote.jl")
 include("DistSSHKit/demos.jl")
@@ -59,12 +59,12 @@ include("DistSSHKit/distributed.jl")
 include("DistSSHKit/drive/types.jl")
 include("DistSSHKit/size/measure.jl")
 include("DistSSHKit/setup.jl")
-include("DistSSHKit/cli/drive_args.jl")
-include("DistSSHKit/cli/go_args.jl")
-include("DistSSHKit/cli/setup_args.jl")
-include("DistSSHKit/cli/size_args.jl")
+include("DistSSHKit/argv/drive_args.jl")
+include("DistSSHKit/argv/go_args.jl")
+include("DistSSHKit/argv/setup_args.jl")
+include("DistSSHKit/argv/size_args.jl")
 include("DistSSHKit/drive.jl")
-include("DistSSHKit/cli/size_report.jl")
+include("DistSSHKit/argv/size_report.jl")
 include("DistSSHKit/go.jl")
 
 const _KIT_ROOT = dirname(@__DIR__)

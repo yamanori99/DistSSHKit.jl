@@ -31,7 +31,7 @@ test/
 ```text
 unit/
   DistSSHKit/          # ↔ src/DistSSHKit/ (module API + setup cores + argv parsers)
-    cli/               # ↔ DistSSHKit/cli/
+    argv/              # ↔ DistSSHKit/argv/
     setup/             # ↔ DistSSHKit/setup/
   cli/                 # ↔ src/cli/ (CLI entry wiring: using_guard, setup exit)
     drive/, go/, setup/, size/   # argv / help tests call DistSSHKit.parse_*
@@ -101,7 +101,7 @@ open "$(cat test/artifacts/ssh-e2e/LATEST)/SUMMARY.txt"
 rm -rf test/artifacts/ssh-e2e
 ```
 
-Kit CLI flags (drive / go / setup / size) also honor `DISTSSHKIT_QUIET`, `DISTSSHKIT_PROGRESS`, `DISTSSHKIT_VERBOSE`, `DISTSSHKIT_YES`, `DISTSSHKIT_HOSTS`, and `DISTSSHKIT_HOSTS_FILE`; see `src/DistSSHKit/cli/session.jl`.
+Kit CLI flags (drive / go / setup / size) also honor `DISTSSHKIT_QUIET`, `DISTSSHKIT_PROGRESS`, `DISTSSHKIT_VERBOSE`, `DISTSSHKIT_YES`, `DISTSSHKIT_HOSTS`, and `DISTSSHKIT_HOSTS_FILE`; see `src/DistSSHKit/argv/session.jl`.
 
 ## Adding tests
 
