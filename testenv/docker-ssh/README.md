@@ -9,7 +9,7 @@ Real OpenSSH + rsync Linux workers. CI remote SSH coverage uses this stack
 
 | Controller | Worker | Where |
 | --- | --- | --- |
-| Linux (`ubuntu-latest`) | `ubuntu:24.04` ×2 | **CI** — PR and main — `E2E / ubuntu-latest → ubuntu-24.04` |
+| Linux (`ubuntu-latest`) | `ubuntu:24.04` ×2 | **CI** — PR / main (`E2E`) and daily (`E2E daily / ubuntu-latest → ubuntu-24.04`) |
 | macOS Intel (`macos-15-intel` + Colima) | same image | **CI daily** — `E2E daily / macos-15-intel → ubuntu-24.04` |
 | WSL2 (`windows-latest`) | same image | **CI daily** — `E2E daily / windows-latest (WSL2) → ubuntu-24.04` |
 | Either | `local:N` | Mixed smoke inside the same suite |
@@ -85,15 +85,16 @@ ssh -F .generated/ssh_config distsshkit-w1 'echo ok; julia --version'
 (`E2E / ubuntu-latest → ubuntu-24.04`).
 [`.github/workflows/ssh-e2e-daily.yml`](../../.github/workflows/ssh-e2e-daily.yml)
 (`E2E daily`) runs at 04:00 JST or via Run workflow: bake
-`ubuntu-latest (image)` to GHCR, then `macos-15-intel` and
-`windows-latest (WSL2)` pull that tag.
+`ubuntu-latest (image)` to GHCR, then `ubuntu-latest`, `macos-15-intel`, and
+`windows-latest (WSL2)` pull that tag and run the suite. Daily Linux is the
+same suite as PR E2E, on the timer, not a PR check.
 
-macOS and WSL pull `ghcr.io/<owner>/distsshkit-linux-ssh-worker:<sha>` (retry
-until the image job has pushed) instead of building Julia-in-Docker on Colima /
-WSL `dockerd`. The same job also pushes `:latest` for local pull. The package
-is meant to be **public** (one-time: package Settings → Change visibility).
-Local `./scripts/up.sh` still builds unless you set `DISTSSHKIT_WORKER_IMAGE`.
-Colima on Intel runners uses `--cpu 3 --memory 8` so the Darwin controller
-keeps RAM.
+Those controller jobs pull `ghcr.io/<owner>/distsshkit-linux-ssh-worker:<sha>`
+(retry until the image job has pushed) instead of building Julia-in-Docker on
+Colima / WSL `dockerd`. After the daily Linux suite, `:latest` is pushed for
+local pull. The package is meant to be **public** (one-time: package Settings →
+Change visibility). Local `./scripts/up.sh` still builds unless you set
+`DISTSSHKIT_WORKER_IMAGE`. Colima on Intel runners uses `--cpu 3 --memory 8`
+so the Darwin controller keeps RAM.
 
 Usual `Pkg.test()` does **not** start Docker and does **not** run this suite.

@@ -6,7 +6,7 @@ How to work on this repository. Users: [Documenter](https://yamanori99.github.io
 
 - macOS / Linux / WSL2 Ubuntu (not native Windows; the kit shells out to `ssh` / `rsync` / POSIX tools)
 - Julia **1.10+** for the library and `Pkg.test()`; **1.12+** for `julia -m DistSSHKit` and docs (`~1.13.0-0` when available). Prefer [juliaup](https://github.com/JuliaLang/juliaup); details in [Requirements](https://yamanori99.github.io/DistSSHKit.jl/dev/requirements/).
-- SSH work: Git, OpenSSH, rsync. Match **major.minor** with remotes (CI E2E workers are 1.12). Daily / Run workflow: `E2E daily` (`macos-15-intel` / WSL2 → `ubuntu-24.04`)
+- SSH work: Git, OpenSSH, rsync. Match **major.minor** with remotes (CI E2E workers are 1.12). Daily / Run workflow: `E2E daily` (`ubuntu-latest` / `macos-15-intel` / WSL2 → `ubuntu-24.04`)
 
 ## Setup
 
@@ -44,7 +44,7 @@ SSH / sync / worker changes: [`testenv/docker-ssh/scripts/up.sh --e2e`](testenv/
 CI (fast on every PR, slow OS on a timer):
 
 - **PR / `main`:** `Test / Pkg.test - Julia * - ubuntu-latest`, `Lint / JETLS - Julia * - ubuntu-latest`, `Docs / Documenter - Julia 1.12 - ubuntu-latest`, `Scan / Gitleaks`. PRs that only touch `README.md`, `CONTRIBUTING.md`, `NEWS.md`, `SECURITY.md`, `LICENSE`, or `.github/pull_request_template.md` skip Pkg.test / JETLS / Documenter (Skipped, not a green pass; required checks still succeed). A new root markdown file is heavy until it is added to [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml). `docs/src` still runs Documenter (and Pkg.test / JETLS). `E2E / ubuntu-latest → ubuntu-24.04` is skipped unless `src/`, `test/`, `demos/`, `testenv/`, `Project.toml`, or the E2E workflow change.
-- **Daily 04:00 JST / Run workflow `E2E daily`:** `ubuntu-latest (image)`, `macos-15-intel → ubuntu-24.04`, `windows-latest (WSL2) → ubuntu-24.04`. Not a PR check. A failed run opens (or comments on) an Issue titled `E2E daily failed` (`ci`); a later green run closes it. README badge tracks `main`.
+- **Daily 04:00 JST / Run workflow `E2E daily`:** `ubuntu-latest (image)`, `ubuntu-latest → ubuntu-24.04`, `macos-15-intel → ubuntu-24.04`, `windows-latest (WSL2) → ubuntu-24.04`. Not a PR check (PR Linux E2E stays on `E2E`). A failed run opens (or comments on) an Issue titled `E2E daily failed` (`ci`); a later green run closes it. README badge tracks `main`.
 - **Assets path:** `Assets / bake SVG`.
 
 Optional: [`.github/jetls-check.sh`](.github/jetls-check.sh) ([JETLS](https://github.com/aviatesk/JETLS.jl); same files as CI, fails on hint+). CI uses `aviatesk/JETLS.jl/.github/actions/check@release` on Julia 1.12 and 1.13. Docs (`julia --project=docs -e 'using Pkg; Pkg.instantiate()'` then `julia --project=docs --color=yes docs/make.jl`), logo bake (`julia docs/src/assets/bake.jl`, plus `--png` / `--gif`), [gitleaks](https://github.com/gitleaks/gitleaks) (`gitleaks detect --source .`).
