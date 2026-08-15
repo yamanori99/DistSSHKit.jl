@@ -7,7 +7,7 @@ using Test
     fixture = _fixture("drive_local_smoke.jl")
     @test isfile(fixture)
 
-    _mktemp_host() do proj::String
+    _mktemp_host() do proj
         _write_host_project!(proj, "SmokeAddApp")
         script = joinpath(proj, "job.jl")
         cp(fixture, script; force=true)

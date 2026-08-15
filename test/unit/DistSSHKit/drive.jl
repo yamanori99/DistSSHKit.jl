@@ -20,7 +20,7 @@ using Test
     end
 
     @testset "KitSession" begin
-        _with_tempdir() do tmp::String
+        _with_tempdir() do tmp
             withenv("DISTSSHKIT_HOSTS_FILE" => "") do
                 session = DistSSHKit.KitSession(project=tmp, workers=["host-a", "host-b:4"])
                 @test session.project == abspath(tmp)
@@ -51,7 +51,7 @@ using Test
     end
 
     @testset "apply_session_env!" begin
-        _with_tempdir() do tmp::String
+        _with_tempdir() do tmp
             session = DistSSHKit.KitSession(
                 project=tmp,
                 workers=["host-a"],
@@ -107,7 +107,7 @@ using Test
         @test DistSSHKit.resolve_pipeline_sync(local_cfg, local_session) === false
         @test !DistSSHKit.resolve_pipeline_collect(local_cfg, local_session)
 
-        _with_tempdir() do tmp::String
+        _with_tempdir() do tmp
             driver = joinpath(tmp, "job.jl")
             write(driver, "")
             od = joinpath(tmp, "my_out")
@@ -141,7 +141,7 @@ using Test
     end
 
     @testset "drive_parsed_from_session sync / parity" begin
-        _with_tempdir() do tmp::String
+        _with_tempdir() do tmp
             script = joinpath(tmp, "job.jl")
             write(script, "")
             session = DistSSHKit.KitSession(project=tmp, workers=["host-a"])
@@ -190,14 +190,14 @@ using Test
     end
 
     @testset "instantiate! requires SSH hosts" begin
-        _with_tempdir() do tmp::String
+        _with_tempdir() do tmp
             session = DistSSHKit.KitSession(project=tmp, workers=["local:2"])
             @test_throws ArgumentError DistSSHKit.instantiate!(session)
         end
     end
 
     @testset "collect! requires hosts" begin
-        _with_tempdir() do tmp::String
+        _with_tempdir() do tmp
             session = DistSSHKit.KitSession(project=tmp, workers=["local:2"])
             err = try
                 DistSSHKit.collect!(session, joinpath(tmp, "out"))
@@ -234,7 +234,7 @@ using Test
     end
 
     @testset "pipeline! missing driver surfaces" begin
-        _with_tempdir() do tmp::String
+        _with_tempdir() do tmp
             missing = joinpath(tmp, "demos", "with_kit", "rho_sweep.jl")
             cfg = DistSSHKit.PipelineConfig(project=tmp, driver=missing, workers=String[])
             err = try

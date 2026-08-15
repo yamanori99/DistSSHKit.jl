@@ -10,7 +10,7 @@ function _run_kit_setup(;
     setup_args::Vector{String},
     kit_root::String=_kit_root(),
     julia::String=_julia_exe(),
-    project_root::Union{Nothing,String}=nothing,
+    project_root=nothing,
     extra_env::Dict{String,String}=Dict{String,String}(),
 )
     function _run(proj::String)
@@ -23,19 +23,19 @@ function _run_kit_setup(;
         return _run_subprocess(setenv(cmd, env))
     end
     if project_root !== nothing
-        return _run(abspath(project_root))
+        return _run(abspath(string(project_root)))
     end
-    return _with_tempdir() do proj::String
+    return _with_tempdir() do proj
         _write_host_project!(proj, "SetupCliHost")
-        return _run(abspath(proj))
+        return _run(abspath(string(proj)))
     end
 end
 
-function _fake_setup_remote_env(state_dir::String)::Dict{String,String}
+function _fake_setup_remote_env(state_dir)::Dict{String,String}
     return Dict{String,String}(
         "DISTSSHKIT_TEST_SSH" => _fixture("fake_setup_ssh.jl"),
         "DISTSSHKIT_TEST_RSYNC" => _fixture("fake_setup_rsync.jl"),
-        "DISTSSHKIT_TEST_STATE_ROOT" => abspath(state_dir),
+        "DISTSSHKIT_TEST_STATE_ROOT" => abspath(string(state_dir)),
         "DISTSSHKIT_YES" => "1",
     )
 end
@@ -76,7 +76,7 @@ function _run_kit_go(;
     script_args::Vector{String}=String[],
     kit_root::String=_kit_root(),
     julia::String=_julia_exe(),
-    project_root::Union{Nothing,String}=nothing,
+    project_root=nothing,
     go_flags::Vector{String}=String[],
     extra_env::Dict{String,String}=Dict{String,String}(),
 )
@@ -94,11 +94,11 @@ function _run_kit_go(;
         return _run_subprocess(setenv(cmd, env))
     end
     if project_root !== nothing
-        return _run(abspath(project_root))
+        return _run(abspath(string(project_root)))
     end
-    return _with_tempdir() do proj::String
+    return _with_tempdir() do proj
         _write_host_project!(proj, "GoCliHost")
-        return _run(abspath(proj))
+        return _run(abspath(string(proj)))
     end
 end
 
@@ -110,7 +110,7 @@ function _run_kit_size(;
     size_args::Vector{String},
     kit_root::String=_kit_root(),
     julia::String=_julia_exe(),
-    project_root::Union{Nothing,String}=nothing,
+    project_root=nothing,
     extra_env::Dict{String,String}=Dict{String,String}(),
 )
     function _run(proj::String)
@@ -123,11 +123,11 @@ function _run_kit_size(;
         return _run_subprocess(setenv(cmd, env))
     end
     if project_root !== nothing
-        return _run(abspath(project_root))
+        return _run(abspath(string(project_root)))
     end
-    return _with_tempdir() do proj::String
+    return _with_tempdir() do proj
         _write_host_project!(proj, "SizeCliHost")
-        return _run(abspath(proj))
+        return _run(abspath(string(proj)))
     end
 end
 

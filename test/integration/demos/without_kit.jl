@@ -10,7 +10,7 @@ using Test
     pipe_script = joinpath(kit_root, "demos", "without_kit", "pipeline_pi.jl")
     env = _child_julia_env()
 
-    _with_tempdir() do tmp::String
+    _with_tempdir() do tmp
         solo_echo_proc, solo_echo_out = _run_subprocess(setenv(
             Cmd([julia, "--startup-file=no", "--project=$kit_root", echo, "4"]),
             env,

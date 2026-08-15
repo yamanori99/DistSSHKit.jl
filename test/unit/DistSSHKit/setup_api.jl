@@ -2,7 +2,7 @@ using Test
 
 @testset "setup!" begin
     function _with_fake_remotes(f::Function)
-        _with_tempdir() do state_dir::String
+        _with_tempdir() do state_dir
             old_proj = get(ENV, "DISTRIBUTED_PROJECT_ROOT", nothing)
             old_remote = get(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT", nothing)
             try
@@ -27,7 +27,7 @@ using Test
 
     @testset "delete + multi-mode" begin
         _with_fake_remotes() do state_dir
-            _with_tempdir() do proj::String
+            _with_tempdir() do proj
                 host = "host1"
                 slot = replace(host, r"[@:/]" => "_")
                 tree = joinpath(state_dir, slot, "tree")
@@ -60,7 +60,7 @@ using Test
 
     @testset "multi-mode stops after rsync refuse" begin
         _with_fake_remotes() do state_dir
-            _with_tempdir() do proj::String
+            _with_tempdir() do proj
                 write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\n")
                 host = "host1"
                 slot = replace(host, r"[@:/]" => "_")
@@ -86,7 +86,7 @@ using Test
 
     @testset "instantiate preflight miss" begin
         _with_fake_remotes() do _
-            _with_tempdir() do proj::String
+            _with_tempdir() do proj
                 session = DistSSHKit.KitSession(
                     project=proj,
                     workers=["host1"],
@@ -103,7 +103,7 @@ using Test
     end
 
     @testset "clone requires repo=" begin
-        _with_tempdir() do proj::String
+        _with_tempdir() do proj
             session = DistSSHKit.KitSession(
                 project=proj,
                 workers=["host1"],
@@ -115,7 +115,7 @@ using Test
         end
 
         _with_fake_remotes() do _
-            _with_tempdir() do proj::String
+            _with_tempdir() do proj
                 session = DistSSHKit.KitSession(
                     project=proj,
                     workers=["host1"],
@@ -132,7 +132,7 @@ using Test
 
     @testset "check + cleanup + bad mode" begin
         _with_fake_remotes() do _
-            _with_tempdir() do proj::String
+            _with_tempdir() do proj
                 write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\nuuid = \"00000000-0000-0000-0000-000000000001\"\n")
                 session = DistSSHKit.KitSession(
                     project=proj,
@@ -154,7 +154,7 @@ using Test
             end
         end
 
-        _with_tempdir() do proj::String
+        _with_tempdir() do proj
             session = DistSSHKit.KitSession(
                 project=proj,
                 workers=["root@192.0.2.1"],

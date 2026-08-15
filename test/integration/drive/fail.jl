@@ -4,7 +4,7 @@ using Test
 # Happy path is `local.jl`. Not SSH.
 
 @testset "drive l:N driver error" begin
-    _mktemp_host() do proj::String
+    _mktemp_host() do proj
         _write_host_project!(proj, "FailApp")
         script = joinpath(proj, "job.jl")
         write(script, "error(\"DISTSSHKIT_RUNNER_BOOM\")\n")

@@ -14,7 +14,7 @@ using Test
     end
 
     @testset "script not found" begin
-        _with_tempdir() do tmp::String
+        _with_tempdir() do tmp
             missing = joinpath(tmp, "nope.jl")
             msg = DistSSHKit.explain_script_not_found(missing, tmp; surface=:api)
             @test occursin("Script not found", msg)
@@ -57,7 +57,7 @@ using Test
     end
 
     @testset "session wiring" begin
-        _with_tempdir() do tmp::String
+        _with_tempdir() do tmp
             session = DistSSHKit.KitSession(project=tmp, workers=String[])
             @test DistSSHKit.hint_surface(session) === :api
             @test session.cli_session.hint_surface === :api
@@ -77,7 +77,7 @@ using Test
     end
 
     @testset "hosts file throws" begin
-        _with_tempdir() do tmp::String
+        _with_tempdir() do tmp
             missing = joinpath(tmp, "no-hosts.txt")
             err = try
                 DistSSHKit.read_hosts_file_lines(missing; surface=:api)
