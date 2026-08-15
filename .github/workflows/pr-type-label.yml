@@ -1,7 +1,8 @@
 # Require a type label on every PR: bug | enhancement | breaking | chore.
 # If missing: unique type on a closing issue (`Fixes #N`) first, else branch prefix
 # (`feat/` → enhancement, `fix/` → bug, …). Dependabot is exempt (`dependencies`).
-# Also add `breaking` when Project.toml version is a cut (0.x.y bump x, or major ≥ 1).
+# Also add `cut` when Project.toml version is a cut (0.x.y bump x, or major ≥ 1).
+# `breaking` is incompatible API/CLI; `cut` is the version bump. They may combine.
 name: Type
 
 on:
@@ -62,7 +63,7 @@ jobs:
               }
             }
 
-            await applyBreakingIfVersionCut(labels);
+            await applyCutIfVersionCut(labels);
 
             async function typeFromClosingIssues(num) {
               const query = `query($owner: String!, $name: String!, $n: Int!) {
@@ -95,9 +96,9 @@ jobs:
               return null;
             }
 
-            async function applyBreakingIfVersionCut(existing) {
-              if (existing.includes("breaking")) {
-                core.info("breaking already present");
+            async function applyCutIfVersionCut(existing) {
+              if (existing.includes("cut")) {
+                core.info("cut already present");
                 return;
               }
               const base = context.payload.pull_request.base.sha;
@@ -114,10 +115,10 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: n,
-                labels: ["breaking"],
+                labels: ["cut"],
               });
               core.info(
-                `Applied breaking (${fmtVer(oldV)} → ${fmtVer(newV)})`,
+                `Applied cut (${fmtVer(oldV)} → ${fmtVer(newV)})`,
               );
             }
 

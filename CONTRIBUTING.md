@@ -56,7 +56,7 @@ Optional: [Fatou](https://fatou.dev) (formatter / lint / LSP locally; no Julia r
 ## Workflow
 
 - Branch from `main` (`feature/…`, `fix/…`, `docs/…`, `chore/…`). Open a PR; `main` is squash-merge only. Keep each PR one reviewable change — split unless `main` would be broken in between. Large plans: Discussion / Enhancement Issue first, then small PRs. Merged head branches are deleted automatically (repo Settings).
-- Breaking (CLI names, module name, driver `init_output_dir!` / `main`, …): bump `x` in `0.x.y`. Patch `y` only otherwise. Tags (`vX.Y.Z`) after a registry release are normally cut by TagBot ([`.github/workflows/TagBot.yml`](.github/workflows/TagBot.yml)). Repo Settings → Actions → Workflow permissions must be **Read and write** (`GITHUB_TOKEN`). Maintainers may still `git tag -a` when needed. Date the matching [NEWS.md](NEWS.md) section `YYYY-MM-DD` UTC on the tag day. On `@JuliaRegistrator register`, paste that section under `Release notes:` so the GitHub Release matches (TagBot's PR list is the default if you skip this).
+- Breaking (CLI names, module name, driver `init_output_dir!` / `main`, …): `breaking` on the PR; later `cut` when you bump `x` in `0.x.y`. Patch `y` only otherwise. Tags (`vX.Y.Z`) after a registry release are normally cut by TagBot ([`.github/workflows/TagBot.yml`](.github/workflows/TagBot.yml)). Repo Settings → Actions → Workflow permissions must be **Read and write** (`GITHUB_TOKEN`). Maintainers may still `git tag -a` when needed. Date the matching [NEWS.md](NEWS.md) section `YYYY-MM-DD` UTC on the tag day. On `@JuliaRegistrator register`, paste that section under `Release notes:` so the GitHub Release matches (TagBot's PR list is the default if you skip this).
 - `setup --clone` / `--rsync` refuse a non-empty destination; redeploy with `setup --delete`. Prefer first deploy `--rsync`; git updates `--sync` / `--pull`. Do not weaken that refusal without tests.
 
 ## Errors: diagnose then explain
@@ -70,7 +70,7 @@ Helpers: `src/DistSSHKit/explain.jl`. Surface lives on `KitCliSession` / `hint_s
 
 ## Issues and Discussions
 
-**Issues** (Bug / Enhancement forms only): `bug` or `enhancement`. Form area picks are triage text — add `area:*` when useful. `breaking` is a PR label, not an Issue type. Usage questions are not Issues.
+**Issues** (Bug / Enhancement forms only): `bug` or `enhancement`. Form area picks are triage text — add `area:*` when useful. `breaking` and `cut` are PR labels, not Issue types. Usage questions are not Issues.
 
 **Discussions**: Q&A, Ideas (promote to an Enhancement Issue when tracking), General, Show and tell, Polls, Announcements. Confirmed bugs are not Discussions. Registry cuts do not need an Announcements post; the GitHub Release is enough. Direction: [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26). Security: [SECURITY.md](SECURITY.md).
 
@@ -87,7 +87,7 @@ Path labels come from generated `.github/labeler.yml`:
 
 Every PR needs **one** type label. CI infers, in order: a unique `bug` / `enhancement` / `chore` on a closing issue (`Fixes #N`); else the branch prefix (`feat/`/`feature/` → `enhancement`; `fix/`/`bug/`/`hotfix/` → `bug`; `breaking/`/`break/` → `breaking`; `chore/`/`docs/`/`ci/`/`build/`/`test/`/`refactor/` and anything else → `chore`). `fix/` plus `Fixes` an enhancement issue gets `enhancement`. Override with `gh pr edit N --add-label …`. Unknown prefixes do not fail the check.
 
-`breaking` may combine with `bug` / `enhancement` / `chore`. It flags a version cut (`0.x.y` bump `x`, or major after `1.0`); the `Project.toml` bump is still a separate commit when you choose. CI also adds `breaking` when the PR's `Project.toml` `version` is that cut (not a `y` patch, not an unrelated `Project.toml` edit).
+`breaking` may combine with `bug` / `enhancement` / `chore`. It means the PR's **behavior** is incompatible (CLI names, dropped API, …). `cut` is the **version bump** (`0.x.y` raise `x`, or major after `1.0`). They are independent: a breaking change can land without bumping, and a cut PR can bump only. CI adds `cut` when the PR's `Project.toml` `version` is that raise (not a `y` patch, not an unrelated `Project.toml` edit). The bump commit is still a separate decision.
 
 Dependabot is exempt from the type-label check (`dependencies` only; path labels like `ci` still apply). Do not add type labels there.
 

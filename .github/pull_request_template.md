@@ -8,5 +8,6 @@
 
 ## Checklist
 
-- [ ] Not breaking — or `breaking` label (version bump decided separately)
+- [ ] Not breaking — or `breaking` label (incompatible behavior)
+- [ ] Version cut — or `cut` label (`0.x` bump `x`; often a separate PR)
 - [ ] Remote / smoke tested if this PR needs it
