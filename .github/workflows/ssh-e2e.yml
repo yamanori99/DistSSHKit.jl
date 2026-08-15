@@ -15,16 +15,13 @@ permissions:
   contents: read
 
 jobs:
-  filter:
-    name: detect e2e paths
+  ssh-e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
-    outputs:
-      e2e: ${{ steps.gate.outputs.e2e }}
+    timeout-minutes: 30
+    name: ubuntu-latest → ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-        if: github.event_name == 'pull_request' || github.event_name == 'push'
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         if: github.event_name == 'pull_request' || github.event_name == 'push'
         id: filter
         with:
@@ -44,29 +41,25 @@ jobs:
             echo "e2e=${{ steps.filter.outputs.e2e }}" >> "$GITHUB_OUTPUT"
           fi
 
-  ssh-e2e:
-    needs: filter
-    if: needs.filter.outputs.e2e == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    name: ubuntu-latest → ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-
       - uses: julia-actions/setup-julia@v3
+        if: steps.gate.outputs.e2e == 'true'
         id: julia
         with:
           version: "1.12"
       - name: Julia ${{ steps.julia.outputs.julia-version }}
+        if: steps.gate.outputs.e2e == 'true'
         run: julia --version
 
       - uses: julia-actions/cache@v3
+        if: steps.gate.outputs.e2e == 'true'
 
       - uses: julia-actions/julia-buildpkg@v1
+        if: steps.gate.outputs.e2e == 'true'
 
       - name: docker-ssh up + SSH E2E
+        if: steps.gate.outputs.e2e == 'true'
         run: ./testenv/docker-ssh/scripts/up.sh --e2e
 
       - name: Teardown workers
-        if: always()
+        if: ${{ always() && steps.gate.outputs.e2e == 'true' }}
         run: ./testenv/docker-ssh/scripts/down.sh || true

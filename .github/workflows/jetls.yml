@@ -15,31 +15,22 @@ permissions:
   contents: read
 
 jobs:
-  filter:
-    name: detect code changes
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
-    outputs:
-      heavy: ${{ steps.detect.outputs.heavy }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/ci-heavy
-        id: detect
-
   # Literal names: skipped matrix jobs leave ${{ matrix.minor }} unexpanded.
   jetls-1-12:
-    needs: filter
-    if: needs.filter.outputs.heavy == 'true'
     name: JETLS - Julia 1.12 - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/ci-heavy
+        id: detect
       - id: files
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
       # Official check action: https://aviatesk.github.io/JETLS.jl/dev/cli-check/#cli-check/github-actions
       # Supported runtimes: Julia 1.12.2–1.13. Action default julia-version is 1.12.
       - uses: aviatesk/JETLS.jl/.github/actions/check@release
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         with:
           files: ${{ steps.files.outputs.list }}
           julia-version: "1.12"
@@ -47,16 +38,18 @@ jobs:
           progress: none
 
   jetls-1-13:
-    needs: filter
-    if: needs.filter.outputs.heavy == 'true'
     name: JETLS - Julia 1.13 - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/ci-heavy
+        id: detect
       - id: files
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
       - uses: aviatesk/JETLS.jl/.github/actions/check@release
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         with:
           files: ${{ steps.files.outputs.list }}
           # Same 1.13 channel as Pkg.test (includes RCs until 1.13 is stable).

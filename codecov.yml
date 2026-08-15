@@ -7,5 +7,8 @@ coverage:
       default:
         informational: true
 
+# GitHub emails every subscriber when Codecov posts a *new* PR comment.
+comment: false
+
 # No `ignore` list: CLI entry points stay in coverage reports.
 # Local drive paths: `test/integration/drive/local.jl`. Remote SSH: `test/e2e.jl` (`SSH E2E` workflow).
