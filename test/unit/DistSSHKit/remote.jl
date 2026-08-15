@@ -74,7 +74,7 @@ using Test
     end
 
     @testset "resolve_host_path_abs" begin
-        mktempdir() do tmp
+        _with_tempdir() do tmp::String
             p = DistSSHKit.canonical_local_path(tmp)
             @test DistSSHKit.resolve_host_project_abs("localhost", p) == p
             withenv("DISTRIBUTED_REMOTE_PROJECT_ROOT" => "/Volumes/z/clone/MyRepo") do
@@ -102,7 +102,7 @@ using Test
         @test r.nproc >= 1
     end
 
-    mktempdir() do tmp
+    _with_tempdir() do tmp::String
         d = abspath(string(tmp))
         @test DistSSHKit.get_local_git_hash(d) === nothing
         @test DistSSHKit.clone_url_from_local_origin(d) === nothing

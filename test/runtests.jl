@@ -5,7 +5,10 @@
 #   julia --project=. -e 'using Pkg; Pkg.test()'
 #   julia --project=. test/runtests.jl
 #
-# Maintainer checks: CONTRIBUTING.md ("Before opening a PR").
+# Top-level `include`s (inside `@testset`s, not functions) so JETLS follows them.
+# Each file already has a `@testset`; do not wrap another around `include`.
+# New unit/integration files must be added here. Maintainer checks:
+#   CONTRIBUTING.md ("Before opening a PR")
 #   ./.github/jetls-check.sh
 
 using Test
@@ -16,54 +19,80 @@ include(joinpath(@__DIR__, "support.jl"))
 println("▸ aqua.jl")
 include(joinpath(@__DIR__, "aqua.jl"))
 
-function _unit_test_files()
-    return (
-        joinpath("DistSSHKit", "display.jl"),
-        joinpath("DistSSHKit", "explain.jl"),
-        joinpath("DistSSHKit", "remote.jl"),
-        joinpath("DistSSHKit", "distributed.jl"),
-        joinpath("DistSSHKit", "drive.jl"),
-        joinpath("DistSSHKit", "size.jl"),
-        joinpath("DistSSHKit", "go.jl"),
-        joinpath("DistSSHKit", "module.jl"),
-        joinpath("DistSSHKit", "argv", "args.jl"),
-        joinpath("DistSSHKit", "argv", "session.jl"),
-        joinpath("DistSSHKit", "hosts.jl"),
-        joinpath("DistSSHKit", "main_dispatch.jl"),
-        joinpath("DistSSHKit", "demos.jl"),
-        joinpath("DistSSHKit", "host_project_toml.jl"),
-        joinpath("DistSSHKit", "setup_api.jl"),
-        joinpath("DistSSHKit", "setup", "checks.jl"),
-        joinpath("DistSSHKit", "setup", "hosts.jl"),
-        joinpath("DistSSHKit", "setup", "rsync.jl"),
-        joinpath("cli", "drive", "args.jl"),
-        joinpath("cli", "go", "args.jl"),
-        joinpath("cli", "setup", "args.jl"),
-        joinpath("cli", "setup", "using_guard.jl"),
-        joinpath("cli", "size", "args.jl"),
-    )
-end
-
-function _integration_test_files()
-    return (
-        joinpath("setup", "exit.jl"),
-        joinpath("go", "overlap.jl"),
-        joinpath("size", "measure.jl"),
-        joinpath("drive", "local.jl"),
-        joinpath("drive", "pkg.jl"),
-        joinpath("drive", "log_via_script.jl"),
-        joinpath("drive", "log_via_module.jl"),
-        joinpath("drive", "pkg_develop.jl"),
-        joinpath("demos", "with_kit.jl"),
-        joinpath("demos", "without_kit.jl"),
-    )
-end
-
 @testset "DistSSHKit" verbose=true begin
-    @testset "unit" begin
-        _run_test_files!(joinpath(@__DIR__, "unit"), _unit_test_files(), "unit")
+    @testset "unit" verbose=true begin
+        println("▸ unit/DistSSHKit/display.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "display.jl"))
+        println("▸ unit/DistSSHKit/explain.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "explain.jl"))
+        println("▸ unit/DistSSHKit/remote.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "remote.jl"))
+        println("▸ unit/DistSSHKit/distributed.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "distributed.jl"))
+        println("▸ unit/DistSSHKit/drive.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "drive.jl"))
+        println("▸ unit/DistSSHKit/size.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "size.jl"))
+        println("▸ unit/DistSSHKit/go.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "go.jl"))
+        println("▸ unit/DistSSHKit/module.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "module.jl"))
+        println("▸ unit/DistSSHKit/argv/args.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "argv", "args.jl"))
+        println("▸ unit/DistSSHKit/argv/session.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "argv", "session.jl"))
+        println("▸ unit/DistSSHKit/hosts.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "hosts.jl"))
+        println("▸ unit/DistSSHKit/main_dispatch.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "main_dispatch.jl"))
+        println("▸ unit/DistSSHKit/demos.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "demos.jl"))
+        println("▸ unit/DistSSHKit/host_project_toml.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "host_project_toml.jl"))
+        println("▸ unit/DistSSHKit/setup_api.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "setup_api.jl"))
+        println("▸ unit/DistSSHKit/setup/checks.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "setup", "checks.jl"))
+        println("▸ unit/DistSSHKit/setup/hosts.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "setup", "hosts.jl"))
+        println("▸ unit/DistSSHKit/setup/git.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "setup", "git.jl"))
+        println("▸ unit/DistSSHKit/setup/rsync.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "setup", "rsync.jl"))
+        println("▸ unit/cli/drive/args.jl")
+        include(joinpath(@__DIR__, "unit", "cli", "drive", "args.jl"))
+        println("▸ unit/cli/go/args.jl")
+        include(joinpath(@__DIR__, "unit", "cli", "go", "args.jl"))
+        println("▸ unit/cli/setup/args.jl")
+        include(joinpath(@__DIR__, "unit", "cli", "setup", "args.jl"))
+        println("▸ unit/cli/setup/using_guard.jl")
+        include(joinpath(@__DIR__, "unit", "cli", "setup", "using_guard.jl"))
+        println("▸ unit/cli/size/args.jl")
+        include(joinpath(@__DIR__, "unit", "cli", "size", "args.jl"))
     end
-    @testset "integration" begin
-        _run_test_files!(joinpath(@__DIR__, "integration"), _integration_test_files(), "integration")
+
+    @testset "integration" verbose=true begin
+        println("▸ integration/setup/exit.jl")
+        include(joinpath(@__DIR__, "integration", "setup", "exit.jl"))
+        println("▸ integration/go/overlap.jl")
+        include(joinpath(@__DIR__, "integration", "go", "overlap.jl"))
+        println("▸ integration/size/measure.jl")
+        include(joinpath(@__DIR__, "integration", "size", "measure.jl"))
+        println("▸ integration/drive/local.jl")
+        include(joinpath(@__DIR__, "integration", "drive", "local.jl"))
+        println("▸ integration/drive/fail.jl")
+        include(joinpath(@__DIR__, "integration", "drive", "fail.jl"))
+        println("▸ integration/drive/pkg.jl")
+        include(joinpath(@__DIR__, "integration", "drive", "pkg.jl"))
+        println("▸ integration/drive/log_via_script.jl")
+        include(joinpath(@__DIR__, "integration", "drive", "log_via_script.jl"))
+        println("▸ integration/drive/log_via_module.jl")
+        include(joinpath(@__DIR__, "integration", "drive", "log_via_module.jl"))
+        println("▸ integration/drive/pkg_develop.jl")
+        include(joinpath(@__DIR__, "integration", "drive", "pkg_develop.jl"))
+        println("▸ integration/demos/with_kit.jl")
+        include(joinpath(@__DIR__, "integration", "demos", "with_kit.jl"))
+        println("▸ integration/demos/without_kit.jl")
+        include(joinpath(@__DIR__, "integration", "demos", "without_kit.jl"))
     end
 end

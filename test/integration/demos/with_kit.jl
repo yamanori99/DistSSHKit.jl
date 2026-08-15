@@ -7,7 +7,7 @@ using Test
     kit_root = _kit_root()
     julia = _julia_exe()
 
-    _mktemp_host() do tmp
+    _mktemp_host() do tmp::String
         demos_dir = joinpath(tmp, "demos")
         mkpath(demos_dir)
         _stage_with_kit_demos!(demos_dir, kit_root)

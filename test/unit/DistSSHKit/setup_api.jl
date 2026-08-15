@@ -2,17 +2,32 @@ using Test
 
 @testset "setup!" begin
     function _with_fake_remotes(f::Function)
-        mktempdir() do state_dir
-            withenv(_fake_setup_remote_env(state_dir)...) do
-                _apply_quiet_setup_session!()
-                return f(state_dir)
+        _with_tempdir() do state_dir::String
+            old_proj = get(ENV, "DISTRIBUTED_PROJECT_ROOT", nothing)
+            old_remote = get(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT", nothing)
+            try
+                withenv(_fake_setup_remote_env(state_dir)...) do
+                    _apply_quiet_setup_session!()
+                    return f(state_dir)
+                end
+            finally
+                if old_proj === nothing
+                    delete!(ENV, "DISTRIBUTED_PROJECT_ROOT")
+                else
+                    ENV["DISTRIBUTED_PROJECT_ROOT"] = old_proj
+                end
+                if old_remote === nothing
+                    delete!(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT")
+                else
+                    ENV["DISTRIBUTED_REMOTE_PROJECT_ROOT"] = old_remote
+                end
             end
         end
     end
 
     @testset "delete + multi-mode" begin
         _with_fake_remotes() do state_dir
-            mktempdir() do proj
+            _with_tempdir() do proj::String
                 host = "host1"
                 slot = replace(host, r"[@:/]" => "_")
                 tree = joinpath(state_dir, slot, "tree")
@@ -36,12 +51,59 @@ using Test
                 @test chained isa DistSSHKit.SyncResult
                 tested = DistSSHKit.setup!(session, :runtest; julia="/bin/echo")
                 @test tested.ok && !tested.cancelled
+
+                inst = DistSSHKit.setup!(session, :instantiate; julia="/bin/echo")
+                @test inst.ok && !inst.cancelled
+            end
+        end
+    end
+
+    @testset "multi-mode stops after rsync refuse" begin
+        _with_fake_remotes() do state_dir
+            _with_tempdir() do proj::String
+                write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\n")
+                host = "host1"
+                slot = replace(host, r"[@:/]" => "_")
+                tree = joinpath(state_dir, slot, "tree")
+                mkpath(tree)
+                touch(joinpath(tree, "keepme.txt"))
+                session = DistSSHKit.KitSession(
+                    project=proj,
+                    workers=[host],
+                    remote="~/App.jl",
+                    yes=true,
+                    quiet=true,
+                )
+                _, res = _capture_stdio() do _, _
+                    DistSSHKit.setup!(session, :rsync, :instantiate)
+                end
+                @test !res.ok
+                # Nonempty tree still there: instantiate must not have been the stop reason.
+                @test isfile(joinpath(tree, "keepme.txt"))
+            end
+        end
+    end
+
+    @testset "instantiate preflight miss" begin
+        _with_fake_remotes() do _
+            _with_tempdir() do proj::String
+                session = DistSSHKit.KitSession(
+                    project=proj,
+                    workers=["host1"],
+                    remote="~/App.jl",
+                    yes=true,
+                    quiet=true,
+                )
+                withenv("DISTSSHKIT_TEST_SSH_FAIL" => "1") do
+                    res = DistSSHKit.setup!(session, :instantiate; julia="/bin/echo")
+                    @test !res.ok
+                end
             end
         end
     end
 
     @testset "clone requires repo=" begin
-        mktempdir() do proj
+        _with_tempdir() do proj::String
             session = DistSSHKit.KitSession(
                 project=proj,
                 workers=["host1"],
@@ -53,7 +115,7 @@ using Test
         end
 
         _with_fake_remotes() do _
-            mktempdir() do proj
+            _with_tempdir() do proj::String
                 session = DistSSHKit.KitSession(
                     project=proj,
                     workers=["host1"],
@@ -70,7 +132,7 @@ using Test
 
     @testset "check + cleanup + bad mode" begin
         _with_fake_remotes() do _
-            mktempdir() do proj
+            _with_tempdir() do proj::String
                 write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\nuuid = \"00000000-0000-0000-0000-000000000001\"\n")
                 session = DistSSHKit.KitSession(
                     project=proj,
@@ -92,7 +154,7 @@ using Test
             end
         end
 
-        mktempdir() do proj
+        _with_tempdir() do proj::String
             session = DistSSHKit.KitSession(
                 project=proj,
                 workers=["root@192.0.2.1"],

@@ -11,7 +11,7 @@ using Test
             _kit_root(),
         ))
 
-        mktempdir() do tmp
+        _with_tempdir() do tmp::String
             missing_kit = joinpath(tmp, "demos", "with_kit", "square_file.jl")
             msg = DistSSHKit.explain_script_not_found(missing_kit, tmp; surface=:cli)
             @test occursin("Script not found", msg)

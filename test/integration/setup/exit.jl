@@ -12,7 +12,7 @@ using Test
     end
 
     @testset "delete" begin
-        _with_tempdir() do state_dir
+        _with_tempdir() do state_dir::String
             proc, combined = _run_kit_setup(
                 setup_args=["--delete", "host1"],
                 extra_env=merge(
@@ -23,7 +23,7 @@ using Test
             @test proc.exitcode == 1
             @test occursin("SSH preflight failed", combined)
         end
-        _with_tempdir() do state_dir
+        _with_tempdir() do state_dir::String
             proc, combined = _run_kit_setup(
                 setup_args=["--delete", "host1", "host2"],
                 extra_env=_fake_setup_remote_env(state_dir),
@@ -34,7 +34,7 @@ using Test
     end
 
     @testset "rsync" begin
-        _with_tempdir() do state_dir
+        _with_tempdir() do state_dir::String
             proc, combined = _run_kit_setup(
                 setup_args=["--rsync", "host1"],
                 extra_env=merge(
@@ -45,7 +45,7 @@ using Test
             @test proc.exitcode == 1
             @test occursin("rsync did not succeed on any host", combined)
         end
-        _with_tempdir() do state_dir
+        _with_tempdir() do state_dir::String
             proc, combined = _run_kit_setup(
                 setup_args=["--rsync", "host1", "host2"],
                 extra_env=_fake_setup_remote_env(state_dir),
@@ -57,7 +57,7 @@ using Test
 
     @testset "runtest" begin
         # `--julia` skips remote detect; fake ssh still sees `Pkg.test()`.
-        _with_tempdir() do state_dir
+        _with_tempdir() do state_dir::String
             proc, combined = _run_kit_setup(
                 setup_args=["--runtest", "--julia", "/bin/echo", "host1"],
                 extra_env=merge(
@@ -68,7 +68,7 @@ using Test
             @test proc.exitcode == 1
             @test occursin("Pkg.test did not succeed on any host", combined)
         end
-        _with_tempdir() do state_dir
+        _with_tempdir() do state_dir::String
             proc, combined = _run_kit_setup(
                 setup_args=["--runtest", "--julia", "/bin/echo", "host1", "host2"],
                 extra_env=_fake_setup_remote_env(state_dir),

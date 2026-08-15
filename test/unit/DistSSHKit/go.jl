@@ -27,14 +27,21 @@ using Dates
             @test all(x -> x.kind === :remote, s)
         end
         @test_throws ArgumentError DistSSHKit._go_plan_slots(["local:0"])
-        @test_throws ArgumentError match(r"did you mean local", DistSSHKit._go_plan_slots(["lacal:0"]))
+        err = try
+            DistSSHKit._go_plan_slots(["lacal:0"])
+            nothing
+        catch e
+            e
+        end
+        @test err isa ArgumentError
+        @test occursin("did you mean local", sprint(showerror, err))
         @test occursin("root@", DistSSHKit._go_host_ssh_hint("192.0.2.11"))
         @test isempty(DistSSHKit._go_host_ssh_hint("root@192.0.2.11"))
         @test isdefined(DistSSHKit, :probe_remote_project_deps)
     end
 
     @testset "_go_batch_output_dir" begin
-        mktempdir() do proj
+        _with_tempdir() do proj::String
             script = joinpath(proj, "demos", "demo.jl")
             mkpath(dirname(script))
             touch(script)
@@ -54,7 +61,7 @@ using Dates
     end
 
     @testset "script not found surfaces" begin
-        mktempdir() do tmp
+        _with_tempdir() do tmp::String
             missing = joinpath(tmp, "demos", "with_kit", "rho_sweep.jl")
             err_api = try
                 DistSSHKit.go!(missing, String[]; project=tmp)
@@ -107,5 +114,27 @@ using Dates
             "julia",
         )
         @test occursin("julia --project=. job.jl 8 " * Base.shell_escape("a b"), with_args)
+    end
+
+    @testset "report_go_errors" begin
+        ok = DistSSHKit.GoResult(true, nothing, nothing, nothing, "job.jl", "/out")
+        @test DistSSHKit.report_go_errors(ok)
+        bad = DistSSHKit.GoResult(
+            false,
+            DistSSHKit.SyncResult(false, [DistSSHKit.HostResult("h1", false, "pull failed")], false),
+            DistSSHKit.DriveResult(false, 2),
+            DistSSHKit.CollectResult(false, 1),
+            "job.jl",
+            "/tmp/go-out";
+            failed_step="run",
+        )
+        buf = IOBuffer()
+        @test !DistSSHKit.report_go_errors(bad; io=buf)
+        txt = String(take!(buf))
+        @test occursin("go failed at step: run", txt)
+        @test occursin("output: /tmp/go-out", txt)
+        @test occursin("sync h1: pull failed", txt)
+        @test occursin("run exit 2", txt)
+        @test occursin("collect exit 1", txt)
     end
 end

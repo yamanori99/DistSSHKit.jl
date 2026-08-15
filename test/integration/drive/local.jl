@@ -9,7 +9,7 @@ using Test
     @test isfile(joinpath(kit_root, "src", "cli", "drive.jl"))
     @test isfile(fixture)
 
-    _mktemp_host() do proj
+    _mktemp_host() do proj::String
         _write_host_project!(proj, "SmokeApp")
         script = joinpath(proj, "job.jl")
         cp(fixture, script; force=true)

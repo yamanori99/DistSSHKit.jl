@@ -7,7 +7,7 @@ using Test
     project = _kit_root()
 
     function _with_fake_remotes(f::Function; extra_env=Dict{String,String}())
-        mktempdir() do state_dir
+        _with_tempdir() do state_dir::String
             withenv(merge(_fake_setup_remote_env(state_dir), extra_env)...) do
                 _apply_quiet_setup_session!()
                 return f(state_dir)
@@ -84,7 +84,7 @@ end
 @testset "setup clone dest safety" begin
     remote_path = "~/App.jl"
 
-    mktempdir() do state_dir
+    _with_tempdir() do state_dir::String
         withenv(_fake_setup_remote_env(state_dir)...) do
             DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(quiet=false, yes=true))
             host = "host1"

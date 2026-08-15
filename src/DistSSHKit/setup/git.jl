@@ -30,7 +30,7 @@ end
 
 function _git_remote_url(project::AbstractString)::String
     try
-        return strip(read(`git -C $(String(project)) remote get-url origin`, String))
+        return strip(read(pipeline(`git -C $(String(project)) remote get-url origin`; stderr=devnull), String))
     catch
         return "<repo_url>"
     end

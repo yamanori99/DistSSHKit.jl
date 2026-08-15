@@ -5,7 +5,7 @@ using Test
 # (those live in unit/DistSSHKit/go.jl).
 
 @testset "local slots overlap" begin
-    mktempdir() do proj
+    _with_tempdir() do proj::String
         write(joinpath(proj, "Project.toml"), "name = \"GoOverlap\"\n")
         script = joinpath(proj, "sleep_mark.jl")
         write(script, """

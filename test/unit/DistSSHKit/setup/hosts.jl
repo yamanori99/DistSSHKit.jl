@@ -4,7 +4,7 @@ using Test
 
 @testset "setup hosts safety" begin
     function _with_fake_remotes(f::Function; extra_env=Dict{String,String}())
-        mktempdir() do state_dir
+        _with_tempdir() do state_dir::String
             withenv(merge(_fake_setup_remote_env(state_dir), extra_env)...) do
                 _apply_quiet_setup_session!()
                 return f(state_dir)
@@ -17,8 +17,39 @@ using Test
         @test_throws ArgumentError DistSSHKit.validate_setup_hosts(String[])
         @test_throws ArgumentError DistSSHKit.validate_setup_hosts(["local"])
         @test_throws ArgumentError DistSSHKit.validate_setup_hosts(["demos/foo.jl"])
-        @test DistSSHKit.validate_setup_hosts(["root@192.0.2.10", "host-b"]) === nothing
-    end
+            @test DistSSHKit.validate_setup_hosts(["root@192.0.2.10", "host-b"]) === nothing
+        end
+
+        @testset "finish_host_op!" begin
+            _apply_quiet_setup_session!()
+            @test DistSSHKit.finish_host_op!(
+                "X",
+                (; cancelled=true, succeeded=0, failed=0),
+            )
+            out, ok = _capture_stdio() do _, _
+                DistSSHKit.finish_host_op!(
+                    "Pkg.test",
+                    (; cancelled=false, succeeded=0, failed=2),
+                )
+            end
+            @test !ok
+            @test occursin("Pkg.test did not succeed on any host", out)
+            out2, ok2 = _capture_stdio() do _, _
+                DistSSHKit.finish_host_op!(
+                    "Pkg.test",
+                    (; cancelled=false, succeeded=1, failed=1),
+                )
+            end
+            @test !ok2
+            @test occursin("failed on 1 host", out2)
+            _, ok3 = _capture_stdio() do _, _
+                DistSSHKit.finish_host_op!(
+                    "Pkg.test",
+                    (; cancelled=false, succeeded=2, failed=0),
+                )
+            end
+            @test ok3
+        end
 
     @testset "probe / preflight" begin
         _with_fake_remotes() do _
