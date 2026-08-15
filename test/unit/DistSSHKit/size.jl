@@ -23,7 +23,7 @@ using Test
     end
 
     @testset "resolve_host_project_abs localhost" begin
-        _with_tempdir() do tmp::String
+        _with_tempdir() do tmp
             p = abspath(tmp)
             @test DistSSHKit.resolve_host_project_abs("localhost", p) ==
                 DistSSHKit.canonical_local_path(p)
@@ -33,7 +33,7 @@ using Test
     end
 
     @testset "resolve_host_path_abs absolute remote map" begin
-        _with_tempdir() do tmp::String
+        _with_tempdir() do tmp
             p = DistSSHKit.canonical_local_path(tmp)
             withenv("DISTRIBUTED_REMOTE_PROJECT_ROOT" => "/remote/App") do
                 # Absolute mapped path short-circuits SSH in resolve_remote_abs_path_on_host.
@@ -68,7 +68,7 @@ using Test
     end
 
     @testset "size_plan with gb_per_worker" begin
-        _with_tempdir() do tmp::String
+        _with_tempdir() do tmp
             session = DistSSHKit.KitSession(
                 project=tmp,
                 workers=String[],
@@ -107,7 +107,7 @@ using Test
     end
 
     @testset "resolve_size_probe_path" begin
-        _with_tempdir() do tmp::String
+        _with_tempdir() do tmp
             p = DistSSHKit.canonical_local_path(tmp)
             @test DistSSHKit.resolve_size_probe_path(p, "warmup.jl") ==
                 joinpath(p, "warmup.jl")
@@ -118,7 +118,7 @@ using Test
     end
 
     @testset "measure_rss missing probe throws" begin
-        _with_tempdir() do tmp::String
+        _with_tempdir() do tmp
             @test_throws ArgumentError DistSSHKit.measure_rss(
                 tmp, String[]; include_local=true, probe="missing_warmup.jl",
             )
@@ -126,7 +126,7 @@ using Test
     end
 
     @testset "PipelineConfig size_probe / DISTSSHKIT_SIZE_PROBE" begin
-        _with_tempdir() do tmp::String
+        _with_tempdir() do tmp
             driver = joinpath(tmp, "job.jl")
             write(driver, "")
             cfg = DistSSHKit.PipelineConfig(driver=driver, size_probe="warmup.jl")

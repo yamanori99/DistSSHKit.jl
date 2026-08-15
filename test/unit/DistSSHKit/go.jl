@@ -41,7 +41,7 @@ using Dates
     end
 
     @testset "_go_batch_output_dir" begin
-        _with_tempdir() do proj::String
+        _with_tempdir() do proj
             script = joinpath(proj, "demos", "demo.jl")
             mkpath(dirname(script))
             touch(script)
@@ -61,7 +61,7 @@ using Dates
     end
 
     @testset "script not found surfaces" begin
-        _with_tempdir() do tmp::String
+        _with_tempdir() do tmp
             missing = joinpath(tmp, "demos", "with_kit", "rho_sweep.jl")
             err_api = try
                 DistSSHKit.go!(missing, String[]; project=tmp)

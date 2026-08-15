@@ -1,7 +1,7 @@
 using Test
 
 @testset "distributed" begin
-    _with_tempdir() do tmp::String
+    _with_tempdir() do tmp
         repo = abspath(string(tmp))
         sd = joinpath(repo, "scripts")
         mkpath(sd)
@@ -29,7 +29,7 @@ using Test
         end
     end
 
-    _with_tempdir() do tmp::String
+    _with_tempdir() do tmp
         default = joinpath(tmp, "output")
         withenv("DISTRIBUTED_OUTPUT_DIR" => nothing) do
             @test DistSSHKit.resolve_distributed_output_dir!(String[], default) == abspath(default)

@@ -21,7 +21,7 @@ using Test
     end
 
     @testset "push / local pull" begin
-        _with_tempdir() do tmp::String
+        _with_tempdir() do tmp
             work = joinpath(tmp, "work")
             mkpath(work)
             _init_commit!(work)
@@ -43,7 +43,7 @@ using Test
 
     @testset "git_sync stops on local failure" begin
         _apply_quiet_setup_session!()
-        _with_tempdir() do tmp::String
+        _with_tempdir() do tmp
             work = joinpath(tmp, "work")
             mkpath(work)
             _init_commit!(work)
@@ -67,7 +67,7 @@ using Test
         _apply_quiet_setup_session!()
         withenv("DISTRIBUTED_SSH_OPTS" => "-o BatchMode=yes -o ConnectTimeout=1") do
             @test !DistSSHKit.git_pull_remote_host!("192.0.2.1", "~/App.jl")
-            _with_tempdir() do tmp::String
+            _with_tempdir() do tmp
                 work = joinpath(tmp, "work")
                 mkpath(work)
                 _init_commit!(work)
@@ -88,7 +88,7 @@ using Test
             "https://github.com/org/App.jl.git",
             "/unused",
         ) == "git@github.com:org/App.jl.git"
-        _with_tempdir() do tmp::String
+        _with_tempdir() do tmp
             @test_throws ErrorException DistSSHKit.resolve_clone_url(nothing, tmp; surface=:cli)
             @test_throws ErrorException DistSSHKit.resolve_clone_url("", tmp; surface=:api)
         end
