@@ -1,7 +1,7 @@
 # Require a type label on every PR: bug | enhancement | breaking | chore.
 # If missing: unique type on a closing issue (`Fixes #N`) first, else branch prefix
 # (`feat/` → enhancement, `fix/` → bug, …). Dependabot is exempt (`dependencies`).
-# Also add `cut` when Project.toml version is a cut (0.x.y bump x, or major ≥ 1).
+# Also add `cut` when Project.toml `version` increases (patch, minor, or major).
 # `breaking` is incompatible API/CLI; `cut` is the version bump. They may combine.
 name: Type
 
@@ -154,11 +154,9 @@ jobs:
 
             function isVersionCut(oldV, newV) {
               if (!oldV || !newV) return false;
-              if (newV.major > oldV.major) return true;
-              if (oldV.major === 0 && newV.major === 0 && newV.minor > oldV.minor) {
-                return true;
-              }
-              return false;
+              if (newV.major !== oldV.major) return newV.major > oldV.major;
+              if (newV.minor !== oldV.minor) return newV.minor > oldV.minor;
+              return newV.patch > oldV.patch;
             }
 
             function inferType(ref) {

@@ -9,5 +9,5 @@
 ## Checklist
 
 - [ ] Not breaking — or `breaking` label (incompatible behavior)
-- [ ] Version cut — or `cut` label (`0.x` bump `x`; often a separate PR)
+- [ ] Version raise — or `cut` label (`Project.toml` `version` went up; register after merge)
 - [ ] Remote / smoke tested if this PR needs it
