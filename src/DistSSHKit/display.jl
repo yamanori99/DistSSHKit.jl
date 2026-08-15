@@ -109,10 +109,41 @@ function kit_project_root(kit_dir::AbstractString)::String
     return root
 end
 
-"""Local project root for kit CLI scripts (`ENV[DISTRIBUTED_PROJECT_ROOT]` or [`kit_project_root`](@ref))."""
+"""True when `path` is `root` or a file/dir under it."""
+function _path_is_under(path::AbstractString, root::AbstractString)::Bool
+    p = canonical_local_path(path)
+    r = canonical_local_path(root)
+    p == r && return true
+    return startswith(p, r * Base.Filesystem.path_separator)
+end
+
+"""
+Job root for the CLI when DistSSHKit is loaded from `kit`.
+
+`kit` is [`kit_project_root`](@ref). If that tree is DistSSHKit's own project
+(checkout, `Pkg.add` depot, or an apps env) and `cwd` is not inside it, use the
+host `Project.toml` walked from `cwd`, or `cwd` if none. `DISTRIBUTED_PROJECT_ROOT`
+is applied in [`cli_project_root`](@ref), not here.
+"""
+function _cli_job_root(kit::AbstractString, cwd::AbstractString)::String
+    kit_abs = canonical_local_path(kit)
+    cwd_abs = canonical_local_path(cwd)
+    own_tree =
+        project_package_name(kit_abs) == "DistSSHKit" &&
+        !isfile(joinpath(dirname(kit_abs), "Project.toml"))
+    if !own_tree
+        return kit_abs
+    end
+    _path_is_under(cwd_abs, kit_abs) && return kit_abs
+    host = resolve_pkg_project_dir(cwd_abs)
+    isfile(joinpath(host, "Project.toml")) && return canonical_local_path(host)
+    return cwd_abs
+end
+
+"""Local project root for kit CLI scripts (`ENV[DISTRIBUTED_PROJECT_ROOT]` or cwd / [`kit_project_root`](@ref))."""
 function cli_project_root(kit_src_dir::AbstractString)
     get(ENV, "DISTRIBUTED_PROJECT_ROOT") do
-        kit_project_root(kit_src_dir)
+        _cli_job_root(kit_project_root(kit_src_dir), pwd())
     end
 end
 

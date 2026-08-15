@@ -31,7 +31,10 @@ using Test
             src = joinpath(d, "src")
             mkpath(src)
             @test DistSSHKit.kit_project_root(src) == d
-            @test DistSSHKit.cli_project_root(src) == d
+            cd(d) do
+                @test DistSSHKit.cli_project_root(src) == realpath(d)
+            end
+            @test DistSSHKit._cli_job_root(d, d) == d
             @test DistSSHKit.resolve_pkg_project_dir(d) == d
         end
         withenv("DISTRIBUTED_PROJECT_ROOT" => "/override/root") do
@@ -47,6 +50,7 @@ using Test
             write(joinpath(app, "Project.toml"), "name = \"MyApp\"\n")
             write(joinpath(kit, "Project.toml"), "name = \"DistSSHKit\"\n")
             @test DistSSHKit.kit_project_root(joinpath(kit, "src")) == app
+            @test DistSSHKit.cli_project_root(joinpath(kit, "src")) == app
             @test DistSSHKit.resolve_pkg_project_dir(scripts) == app
         end
         mktempdir() do tmp
@@ -54,6 +58,25 @@ using Test
             @test DistSSHKit.project_package_name(d) === nothing
             write(joinpath(d, "Project.toml"), "name = \"FooBar\"\n")
             @test DistSSHKit.project_package_name(d) == "FooBar"
+        end
+        # Loaded DistSSHKit is not the host Project.toml (Pkg.add / apps).
+        mktempdir() do tmp
+            d = abspath(string(tmp))
+            pkg = joinpath(d, "packages", "DistSSHKit", "XXXX")
+            mkpath(joinpath(pkg, "src"))
+            write(joinpath(pkg, "Project.toml"), "name = \"DistSSHKit\"\n")
+            job = joinpath(d, "MyJob")
+            mkpath(job)
+            write(joinpath(job, "Project.toml"), "name = \"MyJob\"\n")
+            empty = joinpath(d, "scratch")
+            mkpath(empty)
+            src = joinpath(pkg, "src")
+            @test DistSSHKit.kit_project_root(src) == pkg
+            @test DistSSHKit._cli_job_root(pkg, job) == job
+            @test DistSSHKit._cli_job_root(pkg, empty) == empty
+            cd(job) do
+                @test DistSSHKit.cli_project_root(src) == realpath(job)
+            end
         end
     end
 
