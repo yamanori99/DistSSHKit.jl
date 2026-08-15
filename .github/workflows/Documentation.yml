@@ -13,20 +13,7 @@ concurrency:
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
 jobs:
-  filter:
-    name: detect code changes
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
-    outputs:
-      heavy: ${{ steps.detect.outputs.heavy }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/ci-heavy
-        id: detect
-
   build:
-    needs: filter
-    if: needs.filter.outputs.heavy == 'true'
     name: Documenter - Julia 1.12 - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -38,11 +25,16 @@ jobs:
       pull-requests: read
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/ci-heavy
+        id: detect
       - uses: julia-actions/setup-julia@v3
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         with:
           version: "1.12"
       - uses: julia-actions/cache@v3
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
       - name: Install docs dependencies
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         run: |
           julia --project=docs -e '
             using Pkg
@@ -50,6 +42,7 @@ jobs:
             Pkg.instantiate()
           '
       - name: Doctests
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         run: |
           julia --project=docs -e '
             using Documenter, DistSSHKit, Test
@@ -57,6 +50,7 @@ jobs:
             doctest(DistSSHKit)
           '
       - name: Build and deploy
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         env:
           # Deploy via HTTPS + contents:write (no DOCUMENTER_KEY SSH secret required).
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
