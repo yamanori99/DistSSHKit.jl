@@ -130,6 +130,24 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
             _assert_ssh_e2e_ok(suite, "setup_runtest", proc, out; project=proj, kit=:setup)
         end
 
+        @testset "setup --runtest fails when job tests fail" begin
+            try
+                _ssh_e2e_push_job_runtests!(hosts, remote_root; fail=true)
+                proc, out = _run_kit_setup(;
+                    setup_args=["--runtest", "--remote-path", remote_root, hosts...],
+                    project_root=proj,
+                    extra_env=merge(e2e_env, Dict("DISTSSHKIT_QUIET" => "0")),
+                )
+                _ssh_e2e_record!(
+                    suite, "setup_runtest_fail", proc, out;
+                    expect_ok=false, project=proj, kit=:setup,
+                )
+                @test proc.exitcode != 0
+            finally
+                _ssh_e2e_push_job_runtests!(hosts, remote_root; fail=false)
+            end
+        end
+
         @testset "size two remotes" begin
             proc, out = _run_kit_size(;
                 size_args=["-q", hosts...],

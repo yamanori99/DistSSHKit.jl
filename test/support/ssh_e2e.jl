@@ -244,6 +244,47 @@ function _vendor_distsshkit!(proj::AbstractString; kit_root::AbstractString=_kit
     return dest
 end
 
+"""Job `test/runtests.jl` for SshE2EApp. `fail=true` is a remote Pkg.test() miss."""
+function _ssh_e2e_job_runtests_src(; fail::Bool=false)::String
+    fail && return """
+        using Test
+        @testset "SshE2EApp job env" begin
+            @test false
+        end
+        """
+    return """
+        using Test
+        using SshE2EApp
+        using DistSSHKit
+        @testset "SshE2EApp job env" begin
+            @test SshE2EApp isa Module
+            @test DistSSHKit isa Module
+        end
+        """
+end
+
+"""Overwrite `test/runtests.jl` on each remote (after rsync; does not dirty local git)."""
+function _ssh_e2e_push_job_runtests!(
+    hosts,
+    remote_root::AbstractString;
+    fail::Bool=false,
+)
+    g = _docker_ssh_generated()
+    src = _ssh_e2e_job_runtests_src(; fail=fail)
+    mktemp() do path, io
+        write(io, src)
+        flush(io)
+        for host in hosts
+            proc, out = _run_subprocess(Cmd([
+                "scp", "-F", g.ssh_config, path,
+                "$(host):$(remote_root)/test/runtests.jl",
+            ]))
+            _assert_proc_ok(proc, out; label="scp job runtests $(host)")
+        end
+    end
+    return nothing
+end
+
 """
 Stage a durable SSH E2E remote project: vendored DistSSHKit, demos, smoke,
 `Pkg.instantiate`, and a git commit (for setup --check).
@@ -279,18 +320,7 @@ function _stage_ssh_e2e_remote_host!(
     mkpath(joinpath(proj, "src"))
     write(joinpath(proj, "src", "SshE2EApp.jl"), "module SshE2EApp\nend\n")
     mkpath(joinpath(proj, "test"))
-    write(
-        joinpath(proj, "test", "runtests.jl"),
-        """
-        using Test
-        using SshE2EApp
-        using DistSSHKit
-        @testset "SshE2EApp job env" begin
-            @test SshE2EApp isa Module
-            @test DistSSHKit isa Module
-        end
-        """,
-    )
+    write(joinpath(proj, "test", "runtests.jl"), _ssh_e2e_job_runtests_src())
 
     for (subdir, names) in (
         ("with_kit", ("square_echo.jl", "square_file.jl", "pipeline_square.jl")),

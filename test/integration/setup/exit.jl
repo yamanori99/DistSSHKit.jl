@@ -54,4 +54,27 @@ using Test
             @test occursin("rsync complete (2 host(s))", combined)
         end
     end
+
+    @testset "runtest" begin
+        # `--julia` skips remote detect; fake ssh still sees `Pkg.test()`.
+        _with_tempdir() do state_dir
+            proc, combined = _run_kit_setup(
+                setup_args=["--runtest", "--julia", "/bin/echo", "host1"],
+                extra_env=merge(
+                    _fake_setup_remote_env(state_dir),
+                    Dict("DISTSSHKIT_TEST_PKG_TEST_FAIL" => "1"),
+                ),
+            )
+            @test proc.exitcode == 1
+            @test occursin("Pkg.test did not succeed on any host", combined)
+        end
+        _with_tempdir() do state_dir
+            proc, combined = _run_kit_setup(
+                setup_args=["--runtest", "--julia", "/bin/echo", "host1", "host2"],
+                extra_env=_fake_setup_remote_env(state_dir),
+            )
+            @test proc.exitcode == 0
+            @test occursin("Pkg.test complete (2 host(s))", combined)
+        end
+    end
 end
