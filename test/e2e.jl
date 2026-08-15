@@ -121,6 +121,15 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
             @test occursin("Julia", out)
         end
 
+        @testset "setup --runtest (job Pkg.test)" begin
+            proc, out = _run_kit_setup(;
+                setup_args=["--runtest", "--remote-path", remote_root, hosts...],
+                project_root=proj,
+                extra_env=e2e_env,
+            )
+            _assert_ssh_e2e_ok(suite, "setup_runtest", proc, out; project=proj, kit=:setup)
+        end
+
         @testset "size two remotes" begin
             proc, out = _run_kit_size(;
                 size_args=["-q", hosts...],

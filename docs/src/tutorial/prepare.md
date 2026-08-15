@@ -20,6 +20,8 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 julia --project=. -m DistSSHKit setup --rsync YourHost1 YourHost2   # no remote .git/
 # or: julia --project=. -m DistSSHKit setup --clone YourHost1 YourHost2
 julia --project=. -m DistSSHKit setup --instantiate YourHost1 YourHost2
+# optional: job Pkg.test() on remotes (not DistSSHKit's tests)
+# julia --project=. -m DistSSHKit setup --runtest YourHost1 YourHost2
 ```
 
 `--rsync` is the usual first deploy; `--clone` is the git path (later updates:
@@ -34,6 +36,7 @@ Same steps from Julia:
 ```julia
 session = KitSession(workers=["YourHost1", "YourHost2"], yes=true)
 setup!(session, :rsync, :instantiate)
+# optional: setup!(session, :check); setup!(session, :runtest)
 # git remotes: setup!(session, :clone; repo="https://…") then :instantiate
 # later updates: setup!(session, :sync)
 ```
