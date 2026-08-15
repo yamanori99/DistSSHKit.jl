@@ -13,7 +13,7 @@ function _run_kit_setup(;
     project_root=nothing,
     extra_env::Dict{String,String}=Dict{String,String}(),
 )
-    function _run(proj::String)
+    function _run(proj)
         cmd = _kit_cli_cmd(vcat(["setup"], setup_args); julia=julia, project=kit_root)
         base = Dict{String,String}(
             "DISTSSHKIT_YES" => "1",
@@ -27,7 +27,7 @@ function _run_kit_setup(;
     end
     return _with_tempdir() do proj
         _write_host_project!(proj, "SetupCliHost")
-        return _run(abspath(string(proj)))
+        return _run(proj)
     end
 end
 
@@ -80,7 +80,7 @@ function _run_kit_go(;
     go_flags::Vector{String}=String[],
     extra_env::Dict{String,String}=Dict{String,String}(),
 )
-    function _run(proj::String)
+    function _run(proj)
         cmd = _kit_cli_cmd(
             vcat(["go"], go_flags, hosts, [String(script)], script_args);
             julia=julia,
@@ -98,7 +98,7 @@ function _run_kit_go(;
     end
     return _with_tempdir() do proj
         _write_host_project!(proj, "GoCliHost")
-        return _run(abspath(string(proj)))
+        return _run(proj)
     end
 end
 
@@ -113,7 +113,7 @@ function _run_kit_size(;
     project_root=nothing,
     extra_env::Dict{String,String}=Dict{String,String}(),
 )
-    function _run(proj::String)
+    function _run(proj)
         cmd = _kit_cli_cmd(vcat(["size"], size_args); julia=julia, project=kit_root)
         base = Dict{String,String}(
             "DISTSSHKIT_YES" => "1",
@@ -127,7 +127,7 @@ function _run_kit_size(;
     end
     return _with_tempdir() do proj
         _write_host_project!(proj, "SizeCliHost")
-        return _run(abspath(string(proj)))
+        return _run(proj)
     end
 end
 

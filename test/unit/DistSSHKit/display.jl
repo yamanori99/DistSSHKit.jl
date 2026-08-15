@@ -15,7 +15,7 @@ using Test
         end
 
         _with_tempdir() do tmp
-            d = abspath(string(tmp))
+            d = tmp
             nested = joinpath(d, "a", "b.txt")
             mkpath(dirname(nested))
             write(nested, "")
@@ -27,7 +27,7 @@ using Test
         # Standalone kit vs host-app embedding (the two layouts that matter).
         withenv("DISTRIBUTED_PROJECT_ROOT" => nothing) do
         _with_tempdir() do tmp
-            d = abspath(string(tmp))
+            d = tmp
             write(joinpath(d, "Project.toml"), "name = \"DistSSHKit\"\n")
             src = joinpath(d, "src")
             mkpath(src)
@@ -42,7 +42,7 @@ using Test
             @test DistSSHKit.cli_project_root("/unused") == "/override/root"
         end
         _with_tempdir() do tmp
-            d = abspath(string(tmp))
+            d = tmp
             app = joinpath(d, "MyApp")
             kit = joinpath(app, "DistSSHKit")
             scripts = joinpath(app, "scripts", "jobs")
@@ -55,14 +55,14 @@ using Test
             @test DistSSHKit.resolve_pkg_project_dir(scripts) == app
         end
         _with_tempdir() do tmp
-            d = abspath(string(tmp))
+            d = tmp
             @test DistSSHKit.project_package_name(d) === nothing
             write(joinpath(d, "Project.toml"), "name = \"FooBar\"\n")
             @test DistSSHKit.project_package_name(d) == "FooBar"
         end
         # Loaded DistSSHKit is not the host Project.toml (Pkg.add / apps).
         _with_tempdir() do tmp
-            d = abspath(string(tmp))
+            d = tmp
             pkg = joinpath(d, "packages", "DistSSHKit", "XXXX")
             mkpath(joinpath(pkg, "src"))
             write(joinpath(pkg, "Project.toml"), "name = \"DistSSHKit\"\n")

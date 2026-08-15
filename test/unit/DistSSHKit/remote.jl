@@ -103,7 +103,7 @@ using Test
     end
 
     _with_tempdir() do tmp
-        d = abspath(string(tmp))
+        d = tmp
         @test DistSSHKit.get_local_git_hash(d) === nothing
         @test DistSSHKit.clone_url_from_local_origin(d) === nothing
         @test DistSSHKit.local_git_clean(d) == true
@@ -125,11 +125,11 @@ using Test
 
         full = DistSSHKit.get_local_git_hash(d)
         @test full isa String
-        full = full::String
+        full isa String || error("expected full git hash")
         @test length(full) == 40
         short = DistSSHKit.get_local_git_hash(d; short=8)
         @test short isa String
-        short = short::String
+        short isa String || error("expected short git hash")
         @test length(short) == 8
         @test startswith(full, short)
 

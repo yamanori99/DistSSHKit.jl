@@ -2,7 +2,7 @@ using Test
 
 @testset "distributed" begin
     _with_tempdir() do tmp
-        repo = abspath(string(tmp))
+        repo = tmp
         sd = joinpath(repo, "scripts")
         mkpath(sd)
         out2 = joinpath(repo, "nested", "out2")

@@ -19,9 +19,9 @@ function _write_host_project!(
     return nothing
 end
 
-"""Isolated temp directory removed after `f(path::String)` returns."""
+"""Isolated temp directory removed after `f(path)` returns."""
 function _with_tempdir(f::Function)
-    path::String = abspath(string(mktempdir()))
+    path = abspath(string(mktempdir()))
     try
         return f(path)
     finally
@@ -31,7 +31,7 @@ end
 
 function _mktemp_host(f::Function)
     return _with_tempdir() do path
-        f(abspath(path))
+        f(path)
     end
 end
 
