@@ -28,7 +28,7 @@ How you call it is a separate choice:
   `pipeline!` for optional sync → size! → drive! → collect (not `setup!`)
 - **`distsshkit` (experimental)** — after `pkg> app add DistSSHKit`, run
   `distsshkit …` in the terminal (same flags as `-m`). When to prefer it:
-  [Requirements](@ref Requirements-apps).
+  [User Guide](@ref Manual-distsshkit).
 
 Same host tokens for all three (`local:2`, `user@host:1`). Details: [API](@ref API),
 [User Guide](@ref Manual).

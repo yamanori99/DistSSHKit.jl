@@ -27,6 +27,7 @@ makedocs(;
             "drive" => "manual/drive.md",
             "size" => "manual/size.md",
             "demo" => "manual/demo.md",
+            "distsshkit" => "manual/distsshkit.md",
         ],
         "API" => "api.md",
     ],

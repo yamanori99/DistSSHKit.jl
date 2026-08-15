@@ -13,6 +13,7 @@ Each command page starts with a **Flags** table for that command.
 | [drive](@ref Manual-drive) | Master + Distributed workers; driver farms work |
 | [size](@ref Manual-size) | Estimate worker counts from RAM / CPU |
 | [demo](@ref Manual-demo) | Install or list bundled example scripts |
+| [distsshkit](@ref Manual-distsshkit) | Optional terminal command (`pkg> app add`; experimental) |
 
 ## go vs drive (pick one)
 
