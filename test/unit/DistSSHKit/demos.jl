@@ -82,14 +82,16 @@ using Test
         @test occursin("demo list", sprint(showerror, err))
     end
 
-    DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(quiet=true, yes=true))
+    # `_run_kit_cli_script` (module.jl) leaves DISTSSHKIT_CLI_SUBCOMMAND_DONE=1;
+    # `main` would otherwise return 0 without running `demo`.
     mktemp() do path, io
-        code = redirect_stderr(io) do
-            DistSSHKit.main(["demo", "bogus"])
+        code = withenv("DISTSSHKIT_CLI_SUBCOMMAND_DONE" => "") do
+            redirect_stderr(io) do
+                DistSSHKit.main(["demo", "bogus"])
+            end
         end
         flush(io)
         @test code == 1
         @test occursin("Unknown demo command: bogus", read(path, String))
     end
-    DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession())
 end
