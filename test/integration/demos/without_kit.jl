@@ -1,5 +1,9 @@
 using Test
 
+# Oracle: without_kit scripts exit 0 via solo julia and via kit `go` (stdout
+# discarded for pi_*). pipeline_pi prints "pipeline ok". Stronger go-vs-solo
+# output comparison is a later pass.
+
 @testset "without_kit go local" begin
     kit_root = _kit_root()
     julia = _julia_exe()

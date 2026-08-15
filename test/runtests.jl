@@ -1,5 +1,6 @@
 #!/usr/bin/env julia
-# DistSSHKit unit tests (optional; not required in every host application).
+# DistSSHKit Pkg.test() entry: Aqua + unit + integration.
+# Does not include test/e2e.jl (real SSH; DISTSSHKIT_SSH_E2E=1 / up.sh --e2e).
 # From a standalone kit checkout (this directory as the active project):
 #   julia --project=. -e 'using Pkg; Pkg.test()'
 #   julia --project=. test/runtests.jl
@@ -29,7 +30,7 @@ function _unit_test_files()
         joinpath("DistSSHKit", "argv", "session.jl"),
         joinpath("DistSSHKit", "hosts.jl"),
         joinpath("DistSSHKit", "main_dispatch.jl"),
-        joinpath("DistSSHKit", "demo_cli.jl"),
+        joinpath("DistSSHKit", "demos.jl"),
         joinpath("DistSSHKit", "host_project_toml.jl"),
         joinpath("DistSSHKit", "setup_api.jl"),
         joinpath("DistSSHKit", "setup", "checks.jl"),
@@ -38,7 +39,6 @@ function _unit_test_files()
         joinpath("cli", "drive", "args.jl"),
         joinpath("cli", "go", "args.jl"),
         joinpath("cli", "setup", "args.jl"),
-        joinpath("cli", "setup", "exit.jl"),
         joinpath("cli", "setup", "using_guard.jl"),
         joinpath("cli", "size", "args.jl"),
     )
@@ -46,6 +46,9 @@ end
 
 function _integration_test_files()
     return (
+        joinpath("setup", "exit.jl"),
+        joinpath("go", "overlap.jl"),
+        joinpath("size", "measure.jl"),
         joinpath("drive", "local.jl"),
         joinpath("drive", "pkg.jl"),
         joinpath("drive", "log_via_script.jl"),

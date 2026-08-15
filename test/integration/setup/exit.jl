@@ -1,7 +1,8 @@
 using Test
 
-# Subprocess wiring for the kit `setup` CLI (1 sad + 1 happy per mode).
-# Module-level validate / op outcomes live under DistSSHKit/setup/.
+# Oracle: kit `setup` CLI in a child julia — exit code and a message needle
+# (1 sad + 1 happy per mode). Fake ssh/rsync only; not real OpenSSH.
+# Module-level validate / op outcomes live under unit/DistSSHKit/setup/.
 
 @testset "setup CLI exit codes" begin
     @testset "host validation wiring" begin

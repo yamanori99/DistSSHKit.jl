@@ -1,6 +1,9 @@
 using Test
 using Dates
 
+# Oracle: slot plan, batch paths, julia resolve, missing-script surfaces, remote
+# shell strings. Concurrent local `go!` is integration/go/overlap.jl.
+
 @testset "go" begin
     @testset "_go_plan_slots" begin
         let s = DistSSHKit._go_plan_slots(String[])
@@ -48,33 +51,6 @@ using Dates
         @test DistSSHKit._go_resolve_julia(real) == real
         @test_throws ArgumentError DistSSHKit._go_resolve_julia("/no/such/julia-bin")
         @test_throws ArgumentError DistSSHKit._go_resolve_julia("auto"; host="no-such-host.invalid")
-    end
-
-    @testset "local slots overlap" begin
-        mktempdir() do proj
-            write(joinpath(proj, "Project.toml"), "name = \"GoOverlap\"\n")
-            script = joinpath(proj, "sleep_mark.jl")
-            write(script, """
-                out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", ".")
-                mkpath(out)
-                write(joinpath(out, "t0.txt"), string(time()))
-                sleep(0.6)
-                """)
-            t0 = time()
-            result = DistSSHKit.go!(
-                script,
-                "local:2";
-                project=proj,
-                quiet=true,
-                yes=true,
-            )
-            wall = time() - t0
-            @test result.ok
-            a = parse(Float64, read(joinpath(result.output_dir, "local-1", "t0.txt"), String))
-            b = parse(Float64, read(joinpath(result.output_dir, "local-2", "t0.txt"), String))
-            @test abs(a - b) < 0.45  # sequential would be ~0.6s apart plus julia startup
-            @test wall < 8.0
-        end
     end
 
     @testset "script not found surfaces" begin

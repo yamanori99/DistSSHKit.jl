@@ -1,6 +1,6 @@
 using Test
 
-# Module setup rsync / clone dest messaging (CLI exit codes in cli/setup/exit.jl).
+# Module setup rsync / clone dest messaging (CLI exit codes in integration/setup/exit.jl).
 
 @testset "setup rsync" begin
     remote_path = "~/App.jl"

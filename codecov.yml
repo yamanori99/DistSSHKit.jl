@@ -8,4 +8,4 @@ coverage:
         informational: true
 
 # No `ignore` list: CLI entry points stay in coverage reports.
-# Local drive paths: `test/integration/drive/local.jl`. Remote SSH: `SSH E2E` workflow.
+# Local drive paths: `test/integration/drive/local.jl`. Remote SSH: `test/e2e.jl` (`SSH E2E` workflow).

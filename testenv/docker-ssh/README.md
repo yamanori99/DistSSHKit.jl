@@ -67,7 +67,7 @@ export DISTSSHKIT_WORKER_IMAGE=ghcr.io/yamanori99/distsshkit-linux-ssh-worker:la
 ```
 
 On a Mac or in WSL2 this is how you cover that controller against Linux workers.
-Suite coverage / artifacts: see `test/integration/ssh/run.jl` and
+Suite coverage / artifacts: see `test/e2e.jl` and
 `test/artifacts/README.md` (`$(cat test/artifacts/ssh-e2e/LATEST)/SUMMARY.txt`,
 plus `JULIA_PATHS.txt`).
 

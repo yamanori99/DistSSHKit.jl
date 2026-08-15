@@ -16,12 +16,13 @@ Tests run sequentially (`Test.@testset` nesting). `Pkg.test()` activates `test/P
 
 ```text
 test/
-  runtests.jl          # entry point
+  runtests.jl          # Pkg.test() entry (Aqua + unit + integration)
   aqua.jl              # Aqua.jl QA
+  e2e.jl               # real OpenSSH; not Pkg.test()
   support.jl           # includes support/*.jl
   support/             # shared helpers (subprocess, drive, staging, …)
-  unit/                # fast, in-process tests
-  integration/         # subprocess / drive smoke tests (slow)
+  unit/                # in-process; no child julia, no addprocs
+  integration/         # child julia and/or local addprocs
   fixtures/            # small driver scripts copied into temp host projects
   Project.toml         # test environment
 ```
@@ -33,27 +34,30 @@ unit/
   DistSSHKit/          # ↔ src/DistSSHKit/ (module API + setup cores + argv parsers)
     argv/              # ↔ DistSSHKit/argv/
     setup/             # ↔ DistSSHKit/setup/
-  cli/                 # ↔ src/cli/ (CLI entry wiring: using_guard, setup exit)
+  cli/                 # ↔ src/cli/ (CLI entry wiring, using_guard)
     drive/, go/, setup/, size/   # argv / help tests call DistSSHKit.parse_*
 ```
 
-`integration/` groups drive smokes and demo recipe runs.
+`integration/` is grouped by CLI/area name (`drive/`, `demos/`, `setup/`, `go/`, `size/`).
 
-Real OpenSSH E2E lives under `integration/ssh/` (not part of `Pkg.test()`).
+Real OpenSSH E2E is `test/e2e.jl` (not part of `Pkg.test()`).
 How to run: [`testenv/docker-ssh/README.md`](../testenv/docker-ssh/README.md).
 
 ## Layers
 
-| Layer | What it checks | Typical runtime |
-| --- | --- | --- |
-| **Aqua** (`aqua.jl`) | ambiguities, exports, compat, project consistency | ~5 s |
-| **unit** | parsing, display, module helpers, CLI arg tables | ~5 s |
-| **integration** | kit CLI `drive` / `go` in child processes (`-m` on 1.12+; `main` on 1.10–1.11) | ~2 min |
-| **ssh-e2e** (`E2E / ubuntu-latest → ubuntu-24.04`) | Real SSH + rsync against Docker workers (`DISTSSHKIT_SSH_E2E=1`). CI: every PR | ~10–20 min |
-| **ssh-e2e Linux daily** (`E2E daily / ubuntu-latest → ubuntu-24.04`) | Same suite on the daily timer (not a PR check). Pulls the worker image | ~10–20 min |
-| **ssh-e2e macOS** (`E2E daily / macos-15-intel → ubuntu-24.04`) | Same suite from **macOS Intel** + Colima. Daily 04:00 JST or Run workflow `E2E daily`. Pulls the worker image | ~25–50 min |
-| **ssh-e2e WSL** (`E2E daily / windows-latest (WSL2) → ubuntu-24.04`) | Same suite from WSL2. Daily / Run workflow. Not native Windows | ~20–45 min |
-| **doctests** (`Docs / Documenter - Julia 1.12 - ubuntu-latest`) | docstring examples in `src/` (`Documentation.yml`) | ~5 s |
+Green on one layer does not imply the others. `Pkg.test()` does not run `test/e2e.jl`.
+
+| Layer | Guarantees | Does not guarantee | Typical runtime |
+| --- | --- | --- | --- |
+| **JETLS** (independent) | types / hints on entry files | runtime behavior | — |
+| **Aqua** (`aqua.jl`) | ambiguities, exports, compat, project consistency | CLI / workers | ~5 s |
+| **unit** | in-process facts (parse, paths, fake setup ops, missing-script throws) | child julia, `addprocs`, SSH | ~30 s |
+| **integration** | child `julia` CLI and/or **local** `addprocs` (`-m` on 1.12+; `main` on 1.10–1.11) | real SSH / rsync | ~2 min |
+| **e2e** (`test/e2e.jl`; `E2E / ubuntu-latest → ubuntu-24.04`) | real SSH + rsync against Docker workers (`DISTSSHKIT_SSH_E2E=1`). CI: every PR | local-only CLI wiring | ~10–20 min |
+| **e2e Linux daily** (`E2E daily / ubuntu-latest → ubuntu-24.04`) | Same suite on the daily timer (not a PR check). Pulls the worker image | — | ~10–20 min |
+| **e2e macOS** (`E2E daily / macos-15-intel → ubuntu-24.04`) | Same suite from **macOS Intel** + Colima. Daily 04:00 JST or Run workflow `E2E daily` | — | ~25–50 min |
+| **e2e WSL** (`E2E daily / windows-latest (WSL2) → ubuntu-24.04`) | Same suite from WSL2. Daily / Run workflow. Not native Windows | — | ~20–45 min |
+| **doctests** (`Docs / Documenter - Julia 1.12 - ubuntu-latest`) | docstring examples in `src/` | worker / SSH | ~5 s |
 
 Most of the wall time in `Pkg.test()` is integration (child Julia + local workers).
 Remote SSH on PRs and main is **E2E / ubuntu-latest → ubuntu-24.04**. Daily / Run workflow `E2E daily`: **ubuntu-latest**, **macos-15-intel**, and **WSL2** against `ubuntu-24.04` workers. Doctests run in **Docs / Documenter - Julia 1.12 - ubuntu-latest**, not `Pkg.test()`. **Test / Pkg.test - Julia 1.10 - ubuntu-latest** / **1.11** uses `DistSSHKit.main` for CLI children (`-m` is 1.12+).
@@ -66,13 +70,13 @@ Commands differ in what their core work is:
 | --- | --- | --- | --- |
 | **setup** | Shells out to `ssh` / `rsync` | Fake doubles (`DISTSSHKIT_TEST_SSH`, `DISTSSHKIT_TEST_RSYNC` in `test/fixtures/`) | ssh-e2e |
 | **drive** / **go** | Julia `Distributed` workers | Real **local** `addprocs` (no SSH fake) | ssh-e2e |
-| **size** | Plan math (+ optional remote RSS via `addprocs`) | Pure unit for planning; no SSH fake | ssh-e2e if needed |
+| **size** | Plan math (+ optional remote RSS via `addprocs`) | Pure unit for planning; local probe worker in `integration/size/measure.jl` | ssh-e2e if needed |
 
 Local workers are a cheap real substitute for drive/go (same Julia worker path, no Docker).
 They cannot substitute for setup: copying/deleting a remote tree needs `ssh`/`rsync`, so unit tests swap those binaries for fakes. Do not add the same style of fake for drive/go/size; faking Julia SSH worker launch would be a different, heavier double, and local + ssh-e2e already split that coverage.
 
 Setup/go CLI subprocess helpers (`_run_kit_setup` / `_run_kit_go`) use an
-ephemeral project when `project_root` is omitted, so unit runs do not leave
+ephemeral project when `project_root` is omitted, so those runs do not leave
 `.distsshkit/` logs in the kit checkout. SSH E2E keeps durable runs under
 `test/artifacts/ssh-e2e/` (gitignored).
 
@@ -91,7 +95,7 @@ Loaded via `support.jl`:
 | Variable | Default | Effect |
 | --- | --- | --- |
 | `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL` | `1` in test children (automatic) | Skip broad `pkill` in drive; each subprocess cleans up its own workers via `rmprocs` |
-| `DISTSSHKIT_SSH_E2E` | unset | Set to `1` to run `test/integration/ssh/run.jl` (requires `testenv/docker-ssh` workers) |
+| `DISTSSHKIT_SSH_E2E` | unset | Set to `1` to run `test/e2e.jl` (requires `testenv/docker-ssh` workers) |
 
 SSH E2E keeps one suite dir under `test/artifacts/ssh-e2e/`. Open
 `SUMMARY.txt` only (see [`test/artifacts/README.md`](artifacts/README.md)).
@@ -105,9 +109,10 @@ Kit CLI flags (drive / go / setup / size) also honor `DISTSSHKIT_QUIET`, `DISTSS
 
 ## Adding tests
 
-1. Add a file under `unit/` or `integration/` (follow the existing directory naming).
+1. Add a file under `unit/` (src mirror) or `integration/<area>/` (failure mode). Do not register `test/e2e.jl` in `runtests.jl`.
 2. Register its path in `_unit_test_files()` or `_integration_test_files()` in `runtests.jl`.
 3. Reuse `support/` helpers for subprocess work; put one-off scripts in `fixtures/`.
+4. Put a short Oracle / non-guarantee comment at the top of the file.
 
 ## Aqua note
 

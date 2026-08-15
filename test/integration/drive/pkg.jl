@@ -1,5 +1,8 @@
 using Test
 
+# Oracle: host project with JSON3 + `drive.jl` subprocess prints PKG_DRIVER_SMOKE_OK.
+# Does not cover kit CLI after Pkg.develop (pkg_develop.jl).
+
 @testset "drive l:N with external package" begin
     kit_root = _kit_root()
     fixture = _fixture("pkg_driver_smoke.jl")

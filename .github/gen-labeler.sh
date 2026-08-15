@@ -74,7 +74,6 @@ EOF
     if [[ "$area" == "demos" ]]; then
       cat <<'EOF'
           - "demos/**"
-          - "test/integration/demos/**"
 EOF
     fi
   done

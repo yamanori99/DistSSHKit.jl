@@ -1,8 +1,10 @@
 #!/usr/bin/env julia
-# Real-SSH E2E against testenv/docker-ssh workers.
+# Real-SSH E2E against testenv/docker-ssh workers. Not part of Pkg.test().
+# Oracle: OpenSSH + rsync + remote Julia (setup / drive / go / git). Local
+# with_kit recipes are test/integration/demos/with_kit.jl — not duplicated here.
 #
 #   testenv/docker-ssh/scripts/up.sh --e2e
-#   DISTSSHKIT_SSH_E2E=1 julia --project=. test/integration/ssh/run.jl   # from kit root
+#   DISTSSHKIT_SSH_E2E=1 julia --project=. test/e2e.jl   # from kit root
 #
 # Afterward open only:
 #   $(cat test/artifacts/ssh-e2e/LATEST)/SUMMARY.txt
@@ -10,7 +12,7 @@
 using Test
 using DistSSHKit
 
-kit_root = abspath(joinpath(@__DIR__, "..", "..", ".."))
+kit_root = abspath(joinpath(@__DIR__, ".."))
 include(joinpath(kit_root, "test", "support.jl"))
 
 if !_ssh_e2e_enabled()
