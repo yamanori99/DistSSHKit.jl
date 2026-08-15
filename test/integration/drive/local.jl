@@ -1,5 +1,8 @@
 using Test
 
+# Oracle: host `src/cli/drive.jl` + `local:2` prints DISTSSHKIT_RUNNER_SMOKE_OK.
+# Does not cover kit module CLI, --log-dir, or external host deps.
+
 @testset "drive l:N" begin
     kit_root = _kit_root()
     fixture = _fixture("drive_local_smoke.jl")

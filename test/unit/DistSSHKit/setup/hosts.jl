@@ -1,6 +1,6 @@
 using Test
 
-# Module setup hosts — validate + op return values (CLI exit codes live in cli/setup/exit.jl).
+# Module setup hosts — validate + op return values (CLI exit codes live in integration/setup/exit.jl).
 
 @testset "setup hosts safety" begin
     function _with_fake_remotes(f::Function; extra_env=Dict{String,String}())

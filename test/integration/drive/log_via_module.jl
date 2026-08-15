@@ -1,5 +1,8 @@
 using Test
 
+# Oracle: kit module CLI (`-m` / `main`) + `--log-dir` writes one log with SMOKE_OK.
+# Does not cover raw `drive.jl` (log_via_script.jl).
+
 @testset "drive log via kit module CLI" begin
     fixture = _fixture("drive_local_smoke.jl")
     julia = _julia_exe()

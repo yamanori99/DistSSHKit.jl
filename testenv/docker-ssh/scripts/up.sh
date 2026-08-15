@@ -80,5 +80,5 @@ if [[ "$RUN_E2E" -eq 1 ]]; then
   export DISTSSHKIT_SSH_E2E=1
   export DISTSSHKIT_YES=1
   cd "${KIT_ROOT}"
-  exec julia --project=. --color=yes test/integration/ssh/run.jl
+  exec julia --project=. --color=yes test/e2e.jl
 fi

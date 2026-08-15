@@ -1,5 +1,8 @@
 using Test
 
+# Oracle: staged with_kit recipes under a temp host — square_file CSV bytes,
+# square_echo needle, pipeline_square CSV. Not SSH (test/e2e.jl).
+
 @testset "with_kit drive local" begin
     kit_root = _kit_root()
     julia = _julia_exe()

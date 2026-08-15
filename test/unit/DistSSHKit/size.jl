@@ -1,5 +1,8 @@
 using Test
 
+# Oracle: worker-count arithmetic, path maps, missing-probe throws. Local probe
+# worker RSS is integration/size/measure.jl.
+
 @testset "size" begin
     @testset "size_worker_count" begin
         @test DistSSHKit.size_worker_count(16.0, 8, 2.0; mem_headroom=0.75, master_gb=0.4, is_localhost=true) ==
@@ -101,23 +104,6 @@ using Test
         s = DistSSHKit.WorkerMemorySample(0.5, 1.2)
         @test DistSSHKit.effective_worker_gb(s) == 1.2
         @test DistSSHKit.per_worker_gb_dict(Dict("localhost" => s))["localhost"] == 1.2
-    end
-
-    @testset "measure_rss with probe (local)" begin
-        mktempdir() do tmp
-            write(joinpath(tmp, "Project.toml"), "name = \"ProbeTmp\"\nuuid = \"11111111-1111-1111-1111-111111111111\"\nversion = \"0.0.1\"\n")
-            mkdir(joinpath(tmp, "src"))
-            write(joinpath(tmp, "src", "ProbeTmp.jl"), "module ProbeTmp\nend\n")
-            probe = joinpath(tmp, "warmup.jl")
-            # ~8 MiB allocation — may or may not move rounded GB; peak >= baseline still holds.
-            write(probe, "const _SIZE_WARMUP = zeros(Float64, 1_000_000)\n")
-            samples = DistSSHKit.measure_rss(tmp, String[]; include_local=true, probe=probe)
-            @test haskey(samples, "localhost")
-            s = samples["localhost"]
-            @test s.baseline_gb >= DistSSHKit.WORKER_MEMORY_GB_FLOOR
-            @test s.peak_gb >= s.baseline_gb
-            @test DistSSHKit.effective_worker_gb(s) == max(s.baseline_gb, s.peak_gb)
-        end
     end
 
     @testset "resolve_size_probe_path" begin

@@ -39,7 +39,7 @@ julia --project=. -m DistSSHKit demo install
 julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_file.jl
 ```
 
-SSH / sync / worker changes: [`testenv/docker-ssh/scripts/up.sh --e2e`](testenv/docker-ssh/README.md) (macOS controllers included). To skip building the worker image: `DISTSSHKIT_WORKER_IMAGE=ghcr.io/yamanori99/distsshkit-linux-ssh-worker:latest`. Optional Mac-only workers (not CI): [`testenv/apple-container-ssh`](testenv/apple-container-ssh).
+SSH / sync / worker changes: [`testenv/docker-ssh/scripts/up.sh --e2e`](testenv/docker-ssh/README.md) (macOS controllers included). `Pkg.test()` Green does not cover real SSH; that suite is `test/e2e.jl` (independent gate). To skip building the worker image: `DISTSSHKIT_WORKER_IMAGE=ghcr.io/yamanori99/distsshkit-linux-ssh-worker:latest`. Optional Mac-only workers (not CI): [`testenv/apple-container-ssh`](testenv/apple-container-ssh).
 
 CI (fast on every PR, slow OS on a timer):
 

@@ -1,5 +1,8 @@
 using Test
 
+# Oracle: demo listing, script lookup, missing-script diagnostics. Running the
+# recipes is integration/demos/.
+
 @testset "bundled demos" begin
     demos = DistSSHKit.list_demos()
     @test isdir(DistSSHKit.demos_dir())
