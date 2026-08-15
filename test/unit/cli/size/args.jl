@@ -130,4 +130,26 @@ using Test
         )
         @test occursin("local:$(plan.local_workers)", out)
     end
+
+    @testset "run_size --gb-per-worker --local" begin
+        # In-process size CLI. No SSH. Parser tests above do not run size_main.
+        mktemp() do path, io
+            code = withenv("DISTSSHKIT_CLI_SUBCOMMAND_DONE" => "") do
+                redirect_stderr(devnull) do
+                    redirect_stdout(io) do
+                        DistSSHKit.run_size(["--gb-per-worker", "2", "--local"])
+                    end
+                end
+            end
+            flush(io)
+            out = read(path, String)
+            local_total, local_nproc = DistSSHKit.get_local_resources()
+            expected = DistSSHKit.size_worker_count(
+                local_total, local_nproc, 2.0; is_localhost=true,
+            )
+            @test code == 0
+            @test occursin("local:$(expected)", out)
+            @test occursin("Total: $(expected) workers", out)
+        end
+    end
 end

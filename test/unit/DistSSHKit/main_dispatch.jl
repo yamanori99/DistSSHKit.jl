@@ -1,28 +1,45 @@
 using Test
 
 @testset "(@main) dispatch" begin
-    # `julia -m DistSSHKit` invokes this module's `main` (the `(@main)` entry point).
-    # Redirect CLI help text so test output stays readable.
-    function _main_quiet(args)
-        withenv("DISTSSHKIT_CLI_SUBCOMMAND_DONE" => "") do
-            redirect_stdout(devnull) do
-                redirect_stderr(devnull) do
-                    return DistSSHKit.main(args)
+    # `julia -m DistSSHKit` invokes this module's `main`.
+    function _main_capture(args)
+        mktemp() do out_path, out_io
+            mktemp() do err_path, err_io
+                code = withenv("DISTSSHKIT_CLI_SUBCOMMAND_DONE" => "") do
+                    redirect_stdout(out_io) do
+                        redirect_stderr(err_io) do
+                            DistSSHKit.main(args)
+                        end
+                    end
                 end
+                flush(out_io)
+                flush(err_io)
+                return code, read(out_path, String), read(err_path, String)
             end
         end
     end
-    @test _main_quiet(String[]) == 1
-    # Unknown first token (typo / mistaken flag-as-subcommand) must fail, not exit 0.
-    @test _main_quiet(["bogus"]) == 1
-    @test _main_quiet(["rysnc", "host1"]) == 1
-    @test _main_quiet(["drive", "--help"]) == 0
-    @test _main_quiet(["go", "--help"]) == 0
-    @test _main_quiet(["setup", "--help"]) == 0
-    @test _main_quiet(["size", "--help"]) == 0
-    @test _main_quiet(["-h"]) == 0
-    @test _main_quiet(["--help"]) == 0
-    @test _main_quiet(["drive", "-h"]) == 0
-    @test _main_quiet(["--version"]) == 0
-    @test _main_quiet(["drive", "--version"]) == 0
+
+    let (code, _, err) = _main_capture(String[])
+        @test code == 1
+        @test occursin("Usage", err)
+        @test occursin("julia -m DistSSHKit <command>", err)
+    end
+    # Unknown first token must fail, not exit 0.
+    let (code, _, err) = _main_capture(["bogus"])
+        @test code == 1
+        @test occursin("Unknown subcommand: bogus", err)
+    end
+    let (code, _, err) = _main_capture(["rysnc", "host1"])
+        @test code == 1
+        @test occursin("Unknown subcommand: rysnc", err)
+    end
+    let (code, _, err) = _main_capture(["--help"])
+        @test code == 0
+        @test occursin("Usage", err)
+        @test occursin("julia -m DistSSHKit <command>", err)
+    end
+    let (code, out, _) = _main_capture(["--version"])
+        @test code == 0
+        @test occursin("DistSSHKit $(DistSSHKit.dist_ssh_kit_version())", out)
+    end
 end

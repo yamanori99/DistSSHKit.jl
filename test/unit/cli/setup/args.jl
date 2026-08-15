@@ -42,8 +42,8 @@ using Test
         @test occursin("--rsync", txt)
         @test occursin("--runtest", txt)
         @test occursin("--hosts", txt)
-        @test occursin("Workflow (recommended)", txt) || occursin("recommended", lowercase(txt))
-        @test occursin("--require-git", txt) || occursin("git parity", lowercase(txt))
+        @test occursin("Recommended:", txt)
+        @test occursin("--require-git", txt)
         @test !occursin("day-to-day default", lowercase(txt))
         @test !occursin("drive needs --skip-git-guard", lowercase(txt))
     end

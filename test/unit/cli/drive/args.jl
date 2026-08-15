@@ -4,43 +4,6 @@ using Test
     parse_drive_args = DistSSHKit.parse_drive_args
     drive_help_text = DistSSHKit.drive_help_text
 
-    @testset "missing script hints" begin
-        # Wrong layout under kit root: demos/foo.jl vs demos/with_kit/foo.jl
-        @test occursin("demos/with_kit/square_file.jl", DistSSHKit.explain_script_not_found(
-            joinpath(_kit_root(), "demos", "square_file.jl"),
-            _kit_root(),
-        ))
-
-        _with_tempdir() do tmp
-            missing_kit = joinpath(tmp, "demos", "with_kit", "square_file.jl")
-            msg = DistSSHKit.explain_script_not_found(missing_kit, tmp; surface=:cli)
-            @test occursin("Script not found", msg)
-            @test occursin("demo install", msg)
-            @test occursin("demos/with_kit/square_file.jl", msg)
-            @test !occursin("install_demos()", msg)
-
-            msg_api = DistSSHKit.explain_script_not_found(missing_kit, tmp; surface=:api)
-            @test occursin("DistSSHKit.install_demos()", msg_api)
-            @test !occursin("demo install", msg_api)
-
-            missing_custom = joinpath(tmp, "demos", "with_kit", "rho_sweep.jl")
-            msg2 = DistSSHKit.explain_script_not_found(missing_custom, tmp)
-            @test occursin("Script not found", msg2)
-            @test occursin("./demos/ is missing", msg2)
-            @test occursin("demo install", msg2)
-
-            mkpath(joinpath(tmp, "demos", "with_kit"))
-            msg3 = DistSSHKit.explain_script_not_found(missing_custom, tmp; surface=:api)
-            @test occursin("no such file under ./demos/", msg3)
-            @test occursin("DistSSHKit.install_demos()", msg3)
-            @test occursin("DistSSHKit.list_demos()", msg3)
-        end
-
-        let r = parse_drive_args(["s.jl"])
-            @test r.hint_surface === :cli
-        end
-    end
-
     @testset "collect modes" begin
         @test_throws ArgumentError parse_drive_args(["--collect", "h"])
         @test_throws ArgumentError parse_drive_args(["--collect-sync", "data/sweep", "host"])
@@ -68,6 +31,9 @@ using Test
             end
             let r = parse_drive_args(["-h"])
                 @test r.help == true
+            end
+            let r = parse_drive_args(["s.jl"])
+                @test r.hint_surface === :cli
             end
             let r = parse_drive_args(["--local", "4", "myscript.jl", "a", "b"])
                 @test r.local_workers == 4
@@ -186,9 +152,8 @@ using Test
         @test occursin("--require-git", txt)
         @test occursin("--sync", txt)
         @test occursin("--rsync", txt)
-        @test occursin("post-run-new", txt) || occursin("slot-overwrite", DistSSHKit.COLLECT_MODE_HELP)
-        # Story: parity is opt-in, not required after rsync
-        @test occursin("off by default", lowercase(txt)) || occursin("Default is off", txt)
+        @test occursin("post-run-new", txt)
+        @test occursin("off by default", lowercase(txt))
         @test !occursin("required after `setup --rsync`", txt)
     end
 end

@@ -16,6 +16,7 @@ using Test
     end)
     @test m._cli_bound_before_setup === DistSSHKit.cli_project_root
     Base.include(m, setup_jl)
-    @test m.resolve_remote_project_root("/tmp/App.jl") isa AbstractString
+    @test m.resolve_remote_project_root("/tmp/App.jl") ==
+        DistSSHKit.resolve_remote_project_root("/tmp/App.jl")
     @test isdefined(m, :setup_main)
 end
