@@ -36,7 +36,7 @@ julia> import Pkg; Pkg.add("DistSSHKit")
 Also needs **`ssh`**, **`rsync`**, and **`git`** (git deploy only) on the
 machine where you run the kit; `pkg> add` does not install them.
 [Requirements](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)
-(optional `distsshkit` on PATH is there too).
+(including the optional `distsshkit` command).
 
 Install, demo, `go` / `drive`, remote hosts, and API: **[Documentation](https://yamanori99.github.io/DistSSHKit.jl/stable/)**.
 

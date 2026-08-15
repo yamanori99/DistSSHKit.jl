@@ -26,8 +26,11 @@ How you call it is a separate choice:
 - **CLI** — `julia -m DistSSHKit go …` / `drive …` (and `setup`, `demo`, …)
 - **Julia API** — `setup!` for remotes, `go!` / `drive!` to run, or
   `pipeline!` for optional sync → size! → drive! → collect (not `setup!`)
+- **`distsshkit` (experimental)** — after `pkg> app add DistSSHKit`, run
+  `distsshkit …` in the terminal (same flags as `-m`). When to prefer it:
+  [Requirements](@ref Requirements-apps).
 
-Same host tokens either way (`local:2`, `user@host:1`). Details: [API](@ref API),
+Same host tokens for all three (`local:2`, `user@host:1`). Details: [API](@ref API),
 [User Guide](@ref Manual).
 
 ## Installation
@@ -49,8 +52,7 @@ Also needs **`ssh`**, **`rsync`**, and **`git`** (git deploy only);
 
 !!! note "CLI"
     These pages assume Julia **1.12+** and `julia --project=. -m DistSSHKit …`.
-    On 1.10–1.11 use `go!` / `drive!`. Optional PATH command:
-    [Requirements](@ref Requirements-apps).
+    On 1.10–1.11 use `go!` / `drive!`.
 
 ## Next
 

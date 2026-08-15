@@ -15,7 +15,7 @@ jobs.
   - Library (`Pkg.add` / `using` / `go!` / `drive!`): **1.10+**
   - Terminal CLI (`julia -m DistSSHKit`): **1.12+** (no `-m` before 1.12; use
     the [API](@ref API) or [`main`](@ref))
-  - Optional `distsshkit` on PATH: [below](@ref Requirements-apps)
+  - Optional `distsshkit` command: [below](@ref Requirements-apps)
   - Same **major.minor** on the controller and SSH hosts (`setup --check` fails
     on a mismatch unless `--ignore-julia-version`; patch-only differences warn)
   - Prefer **[juliaup](https://github.com/JuliaLang/juliaup)**
@@ -28,16 +28,25 @@ project on the Linux filesystem (`~/…`), not `/mnt/c/…`. Install `ssh` /
 `rsync` / Julia in WSL. SSH E2E: same `./testenv/docker-ssh/scripts/up.sh --e2e`
 as Linux (Docker Compose must be visible from WSL).
 
-## [`distsshkit` on PATH](@id Requirements-apps)
+## [`distsshkit`](@id Requirements-apps)
 
-`pkg> app add DistSSHKit` (Julia **1.12+**; [Pkg Apps](https://pkgdocs.julialang.org/v1/apps/)
-is experimental). Put `~/.julia/bin` on `PATH`. Same argv as
-`julia -m DistSSHKit`, always the Apps copy, not `--project=.`.
+A third way to call the kit: install a `distsshkit` command you can type in the
+terminal, like `git` or `rsync`. This is Julia **1.12+**
+[Pkg Apps](https://pkgdocs.julialang.org/v1/apps/), which is still experimental.
+Default remains `pkg> add` and `julia --project=. -m DistSSHKit`.
+
+```julia
+pkg> app add DistSSHKit
+```
+
+Add `~/.julia/bin` to `PATH` if Pkg asks. Then `distsshkit go …` is the same
+argv as `julia -m DistSSHKit go …`, but it always runs the Apps copy of
+DistSSHKit, not the kit in `--project=.`.
 
 | Command | Use |
 | --- | --- |
-| `go` / `setup` / `demo` | `distsshkit …` |
-| `drive` / `size` | `julia --project=. -m DistSSHKit …` (shim pins `JULIA_LOAD_PATH`) |
+| `go` / `setup` / `demo` | `distsshkit …` is fine |
+| `drive` / `size` | stay on `julia --project=. -m DistSSHKit …` (Apps pins `JULIA_LOAD_PATH`) |
 
 After changing juliaup: `pkg> app update DistSSHKit`.
 
