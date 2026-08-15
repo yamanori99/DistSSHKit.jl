@@ -1,0 +1,151 @@
+name: CI weekly
+
+# Not on pull_request: insurance for toolchain drift (Julia 1.13, Aqua, JETLS
+# @release) when no PR ran that week. PR / main push stay the gate.
+on:
+  workflow_dispatch:
+  # Sunday 10:00 JST (UTC 01:00). Misses E2E daily (UTC 19:00).
+  schedule:
+    - cron: "0 1 * * 0"
+
+concurrency:
+  group: ci-weekly-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  test-1-10:
+    name: Pkg.test - Julia 1.10 - ubuntu-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/pkg-test
+        with:
+          version: "1.10"
+
+  test-1-11:
+    name: Pkg.test - Julia 1.11 - ubuntu-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/pkg-test
+        with:
+          version: "1.11"
+
+  test-1-12:
+    name: Pkg.test - Julia 1.12 - ubuntu-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/pkg-test
+        with:
+          version: "1.12"
+
+  test-1-13:
+    name: Pkg.test - Julia 1.13 - ubuntu-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/pkg-test
+        with:
+          version: "~1.13.0-0"
+
+  jetls-1-12:
+    name: JETLS - Julia 1.12 - ubuntu-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - id: files
+        run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
+      - uses: aviatesk/JETLS.jl/.github/actions/check@release
+        with:
+          files: ${{ steps.files.outputs.list }}
+          julia-version: "1.12"
+          exit-severity: hint
+          progress: none
+
+  jetls-1-13:
+    name: JETLS - Julia 1.13 - ubuntu-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - id: files
+        run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
+      - uses: aviatesk/JETLS.jl/.github/actions/check@release
+        with:
+          files: ${{ steps.files.outputs.list }}
+          julia-version: "~1.13.0-0"
+          exit-severity: hint
+          progress: none
+
+  aqua-1-12:
+    name: Aqua - Julia 1.12 - ubuntu-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: "1.12"
+      - uses: julia-actions/cache@v3
+      - name: Aqua.test_all (latest Aqua)
+        run: ./.github/aqua-check.sh
+
+  aqua-1-13:
+    name: Aqua - Julia 1.13 - ubuntu-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: "~1.13.0-0"
+      - uses: julia-actions/cache@v3
+      - name: Aqua.test_all (latest Aqua)
+        run: ./.github/aqua-check.sh
+
+  notify:
+    needs:
+      - test-1-10
+      - test-1-11
+      - test-1-12
+      - test-1-13
+      - jetls-1-12
+      - jetls-1-13
+      - aqua-1-12
+      - aqua-1-13
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    name: notify
+    permissions:
+      issues: write
+    steps:
+      - name: Open or close tracking issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FAILED: ${{ contains(join(needs.*.result, ','), 'failure') }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title='CI weekly failed'
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label ci --search "in:title $title" --json number --jq '.[0].number // empty')"
+          if [ "$FAILED" = "true" ]; then
+            body="Latest run: $RUN_URL
+
+          Not a PR check. Re-run **CI weekly** after a fix."
+            if [ -n "$existing" ]; then
+              gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+            else
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label ci --body "$body"
+            fi
+          elif [ -n "$existing" ]; then
+            gh issue close "$existing" --repo "$GITHUB_REPOSITORY" --reason completed --comment "Latest run succeeded: $RUN_URL"
+          fi
