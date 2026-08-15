@@ -81,6 +81,15 @@ function main()
         exit(0)
     end
 
+    # Job `setup --runtest` (`using Pkg; Pkg.test()`). Preflight is `echo ok`.
+    if occursin("Pkg.test()", script)
+        if get(ENV, "DISTSSHKIT_TEST_PKG_TEST_FAIL", "") == "1"
+            println(stderr, "Test Failed")
+            exit(1)
+        end
+        exit(0)
+    end
+
     exit(0)
 end
 
