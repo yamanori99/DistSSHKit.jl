@@ -71,6 +71,8 @@ include(joinpath(@__DIR__, "support.jl"))
     @testset "integration" verbose=true begin
         println("▸ integration/setup/exit.jl")
         include(joinpath(@__DIR__, "integration", "setup", "exit.jl"))
+        println("▸ integration/go/cli.jl")
+        include(joinpath(@__DIR__, "integration", "go", "cli.jl"))
         println("▸ integration/go/overlap.jl")
         include(joinpath(@__DIR__, "integration", "go", "overlap.jl"))
         println("▸ integration/size/measure.jl")
