@@ -27,12 +27,12 @@ using Test
         @test haskey(kit_deps, "TOML")
     end
     kit = TOML.parsefile(kit_toml)
-    apps = get(kit, "apps", nothing)
-    @test apps isa AbstractDict
+    @test haskey(kit, "apps")
+    apps = kit["apps"]::AbstractDict
     @test haskey(apps, "distsshkit")
     @test !haskey(apps, "DistSSHKit")
     @test !haskey(apps, "dsk")
-    flags = get(apps["distsshkit"], "julia_flags", nothing)
+    flags = apps["distsshkit"]["julia_flags"]
     @test flags isa AbstractVector
-    @test "--startup-file=no" in String.(flags)
+    @test "--startup-file=no" in String.(flags::AbstractVector)
 end

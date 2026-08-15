@@ -27,7 +27,14 @@ using Dates
             @test all(x -> x.kind === :remote, s)
         end
         @test_throws ArgumentError DistSSHKit._go_plan_slots(["local:0"])
-        @test_throws ArgumentError match(r"did you mean local", DistSSHKit._go_plan_slots(["lacal:0"]))
+        err = try
+            DistSSHKit._go_plan_slots(["lacal:0"])
+            nothing
+        catch e
+            e
+        end
+        @test err isa ArgumentError
+        @test occursin("did you mean local", sprint(showerror, err))
         @test occursin("root@", DistSSHKit._go_host_ssh_hint("192.0.2.11"))
         @test isempty(DistSSHKit._go_host_ssh_hint("root@192.0.2.11"))
         @test isdefined(DistSSHKit, :probe_remote_project_deps)
