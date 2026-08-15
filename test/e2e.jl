@@ -47,7 +47,7 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
                 for host in hosts
                     found = DistSSHKit.resolve_remote_julia(host, "auto")
                     @test found isa AbstractString
-                    found = found::String
+                    found isa AbstractString || error("expected remote julia path")
                     @test isabspath(found) || startswith(found, '/')
                     @test found != "julia"
                     ver = DistSSHKit.get_remote_julia_version(host, found)
@@ -213,8 +213,9 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
             _assert_ssh_e2e_ok(suite, "go_pi_file", proc, out; project=proj, kit=:go)
             batch = _ssh_e2e_latest_go_batch(proj)
             @test batch !== nothing
+            batch === nothing && error("expected go batch for pi_file")
             for host in hosts
-                slot = joinpath(batch::String, host)
+                slot = joinpath(batch, host)
                 @test isdir(slot)
                 @test isfile(joinpath(slot, "pi_results.txt"))
                 body = read(joinpath(slot, "pi_results.txt"), String)
@@ -351,7 +352,7 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
                 seed = _ssh_e2e_seed_git_origin!(proj)
             end
             @test seed !== nothing
-            seed = seed::NamedTuple
+            seed === nothing && error("expected git origin seed")
 
             proc, out = _run_kit_setup(;
                 setup_args=[
@@ -391,7 +392,8 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
             _assert_ssh_e2e_ok(suite, "git_check", proc, out; project=proj, kit=:setup)
             local_before = DistSSHKit.get_local_git_hash(proj; short=12)
             @test local_before isa String
-            @test occursin(local_before::String, out)
+            local_before isa String || error("expected local git hash")
+            @test occursin(local_before, out)
 
             bumped = nothing
             withenv(git_env...) do
@@ -413,7 +415,8 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
                 extra_env=merge(git_env, Dict("DISTSSHKIT_QUIET" => "0")),
             )
             _assert_ssh_e2e_ok(suite, "git_check_after_sync", proc, out; project=proj, kit=:setup)
-            @test occursin(bumped::String, out)
+            bumped isa String || error("expected bumped git hash")
+            @test occursin(bumped, out)
 
             # drive --require-git must pass when remotes have matching .git/
             proc, out = _run_kit_drive(;

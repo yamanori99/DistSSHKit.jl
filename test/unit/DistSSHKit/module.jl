@@ -2,7 +2,7 @@ using Test
 
 @testset "DistSSHKit module" begin
     _with_tempdir() do tmp
-        d = abspath(string(tmp))
+        d = tmp
         @test DistSSHKit._project_toml_version(joinpath(d, "Project.toml")) === nothing
         write(joinpath(d, "Project.toml"), "name = \"Foo\"\n")
         @test DistSSHKit._project_toml_version(joinpath(d, "Project.toml")) === nothing
