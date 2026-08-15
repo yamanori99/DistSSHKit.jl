@@ -138,14 +138,14 @@ using Test
         @testset "quiet keeps kit log" begin
             _with_tempdir() do tmp::String
                 with_kit_verbosity(:quiet) do
-                    log_path = nothing
-                    out, _ = _capture_stdio() do _, _
-                        log_path = DistSSHKit.init_log_file(tmp; prefix="quiet_test")
+                    out, log_path = _capture_stdio() do _, _
+                        path = DistSSHKit.init_log_file(tmp; prefix="quiet_test")
                         DistSSHKit.writeln_both("hello-quiet")
                         DistSSHKit.println_fatal("fatal-line")
+                        return path
                     end
                     DistSSHKit.close_log_file()
-                    body = read(log_path::String, String)
+                    body = read(log_path, String)
                     @test occursin("hello-quiet", body)
                     @test occursin("Log file:", body)
                     @test occursin("fatal-line", body)
