@@ -35,26 +35,8 @@ julia> import Pkg; Pkg.add("DistSSHKit")
 
 Also needs **`ssh`**, **`rsync`**, and **`git`** (git deploy only) on the
 machine where you run the kit; `pkg> add` does not install them.
-[Requirements](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/).
-
-Optional (Julia **1.12+**, [Pkg Apps](https://pkgdocs.julialang.org/v1/apps/),
-experimental): a PATH shim that always runs the **Apps** copy of DistSSHKit,
-not the kit in the current project. For the project kit, keep
-`julia --project=. -m DistSSHKit`.
-
-```julia
-pkg> app add DistSSHKit
-```
-
-If `~/.julia/bin` is on `PATH` (Pkg warns when it is not):
-
-```bash
-distsshkit --help
-```
-
-Same arguments as `julia -m DistSSHKit`. Fits `go` / `setup` / `demo`. For
-`drive` / `size`, use `julia --project=. -m DistSSHKit` so workers use the job
-project.
+[Requirements](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)
+(optional `distsshkit` on PATH is there too).
 
 Install, demo, `go` / `drive`, remote hosts, and API: **[Documentation](https://yamanori99.github.io/DistSSHKit.jl/stable/)**.
 

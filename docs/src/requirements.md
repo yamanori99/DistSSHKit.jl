@@ -15,13 +15,7 @@ jobs.
   - Library (`Pkg.add` / `using` / `go!` / `drive!`): **1.10+**
   - Terminal CLI (`julia -m DistSSHKit`): **1.12+** (no `-m` before 1.12; use
     the [API](@ref API) or [`main`](@ref))
-  - Optional PATH shim (`pkg> app add DistSSHKit` → `distsshkit`): **1.12+**,
-    [Pkg Apps](https://pkgdocs.julialang.org/v1/apps/) (experimental). Put
-    `~/.julia/bin` on `PATH`. The shim always runs the Apps copy of DistSSHKit,
-    not the kit in the current project. Prefer it for `go` / `setup` / `demo`.
-    For `drive` / `size`, use `julia --project=. -m DistSSHKit` (the shim pins
-    `JULIA_LOAD_PATH`). The Julia executable baked into the shim is the one
-    used at `app add`; after changing juliaup, run `pkg> app update DistSSHKit`.
+  - Optional `distsshkit` on PATH: [below](@ref Requirements-apps)
   - Same **major.minor** on the controller and SSH hosts (`setup --check` fails
     on a mismatch unless `--ignore-julia-version`; patch-only differences warn)
   - Prefer **[juliaup](https://github.com/JuliaLang/juliaup)**
@@ -33,6 +27,19 @@ WSL2 is Linux. Run the kit **inside** the distro (not PowerShell). Keep the
 project on the Linux filesystem (`~/…`), not `/mnt/c/…`. Install `ssh` /
 `rsync` / Julia in WSL. SSH E2E: same `./testenv/docker-ssh/scripts/up.sh --e2e`
 as Linux (Docker Compose must be visible from WSL).
+
+## [`distsshkit` on PATH](@id Requirements-apps)
+
+`pkg> app add DistSSHKit` (Julia **1.12+**; [Pkg Apps](https://pkgdocs.julialang.org/v1/apps/)
+is experimental). Put `~/.julia/bin` on `PATH`. Same argv as
+`julia -m DistSSHKit`, always the Apps copy, not `--project=.`.
+
+| Command | Use |
+| --- | --- |
+| `go` / `setup` / `demo` | `distsshkit …` |
+| `drive` / `size` | `julia --project=. -m DistSSHKit …` (shim pins `JULIA_LOAD_PATH`) |
+
+After changing juliaup: `pkg> app update DistSSHKit`.
 
 ## Remotes
 

@@ -5,10 +5,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
-- Optional Pkg Apps entry (Julia **1.12+**): `pkg> app add DistSSHKit` installs
-  a `distsshkit` shim. Same dispatcher as `julia -m DistSSHKit`. The default
-  install remains `pkg> add`. Drive / size still belong on
-  `julia --project=. -m DistSSHKit`.
+- Optional `pkg> app add DistSSHKit` (Pkg Apps, experimental): `distsshkit` on
+  PATH. Same argv as `-m`. Prefer for `go` / `setup` / `demo`; `drive` / `size`
+  stay `julia --project=. -m DistSSHKit`.
 
 - `setup --runtest`: `Pkg.test()` of the **job** project on remotes (after
   `--check`; not DistSSHKit's own `Pkg.test()`).
