@@ -3,8 +3,8 @@
 ## Summary
 
 <!-- What / why -->
-<!-- Type label is automatic from the branch prefix (feat/ → enhancement, fix/ → bug,
-     otherwise chore). Override with gh pr edit if needed. -->
+<!-- Type label: closing issue (`Fixes #N`) if unique, else branch prefix
+     (feat/ → enhancement, fix/ → bug, otherwise chore). Override with gh pr edit. -->
 
 ## Checklist
 

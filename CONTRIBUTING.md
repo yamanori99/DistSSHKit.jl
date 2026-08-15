@@ -85,7 +85,7 @@ Path labels come from generated `.github/labeler.yml`:
 
 `src/cli/<area>/` → `area:<area>`; `explain` / `demos` are also path-auto. No catch-all `area:kit`. New CLI area: regenerate, commit, create the GitHub label if needed.
 
-Every PR needs **one** type label. CI infers from the branch prefix: `feat/`/`feature/` → `enhancement`; `fix/`/`bug/`/`hotfix/` → `bug`; `breaking/`/`break/` → `breaking`; `chore/`/`docs/`/`ci/`/`build/`/`test/`/`refactor/` and anything else → `chore`. Override with `gh pr edit N --add-label …`. Unknown prefixes do not fail the check.
+Every PR needs **one** type label. CI infers, in order: a unique `bug` / `enhancement` / `chore` on a closing issue (`Fixes #N`); else the branch prefix (`feat/`/`feature/` → `enhancement`; `fix/`/`bug/`/`hotfix/` → `bug`; `breaking/`/`break/` → `breaking`; `chore/`/`docs/`/`ci/`/`build/`/`test/`/`refactor/` and anything else → `chore`). `fix/` plus `Fixes` an enhancement issue gets `enhancement`. Override with `gh pr edit N --add-label …`. Unknown prefixes do not fail the check.
 
 `breaking` may combine with `bug` / `enhancement` / `chore`. It flags a version cut (`0.x.y` bump `x`, or major after `1.0`); the `Project.toml` bump is a separate decision.
 
