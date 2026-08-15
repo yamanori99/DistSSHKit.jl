@@ -1,5 +1,12 @@
 FROM ubuntu:24.04
 
+# GHCR package page (description / source / license):
+# https://docs.github.com/packages/working-with-a-github-packages-registry/working-with-the-container-registry
+LABEL org.opencontainers.image.source="https://github.com/yamanori99/DistSSHKit.jl"
+LABEL org.opencontainers.image.documentation="https://github.com/yamanori99/DistSSHKit.jl/blob/main/testenv/docker-ssh/README.md"
+LABEL org.opencontainers.image.description="Linux SSH worker for DistSSHKit E2E (sshd, rsync, git, Julia 1.12). Not the DistSSHKit runtime."
+LABEL org.opencontainers.image.licenses="MIT"
+
 ENV DEBIAN_FRONTEND=noninteractive
 ENV SSH_USER=dev
 
