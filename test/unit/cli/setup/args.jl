@@ -13,6 +13,11 @@ using Test
         @test r.ignore_julia_version == true
     end
 
+    let r = parse_setup_args(["--runtest", "host1"])
+        @test r.mode == :runtest
+        @test r.hosts == ["host1"]
+    end
+
     let r = parse_setup_args(["--rsync", "host1", "host2"])
         @test r.mode == :rsync_push
         @test r.hosts == ["host1", "host2"]
@@ -35,6 +40,7 @@ using Test
     @testset "help smoke (rsync-first)" begin
         txt = DistSSHKit.setup_help_text()
         @test occursin("--rsync", txt)
+        @test occursin("--runtest", txt)
         @test occursin("--hosts", txt)
         @test occursin("Workflow (recommended)", txt) || occursin("recommended", lowercase(txt))
         @test occursin("--require-git", txt) || occursin("git parity", lowercase(txt))

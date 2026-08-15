@@ -8,6 +8,7 @@ const _SETUP_BANG_MODES = (
     :pull,
     :instantiate,
     :check,
+    :runtest,
     :cleanup,
 )
 
@@ -26,6 +27,7 @@ Prepare SSH hosts — same jobs as `julia -m DistSSHKit setup --…`.
 | `:pull` | `--pull` | Local pull then remote pull |
 | `:instantiate` | `--instantiate` | `julia=` (default `"auto"`) |
 | `:check` | `--check` | `ignore_julia_version=`, `check_code_sync=` |
+| `:runtest` | `--runtest` | job `Pkg.test()` on remotes; `julia=` |
 | `:cleanup` | `--cleanup` | Kill stale workers (no confirm) |
 
 Confirmations follow `session.yes` (CLI `-y`). Multiple modes run in order and
@@ -120,6 +122,13 @@ function _setup_one!(
         return SyncResult(false, raw.host_results; ok=raw.ok)
     elseif mode === :instantiate
         return instantiate!(session; julia=julia_path)
+    elseif mode === :runtest
+        preflight_setup_ssh(hosts) || return SyncResult(true, HostResult[]; ok=false)
+        raw = runtest_remotes(
+            hosts, julia_path, remote_path, session.project;
+            path_anchor=session.project,
+        )
+        return _sync_result_from_host_op(raw)
     elseif mode === :check
         result = check_prerequisites(
             hosts,

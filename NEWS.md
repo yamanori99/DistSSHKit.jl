@@ -10,6 +10,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
   install remains `pkg> add`. Drive / size still belong on
   `julia --project=. -m DistSSHKit`.
 
+- `setup --runtest`: `Pkg.test()` of the **job** project on remotes (after
+  `--check`; not DistSSHKit's own `Pkg.test()`).
+
 ## 0.2.1 (2026-08-14)
 
 Patch after the first General registration (`0.2.0`).

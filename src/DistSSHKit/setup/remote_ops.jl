@@ -221,18 +221,20 @@ function cleanup_remote_workers(hosts::Vector{String})::NamedTuple
 end
 
 """
-Run Pkg.instantiate on remote hosts (parallel).
+Run `using Pkg; <pkg_e>` on remote hosts (parallel) with `--project` at `remote_path`.
 
 Returns `(cancelled=false, succeeded, failed)`.
 Private git deps need working SSH on the remote (or agent forwarding). Uses
 `JULIA_PKG_USE_CLI_GIT=true` so Pkg prefers the `git` CLI over LibGit2.
 """
-function instantiate_remotes(
+function _pkg_e_on_remotes(
     hosts::Vector{String},
     julia_path::String,
     remote_path::String,
     project::AbstractString;
     path_anchor::AbstractString=project,
+    pkg_e::AbstractString,
+    spin_label::AbstractString,
 )::NamedTuple
     kit_println("  Local project: $(cli_project_disp(project, path_anchor))")
     kit_println("  Remote --project: $remote_path")
@@ -245,7 +247,7 @@ function instantiate_remotes(
     pq = _remote_shell_path_word(remote_path)
     results = Dict{String,Bool}()
     fail_msgs = Dict{String,String}()
-    kit_spin!("  Instantiating ($(length(hosts)) hosts) ") do
+    kit_spin!("  $spin_label ($(length(hosts)) hosts) ") do
         @sync for host in hosts
             @async begin
                 host_julia = julia_path == "auto" ? detect_julia_path(host) : julia_path
@@ -256,7 +258,7 @@ function instantiate_remotes(
                     jb = _remote_shell_path_word(host_julia)
                     # Prefer git CLI (ssh-agent / SSH config) over LibGit2 credentials UI.
                     cmd = "JULIA_PKG_USE_CLI_GIT=true $jb --project=$pq --startup-file=no " *
-                        "-e 'using Pkg; Pkg.instantiate()'"
+                        "-e 'using Pkg; $pkg_e'"
                     out = IOBuffer()
                     err = IOBuffer()
                     try
@@ -310,6 +312,37 @@ function instantiate_remotes(
         end
     end
     return (; cancelled=false, succeeded, failed, hosts=host_results)
+end
+
+function instantiate_remotes(
+    hosts::Vector{String},
+    julia_path::String,
+    remote_path::String,
+    project::AbstractString;
+    path_anchor::AbstractString=project,
+)::NamedTuple
+    return _pkg_e_on_remotes(
+        hosts, julia_path, remote_path, project;
+        path_anchor=path_anchor,
+        pkg_e="Pkg.instantiate()",
+        spin_label="Instantiating",
+    )
+end
+
+"""Run `Pkg.test()` of the **job** project on remote hosts (not DistSSHKit's tests)."""
+function runtest_remotes(
+    hosts::Vector{String},
+    julia_path::String,
+    remote_path::String,
+    project::AbstractString;
+    path_anchor::AbstractString=project,
+)::NamedTuple
+    return _pkg_e_on_remotes(
+        hosts, julia_path, remote_path, project;
+        path_anchor=path_anchor,
+        pkg_e="Pkg.test()",
+        spin_label="Pkg.test",
+    )
 end
 
 """Resolve clone URL: `--repo` / `repo=` wins, else local `origin` (HTTPS GitHub → SSH)."""

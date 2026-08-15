@@ -268,10 +268,29 @@ function _stage_ssh_e2e_remote_host!(
 
         [sources]
         DistSSHKit = {path = "deps/DistSSHKit"}
+
+        [extras]
+        Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+        [targets]
+        test = ["Test"]
         """,
     )
     mkpath(joinpath(proj, "src"))
     write(joinpath(proj, "src", "SshE2EApp.jl"), "module SshE2EApp\nend\n")
+    mkpath(joinpath(proj, "test"))
+    write(
+        joinpath(proj, "test", "runtests.jl"),
+        """
+        using Test
+        using SshE2EApp
+        using DistSSHKit
+        @testset "SshE2EApp job env" begin
+            @test SshE2EApp isa Module
+            @test DistSSHKit isa Module
+        end
+        """,
+    )
 
     for (subdir, names) in (
         ("with_kit", ("square_echo.jl", "square_file.jl", "pipeline_square.jl")),

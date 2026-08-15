@@ -3,7 +3,7 @@
 `julia -m DistSSHKit setup` — deploy and verify the project on SSH hosts.
 
 Recommended workflow:
-  1. --rsync → 2. --instantiate → 3. --check → `go` / `drive`
+  1. --rsync → 2. --instantiate → 3. --check → 4. --runtest (optional) → `go` / `drive`
   Optional git: --clone → --instantiate → --check → --sync / --pull
   Replace a remote tree: --delete, then --rsync or --clone
 
@@ -83,6 +83,7 @@ if !isdefined(@__MODULE__, :setup_main)
                 :sync => "Sync",
                 :rsync_push => "rsync (no git)",
                 :instantiate => "Instantiate",
+                :runtest => "Pkg.test (job)",
                 :cleanup => "Cleanup Workers",
             )[opts.mode]
             print_header("DistSSHKit setup · $mode_name")
@@ -91,7 +92,7 @@ if !isdefined(@__MODULE__, :setup_main)
             kit_println()
 
             # Mutating / multi-host SSH ops: fail fast before confirmations.
-            if opts.mode in (:delete, :clone, :rsync_push, :instantiate)
+            if opts.mode in (:delete, :clone, :rsync_push, :instantiate, :runtest)
                 if !preflight_setup_ssh(opts.hosts)
                     print_err("SSH preflight failed. Fix connectivity, then retry.")
                     kit_println()
@@ -128,6 +129,16 @@ if !isdefined(@__MODULE__, :setup_main)
                 return finish_host_op!(
                     "Instantiate",
                     instantiate_remotes(
+                        opts.hosts, opts.julia_path, remote_path, project;
+                        path_anchor=path_anchor,
+                    ),
+                ) ? 0 : 1
+            end
+
+            if opts.mode == :runtest
+                return finish_host_op!(
+                    "Pkg.test",
+                    runtest_remotes(
                         opts.hosts, opts.julia_path, remote_path, project;
                         path_anchor=path_anchor,
                     ),

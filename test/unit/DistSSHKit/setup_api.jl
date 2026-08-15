@@ -34,6 +34,8 @@ using Test
                 # Fresh empty remote then rsync+instantiate path (fake rsync creates tree).
                 chained = DistSSHKit.setup!(session, :rsync)
                 @test chained isa DistSSHKit.SyncResult
+                tested = DistSSHKit.setup!(session, :runtest; julia="/bin/echo")
+                @test tested.ok && !tested.cancelled
             end
         end
     end
@@ -82,7 +84,7 @@ using Test
                 end
                 @test res isa DistSSHKit.SyncResult
                 @test !res.cancelled
-                @test res.ok == false
+                @test !res.ok
                 @test occursin("Prerequisites not met", out)
 
                 @test_throws ArgumentError DistSSHKit.setup!(session, :nope)

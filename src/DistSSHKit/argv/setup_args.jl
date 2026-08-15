@@ -2,7 +2,7 @@ function show_requirements(; io::IO=stdout)
     print_help_chrome("DistSSHKit setup"; io=io)
     print_help_lines(io,
         "Deploy and check the project on SSH hosts before go / drive.",
-        "Recommended: --rsync, --instantiate, --check.",
+        "Recommended: --rsync, --instantiate, --check, then optional --runtest.",
         "Remote path: ~/Parent/RepoName, or --remote-path / ENV.",
         "Git parity is drive --require-git (off by default).",
     )
@@ -13,6 +13,7 @@ function show_requirements(; io::IO=stdout)
         "  setup --rsync host1 host2",
         "  setup --instantiate host1 host2",
         "  setup --check host1 host2",
+        "  setup --runtest host1 host2",
     )
     print_help_blank(io)
     print_help_section("Modes (one per run)"; io=io)
@@ -22,6 +23,7 @@ function show_requirements(; io::IO=stdout)
         "  --sync / --pull      git update",
         "  --instantiate        Pkg.instantiate on remotes",
         "  --check              SSH, Julia, project, deps",
+        "  --runtest            Pkg.test of the job project on remotes",
         "  --cleanup / --delete stale workers / remote tree",
     )
     print_help_blank(io)
@@ -69,6 +71,9 @@ function parse_setup_args(args::Vector{String})
             cli_consume!(c)
         elseif arg == "--instantiate"
             mode = :instantiate
+            cli_consume!(c)
+        elseif arg == "--runtest"
+            mode = :runtest
             cli_consume!(c)
         elseif arg == "--cleanup"
             mode = :cleanup

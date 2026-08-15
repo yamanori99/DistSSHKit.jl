@@ -48,11 +48,12 @@ First-time remotes usually look like:
 session = KitSession(workers=["user@h1"], remote="/path/to/project", yes=true)
 setup!(session, :delete, :rsync, :instantiate)
 setup!(session, :check; ignore_julia_version=true)  # optional
+setup!(session, :runtest)  # optional: job Pkg.test() on remotes
 # git trees: setup!(session, :clone; repo="https://…") instead of :rsync
 ```
 
 [`setup!`](@ref) mirrors `julia -m DistSSHKit setup --…` (`:delete`, `:rsync`,
-`:clone`, `:sync`, `:pull`, `:instantiate`, `:check`, `:cleanup`). Confirmations
+`:clone`, `:sync`, `:pull`, `:instantiate`, `:check`, `:runtest`, `:cleanup`). Confirmations
 follow `session.yes`. **`:clone` requires `repo=`** (no silent `origin` lookup;
 clone runs on the remote). [`sync!`](@ref) / [`instantiate!`](@ref) remain as
 short aliases for the common deploy steps.
