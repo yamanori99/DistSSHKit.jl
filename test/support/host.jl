@@ -18,21 +18,25 @@ function _write_host_project!(
     return nothing
 end
 
-"""Isolated temp directory removed after `f(path)` returns."""
+"""Isolated temp directory removed after `f(path::String)` returns."""
 function _with_tempdir(f::Function)
-    path = mktempdir()
+    path::String = abspath(String(mktempdir()))
     try
-        return f(path)
+        return _invoke_tempdir(f, path)
     finally
         rm(path; recursive=true, force=true)
     end
 end
 
+_invoke_tempdir(f::Function, path::String) = f(path)
+
 function _mktemp_host(f::Function)
-    return _with_tempdir() do path
-        f(abspath(path))
+    return _with_tempdir() do path::String
+        return _invoke_mktemp_host(f, abspath(path))
     end
 end
+
+_invoke_mktemp_host(f::Function, path::String) = f(path)
 
 function _develop_kit!(host_project::String; kit_root::String=_kit_root(), julia::String=_julia_exe())
     cmd = setenv(

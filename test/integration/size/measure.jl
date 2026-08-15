@@ -5,7 +5,7 @@ using Test
 # hide ~8 MiB). Missing-probe throws stay in unit/DistSSHKit/size.jl.
 
 @testset "measure_rss with probe (local)" begin
-    mktempdir() do tmp
+    _with_tempdir() do tmp::String
         write(joinpath(tmp, "Project.toml"), "name = \"ProbeTmp\"\nuuid = \"11111111-1111-1111-1111-111111111111\"\nversion = \"0.0.1\"\n")
         mkdir(joinpath(tmp, "src"))
         write(joinpath(tmp, "src", "ProbeTmp.jl"), "module ProbeTmp\nend\n")

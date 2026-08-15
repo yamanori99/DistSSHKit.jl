@@ -13,7 +13,7 @@ using Test
     @test occursin("locate_package", expr)
     @test occursin("not instantiated", expr)
 
-    mktempdir() do dir
+    _with_tempdir() do dir::String
         @test DistSSHKit.probe_project_deps(dir) == "Project.toml not found"
         write(joinpath(dir, "Project.toml"), "[deps]\n")
         @test occursin("Manifest.toml not found", DistSSHKit.probe_project_deps(dir))

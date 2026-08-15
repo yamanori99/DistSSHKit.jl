@@ -25,7 +25,7 @@ function _run_kit_setup(;
     if project_root !== nothing
         return _run(abspath(project_root))
     end
-    return _with_tempdir() do proj
+    return _with_tempdir() do proj::String
         _write_host_project!(proj, "SetupCliHost")
         return _run(abspath(proj))
     end
@@ -96,7 +96,7 @@ function _run_kit_go(;
     if project_root !== nothing
         return _run(abspath(project_root))
     end
-    return _with_tempdir() do proj
+    return _with_tempdir() do proj::String
         _write_host_project!(proj, "GoCliHost")
         return _run(abspath(proj))
     end
@@ -125,7 +125,7 @@ function _run_kit_size(;
     if project_root !== nothing
         return _run(abspath(project_root))
     end
-    return _with_tempdir() do proj
+    return _with_tempdir() do proj::String
         _write_host_project!(proj, "SizeCliHost")
         return _run(abspath(proj))
     end

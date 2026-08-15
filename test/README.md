@@ -88,7 +88,6 @@ Loaded via `support.jl`:
 - `_run_kit_drive` / `_run_host_drive` / `_run_kit_setup` / `_run_kit_go` / `_run_kit_size` — CLI subprocesses
 - `_mktemp_host`, `_with_tempdir`, `_stage_with_kit_demos!` — isolated temp host projects with bundled `with_kit` demos
 - `_with_ssh_e2e_suite`, `_stage_ssh_e2e_remote_host!` — SSH E2E suite + scratch projects
-- `_run_test_files!` — sequential test-file includes
 
 ## Environment variables
 
@@ -109,8 +108,8 @@ Kit CLI flags (drive / go / setup / size) also honor `DISTSSHKIT_QUIET`, `DISTSS
 
 ## Adding tests
 
-1. Add a file under `unit/` (src mirror) or `integration/<area>/` (failure mode). Do not register `test/e2e.jl` in `runtests.jl`.
-2. Register its path in `_unit_test_files()` or `_integration_test_files()` in `runtests.jl`.
+1. Add a file under `unit/` (src mirror) or `integration/<area>/` (failure mode).
+2. Add a top-level `include` in `runtests.jl` (JETLS follows that; do not wrap it in a function). Do not register `test/e2e.jl` there.
 3. Reuse `support/` helpers for subprocess work; put one-off scripts in `fixtures/`.
 4. Put a short Oracle / non-guarantee comment at the top of the file.
 

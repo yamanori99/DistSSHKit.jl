@@ -3,7 +3,6 @@
 
 if !isdefined(Main, :_child_julia_env)
     include(joinpath(@__DIR__, "support", "_common.jl"))
-    include(joinpath(@__DIR__, "support", "testfiles.jl"))
     include(joinpath(@__DIR__, "support", "subprocess.jl"))
     include(joinpath(@__DIR__, "support", "host.jl"))
     include(joinpath(@__DIR__, "support", "drive.jl"))
