@@ -23,12 +23,17 @@ Use it from the terminal or from Julia code / notebooks.
 
 How you call it is a separate choice:
 
-- **CLI** — `julia -m DistSSHKit go …` / `drive …` (and `setup`, `demo`, …)
-- **Julia API** — `setup!` for remotes, `go!` / `drive!` to run, or
+- **Julia API** (**1.10+**) — `setup!` for remotes, `go!` / `drive!` to run, or
   `pipeline!` for optional sync → size! → drive! → collect (not `setup!`)
+- **CLI** (**1.12+**) — `julia --project=. -m DistSSHKit go …` / `drive …`
+  (and `setup`, `demo`, …). This is the job-project kit.
+- **`distsshkit` (experimental, 1.12+)** — after `pkg> app add DistSSHKit`, a
+  `distsshkit` command on the terminal. Same flags as `-m`, but always the
+  Apps copy, not `--project=.`. When to use it:
+  [User Guide](@ref Manual-distsshkit).
 
-Same host tokens either way (`local:2`, `user@host:1`). Details: [API](@ref API),
-[User Guide](@ref Manual).
+Same host tokens for all of these (`local:2`, `user@host:1`). Details:
+[API](@ref API), [User Guide](@ref Manual).
 
 ## Installation
 
@@ -44,16 +49,11 @@ Or, equivalently, via the `Pkg` API:
 julia> import Pkg; Pkg.add("DistSSHKit")
 ```
 
+Optional `distsshkit` command (**1.12+**, experimental):
+[User Guide](@ref Manual-distsshkit).
+
 Also needs **`ssh`**, **`rsync`**, and **`git`** (git deploy only);
 `pkg> add` does not install them. [Requirements](@ref).
-
-!!! note "CLI"
-    These pages assume Julia **1.12+** and `julia --project=. -m DistSSHKit …`.
-    There is no separate binary. On 1.10–1.11 use `go!` / `drive!`; see
-    [Requirements](@ref).
-    Optional: `pkg> app add DistSSHKit` installs a `distsshkit` shim
-    (`~/.julia/bin`). That always launches the Apps copy, not the kit in the
-    current project. Manual examples stay `-m`.
 
 ## Next
 
