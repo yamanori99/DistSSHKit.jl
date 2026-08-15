@@ -5,13 +5,21 @@
 #   - each directory under src/cli/<area>/ → area:<area>
 #   - src/DistSSHKit/argv/<area>* → same area (drive_args.jl, size_report.jl, …)
 #   - kit modules explain / demos → area:explain, area:demos (path auto)
+#   - test harness → area:test (`test/**` minus product-test trees below)
 #   - product docs → docs (docs/**, README.md, demos markdown — not CONTRIBUTING)
 #   - .github/** → ci
 # No catch-all area:kit — shared paths are typed via type labels only.
 #
+# Product tests live only under the trees in `product_test_trees` and pick up
+# area:* via the ${area} globs. Any other path under test/ is the harness
+# (runtests, support, e2e, fixtures, a future test/e2e/, …). Add a name to
+# that array if you introduce another product-test tree. testenv/ is not
+# area:test.
+#
 # When the package layout changes substantially (new CLI area, rename/move of
-# DistSSHKit modules, demos tree, docs roots, …), update this script’s globs /
-# area discovery, regenerate labeler.yml, and commit both.
+# DistSSHKit modules, demos tree, docs roots, a new product-test tree, …),
+# update this script’s globs / area discovery, regenerate labeler.yml, and
+# commit both.
 #
 # Usage:
 #   ./.github/gen-labeler.sh           # write .github/labeler.yml
@@ -30,6 +38,8 @@ for dir in "${ROOT}/src/cli"/*/; do
 done
 # Modules without src/cli/<area>/ — still first-class path areas.
 areas+=(explain demos)
+# Immediate children of test/ that mirror src (not the harness).
+product_test_trees=(unit integration)
 
 IFS=$'\n' areas_sorted=($(printf '%s\n' "${areas[@]:-}" | LC_ALL=C sort -u))
 unset IFS
@@ -54,7 +64,15 @@ ci:
   - changed-files:
       - any-glob-to-any-file:
           - ".github/**"
+
+"area:test":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "test/**"
 EOF
+  for tree in "${product_test_trees[@]}"; do
+    printf '          - "!test/%s/**"\n' "$tree"
+  done
 
   for area in "${areas_sorted[@]:-}"; do
     cat <<EOF
