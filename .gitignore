@@ -4,12 +4,13 @@ docs/Manifest.toml
 docs/build/
 docs/site/
 
-# Local runs (drive/go logs default to <script-dir>/results/)
+# Local runs (drive/go logs default to <script-dir>/results/; demos write output/)
 data/
 runner_*.log
 drive_*.log
 go_*.log
 results/
+output/
 .distsshkit/
 
 # Tests & CI artifacts
