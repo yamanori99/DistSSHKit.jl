@@ -26,6 +26,28 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v7
+      - name: Log in to GHCR
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+      - name: docker-ssh build + push
+        env:
+          DISTSSHKIT_PUSH_IMAGE: ghcr.io/${{ github.repository_owner }}/distsshkit-linux-ssh-worker:${{ github.sha }}
+        run: ./testenv/docker-ssh/scripts/up.sh
+      - name: Teardown workers
+        if: always()
+        run: ./testenv/docker-ssh/scripts/down.sh || true
+
+  linux-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    name: ubuntu-latest → ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
         with:
           version: "1.12"
@@ -38,9 +60,10 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
       - name: docker-ssh up + SSH E2E
         env:
-          DISTSSHKIT_PUSH_IMAGE: ghcr.io/${{ github.repository_owner }}/distsshkit-linux-ssh-worker:${{ github.sha }}
+          DISTSSHKIT_WORKER_IMAGE: ghcr.io/${{ github.repository_owner }}/distsshkit-linux-ssh-worker:${{ github.sha }}
+          DISTSSHKIT_WORKER_PULL_RETRIES: "40"
         run: ./testenv/docker-ssh/scripts/up.sh --e2e
-      # SHA for daily macOS/WSL; latest for local pull (package should be public).
+      # SHA from the image job; latest after this Linux suite (package should be public).
       - name: Push latest
         env:
           IMAGE: ghcr.io/${{ github.repository_owner }}/distsshkit-linux-ssh-worker
@@ -156,7 +179,7 @@ jobs:
 
   # Schedule runs are not PR checks, and github-actions[bot] does not email.
   notify:
-    needs: [linux-image, macos-e2e, wsl-e2e]
+    needs: [linux-image, linux-e2e, macos-e2e, wsl-e2e]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -175,7 +198,7 @@ jobs:
           if [ "$FAILED" = "true" ]; then
             body="Latest run: $RUN_URL
 
-          Not a PR check (macOS / WSL are schedule-only). Re-run **E2E daily** after a fix."
+          Not a PR check (Linux / macOS / WSL are schedule-only). Re-run **E2E daily** after a fix."
             if [ -n "$existing" ]; then
               gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
             else

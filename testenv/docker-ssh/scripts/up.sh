@@ -2,8 +2,8 @@
 # Build once, then start docker-ssh workers (ports 2222 / 2223).
 # Optional: ./scripts/up.sh --e2e  → also run the SSH E2E suite from kit root.
 #
-# CI: DISTSSHKIT_WORKER_IMAGE=ghcr.io/…:sha pulls instead of building (macOS/WSL
-# wait for the Linux job to push). DISTSSHKIT_PUSH_IMAGE=… tags+pushes after
+# CI: DISTSSHKIT_WORKER_IMAGE=ghcr.io/…:sha pulls instead of building (Linux /
+# macOS / WSL daily wait for the image job to push). DISTSSHKIT_PUSH_IMAGE=… tags+pushes after
 # a local build so those jobs can start in parallel.
 set -euo pipefail
 
