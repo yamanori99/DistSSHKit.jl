@@ -90,6 +90,13 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
                 extra_env=e2e_env,
             )
             _assert_ssh_e2e_ok(suite, "setup_rsync", proc, out; project=proj, kit=:setup)
+            for host in hosts
+                p, ssh_out = _run_subprocess(Cmd([
+                    "ssh", "-F", g.ssh_config, host,
+                    "test -f $(remote_root)/Project.toml",
+                ]))
+                _assert_proc_ok(p, ssh_out; label="rsync $(host) Project.toml")
+            end
         end
 
         @testset "setup --instantiate" begin
@@ -265,6 +272,9 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
                 )
                 _assert_ssh_e2e_api_ok(suite, "api_go", go_res.ok)
                 @test go_res.ok
+                go_txt = joinpath(go_res.output_dir, hosts[1], "pi_results.txt")
+                @test isfile(go_txt)
+                @test occursin("pi=", read(go_txt, String))
 
                 pipe_res = pipeline!(
                     echo_script,
