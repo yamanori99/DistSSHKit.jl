@@ -20,7 +20,7 @@ using Test
     end
 
     @testset "KitSession" begin
-        mktempdir() do tmp
+        _with_tempdir() do tmp::String
             withenv("DISTSSHKIT_HOSTS_FILE" => "") do
                 session = DistSSHKit.KitSession(project=tmp, workers=["host-a", "host-b:4"])
                 @test session.project == abspath(tmp)
@@ -51,7 +51,7 @@ using Test
     end
 
     @testset "apply_session_env!" begin
-        mktempdir() do tmp
+        _with_tempdir() do tmp::String
             session = DistSSHKit.KitSession(
                 project=tmp,
                 workers=["host-a"],
@@ -107,7 +107,7 @@ using Test
         @test DistSSHKit.resolve_pipeline_sync(local_cfg, local_session) === false
         @test !DistSSHKit.resolve_pipeline_collect(local_cfg, local_session)
 
-        mktempdir() do tmp
+        _with_tempdir() do tmp::String
             driver = joinpath(tmp, "job.jl")
             write(driver, "")
             od = joinpath(tmp, "my_out")
@@ -141,7 +141,7 @@ using Test
     end
 
     @testset "drive_parsed_from_session sync / parity" begin
-        mktempdir() do tmp
+        _with_tempdir() do tmp::String
             script = joinpath(tmp, "job.jl")
             write(script, "")
             session = DistSSHKit.KitSession(project=tmp, workers=["host-a"])
@@ -190,14 +190,51 @@ using Test
     end
 
     @testset "instantiate! requires SSH hosts" begin
-        mktempdir() do tmp
+        _with_tempdir() do tmp::String
             session = DistSSHKit.KitSession(project=tmp, workers=["local:2"])
             @test_throws ArgumentError DistSSHKit.instantiate!(session)
         end
     end
 
+    @testset "collect! requires hosts" begin
+        _with_tempdir() do tmp::String
+            session = DistSSHKit.KitSession(project=tmp, workers=["local:2"])
+            err = try
+                DistSSHKit.collect!(session, joinpath(tmp, "out"))
+                nothing
+            catch e
+                e
+            end
+            @test err isa ArgumentError
+            @test occursin("collect!", sprint(showerror, err))
+        end
+    end
+
+    @testset "report_pipeline_errors" begin
+        ok = DistSSHKit.PipelineResult(
+            true, nothing, nothing, nothing, nothing, "job.jl",
+        )
+        @test DistSSHKit.report_pipeline_errors(ok)
+        bad = DistSSHKit.PipelineResult(
+            false,
+            DistSSHKit.SyncResult(false, [DistSSHKit.HostResult("h1", false, "rsync refuse")], false),
+            nothing,
+            DistSSHKit.DriveResult(false, 1),
+            DistSSHKit.CollectResult(false, 1),
+            "job.jl";
+            failed_step="drive",
+        )
+        buf = IOBuffer()
+        @test !DistSSHKit.report_pipeline_errors(bad; io=buf)
+        txt = String(take!(buf))
+        @test occursin("pipeline! failed at step: drive", txt)
+        @test occursin("sync h1: rsync refuse", txt)
+        @test occursin("drive exit 1", txt)
+        @test occursin("collect exit 1", txt)
+    end
+
     @testset "pipeline! missing driver surfaces" begin
-        mktempdir() do tmp
+        _with_tempdir() do tmp::String
             missing = joinpath(tmp, "demos", "with_kit", "rho_sweep.jl")
             cfg = DistSSHKit.PipelineConfig(project=tmp, driver=missing, workers=String[])
             err = try

@@ -10,7 +10,10 @@ using Test
     setup_jl = joinpath(kit_src, "cli", "setup.jl")
     Core.eval(m, :(include(path) = Base.include($m, path)))
     Core.eval(m, :(const DistSSHKit = $(DistSSHKit)))
-    Core.eval(m, :(using .DistSSHKit: cli_project_root))
+    Core.eval(m, quote
+        using .DistSSHKit: cli_project_root
+        @assert cli_project_root === $(DistSSHKit.cli_project_root)
+    end)
     Base.include(m, setup_jl)
     @test m.resolve_remote_project_root("/tmp/App.jl") isa AbstractString
     @test isdefined(m, :setup_main)
