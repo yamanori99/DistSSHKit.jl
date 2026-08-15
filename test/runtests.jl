@@ -1,5 +1,5 @@
 #!/usr/bin/env julia
-# DistSSHKit Pkg.test() entry: Aqua + unit + integration.
+# DistSSHKit Pkg.test() entry: unit + integration (Aqua is CI-only).
 # Does not include test/e2e.jl (real SSH; DISTSSHKIT_SSH_E2E=1 / up.sh --e2e).
 # From a standalone kit checkout (this directory as the active project):
 #   julia --project=. -e 'using Pkg; Pkg.test()'
@@ -15,9 +15,6 @@ using Test
 using DistSSHKit
 
 include(joinpath(@__DIR__, "support.jl"))
-
-println("▸ aqua.jl")
-include(joinpath(@__DIR__, "aqua.jl"))
 
 @testset "DistSSHKit" verbose=true begin
     @testset "unit" verbose=true begin
