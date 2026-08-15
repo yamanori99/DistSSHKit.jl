@@ -10,14 +10,13 @@ From the kit checkout root:
 julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
-Tests run sequentially (`Test.@testset` nesting). `Pkg.test()` activates `test/Project.toml` (Aqua, fixtures, path dependency on `..`).
+Tests run sequentially (`Test.@testset` nesting). `Pkg.test()` activates `test/Project.toml` (fixtures, path dependency on `..`). Aqua is a separate CI job.
 
 ## Layout
 
 ```text
 test/
-  runtests.jl          # Pkg.test() entry (Aqua + unit + integration)
-  aqua.jl              # Aqua.jl QA
+  runtests.jl          # Pkg.test() entry (unit + integration)
   e2e.jl               # real OpenSSH; not Pkg.test()
   support.jl           # includes support/*.jl
   support/             # shared helpers (subprocess, drive, staging, …)
@@ -50,7 +49,7 @@ Green on one layer does not imply the others. `Pkg.test()` does not run `test/e2
 | Layer | Guarantees | Does not guarantee | Typical runtime |
 | --- | --- | --- | --- |
 | **JETLS** (independent) | types / hints on entry files | runtime behavior | — |
-| **Aqua** (`aqua.jl`) | ambiguities, exports, compat, project consistency | CLI / workers | ~5 s |
+| **Aqua** (independent; latest registry Aqua) | ambiguities, exports, compat, project consistency | CLI / workers | ~5 s |
 | **unit** | in-process facts (parse, paths, fake setup ops, missing-script throws) | child julia, `addprocs`, SSH | ~30 s |
 | **integration** | child `julia` CLI and/or **local** `addprocs` (`-m` on 1.12+; `main` on 1.10–1.11) | real SSH / rsync | ~2 min |
 | **e2e** (`test/e2e.jl`; `E2E / ubuntu-latest → ubuntu-24.04`) | real SSH + rsync against Docker workers (`DISTSSHKIT_SSH_E2E=1`). CI: every PR | local-only CLI wiring | ~10–20 min |
@@ -115,4 +114,4 @@ Kit CLI flags (drive / go / setup / size) also honor `DISTSSHKIT_QUIET`, `DISTSS
 
 ## Aqua note
 
-`runtests.jl` and `aqua.jl` both `using DistSSHKit` as the package (root project or `test/Project.toml` `[sources]`). `Pkg` is a module dependency (`using Pkg` in `src/DistSSHKit.jl`) so Aqua's `stale_deps` can run.
+Aqua is not in `Pkg.test()`. CI (and [`.github/aqua-check.sh`](../.github/aqua-check.sh)) develops the kit in a temp env and `Pkg.add("Aqua")` with no version pin. `Pkg` is a module dependency (`using Pkg` in `src/DistSSHKit.jl`) so Aqua's `stale_deps` can run.
