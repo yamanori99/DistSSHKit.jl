@@ -1,5 +1,4 @@
 [deps]
-Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 DistSSHKit = "ceec0504-c968-4be5-b215-667cae0e8f81"
@@ -13,7 +12,6 @@ TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 DistSSHKit = {path = ".."}
 
 [compat]
-Aqua = "0.8"
 ArgParse = "1"
 Dates = "1.10"
 Distributed = "1.10"

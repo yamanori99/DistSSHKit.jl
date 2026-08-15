@@ -1,0 +1,58 @@
+name: Aqua
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: aqua-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+permissions:
+  contents: read
+
+jobs:
+  filter:
+    name: detect code changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      heavy: ${{ steps.detect.outputs.heavy }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/ci-heavy
+        id: detect
+
+  # Literal names: skipped matrix jobs leave ${{ matrix.minor }} unexpanded.
+  aqua-1-12:
+    needs: filter
+    if: needs.filter.outputs.heavy == 'true'
+    name: Aqua - Julia 1.12 - ubuntu-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: "1.12"
+      - uses: julia-actions/cache@v3
+      - name: Aqua.test_all (latest Aqua)
+        run: ./.github/aqua-check.sh
+
+  aqua-1-13:
+    needs: filter
+    if: needs.filter.outputs.heavy == 'true'
+    name: Aqua - Julia 1.13 - ubuntu-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: "~1.13.0-0"
+      - uses: julia-actions/cache@v3
+      - name: Aqua.test_all (latest Aqua)
+        run: ./.github/aqua-check.sh

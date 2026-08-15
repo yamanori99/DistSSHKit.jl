@@ -17,7 +17,6 @@ files=(
     demos/with_kit/*.jl
     demos/without_kit/*.jl
     test/runtests.jl
-    test/aqua.jl
     test/fixtures/*.jl
 )
 
