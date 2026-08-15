@@ -83,7 +83,7 @@ Path labels come from generated `.github/labeler.yml`:
 ./.github/gen-labeler.sh --check  # CI drift
 ```
 
-`src/cli/<area>/` → `area:<area>`; `explain` / `demos` are also path-auto. No catch-all `area:kit`. New CLI area: regenerate, commit, create the GitHub label if needed.
+`src/cli/<area>/` → `area:<area>`; `explain` / `demos` are also path-auto. Test harness (`test/**` except `test/unit/` and `test/integration/`) → `area:test`. Product tests under those two trees keep only their `area:<area>`. No catch-all `area:kit`. New CLI area or a third product-test tree: regenerate, commit, create the GitHub label if needed.
 
 Every PR needs **one** type label. CI infers, in order: a unique `bug` / `enhancement` / `chore` on a closing issue (`Fixes #N`); else the branch prefix (`feat/`/`feature/` → `enhancement`; `fix/`/`bug/`/`hotfix/` → `bug`; `breaking/`/`break/` → `breaking`; `chore/`/`docs/`/`ci/`/`build/`/`test/`/`refactor/` and anything else → `chore`). `fix/` plus `Fixes` an enhancement issue gets `enhancement`. Override with `gh pr edit N --add-label …`. Unknown prefixes do not fail the check.
 

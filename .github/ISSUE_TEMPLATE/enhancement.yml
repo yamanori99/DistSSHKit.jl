@@ -31,5 +31,6 @@ body:
         - size
         - explain
         - demos
+        - test
     validations:
       required: false
