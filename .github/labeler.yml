@@ -14,6 +14,13 @@ ci:
       - any-glob-to-any-file:
           - ".github/**"
 
+"area:test":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "test/**"
+          - "!test/unit/**"
+          - "!test/integration/**"
+
 "area:demos":
   - changed-files:
       - any-glob-to-any-file:
