@@ -44,4 +44,11 @@ using Test
             end
         end
     end
+
+    @testset "script arg prelude" begin
+        withenv("DISTSSHKIT_SCRIPT_ARG_PRELUDE" => "alpha\n\nbeta") do
+            @test DistSSHKit._merge_script_arg_prelude(["job.jl"]) == ["job.jl", "alpha", "beta"]
+        end
+        @test get(ENV, "DISTSSHKIT_SCRIPT_ARG_PRELUDE", nothing) === nothing
+    end
 end

@@ -70,4 +70,35 @@ using Test
         @test_throws ArgumentError parse_go_args(["--sync", "--skip-git-guard", "job.jl"])
         @test_throws ArgumentError parse_go_args(["--sync", "--rsync", "job.jl"])
     end
+
+    @testset "unknown option and missing script" begin
+        @test_throws ArgumentError parse_go_args(["--nope"])
+        let r = parse_go_args(["h1"])
+            @test r.script_path === nothing
+            @test r.hosts == ["h1"]
+            @test !r.help
+        end
+        mktemp() do path, io
+            code = withenv("DISTSSHKIT_CLI_SUBCOMMAND_DONE" => "") do
+                redirect_stderr(devnull) do
+                    redirect_stdout(io) do
+                        DistSSHKit.go(String[])
+                    end
+                end
+            end
+            flush(io)
+            @test code == 0
+            @test occursin("SCRIPT.jl", read(path, String))
+        end
+    end
+
+    @testset "--hosts-file keeps host:N" begin
+        hosts_file = _sample_hosts_file()
+        withenv("DISTSSHKIT_HOSTS" => nothing, "DISTSSHKIT_HOSTS_FILE" => nothing) do
+            let r = parse_go_args(["--hosts-file", hosts_file, "job.jl"])
+                @test r.hosts == ["host-a", "host-b:4"]
+                @test r.script_path == "job.jl"
+            end
+        end
+    end
 end

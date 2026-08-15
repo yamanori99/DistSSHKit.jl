@@ -17,6 +17,12 @@ using Test
         @test !DistSSHKit.looks_like_path_host("root@192.0.2.10")
         @test !DistSSHKit.looks_like_path_host("user@host:22")  # colon ok; @ present
         @test !DistSSHKit.looks_like_path_host("worker-node-a")
+        _with_tempdir() do tmp
+            cd(tmp) do
+                write("worker-node-a", "")
+                @test DistSSHKit.looks_like_path_host("worker-node-a")
+            end
+        end
     end
 
     @testset "summarize_ssh_error" begin

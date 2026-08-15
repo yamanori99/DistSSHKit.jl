@@ -15,6 +15,14 @@ using Test
         plan = DistSSHKit.worker_plan_from_tokens(["local:2", "h1:1"])
         @test plan.local_workers == 2
         @test plan.remote_workers == Dict("h1" => 1)
+        err = try
+            DistSSHKit.worker_plan_from_tokens(["h1"])
+            nothing
+        catch e
+            e
+        end
+        @test err isa ArgumentError
+        @test occursin("KitSession", sprint(showerror, err))
 
         @test_throws ArgumentError DistSSHKit.parse_worker_tokens(["local:1", "l:2"])
     end

@@ -76,6 +76,7 @@ using Test
     @testset "apply_kit_cli_session!" begin
         withenv(clear_verbosity_env..., "DISTSSHKIT_YES" => nothing) do
             prev = DistSSHKit.kit_verbosity()
+            prev_ni = DistSSHKit.kit_noninteractive()
             try
                 DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(yes=true))
                 @test DistSSHKit.kit_confirm("ignored")
@@ -91,6 +92,35 @@ using Test
                 @test DistSSHKit.kit_output_detail()
             finally
                 DistSSHKit.set_kit_verbosity!(prev)
+                DistSSHKit.set_kit_noninteractive!(prev_ni)
+            end
+        end
+    end
+
+    @testset "kit_confirm stdin" begin
+        withenv("DISTSSHKIT_YES" => nothing) do
+            prev_ni = DistSSHKit.kit_noninteractive()
+            DistSSHKit.set_kit_noninteractive!(false)
+            try
+                function _confirm_stdio(answer; keyword=nothing)
+                    return _capture_stdio() do stdin_io, _
+                        write(stdin_io, answer)
+                        flush(stdin_io)
+                        seekstart(stdin_io)
+                        DistSSHKit.kit_confirm("really wipe?"; keyword=keyword)
+                    end
+                end
+                out, ok = _confirm_stdio("n\n")
+                @test !ok
+                @test occursin("really wipe?", out)
+                _, ok = _confirm_stdio("y\n")
+                @test ok
+                _, ok = _confirm_stdio("DELETE\n"; keyword="DELETE")
+                @test ok
+                _, ok = _confirm_stdio("nope\n"; keyword="DELETE")
+                @test !ok
+            finally
+                DistSSHKit.set_kit_noninteractive!(prev_ni)
             end
         end
     end
