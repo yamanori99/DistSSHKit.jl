@@ -51,6 +51,9 @@ Also needs **`ssh`**, **`rsync`**, and **`git`** (git deploy only);
     These pages assume Julia **1.12+** and `julia --project=. -m DistSSHKit …`.
     There is no separate binary. On 1.10–1.11 use `go!` / `drive!`; see
     [Requirements](@ref).
+    Optional: `pkg> app add DistSSHKit` installs a `distsshkit` shim
+    (`~/.julia/bin`). That always launches the Apps copy, not the kit in the
+    current project. Manual examples stay `-m`.
 
 ## Next
 

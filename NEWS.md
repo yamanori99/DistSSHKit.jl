@@ -3,6 +3,13 @@
 User-facing changes. Date a section `YYYY-MM-DD` (UTC) when that version is tagged.
 GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator register`).
 
+## Unreleased
+
+- Optional Pkg Apps entry (Julia **1.12+**): `pkg> app add DistSSHKit` installs
+  a `distsshkit` shim. Same dispatcher as `julia -m DistSSHKit`. The default
+  install remains `pkg> add`. Drive / size still belong on
+  `julia --project=. -m DistSSHKit`.
+
 ## 0.2.1 (2026-08-14)
 
 Patch after the first General registration (`0.2.0`).

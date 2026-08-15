@@ -26,4 +26,13 @@ using Test
         @test haskey(kit_deps, "Dates")
         @test haskey(kit_deps, "TOML")
     end
+    kit = TOML.parsefile(kit_toml)
+    apps = get(kit, "apps", nothing)
+    @test apps isa AbstractDict
+    @test haskey(apps, "distsshkit")
+    @test !haskey(apps, "DistSSHKit")
+    @test !haskey(apps, "dsk")
+    flags = get(apps["distsshkit"], "julia_flags", nothing)
+    @test flags isa AbstractVector
+    @test "--startup-file=no" in String.(flags)
 end

@@ -15,6 +15,13 @@ jobs.
   - Library (`Pkg.add` / `using` / `go!` / `drive!`): **1.10+**
   - Terminal CLI (`julia -m DistSSHKit`): **1.12+** (no `-m` before 1.12; use
     the [API](@ref API) or [`main`](@ref))
+  - Optional PATH shim (`pkg> app add DistSSHKit` → `distsshkit`): **1.12+**,
+    [Pkg Apps](https://pkgdocs.julialang.org/v1/apps/) (experimental). Put
+    `~/.julia/bin` on `PATH`. The shim always runs the Apps copy of DistSSHKit,
+    not the kit in the current project. Prefer it for `go` / `setup` / `demo`.
+    For `drive` / `size`, use `julia --project=. -m DistSSHKit` (the shim pins
+    `JULIA_LOAD_PATH`). The Julia executable baked into the shim is the one
+    used at `app add`; after changing juliaup, run `pkg> app update DistSSHKit`.
   - Same **major.minor** on the controller and SSH hosts (`setup --check` fails
     on a mismatch unless `--ignore-julia-version`; patch-only differences warn)
   - Prefer **[juliaup](https://github.com/JuliaLang/juliaup)**

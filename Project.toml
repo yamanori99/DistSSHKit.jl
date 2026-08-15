@@ -1,11 +1,14 @@
 name = "DistSSHKit"
 uuid = "ceec0504-c968-4be5-b215-667cae0e8f81"
+license = "MIT"
 version = "0.2.1"
 authors = [
     "Yamamoto, Takanori <takanori.yamamoto.99@gmail.com>",
     "Ampuku, Honoka <ampk.hono@gmail.com>",
 ]
-license = "MIT"
+
+[workspace]
+projects = ["test", "docs"]
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
@@ -20,5 +23,5 @@ Pkg = "1.10"
 TOML = "1"
 julia = "1.10"
 
-[workspace]
-projects = ["test", "docs"]
+[apps.distsshkit]
+julia_flags = ["--startup-file=no"]
