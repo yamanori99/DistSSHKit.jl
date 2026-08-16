@@ -41,6 +41,7 @@ unit/
 
 Real OpenSSH E2E is `test/e2e.jl` (not part of `Pkg.test()`).
 How to run: [`testenv/docker-ssh/README.md`](../testenv/docker-ssh/README.md).
+What the suite covers: [SSH E2E suite](#ssh-e2e-suite) below.
 
 ## Layers
 
@@ -60,6 +61,52 @@ Green on one layer does not imply the others. `Pkg.test()` does not run `test/e2
 
 Most of the wall time in `Pkg.test()` is integration (child Julia + local workers).
 Remote SSH on PRs and main is **E2E / ubuntu-latest → ubuntu-24.04**. Daily / Run workflow `E2E daily`: **ubuntu-latest**, **macos-15-intel**, and **WSL2** against `ubuntu-24.04` workers. Doctests run in **Docs / Documenter - Julia 1.12 - ubuntu-latest**, not `Pkg.test()`. **Test / Pkg.test - Julia 1.10 - ubuntu-latest** / **1.11** uses `DistSSHKit.main` for CLI children (`-m` is 1.12+).
+
+## SSH E2E suite
+
+Two Linux Docker workers, real `ssh` / `rsync` / remote Julia (`test/e2e.jl`).
+Controller × worker OS matrix: [`testenv/docker-ssh/README.md`](../testenv/docker-ssh/README.md).
+
+**Prepare the house (rsync `setup`)**
+
+| Check | Honest fact |
+| --- | --- |
+| Julia resolve | controller and remotes share major.minor |
+| `--delete` | remote `Project.toml` is gone (`ssh test ! -e`) |
+| `--rsync` | remote `Project.toml` exists |
+| `--instantiate` / `--check` | job deps; Julia version (no `--ignore-julia-version`) |
+| `--runtest` | job `Pkg.test` pass, then a planted failure is non-zero |
+| `--rsync` nonempty | refused |
+| `~/…` remote path | delete → rsync → instantiate → drive still run |
+
+**Farm out work (`drive` / `go` / `size`)**
+
+`square_file` writes the CSV in `main()` on the **controller**. Workers only return numbers. Collect tests must use files workers write.
+
+| Check | Honest fact |
+| --- | --- |
+| `size` | both hosts, `GB`, `Total:` |
+| `square_echo` | remote compute; stdout has `param^2:` |
+| `square_file` | local CSV exists; **absent** on the remote |
+| `worker_*.txt` | written on the worker; `ssh cat`; `--collect-missing` restores; skip keeps junk; `--collect-overwrite` replaces |
+| worker `error(...)` | non-zero |
+| mixed `local:1` + two remotes | smoke `nw=3` |
+| `go pi_echo` | π on both hosts |
+| `go pi_file` | slot `pi_results.txt` on the controller after go collect |
+| API | `setup!` / `go!` / `pipeline!(collect=true)` on worker files |
+
+**Git house (separate remote root)**
+
+| Check | Honest fact |
+| --- | --- |
+| `--clone` / `--instantiate` / `--check` | remote hash matches |
+| `--require-git` after a local bump | fails (mismatch) |
+| `--sync` then `--require-git` | pass |
+| `--pull` after controller `git push` | `e2e_sync_marker.txt` on the workers matches |
+
+**Wiring:** worker-1 can SSH to worker-2 (compose DNS).
+
+**Not this file:** macOS workers, dead hosts, fake `ssh`/`rsync`, local-only `with_kit` recipes (`test/integration/demos/`).
 
 ## Why only `setup` uses SSH/rsync fakes
 
