@@ -71,6 +71,33 @@ using Test
         @test_throws ArgumentError parse_go_args(["--sync", "--rsync", "job.jl"])
     end
 
+    @testset "version, quiet, and hosts env" begin
+        let r = parse_go_args(["--version"])
+            @test r.show_version
+        end
+        let r = parse_go_args(["-q", "-y", "job.jl"])
+            @test r.cli_session.quiet
+            @test r.cli_session.yes
+            DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession())
+        end
+        withenv("DISTSSHKIT_HOSTS" => "env-a:2,env-b") do
+            let r = parse_go_args(["job.jl"])
+                @test r.hosts == ["env-a:2", "env-b"]
+            end
+        end
+        @test_throws ArgumentError parse_go_args(["--output-dir"])
+        @test_throws ArgumentError parse_go_args(["--julia"])
+    end
+
+    @testset "help smoke" begin
+        txt = sprint(io -> DistSSHKit.show_go_usage(; io=io))
+        @test occursin("Usage", txt)
+        @test occursin("--output-dir", txt)
+        @test occursin("--sync", txt)
+        @test occursin("--hosts", txt)
+        @test occursin("SCRIPT.jl", txt)
+    end
+
     @testset "unknown option and missing script" begin
         @test_throws ArgumentError parse_go_args(["--nope"])
         let r = parse_go_args(["h1"])

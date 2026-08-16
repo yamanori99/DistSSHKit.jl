@@ -106,6 +106,64 @@ using Test
         @test DistSSHKit.per_worker_gb_dict(Dict("localhost" => s))["localhost"] == 1.2
     end
 
+    @testset "resolve_worker_memory_samples gb_per_worker" begin
+        opts = (
+            show_help=false,
+            show_version=false,
+            cli_session=nothing,
+            gb_per_worker=1.5,
+            probe=nothing,
+            mem_headroom=DistSSHKit.DEFAULT_MEM_HEADROOM,
+            master_gb=DistSSHKit.DEFAULT_MASTER_GB,
+            include_local=true,
+            hosts=String[],
+        )
+        mktemp() do path, io
+            samples = with_kit_verbosity(:verbose) do
+                redirect_stdout(io) do
+                    DistSSHKit.resolve_worker_memory_samples("/unused", ["localhost"], String[], opts)
+                end
+            end
+            flush(io)
+            @test samples !== nothing
+            @test samples["localhost"] == DistSSHKit.WorkerMemorySample(1.5, 1.5)
+            @test occursin("manual", read(path, String))
+        end
+    end
+
+    @testset "print_size_report empty worker template" begin
+        local_total, _ = DistSSHKit.get_local_resources()
+        pw = max(local_total * 100, 1_000.0)
+        opts = (
+            show_help=false,
+            show_version=false,
+            cli_session=nothing,
+            gb_per_worker=pw,
+            probe=nothing,
+            mem_headroom=DistSSHKit.DEFAULT_MEM_HEADROOM,
+            master_gb=DistSSHKit.DEFAULT_MASTER_GB,
+            include_local=true,
+            hosts=String[],
+        )
+        samples = Dict("localhost" => DistSSHKit.WorkerMemorySample(pw, pw))
+        plan = DistSSHKit.compute_worker_plan(
+            ["localhost"], String[], Dict("localhost" => pw);
+            mem_headroom=DistSSHKit.DEFAULT_MEM_HEADROOM,
+            master_gb=DistSSHKit.DEFAULT_MASTER_GB,
+        )
+        @test plan.local_workers == 0
+        mktemp() do path, io
+            redirect_stdout(io) do
+                DistSSHKit.print_size_report(["localhost"], String[], samples, opts)
+            end
+            flush(io)
+            out = read(path, String)
+            @test occursin("Total: 0 workers", out)
+            @test occursin("drive <script.jl>", out)
+            @test !occursin("local:", out)
+        end
+    end
+
     @testset "resolve_size_probe_path" begin
         _with_tempdir() do tmp
             p = DistSSHKit.canonical_local_path(tmp)

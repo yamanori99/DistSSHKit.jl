@@ -43,8 +43,9 @@ function main()
     if startswith(strip(script), "test -d")
         if isdir(tree)
             println("ok")
+            exit(0)
         end
-        exit(0)
+        exit(1)
     end
 
     if occursin("test -f", script) && occursin("Project.toml", script)
@@ -86,6 +87,22 @@ function main()
         if get(ENV, "DISTSSHKIT_TEST_PKG_TEST_FAIL", "") == "1"
             println(stderr, "Test Failed")
             exit(1)
+        end
+        exit(0)
+    end
+
+    if occursin("find ", script) && occursin("-type f", script)
+        m = match(r"find\s+(\S+)\s+-type", script)
+        cap = m === nothing ? nothing : m.captures[1]
+        find_root = cap === nothing ? tree : String(cap)
+        find_root = strip(find_root, ['\'', '"'])
+        if isdir(tree)
+            for (root, _, files) in walkdir(tree)
+                for f in files
+                    rel = relpath(joinpath(root, f), tree)
+                    println(joinpath(find_root, rel))
+                end
+            end
         end
         exit(0)
     end

@@ -16,6 +16,24 @@ using Test
         let r = parse_size_args(["--hosts", "h1:4,h2", "host-cli"])
             @test r.hosts == ["host-cli", "h1", "h2"]
         end
+        let r = parse_size_args(["-l", "host1"])
+            @test r.include_local == true
+            @test r.hosts == ["host1"]
+        end
+        let r = parse_size_args(["--hosts-file", _sample_hosts_file(), "host-cli"])
+            @test r.hosts == ["host-cli", "host-a", "host-b"]
+        end
+        let r = parse_size_args(["--version", "--local"])
+            @test r.show_version
+            @test r.include_local
+        end
+        # Unknown flags are warned and skipped (not an error).
+        let r = @test_logs (:warn, r"Unknown option") parse_size_args(["--nope", "--local"])
+            @test r.include_local
+            @test isempty(r.hosts)
+        end
+        @test_throws ArgumentError parse_size_args(["--gb-per-worker"])
+        @test_throws ArgumentError parse_size_args(["--probe"])
         withenv("DISTSSHKIT_HOSTS" => "env-h:2") do
             let r = parse_size_args(["host-cli"])
                 @test r.hosts == ["host-cli", "env-h"]

@@ -12,9 +12,10 @@ using Test
 
         fixed = DistSSHKit.parse_worker_tokens(["local:2", "h1:1"])
         @test DistSSHKit.worker_tokens_fully_specified(fixed)
-        plan = DistSSHKit.worker_plan_from_tokens(["local:2", "h1:1"])
-        @test plan.local_workers == 2
-        @test plan.remote_workers == Dict("h1" => 1)
+        let plan = DistSSHKit.worker_plan_from_tokens(["local:2", "h1:1"])
+            @test plan.local_workers == 2
+            @test plan.remote_workers == Dict("h1" => 1)
+        end
         err = try
             DistSSHKit.worker_plan_from_tokens(["h1"])
             nothing
@@ -25,6 +26,30 @@ using Test
         @test occursin("KitSession", sprint(showerror, err))
 
         @test_throws ArgumentError DistSSHKit.parse_worker_tokens(["local:1", "l:2"])
+
+        auto = DistSSHKit.parse_worker_tokens(["local", "h1:3"])
+        @test auto.local_autosize
+        @test auto.local_workers == 0
+        @test auto.remote_fixed == Dict("h1" => 3)
+        @test DistSSHKit.remote_hosts_from_tokens(["local:2", "h1", "h2:4"]) == ["h1", "h2"]
+
+        _with_tempdir() do tmp
+            session = DistSSHKit.KitSession(
+                project=tmp,
+                workers=["local"],
+                include_local_for_size=true,
+            )
+            plan = DistSSHKit.worker_plan_from_tokens(
+                ["local"];
+                session=session,
+                gb_per_worker=2.0,
+            )
+            local_total, local_nproc = DistSSHKit.get_local_resources()
+            @test plan.local_workers == DistSSHKit.size_worker_count(
+                local_total, local_nproc, 2.0; is_localhost=true,
+            )
+            @test isempty(plan.remote_workers)
+        end
     end
 
     @testset "KitSession" begin
@@ -63,6 +88,25 @@ using Test
         delete!(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT")
         DistSSHKit.set_kit_output_quiet!(false)
         DistSSHKit.set_kit_noninteractive!(false)
+    end
+
+    @testset "session_remote_root / session_size_hosts" begin
+        _with_tempdir() do tmp
+            session = DistSSHKit.KitSession(
+                project=tmp,
+                workers=["h1:1"],
+                remote="/remote/App.jl",
+                include_local_for_size=true,
+            )
+            @test DistSSHKit.session_remote_root(session) == "/remote/App.jl"
+            all_h, remotes = DistSSHKit.session_size_hosts(session)
+            @test all_h == ["localhost", "h1"]
+            @test remotes == ["h1"]
+            remote_only = DistSSHKit.KitSession(project=tmp, workers=["h1:1"])
+            a2, r2 = DistSSHKit.session_size_hosts(remote_only)
+            @test a2 == ["h1"]
+            @test r2 == ["h1"]
+        end
     end
 
     @testset "pipeline helpers" begin
@@ -121,8 +165,30 @@ using Test
         @test DistSSHKit._parse_env_sync_mode("rsync") === :rsync
         @test DistSSHKit._parse_env_sync_mode("sync") === :sync
         @test DistSSHKit._parse_env_sync_mode("off") === false
+        @test DistSSHKit._parse_env_sync_mode("skip") === false
+        @test DistSSHKit._parse_env_sync_mode("no") === false
+        @test DistSSHKit._parse_env_sync_mode("") === nothing
+        @test DistSSHKit._parse_env_sync_mode("  ") === nothing
         @test_throws ArgumentError DistSSHKit._parse_env_sync_mode("true")
         @test_throws ArgumentError DistSSHKit._parse_env_sync_mode("1")
+
+        withenv(
+            "DRIVER" => "",
+            "DISTSSHKIT_HOSTS" => "",
+            "DISTSSHKIT_HOSTS_FILE" => "",
+        ) do
+            @test_throws ArgumentError DistSSHKit.pipeline_config_from_env()
+        end
+        withenv(
+            "DRIVER" => "job.jl",
+            "DISTSSHKIT_QUIET" => "1",
+            "DISTSSHKIT_VERBOSE" => "1",
+            "DISTSSHKIT_PROGRESS" => nothing,
+            "DISTSSHKIT_HOSTS" => "",
+            "DISTSSHKIT_HOSTS_FILE" => "",
+        ) do
+            @test_throws ArgumentError DistSSHKit.pipeline_config_from_env()
+        end
 
         cfg_jl = DistSSHKit.PipelineConfig(
             driver="job.jl",
@@ -180,6 +246,40 @@ using Test
             )
             @test parsed_rsync.sync_mode === :rsync
             @test parsed_rsync.skip_hash_check == true
+        end
+    end
+
+    @testset "sync! refusals" begin
+        _with_tempdir() do tmp
+            local_only = DistSSHKit.KitSession(project=tmp, workers=["local:2"])
+            @test_throws ArgumentError DistSSHKit.sync!(local_only)
+            @test_throws ArgumentError DistSSHKit.sync!(local_only; mode=false)
+            remote = DistSSHKit.KitSession(project=tmp, workers=["h1"])
+            @test_throws ArgumentError DistSSHKit.sync!(remote; mode=:nope)
+        end
+    end
+
+    @testset "drive runtime helpers in Main" begin
+        # `_common.jl` / `checks.jl` load into Main with the drive CLI fragments.
+        _with_tempdir() do tmp
+            DistSSHKit._ensure_drive_fragments!(tmp)
+            @test Main.estimate_worker_memory_gb() > 0
+            total, avail = Main.estimate_available_gb()
+            @test total > 0
+            @test avail > 0
+            DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(yes=true))
+            redirect_stdout(devnull) do
+                redirect_stderr(devnull) do
+                    @test Main.check_memory_capacity(1, Tuple{String,Union{Int,Nothing}}[], nothing)
+                    ok, mm, uv = Main.check_git_hashes(String[], tmp)
+                    @test ok
+                    @test isempty(mm)
+                    @test isempty(uv)
+                end
+            end
+            missing = joinpath(tmp, "no_such_driver.jl")
+            msg = Main.drive_script_not_found_message(missing, tmp; surface=:api)
+            @test occursin("not found", lowercase(msg))
         end
     end
 

@@ -69,10 +69,11 @@ Commands differ in what their core work is:
 | --- | --- | --- | --- |
 | **setup** | Shells out to `ssh` / `rsync` | Fake doubles (`DISTSSHKIT_TEST_SSH`, `DISTSSHKIT_TEST_RSYNC` in `test/fixtures/`) | ssh-e2e |
 | **drive** / **go** | Julia `Distributed` workers | Real **local** `addprocs` (no SSH fake) | ssh-e2e |
+| **drive collect** | `ssh` / `rsync` of result trees | Same setup doubles, **control flow only** (fake rsync does not copy) | ssh-e2e |
 | **size** | Plan math (+ optional remote RSS via `addprocs`) | Pure unit for planning; local probe worker in `integration/size/measure.jl` | ssh-e2e if needed |
 
 Local workers are a cheap real substitute for drive/go (same Julia worker path, no Docker).
-They cannot substitute for setup: copying/deleting a remote tree needs `ssh`/`rsync`, so unit tests swap those binaries for fakes. Do not add the same style of fake for drive/go/size; faking Julia SSH worker launch would be a different, heavier double, and local + ssh-e2e already split that coverage.
+They cannot substitute for setup: copying/deleting a remote tree needs `ssh`/`rsync`, so unit tests swap those binaries for fakes. Do not fake Julia SSH worker launch; local + ssh-e2e already split that coverage. Drive **collect** may reuse the setup doubles to cover skip / invoke / fail wiring; transferred bytes stay in ssh-e2e.
 
 Setup/go CLI subprocess helpers (`_run_kit_setup` / `_run_kit_go`) use an
 ephemeral project when `project_root` is omitted, so those runs do not leave
@@ -101,6 +102,7 @@ Consent warnings next to those prompts (`print_warn` / `print_err`) must be too.
 | --- | --- | --- |
 | `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL` | `1` in test children (automatic) | Skip broad `pkill` in drive; each subprocess cleans up its own workers via `rmprocs` |
 | `DISTSSHKIT_SSH_E2E` | unset | Set to `1` to run `test/e2e.jl` (requires `testenv/docker-ssh` workers) |
+| `DISTSSHKIT_CODE_COVERAGE` | unset | Set to `1` with `up.sh --e2e` to pass `--code-coverage=user` (parent + child CLI). CI E2E does this. Merge with `Pkg.test` coverage on Codecov. |
 
 SSH E2E keeps one suite dir under `test/artifacts/ssh-e2e/`. Open
 `SUMMARY.txt` only (see [`test/artifacts/README.md`](artifacts/README.md)).

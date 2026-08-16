@@ -23,6 +23,46 @@ using Test
         @test r.hosts == ["host1", "host2"]
     end
 
+    for (flag, mode) in (
+        "--clone" => :clone,
+        "--sync" => :sync,
+        "--pull" => :pull,
+        "--instantiate" => :instantiate,
+        "--cleanup" => :cleanup,
+        "--delete" => :delete,
+        "--requirements" => :requirements,
+    )
+        let r = parse_setup_args([flag, "host1"])
+            @test r.mode == mode
+            @test r.hosts == ["host1"]
+        end
+    end
+
+    # Last mode token wins; earlier flags are not rejected.
+    let r = parse_setup_args(["--check", "--rsync", "host1"])
+        @test r.mode == :rsync_push
+    end
+
+    let r = parse_setup_args(["--clone", "--repo", "git@ex/app.git", "host1"])
+        @test r.repo_url == "git@ex/app.git"
+        @test r.mode == :clone
+    end
+    let r = parse_setup_args(["--check", "--remote-path", "~/work/App.jl", "host1"])
+        @test r.remote_path_override == "~/work/App.jl"
+    end
+    let r = parse_setup_args(["--check", "--remote-dir", "/tmp/App.jl", "host1"])
+        @test r.remote_path_override == "/tmp/App.jl"
+    end
+    let r = parse_setup_args(["--check", "--julia", "/opt/julia/bin/julia", "host1"])
+        @test r.julia_path == "/opt/julia/bin/julia"
+    end
+    let r = parse_setup_args(["--version", "--check", "host1"])
+        @test r.show_version
+        @test r.mode == :check
+    end
+    @test_throws ArgumentError parse_setup_args(["--repo"])
+    @test_throws ArgumentError parse_setup_args(["--julia"])
+
     let r = parse_setup_args(["--check", "--hosts-file", _sample_hosts_file(), "host-cli"])
         @test r.hosts == ["host-cli", "host-a", "host-b"]
     end

@@ -10,5 +10,16 @@ coverage:
 # GitHub emails every subscriber when Codecov posts a *new* PR comment.
 comment: false
 
+# Pkg.test (flag pkgtest) and PR SSH E2E (flag e2e) upload separately and merge.
+# Carryforward: docs-only PRs skip E2E and would otherwise drop SSH-line hits.
+flag_management:
+  default_rules:
+    carryforward: true
+  individual_flags:
+    - name: pkgtest
+      carryforward: true
+    - name: e2e
+      carryforward: true
+
 # No `ignore` list: CLI entry points stay in coverage reports.
-# Local drive paths: `test/integration/drive/local.jl`. Remote SSH: `test/e2e.jl` (`SSH E2E` workflow).
+# Local drive: Pkg.test integration. Remote SSH: E2E job `--code-coverage`.
