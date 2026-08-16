@@ -46,8 +46,8 @@
     <!--
       No ring. Size-aware fan (equal rim gaps ~52px, outer pad ~20):
         master  @ (120, 184)  dots → optical screen center; rim top y=159
-        laptop  @ (120, 90)   dots → optical screen center; rim base y=107
-        minibox @ (44, 108)   dots → optical screen center
+        laptop  @ (120, 90)   dots → y=-3 (slightly below optical center)
+        minibox @ (44, 108)   dots → y=2 (slightly below optical center)
         desktop @ (198, 108)  dots → y=-7 (slightly below optical center; spin-safe)
       Remote juliacircles use R=5.4 (spin-safe in the tightest screen: desktop
       46×28 after stroke). Master keeps official R=6.2. Packet paths aim at
@@ -58,12 +58,12 @@
     <g id="laptop-body">
       <rect class="stroke" x="-25" y="-22" width="50" height="34" rx="2.5"/>
       <path class="stroke" d="M-31,13 L31,13 L27,17 L-27,17 Z"/>
-      <circle class="attach" id="attach-laptop" cx="0" cy="-5" r="0"/>
+      <circle class="attach" id="attach-laptop" cx="0" cy="-3" r="0"/>
     </g>
     <g id="minibox-body">
       <rect class="stroke" x="-24" y="-16" width="48" height="32" rx="7"/>
       <line class="stroke" x1="-16" y1="19.5" x2="16" y2="19.5"/>
-      <circle class="attach" id="attach-minibox" cx="0" cy="0" r="0"/>
+      <circle class="attach" id="attach-minibox" cx="0" cy="2" r="0"/>
     </g>
     <g id="desktop-body">
       <rect class="stroke" x="-23" y="-22" width="46" height="28" rx="2.5"/>
@@ -251,7 +251,7 @@
           keySplines="0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1"
           values="51;58;51;57;51;56;51;54.5;51;53;51;51.8;51"/>
       </line>
-      <g transform="translate(0, 0)">
+      <g transform="translate(0, 2)">
             <g>
               <!-- After R+G+P solid (~4.7s): run with master (~3 ぐるん) -->
               <animateTransform attributeName="transform" type="rotate"
@@ -281,7 +281,7 @@
           keySplines="0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1"
           values="69;76;69;75;69;74;69;72.5;69;71;69;69.8;69"/>
       </line>
-      <g transform="translate(0, -5)">
+      <g transform="translate(0, -3)">
             <g>
               <!-- After R+G+P solid (~4.7s): run with master (~3 ぐるん) -->
               <animateTransform attributeName="transform" type="rotate"
