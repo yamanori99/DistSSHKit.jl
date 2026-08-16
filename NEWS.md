@@ -15,6 +15,13 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 - **Breaking:** `demo install` copies one family (`with_kit` or `without_kit`),
   not both. Bare `demo install` refuses. API: `install_demos(; family=...)`.
 
+- Confirm prompts always print (`-q` / `--progress` included). `-y` still skips
+  them.
+
+- CLI job root: `julia -m DistSSHKit` from a project that depends on DistSSHKit
+  uses that project's `Project.toml`, not the kit's.
+  `DISTRIBUTED_PROJECT_ROOT` overrides.
+
 ## 0.2.1 (2026-08-14)
 
 Patch after the first General registration (`0.2.0`).
