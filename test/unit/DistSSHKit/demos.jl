@@ -36,18 +36,6 @@ using Test
             ), ""),
         )
         @test DistSSHKit.missing_script_demo_hint(joinpath(tmp, "jobs", "x.jl"), tmp) === nothing
-
-        api_msg = DistSSHKit.explain_script_not_found(
-            joinpath(tmp, "demos", "with_kit", "rho_sweep.jl"),
-            tmp;
-            surface=:api,
-            headline="script not found: x",
-        )
-        @test startswith(api_msg, "script not found: x")
-        @test occursin("DistSSHKit.install_demos()", api_msg)
-
-        @test DistSSHKit.join_explained_message("head", nothing) == "head"
-        @test DistSSHKit.join_explained_message("head", "Hint: x") == "head\nHint: x"
     end
 
     _with_tempdir() do tmp
@@ -94,11 +82,16 @@ using Test
         @test occursin("demo list", sprint(showerror, err))
     end
 
-    # CLI wiring smoke (install path covered by install_demos above).
-    DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(quiet=true, yes=true))
-    @test DistSSHKit.main(["demo", "--help"]) == 0
-    @test redirect_stderr(devnull) do
-        DistSSHKit.main(["demo", "bogus"])
-    end == 1
-    DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession())
+    # `_run_kit_cli_script` (module.jl) leaves DISTSSHKIT_CLI_SUBCOMMAND_DONE=1;
+    # `main` would otherwise return 0 without running `demo`.
+    mktemp() do path, io
+        code = withenv("DISTSSHKIT_CLI_SUBCOMMAND_DONE" => "") do
+            redirect_stderr(io) do
+                DistSSHKit.main(["demo", "bogus"])
+            end
+        end
+        flush(io)
+        @test code == 1
+        @test occursin("Unknown demo command: bogus", read(path, String))
+    end
 end

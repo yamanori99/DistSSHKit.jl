@@ -6,8 +6,16 @@ Drop `Pkg.test`'s `JULIA_LOAD_PATH` so `--project=` resolves packages (and
 stdlibs like Serialization) like a normal user invocation.
 """
 function _child_julia_env(extra::AbstractDict=Dict{String,String}())
+    # In-process `_run_kit_cli_script` sets DISTSSHKIT_CLI_SUBCOMMAND_DONE so a
+    # nested `main` does not run twice. Children must not inherit that, or
+    # `DistSSHKit.main` / `-m DistSSHKit` returns 0 with empty output.
+    skip = Set((
+        "JULIA_LOAD_PATH",
+        "DISTSSHKIT_CLI_SUBCOMMAND_DONE",
+        "DIST_SSH_KIT_CLI_INCLUDE",
+    ))
     env = Dict{String,String}(
-        String(k) => String(v) for (k, v) in ENV if !isempty(v) && String(k) != "JULIA_LOAD_PATH"
+        String(k) => String(v) for (k, v) in ENV if !isempty(v) && !(String(k) in skip)
     )
     env["JULIA_PKG_PRECOMPILE_AUTO"] = get(ENV, "JULIA_PKG_PRECOMPILE_AUTO", "0")
     # Avoid broad pkill in drive; each child cleans its own workers via rmprocs.

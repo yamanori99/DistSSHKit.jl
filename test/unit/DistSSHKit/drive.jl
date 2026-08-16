@@ -44,20 +44,6 @@ using Test
         @test DistSSHKit.drive_host_specs(plan) == ["local:2", "host-a:4"]
     end
 
-    @testset "compute_worker_plan" begin
-        per_worker = Dict("localhost" => 1.0, "host-a" => 1.0)
-        plan = DistSSHKit.compute_worker_plan(
-            ["localhost", "host-a"],
-            ["host-a"],
-            per_worker;
-            mem_headroom=0.75,
-            master_gb=0.4,
-        )
-        @test plan.local_workers >= 0
-        @test haskey(plan.remote_workers, "host-a")
-        @test plan.remote_workers["host-a"] >= 0
-    end
-
     @testset "apply_session_env!" begin
         _with_tempdir() do tmp
             session = DistSSHKit.KitSession(

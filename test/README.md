@@ -83,7 +83,7 @@ ephemeral project when `project_root` is omitted, so those runs do not leave
 
 Loaded via `support.jl`:
 
-- `_child_julia_env` — child-process `ENV` (drops `JULIA_LOAD_PATH`, sets `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1`)
+- `_child_julia_env` — child-process `ENV` (drops `JULIA_LOAD_PATH` and in-process CLI-done flags, sets `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1`)
 - `_run_kit_drive` / `_run_host_drive` / `_run_kit_setup` / `_run_kit_go` / `_run_kit_size` — CLI subprocesses
 - `_mktemp_host`, `_with_tempdir`, `_stage_with_kit_demos!` — isolated temp host projects with bundled `with_kit` demos
 - `_with_ssh_e2e_suite`, `_stage_ssh_e2e_remote_host!` — SSH E2E suite + scratch projects
