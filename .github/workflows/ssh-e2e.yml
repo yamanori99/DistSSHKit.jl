@@ -78,7 +78,7 @@ jobs:
           slug: ${{ github.repository }}
           use_oidc: true
           flags: e2e
-          fail_ci_if_error: false
+          fail_ci_if_error: true
       - name: E2E coverage summary
         if: ${{ always() && steps.e2e.outcome == 'success' }}
         run: |
