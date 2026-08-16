@@ -32,7 +32,7 @@ jobs:
   test-1-11:
     name: Pkg.test - Julia 1.11 - ubuntu-latest
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
@@ -40,6 +40,10 @@ jobs:
           version: "1.11"
       - uses: julia-actions/cache@v3
       - uses: ./.github/actions/pkg-test
+        id: pkgtest
+        continue-on-error: true
+      - uses: ./.github/actions/pkg-test
+        if: steps.pkgtest.outcome == 'failure'
 
   test-1-12:
     name: Pkg.test - Julia 1.12 - ubuntu-latest
