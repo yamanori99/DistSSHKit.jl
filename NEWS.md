@@ -5,7 +5,7 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
-## 0.3.0
+## 0.3.0 (2026-08-16)
 
 Breaking cut after `0.2.1`. No `0.2.2` on General.
 
