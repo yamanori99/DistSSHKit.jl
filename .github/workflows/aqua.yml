@@ -13,6 +13,7 @@ concurrency:
 
 permissions:
   contents: read
+  actions: write # julia-actions/cache delete-old-caches
 
 jobs:
   aqua-1-12:

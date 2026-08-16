@@ -15,6 +15,7 @@ concurrency:
 permissions:
   contents: read
   id-token: write # Codecov OIDC upload (see Upload coverage step)
+  actions: write # julia-actions/cache delete-old-caches
 
 jobs:
   # Full `Pkg.test()` stays Linux-only. Slow SSH E2E controllers are `E2E daily`.
@@ -24,15 +25,19 @@ jobs:
   test-1-10:
     name: Pkg.test - Julia 1.10 - ubuntu-latest
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/ci-heavy
         id: detect
-      - uses: ./.github/actions/pkg-test
+      - uses: julia-actions/setup-julia@v3
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         with:
           version: "1.10"
+      - uses: julia-actions/cache@v3
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
+      - uses: ./.github/actions/pkg-test
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
 
   test-1-11:
     name: Pkg.test - Julia 1.11 - ubuntu-latest
@@ -42,10 +47,14 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/ci-heavy
         id: detect
-      - uses: ./.github/actions/pkg-test
+      - uses: julia-actions/setup-julia@v3
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         with:
           version: "1.11"
+      - uses: julia-actions/cache@v3
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
+      - uses: ./.github/actions/pkg-test
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
 
   test-1-12:
     name: Pkg.test - Julia 1.12 - ubuntu-latest
@@ -55,10 +64,15 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/ci-heavy
         id: detect
-      - uses: ./.github/actions/pkg-test
+      - uses: julia-actions/setup-julia@v3
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         with:
           version: "1.12"
+      - uses: julia-actions/cache@v3
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
+      - uses: ./.github/actions/pkg-test
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
+        with:
           coverage: "true"
 
   test-1-13:
@@ -69,8 +83,12 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/ci-heavy
         id: detect
-      - uses: ./.github/actions/pkg-test
+      - uses: julia-actions/setup-julia@v3
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         with:
           # Prerelease channel; ~1.13.0-0 picks the latest 1.13.x (including RCs).
           version: "~1.13.0-0"
+      - uses: julia-actions/cache@v3
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
+      - uses: ./.github/actions/pkg-test
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'

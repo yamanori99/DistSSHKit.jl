@@ -109,8 +109,7 @@ function resolve_worker_memory_samples(
     end
     failed = [h for h in all_hosts if !haskey(measured, h)]
     if !isempty(failed)
-        print_progress_warn("  Connection failed: $(join(failed, ", "))")
-        kit_println()
+        print_warn("  Connection failed: $(join(failed, ", "))\n")
     end
     samples = Dict{String,WorkerMemorySample}()
     for h in all_hosts
@@ -127,9 +126,7 @@ function resolve_worker_memory_samples(
         else
             fb = WORKER_MEMORY_GB_FALLBACK
             samples[h] = WorkerMemorySample(fb, fb)
-            kit_print("  $h: ")
-            print_progress_warn("$fb GB (probe failed, using default)")
-            kit_println()
+            print_warn("  $h: $fb GB (probe failed, using default)\n")
         end
     end
     return samples

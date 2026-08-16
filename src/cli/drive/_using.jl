@@ -24,6 +24,7 @@ using .DistSSHKit:
     print_ok,
     print_progress_err,
     print_progress_warn,
+    print_warn,
     println_fatal,
     project_package_name,
     remote_path_for_ssh_collect,

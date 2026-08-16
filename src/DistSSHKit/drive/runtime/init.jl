@@ -129,13 +129,17 @@ function init_drive_workers!(proj_dir::String, explicit_package, path_anchor::St
 
         @eval @everywhere ENV["JULIA_PKG_PRECOMPILE_AUTO"] = "0"
         @eval @everywhere using Pkg
-        @eval @everywhere function _drive_worker_activate!(path::String)
-            Pkg.activate(path; io=devnull)
-            return nothing
-        end
-        @eval @everywhere function _drive_worker_include!(path::String)
-            Base.include(Main, path)
-            return nothing
+        # Master already has these from this file; `@everywhere` without
+        # `workers()` would warn-overwrite pid 1 on every drive.
+        @eval @everywhere workers() begin
+            function _drive_worker_activate!(path::String)
+                Pkg.activate(path; io=devnull)
+                return nothing
+            end
+            function _drive_worker_include!(path::String)
+                Base.include(Main, path)
+                return nothing
+            end
         end
         for w in workers()
             worker_proj = get(RUNNER_WORKER_PROJECT_DIRS, w, proj_dir)

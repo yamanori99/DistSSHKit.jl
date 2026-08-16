@@ -16,6 +16,10 @@ using DistSSHKit
 
 include(joinpath(@__DIR__, "support.jl"))
 
+# In-process default matches TTY CLI (`:progress`), not module-load `:verbose`
+# or a pipe. Child CLI processes still auto-detect their own stdout.
+DistSSHKit.set_kit_verbosity!(:progress)
+
 @testset "DistSSHKit" verbose=true begin
     @testset "unit" verbose=true begin
         println("▸ unit/DistSSHKit/display.jl")

@@ -131,10 +131,10 @@ function run_drive_parsed!(
                 msg =
                     "⚠ Local working tree has uncommitted changes (this run may not match any git commit)"
                 write_both("  ")
-                print_progress_warn(msg)
-                writeln_both("")
-                writeln_both("  Omit --require-git to skip this check"; color=:light_black)
-                writeln_both("")
+                print_warn(msg)
+                println_fatal()
+                println_fatal("  Omit --require-git to skip this check")
+                println_fatal()
             end
 
             if !isempty(host_names)

@@ -55,19 +55,17 @@ function delete_remotes(
     remote_path::String;
     confirm::Bool=true,
 )::NamedTuple
-    kit_print("  ")
-    print_progress_err("This will DELETE repositories on all hosts via SSH.")
-    kit_println()
-    kit_println("  Remote path: $remote_path")
-    kit_println("  Hosts: $(join(hosts, ", "))")
-    kit_println("  Note: setup hosts are SSH targets only (not drive/go `local`).")
-    kit_println()
-    if confirm
+    if confirm && !kit_noninteractive()
+        print_err("  This will DELETE repositories on all hosts via SSH.\n")
+        println_fatal("  Remote path: $remote_path")
+        println_fatal("  Hosts: $(join(hosts, ", "))")
+        println_fatal("  Note: setup hosts are SSH targets only (not drive/go `local`).")
+        println_fatal()
         kit_confirm("Type 'delete' to confirm: "; keyword="delete") || begin
             println_fatal("Cancelled.")
             return (; cancelled=true, succeeded=0, failed=0, hosts=HostResult[])
         end
-        kit_println()
+        println_fatal()
     end
 
     pq = _remote_shell_path_word(remote_path)
@@ -119,21 +117,19 @@ function clone_to_remotes(
     clone_url::String;
     confirm::Bool=true,
 )::NamedTuple
-    kit_println("  Repository: $clone_url")
-    kit_println("  Remote path: $remote_path")
-    kit_println("  Hosts: $(join(hosts, ", "))")
-    kit_println()
-    kit_print("  ")
-    print_progress_warn("Safety: refuses if the remote path already has any files.")
-    kit_println()
-    kit_println("  To replace an existing tree, run `setup --delete` first, then `--clone`.")
-    kit_println()
-    if confirm
+    if confirm && !kit_noninteractive()
+        println_fatal("  Repository: $clone_url")
+        println_fatal("  Remote path: $remote_path")
+        println_fatal("  Hosts: $(join(hosts, ", "))")
+        println_fatal()
+        print_warn("  Safety: refuses if the remote path already has any files.\n")
+        println_fatal("  To replace an existing tree, run `setup --delete` first, then `--clone`.")
+        println_fatal()
         kit_confirm("Proceed? [y/N]: ") || begin
             println_fatal("Cancelled.")
             return (; cancelled=true, succeeded=0, failed=0, hosts=HostResult[])
         end
-        kit_println()
+        println_fatal()
     end
 
     pq = _remote_shell_path_word(remote_path)

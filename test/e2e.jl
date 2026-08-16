@@ -14,6 +14,7 @@ using DistSSHKit
 
 kit_root = abspath(joinpath(@__DIR__, ".."))
 include(joinpath(kit_root, "test", "support.jl"))
+DistSSHKit.set_kit_verbosity!(:progress)
 
 if !_ssh_e2e_enabled()
     @info "Skipping SSH E2E (set DISTSSHKIT_SSH_E2E=1 to enable)"

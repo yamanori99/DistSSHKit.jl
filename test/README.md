@@ -87,6 +87,13 @@ Loaded via `support.jl`:
 - `_run_kit_drive` / `_run_host_drive` / `_run_kit_setup` / `_run_kit_go` / `_run_kit_size` — CLI subprocesses
 - `_mktemp_host`, `_with_tempdir`, `_stage_with_kit_demos!` — isolated temp host projects with bundled `with_kit` demos
 - `_with_ssh_e2e_suite`, `_stage_ssh_e2e_remote_host!` — SSH E2E suite + scratch projects
+- `_capture_stdio` / `with_kit_verbosity` — capture stdin/stdout; pin kit verbosity and restore
+
+`runtests.jl` and `e2e.jl` pin in-process verbosity to `:progress` (TTY CLI default).
+Child CLI processes still auto-detect their own stdout. Tests that assert on
+captured kit detail lines must wrap with `with_kit_verbosity(:verbose)`.
+`kit_confirm` prompts must be visible in `:quiet`, `:progress`, and `:verbose`.
+Consent warnings next to those prompts (`print_warn` / `print_err`) must be too.
 
 ## Environment variables
 
@@ -111,6 +118,7 @@ Kit CLI flags (drive / go / setup / size) also honor `DISTSSHKIT_QUIET`, `DISTSS
 2. Add a top-level `include` in `runtests.jl` (JETLS follows that; do not wrap it in a function). Do not register `test/e2e.jl` there.
 3. Reuse `support/` helpers for subprocess work; put one-off scripts in `fixtures/`.
 4. Put a short Oracle / non-guarantee comment at the top of the file.
+5. Do not assume in-process verbosity is `:verbose`. Pin it with `with_kit_verbosity`.
 
 ## Aqua note
 

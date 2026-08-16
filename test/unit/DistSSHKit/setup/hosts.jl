@@ -63,17 +63,29 @@ using Test
     end
 
     @testset "delete_remotes" begin
-        withenv("DISTSSHKIT_YES" => "") do
-            DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(quiet=false, yes=false))
-            out, result = _capture_stdio() do stdin_io, _
-                println(stdin_io, "no")
-                flush(stdin_io)
-                seekstart(stdin_io)
-                DistSSHKit.delete_remotes(["host1"], "~/App.jl")
+        withenv("DISTSSHKIT_YES" => nothing) do
+            prev_ni = DistSSHKit.kit_noninteractive()
+            DistSSHKit.set_kit_noninteractive!(false)
+            try
+                for v in (:quiet, :progress, :verbose)
+                    with_kit_verbosity(v) do
+                        out, result = _capture_stdio() do stdin_io, _
+                            println(stdin_io, "no")
+                            flush(stdin_io)
+                            seekstart(stdin_io)
+                            DistSSHKit.delete_remotes(["host1"], "~/App.jl")
+                        end
+                        @test result.cancelled && result.succeeded == 0 && result.failed == 0
+                        @test isempty(result.hosts)
+                        @test occursin("Cancelled.", out)
+                        @test occursin("DELETE", out)
+                        @test occursin("Type 'delete'", out)
+                        @test occursin("~/App.jl", out)
+                    end
+                end
+            finally
+                DistSSHKit.set_kit_noninteractive!(prev_ni)
             end
-            @test result.cancelled && result.succeeded == 0 && result.failed == 0
-            @test isempty(result.hosts)
-            @test occursin("Cancelled.", out)
         end
 
         _with_fake_remotes() do state_dir
@@ -90,6 +102,31 @@ using Test
     end
 
     @testset "clone_to_remotes" begin
+        withenv("DISTSSHKIT_YES" => nothing) do
+            prev_ni = DistSSHKit.kit_noninteractive()
+            DistSSHKit.set_kit_noninteractive!(false)
+            try
+                for v in (:quiet, :progress, :verbose)
+                    with_kit_verbosity(v) do
+                        out, result = _capture_stdio() do stdin_io, _
+                            println(stdin_io, "n")
+                            flush(stdin_io)
+                            seekstart(stdin_io)
+                            DistSSHKit.clone_to_remotes(
+                                ["host1"], "~/App.jl", "git@example.com:org/App.jl.git",
+                            )
+                        end
+                        @test result.cancelled && result.succeeded == 0 && result.failed == 0
+                        @test occursin("Cancelled.", out)
+                        @test occursin("Safety:", out)
+                        @test occursin("Proceed?", out)
+                    end
+                end
+            finally
+                DistSSHKit.set_kit_noninteractive!(prev_ni)
+            end
+        end
+
         _with_fake_remotes() do _
             result = DistSSHKit.clone_to_remotes(
                 ["host1"], "~/App.jl", "git@example.com:org/App.jl.git";

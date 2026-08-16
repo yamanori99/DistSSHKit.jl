@@ -65,6 +65,23 @@ function _capture_stdio(f::Function)
     end
 end
 
+"""Run `f` with kit verbosity `v`, then restore the previous value.
+
+Use this whenever a test asserts on captured kit stdout. `Pkg.test()` pins
+`:progress` (TTY CLI default); do not assume the module-load `:verbose`.
+"""
+function with_kit_verbosity(f, v::Symbol)
+    prev = DistSSHKit.kit_verbosity()
+    try
+        DistSSHKit.set_kit_verbosity!(v)
+        return f()
+    finally
+        DistSSHKit.close_log_file()
+        DistSSHKit.kit_progress_done!()
+        DistSSHKit.set_kit_verbosity!(prev)
+    end
+end
+
 """Run the kit `go` CLI as a subprocess.
 
 Same project-root rule as [`_run_kit_setup`](@ref): omit `project_root` only for

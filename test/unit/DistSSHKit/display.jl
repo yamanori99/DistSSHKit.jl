@@ -100,19 +100,6 @@ using Test
     end
 
     @testset "verbosity gates" begin
-        # do-block form: `with_kit_verbosity(:quiet) do ... end`
-        function with_kit_verbosity(f, v::Symbol)
-            prev = DistSSHKit.kit_verbosity()
-            try
-                DistSSHKit.set_kit_verbosity!(v)
-                return f()
-            finally
-                DistSSHKit.close_log_file()
-                DistSSHKit.kit_progress_done!()  # no-op when idle
-                DistSSHKit.set_kit_verbosity!(prev)
-            end
-        end
-
         @testset "writeln_both: verbose terminal, quiet log-only" begin
             _with_tempdir() do tmp
                 with_kit_verbosity(:quiet) do
@@ -200,7 +187,12 @@ using Test
                 @test !occursin(half, done_line)
             end
 
-            @test DistSSHKit._progress_can_draw() == false  # not :progress yet
+            with_kit_verbosity(:verbose) do
+                @test DistSSHKit._progress_can_draw() == false
+            end
+            with_kit_verbosity(:quiet) do
+                @test DistSSHKit._progress_can_draw() == false
+            end
             with_kit_verbosity(:progress) do
                 withenv("NO_COLOR" => "1") do
                     @test DistSSHKit._progress_can_draw() == false

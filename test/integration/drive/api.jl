@@ -13,21 +13,29 @@ using Test
         # SMOKE_OK is on the captured stream (same string as CLI `local.jl`).
         prev_v = DistSSHKit.kit_verbosity()
         try
-            mktemp() do path, io
-                result = redirect_stdout(io) do
-                    DistSSHKit.drive!(
-                        script,
-                        "local:2";
-                        project=proj,
-                        verbosity=:verbose,
-                        yes=true,
-                    )
+            mktemp() do out_path, out_io
+                mktemp() do err_path, err_io
+                    result = redirect_stdout(out_io) do
+                        redirect_stderr(err_io) do
+                            DistSSHKit.drive!(
+                                script,
+                                "local:2";
+                                project=proj,
+                                verbosity=:verbose,
+                                yes=true,
+                            )
+                        end
+                    end
+                    flush(out_io)
+                    flush(err_io)
+                    out = read(out_path, String)
+                    err = read(err_path, String)
+                    @test result.ok
+                    @test result.exit_code == 0
+                    @test occursin("DISTSSHKIT_RUNNER_SMOKE_OK nw=2", out)
+                    # `@everywhere` must not redefine master helpers (warn-overwrite).
+                    @test !occursin("overwritten", err)
                 end
-                flush(io)
-                out = read(path, String)
-                @test result.ok
-                @test result.exit_code == 0
-                @test occursin("DISTSSHKIT_RUNNER_SMOKE_OK nw=2", out)
             end
         finally
             DistSSHKit.set_kit_verbosity!(prev_v)
