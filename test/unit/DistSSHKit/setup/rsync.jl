@@ -35,16 +35,27 @@ using Test
     end
 
     @testset "rsync outcomes" begin
-        withenv("DISTSSHKIT_YES" => "") do
-            DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(quiet=false, yes=false))
-            out, result = _capture_stdio() do stdin_io, _
-                println(stdin_io, "")
-                flush(stdin_io)
-                seekstart(stdin_io)
-                DistSSHKit.rsync_push_to_remotes(["host1"], remote_path, project)
+        withenv("DISTSSHKIT_YES" => nothing) do
+            prev_ni = DistSSHKit.kit_noninteractive()
+            DistSSHKit.set_kit_noninteractive!(false)
+            try
+                for v in (:quiet, :progress, :verbose)
+                    with_kit_verbosity(v) do
+                        out, result = _capture_stdio() do stdin_io, _
+                            println(stdin_io, "")
+                            flush(stdin_io)
+                            seekstart(stdin_io)
+                            DistSSHKit.rsync_push_to_remotes(["host1"], remote_path, project)
+                        end
+                        @test result == (cancelled=true, succeeded=0, failed=0)
+                        @test occursin("Cancelled.", out)
+                        @test occursin("bypasses git", out)
+                        @test occursin("Type 'rsync'", out)
+                    end
+                end
+            finally
+                DistSSHKit.set_kit_noninteractive!(prev_ni)
             end
-            @test result == (cancelled=true, succeeded=0, failed=0)
-            @test occursin("Cancelled.", out)
         end
 
         _with_fake_remotes(extra_env=Dict("DISTSSHKIT_TEST_MKDIR_FAIL" => "1")) do _

@@ -7,6 +7,8 @@ using .DistSSHKit:
     print_ok,
     print_progress_err,
     print_progress_warn,
+    print_warn,
+    println_fatal,
     rss_bytes_to_worker_gb,
     write_both,
     writeln_both
@@ -73,20 +75,20 @@ function check_memory_capacity(local_workers::Int, hosts::Vector{Tuple{String,Un
     writeln_both("")
 
     if !isempty(warnings)
-        print_progress_warn("WARNING: "; bold=true)
-        writeln_both("Memory pressure detected!")
-        writeln_both("")
+        print_warn("WARNING: "; bold=true)
+        println_fatal("Memory pressure detected!")
+        println_fatal()
         for w in warnings
-            print_progress_warn(w * "\n")
+            print_warn(w * "\n")
         end
-        writeln_both("")
-        writeln_both("Consider reducing worker count.")
-        writeln_both("")
+        println_fatal()
+        println_fatal("Consider reducing worker count.")
+        println_fatal()
         DistSSHKit.kit_confirm("Continue anyway? [y/N]: ") || begin
-            writeln_both("Aborted.")
+            println_fatal("Aborted.")
             return false
         end
-        writeln_both("")
+        println_fatal()
     end
     return true
 end

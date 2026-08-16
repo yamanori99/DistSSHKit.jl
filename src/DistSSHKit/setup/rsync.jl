@@ -109,26 +109,21 @@ function _print_rsync_safety_banner!(
     hosts::Vector{String},
     path_anchor::AbstractString,
 )
-    # Banner is detail-only; quiet/progress leave the TTY (and skip this noise).
-    !kit_output_detail() && return nothing
-    kit_print("  ")
-    print_progress_warn("This bypasses git entirely: no commit, no push/pull, no hash check.")
-    kit_println()
-    kit_println("  Local and remote git commits will likely disagree afterwards.")
-    kit_println("  That is fine: `drive` does not require git parity by default.")
-    kit_println("  Use `drive --require-git` only with git-managed remotes.")
-    kit_println("  Prefer `setup --sync` when you need the git-commit reproducibility guarantee.")
-    kit_println()
-    kit_print("  ")
-    print_progress_warn("Safety: refuses if the remote path already has any files.")
-    kit_println()
-    kit_println("  To replace an existing tree, run `setup --delete` first, then `--rsync`.")
-    kit_println("  Mirrors onto a missing/empty path (`--delete`); excludes `.git/`; honors `.gitignore`.")
-    kit_println()
-    kit_println("  Local project: $(display_path(local_root, path_anchor))")
-    kit_println("  Remote path: $remote_path")
-    kit_println("  Hosts: $(join(hosts, ", "))")
-    kit_println()
+    # Consent text: always on the terminal (same gate as `kit_confirm`).
+    print_warn("  This bypasses git entirely: no commit, no push/pull, no hash check.\n")
+    println_fatal("  Local and remote git commits will likely disagree afterwards.")
+    println_fatal("  That is fine: `drive` does not require git parity by default.")
+    println_fatal("  Use `drive --require-git` only with git-managed remotes.")
+    println_fatal("  Prefer `setup --sync` when you need the git-commit reproducibility guarantee.")
+    println_fatal()
+    print_warn("  Safety: refuses if the remote path already has any files.\n")
+    println_fatal("  To replace an existing tree, run `setup --delete` first, then `--rsync`.")
+    println_fatal("  Mirrors onto a missing/empty path (`--delete`); excludes `.git/`; honors `.gitignore`.")
+    println_fatal()
+    println_fatal("  Local project: $(display_path(local_root, path_anchor))")
+    println_fatal("  Remote path: $remote_path")
+    println_fatal("  Hosts: $(join(hosts, ", "))")
+    println_fatal()
     return nothing
 end
 
@@ -212,20 +207,18 @@ function rsync_project_to_hosts!(
     remote_path = String(remote_path)
     path_anchor = canonical_local_path(path_anchor)
 
-    if confirm
+    if confirm && !kit_noninteractive()
         _print_rsync_safety_banner!(local_root, remote_path, hosts, path_anchor)
-        if !kit_noninteractive()
-            if !kit_confirm("Type 'rsync' to confirm: "; keyword="rsync")
-                println_fatal("Cancelled.")
-                return (
-                    cancelled=true,
-                    succeeded=0,
-                    failed=0,
-                    host_results=HostResult[],
-                )
-            end
-            kit_println()
+        if !kit_confirm("Type 'rsync' to confirm: "; keyword="rsync")
+            println_fatal("Cancelled.")
+            return (
+                cancelled=true,
+                succeeded=0,
+                failed=0,
+                host_results=HostResult[],
+            )
         end
+        println_fatal()
     end
 
     ssh_cmd_str = _host_sync_rsync_transport()

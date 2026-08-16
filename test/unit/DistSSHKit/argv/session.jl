@@ -110,15 +110,20 @@ using Test
                         DistSSHKit.kit_confirm("really wipe?"; keyword=keyword)
                     end
                 end
-                out, ok = _confirm_stdio("n\n")
-                @test !ok
-                @test occursin("really wipe?", out)
-                _, ok = _confirm_stdio("y\n")
-                @test ok
-                _, ok = _confirm_stdio("DELETE\n"; keyword="DELETE")
-                @test ok
-                _, ok = _confirm_stdio("nope\n"; keyword="DELETE")
-                @test !ok
+                # Prompt must show in every verbosity (TTY default is :progress).
+                for v in (:quiet, :progress, :verbose)
+                    with_kit_verbosity(v) do
+                        out, ok = _confirm_stdio("n\n")
+                        @test !ok
+                        @test occursin("really wipe?", out)
+                        _, ok = _confirm_stdio("y\n")
+                        @test ok
+                        _, ok = _confirm_stdio("DELETE\n"; keyword="DELETE")
+                        @test ok
+                        _, ok = _confirm_stdio("nope\n"; keyword="DELETE")
+                        @test !ok
+                    end
+                end
             finally
                 DistSSHKit.set_kit_noninteractive!(prev_ni)
             end

@@ -47,12 +47,15 @@ using Test
             work = joinpath(tmp, "work")
             mkpath(work)
             _init_commit!(work)
-            raw = DistSSHKit.git_sync_project_to_hosts!(
-                ["192.0.2.1"], work, "~/App.jl";
-                do_push=true, do_pull=true, do_local_pull=false,
-            )
+            out, raw = _capture_stdio() do _, _
+                DistSSHKit.git_sync_project_to_hosts!(
+                    ["192.0.2.1"], work, "~/App.jl";
+                    do_push=true, do_pull=true, do_local_pull=false,
+                )
+            end
             @test !raw.ok
             @test isempty(raw.host_results)
+            @test occursin("Push failed.", out)
 
             raw_pull = DistSSHKit.git_sync_project_to_hosts!(
                 ["192.0.2.1"], work, "~/App.jl";

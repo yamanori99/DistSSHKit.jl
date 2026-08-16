@@ -368,14 +368,21 @@ end
 """
 Prompt on stdin; return `true` if confirmed.
 
-With `--yes` / `DISTSSHKIT_YES`, always returns `true`.
+The prompt is always written to the terminal (quiet / progress / verbose).
+Do not route it through [`kit_print`](@ref) (`:verbose` only).
+
+With `--yes` / `DISTSSHKIT_YES`, always returns `true` without prompting.
 `keyword=nothing` → accept `y` / `yes` (case-insensitive).
 Otherwise the answer must match `keyword` exactly.
 """
 function kit_confirm(prompt::AbstractString; keyword::Union{Nothing,String}=nothing)::Bool
     kit_noninteractive() && return true
-    kit_print(prompt)
+    print(stdout, prompt)
     flush(stdout)
+    if LOG_FILE_HANDLE[] !== nothing
+        print(LOG_FILE_HANDLE[], prompt)
+        flush(LOG_FILE_HANDLE[])
+    end
     answer = strip(readline())
     if keyword === nothing
         return lowercase(answer) in ("y", "yes")
