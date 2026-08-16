@@ -1,8 +1,8 @@
 #!/usr/bin/env julia
 # Real-SSH E2E against testenv/docker-ssh workers. Not part of Pkg.test().
 # Oracle: OpenSSH + rsync + remote Julia (setup / drive / go / git). Assert
-# remote files via `ssh` / collected bytes — not fake ssh/rsync, not exit-0
-# alone. Local with_kit recipes are test/integration/demos/with_kit.jl.
+# files workers write (`ssh cat` / collect). Controller-side demo CSV is not
+# a remote collect. Local with_kit recipes are test/integration/demos/.
 #
 #   testenv/docker-ssh/scripts/up.sh --e2e
 #   DISTSSHKIT_SSH_E2E=1 julia --project=. test/e2e.jl   # from kit root
@@ -182,12 +182,10 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
             @test occursin("param^2:", out)
         end
 
-        @testset "drive square_file collect bytes (rsync remote)" begin
+        @testset "drive square_file CSV is local (controller main)" begin
             square_file = joinpath(proj, "demos", "with_kit", "square_file.jl")
             out_csv = joinpath(proj, "demos", "with_kit", "output", "square_results.csv")
-            collect_root = joinpath(proj, "demos", "with_kit", "output")
             isfile(out_csv) && rm(out_csv)
-
             proc, out = _run_kit_drive(;
                 script=square_file,
                 host_root=proj,
@@ -199,16 +197,41 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
             )
             _assert_ssh_e2e_ok(suite, "drive_square_file", proc, out)
             @test isfile(out_csv)
-            csv0 = read(out_csv, String)
-            @test occursin("param,result", csv0)
-            @test occursin("1,1", csv0)
+            @test occursin("param,result", read(out_csv, String))
+            p, _ = _ssh_e2e_ssh(hosts[1], "test ! -e $(remote_root)/demos/with_kit/output/square_results.csv")
+            _assert_proc_ok(p, ""; label="square_file CSV absent on remote")
+        end
 
-            remote_csv = "$(remote_root)/demos/with_kit/output/square_results.csv"
-            p, remote_body = _ssh_e2e_ssh(hosts[1], "cat $(remote_csv)")
-            _assert_proc_ok(p, remote_body; label="ssh cat square_results.csv")
-            @test occursin("param,result", remote_body)
+        @testset "drive collect bytes written on workers" begin
+            script = joinpath(proj, "worker_file.jl")
+            collect_root = joinpath(proj, "output")
+            isdir(collect_root) && rm(collect_root; recursive=true)
 
-            rm(out_csv)
+            proc, out = _run_kit_drive(;
+                script=script,
+                host_root=proj,
+                local_workers=0,
+                remote_hosts=remote_tokens,
+                drive_flags=["-y", "-q"],
+                extra_env=e2e_env,
+            )
+            _assert_ssh_e2e_ok(suite, "drive_worker_file", proc, out)
+
+            p, remote_body = _ssh_e2e_ssh(
+                hosts[1],
+                "find $(remote_root)/output -name 'worker_*.txt' -exec cat {} +",
+            )
+            _assert_proc_ok(p, remote_body; label="ssh cat worker files")
+            @test occursin("DISTSSHKIT_E2E_WORKER_FILE", remote_body)
+
+            local_files = filter(f -> startswith(basename(f), "worker_"),
+                isdir(collect_root) ? readdir(collect_root; join=true) : String[])
+            @test !isempty(local_files)
+            @test any(f -> occursin("DISTSSHKIT_E2E_WORKER_FILE", read(f, String)), local_files)
+
+            for f in local_files
+                rm(f)
+            end
             proc, out = _run_kit_drive_collect(;
                 collect_root=collect_root,
                 hosts=hosts,
@@ -216,29 +239,33 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
                 extra_env=e2e_env,
             )
             _assert_ssh_e2e_ok(suite, "collect_missing", proc, out)
-            @test isfile(out_csv)
-            @test occursin("param,result", read(out_csv, String))
+            local_files = filter(f -> startswith(basename(f), "worker_"),
+                readdir(collect_root; join=true))
+            @test !isempty(local_files)
+            let sample = local_files[1]
+                @test occursin("DISTSSHKIT_E2E_WORKER_FILE", read(sample, String))
 
-            write(out_csv, "LOCALJUNK\n")
-            proc, out = _run_kit_drive_collect(;
-                collect_root=collect_root,
-                hosts=hosts,
-                host_root=proj,
-                extra_env=e2e_env,
-            )
-            _assert_ssh_e2e_ok(suite, "collect_missing_skip", proc, out)
-            @test read(out_csv, String) == "LOCALJUNK\n"
+                write(sample, "LOCALJUNK\n")
+                proc, out = _run_kit_drive_collect(;
+                    collect_root=collect_root,
+                    hosts=hosts,
+                    host_root=proj,
+                    extra_env=e2e_env,
+                )
+                _assert_ssh_e2e_ok(suite, "collect_missing_skip", proc, out)
+                @test read(sample, String) == "LOCALJUNK\n"
 
-            proc, out = _run_kit_drive_collect(;
-                collect_root=collect_root,
-                hosts=hosts,
-                overwrite=true,
-                host_root=proj,
-                extra_env=e2e_env,
-            )
-            _assert_ssh_e2e_ok(suite, "collect_overwrite", proc, out)
-            @test occursin("param,result", read(out_csv, String))
-            @test !occursin("LOCALJUNK", read(out_csv, String))
+                proc, out = _run_kit_drive_collect(;
+                    collect_root=collect_root,
+                    hosts=hosts,
+                    overwrite=true,
+                    host_root=proj,
+                    extra_env=e2e_env,
+                )
+                _assert_ssh_e2e_ok(suite, "collect_overwrite", proc, out)
+                @test occursin("DISTSSHKIT_E2E_WORKER_FILE", read(sample, String))
+                @test !occursin("LOCALJUNK", read(sample, String))
+            end
         end
 
         @testset "drive remote worker error is a real failure" begin
@@ -308,7 +335,7 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
             end
         end
 
-        # Path boundary: `~/…` remote root must still collect absolute find paths.
+        # `~/…` remote root: setup + drive still run. square_file CSV is local.
         @testset "drive square_file collect with tilde remote root" begin
             tilde_root = _ssh_e2e_tilde_remote_root()
             tilde_env = _ssh_e2e_env(; remote_project=tilde_root)
@@ -389,15 +416,14 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
                 @test isfile(go_txt)
                 @test occursin("pi=", read(go_txt, String))
 
-                square_file = joinpath(proj, "demos", "with_kit", "square_file.jl")
-                out_csv = joinpath(proj, "demos", "with_kit", "output", "square_results.csv")
-                isfile(out_csv) && rm(out_csv)
+                worker_script = joinpath(proj, "worker_file.jl")
+                worker_out = joinpath(proj, "output")
+                isdir(worker_out) && rm(worker_out; recursive=true)
                 pipe_res = pipeline!(
-                    square_file,
+                    worker_script,
                     remote_tokens[2];
                     project=proj,
                     remote=remote_root,
-                    args=["3"],
                     collect=true,
                     enable_log=false,
                     yes=true,
@@ -406,8 +432,12 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
                 )
                 _assert_ssh_e2e_api_ok(suite, "api_pipeline", pipe_res.ok)
                 @test pipe_res.ok
-                @test isfile(out_csv)
-                @test occursin("param,result", read(out_csv, String))
+                worker_txts = filter(
+                    f -> startswith(basename(f), "worker_"),
+                    isdir(worker_out) ? readdir(worker_out; join=true) : String[],
+                )
+                @test !isempty(worker_txts)
+                @test any(f -> occursin("DISTSSHKIT_E2E_WORKER_FILE", read(f, String)), worker_txts)
             end
         end
 
