@@ -59,7 +59,7 @@ tokens, in order: `--hosts`, `DISTSSHKIT_HOSTS`, then the hosts file.
 `NO_COLOR` sessions default to full detail. `-q` hides terminal detail;
 `--verbose` forces the old chatter (`DISTSSHKIT_QUIET` / `DISTSSHKIT_PROGRESS` /
 `DISTSSHKIT_VERBOSE`; at most one). Kit / slot logs still write. Fatals stay on
-the terminal.
+the terminal. Confirm prompts always print (`-y` / `DISTSSHKIT_YES` skips them).
 
 **Collect modes:**
 
