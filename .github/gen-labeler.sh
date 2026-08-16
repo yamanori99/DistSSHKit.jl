@@ -5,7 +5,11 @@
 #   - each directory under src/cli/<area>/ → area:<area>
 #   - src/DistSSHKit/argv/<area>* → same area (drive_args.jl, size_report.jl, …)
 #   - kit modules explain / demos → area:explain, area:demos (path auto)
-#   - test harness → area:test (`test/**` minus product-test trees below)
+#   - test harness → area:test (`test/**` minus product-test trees below, plus
+#     `testenv/**` — Docker/Apple SSH workers)
+#   - SSH E2E entry (`test/e2e.jl`, `test/support/ssh_e2e.jl`) also gets each
+#     CLI area (drive / go / setup / size): the suite is those commands on
+#     real SSH, not a fourth product-test tree.
 #   - product docs → docs (docs/**, README.md, demos markdown — not CONTRIBUTING)
 #   - .github/** → ci
 # No catch-all area:kit — shared paths are typed via type labels only.
@@ -13,8 +17,7 @@
 # Product tests live only under the trees in `product_test_trees` and pick up
 # area:* via the ${area} globs. Any other path under test/ is the harness
 # (runtests, support, e2e, fixtures, a future test/e2e/, …). Add a name to
-# that array if you introduce another product-test tree. testenv/ is not
-# area:test.
+# that array if you introduce another product-test tree.
 #
 # When the package layout changes substantially (new CLI area, rename/move of
 # DistSSHKit modules, demos tree, docs roots, a new product-test tree, …),
@@ -69,6 +72,7 @@ ci:
   - changed-files:
       - any-glob-to-any-file:
           - "test/**"
+          - "testenv/**"
 EOF
   for tree in "${product_test_trees[@]}"; do
     printf '          - "!test/%s/**"\n' "$tree"
@@ -87,7 +91,14 @@ EOF
           - "src/cli/${area}.*"
           - "test/**/${area}/**"
           - "test/**/${area}.*"
+          - "test/fixtures/${area}*"
 EOF
+    if [[ -e "${ROOT}/src/cli/${area}.jl" || -d "${ROOT}/src/cli/${area}" ]]; then
+      cat <<'EOF'
+          - "test/e2e.jl"
+          - "test/support/ssh_e2e.jl"
+EOF
+    fi
     # Bundled demos live under repo-root demos/ (not only DistSSHKit/demos.jl).
     if [[ "$area" == "demos" ]]; then
       cat <<'EOF'

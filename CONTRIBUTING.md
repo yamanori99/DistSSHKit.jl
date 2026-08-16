@@ -129,7 +129,9 @@ Helpers: `src/DistSSHKit/explain.jl`. Surface is `hint_surface(session)`. Keep d
 
 - `src/cli/<area>/` → `area:<area>` (`explain` / `demos` too)
 - `test/**` except `test/unit/` and `test/integration/` → `area:test`
-- Product tests under those two trees keep only their `area:<area>`
+- `testenv/**` → `area:test` (SSH worker stacks)
+- `test/e2e.jl` and `test/support/ssh_e2e.jl` also get CLI areas (`drive` / `go` / `setup` / `size`)
+- Product tests under `unit/` and `integration/` keep only their `area:<area>`
 - `.github/**` → `ci`
 - No `area:kit`
 
