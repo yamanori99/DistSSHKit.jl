@@ -13,9 +13,14 @@ end
 function _host_sync_rsync_argv()::Vector{String}
     custom = strip(get(ENV, "DISTSSHKIT_TEST_RSYNC", ""))
     if !isempty(custom)
-        julia = joinpath(Sys.BINDIR, Base.julia_exename())
         path = abspath(custom)
-        return [julia, "--startup-file=no", path]
+        # `.jl` doubles spawn Julia; prefer `.sh` so collect tests do not nest a
+        # second compiler (1.11 GHA OOM).
+        if endswith(path, ".jl")
+            julia = joinpath(Sys.BINDIR, Base.julia_exename())
+            return [julia, "--startup-file=no", path]
+        end
+        return ["sh", path]
     end
     return ["rsync"]
 end

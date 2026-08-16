@@ -1,7 +1,7 @@
 using Test
 
 # Oracle: `collect!` skip / empty / rsync-invoke / rsync-fail wiring via setup
-# SSH+rsync fakes. Fake rsync is `exit 0` (or 1); it does not copy bytes.
+# SSH+rsync fakes. Fake rsync is `sh` `exit 0` (or 1); it does not copy bytes.
 # Real collect of remote files is ssh-e2e.
 
 @testset "drive collect_tree" begin
