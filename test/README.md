@@ -52,7 +52,7 @@ Green on one layer does not imply the others. `Pkg.test()` does not run `test/e2
 | **Aqua** (independent; latest registry Aqua) | ambiguities, exports, compat, project consistency | CLI / workers | ~5 s |
 | **unit** | in-process facts (parse, paths, fake setup ops, missing-script throws) | child julia, `addprocs`, SSH | ~30 s |
 | **integration** | child `julia` CLI and/or **local** `addprocs` (`-m` on 1.12+; `main` on 1.10–1.11) | real SSH / rsync | ~2 min |
-| **e2e** (`test/e2e.jl`; `E2E / ubuntu-latest → ubuntu-24.04`) | real SSH + rsync against Docker workers (`DISTSSHKIT_SSH_E2E=1`). CI: every PR | local-only CLI wiring | ~10–20 min |
+| **e2e** (`test/e2e.jl`; `E2E / ubuntu-latest → ubuntu-24.04`) | real SSH + rsync against Docker workers (`DISTSSHKIT_SSH_E2E=1`): setup delete/rsync/git, drive/go bytes, collect-missing/overwrite, `--require-git` miss, `--pull`. CI: every PR | local-only CLI wiring; fake collect bytes | ~15–25 min |
 | **e2e Linux daily** (`E2E daily / ubuntu-latest → ubuntu-24.04`) | Same suite on the daily timer (not a PR check). Pulls the worker image | — | ~10–20 min |
 | **e2e macOS** (`E2E daily / macos-15-intel → ubuntu-24.04`) | Same suite from **macOS Intel** + Colima. Daily 04:00 JST or Run workflow `E2E daily` | — | ~25–50 min |
 | **e2e WSL** (`E2E daily / windows-latest (WSL2) → ubuntu-24.04`) | Same suite from WSL2. Daily / Run workflow. Not native Windows | — | ~20–45 min |

@@ -1,7 +1,8 @@
 #!/usr/bin/env julia
 # Real-SSH E2E against testenv/docker-ssh workers. Not part of Pkg.test().
-# Oracle: OpenSSH + rsync + remote Julia (setup / drive / go / git). Local
-# with_kit recipes are test/integration/demos/with_kit.jl — not duplicated here.
+# Oracle: OpenSSH + rsync + remote Julia (setup / drive / go / git). Assert
+# remote files via `ssh` / collected bytes — not fake ssh/rsync, not exit-0
+# alone. Local with_kit recipes are test/integration/demos/with_kit.jl.
 #
 #   testenv/docker-ssh/scripts/up.sh --e2e
 #   DISTSSHKIT_SSH_E2E=1 julia --project=. test/e2e.jl   # from kit root
@@ -83,6 +84,10 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
                 extra_env=e2e_env,
             )
             _assert_ssh_e2e_ok(suite, "setup_delete", proc, out; project=proj, kit=:setup)
+            for host in hosts
+                p, ssh_out = _ssh_e2e_ssh(host, "test ! -e $(remote_root)/Project.toml")
+                _assert_proc_ok(p, ssh_out; label="delete $(host) Project.toml gone")
+            end
         end
 
         @testset "setup --rsync" begin
@@ -159,6 +164,8 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
             _assert_ssh_e2e_ok(suite, "size_remotes", proc, out)
             @test occursin(hosts[1], out)
             @test occursin(hosts[2], out)
+            @test occursin(" GB", out)
+            @test occursin("Total:", out)
         end
 
         @testset "drive square_echo two remotes" begin
@@ -173,6 +180,82 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
             )
             _assert_ssh_e2e_ok(suite, "drive_square_echo", proc, out)
             @test occursin("param^2:", out)
+        end
+
+        @testset "drive square_file collect bytes (rsync remote)" begin
+            square_file = joinpath(proj, "demos", "with_kit", "square_file.jl")
+            out_csv = joinpath(proj, "demos", "with_kit", "output", "square_results.csv")
+            collect_root = joinpath(proj, "demos", "with_kit", "output")
+            isfile(out_csv) && rm(out_csv)
+
+            proc, out = _run_kit_drive(;
+                script=square_file,
+                host_root=proj,
+                local_workers=0,
+                remote_hosts=remote_tokens,
+                script_args=["4"],
+                drive_flags=["-y", "-q"],
+                extra_env=e2e_env,
+            )
+            _assert_ssh_e2e_ok(suite, "drive_square_file", proc, out)
+            @test isfile(out_csv)
+            csv0 = read(out_csv, String)
+            @test occursin("param,result", csv0)
+            @test occursin("1,1", csv0)
+
+            remote_csv = "$(remote_root)/demos/with_kit/output/square_results.csv"
+            p, remote_body = _ssh_e2e_ssh(hosts[1], "cat $(remote_csv)")
+            _assert_proc_ok(p, remote_body; label="ssh cat square_results.csv")
+            @test occursin("param,result", remote_body)
+
+            rm(out_csv)
+            proc, out = _run_kit_drive_collect(;
+                collect_root=collect_root,
+                hosts=hosts,
+                host_root=proj,
+                extra_env=e2e_env,
+            )
+            _assert_ssh_e2e_ok(suite, "collect_missing", proc, out)
+            @test isfile(out_csv)
+            @test occursin("param,result", read(out_csv, String))
+
+            write(out_csv, "LOCALJUNK\n")
+            proc, out = _run_kit_drive_collect(;
+                collect_root=collect_root,
+                hosts=hosts,
+                host_root=proj,
+                extra_env=e2e_env,
+            )
+            _assert_ssh_e2e_ok(suite, "collect_missing_skip", proc, out)
+            @test read(out_csv, String) == "LOCALJUNK\n"
+
+            proc, out = _run_kit_drive_collect(;
+                collect_root=collect_root,
+                hosts=hosts,
+                overwrite=true,
+                host_root=proj,
+                extra_env=e2e_env,
+            )
+            _assert_ssh_e2e_ok(suite, "collect_overwrite", proc, out)
+            @test occursin("param,result", read(out_csv, String))
+            @test !occursin("LOCALJUNK", read(out_csv, String))
+        end
+
+        @testset "drive remote worker error is a real failure" begin
+            proc, out = _run_kit_drive(;
+                script=joinpath(proj, "fail.jl"),
+                host_root=proj,
+                local_workers=0,
+                remote_hosts=remote_tokens,
+                drive_flags=["-y", "-q"],
+                extra_env=merge(e2e_env, Dict("DISTSSHKIT_QUIET" => "0")),
+            )
+            _ssh_e2e_record!(
+                suite, "drive_remote_error", proc, out;
+                expect_ok=false, project=proj,
+            )
+            @test proc.exitcode != 0
+            @test occursin("DISTSSHKIT_E2E_REMOTE_FAIL", out)
         end
 
         @testset "drive mixed local+remotes smoke" begin
@@ -306,13 +389,16 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
                 @test isfile(go_txt)
                 @test occursin("pi=", read(go_txt, String))
 
+                square_file = joinpath(proj, "demos", "with_kit", "square_file.jl")
+                out_csv = joinpath(proj, "demos", "with_kit", "output", "square_results.csv")
+                isfile(out_csv) && rm(out_csv)
                 pipe_res = pipeline!(
-                    echo_script,
+                    square_file,
                     remote_tokens[2];
                     project=proj,
                     remote=remote_root,
                     args=["3"],
-                    collect=false,
+                    collect=true,
                     enable_log=false,
                     yes=true,
                     quiet=true,
@@ -320,6 +406,8 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
                 )
                 _assert_ssh_e2e_api_ok(suite, "api_pipeline", pipe_res.ok)
                 @test pipe_res.ok
+                @test isfile(out_csv)
+                @test occursin("param,result", read(out_csv, String))
             end
         end
 
@@ -404,6 +492,21 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
             @test bumped isa String
             @test bumped != local_before
 
+            proc, out = _run_kit_drive(;
+                script=joinpath(proj, "smoke.jl"),
+                host_root=proj,
+                local_workers=0,
+                remote_hosts=remote_tokens,
+                drive_flags=["-y", "-q", "--require-git"],
+                extra_env=merge(git_env, Dict("DISTSSHKIT_QUIET" => "0")),
+            )
+            _ssh_e2e_record!(
+                suite, "git_require_git_mismatch", proc, out;
+                expect_ok=false, project=proj,
+            )
+            @test proc.exitcode != 0
+            @test occursin("mismatch", lowercase(out)) || occursin("could not be verified", lowercase(out))
+
             proc, out = _run_kit_setup(;
                 setup_args=["--sync", "--remote-path", git_root, hosts...],
                 project_root=proj,
@@ -431,6 +534,26 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
             )
             _assert_ssh_e2e_ok(suite, "git_drive_require_git", proc, out)
             @test occursin("DISTSSHKIT_RUNNER_SMOKE_OK", out)
+
+            pulled = nothing
+            withenv(git_env...) do
+                pulled = _ssh_e2e_git_bump_commit!(proj; message="e2e-pull")
+                _ssh_e2e_git_push!(proj)
+            end
+            @test pulled isa String
+            marker = read(joinpath(proj, "e2e_sync_marker.txt"), String)
+
+            proc, out = _run_kit_setup(;
+                setup_args=["--pull", "--remote-path", git_root, hosts...],
+                project_root=proj,
+                extra_env=merge(git_env, Dict("DISTSSHKIT_QUIET" => "0")),
+            )
+            _assert_ssh_e2e_ok(suite, "git_pull", proc, out; project=proj, kit=:setup)
+            for host in hosts
+                p, body = _ssh_e2e_ssh(host, "cat $(git_root)/e2e_sync_marker.txt")
+                _assert_proc_ok(p, body; label="pull marker $(host)")
+                @test body == marker
+            end
         end
     end
 end

@@ -42,6 +42,14 @@ function _ssh_e2e_env(;
     return merge(base, extra)
 end
 
+"""`ssh -F docker-ssh config HOST REMOTE_CMD`."""
+function _ssh_e2e_ssh(host::AbstractString, remote_cmd::AbstractString)
+    g = _docker_ssh_generated()
+    return _run_subprocess(Cmd([
+        "ssh", "-F", g.ssh_config, String(host), String(remote_cmd),
+    ]))
+end
+
 _ssh_e2e_hosts() = ("distsshkit-w1", "distsshkit-w2")
 _ssh_e2e_remote_root() = "/home/dev/distsshkit-e2e"
 # Separate tree for git clone/sync/--require-git (rsync excludes `.git/`).
@@ -335,6 +343,7 @@ function _stage_ssh_e2e_remote_host!(
         end
     end
     cp(_fixture("drive_local_smoke.jl"), joinpath(proj, "smoke.jl"); force=true)
+    cp(_fixture("drive_remote_error.jl"), joinpath(proj, "fail.jl"); force=true)
 
     # Kit logs / demo outputs must not dirty the tree: setup --sync requires clean git.
     write(
@@ -427,6 +436,19 @@ function _ssh_e2e_seed_git_origin!(proj::AbstractString)
     proc, out = _run_subprocess(push_cmd)
     _assert_proc_ok(proc, out; label="ssh-e2e git push origin")
     return (; origin_controller=origin, origin_workers=_ssh_e2e_bare_ssh_from_workers(), branch)
+end
+
+"""`git push` HEAD to `origin` using docker-ssh `-F` (for setup --pull after a local bump)."""
+function _ssh_e2e_git_push!(proj::AbstractString)
+    g = _docker_ssh_generated()
+    proj = abspath(proj)
+    push_cmd = setenv(
+        `git -C $proj push origin HEAD`,
+        Dict("GIT_SSH_COMMAND" => "ssh -F $(g.ssh_config)"),
+    )
+    proc, out = _run_subprocess(push_cmd)
+    _assert_proc_ok(proc, out; label="ssh-e2e git push")
+    return nothing
 end
 
 """Make a sync-test commit on `proj` and leave the working tree clean."""

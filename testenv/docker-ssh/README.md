@@ -21,6 +21,8 @@ Real OpenSSH + rsync Linux workers. CI remote SSH coverage uses this stack
 - **Not covered (no free CI):** Linux controller → macOS worker; Mac workers (use apple-container locally).
 - **Git parity (`--require-git`):** covered in the suite via a separate git remote root
   (`clone` from a bare on worker-1 → `--sync` → `drive --require-git`).
+  Mismatch before `--sync` must fail. `--pull` after a controller `git push`
+  is checked by reading `e2e_sync_marker.txt` on the workers.
   The rsync path still excludes `.git/` and does not claim parity.
 
 Worker image pins Julia **1.12** (juliaup `--default-channel 1.12`) to match CI controllers so `--check` can run **without** `--ignore-julia-version`. Install policy: [Requirements](https://yamanori99.github.io/DistSSHKit.jl/dev/requirements/).
