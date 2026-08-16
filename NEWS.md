@@ -5,6 +5,10 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+## 0.2.2
+
+Patch after `0.2.1`.
+
 - Optional `pkg> app add DistSSHKit` (Pkg Apps, experimental): `distsshkit` on
   PATH. Same argv as `-m`. Prefer for `go` / `setup` / `demo`; `drive` / `size`
   stay `julia --project=. -m DistSSHKit`.
