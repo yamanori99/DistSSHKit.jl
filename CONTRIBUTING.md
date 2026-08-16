@@ -61,7 +61,9 @@ See [testenv/docker-ssh/README.md](testenv/docker-ssh/README.md). Skip the image
 
 Ubuntu: `Pkg.test` (1.10–1.13), JETLS, Aqua, Documenter (1.12), Gitleaks. Linux E2E runs if `src/`, `test/`, `demos/`, `testenv/`, `Project.toml`, or the E2E workflow changed.
 
-These files alone skip the heavy steps (job still starts; Pkg.test / JETLS / Aqua / Documenter do not run): `README.md`, `CONTRIBUTING.md`, `NEWS.md`, `SECURITY.md`, `LICENSE`, `.gitignore`, `.github/pull_request_template.md`. A new root markdown file stays heavy until listed in [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml). Changes under `docs/src` still run those jobs.
+These files alone skip the heavy steps (job still starts; Pkg.test / JETLS / Aqua / Documenter do not run): `README.md`, `CONTRIBUTING.md`, `NEWS.md`, `SECURITY.md`, `LICENSE`, `.gitignore`, `.github/pull_request_template.md`. A new root markdown file stays heavy until listed in [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml). Changes under `docs/src` still run those jobs. A `cut` label skips none of this: Pkg.test, JETLS, Aqua, Documenter, and Linux E2E all run. macOS / WSL stay on `E2E daily`, not the PR.
+
+Required to merge (job names): `Pkg.test` 1.10–1.13, `JETLS` 1.12–1.13, `Aqua` 1.12–1.13, `Documenter` 1.12, `Gitleaks`, `ubuntu-latest → ubuntu-24.04`, `PR label`. A skipped heavy step still leaves the job green.
 
 ### Local
 
@@ -100,7 +102,7 @@ Branch from `main`. Squash-merge only. One reviewable change per PR; split unles
 ### Release
 
 - `breaking`: incompatible behavior. Can land without a version bump.
-- `cut`: `Project.toml` `version` went up. CI adds this; other `Project.toml` edits do not.
+- `cut`: `Project.toml` `version` went up. CI adds this; other `Project.toml` edits do not. The PR suite does not path-skip (see PR CI).
 - On a breaking line bump `x` in `0.x.y`; otherwise bump `y`.
 - After merge: `@JuliaRegistrator register`, and paste the [NEWS.md](NEWS.md) section under `Release notes:`. TagBot tags once General has the release. Date NEWS `YYYY-MM-DD` UTC on the tag day.
 - Repo Settings → Actions → Workflow permissions: **Read and write** (`GITHUB_TOKEN`).

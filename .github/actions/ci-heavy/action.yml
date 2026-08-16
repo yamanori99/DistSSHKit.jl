@@ -32,10 +32,15 @@ runs:
       shell: bash
       env:
         HEAVY: ${{ steps.filter.outputs.heavy }}
+        # Exact name `cut` (version bump). Path skips do not apply.
+        CUT: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'cut') }}
       run: |
         if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
           echo "heavy=true" >> "$GITHUB_OUTPUT"
           echo "non-PR: heavy=true"
+        elif [ "${CUT}" = "true" ]; then
+          echo "heavy=true" >> "$GITHUB_OUTPUT"
+          echo "PR cut: heavy=true"
         else
           echo "heavy=${HEAVY}" >> "$GITHUB_OUTPUT"
           echo "PR: heavy=${HEAVY}"

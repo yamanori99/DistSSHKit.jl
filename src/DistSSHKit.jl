@@ -16,7 +16,7 @@ using TOML
 # Prefer `julia -m DistSSHKit …` for day-to-day CLI.
 #   go! / drive! / sync! / instantiate! / collect! / size! — steps
 #   setup! — Julian mirror of `setup --delete|--rsync|…`
-#   size_plan — same as size! (kept name)
+#   size! — same as size_plan (kept name)
 #   pipeline! — optional sugar (sync → size! → drive → collect)
 #   go / drive — same argv as the CLI (thin wrappers)
 #   worker_pmap — world-age escape hatch inside drivers
