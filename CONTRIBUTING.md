@@ -63,6 +63,8 @@ Ubuntu: `Pkg.test` (1.10–1.13), JETLS, Aqua, Documenter (1.12), Gitleaks. Linu
 
 These files alone skip the heavy steps (job still starts; Pkg.test / JETLS / Aqua / Documenter do not run): `README.md`, `CONTRIBUTING.md`, `NEWS.md`, `SECURITY.md`, `LICENSE`, `.gitignore`, `.github/pull_request_template.md`. A new root markdown file stays heavy until listed in [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml). Changes under `docs/src` still run those jobs. A `cut` label skips none of this: Pkg.test, JETLS, Aqua, Documenter, and Linux E2E all run. macOS / WSL stay on `E2E daily`, not the PR.
 
+Required to merge (job names): `Pkg.test` 1.10–1.13, `JETLS` 1.12–1.13, `Aqua` 1.12–1.13, `Documenter` 1.12, `Gitleaks`, `ubuntu-latest → ubuntu-24.04`, `PR label`. A skipped heavy step still leaves the job green.
+
 ### Local
 
 ```bash
