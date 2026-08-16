@@ -17,10 +17,15 @@ ci:
 "area:test":
   - changed-files:
       - any-glob-to-any-file:
-          - "test/**"
           - "testenv/**"
-          - "!test/unit/**"
-          - "!test/integration/**"
+          - "test/Project.toml"
+          - "test/README.md"
+          - "test/artifacts/**"
+          - "test/e2e.jl"
+          - "test/fixtures/**"
+          - "test/runtests.jl"
+          - "test/support/**"
+          - "test/support.jl"
 
 "area:demos":
   - changed-files:

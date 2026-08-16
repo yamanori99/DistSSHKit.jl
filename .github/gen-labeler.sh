@@ -5,8 +5,10 @@
 #   - each directory under src/cli/<area>/ → area:<area>
 #   - src/DistSSHKit/argv/<area>* → same area (drive_args.jl, size_report.jl, …)
 #   - kit modules explain / demos → area:explain, area:demos (path auto)
-#   - test harness → area:test (`test/**` minus product-test trees below, plus
-#     `testenv/**` — Docker/Apple SSH workers)
+#   - test harness → area:test (`testenv/**` plus each `test/<name>` that is
+#     not a product-test tree). Do not emit `!` globs into
+#     any-glob-to-any-file: labeler ORs them as "not this path" and tags
+#     unrelated files (CONTRIBUTING.md → area:test).
 #   - SSH E2E entry (`test/e2e.jl`, `test/support/ssh_e2e.jl`) also gets each
 #     CLI area (drive / go / setup / size): the suite is those commands on
 #     real SSH, not a fourth product-test tree.
@@ -71,12 +73,25 @@ ci:
 "area:test":
   - changed-files:
       - any-glob-to-any-file:
-          - "test/**"
           - "testenv/**"
 EOF
-  for tree in "${product_test_trees[@]}"; do
-    printf '          - "!test/%s/**"\n' "$tree"
+  # Positive paths only (see header). Skip product_test_trees.
+  shopt -s nullglob
+  for entry in "${ROOT}/test/"*; do
+    name="$(basename "$entry")"
+    skip=false
+    for tree in "${product_test_trees[@]}"; do
+      [[ "$name" == "$tree" ]] && skip=true && break
+    done
+    [[ "$skip" == true ]] && continue
+    git -C "$ROOT" check-ignore -q "test/${name}" && continue
+    if [[ -d "$entry" ]]; then
+      printf '          - "test/%s/**"\n' "$name"
+    else
+      printf '          - "test/%s"\n' "$name"
+    fi
   done
+  shopt -u nullglob
 
   for area in "${areas_sorted[@]:-}"; do
     cat <<EOF
