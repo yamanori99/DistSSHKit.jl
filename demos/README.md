@@ -1,6 +1,6 @@
 # demos/
 
-Two groups — same layout after `demo install`:
+Install one family:
 
 | Path | Role | Command |
 | --- | --- | --- |
@@ -23,7 +23,8 @@ Naming: `{topic}_{file|echo}` — `*_file` writes a file, `*_echo` prints only.
 `pipeline_square.jl` / `pipeline_pi.jl` are thin API wrappers over the `*_file` jobs.
 
 ```bash
-julia --project=. -m DistSSHKit demo install
+julia --project=. -m DistSSHKit demo install with_kit
+julia --project=. -m DistSSHKit demo install without_kit
 julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_file.jl
 julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_echo.jl
 julia --project=. demos/with_kit/pipeline_square.jl

@@ -339,7 +339,7 @@ using Test
             end
             @test err isa ArgumentError
             @test occursin("driver not found", sprint(showerror, err))
-            @test occursin("DistSSHKit.install_demos()", sprint(showerror, err))
+            @test occursin("DistSSHKit.install_demos(; family=", sprint(showerror, err))
         end
     end
 

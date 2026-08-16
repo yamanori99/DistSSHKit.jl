@@ -3,9 +3,9 @@
 Install or list the bundled example scripts.
 
 ```bash
-julia --project=. -m DistSSHKit demo install
+julia --project=. -m DistSSHKit demo install with_kit
 julia --project=. -m DistSSHKit demo list
-julia --project=. -m DistSSHKit demo install --dest DIR
+julia --project=. -m DistSSHKit demo install without_kit --dest DIR
 ```
 
 Walkthrough: [First Steps · Demo](@ref Tutorial-Demo).
@@ -15,12 +15,13 @@ Walkthrough: [First Steps · Demo](@ref Tutorial-Demo).
 | Form | Meaning |
 | --- | --- |
 | `demo list` | Show demo ids and package paths |
-| `demo install` | Copy `demos/with_kit/` and `demos/without_kit/` into `./demos/` |
+| `demo install with_kit` | Copy `demos/with_kit/` into `./demos/` |
+| `demo install without_kit` | Copy `demos/without_kit/` into `./demos/` |
 | `--dest DIR` | Install under `DIR/demos/` instead of `./demos/` |
 | `--force` | Overwrite existing demo files |
 | `-h` / `--help` | Help |
 
-Layout under `demos/` after install:
+Bare `demo install` (both families) is refused. Layout under `demos/` after install:
 
 | Path | Role | Command |
 | --- | --- | --- |

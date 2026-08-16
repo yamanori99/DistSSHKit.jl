@@ -20,7 +20,7 @@ using Test
         @test diag.kind === :install_bundled
         @test occursin("demo install", DistSSHKit.explain_missing_script_hint(diag; surface=:cli))
         @test occursin(
-            "DistSSHKit.install_demos()",
+            "DistSSHKit.install_demos(; family=",
             DistSSHKit.explain_missing_script_hint(diag; surface=:api),
         )
 
@@ -39,26 +39,30 @@ using Test
     end
 
     _with_tempdir() do tmp
-        result = DistSSHKit.install_demos(tmp)
-        @test length(result.installed) == length(DistSSHKit.list_demos())
+        result = DistSSHKit.install_demos(tmp; family="with_kit")
+        @test length(result.installed) == count(s -> startswith(s, "with_kit/"), DistSSHKit.list_demos())
         @test isempty(result.skipped)
         @test isfile(joinpath(tmp, "demos", "with_kit", "square_file.jl"))
         @test isfile(joinpath(tmp, "demos", "with_kit", "pipeline_square.jl"))
-        @test isfile(joinpath(tmp, "demos", "without_kit", "pipeline_pi.jl"))
+        @test !isdir(joinpath(tmp, "demos", "without_kit"))
         @test isfile(joinpath(tmp, "demos", ".gitignore"))
         @test occursin("init_output_dir!", read(joinpath(tmp, "demos", "with_kit", "square_file.jl"), String))
 
         edited_path = joinpath(tmp, "demos", "with_kit", "square_file.jl")
         write(edited_path, "# edited by user\n")
-        result2 = DistSSHKit.install_demos(tmp)
+        result2 = DistSSHKit.install_demos(tmp; family="with_kit")
         @test isempty(result2.installed)
         # Existing demo scripts + demos/.gitignore are left untouched without --force.
         @test length(result2.skipped) == length(result.installed) + 1
         @test read(edited_path, String) == "# edited by user\n"
 
-        result3 = DistSSHKit.install_demos(tmp; force=true)
+        result3 = DistSSHKit.install_demos(tmp; family="with_kit", force=true)
         @test isempty(result3.skipped)
         @test occursin("init_output_dir!", read(edited_path, String))
+
+        result_wo = DistSSHKit.install_demos(tmp; family="without_kit")
+        @test isfile(joinpath(tmp, "demos", "without_kit", "pipeline_pi.jl"))
+        @test !isempty(result_wo.installed)
     end
 
     let err = try
@@ -68,18 +72,48 @@ using Test
             e
         end
         @test err isa ArgumentError
-        @test occursin("install_demos(dest=", sprint(showerror, err))
-        @test occursin("list_demos()", sprint(showerror, err))
+        @test occursin("family=", sprint(showerror, err))
     end
     let err = try
-            DistSSHKit.install_demos(_kit_root(); surface=:cli)
+            DistSSHKit.install_demos(_kit_root(); family="with_kit", surface=:api)
             nothing
         catch e
             e
         end
         @test err isa ArgumentError
-        @test occursin("demo install --dest", sprint(showerror, err))
+        @test occursin("install_demos(dest=", sprint(showerror, err))
+        @test occursin("list_demos()", sprint(showerror, err))
+    end
+    let err = try
+            DistSSHKit.install_demos(_kit_root(); family="with_kit", surface=:cli)
+            nothing
+        catch e
+            e
+        end
+        @test err isa ArgumentError
+        @test occursin("demo install with_kit --dest", sprint(showerror, err))
         @test occursin("demo list", sprint(showerror, err))
+    end
+
+    mktemp() do path, io
+        code = withenv("DISTSSHKIT_CLI_SUBCOMMAND_DONE" => "") do
+            redirect_stderr(io) do
+                DistSSHKit.main(["demo", "install"])
+            end
+        end
+        flush(io)
+        @test code == 1
+        @test occursin("with_kit or without_kit", read(path, String))
+    end
+    _with_tempdir() do tmp
+        code = withenv("DISTSSHKIT_CLI_SUBCOMMAND_DONE" => "") do
+            redirect_stdout(devnull) do
+                DistSSHKit.demo(["install", "without_kit", "--dest", tmp])
+            end
+        end
+        @test code == 0
+        @test isfile(joinpath(tmp, "demos", "without_kit", "pi_file.jl"))
+        @test !isdir(joinpath(tmp, "demos", "with_kit"))
     end
 
     # `_run_kit_cli_script` (module.jl) leaves DISTSSHKIT_CLI_SUBCOMMAND_DONE=1;

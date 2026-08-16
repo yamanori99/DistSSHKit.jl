@@ -29,7 +29,7 @@ using Test
                 demo, tmp; surface=:api, headline="script not found: x",
             )
             @test startswith(headed, "script not found: x")
-            @test occursin("DistSSHKit.install_demos()", headed)
+            @test occursin("DistSSHKit.install_demos(; family=", headed)
 
             kit_wrong = DistSSHKit.explain_script_not_found(
                 joinpath(_kit_root(), "demos", "square_file.jl"),
@@ -42,7 +42,7 @@ using Test
             @test occursin("demo install", cli)
             @test !occursin("install_demos()", cli)
             api = DistSSHKit.explain_script_not_found(missing_kit, tmp; surface=:api)
-            @test occursin("DistSSHKit.install_demos()", api)
+            @test occursin("DistSSHKit.install_demos(; family=", api)
             @test !occursin("demo install", api)
 
             custom = joinpath(tmp, "demos", "with_kit", "rho_sweep.jl")

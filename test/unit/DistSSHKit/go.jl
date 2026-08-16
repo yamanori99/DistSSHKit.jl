@@ -83,7 +83,7 @@ using Dates
                 e
             end
             @test err_api isa ArgumentError
-            @test occursin("DistSSHKit.install_demos()", sprint(showerror, err_api))
+            @test occursin("DistSSHKit.install_demos(; family=", sprint(showerror, err_api))
 
             err_cli = try
                 DistSSHKit.go!(missing, String[]; project=tmp, hint_surface=:cli)
