@@ -67,12 +67,14 @@ Demo scripts live under `./demos/` after `demo install with_kit` (or
 
 ## Checks
 
-Example commands only — DistSSHKit does not run them. Local-only first run: the
-blocks under **Where you run the kit** are enough. Add the **Each SSH host**
-blocks when you use remotes.
+The `ssh …` snippets below are **examples** you can type yourself. DistSSHKit
+does not run them. `USER@HOST` is a placeholder (`user@hostname`, an IP, or an
+SSH config `Host` alias). Timeouts and extra `-o` flags need not match the
+kit (`ConnectTimeout` here is `5`; the kit uses `10` plus keepalives).
 
-In SSH examples, replace `USER@HOST` with `user@hostname`, an IP, or an SSH
-config `Host` alias — not the literal string `USER@HOST`.
+Local-only first run: the **Where you run the kit** list is enough. Add
+**Each SSH host** when you use remotes. For the kit's own probe, use
+`setup --check` at the end of that subsection.
 
 ### Where you run the kit
 
@@ -83,32 +85,35 @@ config `Host` alias — not the literal string `USER@HOST`.
 
 ### Each SSH host
 
-Passwordless login (once per host):
+Example — passwordless login (once per host):
 
 ```bash
 ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=accept-new USER@HOST echo ok
 ```
 
-Julia **1.12+** (same major.minor as the kit machine, via juliaup). Log in,
-find the binary, then check with that **full path** (non-interactive `ssh`
-often has no login `PATH`, so bare `julia` fails):
+Example — Julia **1.12+** (same major.minor as the kit machine, via juliaup).
+Log in, find the binary, then check with that **full path** (non-interactive
+`ssh` often has no login `PATH`, so bare `julia` fails):
 
 - `ssh USER@HOST`
 - `which julia` (often `$HOME/.juliaup/bin/julia`)
 - `exit`
 
+Replace `/path/from/which/julia` with that path:
+
 ```bash
 ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=accept-new USER@HOST '/path/from/which/julia --version'
 ```
 
-The same checks (SSH, Julia path / version, remote project) are also covered by
-`setup --check`, which probes common Julia locations for you:
+The kit covers the same ground (`ssh`, Julia path / version, remote project)
+with `setup --check` (probes common Julia locations; this **is** a DistSSHKit
+command):
 
 ```bash
 julia --project=. -m DistSSHKit setup --check USER@HOST
 ```
 
-`git` only if that host will clone / pull:
+Example — `git` only if that host will clone / pull:
 
 ```bash
 ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=accept-new USER@HOST 'which git'
