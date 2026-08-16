@@ -58,7 +58,7 @@ file is `include`d on the worker and `peak_gb` is measured afterward. Without a
 probe, `peak_gb == baseline_gb`.
 
 Uses the same remote path resolution as drive `addprocs`. Suggestions should use
-[`effective_worker_gb`](@ref) / [`per_worker_gb_dict`](@ref).
+`effective_worker_gb` / `per_worker_gb_dict`.
 """
 function measure_rss(
     project::AbstractString,

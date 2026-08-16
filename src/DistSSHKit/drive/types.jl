@@ -25,7 +25,7 @@ end
 """
     size_worker_count(total_gb, nproc, per_worker_gb; mem_headroom, master_gb, is_localhost)
 
-Pure RAM/CPU cap for one host (shared by CLI and [`compute_worker_plan`](@ref)).
+Pure RAM/CPU cap for one host (shared by CLI and `compute_worker_plan`).
 """
 function size_worker_count(
     total_gb::Real,
@@ -140,11 +140,11 @@ function remote_hosts_from_tokens(tokens::AbstractVector{<:AbstractString})::Vec
 end
 
 """
-Per-host RSS sample from [`measure_rss`](@ref).
+Per-host RSS sample from `measure_rss`.
 
 `baseline_gb` is after package load. `peak_gb` is after an optional warm-up
 probe script (equals baseline when no probe runs). Suggestions use
-[`effective_worker_gb`](@ref) = `max(baseline, peak)`.
+`effective_worker_gb` = `max(baseline, peak)`.
 """
 struct WorkerMemorySample
     baseline_gb::Float64
@@ -154,7 +154,7 @@ end
 """GB used for worker-count math (`max` of baseline and peak)."""
 effective_worker_gb(s::WorkerMemorySample)::Float64 = max(s.baseline_gb, s.peak_gb)
 
-"""Map host → effective GB for [`compute_worker_plan`](@ref)."""
+"""Map host → effective GB for `compute_worker_plan`."""
 function per_worker_gb_dict(samples::Dict{String,WorkerMemorySample})::Dict{String,Float64}
     return Dict{String,Float64}(h => effective_worker_gb(s) for (h, s) in samples)
 end

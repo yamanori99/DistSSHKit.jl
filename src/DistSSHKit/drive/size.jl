@@ -54,8 +54,8 @@ end
     )
 
 Estimate worker counts for hosts in `session`. When `gb_per_worker` is omitted,
-probes each host via [`measure_rss`](@ref) (package-load baseline, optional
-warm-up `probe` script for peak RSS). Counts use [`effective_worker_gb`](@ref).
+probes each host via `measure_rss` (package-load baseline, optional
+warm-up `probe` script for peak RSS). Counts use `effective_worker_gb`.
 
 Returns [`WorkerPlan`](@ref).
 """

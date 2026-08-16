@@ -194,7 +194,7 @@ go(args::Vector{String}=copy(ARGS))::Cint = _run_kit_cli_script("go.jl", args)
 """
     setup(args::Vector{String}=copy(ARGS))
 
-Run `setup.jl` (clone / sync / cleanup) with `args`. See [`drive`](@ref).
+Run `setup.jl` (clone / sync / cleanup) with `args` (same as `julia -m DistSSHKit setup …`).
 """
 setup(args::Vector{String}=copy(ARGS))::Cint = _run_kit_cli_script("setup.jl", args)
 
