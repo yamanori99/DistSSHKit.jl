@@ -216,7 +216,7 @@ CLI entry. Prefer Julia 1.12+ and `julia -m DistSSHKit SUBCOMMAND …`:
     julia --project=. -m DistSSHKit setup --clone host1 host2
     julia --project=. -m DistSSHKit size --local host1
 
-On 1.10–1.11 there is no `-m`; pass the same argv to `main`.
+`main` remains for wrappers and tests; prefer `-m` day-to-day.
 """
 function main(args::Vector{String}=copy(ARGS))::Cint
     known_subcommands = (

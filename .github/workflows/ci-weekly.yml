@@ -17,34 +17,6 @@ permissions:
   actions: write # julia-actions/cache delete-old-caches
 
 jobs:
-  test-1-10:
-    name: Pkg.test - Julia 1.10 - ubuntu-latest
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-      - uses: julia-actions/setup-julia@v3
-        with:
-          version: "1.10"
-      - uses: julia-actions/cache@v3
-      - uses: ./.github/actions/pkg-test
-        with:
-          heap_size_hint: "2G"
-
-  test-1-11:
-    name: Pkg.test - Julia 1.11 - ubuntu-latest
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v7
-      - uses: julia-actions/setup-julia@v3
-        with:
-          version: "1.11"
-      - uses: julia-actions/cache@v3
-      - uses: ./.github/actions/pkg-test
-        with:
-          heap_size_hint: "2G"
-
   test-1-12:
     name: Pkg.test - Julia 1.12 - ubuntu-latest
     runs-on: ubuntu-latest
@@ -127,8 +99,6 @@ jobs:
 
   notify:
     needs:
-      - test-1-10
-      - test-1-11
       - test-1-12
       - test-1-13
       - jetls-1-12

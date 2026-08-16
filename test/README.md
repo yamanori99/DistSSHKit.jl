@@ -49,7 +49,7 @@ unit/
 
 ## Layers
 
-Green on one layer does not imply the others. `Pkg.test()` does not run `e2e.jl`. Most of `Pkg.test()` wall time is integration. On 1.10–1.11, child CLI uses `DistSSHKit.main` (`-m` is 1.12+).
+Green on one layer does not imply the others. `Pkg.test()` does not run `e2e.jl`. Most of `Pkg.test()` wall time is integration. Child CLI uses `julia -m DistSSHKit`.
 
 | Layer | Proves | Not | Time |
 | --- | --- | --- | --- |

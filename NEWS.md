@@ -5,6 +5,11 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+## 0.3.0
+
+Breaking cut after `0.2.1`. No `0.2.2` on General.
+
+- **Breaking:** Julia **1.12+** only (library and CLI). 1.10 / 1.11 dropped.
 - **Breaking:** exported `size_plan` removed; use `size!`.
 - **Breaking:** `go` / `drive` argv wrappers are no longer exported. Use
   `go!` / `drive!` or `julia -m DistSSHKit`.
