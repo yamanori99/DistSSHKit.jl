@@ -39,7 +39,7 @@ jobs:
       - uses: ./.github/actions/pkg-test
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         with:
-          heap_size_hint: "2G"
+          heap_size_hint: "4G"
 
   test-1-11:
     name: Pkg.test - Julia 1.11 - ubuntu-latest
@@ -58,7 +58,7 @@ jobs:
       - uses: ./.github/actions/pkg-test
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         with:
-          heap_size_hint: "2G"
+          heap_size_hint: "4G"
 
   test-1-12:
     name: Pkg.test - Julia 1.12 - ubuntu-latest

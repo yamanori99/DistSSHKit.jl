@@ -8,7 +8,7 @@ inputs:
     required: false
     default: "false"
   heap_size_hint:
-    description: "If set (e.g. 2G), pass --heap-size-hint to the Pkg.test process"
+    description: "If set (e.g. 4G), pass --heap-size-hint to the Pkg.test process"
     required: false
     default: ""
 
@@ -22,7 +22,8 @@ runs:
       if: inputs.heap_size_hint == ''
       with:
         coverage: ${{ inputs.coverage }}
-    # julia-runtest has no extra julia_args. Hint makes 1.10/1.11 GC before GHA OOM.
+    # julia-runtest has no extra julia_args. Hint makes 1.10/1.11 GC before GHA
+    # OOM (~7G). 2G still threw OutOfMemoryError in collect_tree on 1.11.
     - name: Pkg.test with heap-size-hint
       if: inputs.heap_size_hint != ''
       shell: bash
