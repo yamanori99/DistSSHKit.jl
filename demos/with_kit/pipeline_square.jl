@@ -58,8 +58,8 @@ result = pipeline!(driver, "local:2"; args=[n], collect=false, enable_log=false)
 #       # log_dir=nothing,
 #       # package=nothing,              # package name hint on workers
 #       # skip_hash_check=nothing,      # false → require remote git parity
-#       # gb_per_worker=nothing,        # size_plan when a host has no :N
-#       # size_probe=nothing,           # warm-up script for size_plan peak RSS
+#       # gb_per_worker=nothing,        # size! when a host has no :N
+#       # size_probe=nothing,           # warm-up script for size! peak RSS
 #       # mem_headroom=0.75,
 #       # master_gb=0.4,
 #   )

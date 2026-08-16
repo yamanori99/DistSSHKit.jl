@@ -71,7 +71,7 @@ using Test
         @test occursin("workers=", DistSSHKit.explain_no_hosts(; surface=:api, kind=:ssh))
         @test occursin("--hosts-file", DistSSHKit.explain_no_hosts(; surface=:cli, kind=:ssh))
         @test occursin("collect!", DistSSHKit.explain_no_hosts(; surface=:api, kind=:collect))
-        @test occursin("size_plan", DistSSHKit.explain_no_hosts(; surface=:api, kind=:size))
+        @test occursin("size!", DistSSHKit.explain_no_hosts(; surface=:api, kind=:size))
     end
 
     @testset "clone / probe / driver" begin

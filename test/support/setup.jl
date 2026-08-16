@@ -34,7 +34,7 @@ end
 function _fake_setup_remote_env(state_dir)::Dict{String,String}
     return Dict{String,String}(
         "DISTSSHKIT_TEST_SSH" => _fixture("fake_setup_ssh.jl"),
-        "DISTSSHKIT_TEST_RSYNC" => _fixture("fake_setup_rsync.jl"),
+        "DISTSSHKIT_TEST_RSYNC" => _fixture("fake_setup_rsync.sh"),
         "DISTSSHKIT_TEST_STATE_ROOT" => abspath(string(state_dir)),
         "DISTSSHKIT_YES" => "1",
     )

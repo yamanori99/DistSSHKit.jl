@@ -5,6 +5,10 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- **Breaking:** exported `size_plan` removed; use `size!`.
+- **Breaking:** `go` / `drive` argv wrappers are no longer exported. Use
+  `go!` / `drive!` or `julia -m DistSSHKit`.
+
 - Optional `pkg> app add DistSSHKit` (Pkg Apps, experimental): `distsshkit` on
   PATH. Same argv as `-m`. Prefer for `go` / `setup` / `demo`; `drive` / `size`
   stay `julia --project=. -m DistSSHKit`.

@@ -16,9 +16,8 @@ using TOML
 # Prefer `julia -m DistSSHKit …` for day-to-day CLI.
 #   go! / drive! / sync! / instantiate! / collect! / size! — steps
 #   setup! — Julian mirror of `setup --delete|--rsync|…`
-#   size! — same as size_plan (kept name)
 #   pipeline! — optional sugar (sync → size! → drive → collect)
-#   go / drive — same argv as the CLI (thin wrappers)
+#   go / drive — argv wrappers (not exported; tests / `main`)
 #   worker_pmap — world-age escape hatch inside drivers
 export worker_pmap
 export KitSession
@@ -32,7 +31,6 @@ export PipelineResult
 export sync!
 export instantiate!
 export setup!
-export size_plan
 export size!
 export drive!
 export collect!
@@ -42,8 +40,7 @@ export report_pipeline_errors
 export go!
 export GoResult
 export report_go_errors
-export go
-export drive
+# `go` / `drive` argv wrappers stay unexported (`main` and tests).
 
 
 # Implementation
@@ -197,7 +194,7 @@ go(args::Vector{String}=copy(ARGS))::Cint = _run_kit_cli_script("go.jl", args)
 """
     setup(args::Vector{String}=copy(ARGS))
 
-Run `setup.jl` (clone / sync / cleanup) with `args`. See [`drive`](@ref).
+Run `setup.jl` (clone / sync / cleanup) with `args` (same as `julia -m DistSSHKit setup …`).
 """
 setup(args::Vector{String}=copy(ARGS))::Cint = _run_kit_cli_script("setup.jl", args)
 

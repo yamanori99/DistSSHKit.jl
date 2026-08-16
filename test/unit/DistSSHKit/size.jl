@@ -67,17 +67,14 @@ using Test
         @test isempty(plan.remote_workers)
     end
 
-    @testset "size_plan with gb_per_worker" begin
+    @testset "size! with gb_per_worker" begin
         _with_tempdir() do tmp
             session = DistSSHKit.KitSession(
                 project=tmp,
                 workers=String[],
                 include_local_for_size=true,
             )
-            plan = DistSSHKit.size_plan(session; gb_per_worker=2.0)
-            aliased = DistSSHKit.size!(session; gb_per_worker=2.0)
-            @test aliased.local_workers == plan.local_workers
-            @test aliased.remote_workers == plan.remote_workers
+            plan = DistSSHKit.size!(session; gb_per_worker=2.0)
             local_total, local_nproc = DistSSHKit.get_local_resources()
             @test plan.local_workers == DistSSHKit.size_worker_count(
                 local_total, local_nproc, 2.0; is_localhost=true,
@@ -85,7 +82,7 @@ using Test
         end
     end
 
-    @testset "size_plan uses effective GB from probe samples" begin
+    @testset "size! uses effective GB from probe samples" begin
         # Manual samples via gb_per_worker path already covered; here ensure
         # effective_worker_gb feeds plan math when peak > baseline.
         s = DistSSHKit.WorkerMemorySample(0.5, 2.0)

@@ -1,11 +1,15 @@
 # Rsync local project tree to SSH hosts (shared by `setup --rsync` and `sync!`).
 
+"""Julia argv for `DISTSSHKIT_TEST_SSH` / `.jl` rsync doubles (`--compile=min`)."""
+function _test_double_julia_argv(script::AbstractString)::Vector{String}
+    julia = joinpath(Sys.BINDIR, Base.julia_exename())
+    return [julia, "--startup-file=no", "--compile=min", abspath(script)]
+end
+
 function _host_sync_rsync_transport()::String
     custom = strip(get(ENV, "DISTSSHKIT_TEST_SSH", ""))
     if !isempty(custom)
-        julia = joinpath(Sys.BINDIR, Base.julia_exename())
-        path = abspath(custom)
-        return join([julia, "--startup-file=no", path], " ")
+        return join(_test_double_julia_argv(custom), " ")
     end
     return "ssh " * join(ssh_opts(), " ")
 end
@@ -13,9 +17,11 @@ end
 function _host_sync_rsync_argv()::Vector{String}
     custom = strip(get(ENV, "DISTSSHKIT_TEST_RSYNC", ""))
     if !isempty(custom)
-        julia = joinpath(Sys.BINDIR, Base.julia_exename())
         path = abspath(custom)
-        return [julia, "--startup-file=no", path]
+        # `.jl` doubles spawn Julia; prefer `.sh` so collect tests do not nest a
+        # second compiler (1.11 GHA OOM).
+        endswith(path, ".jl") && return _test_double_julia_argv(path)
+        return ["sh", path]
     end
     return ["rsync"]
 end
@@ -23,9 +29,7 @@ end
 function _host_sync_remote_shell_cmd(host::String, remote_script::String)::Cmd
     custom = strip(get(ENV, "DISTSSHKIT_TEST_SSH", ""))
     if !isempty(custom)
-        julia = joinpath(Sys.BINDIR, Base.julia_exename())
-        path = abspath(custom)
-        return Cmd([julia, "--startup-file=no", path, host, remote_script])
+        return Cmd(vcat(_test_double_julia_argv(custom), [host, remote_script]))
     end
     return Cmd(vcat(["ssh"], collect(ssh_opts()), [host, remote_script]))
 end
