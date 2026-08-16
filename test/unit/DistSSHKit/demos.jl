@@ -106,15 +106,12 @@ using Test
         @test occursin("with_kit or without_kit", read(path, String))
     end
     _with_tempdir() do tmp
-        mktemp() do path, io
-            code = withenv("DISTSSHKIT_CLI_SUBCOMMAND_DONE" => "") do
-                redirect_stdout(io) do
-                    DistSSHKit.demo(["install", "without_kit", "--dest", tmp])
-                end
+        code = withenv("DISTSSHKIT_CLI_SUBCOMMAND_DONE" => "") do
+            redirect_stdout(devnull) do
+                DistSSHKit.demo(["install", "without_kit", "--dest", tmp])
             end
-            flush(io)
-            @test code == 0
         end
+        @test code == 0
         @test isfile(joinpath(tmp, "demos", "without_kit", "pi_file.jl"))
         @test !isdir(joinpath(tmp, "demos", "with_kit"))
     end

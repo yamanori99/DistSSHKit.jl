@@ -1,6 +1,6 @@
 # demos/
 
-Two families. `demo install` copies one (`with_kit` or `without_kit`), not both:
+Install one family:
 
 | Path | Role | Command |
 | --- | --- | --- |
