@@ -60,7 +60,8 @@ DistSSHKit assumes a Julia **project** — `Project.toml` at the project root
   **every** machine that runs jobs: local `Pkg.instantiate()`, and
   `setup --instantiate` on remotes (after `--clone` or `--rsync`).
 
-Demo scripts live under `./demos/` after `demo install`; see
+Demo scripts live under `./demos/` after `demo install with_kit` (or
+`without_kit`); see
 [Introduction](@ref DistSSHKit.jl).
 
 ## Checks

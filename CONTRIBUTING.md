@@ -39,7 +39,7 @@ Do this on 1.10, and on 1.12 / 1.13 when you can. Layout: [test/README.md](test/
 Smoke (1.12+; [`demos/README.md`](demos/README.md)):
 
 ```bash
-julia --project=. -m DistSSHKit demo install
+julia --project=. -m DistSSHKit demo install with_kit
 julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_file.jl
 ```
 

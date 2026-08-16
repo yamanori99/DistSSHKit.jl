@@ -12,6 +12,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 - `setup --runtest`: `Pkg.test()` of the **job** project on remotes (after
   `--check`; not DistSSHKit's own `Pkg.test()`).
 
+- **Breaking:** `demo install` copies one family (`with_kit` or `without_kit`),
+  not both. Bare `demo install` refuses. API: `install_demos(; family=...)`.
+
 ## 0.2.1 (2026-08-14)
 
 Patch after the first General registration (`0.2.0`).

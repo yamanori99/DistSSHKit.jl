@@ -27,7 +27,7 @@ The first always runs the Apps copy of DistSSHKit, not the kit in
 | `drive` / `size` | stay on `julia --project=. -m DistSSHKit …` (Apps pins `JULIA_LOAD_PATH`) |
 
 ```bash
-distsshkit demo install
+distsshkit demo install with_kit
 distsshkit setup --rsync user@host1                              # first deploy
 distsshkit setup --instantiate user@host1                        # remote Pkg
 # size / drive: job project, not the Apps copy

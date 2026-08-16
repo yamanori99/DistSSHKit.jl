@@ -9,10 +9,10 @@ Also see [User Guide · demo](@ref Manual-demo), [go](@ref Manual-go),
 ## Install
 
 ```bash
-julia --project=. -m DistSSHKit demo install
+julia --project=. -m DistSSHKit demo install with_kit
 ```
 
-That copies:
+That copies `demos/with_kit/`. For standalone scripts, `demo install without_kit`.
 
 ```text
 demos/
@@ -20,7 +20,7 @@ demos/
     square_file.jl   # file: square_results.csv
     square_echo.jl   # stdout only
     pipeline_square.jl  # pipeline!(driver, "local:2")
-  without_kit/       # standalone scripts — use julia, go, or go!
+  without_kit/       # after `demo install without_kit`
     pi_file.jl       # file: pi_results.txt
     pi_echo.jl       # stdout only
     pipeline_pi.jl       # go!(script, "local:2") → pi_file.jl

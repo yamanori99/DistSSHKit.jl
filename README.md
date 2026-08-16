@@ -106,7 +106,7 @@ Details: [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/).
 Bundled examples so you can try the kit without writing a job first:
 
 ```bash
-julia --project=. -m DistSSHKit demo install
+julia --project=. -m DistSSHKit demo install with_kit
 ```
 
 ```bash
