@@ -93,7 +93,8 @@ function main()
 
     if occursin("find ", script) && occursin("-type f", script)
         m = match(r"find\s+(\S+)\s+-type", script)
-        find_root = m === nothing ? tree : String(m.captures[1])
+        cap = m === nothing ? nothing : m.captures[1]
+        find_root = cap === nothing ? tree : String(cap)
         find_root = strip(find_root, ['\'', '"'])
         if isdir(tree)
             for (root, _, files) in walkdir(tree)

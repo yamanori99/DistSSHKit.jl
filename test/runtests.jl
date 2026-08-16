@@ -23,10 +23,10 @@ DistSSHKit.set_kit_verbosity!(:progress)
 # Keep `include(joinpath(@__DIR__, …))` at this top level (JETLS). Only the
 # banner is counted. Update `_RUNTEST_N` when adding a file below.
 const _RUNTEST_N = 41
-_runtest_i = 0
+const _RUNTEST_I = Ref(0)
 function _runtest_announce(rel::AbstractString)
-    global _runtest_i += 1
-    println("[$_runtest_i/$_RUNTEST_N]  $rel")
+    _RUNTEST_I[] += 1
+    println("[$( _RUNTEST_I[])/$_RUNTEST_N]  $rel")
     flush(stdout)
     return nothing
 end

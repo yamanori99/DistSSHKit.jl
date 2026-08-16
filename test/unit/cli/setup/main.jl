@@ -31,12 +31,8 @@ using Test
         @test code == 0
         @test occursin("--instantiate", out)
     end
-    let (code, combined_out, combined_err) = begin
-            code, out, err = _setup_capture(["--delete", "local"])
-            (code, out, err)
-        end
+    let (code, out, err) = _setup_capture(["--delete", "local"])
         @test code == 1
-        txt = combined_out * combined_err
-        @test occursin("SSH targets only", txt)
+        @test occursin("SSH targets only", out * err)
     end
 end

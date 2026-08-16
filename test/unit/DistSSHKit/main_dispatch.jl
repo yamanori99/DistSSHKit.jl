@@ -54,13 +54,11 @@ using Test
     # Subcommand --help / --version load `src/cli/*.jl` in-process (no SSH / addprocs).
     @testset "subcommand help and version" begin
         for cmd in ("drive", "go", "setup", "size")
-            let (code, combined_out, combined_err) = begin
-                    code, out, err = _main_capture([cmd, "--help"])
-                    (code, out * err, err)
-                end
+            let (code, out, err) = _main_capture([cmd, "--help"])
+                combined = out * err
                 @test code == 0
-                @test occursin("Usage", combined_out)
-                @test occursin(cmd, lowercase(combined_out))
+                @test occursin("Usage", combined)
+                @test occursin(cmd, lowercase(combined))
             end
             let (code, out, _) = _main_capture([cmd, "--version"])
                 @test code == 0

@@ -12,9 +12,10 @@ using Test
 
         fixed = DistSSHKit.parse_worker_tokens(["local:2", "h1:1"])
         @test DistSSHKit.worker_tokens_fully_specified(fixed)
-        plan = DistSSHKit.worker_plan_from_tokens(["local:2", "h1:1"])
-        @test plan.local_workers == 2
-        @test plan.remote_workers == Dict("h1" => 1)
+        let plan = DistSSHKit.worker_plan_from_tokens(["local:2", "h1:1"])
+            @test plan.local_workers == 2
+            @test plan.remote_workers == Dict("h1" => 1)
+        end
         err = try
             DistSSHKit.worker_plan_from_tokens(["h1"])
             nothing
