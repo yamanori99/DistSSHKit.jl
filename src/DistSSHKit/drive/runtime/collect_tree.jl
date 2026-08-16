@@ -42,8 +42,9 @@ function drive_collect_tree(local_root::AbstractString, host_names::Vector{Strin
                 continue
             end
             host_remote = host_remote::String
+            pq = DistSSHKit._remote_shell_path_word(host_remote)
             if !success(pipeline(
-                    Cmd(["ssh", ssh_opts()..., host, "test", "-d", host_remote]);
+                    DistSSHKit._host_sync_remote_shell_cmd(host, "test -d $pq");
                     stderr=devnull, stdout=devnull,
                 ))
                 writeln_both("(skip: no directory on host at $host_remote)")

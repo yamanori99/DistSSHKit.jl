@@ -453,10 +453,11 @@ function collect_tree_remote_files_ssh(host::AbstractString, remote_root::Abstra
     rr = ensure_remote_abs_path(hp, remote_root)
     rr === nothing && return Tuple{String,String}[]
     rr = rr::String
+    pq = _remote_shell_path_word(rr)
     out = try
         read(
             pipeline(
-                Cmd(["ssh", ssh_opts()..., hp, "find", rr, "-type", "f", "-print"]);
+                _host_sync_remote_shell_cmd(hp, "find $pq -type f -print");
                 stderr=devnull,
             ),
             String,

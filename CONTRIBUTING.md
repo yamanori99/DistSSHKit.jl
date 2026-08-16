@@ -49,6 +49,12 @@ julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_file.jl
 testenv/docker-ssh/scripts/up.sh --e2e
 ```
 
+CI E2E (`DISTSSHKIT_CODE_COVERAGE=1`) writes `.cov` and uploads to Codecov (merged with `Pkg.test`). Local coverage:
+
+```bash
+DISTSSHKIT_CODE_COVERAGE=1 testenv/docker-ssh/scripts/up.sh --e2e
+```
+
 See [testenv/docker-ssh/README.md](testenv/docker-ssh/README.md). Skip the image build with `DISTSSHKIT_WORKER_IMAGE=ghcr.io/yamanori99/distsshkit-linux-ssh-worker:latest`. Mac-only workers (not CI): [testenv/apple-container-ssh](testenv/apple-container-ssh).
 
 ### PR CI

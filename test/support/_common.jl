@@ -14,13 +14,24 @@ end
 _julia_exe()::String = joinpath(Sys.BINDIR, Base.julia_exename())
 _fixture(name::AbstractString) = joinpath(_test_root(), "fixtures", name)
 
+"""`--code-coverage=user` when the parent Julia process is collecting coverage."""
+function _julia_coverage_args()::Vector{String}
+    Base.JLOptions().code_coverage == 0 && return String[]
+    return ["--code-coverage=user"]
+end
+
 """Kit CLI as a child `julia`. Uses `-m DistSSHKit` on 1.12+; `main(ARGS)` before that."""
 function _kit_cli_cmd(
     args::AbstractVector{<:AbstractString};
     julia::AbstractString=_julia_exe(),
     project::AbstractString=_kit_root(),
 )::Cmd
-    prefix = String[String(julia), "--startup-file=no", "--project=$(project)"]
+    prefix = String[
+        String(julia),
+        "--startup-file=no",
+        "--project=$(project)",
+        _julia_coverage_args()...,
+    ]
     argv = String[String(a) for a in args]
     if VERSION >= v"1.12"
         return Cmd(vcat(prefix, ["-m", "DistSSHKit"], argv))

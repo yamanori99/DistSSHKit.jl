@@ -27,6 +27,7 @@ runs:
         files: lcov.info
         slug: ${{ github.repository }}
         use_oidc: true
+        flags: pkgtest
         fail_ci_if_error: false
     - name: Coverage summary
       if: inputs.coverage == 'true'

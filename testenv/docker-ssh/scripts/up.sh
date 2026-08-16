@@ -19,6 +19,7 @@ for arg in "$@"; do
       echo "usage: $0 [--e2e]"
       echo "  DISTSSHKIT_WORKER_IMAGE  pull this tag (skip compose build)"
       echo "  DISTSSHKIT_PUSH_IMAGE    after build, tag and push"
+      echo "  DISTSSHKIT_CODE_COVERAGE=1  e2e with --code-coverage=user (child CLI too)"
       exit 0
       ;;
     *)
@@ -80,5 +81,9 @@ if [[ "$RUN_E2E" -eq 1 ]]; then
   export DISTSSHKIT_SSH_E2E=1
   export DISTSSHKIT_YES=1
   cd "${KIT_ROOT}"
-  exec julia --project=. --color=yes test/e2e.jl
+  julia_e2e=(julia --project=. --color=yes)
+  if [[ "${DISTSSHKIT_CODE_COVERAGE:-}" == "1" ]]; then
+    julia_e2e+=(--code-coverage=user)
+  fi
+  exec "${julia_e2e[@]}" test/e2e.jl
 fi

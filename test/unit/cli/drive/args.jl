@@ -40,13 +40,41 @@ using Test
                 @test r.script_path == "myscript.jl"
                 @test r.script_args == ["a", "b"]
             end
+            # Compact flag forms (`--local:N` / `-l:N` / `--workers:N` / `-w:N`).
+            let r = parse_drive_args(["--local:5", "s.jl"])
+                @test r.local_workers == 5
+            end
+            let r = parse_drive_args(["-l:2", "s.jl"])
+                @test r.local_workers == 2
+            end
+            let r = parse_drive_args(["-l", "3", "s.jl"])
+                @test r.local_workers == 3
+            end
+            let r = parse_drive_args(["--workers:7", "host1", "s.jl"])
+                @test r.default_workers == 7
+                @test r.hosts == [("host1", nothing)]
+            end
+            let r = parse_drive_args(["-w:4", "host1", "s.jl"])
+                @test r.default_workers == 4
+            end
             # One local-alias form; DistSSHKit/hosts.jl covers the predicate set.
             let r = parse_drive_args(["local:3", "host1:2", "s.jl"])
                 @test r.local_workers == 3
                 @test r.hosts == [("host1", 2)]
             end
+            let r = parse_drive_args(["localhost:4", "s.jl"])
+                @test r.local_workers == 4
+                @test isempty(r.hosts)
+            end
             @test_throws ArgumentError parse_drive_args(["--local", "2", "local:2", "s.jl"])
             @test_throws ArgumentError parse_drive_args(["--local", "s.jl"])
+            @test_throws ArgumentError parse_drive_args(["--local:"])
+            @test_throws ArgumentError parse_drive_args(["--local", "0", "s.jl"])
+            @test_throws ArgumentError parse_drive_args(["--workers", "s.jl"])
+            @test_throws ArgumentError parse_drive_args(["--workers", "x", "s.jl"])
+            @test_throws ArgumentError parse_drive_args(["--nope", "s.jl"])
+            @test_throws ArgumentError parse_drive_args(["--julia"])
+            @test_throws ArgumentError parse_drive_args(["--require-git", "--require-git", "s.jl"])
 
             let r = parse_drive_args(["--workers", "3", "host1", "host2:5", "s.jl"])
                 @test r.default_workers == 3
@@ -141,6 +169,19 @@ using Test
         @test_throws ArgumentError parse_drive_args(["--rsync", "--require-git", "s.jl"])
         @test_throws ArgumentError parse_drive_args(["--require-git", "--skip-git-guard", "s.jl"])
         @test_throws ArgumentError parse_drive_args(["--sync", "--collect-missing", "out", "h1"])
+        # Duplicate same sync flag is a no-op (only mixed flags throw).
+        let r = parse_drive_args(["--sync", "--sync", "host1", "s.jl"])
+            @test r.sync_mode === :sync
+        end
+        @test_throws ArgumentError parse_drive_args(["host1", "--collect-missing", "out", "h1"])
+        # Shared flags are peeled even after `--collect-missing` (not treated as HOST).
+        let r = parse_drive_args(["--collect-missing", "out", "--quiet", "h1"])
+            @test r.collect_hosts == ["h1"]
+            @test r.cli_session.quiet
+            DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession())
+        end
+        @test_throws ArgumentError parse_drive_args(["--collect-missing", "out", "--foo", "h1"])
+        @test_throws ArgumentError parse_drive_args(["--collect-overwrite"])
     end
 
     @testset "help smoke" begin

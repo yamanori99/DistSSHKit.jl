@@ -27,6 +27,10 @@ using Dates
             @test all(x -> x.kind === :remote, s)
         end
         @test_throws ArgumentError DistSSHKit._go_plan_slots(["local:0"])
+        @test_throws ArgumentError DistSSHKit._go_plan_slots(["local:-1"])
+        @test DistSSHKit._go_sanitize_label("user@lab") == "user@lab"
+        @test DistSSHKit._go_sanitize_label("a/b c") == "a_b_c"
+        @test DistSSHKit._go_sanitize_label("***") == "_"
         err = try
             DistSSHKit._go_plan_slots(["lacal:0"])
             nothing
@@ -37,6 +41,16 @@ using Dates
         @test occursin("did you mean local", sprint(showerror, err))
         @test occursin("root@", DistSSHKit._go_host_ssh_hint("192.0.2.11"))
         @test isempty(DistSSHKit._go_host_ssh_hint("root@192.0.2.11"))
+    end
+
+    @testset "_go_script_relpath" begin
+        _with_tempdir() do proj
+            nested = joinpath(proj, "demos", "job.jl")
+            mkpath(dirname(nested))
+            touch(nested)
+            @test DistSSHKit._go_script_relpath(proj, nested) == joinpath("demos", "job.jl")
+            @test_throws ArgumentError DistSSHKit._go_script_relpath(proj, "/tmp/outside.jl")
+        end
     end
 
     @testset "_go_batch_output_dir" begin

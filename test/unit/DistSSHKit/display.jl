@@ -60,6 +60,18 @@ using Test
             write(joinpath(d, "Project.toml"), "name = \"FooBar\"\n")
             @test DistSSHKit.project_package_name(d) == "FooBar"
         end
+        _with_tempdir() do tmp
+            d = tmp
+            write(joinpath(d, "Project.toml"), "name = \"DistSSHKit\"\n")
+            cli = joinpath(d, "src", "cli")
+            mkpath(cli)
+            @test DistSSHKit.kit_project_root(cli) == d
+            @test DistSSHKit.cli_project_disp(d, DistSSHKit.canonical_local_path(d)) ==
+                basename(abspath(d))
+        end
+        @test DistSSHKit._path_is_under("/a/b/c", "/a/b")
+        @test DistSSHKit._path_is_under("/a/b", "/a/b")
+        @test !DistSSHKit._path_is_under("/a/bother", "/a/b")
         # Loaded DistSSHKit is not the host Project.toml (Pkg.add / apps).
         _with_tempdir() do tmp
             d = tmp
@@ -97,6 +109,22 @@ using Test
         @test DistSSHKit.subcommand_args_record("drive", ["l:2", "script.jl"]) ==
             "drive l:2 script.jl"
         @test "Julia binary" in first.(DistSSHKit.julia_env_record())
+    end
+
+    @testset "help chrome" begin
+        buf = IOBuffer()
+        DistSSHKit.print_cli_error("boom"; io=buf)
+        @test occursin("Error:", String(take!(buf)))
+        @test DistSSHKit._help_section_line("Usage:")
+        @test !DistSSHKit._help_section_line("  indented:")
+        @test !DistSSHKit._help_section_line("# comment:")
+        txt = sprint(io -> DistSSHKit.print_help_document(
+            "DistSSHKit test",
+            "Usage:\n  cmd --help\n";
+            io=io,
+        ))
+        @test occursin("DistSSHKit test", txt)
+        @test occursin("cmd --help", txt)
     end
 
     @testset "verbosity gates" begin
