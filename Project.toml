@@ -17,9 +17,9 @@ Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 
 [compat]
-Dates = "1.12"
-Distributed = "1.12"
-Pkg = "1.12"
+Dates = "1.10"
+Distributed = "1.10"
+Pkg = "1.10"
 TOML = "1"
 julia = "1.12"
 
