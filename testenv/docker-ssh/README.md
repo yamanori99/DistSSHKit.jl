@@ -14,7 +14,7 @@ Real OpenSSH + rsync Linux workers. CI remote SSH coverage uses this stack
 | WSL2 (`windows-latest`) | same image | **CI daily** — `E2E daily / windows-latest (WSL2) → ubuntu-24.04` |
 | Either | `local:N` | Mixed smoke inside the same suite |
 
-Suite inventory (what each `@testset` proves): [`test/README.md`](../../test/README.md#ssh-e2e-suite).
+Suite inventory (what each `@testset` proves): [`test/README.md`](../../test/README.md#ssh-e2e).
 
 ### Honest limits
 

@@ -1,6 +1,6 @@
 # Tests
 
-How the DistSSHKit test suite is organized. For the full maintainer checklist, see [CONTRIBUTING.md](../CONTRIBUTING.md).
+How this repo tests DistSSHKit. Maintainer checklist: [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 ## Run
 
@@ -10,165 +10,140 @@ From the kit checkout root:
 julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
-Tests run sequentially (`Test.@testset` nesting). `Pkg.test()` activates `test/Project.toml` (fixtures, path dependency on `..`). Aqua is a separate CI job.
+That is `test/runtests.jl` (unit + integration), sequential `@testset`s, `test/Project.toml`. Aqua is a separate CI job, not `Pkg.test()`.
+
+Real SSH:
+
+```bash
+testenv/docker-ssh/scripts/up.sh --e2e
+```
+
+Details: [`testenv/docker-ssh/README.md`](../testenv/docker-ssh/README.md). Inventory: [SSH E2E](#ssh-e2e) below.
 
 ## Layout
 
 ```text
 test/
-  runtests.jl          # Pkg.test() entry (unit + integration)
-  e2e.jl               # real OpenSSH; not Pkg.test()
-  support.jl           # includes support/*.jl
-  support/             # shared helpers (subprocess, drive, staging, …)
-  unit/                # in-process; no child julia, no addprocs
-  integration/         # child julia and/or local addprocs
-  fixtures/            # small driver scripts copied into temp host projects
-  Project.toml         # test environment
+  runtests.jl     # Pkg.test() — unit + integration
+  e2e.jl          # real OpenSSH; not Pkg.test()
+  support.jl      # loads support/
+  support/        # subprocess, staging, E2E helpers
+  unit/           # in-process (no child julia, no addprocs)
+  integration/    # child julia and/or local addprocs
+  fixtures/       # small scripts copied into temp hosts
+  Project.toml
 ```
 
 `unit/` mirrors `src/`:
 
 ```text
 unit/
-  DistSSHKit/          # ↔ src/DistSSHKit/ (module API + setup cores + argv parsers)
-    argv/              # ↔ DistSSHKit/argv/
-    setup/             # ↔ DistSSHKit/setup/
-  cli/                 # ↔ src/cli/ (CLI entry wiring, using_guard)
-    drive/, go/, setup/, size/   # argv / help tests call DistSSHKit.parse_*
+  DistSSHKit/     # ↔ src/DistSSHKit/ (API, setup cores, argv)
+    argv/         # ↔ DistSSHKit/argv/
+    setup/        # ↔ DistSSHKit/setup/
+  cli/            # ↔ src/cli/
+    drive/, go/, setup/, size/
 ```
 
-`integration/` is grouped by CLI/area name (`drive/`, `demos/`, `setup/`, `go/`, `size/`).
-
-Real OpenSSH E2E is `test/e2e.jl` (not part of `Pkg.test()`).
-How to run: [`testenv/docker-ssh/README.md`](../testenv/docker-ssh/README.md).
-What the suite covers: [SSH E2E suite](#ssh-e2e-suite) below.
+`integration/` is grouped by area (`drive/`, `demos/`, `setup/`, `go/`, `size/`).
 
 ## Layers
 
-Green on one layer does not imply the others. `Pkg.test()` does not run `test/e2e.jl`.
+Green on one layer does not imply the others. `Pkg.test()` does not run `e2e.jl`. Most of `Pkg.test()` wall time is integration. On 1.10–1.11, child CLI uses `DistSSHKit.main` (`-m` is 1.12+).
 
-| Layer | Guarantees | Does not guarantee | Typical runtime |
+| Layer | Proves | Not | Time |
 | --- | --- | --- | --- |
-| **JETLS** (independent) | types / hints on entry files | runtime behavior | — |
-| **Aqua** (independent; latest registry Aqua) | ambiguities, exports, compat, project consistency | CLI / workers | ~5 s |
-| **unit** | in-process facts (parse, paths, fake setup ops, missing-script throws) | child julia, `addprocs`, SSH | ~30 s |
-| **integration** | child `julia` CLI and/or **local** `addprocs` (`-m` on 1.12+; `main` on 1.10–1.11) | real SSH / rsync | ~2 min |
-| **e2e** (`test/e2e.jl`; `E2E / ubuntu-latest → ubuntu-24.04`) | real SSH + rsync against Docker workers (`DISTSSHKIT_SSH_E2E=1`): setup delete/rsync/git, drive/go bytes, collect-missing/overwrite, `--require-git` miss, `--pull`. CI: every PR | local-only CLI wiring; fake collect bytes | ~15–25 min |
-| **e2e Linux daily** (`E2E daily / ubuntu-latest → ubuntu-24.04`) | Same suite on the daily timer (not a PR check). Pulls the worker image | — | ~10–20 min |
-| **e2e macOS** (`E2E daily / macos-15-intel → ubuntu-24.04`) | Same suite from **macOS Intel** + Colima. Daily 04:00 JST or Run workflow `E2E daily` | — | ~25–50 min |
-| **e2e WSL** (`E2E daily / windows-latest (WSL2) → ubuntu-24.04`) | Same suite from WSL2. Daily / Run workflow. Not native Windows | — | ~20–45 min |
-| **doctests** (`Docs / Documenter - Julia 1.12 - ubuntu-latest`) | docstring examples in `src/` | worker / SSH | ~5 s |
+| JETLS | types / hints on entry files | runtime | — |
+| Aqua | ambiguities, exports, compat (latest registry Aqua) | CLI / workers | ~5 s |
+| unit | parse, paths, fake setup, throws | child julia, `addprocs`, SSH | ~30 s |
+| integration | child CLI and/or **local** `addprocs` | real SSH / rsync | ~2 min |
+| e2e | real SSH + rsync, two Docker workers; every PR | local-only CLI wiring | ~15–25 min |
+| e2e daily | same `e2e.jl` from Linux, macOS Intel, or WSL2 (not a PR check) | macOS workers | 10–50 min |
+| doctests | `src/` docstring examples (Documenter, Julia 1.12) | workers / SSH | ~5 s |
 
-Most of the wall time in `Pkg.test()` is integration (child Julia + local workers).
-Remote SSH on PRs and main is **E2E / ubuntu-latest → ubuntu-24.04**. Daily / Run workflow `E2E daily`: **ubuntu-latest**, **macos-15-intel**, and **WSL2** against `ubuntu-24.04` workers. Doctests run in **Docs / Documenter - Julia 1.12 - ubuntu-latest**, not `Pkg.test()`. **Test / Pkg.test - Julia 1.10 - ubuntu-latest** / **1.11** uses `DistSSHKit.main` for CLI children (`-m` is 1.12+).
+## SSH E2E
 
-## SSH E2E suite
+Two Linux Docker workers. `DISTSSHKIT_SSH_E2E=1`. Controller OS matrix: [`testenv/docker-ssh/README.md`](../testenv/docker-ssh/README.md).
 
-Two Linux Docker workers, real `ssh` / `rsync` / remote Julia (`test/e2e.jl`).
-Controller × worker OS matrix: [`testenv/docker-ssh/README.md`](../testenv/docker-ssh/README.md).
-
-**Prepare the house (rsync `setup`)**
-
-| Check | Honest fact |
-| --- | --- |
-| Julia resolve | controller and remotes share major.minor |
-| `--delete` | remote `Project.toml` is gone (`ssh test ! -e`) |
-| `--rsync` | remote `Project.toml` exists |
-| `--instantiate` / `--check` | job deps; Julia version (no `--ignore-julia-version`) |
-| `--runtest` | job `Pkg.test` pass, then a planted failure is non-zero |
-| `--rsync` nonempty | refused |
-| `~/…` remote path | delete → rsync → instantiate → drive still run |
-
-**Farm out work (`drive` / `go` / `size`)**
-
-`square_file` writes the CSV in `main()` on the **controller**. Workers only return numbers. Collect tests must use files workers write.
-
-| Check | Honest fact |
-| --- | --- |
-| `size` | both hosts, `GB`, `Total:` |
-| `square_echo` | remote compute; stdout has `param^2:` |
-| `square_file` | local CSV exists; **absent** on the remote |
-| `worker_*.txt` | written on the worker; `ssh cat`; `--collect-missing` restores; skip keeps junk; `--collect-overwrite` replaces |
-| worker `error(...)` | non-zero |
-| mixed `local:1` + two remotes | smoke `nw=3` |
-| `go pi_echo` | π on both hosts |
-| `go pi_file` | slot `pi_results.txt` on the controller after go collect |
-| API | `setup!` / `go!` / `pipeline!(collect=true)` on worker files |
-
-**Git house (separate remote root)**
-
-| Check | Honest fact |
-| --- | --- |
-| `--clone` / `--instantiate` / `--check` | remote hash matches |
-| `--require-git` after a local bump | fails (mismatch) |
-| `--sync` then `--require-git` | pass |
-| `--pull` after controller `git push` | `e2e_sync_marker.txt` on the workers matches |
-
-**Wiring:** worker-1 can SSH to worker-2 (compose DNS).
-
-**Not this file:** macOS workers, dead hosts, fake `ssh`/`rsync`, local-only `with_kit` recipes (`test/integration/demos/`).
-
-## Why only `setup` uses SSH/rsync fakes
-
-Commands differ in what their core work is:
-
-| Command | Core work | How `Pkg.test()` covers it | Real remote |
-| --- | --- | --- | --- |
-| **setup** | Shells out to `ssh` / `rsync` | Fake doubles (`DISTSSHKIT_TEST_SSH`, `DISTSSHKIT_TEST_RSYNC` in `test/fixtures/`) | ssh-e2e |
-| **drive** / **go** | Julia `Distributed` workers | Real **local** `addprocs` (no SSH fake) | ssh-e2e |
-| **drive collect** | `ssh` / `rsync` of result trees | Same setup doubles, **control flow only** (fake rsync does not copy) | ssh-e2e |
-| **size** | Plan math (+ optional remote RSS via `addprocs`) | Pure unit for planning; local probe worker in `integration/size/measure.jl` | ssh-e2e if needed |
-
-Local workers are a cheap real substitute for drive/go (same Julia worker path, no Docker).
-They cannot substitute for setup: copying/deleting a remote tree needs `ssh`/`rsync`, so unit tests swap those binaries for fakes. Do not fake Julia SSH worker launch; local + ssh-e2e already split that coverage. Drive **collect** may reuse the setup doubles to cover skip / invoke / fail wiring; transferred bytes stay in ssh-e2e.
-
-Setup/go CLI subprocess helpers (`_run_kit_setup` / `_run_kit_go`) use an
-ephemeral project when `project_root` is omitted, so those runs do not leave
-`.distsshkit/` logs in the kit checkout. SSH E2E keeps durable runs under
-`test/artifacts/ssh-e2e/` (gitignored).
-
-## Support helpers
-
-Loaded via `support.jl`:
-
-- `_child_julia_env` — child-process `ENV` (drops `JULIA_LOAD_PATH` and in-process CLI-done flags, sets `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1`)
-- `_run_kit_drive` / `_run_host_drive` / `_run_kit_setup` / `_run_kit_go` / `_run_kit_size` — CLI subprocesses
-- `_mktemp_host`, `_with_tempdir`, `_stage_with_kit_demos!` — isolated temp host projects with bundled `with_kit` demos
-- `_with_ssh_e2e_suite`, `_stage_ssh_e2e_remote_host!` — SSH E2E suite + scratch projects
-- `_capture_stdio` / `with_kit_verbosity` — capture stdin/stdout; pin kit verbosity and restore
-
-`runtests.jl` and `e2e.jl` pin in-process verbosity to `:progress` (TTY CLI default).
-Child CLI processes still auto-detect their own stdout. Tests that assert on
-captured kit detail lines must wrap with `with_kit_verbosity(:verbose)`.
-`kit_confirm` prompts must be visible in `:quiet`, `:progress`, and `:verbose`.
-Consent warnings next to those prompts (`print_warn` / `print_err`) must be too.
-
-## Environment variables
-
-| Variable | Default | Effect |
-| --- | --- | --- |
-| `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL` | `1` in test children (automatic) | Skip broad `pkill` in drive; each subprocess cleans up its own workers via `rmprocs` |
-| `DISTSSHKIT_SSH_E2E` | unset | Set to `1` to run `test/e2e.jl` (requires `testenv/docker-ssh` workers) |
-| `DISTSSHKIT_CODE_COVERAGE` | unset | Set to `1` with `up.sh --e2e` to pass `--code-coverage=user` (parent + child CLI). CI E2E does this. Merge with `Pkg.test` coverage on Codecov. |
-
-SSH E2E keeps one suite dir under `test/artifacts/ssh-e2e/`. Open
-`SUMMARY.txt` only (see [`test/artifacts/README.md`](artifacts/README.md)).
+Open logs with [`test/artifacts/README.md`](artifacts/README.md):
 
 ```bash
 open "$(cat test/artifacts/ssh-e2e/LATEST)/SUMMARY.txt"
 rm -rf test/artifacts/ssh-e2e
 ```
 
-Kit CLI flags (drive / go / setup / size) also honor `DISTSSHKIT_QUIET`, `DISTSSHKIT_PROGRESS`, `DISTSSHKIT_VERBOSE`, `DISTSSHKIT_YES`, `DISTSSHKIT_HOSTS`, and `DISTSSHKIT_HOSTS_FILE`; see `src/DistSSHKit/argv/session.jl`.
+Coverage (`DISTSSHKIT_CODE_COVERAGE=1` on `up.sh --e2e`) writes `.cov` on the controller (child CLI too) and merges with `Pkg.test` on Codecov.
 
-## Adding tests
+### Setup (rsync tree)
 
-1. Add a file under `unit/` (src mirror) or `integration/<area>/` (failure mode).
-2. Add a top-level `include` in `runtests.jl` (JETLS follows that; do not wrap it in a function). Do not register `test/e2e.jl` there.
-3. Reuse `support/` helpers for subprocess work; put one-off scripts in `fixtures/`.
-4. Put a short Oracle / non-guarantee comment at the top of the file.
-5. Do not assume in-process verbosity is `:verbose`. Pin it with `with_kit_verbosity`.
+| Check | Fact |
+| --- | --- |
+| Julia resolve | controller and remotes share major.minor |
+| `--delete` | remote `Project.toml` is gone |
+| `--rsync` | remote `Project.toml` exists |
+| `--instantiate` / `--check` | job deps; Julia version (no `--ignore-julia-version`) |
+| `--runtest` | job `Pkg.test` pass; a planted failure is non-zero |
+| `--rsync` nonempty | refused |
+| `~/…` remote path | delete → rsync → instantiate → drive still run |
 
-## Aqua note
+### Drive / go / size
 
-Aqua is not in `Pkg.test()`. CI (and [`.github/aqua-check.sh`](../.github/aqua-check.sh)) develops the kit in a temp env and `Pkg.add("Aqua")` with no version pin. `Pkg` is a module dependency (`using Pkg` in `src/DistSSHKit.jl`) so Aqua's `stale_deps` can run.
+`square_file` writes the CSV in `main()` on the **controller**. Workers only return numbers. Collect tests use files workers write.
+
+| Check | Fact |
+| --- | --- |
+| `size` | both hosts, `GB`, `Total:` |
+| `square_echo` | remote compute; stdout has `param^2:` |
+| `square_file` | local CSV exists; absent on the remote |
+| `worker_*.txt` | on the worker; `ssh cat`; `--collect-missing` restores; skip keeps junk; `--collect-overwrite` replaces |
+| worker `error(...)` | non-zero |
+| mixed `local:1` + two remotes | smoke `nw=3` |
+| `go pi_echo` | π on both hosts |
+| `go pi_file` | slot `pi_results.txt` after go collect |
+| API | `setup!` / `go!` / `pipeline!(collect=true)` on worker files |
+
+### Git (separate remote root)
+
+| Check | Fact |
+| --- | --- |
+| `--clone` / `--instantiate` / `--check` | remote hash matches |
+| `--require-git` after a local bump | fails |
+| `--sync` then `--require-git` | pass |
+| `--pull` after controller `git push` | `e2e_sync_marker.txt` on the workers matches |
+
+Worker-1 can SSH to worker-2 (compose DNS).
+
+Not this file: macOS workers, dead hosts, fake `ssh`/`rsync`, local `with_kit` recipes (`test/integration/demos/`).
+
+## Fakes vs real SSH
+
+| Command | Core work | `Pkg.test()` | Bytes on a real remote |
+| --- | --- | --- | --- |
+| setup | `ssh` / `rsync` | fixtures `DISTSSHKIT_TEST_SSH` / `_RSYNC` | e2e |
+| drive / go | `Distributed` workers | real **local** `addprocs` (no SSH fake) | e2e |
+| drive collect | `ssh` / `rsync` of result trees | same fakes, **control flow only** (fake rsync does not copy) | e2e |
+| size | plan math (+ optional RSS) | unit + local probe in `integration/size/` | e2e if needed |
+
+Do not fake Julia SSH worker launch. Local workers stand in for drive/go; they cannot stand in for setup. `_run_kit_setup` / `_run_kit_go` use an ephemeral project unless `project_root` is set (E2E uses `test/artifacts/ssh-e2e/`).
+
+## Writing tests
+
+1. Add under `unit/` (src mirror) or `integration/<area>/`.
+2. Top-level `include` in `runtests.jl` (JETLS follows that). Do not register `e2e.jl` there.
+3. Subprocess helpers in `support/`; one-off scripts in `fixtures/`.
+4. Short Oracle / non-guarantee comment at the top of the file.
+5. Pin verbosity with `with_kit_verbosity` if you assert kit detail lines. `Pkg.test` defaults to `:progress`. `kit_confirm` and consent warnings must show in `:quiet`, `:progress`, and `:verbose`.
+
+Helpers (via `support.jl`): `_child_julia_env`, `_run_kit_drive` / `_run_kit_setup` / `_run_kit_go` / `_run_kit_size`, `_mktemp_host` / `_with_tempdir` / `_stage_with_kit_demos!`, `_with_ssh_e2e_suite`, `_capture_stdio` / `with_kit_verbosity`.
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL` | `1` in test children | skip broad `pkill`; each child `rmprocs`es its own workers |
+| `DISTSSHKIT_SSH_E2E` | unset | `1` runs `test/e2e.jl` (needs docker-ssh workers) |
+| `DISTSSHKIT_CODE_COVERAGE` | unset | `1` with `up.sh --e2e` → `--code-coverage=user` |
+
+CLI also honors `DISTSSHKIT_QUIET`, `DISTSSHKIT_PROGRESS`, `DISTSSHKIT_VERBOSE`, `DISTSSHKIT_YES`, `DISTSSHKIT_HOSTS`, `DISTSSHKIT_HOSTS_FILE` (`src/DistSSHKit/argv/session.jl`).
+
+## Aqua
+
+CI and [`.github/aqua-check.sh`](../.github/aqua-check.sh) `Pkg.add("Aqua")` with no version pin. `Pkg` is a module dep (`using Pkg` in `src/DistSSHKit.jl`) so Aqua `stale_deps` can run.

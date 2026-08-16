@@ -2,7 +2,7 @@
 # Real-SSH E2E against testenv/docker-ssh workers. Not part of Pkg.test().
 # Oracle: OpenSSH + rsync + remote Julia (setup / drive / go / git). Assert
 # files workers write (`ssh cat` / collect). Controller-side demo CSV is not
-# a remote collect. Inventory: test/README.md § SSH E2E suite.
+# a remote collect. Inventory: test/README.md § SSH E2E.
 # Local with_kit recipes are test/integration/demos/.
 #
 #   testenv/docker-ssh/scripts/up.sh --e2e
