@@ -19,7 +19,7 @@ runs:
         coverage: ${{ inputs.coverage }}
     - uses: julia-actions/julia-processcoverage@v1
       if: inputs.coverage == 'true'
-    # Public: OIDC. Private: upload fails quietly until the repo is public.
+    # Public repo + OIDC. A failed upload fails the job (no silent green).
     - name: Upload coverage to Codecov
       if: inputs.coverage == 'true'
       uses: codecov/codecov-action@v7
@@ -28,7 +28,7 @@ runs:
         slug: ${{ github.repository }}
         use_oidc: true
         flags: pkgtest
-        fail_ci_if_error: false
+        fail_ci_if_error: true
     - name: Coverage summary
       if: inputs.coverage == 'true'
       shell: bash
