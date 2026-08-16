@@ -60,11 +60,11 @@
 
   <g transform="translate(44, 108)">
     <use href="#minibox-body"/>
-    <use href="#juliadot" x="0" y="0"/>
+    <use href="#juliadot" x="0" y="2"/>
   </g>
   <g transform="translate(120, 90)">
     <use href="#laptop-body"/>
-    <use href="#juliadot" x="0" y="-5"/>
+    <use href="#juliadot" x="0" y="-3"/>
   </g>
   <g transform="translate(198, 108)">
     <use href="#desktop-body"/>
