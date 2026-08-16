@@ -33,8 +33,8 @@ Remote project paths use the same resolution as [`drive`](@ref Manual-drive)
 Measurement is a **hint**, not a job peak: baseline is package-load RSS; with
 `--probe`, peak is after that script runs. Worker counts use
 `max(baseline, peak)`. Prefer an explicit `host:N` (CLI / API tokens) or
-`--gb-per-worker` when you know the workload. Prefer [`size!`](@ref)
-([`size_plan`](@ref) is the same function). It returns a [`WorkerPlan`](@ref) for
+`--gb-per-worker` when you know the workload. Prefer [`size!`](@ref).
+It returns a [`WorkerPlan`](@ref) for
 `drive!(session, …; plan=…)`; day-to-day runs usually use tokens instead
 (`drive!("job.jl", "local:2"; …)`).
 

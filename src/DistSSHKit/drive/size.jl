@@ -1,4 +1,4 @@
-# size_plan — worker count sizing (structured return).
+# size! — worker count sizing (structured return).
 
 """
     compute_worker_plan(
@@ -47,7 +47,7 @@ function compute_worker_plan(
 end
 
 """
-    size_plan(
+    size!(
         session::KitSession;
         gb_per_worker=nothing, probe=nothing,
         mem_headroom=DEFAULT_MEM_HEADROOM, master_gb=DEFAULT_MASTER_GB,
@@ -57,9 +57,9 @@ Estimate worker counts for hosts in `session`. When `gb_per_worker` is omitted,
 probes each host via [`measure_rss`](@ref) (package-load baseline, optional
 warm-up `probe` script for peak RSS). Counts use [`effective_worker_gb`](@ref).
 
-Returns [`WorkerPlan`](@ref). Prefer [`size!`](@ref) for the bang-style name.
+Returns [`WorkerPlan`](@ref).
 """
-function size_plan(
+function size!(
     session::KitSession;
     gb_per_worker::Union{Nothing,Real}=nothing,
     probe::Union{Nothing,AbstractString}=nothing,
@@ -105,14 +105,4 @@ function size_plan(
         mem_headroom=mem_headroom,
         master_gb=master_gb,
     )
-end
-
-"""
-    size!(session::KitSession; kwargs...)
-
-Alias for [`size_plan`](@ref). Prefer this name to match `sync!` / `drive!` /
-`collect!`. Same arguments and [`WorkerPlan`](@ref) return.
-"""
-function size!(session::KitSession; kwargs...)
-    return size_plan(session; kwargs...)
 end

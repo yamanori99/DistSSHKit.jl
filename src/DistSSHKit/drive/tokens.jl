@@ -3,7 +3,7 @@
 """
 Build a [`WorkerPlan`](@ref) from tokens.
 
-When any host lacks `:N`, run [`size_plan`](@ref) on `session` (must list those
+When any host lacks `:N`, run [`size!`](@ref) on `session` (must list those
 hosts; set `include_local_for_size` for bare `local`). Explicit `:N` wins over size.
 """
 function worker_plan_from_tokens(
@@ -23,9 +23,9 @@ function worker_plan_from_tokens(
     end
 
     session === nothing && throw(ArgumentError(
-        "worker tokens need size_plan for hosts without :N; pass a KitSession",
+        "worker tokens need size! for hosts without :N; pass a KitSession",
     ))
-    sized = size_plan(
+    sized = size!(
         session;
         gb_per_worker=gb_per_worker,
         probe=probe,

@@ -1,4 +1,4 @@
-# pipeline! — sync → size! / size_plan → drive → collect.
+# pipeline! — sync → size! → drive → collect.
 
 function _parse_env_hosts(raw::AbstractString)::Vector{String}
     s = strip(String(raw))

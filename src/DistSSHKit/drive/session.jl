@@ -1,6 +1,6 @@
 # KitSession — shared context for drive / sync / collect APIs.
 
-"""Runtime context for `sync!`, `size_plan`, `drive!`, `collect!`."""
+"""Runtime context for `sync!`, `size!`, `drive!`, `collect!`."""
 mutable struct KitSession
     project::String
     hosts::Vector{String}
@@ -18,7 +18,7 @@ end
                quiet=false, verbosity=nothing, yes=true, include_local_for_size=false)
 
 Build a session for drive APIs. `workers` are CLI-style tokens
-(`local:2`, `user@host:1`, or bare `user@host` for later [`size_plan`](@ref)).
+(`local:2`, `user@host:1`, or bare `user@host` for later [`size!`](@ref)).
 
 `session.hosts` keeps remote SSH names only (for sync / collect).
 `session.tokens` keeps the original tokens (including `local:N`).
@@ -96,7 +96,7 @@ end
 """Explain surface for this session (`:cli` or `:api`)."""
 hint_surface(session::KitSession)::Symbol = session.cli_session.hint_surface
 
-"""SSH host names used for [`size_plan`](@ref) (`localhost` first when `include_local_for_size`)."""
+"""SSH host names used for [`size!`](@ref) (`localhost` first when `include_local_for_size`)."""
 function session_size_hosts(session::KitSession)::Tuple{Vector{String},Vector{String}}
     remote_hosts = copy(session.hosts)
     if session.include_local_for_size

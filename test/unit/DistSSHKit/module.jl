@@ -15,6 +15,13 @@ using Test
     @test DistSSHKit.dist_ssh_kit_version() isa VersionNumber
     @test DistSSHKit.dist_ssh_kit_version() != v"0.0.0"
 
+    # Public surface: sizing is `size!`; argv `go` / `drive` are unexported.
+    ns = names(DistSSHKit)
+    @test :size! in ns && :go! in ns && :drive! in ns
+    @test :size_plan ∉ ns && :go ∉ ns && :drive ∉ ns
+    @test isdefined(DistSSHKit, :go) && isdefined(DistSSHKit, :drive)
+    @test !isdefined(DistSSHKit, :size_plan)
+
     let fixture = _fixture("cli_echo_args.jl")
         mktemp() do args_file, _
             withenv(

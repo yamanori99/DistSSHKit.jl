@@ -5,6 +5,10 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- **Breaking:** exported `size_plan` removed; use `size!`.
+- **Breaking:** `go` / `drive` argv wrappers are no longer exported. Use
+  `go!` / `drive!` or `julia -m DistSSHKit`.
+
 - Optional `pkg> app add DistSSHKit` (Pkg Apps, experimental): `distsshkit` on
   PATH. Same argv as `-m`. Prefer for `go` / `setup` / `demo`; `drive` / `size`
   stay `julia --project=. -m DistSSHKit`.
@@ -27,7 +31,7 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 Patch after the first General registration (`0.2.0`).
 
 - Library / `go!` / `drive!`: Julia **1.10+**. Terminal `julia -m DistSSHKit`: **1.12+**.
-- `setup!` (same modes as CLI `setup`). `size!` (alias of `size_plan`).
+- `setup!` (same modes as CLI `setup`). `size!` (then also exported as `size_plan`).
 - `go` / `drive` / `setup` / `size` share `--hosts` and `DISTSSHKIT_HOSTS`.
 - Failures that need a next command: diagnose, then explain for CLI vs API.
 - `drive` collect works with remote `~` roots.

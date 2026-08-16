@@ -1,6 +1,6 @@
 # Result types for the drive / sync API.
 
-"""Default RAM fraction usable for workers in [`size_plan`](@ref) / `size`."""
+"""Default RAM fraction usable for workers in [`size!`](@ref) / `size`."""
 const DEFAULT_MEM_HEADROOM = 0.75
 """Default GB reserved for the master process on localhost sizing."""
 const DEFAULT_MASTER_GB = 0.4
@@ -67,7 +67,7 @@ end
 
 WorkerPlan() = WorkerPlan(0, Dict{String,Int}())
 
-"""Parsed drive/go worker tokens (counts may still need [`size_plan`](@ref))."""
+"""Parsed drive/go worker tokens (counts may still need [`size!`](@ref))."""
 struct ParsedWorkerTokens
     local_workers::Int
     local_autosize::Bool

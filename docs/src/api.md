@@ -63,7 +63,7 @@ require git parity by default (same as CLI). Pass `sync=:sync` / `:rsync` when
 you want a one-shot deploy. Git parity (`skip_hash_check=false`, CLI:
 `drive --require-git`) is **drive** / **pipeline** only — `go!` stays simpler.
 Prefer positional worker tokens over building a [`WorkerPlan`](@ref) by hand
-(`WorkerPlan` remains the return type of [`size!`](@ref) / [`size_plan`](@ref)).
+(`WorkerPlan` is the return type of [`size!`](@ref)).
 Pass `julia=` on `go!` / `drive!` / `pipeline!` to pin the remote Julia binary
 (same as CLI `--julia`).
 
@@ -82,13 +82,7 @@ instantiate!
 HostResult
 SyncResult
 size!
-size_plan
 WorkerPlan
-WorkerMemorySample
-measure_rss
-effective_worker_gb
-per_worker_gb_dict
-compute_worker_plan
 drive!
 DriveResult
 collect!
@@ -110,15 +104,4 @@ methods in the same session.
 
 ```@docs
 worker_pmap
-```
-
-## Same argv as the CLI
-
-[`go`](@ref) / [`drive`](@ref) accept the same argument vector as
-`julia -m DistSSHKit go|drive …`. Prefer `go!` / `drive!` / `pipeline!` in new
-code; these exist for thin wrappers and tests.
-
-```@docs
-go
-drive
 ```

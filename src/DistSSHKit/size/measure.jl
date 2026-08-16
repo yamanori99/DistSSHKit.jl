@@ -1,4 +1,4 @@
-# Per-host RSS probe for size / size_plan.
+# Per-host RSS probe for size / size!.
 # Remotecalls use `Core.eval` on worker `Main` so workers need not load DistSSHKit.
 
 """Resolve a size `--probe` script path under `project` (absolute paths unchanged)."""
