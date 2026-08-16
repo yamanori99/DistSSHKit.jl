@@ -38,11 +38,13 @@ jobs:
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
       - uses: ./.github/actions/pkg-test
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
+        with:
+          heap_size_hint: "2G"
 
   test-1-11:
     name: Pkg.test - Julia 1.11 - ubuntu-latest
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/ci-heavy
@@ -53,13 +55,10 @@ jobs:
           version: "1.11"
       - uses: julia-actions/cache@v3
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-      # 1.11 has OOM'd in collect_tree on GHA; tests stay as-is.
       - uses: ./.github/actions/pkg-test
-        id: pkgtest
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        continue-on-error: true
-      - uses: ./.github/actions/pkg-test
-        if: steps.pkgtest.outcome == 'failure'
+        with:
+          heap_size_hint: "2G"
 
   test-1-12:
     name: Pkg.test - Julia 1.12 - ubuntu-latest
