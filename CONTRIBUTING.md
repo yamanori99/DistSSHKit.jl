@@ -104,7 +104,8 @@ Branch from `main`. Squash-merge only. One reviewable change per PR; split unles
 - `breaking`: incompatible behavior. Can land without a version bump.
 - `cut`: `Project.toml` `version` went up. CI adds this; other `Project.toml` edits do not. The PR suite does not path-skip (see PR CI).
 - On a breaking line bump `x` in `0.x.y`; otherwise bump `y`.
-- After merge: `@JuliaRegistrator register`, and paste the [NEWS.md](NEWS.md) section under `Release notes:`. TagBot tags once General has the release. Date NEWS `YYYY-MM-DD` UTC on the tag day.
+- After merge: `@JuliaRegistrator register` on the **merge commit** (not the PR body), and paste the [NEWS.md](NEWS.md) section under `Release notes:`. TagBot tags once General has the release. Date NEWS `YYYY-MM-DD` UTC on the tag day.
+- TagBot uses SSH deploy key secret `DOCUMENTER_KEY` (write deploy key on this repo) so the `vX.Y.Z` tag starts Docs and `stable` updates. Docs still deploy with `GITHUB_TOKEN`. Do not add a `+doc1` tag unless that path failed. Manual rebuild: `gh workflow run Docs --ref vX.Y.Z`.
 - Repo Settings → Actions → Workflow permissions: **Read and write** (`GITHUB_TOKEN`).
 
 ## Errors
@@ -130,8 +131,9 @@ Helpers: `src/DistSSHKit/explain.jl`. Surface is `hint_surface(session)`. Keep d
 ```
 
 - `src/cli/<area>/` → `area:<area>` (`explain` / `demos` too)
-- `test/**` except `test/unit/` and `test/integration/` → `area:test`
-- `testenv/**` → `area:test` (SSH worker stacks)
+- Harness under `test/` (not `unit/` / `integration/`) and `testenv/**` →
+  `area:test`. Globs are positive paths from `gen-labeler.sh`; do not add `!`
+  excludes (labeler ORs them and tags unrelated files).
 - `test/e2e.jl` and `test/support/ssh_e2e.jl` also get CLI areas (`drive` / `go` / `setup` / `size`)
 - Product tests under `unit/` and `integration/` keep only their `area:<area>`
 - `.github/**` → `ci`

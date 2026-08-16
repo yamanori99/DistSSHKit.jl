@@ -18,6 +18,6 @@ jobs:
       - uses: JuliaRegistries/TagBot@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          # Docs deploy via GITHUB_TOKEN (Documentation.yml). Leave DOCUMENTER_KEY
-          # unset unless you need TagBot-created tags to trigger other workflows.
-          # ssh: ${{ secrets.DOCUMENTER_KEY }}
+          # SSH deploy key so the version tag starts Documentation.yml (`stable`).
+          # Docs still push gh-pages with GITHUB_TOKEN (not this key).
+          ssh: ${{ secrets.DOCUMENTER_KEY }}
