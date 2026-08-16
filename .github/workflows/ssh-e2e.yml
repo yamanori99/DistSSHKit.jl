@@ -36,11 +36,14 @@ jobs:
               - "Project.toml"
               - ".github/workflows/ssh-e2e.yml"
       - id: gate
+        env:
+          FILTER_E2E: ${{ steps.filter.outputs.e2e }}
+          CUT: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'cut') }}
         run: |
-          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] || [ "$CUT" = "true" ]; then
             echo "e2e=true" >> "$GITHUB_OUTPUT"
           else
-            echo "e2e=${{ steps.filter.outputs.e2e }}" >> "$GITHUB_OUTPUT"
+            echo "e2e=${FILTER_E2E}" >> "$GITHUB_OUTPUT"
           fi
 
       - uses: julia-actions/setup-julia@v3
