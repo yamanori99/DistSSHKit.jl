@@ -1,11 +1,8 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-action.json
 name: pkg-test
-description: Pkg.test for one Julia version (caller sets the check name)
+description: Pkg.test after the caller has run setup-julia and julia-actions/cache
 
 inputs:
-  version:
-    description: setup-julia version spec
-    required: true
   coverage:
     description: "true to run coverage + Codecov"
     required: false
@@ -14,14 +11,8 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: julia-actions/setup-julia@v3
-      id: julia
-      with:
-        version: ${{ inputs.version }}
-    - name: Julia ${{ steps.julia.outputs.julia-version }}
-      shell: bash
-      run: julia --version
-    - uses: julia-actions/cache@v3
+    # Do not put julia-actions/cache here. Nested composite makes delete-old-caches
+    # fail (julia-actions/cache#236) and fills the 10 GB Actions cache quota.
     - uses: julia-actions/julia-buildpkg@v1
     - uses: julia-actions/julia-runtest@v1
       with:
