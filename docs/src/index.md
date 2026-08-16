@@ -23,7 +23,7 @@ Use it from the terminal or from Julia code / notebooks.
 
 How you call it is a separate choice:
 
-- **Julia API** (**1.10+**) — `setup!` for remotes, `go!` / `drive!` to run, or
+- **Julia API** (**1.12+**) — `setup!` for remotes, `go!` / `drive!` to run, or
   `pipeline!` for optional sync → size! → drive! → collect (not `setup!`)
 - **CLI** (**1.12+**) — `julia --project=. -m DistSSHKit go …` / `drive …`
   (and `setup`, `demo`, …). This is the job-project kit.

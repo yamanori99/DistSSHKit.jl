@@ -20,7 +20,7 @@ function _julia_coverage_args()::Vector{String}
     return ["--code-coverage=user"]
 end
 
-"""Kit CLI as a child `julia`. Uses `-m DistSSHKit` on 1.12+; `main(ARGS)` before that."""
+"""Kit CLI as a child `julia -m DistSSHKit`."""
 function _kit_cli_cmd(
     args::AbstractVector{<:AbstractString};
     julia::AbstractString=_julia_exe(),
@@ -33,14 +33,7 @@ function _kit_cli_cmd(
         _julia_coverage_args()...,
     ]
     argv = String[String(a) for a in args]
-    if VERSION >= v"1.12"
-        return Cmd(vcat(prefix, ["-m", "DistSSHKit"], argv))
-    end
-    return Cmd(vcat(
-        prefix,
-        ["-e", "using DistSSHKit; exit(Int(DistSSHKit.main(ARGS)))", "--"],
-        argv,
-    ))
+    return Cmd(vcat(prefix, ["-m", "DistSSHKit"], argv))
 end
 
 """Temp hosts file: comment line, `host-a`, and `host-b:4`."""

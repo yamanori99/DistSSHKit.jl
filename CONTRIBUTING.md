@@ -6,8 +6,8 @@ Internals of this repo. Users: [stable docs](https://yamanori99.github.io/DistSS
 
 macOS, Linux, or WSL2 Ubuntu. Not native Windows (the kit shells out to `ssh` / `rsync`).
 
-- Library and `Pkg.test()`: Julia **1.10+**
-- `julia -m DistSSHKit` and docs: **1.12+** (`~1.13.0-0` when that channel exists)
+- Library, `Pkg.test()`, `julia -m DistSSHKit`, and docs: Julia **1.12+**
+  (`~1.13.0-0` when that channel exists)
 - SSH: Git, OpenSSH, rsync. Match remote **major.minor** (CI workers are 1.12)
 
 Prefer [juliaup](https://github.com/JuliaLang/juliaup). Details: [Requirements](https://yamanori99.github.io/DistSSHKit.jl/dev/requirements/).
@@ -26,7 +26,7 @@ From another app:
 julia --project=/path/to/MyProject.jl -e 'using Pkg; Pkg.develop(path="/path/to/DistSSHKit.jl")'
 ```
 
-On 1.12+, `julia --project=. -m DistSSHKit …` matches `Pkg.add`. On 1.10–1.11 use `go!` / `drive!` or [`main`](https://yamanori99.github.io/DistSSHKit.jl/stable/api/).
+On 1.12+, `julia --project=. -m DistSSHKit …` matches `Pkg.add`.
 
 ## Test
 
@@ -34,7 +34,7 @@ On 1.12+, `julia --project=. -m DistSSHKit …` matches `Pkg.add`. On 1.10–1.1
 julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
-Do this on 1.10, and on 1.12 / 1.13 when you can. Layout: [test/README.md](test/README.md).
+Do this on 1.12 / 1.13. Layout: [test/README.md](test/README.md).
 
 Smoke (1.12+; [`demos/README.md`](demos/README.md)):
 
@@ -59,11 +59,11 @@ See [testenv/docker-ssh/README.md](testenv/docker-ssh/README.md). Skip the image
 
 ### PR CI
 
-Ubuntu: `Pkg.test` (1.10–1.13), JETLS, Aqua, Documenter (1.12), Gitleaks. Linux E2E runs if `src/`, `test/`, `demos/`, `testenv/`, `Project.toml`, or the E2E workflow changed.
+Ubuntu: `Pkg.test` (1.12–1.13), JETLS, Aqua, Documenter (1.12), Gitleaks. Linux E2E runs if `src/`, `test/`, `demos/`, `testenv/`, `Project.toml`, or the E2E workflow changed.
 
 These files alone skip the heavy steps (job still starts; Pkg.test / JETLS / Aqua / Documenter do not run): `README.md`, `CONTRIBUTING.md`, `NEWS.md`, `SECURITY.md`, `LICENSE`, `.gitignore`, `.github/pull_request_template.md`. A new root markdown file stays heavy until listed in [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml). Changes under `docs/src` still run those jobs. A `cut` label skips none of this: Pkg.test, JETLS, Aqua, Documenter, and Linux E2E all run. macOS / WSL stay on `E2E daily`, not the PR.
 
-Required to merge (job names): `Pkg.test` 1.10–1.13, `JETLS` 1.12–1.13, `Aqua` 1.12–1.13, `Documenter` 1.12, `Gitleaks`, `ubuntu-latest → ubuntu-24.04`, `PR label`. A skipped heavy step still leaves the job green.
+Required to merge (job names): `Pkg.test` 1.12–1.13, `JETLS` 1.12–1.13, `Aqua` 1.12–1.13, `Documenter` 1.12, `Gitleaks`, `ubuntu-latest → ubuntu-24.04`, `PR label`. A skipped heavy step still leaves the job green.
 
 ### Local
 

@@ -11,14 +11,13 @@ Applies to the machine where you run the kit **and** each SSH host that runs
 jobs.
 
 - **macOS, Linux, and WSL2 Ubuntu** (not native Windows)
-- **Julia**
-  - Library (`Pkg.add` / `using` / `go!` / `drive!`): **1.10+**
-  - Terminal CLI (`julia -m DistSSHKit`): **1.12+** (no `-m` before 1.12; use
-    the [API](@ref API) or [`main`](@ref))
-  - Optional `distsshkit` (**1.12+**, experimental):
-    [User Guide](@ref Manual-distsshkit)
-  - Same **major.minor** on the controller and SSH hosts (`setup --check` fails
-    on a mismatch unless `--ignore-julia-version`; patch-only differences warn)
+- **Julia 1.12+**
+  - Library (`Pkg.add` / `using` / `go!` / `drive!`), CLI
+    (`julia -m DistSSHKit`), and optional `distsshkit`
+    ([User Guide](@ref Manual-distsshkit))
+  - Same **major.minor** on the controller and SSH hosts (`setup --check`
+    fails on a mismatch unless `--ignore-julia-version`; patch-only
+    differences warn)
   - Prefer **[juliaup](https://github.com/JuliaLang/juliaup)**
     (`$HOME/.juliaup/bin/julia`): E2E workers and remote auto-detect start
     there. `--julia` / `JULIA_DISTRIBUTED_EXE` override. Missing path or a
@@ -90,7 +89,7 @@ Passwordless login (once per host):
 ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=accept-new USER@HOST echo ok
 ```
 
-Julia (prefer the same major.minor as the kit machine, via juliaup). Log in,
+Julia **1.12+** (same major.minor as the kit machine, via juliaup). Log in,
 find the binary, then check with that **full path** (non-interactive `ssh`
 often has no login `PATH`, so bare `julia` fails):
 

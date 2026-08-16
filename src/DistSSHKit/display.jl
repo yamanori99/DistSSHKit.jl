@@ -305,21 +305,14 @@ function Base.write(io::TeeIO, b::AbstractVector{UInt8})
     return _teeio_write_vector!(io, b)
 end
 
-# 1.10: `write(::IO, ::Array)` vs AbstractVector. 1.11+: StridedVector vs Base.
+# `AbstractVector{UInt8}` alone is ambiguous with Base's `write(::IO, ::StridedArray)`.
 function Base.write(io::TeeIO, b::Vector{UInt8})
     bv::AbstractVector{UInt8} = b
     return _teeio_write_vector!(io, bv)
 end
 
-if VERSION < v"1.11"
-    function Base.write(io::TeeIO, b::SubArray{UInt8,1,A}) where {A<:Array}
-        return _teeio_write_vector!(io, Vector{UInt8}(b))
-    end
-else
-    # `AbstractVector{UInt8}` alone is ambiguous with Base's `write(::IO, ::StridedArray)`.
-    function Base.write(io::TeeIO, b::StridedVector{UInt8})
-        return _teeio_write_vector!(io, b)
-    end
+function Base.write(io::TeeIO, b::StridedVector{UInt8})
+    return _teeio_write_vector!(io, b)
 end
 
 # Also ambiguous with Base's `write(::IO, ::Base.CodeUnits)` (e.g. `write(io, codeunits(str))`);

@@ -7,10 +7,6 @@ inputs:
     description: "true to run coverage + Codecov"
     required: false
     default: "false"
-  heap_size_hint:
-    description: "If set (e.g. 2G), pass --heap-size-hint to the Pkg.test process"
-    required: false
-    default: ""
 
 runs:
   using: composite
@@ -19,31 +15,8 @@ runs:
     # fail (julia-actions/cache#236) and fills the 10 GB Actions cache quota.
     - uses: julia-actions/julia-buildpkg@v1
     - uses: julia-actions/julia-runtest@v1
-      if: inputs.heap_size_hint == ''
       with:
         coverage: ${{ inputs.coverage }}
-    # julia-runtest has no extra julia_args. Hint makes 1.10/1.11 GC before GHA OOM.
-    - name: Pkg.test with heap-size-hint
-      if: inputs.heap_size_hint != ''
-      shell: bash
-      env:
-        HEAP_SIZE_HINT: ${{ inputs.heap_size_hint }}
-        COVERAGE: ${{ inputs.coverage }}
-      run: |
-        julia --color=yes --project=@. -e '
-          using Pkg
-          hint = ENV["HEAP_SIZE_HINT"]
-          cov = ENV["COVERAGE"] == "true"
-          Pkg.test(;
-            coverage=cov,
-            julia_args=[
-              "--heap-size-hint=$(hint)",
-              "--check-bounds=yes",
-              "--compiled-modules=yes",
-              "--depwarn=yes",
-            ],
-          )
-        '
     - uses: julia-actions/julia-processcoverage@v1
       if: inputs.coverage == 'true'
     # Public repo + OIDC. A failed upload fails the job (no silent green).
