@@ -39,6 +39,29 @@ function _run_kit_drive(;
     return _run_subprocess(setenv(cmd, env))
 end
 
+"""Run `drive --collect-missing|--collect-overwrite ROOT HOST...` as a child CLI."""
+function _run_kit_drive_collect(;
+    collect_root::AbstractString,
+    hosts::Vector{String},
+    overwrite::Bool=false,
+    host_root,
+    kit_root::AbstractString=_kit_root(),
+    julia::AbstractString=_julia_exe(),
+    extra_env::Dict{String,String}=Dict{String,String}(),
+)
+    isempty(hosts) && error("_run_kit_drive_collect: need hosts")
+    flag = overwrite ? "--collect-overwrite" : "--collect-missing"
+    cmd = _kit_cli_cmd(
+        vcat(["drive", "-y", "-q", flag, String(collect_root)], hosts);
+        julia=String(julia),
+        project=String(kit_root),
+    )
+    env = _child_julia_env(merge(Dict(
+        "DISTRIBUTED_PROJECT_ROOT" => _drive_host_root(host_root),
+    ), extra_env))
+    return _run_subprocess(setenv(cmd, env))
+end
+
 """Run `drive.jl` with `--project` set to a host package."""
 function _run_host_drive(;
     script::AbstractString,

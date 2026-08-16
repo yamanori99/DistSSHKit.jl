@@ -14,6 +14,8 @@ Real OpenSSH + rsync Linux workers. CI remote SSH coverage uses this stack
 | WSL2 (`windows-latest`) | same image | **CI daily** — `E2E daily / windows-latest (WSL2) → ubuntu-24.04` |
 | Either | `local:N` | Mixed smoke inside the same suite |
 
+Suite inventory (what each `@testset` proves): [`test/README.md`](../../test/README.md#ssh-e2e).
+
 ### Honest limits
 
 - CI macOS controller is **daily / dispatch** (`macos-15-intel` + Colima). Apple Silicon GitHub runners cannot nest VMs.
@@ -21,6 +23,8 @@ Real OpenSSH + rsync Linux workers. CI remote SSH coverage uses this stack
 - **Not covered (no free CI):** Linux controller → macOS worker; Mac workers (use apple-container locally).
 - **Git parity (`--require-git`):** covered in the suite via a separate git remote root
   (`clone` from a bare on worker-1 → `--sync` → `drive --require-git`).
+  Mismatch before `--sync` must fail. `--pull` after a controller `git push`
+  is checked by reading `e2e_sync_marker.txt` on the workers.
   The rsync path still excludes `.git/` and does not claim parity.
 
 Worker image pins Julia **1.12** (juliaup `--default-channel 1.12`) to match CI controllers so `--check` can run **without** `--ignore-julia-version`. Install policy: [Requirements](https://yamanori99.github.io/DistSSHKit.jl/dev/requirements/).

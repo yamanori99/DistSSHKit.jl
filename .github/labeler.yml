@@ -18,6 +18,7 @@ ci:
   - changed-files:
       - any-glob-to-any-file:
           - "test/**"
+          - "testenv/**"
           - "!test/unit/**"
           - "!test/integration/**"
 
@@ -31,6 +32,7 @@ ci:
           - "src/cli/demos.*"
           - "test/**/demos/**"
           - "test/**/demos.*"
+          - "test/fixtures/demos*"
           - "demos/**"
 
 "area:drive":
@@ -43,6 +45,9 @@ ci:
           - "src/cli/drive.*"
           - "test/**/drive/**"
           - "test/**/drive.*"
+          - "test/fixtures/drive*"
+          - "test/e2e.jl"
+          - "test/support/ssh_e2e.jl"
 
 "area:explain":
   - changed-files:
@@ -54,6 +59,7 @@ ci:
           - "src/cli/explain.*"
           - "test/**/explain/**"
           - "test/**/explain.*"
+          - "test/fixtures/explain*"
 
 "area:go":
   - changed-files:
@@ -65,6 +71,9 @@ ci:
           - "src/cli/go.*"
           - "test/**/go/**"
           - "test/**/go.*"
+          - "test/fixtures/go*"
+          - "test/e2e.jl"
+          - "test/support/ssh_e2e.jl"
 
 "area:setup":
   - changed-files:
@@ -76,6 +85,9 @@ ci:
           - "src/cli/setup.*"
           - "test/**/setup/**"
           - "test/**/setup.*"
+          - "test/fixtures/setup*"
+          - "test/e2e.jl"
+          - "test/support/ssh_e2e.jl"
 
 "area:size":
   - changed-files:
@@ -87,3 +99,6 @@ ci:
           - "src/cli/size.*"
           - "test/**/size/**"
           - "test/**/size.*"
+          - "test/fixtures/size*"
+          - "test/e2e.jl"
+          - "test/support/ssh_e2e.jl"
