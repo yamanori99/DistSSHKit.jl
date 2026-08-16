@@ -177,7 +177,7 @@ end
 Settings for [`pipeline!`](@ref): sync, worker tokens, driver run, and optional collect.
 
 Worker placement uses CLI-style tokens (`local:2`, `user@host:1`). Bare hosts are
-sized via [`size_plan`](@ref). Set `sync=false` to skip sync. Set `collect=false`
+sized via [`size!`](@ref). Set `sync=false` to skip sync. Set `collect=false`
 to skip rsync-back. Git parity is off by default; pass `skip_hash_check=false`
 (or CLI `--require-git`) to require matching remote commits.
 

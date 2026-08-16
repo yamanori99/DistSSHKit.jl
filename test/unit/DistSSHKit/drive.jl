@@ -151,6 +151,9 @@ using Test
             od = joinpath(tmp, "my_out")
             cfg_od = DistSSHKit.PipelineConfig(driver=driver, output_dir=od)
             @test DistSSHKit.pipeline_collect_root(cfg_od) == abspath(od)
+            dest = joinpath(tmp, "collect_here")
+            cfg_path = DistSSHKit.PipelineConfig(driver=driver, collect=dest)
+            @test DistSSHKit.pipeline_collect_root(cfg_path) == abspath(dest)
             withenv("DISTRIBUTED_OUTPUT_DIR" => joinpath(tmp, "env_out")) do
                 cfg_env = DistSSHKit.PipelineConfig(driver=driver)
                 @test DistSSHKit.pipeline_collect_root(cfg_env) ==
@@ -275,6 +278,11 @@ using Test
                     @test ok
                     @test isempty(mm)
                     @test isempty(uv)
+                    @test !Main._skip_global_worker_pkill()
+                    withenv("DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL" => "1") do
+                        @test Main._skip_global_worker_pkill()
+                        Main.cleanup_stale_workers!(Tuple{String,Union{Int,Nothing}}[])
+                    end
                 end
             end
             missing = joinpath(tmp, "no_such_driver.jl")
