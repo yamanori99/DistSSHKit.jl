@@ -1,6 +1,9 @@
 # Contributing
 
-Internals of this repo. Users: [stable docs](https://yamanori99.github.io/DistSSHKit.jl/stable/) (`docs/`), [README.md](README.md), [NEWS.md](NEWS.md). Dev: [dev](https://yamanori99.github.io/DistSSHKit.jl/dev/).
+Internals of this repo.
+
+- Users: [stable docs](https://yamanori99.github.io/DistSSHKit.jl/stable/) (`docs/`), [README.md](README.md), [NEWS.md](NEWS.md)
+- Dev docs: [dev](https://yamanori99.github.io/DistSSHKit.jl/dev/)
 
 ## Feature freeze
 
@@ -23,8 +26,10 @@ Tracked bugs stay Issues. Direction for the kit as a whole is still
 
 macOS, Linux, or WSL2 Ubuntu. Not native Windows (the kit shells out to `ssh` / `rsync`).
 
-- Library, `Pkg.test()`, `julia -m DistSSHKit`, and docs: Julia **1.12+**
-- SSH: Git, OpenSSH, rsync. Match remote **major.minor** (E2E workers = slot **min**)
+| What | Need |
+| --- | --- |
+| Library, `Pkg.test()`, `julia -m DistSSHKit`, docs | Julia **1.12+** |
+| SSH | Git, OpenSSH, rsync. Match remote **major.minor** (E2E workers = slot **min**) |
 
 Prefer [juliaup](https://github.com/JuliaLang/juliaup). Details: [Requirements](https://yamanori99.github.io/DistSSHKit.jl/dev/requirements/).
 
@@ -50,9 +55,9 @@ On 1.12+, `julia --project=. -m DistSSHKit …` matches `Pkg.add`.
 julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
-Do this on slot **min** and **max** (and **tip** if you have nightly). Layout: [test/README.md](test/README.md).
+Run this on slot **min** and **max** (and **tip** if you have nightly). Layout: [test/README.md](test/README.md).
 
-Smoke (1.12+; [`demos/README.md`](demos/README.md)):
+Smoke (1.12+; [demos/README.md](demos/README.md)):
 
 ```bash
 julia --project=. -m DistSSHKit demo install with_kit
@@ -91,55 +96,87 @@ When a new RC lands, change `JULIA_SLOT_MAX` only. When bumping compat, raise `J
 
 Ubuntu: `Pkg.test` min / max / tip, JETLS min / max, Aqua min / max / tip, Documenter min, Gitleaks. Linux E2E (min) runs if `src/`, `test/`, `demos/`, `testenv/`, `Project.toml`, or the E2E workflow changed.
 
-These files alone skip the heavy steps (job still starts; Pkg.test / JETLS / Aqua / Documenter do not run): `README.md`, `CONTRIBUTING.md`, `NEWS.md`, `SECURITY.md`, `LICENSE`, `.gitignore`, `.github/pull_request_template.md`. A new root markdown file stays heavy until listed in [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml). Changes under `docs/src` still run those jobs. A `cut` label skips none of this: Pkg.test, JETLS, Aqua, Documenter, and Linux E2E all run. macOS / WSL stay on `E2E daily`, not the PR.
+These files **alone** skip the heavy steps (job still starts; Pkg.test / JETLS / Aqua / Documenter do not run):
 
-Required to merge (full job names): `Pkg.test - min - ubuntu-latest`, `Pkg.test - max - ubuntu-latest`, `JETLS - min - ubuntu-latest`, `JETLS - max - ubuntu-latest`, `Aqua - min - ubuntu-latest`, `Aqua - max - ubuntu-latest`, `Documenter - min - ubuntu-latest`, `Gitleaks`, `ubuntu-latest → ubuntu-24.04`, `PR label`. Tip jobs are allow-failure. A skipped heavy step still leaves the job green.
+- `README.md`, `CONTRIBUTING.md`, `NEWS.md`, `SECURITY.md`, `LICENSE`
+- `.gitignore`, `.github/pull_request_template.md`
 
-**Once:** GitHub required checks used `Pkg.test - Julia 1.12 - ubuntu-latest` style names. After this lands, set protection to the slot names above.
+A new root markdown file stays heavy until listed in [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml). Changes under `docs/src` still run those jobs. A `cut` label skips none of this: Pkg.test, JETLS, Aqua, Documenter, and Linux E2E all run. macOS / WSL stay on `E2E daily`, not the PR.
 
-### Local
+Required to merge (branch protection uses these names). Tip jobs are allow-failure. A skipped heavy step still leaves the job green.
+
+- `Pkg.test - min - ubuntu-latest`
+- `Pkg.test - max - ubuntu-latest`
+- `JETLS - min - ubuntu-latest`
+- `JETLS - max - ubuntu-latest`
+- `Aqua - min - ubuntu-latest`
+- `Aqua - max - ubuntu-latest`
+- `Documenter - min - ubuntu-latest`
+- `Gitleaks`
+- `ubuntu-latest → ubuntu-24.04`
+- `PR label`
+
+### Local checks
 
 ```bash
 ./.github/jetls-check.sh    # hint+; same files as CI
 ./.github/aqua-check.sh     # latest registry Aqua; not part of Pkg.test()
-```
-
-JETLS CI uses `aviatesk/JETLS.jl/.github/actions/check@release` (moving tag). After a bump, re-read [cli-check](https://aviatesk.github.io/JETLS.jl/dev/cli-check/) and keep failing on hint+.
-
-```bash
 julia --project=docs -e 'using Pkg; Pkg.instantiate()'
 julia --project=docs --color=yes docs/make.jl
 julia docs/src/assets/bake.jl          # optional --png / --gif
 gitleaks detect --source .
 ```
 
+JETLS CI uses `aviatesk/JETLS.jl/.github/actions/check@release` (moving tag). After a bump, re-read [cli-check](https://aviatesk.github.io/JETLS.jl/dev/cli-check/) and keep failing on hint+.
+
 JETLS is the type gate. Do not commit `.vscode/settings.json` to silence the Language Server.
 
 [Fatou](https://fatou.dev) is local only. Do not add `fatou.toml` or Fatou to `.vscode/extensions.json`. After a Fatou bump, check it did not rewrite files you did not mean to touch.
 
-### Daily E2E
+### Scheduled CI
 
-04:00 JST or Run workflow `E2E daily`: `ubuntu-latest`, `macos-15-intel`, and WSL2 against `ubuntu-24.04`. Not a PR check. A failed run opens (or comments on) Issue `E2E daily failed`; a later green run closes it.
+| When | Workflow | What |
+| --- | --- | --- |
+| 04:00 JST, or Run workflow | `E2E daily` | `ubuntu-latest`, `macos-15-intel`, WSL2 → `ubuntu-24.04`. Not a PR check. Failure opens (or comments on) Issue `E2E daily failed`; a later green run closes it. |
+| Sunday 10:00 JST, or Run workflow | `CI weekly` | Same `Pkg.test` / JETLS / Aqua slots as a PR (no coverage). Not a PR check. Catches max / Aqua / JETLS `@release` drift when nothing merged that week. Failure of min/max jobs opens Issue `CI weekly failed` (`ci`); tip is omitted from that notify. |
 
-### Weekly CI
+## Pull requests
 
-Sunday 10:00 JST or Run workflow `CI weekly`: same `Pkg.test` / JETLS / Aqua slots as a PR (no coverage). Not a PR check. Catches max / Aqua / JETLS `@release` drift when nothing merged that week. Failure of min/max jobs opens Issue `CI weekly failed` (`ci`); tip is omitted from that notify.
-
-## Workflow
-
-Branch from `main`. Squash-merge only. One reviewable change per PR; split unless `main` would be broken in between. Large plans: Discussion or Enhancement Issue first, then small PRs. Merged heads are deleted.
+- Branch from `main`. Squash-merge only. Merged heads are deleted.
+- One reviewable change per PR. Split unless `main` would be broken in between.
+- Large plans: Discussion or Enhancement Issue first, then small PRs.
 
 `setup --clone` / `--rsync` refuse a non-empty destination. Redeploy with `setup --delete`. First deploy `--rsync`; later git `--sync` / `--pull`. Do not weaken that refusal without tests.
 
-### Release
+## Release
 
-- `breaking`: incompatible behavior. Can land without a version bump.
-- `cut`: `Project.toml` `version` went up. CI adds this; other `Project.toml` edits do not. The PR suite does not path-skip (see PR CI).
-- On a breaking line bump `x` in `0.x.y`; otherwise bump `y`.
-- During the [feature freeze](#feature-freeze), cut happy-path bugs promptly. Prefer not to cut for opt-in flags, docs, or CI unless a General user or DistSSHKitQueue.jl needs them.
-- After merge: `@JuliaRegistrator register` on the **merge commit** (not the PR body), and paste the [NEWS.md](NEWS.md) section under `Release notes:`. TagBot tags once General has the release. Date NEWS `YYYY-MM-DD` UTC on the tag day.
-- TagBot uses SSH deploy key secret `DOCUMENTER_KEY` (write deploy key on this repo) so the `vX.Y.Z` tag starts Docs and `stable` updates. Docs still deploy with `GITHUB_TOKEN`. Do not add a `+doc1` tag unless that path failed. Manual rebuild: `gh workflow run Docs --ref vX.Y.Z`.
-- Repo Settings → Actions → Workflow permissions: **Read and write** (`GITHUB_TOKEN`).
+| Label | Meaning |
+| --- | --- |
+| `breaking` | Incompatible behavior. May land **without** a version bump. About behavior, not the bump. |
+| `cut` | `Project.toml` `version` went up. CI adds this; other `Project.toml` edits do not. The PR suite does not path-skip. |
+
+On a breaking line bump `x` in `0.x.y`; otherwise bump `y`.
+
+### When to cut
+
+Not a calendar. Cut when [NEWS.md](NEWS.md) **Unreleased** has something General users should get. Do not ship an empty cut. Do not automate the bump or `@JuliaRegistrator register`.
+
+| Unreleased is… | Cut? |
+| --- | --- |
+| Happy-path bug (ordinary `~/` roots, default `drive` / `go` / `setup`) | Yes, that patch promptly |
+| Opt-in flags, docs, CI, labels, internal cache | When someone needs it on General, **or** those items have sat in Unreleased for **two weeks** |
+
+During the [feature freeze](#feature-freeze), still cut happy-path bugs promptly. Do not use the two-week rule for opt-in flags, docs, or CI unless a General user or DistSSHKitQueue.jl needs them.
+
+### After a cut merges
+
+1. `@JuliaRegistrator register` on the **merge commit** (not the PR body).
+2. Paste the NEWS section under `Release notes:`.
+3. TagBot tags once General has the release. Date NEWS `YYYY-MM-DD` UTC on the tag day.
+
+TagBot uses SSH deploy key secret `DOCUMENTER_KEY` (write deploy key on this repo) so the `vX.Y.Z` tag starts Docs and `stable` updates. Docs still deploy with `GITHUB_TOKEN`. Do not add a `+doc1` tag unless that path failed. Manual rebuild: `gh workflow run Docs --ref vX.Y.Z`.
+
+Repo Settings → Actions → Workflow permissions: **Read and write** (`GITHUB_TOKEN`).
 
 ## Errors
 
@@ -165,30 +202,37 @@ Maintainer memo: [#50](https://github.com/yamanori99/DistSSHKit.jl/issues/50) is
 ./.github/gen-labeler.sh --check  # CI drift
 ```
 
-- `src/cli/<area>/` → `area:<area>` (`explain` / `demos` too)
-- Shared kit (`src/DistSSHKit.jl`, leftover DistSSHKit / argv stems, matching
-  unit tests, shared `test/*/cli/` files, package meta) → `area:kit`
-- Harness under `test/` (not `unit/` / `integration/`) and `testenv/**` →
-  `area:test`. Globs are positive paths from `gen-labeler.sh`; do not add `!`
-  excludes (labeler ORs them as "not this path" and tags unrelated files).
-- `test/e2e.jl` and `test/support/ssh_e2e.jl` also get CLI areas (`drive` / `go` / `setup` / `size`)
-- Product tests under `unit/` and `integration/` keep only their `area:<area>`
-  (plus `area:kit` when the file is leftover shared kit)
-- `docs/**`, `README.md`, `NEWS.md`, `demos/**/*.md` → `area:docs`
-- `.github/**`, `codecov.yml` → `area:ci`
-- Every tracked path must match some `area:*` glob (`gen-labeler.sh --check`)
+Every tracked path must match some `area:*` glob (`gen-labeler.sh --check`). Globs are positive paths; do not add `!` excludes (labeler ORs them as "not this path" and tags unrelated files).
+
+| Paths | Label |
+| --- | --- |
+| `src/cli/<area>/` (`explain` / `demos` too) | `area:<area>` |
+| Shared kit (`src/DistSSHKit.jl`, leftover DistSSHKit / argv stems, matching unit tests, shared `test/*/cli/` files, package meta) | `area:kit` |
+| Harness under `test/` (not `unit/` / `integration/`) and `testenv/**` | `area:test` |
+| `test/e2e.jl`, `test/support/ssh_e2e.jl` | CLI areas `drive` / `go` / `setup` / `size` as well |
+| Product tests under `unit/` and `integration/` | that `area:<area>` (plus `area:kit` when leftover shared kit) |
+| `docs/**`, `README.md`, `NEWS.md`, `demos/**/*.md` | `area:docs` |
+| `.github/**`, `codecov.yml` | `area:ci` |
 
 New CLI area or a new product-test tree: edit the script, regenerate, create the GitHub label.
-Backfill every PR after a vocabulary change (dry-run, then apply):
+
+Backfill every PR after a vocabulary change:
 
 ```bash
-./.github/retag-pr-areas.sh
+./.github/retag-pr-areas.sh           # dry-run
 ./.github/retag-pr-areas.sh --apply
 ```
 
-Every PR needs one type label (`bug` / `enhancement` / `chore`). CI infers, in order: a unique type on a closing issue (`Fixes #N`); else the branch prefix (`feat/` → enhancement, `fix/` → bug, `breaking/` → breaking, `chore/` / `docs/` / `ci/` / `test/` / anything else → chore). `fix/` plus `Fixes` an enhancement issue gets `enhancement`. Override with `gh pr edit N --add-label …`. Dependabot skips the type check (`dependencies` only).
+### Type labels
 
-`breaking` may sit next to the type label. It is about behavior, not the version bump. After merge a human registers; TagBot tags.
+Every PR needs one of `bug` / `enhancement` / `chore`. Dependabot skips the type check (`dependencies` only). Override with `gh pr edit N --add-label …`.
+
+CI infers, in order:
+
+1. A unique type on a closing issue (`Fixes #N`)
+2. Else the branch prefix: `feat/` → enhancement, `fix/` → bug, `breaking/` → breaking, `chore/` / `docs/` / `ci/` / `test/` / anything else → chore
+
+`fix/` plus `Fixes` an enhancement issue gets `enhancement`. `breaking` may sit next to the type label. After merge a human registers; TagBot tags.
 
 ## Language
 
