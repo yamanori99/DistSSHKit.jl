@@ -5,6 +5,8 @@
 #   - each directory under src/cli/<area>/ → area:<area>
 #   - src/DistSSHKit/argv/<area>* → same area (drive_args.jl, size_report.jl, …)
 #   - kit modules explain / demos → area:explain, area:demos (path auto)
+#   - leftover DistSSHKit / argv / matching unit tests / shared CLI tests /
+#     package meta → area:kit (every tracked path must match some area:*)
 #   - test harness → area:test (`testenv/**` plus each `test/<name>` that is
 #     not a product-test tree). Do not emit `!` globs into
 #     any-glob-to-any-file: labeler ORs them as "not this path" and tags
@@ -12,10 +14,9 @@
 #   - SSH E2E entry (`test/e2e.jl`, `test/support/ssh_e2e.jl`) also gets each
 #     CLI area (drive / go / setup / size): the suite is those commands on
 #     real SSH, not a fourth product-test tree.
-#   - product docs → docs (docs/**, README.md, NEWS.md, demos markdown — not
-#     CONTRIBUTING)
-#   - .github/** → ci
-# No catch-all area:kit — shared paths are typed via type labels only.
+#   - product docs → area:docs (docs/**, README.md, NEWS.md, demos markdown —
+#     not CONTRIBUTING; that is area:kit)
+#   - .github/** and codecov.yml → area:ci
 #
 # Product tests live only under the trees in `product_test_trees` and pick up
 # area:* via the ${area} globs. Any other path under test/ is the harness
@@ -50,6 +51,22 @@ product_test_trees=(unit integration)
 IFS=$'\n' areas_sorted=($(printf '%s\n' "${areas[@]:-}" | LC_ALL=C sort -u))
 unset IFS
 
+is_area() {
+  local n="$1" a
+  for a in "${areas_sorted[@]:-}"; do
+    [[ "$n" == "$a" ]] && return 0
+  done
+  return 1
+}
+
+argv_owned_by_area() {
+  local name="$1" a
+  for a in "${areas_sorted[@]:-}"; do
+    [[ "$name" == "$a"* ]] && return 0
+  done
+  return 1
+}
+
 tmp="$(mktemp)"
 trap 'rm -f "$tmp"' EXIT
 
@@ -59,7 +76,7 @@ trap 'rm -f "$tmp"' EXIT
 # Prefer directory / stem globs; regenerate after adding src/cli/<area>/.
 # https://github.com/actions/labeler
 
-docs:
+"area:docs":
   - changed-files:
       - any-glob-to-any-file:
           - "docs/**"
@@ -67,10 +84,11 @@ docs:
           - "NEWS.md"
           - "demos/**/*.md"
 
-ci:
+"area:ci":
   - changed-files:
       - any-glob-to-any-file:
           - ".github/**"
+          - "codecov.yml"
 
 "area:test":
   - changed-files:
@@ -92,6 +110,78 @@ EOF
     else
       printf '          - "test/%s"\n' "$name"
     fi
+  done
+  shopt -u nullglob
+
+  cat <<'EOF'
+
+"area:kit":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/DistSSHKit.jl"
+          - ".gitignore"
+          - ".vscode/**"
+          - "CONTRIBUTING.md"
+          - "LICENSE"
+          - "Project.toml"
+          - "SECURITY.md"
+EOF
+
+  shopt -s nullglob
+  for entry in "${ROOT}/src/DistSSHKit/"*; do
+    base="$(basename "$entry")"
+    if [[ -d "$entry" ]]; then
+      is_area "$base" && continue
+      [[ "$base" == "argv" ]] && continue
+      printf '          - "src/DistSSHKit/%s/**"\n' "$base"
+      continue
+    fi
+    stem="${base%.jl}"
+    is_area "$stem" && continue
+    printf '          - "src/DistSSHKit/%s.*"\n' "$stem"
+  done
+
+  for entry in "${ROOT}/src/DistSSHKit/argv/"*; do
+    [[ -e "$entry" ]] || continue
+    base="$(basename "$entry")"
+    argv_owned_by_area "$base" && continue
+    printf '          - "src/DistSSHKit/argv/%s"\n' "$base"
+  done
+
+  for entry in "${ROOT}/test/unit/DistSSHKit/"*; do
+    [[ -e "$entry" ]] || continue
+    base="$(basename "$entry")"
+    if [[ -d "$entry" ]]; then
+      is_area "$base" && continue
+      [[ "$base" == "argv" ]] && continue
+      printf '          - "test/unit/DistSSHKit/%s/**"\n' "$base"
+      continue
+    fi
+    stem="${base%.jl}"
+    is_area "$stem" && continue
+    printf '          - "test/unit/DistSSHKit/%s"\n' "$base"
+  done
+
+  for entry in "${ROOT}/test/unit/DistSSHKit/argv/"*; do
+    [[ -e "$entry" ]] || continue
+    base="$(basename "$entry")"
+    argv_owned_by_area "$base" && continue
+    printf '          - "test/unit/DistSSHKit/argv/%s"\n' "$base"
+  done
+
+  for tree in "${product_test_trees[@]}"; do
+    for entry in "${ROOT}/test/${tree}/cli/"*; do
+      [[ -e "$entry" ]] || continue
+      base="$(basename "$entry")"
+      name="$base"
+      [[ -f "$entry" ]] && name="${base%.jl}"
+      is_area "$name" && continue
+      if [[ -d "$entry" ]]; then
+        printf '          - "test/%s/cli/%s/**"\n' "$tree" "$base"
+      else
+        printf '          - "test/%s/cli/%s"\n' "$tree" "$base"
+      fi
+    done
   done
   shopt -u nullglob
 
@@ -125,9 +215,68 @@ EOF
   done
 } >"$tmp"
 
+# Every tracked file must match at least one area:* glob (minimatch-style **).
+coverage_ok=1
+if command -v python3 >/dev/null 2>&1; then
+  if ! python3 - "$ROOT" "$tmp" <<'PY'
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+root, yml = Path(sys.argv[1]), Path(sys.argv[2])
+text = yml.read_text(encoding="utf-8")
+globs = re.findall(r'^\s+- "([^"]+)"\s*$', text, re.M)
+if not globs:
+    print("no globs in generated labeler.yml", file=sys.stderr)
+    sys.exit(1)
+
+def to_re(glob):
+    i, out = 0, []
+    while i < len(glob):
+        if glob.startswith("**/", i):
+            out.append("(?:.*/)?")
+            i += 3
+            continue
+        if glob.startswith("**", i):
+            out.append(".*")
+            i += 2
+            continue
+        if glob[i] == "*":
+            out.append("[^/]*")
+            i += 1
+            continue
+        out.append(re.escape(glob[i]))
+        i += 1
+    return re.compile("^" + "".join(out) + "$")
+
+compiled = [to_re(g) for g in globs]
+files = subprocess.check_output(
+    ["git", "-C", str(root), "ls-files", "-z"], text=True
+).split("\0")
+missing = []
+for path in files:
+    if not path:
+        continue
+    if not any(rx.match(path) for rx in compiled):
+        missing.append(path)
+if missing:
+    print("unlabeled paths (add globs to gen-labeler.sh):", file=sys.stderr)
+    for p in missing:
+        print(f"  {p}", file=sys.stderr)
+    sys.exit(1)
+PY
+  then
+    coverage_ok=0
+  fi
+fi
+
 mkdir -p "$(dirname "$OUT")"
 
 if [[ "${1:-}" == "--check" ]]; then
+  if [[ "$coverage_ok" -ne 1 ]]; then
+    exit 1
+  fi
   if [[ ! -f "$OUT" ]]; then
     echo "missing $OUT — run ./.github/gen-labeler.sh" >&2
     exit 1
@@ -140,5 +289,9 @@ if [[ "${1:-}" == "--check" ]]; then
   exit 0
 fi
 
+if [[ "$coverage_ok" -ne 1 ]]; then
+  exit 1
+fi
+
 cp "$tmp" "$OUT"
-echo "wrote $OUT (${#areas_sorted[@]} areas: ${areas_sorted[*]:-})"
+echo "wrote $OUT (${#areas_sorted[@]} CLI/module areas + kit/docs/ci/test)"

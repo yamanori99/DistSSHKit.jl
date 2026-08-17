@@ -27,12 +27,15 @@ body:
       description: Same vocabulary as PR path labels. Add matching area:* labels after submit if useful.
       multiple: true
       options:
+        - ci
+        - demos
+        - docs
         - drive
+        - explain
         - go
+        - kit
         - setup
         - size
-        - explain
-        - demos
         - test
     validations:
       required: false
