@@ -7,6 +7,12 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 - Docs: `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL`, and gitignore `.distsshkit/` in
   the job project.
+- Opt-in `drive --require-all-hosts` / `DISTSSHKIT_REQUIRE_ALL_HOSTS` (and
+  `drive!(…; require_all_hosts=true)`): fail if a listed SSH host did not join
+  or post-run collect reported an error. Default remains best-effort exit 0.
+- `DISTSSHKIT_JOBS` (default 1): concurrent rsync hosts, concurrent post-run
+  collect hosts, and parallel `detect_julia_path` before sequential `size!`
+  `addprocs`. `addprocs` itself stays sequential.
 
 ## 0.3.0 (2026-08-16)
 

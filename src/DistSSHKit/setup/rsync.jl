@@ -251,55 +251,66 @@ function rsync_project_to_hosts!(
     end
 
     ssh_cmd_str = _host_sync_rsync_transport()
-    host_results = HostResult[]
-    succeeded = 0
-    failed = 0
-    for host in hosts
+    n_hosts = length(hosts)
+    host_results = Vector{HostResult}(undef, n_hosts)
+    jobs = kit_host_jobs()
+    sequential_spin = report && jobs == 1
+
+    function _rsync_host_result(host::String)::HostResult
         dir_created = false
         try
-            outcome = if report
+            outcome = if sequential_spin
                 kit_spin!("  $host: ") do
-                    _rsync_one_host!(
-                        host, local_root, remote_path, ssh_cmd_str;
-                    )
+                    _rsync_one_host!(host, local_root, remote_path, ssh_cmd_str)
                 end
             else
                 _rsync_one_host!(host, local_root, remote_path, ssh_cmd_str)
             end
             if outcome.status === :busy || outcome.status === :mkdir_fail
-                if report
-                    print_err("✗ $(outcome.message)")
-                    println()
-                end
-                push!(host_results, HostResult(host, false, outcome.message))
-                failed += 1
-                continue
+                return HostResult(host, false, outcome.message)
             end
             dir_created = outcome.dir_created
-            if report
-                print_ok("✓")
-                kit_println()
-            end
-            push!(
-                host_results,
-                HostResult(host, true, dir_created ? "rsync ok (created remote dir)" : "rsync ok"),
+            return HostResult(
+                host,
+                true,
+                dir_created ? "rsync ok (created remote dir)" : "rsync ok",
             )
-            succeeded += 1
         catch e
             msg = sprint(showerror, e)
             if dir_created
                 msg = "rsync failed after creating directory: " * msg
             end
-            if report
-                if dir_created
-                    print_err("✗ rsync failed after creating directory: $(sprint(showerror, e))")
-                else
-                    print_err("✗ $(sprint(showerror, e))")
-                end
+            return HostResult(host, false, msg)
+        end
+    end
+
+    map_host_jobs(hosts) do i, host
+        host_results[i] = _rsync_host_result(host)
+    end
+
+    succeeded = 0
+    failed = 0
+    for hr in host_results
+        if hr.ok
+            succeeded += 1
+        else
+            failed += 1
+        end
+        if report && !sequential_spin
+            kit_print("  $(hr.host): ")
+            if hr.ok
+                print_ok("✓")
+                kit_println()
+            else
+                print_err("✗ $(hr.message)")
                 println()
             end
-            push!(host_results, HostResult(host, false, msg))
-            failed += 1
+        elseif report && sequential_spin && !hr.ok
+            print_err("✗ $(hr.message)")
+            println()
+        elseif report && sequential_spin && hr.ok
+            print_ok("✓")
+            kit_println()
         end
     end
 

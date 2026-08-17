@@ -140,6 +140,29 @@ using Test
         @test occursin("--hosts", DistSSHKit.KIT_HOSTS_FLAG_HELP)
         @test occursin("DISTSSHKIT_HOSTS", DistSSHKit.KIT_HOSTS_ENV_HELP)
         @test occursin("DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL", DistSSHKit.KIT_SKIP_PKILL_ENV_HELP)
+        @test occursin("DISTSSHKIT_JOBS", DistSSHKit.KIT_JOBS_ENV_HELP)
+        @test occursin("DISTSSHKIT_REQUIRE_ALL_HOSTS", DistSSHKit.KIT_REQUIRE_ALL_HOSTS_ENV_HELP)
+    end
+
+    @testset "kit_host_jobs" begin
+        withenv("DISTSSHKIT_JOBS" => nothing) do
+            @test DistSSHKit.kit_host_jobs() == 1
+        end
+        withenv("DISTSSHKIT_JOBS" => "4") do
+            @test DistSSHKit.kit_host_jobs() == 4
+        end
+        withenv("DISTSSHKIT_JOBS" => "0") do
+            @test DistSSHKit.kit_host_jobs() == 1
+        end
+        withenv("DISTSSHKIT_JOBS" => "nope") do
+            @test DistSSHKit.kit_host_jobs() == 1
+        end
+        seen = Int[]
+        DistSSHKit.map_host_jobs(["a", "b"]) do i, host
+            push!(seen, i)
+            @test host == ["a", "b"][i]
+        end
+        @test sort(seen) == [1, 2]
     end
 
     @testset "hosts file" begin

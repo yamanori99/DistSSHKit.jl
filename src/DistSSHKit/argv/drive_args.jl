@@ -105,6 +105,8 @@ function parse_drive_args(args::Vector{String})
     sync_mode = nothing
     require_git = false
     skip_git_guard = false
+    require_all_hosts = _env_flag("DISTSSHKIT_REQUIRE_ALL_HOSTS")
+    require_all_hosts_cli = false
     hosts = Tuple{String,Union{Int,Nothing}}[]
     script_path = nothing
     script_args = String[]
@@ -161,6 +163,13 @@ function parse_drive_args(args::Vector{String})
             ))
             skip_git_guard = true
             skip_hash_check = true
+            i += 1
+        elseif arg == "--require-all-hosts"
+            require_all_hosts_cli && throw(ArgumentError(
+                "drive: --require-all-hosts specified more than once",
+            ))
+            require_all_hosts_cli = true
+            require_all_hosts = true
             i += 1
         elseif arg == "--no-log"
             enable_log = false
@@ -223,6 +232,7 @@ function parse_drive_args(args::Vector{String})
                 collect_hosts=tree_hosts,
                 collect_overwrite=merge,
                 sync_mode=nothing,
+                require_all_hosts=require_all_hosts,
                 help=false,
                 show_version=cli_session.show_version,
                 cli_session=cli_session,
@@ -245,6 +255,7 @@ function parse_drive_args(args::Vector{String})
                 collect_hosts=nothing,
                 collect_overwrite=nothing,
                 sync_mode=nothing,
+                require_all_hosts=false,
                 help=true,
                 show_version=cli_session.show_version,
                 cli_session=cli_session,
@@ -311,6 +322,7 @@ function parse_drive_args(args::Vector{String})
         collect_hosts=nothing,
         collect_overwrite=nothing,
         sync_mode=(sync_mode isa Symbol ? sync_mode : nothing),
+        require_all_hosts=require_all_hosts,
         help=false,
         show_version=cli_session.show_version,
         cli_session=cli_session,
@@ -346,6 +358,7 @@ function show_drive_requirements(; io::IO=stdout)
         "  -w, --workers N     default when host has no :N",
         "  --sync / --rsync    optional pre-run (default: none)",
         "  --require-git       $(REQUIRE_GIT_MEANING)",
+        "  --require-all-hosts fail if a listed SSH host did not join or collect failed",
         "  --output-dir PATH   result root (DISTRIBUTED_OUTPUT_DIR)",
         "  --julia PATH        remote Julia",
         "  --no-log            skip drive_*.log",
@@ -370,6 +383,9 @@ function show_drive_requirements(; io::IO=stdout)
         "  JULIA_DISTRIBUTED_EXE       default remote Julia",
         "  DISTSSHKIT_QUIET / PROGRESS / VERBOSE / YES",
         "  $(KIT_SKIP_PKILL_ENV_HELP)",
+        "  $(KIT_JOBS_ENV_HELP)",
+        "  $(KIT_REQUIRE_ALL_HOSTS_ENV_HELP)",
+        "  DISTRIBUTED_SKIP_COLLECT=1  skip post-run collect",
     )
     print_help_blank(io)
     print_help_lines(io,

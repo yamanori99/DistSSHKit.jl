@@ -8,7 +8,12 @@ Recursively pull files under `local_root` from each host (**collect-missing** /
 Uses `DISTRIBUTED_REMOTE_PROJECT_ROOT` (via `remote_path_for_ssh_collect`) to map the local root to the correct path on each host.
 Respects `--quiet` / `--progress` via kit printers (kit log still written when open).
 """
-function drive_collect_tree(local_root::AbstractString, host_names::Vector{String}; merge::Bool=false)
+function drive_collect_tree(
+    local_root::AbstractString,
+    host_names::Vector{String};
+    merge::Bool=false,
+    strict::Bool=false,
+)
     repo_root  = DistSSHKit.canonical_local_path(PROJECT_ROOT)
     local_root = DistSSHKit.canonical_local_path(local_root)
     transport = DistSSHKit._host_sync_rsync_transport()
@@ -39,6 +44,7 @@ function drive_collect_tree(local_root::AbstractString, host_names::Vector{Strin
             if host_remote === nothing
                 writeln_both("(skip: cannot resolve remote root $(repr(remote_root)))")
                 writeln_both("      hint: export DISTRIBUTED_REMOTE_PROJECT_ROOT=<abs path on SSH host>")
+                strict && (ok = false)
                 continue
             end
             host_remote = host_remote::String
@@ -49,6 +55,7 @@ function drive_collect_tree(local_root::AbstractString, host_names::Vector{Strin
                 ))
                 writeln_both("(skip: no directory on host at $host_remote)")
                 writeln_both("      hint: export DISTRIBUTED_REMOTE_PROJECT_ROOT=<repo root on SSH host>")
+                strict && (ok = false)
                 continue
             end
 

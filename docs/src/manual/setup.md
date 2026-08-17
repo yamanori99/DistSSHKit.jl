@@ -43,7 +43,7 @@ Pick **one mode** per invocation (except shared options).
 | `-h` / `--help` | Full help |
 
 `--clone` / `--rsync` never overwrite a nonempty remote path; use `--delete`
-first to replace.
+first to replace. `DISTSSHKIT_JOBS` (default 1) may rsync several hosts at once.
 
 ## Remote path
 

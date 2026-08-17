@@ -72,6 +72,16 @@ using Test
             @test raw.succeeded == 1 && raw.failed == 0
         end
 
+        _with_fake_remotes() do _
+            withenv("DISTSSHKIT_JOBS" => "2") do
+                raw = DistSSHKit.rsync_project_to_hosts!(
+                    ["host1", "host2"], project, remote_path; confirm=false, report=false,
+                )
+                @test raw.succeeded == 2 && raw.failed == 0
+                @test [hr.host for hr in raw.host_results] == ["host1", "host2"]
+            end
+        end
+
         _with_fake_remotes() do state_dir
             host = "user@host.test"
             _mark_nonempty!(state_dir, host)

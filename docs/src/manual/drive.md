@@ -22,6 +22,7 @@ driver contract, prefer [`go`](@ref Manual-go).
 | `--sync` | Git push/pull immediately before the run (**optional**; default is none) |
 | `--rsync` | Rsync deploy first (empty/missing remote, or after `setup --delete`) |
 | `--require-git` | Opt-in git parity: dirty-tree warn + remote commit must match local |
+| `--require-all-hosts` | Fail if a listed SSH host did not join, or if collect reported an error (default: best-effort, exit 0) |
 | `--skip-git-guard` | Compat no-op (parity already off) |
 | `-w` / `--workers N` | Default worker count for hosts without `:N` (also `-w:N`) |
 | `-l` / `--local N` | Alias for `local:N` (also `--local:N`; **count**, not size) |
@@ -48,6 +49,10 @@ driver contract, prefer [`go`](@ref Manual-go).
 Default pre-run sync and git parity are both **none** (same idea as
 [`go`](@ref Manual-go)). Prepare remotes with [`setup`](@ref Manual-setup),
 or pass `--sync` / `--rsync`. Use `--require-git` only on git-managed remotes.
+
+`DISTSSHKIT_REQUIRE_ALL_HOSTS=1` is the same as `--require-all-hosts`.
+`DISTSSHKIT_JOBS` (default 1) caps concurrent SSH host work for rsync, post-run
+collect, and `size` Julia-path detection.
 
 ## Prerequisites
 

@@ -126,14 +126,14 @@ function collect_drive_results!(
     if isempty(successful_hosts)
         writeln_both("")
         writeln_field("Results", display_path(results_dir, path_anchor))
-        return
+        return true
     end
 
     writeln_both("")
     if skip_collect
         writeln_both("Results saved locally (no remote collection needed).")
         writeln_field("Results", display_path(results_dir, path_anchor))
-        return
+        return true
     end
 
     collect_roots = distributed_collect_root_dirs(script_dir, DistSSHKit.canonical_local_path(PROJECT_ROOT))
@@ -142,8 +142,13 @@ function collect_drive_results!(
     end
     writeln_both("Collecting results from remote hosts..."; color=:light_black)
     repo_ra = DistSSHKit.canonical_local_path(PROJECT_ROOT)
-    for host in unique(successful_hosts)
-        write_both("  $host: ")
+    hosts_u = unique(successful_hosts)
+    n_hosts = length(hosts_u)
+    totals = zeros(Int, n_hosts)
+    errs = Vector{Any}(undef, n_hosts)
+    fill!(errs, nothing)
+
+    DistSSHKit.map_host_jobs(hosts_u) do i, host
         total_for_host = 0
         host_err = nothing
         try
@@ -219,22 +224,33 @@ function collect_drive_results!(
                     catch; end
                 end
             end
-            if host_err !== nothing
-                print_progress_err("✗ ($host_err)")
-            elseif total_for_host == 0
-                print_progress_warn("(nothing to collect)")
-            else
-                print_ok("✓ ($total_for_host file$(total_for_host == 1 ? "" : "s"))")
-            end
-            writeln_both("")
         catch e
-            print_progress_err("✗ ($e)")
-            writeln_both("")
+            host_err === nothing && (host_err = e)
         end
+        totals[i] = total_for_host
+        errs[i] = host_err
+    end
+
+    collect_ok = true
+    for i in 1:n_hosts
+        host = hosts_u[i]
+        total_for_host = totals[i]
+        host_err = errs[i]
+        write_both("  $host: ")
+        if host_err !== nothing
+            collect_ok = false
+            print_progress_err("✗ ($host_err)")
+        elseif total_for_host == 0
+            print_progress_warn("(nothing to collect)")
+        else
+            print_ok("✓ ($total_for_host file$(total_for_host == 1 ? "" : "s"))")
+        end
+        writeln_both("")
     end
     coll_disp = join(
         (display_path(String(p), path_anchor) for p in collect_roots),
         ", ",
     )
     writeln_field("Results", coll_disp)
+    return collect_ok
 end

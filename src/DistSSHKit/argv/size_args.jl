@@ -28,6 +28,11 @@ function show_size_usage(; io::IO=stdout)
         "  -h, --help          this help",
     )
     print_help_blank(io)
+    print_help_section("Environment"; io=io)
+    print_help_lines(io,
+        "  $(KIT_JOBS_ENV_HELP)",
+    )
+    print_help_blank(io)
     print_help_lines(io,
         "Details: docs (manual/size). See also: drive, setup.",
     )
