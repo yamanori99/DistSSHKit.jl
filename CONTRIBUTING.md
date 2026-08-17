@@ -63,10 +63,12 @@ Exactly three pins, in [`.github/julia-slots.env`](.github/julia-slots.env). Do 
 | Slot | Role | Required |
 | --- | --- | --- |
 | **min** | `Project.toml` julia floor. Pkg.test, Aqua, JETLS, Documenter, bake, PR E2E, GHCR worker | yes |
-| **max** | Newest tagged or prerelease (`versions.json`). Pkg.test, Aqua, JETLS | yes |
+| **max** | Newest tagged or prerelease (`versions.json`). Pkg.test, Aqua | yes |
 | **tip** | Next-minor nightly. Pkg.test, Aqua. `continue-on-error` | no |
 
-When a new RC lands, change `JULIA_SLOT_MAX` only. When bumping compat, raise `JULIA_SLOT_MIN` (and the worker Dockerfile / WSL `--default-channel`) in the same PR. JETLS has no **tip** until that runtime is listed.
+JETLS is min plus `JULIA_SLOT_JETLS_MAX` (job name still `JETLS - max`). That pin lags when `max` / `tip` move past what JETLS lists (today 1.12.2–1.13). Raise it only after JETLS supports that runtime. No JETLS **tip**.
+
+When a new RC lands, change `JULIA_SLOT_MAX` only. When bumping compat, raise `JULIA_SLOT_MIN` (and the worker Dockerfile / WSL `--default-channel`) in the same PR.
 
 ### PR CI
 

@@ -4,7 +4,7 @@ description: Resolve min/max/tip from .github/julia-slots.env; optionally setup-
 
 inputs:
   slot:
-    description: min, max, or tip
+    description: min, max, tip, or jetls-max
     required: true
   setup:
     description: "true to run julia-actions/setup-julia"
@@ -29,11 +29,11 @@ runs:
       run: |
         set -euo pipefail
         case "${SLOT}" in
-          min|max|tip) ;;
+          min|max|tip|jetls-max) ;;
           *) echo "unknown slot: ${SLOT}" >&2; exit 1 ;;
         esac
         file="${GITHUB_WORKSPACE}/.github/julia-slots.env"
-        var="JULIA_SLOT_$(printf '%s' "${SLOT}" | tr '[:lower:]' '[:upper:]')"
+        var="JULIA_SLOT_$(printf '%s' "${SLOT}" | tr '[:lower:]-' '[:upper:]_')"
         version="$(grep -E "^${var}=" "${file}" | cut -d= -f2- | tr -d '\r')"
         if [ -z "${version}" ]; then
           echo "missing ${var} in ${file}" >&2
