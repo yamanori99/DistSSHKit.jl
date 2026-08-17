@@ -7,10 +7,6 @@ Linux, and WSL2 Ubuntu** (not native Windows).
 These days, even small labs and individuals often have several high-performance
 machines or workstations. DistSSHKit helps you put that hardware to work.
 
-This package runs **one** job (`go` / `drive`). A sibling **DistSSHKitQueue**
-is in development for a small-lab FIFO across those jobs. It is not a DistSSHKit
-command; see [#50](https://github.com/yamanori99/DistSSHKit.jl/issues/50).
-
 ## What is DistSSHKit?
 
 Two ways to run (job shape):

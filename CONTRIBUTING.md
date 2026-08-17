@@ -5,6 +5,23 @@ Internals of this repo.
 - Users: [stable docs](https://yamanori99.github.io/DistSSHKit.jl/stable/) (`docs/`), [README.md](README.md), [NEWS.md](NEWS.md)
 - Dev docs: [dev](https://yamanori99.github.io/DistSSHKit.jl/dev/)
 
+## Feature freeze
+
+`0.3` is the job kit (`go` / `drive` / `setup` and the bang APIs). New features
+are paused so [DistSSHKitQueue.jl](https://github.com/yamanori99/DistSSHKitQueue.jl)
+and other research can pin this surface. README points here.
+
+**Lands:** happy-path bugs (ordinary `~/` roots, default `drive` / `go` /
+`setup`); CI / Julia slots / Aqua / JETLS drift; a hook DistSSHKitQueue.jl cannot implement
+without the kit (Enhancement Issue first, then a small PR).
+
+**Does not land:** new job shapes, CLI areas, or scheduler-like flags; breaking
+API or behavior unless the current contract is unusable.
+
+Chat: [Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions).
+Tracked bugs stay Issues. Direction for the kit as a whole is still
+[Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26).
+
 ## Requirements
 
 macOS, Linux, or WSL2 Ubuntu. Not native Windows (the kit shells out to `ssh` / `rsync`).
@@ -148,6 +165,8 @@ Not a calendar. Cut when [NEWS.md](NEWS.md) **Unreleased** has something General
 | --- | --- |
 | Happy-path bug (ordinary `~/` roots, default `drive` / `go` / `setup`) | Yes, that patch promptly |
 | Opt-in flags, docs, CI, labels, internal cache | When someone needs it on General, **or** those items have sat in Unreleased for **two weeks** |
+
+During the [feature freeze](#feature-freeze), still cut happy-path bugs promptly. Do not use the two-week rule for opt-in flags, docs, or CI unless a General user or DistSSHKitQueue.jl needs them.
 
 ### After a cut merges
 
