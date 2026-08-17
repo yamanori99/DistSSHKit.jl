@@ -30,6 +30,8 @@ The difference is **what the script is**:
 
 If you want “run this job on a few machines,” start with **go**.
 If you want one master farming work with `pmap` (and friends), use **drive**.
+A queue of many jobs over time is **DistSSHKitQueue** (in development), not a
+kit CLI; see [#50](https://github.com/yamanori99/DistSSHKit.jl/issues/50).
 
 ## Flag consistency (read once)
 

@@ -136,7 +136,7 @@ Helpers: `src/DistSSHKit/explain.jl`. Surface is `hint_surface(session)`. Keep d
 
 **Issues** (Bug / Enhancement forms only): `bug` or `enhancement`. The area dropdown is triage; add `area:*` if useful. Usage questions are Discussions. Confirmed bugs are Issues. `breaking` and `cut` are PR labels. Direction: [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26). Security: [SECURITY.md](SECURITY.md).
 
-Maintainer memo: [#50](https://github.com/yamanori99/DistSSHKit.jl/issues/50) (simple scheduler, handful of machines) is **not** a kit feature. The hall is [DistSSHKitQueue.jl](https://github.com/yamanori99/DistSSHKitQueue.jl) (private for now; `DESIGN.md`). Do not add `schedule` here. Close #50 later, when Queue is far enough to point at, and drop it from the kit `v0.4.0` milestone. Thread: [comment](https://github.com/yamanori99/DistSSHKit.jl/issues/50#issuecomment-5317919861).
+Maintainer memo: [#50](https://github.com/yamanori99/DistSSHKit.jl/issues/50) is closed (`not_planned` in-kit). The hall is [DistSSHKitQueue.jl](https://github.com/yamanori99/DistSSHKitQueue.jl) (private for now). Do not add `schedule` here.
 
 **Discussions**: Q&A, Ideas (promote to an Enhancement Issue when tracking), General, Show and tell, Polls, Announcements. Registry cuts do not need an Announcements post; the GitHub Release is enough.
 
