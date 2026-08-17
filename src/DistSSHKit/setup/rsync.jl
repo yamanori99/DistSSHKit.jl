@@ -26,6 +26,31 @@ function _host_sync_rsync_argv()::Vector{String}
     return ["rsync"]
 end
 
+"""Run rsync with `--files-from` via a temp list, not `stdin`.
+
+Julia 1.14 `pipeline(; stdin=buf)` waits for the write and throws `EPIPE` if the
+child exits without reading stdin (fake rsync, or rsync dying on argv). A list
+file is the same rsync contract without that pipe.
+"""
+function _run_rsync_files_from(
+    rsync_bin::Vector{String},
+    opts::Vector{String},
+    src::AbstractString,
+    dest::AbstractString,
+    files::Vector{String};
+    stderr=stderr,
+)
+    mktemp() do path, io
+        for rel in files
+            println(io, rel)
+        end
+        close(io)
+        cmd = Cmd(vcat(rsync_bin, opts, ["--files-from=$path", String(src), String(dest)]))
+        run(pipeline(cmd; stderr=stderr))
+    end
+    return nothing
+end
+
 function _host_sync_remote_shell_cmd(host::String, remote_script::String)::Cmd
     custom = strip(get(ENV, "DISTSSHKIT_TEST_SSH", ""))
     if !isempty(custom)
