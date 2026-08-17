@@ -1,0 +1,29 @@
+/* Slightly larger sidebar logo than Documenter default (6rem). */
+#documenter .docs-sidebar .docs-logo > img {
+  max-height: 8rem;
+}
+
+/* Version selector: Documenter puts it at the bottom of the sidebar. */
+#documenter .docs-sidebar {
+  display: flex;
+  flex-direction: column;
+}
+#documenter .docs-sidebar > .docs-logo {
+  order: 0;
+}
+#documenter .docs-sidebar > .docs-package-name {
+  order: 1;
+}
+#documenter .docs-sidebar > .docs-version-selector {
+  order: 2;
+  margin: 0.5rem 0.75rem 0;
+}
+#documenter .docs-sidebar > .docs-search-query {
+  order: 3;
+}
+#documenter .docs-sidebar > .docs-menu {
+  order: 4;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
