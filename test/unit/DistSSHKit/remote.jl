@@ -185,6 +185,20 @@ using Test
         @test pq_abs == abs
     end
 
+    @testset "detect_julia_path cache" begin
+        empty!(DistSSHKit._DETECT_JULIA_PATH_CACHE)
+        try
+            @test DistSSHKit.detect_julia_path("") === nothing
+            @test !haskey(DistSSHKit._DETECT_JULIA_PATH_CACHE, "")
+            @test DistSSHKit.detect_julia_path("no-such-host.invalid") === nothing
+            @test DistSSHKit._DETECT_JULIA_PATH_CACHE["no-such-host.invalid"] === nothing
+            DistSSHKit._DETECT_JULIA_PATH_CACHE["cache-hit.host"] = "/opt/julia"
+            @test DistSSHKit.detect_julia_path("cache-hit.host") == "/opt/julia"
+        finally
+            empty!(DistSSHKit._DETECT_JULIA_PATH_CACHE)
+        end
+    end
+
     @test DistSSHKit.get_remote_julia_version("no-such-host.invalid", "/usr/bin/julia") === nothing
     @test DistSSHKit.detect_julia_path("no-such-host.invalid") === nothing
     @test DistSSHKit.resolve_remote_julia("no-such-host.invalid", "auto") === nothing
