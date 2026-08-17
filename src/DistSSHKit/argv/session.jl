@@ -35,6 +35,8 @@ const KIT_VERBOSE_ENV_HELP =
     "DISTSSHKIT_VERBOSE                Same as --verbose"
 const KIT_HOSTS_ENV_HELP =
     "DISTSSHKIT_HOSTS                  Same as --hosts"
+const KIT_SKIP_PKILL_ENV_HELP =
+    "DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL  1: skip pkill of julia --worker / --bind-to"
 
 """CLI default when no verbosity flag/env is set: live bar on a TTY, else verbose."""
 kit_cli_auto_verbosity(; live::Union{Nothing,Bool}=nothing)::Symbol =

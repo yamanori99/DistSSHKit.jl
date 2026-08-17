@@ -27,7 +27,7 @@ Pick **one mode** per invocation (except shared options).
 | `--pull` | `git pull` on laptop first, then remotes (no push) |
 | `--instantiate` | `Pkg.instantiate` on remotes after deploy |
 | `--runtest` | `Pkg.test()` of the **job** project on remotes (not DistSSHKit's tests) |
-| `--cleanup` | Kill stale Julia worker processes (local + remotes) |
+| `--cleanup` | Kill stale Julia worker processes (local + remotes); `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` skips the `pkill` |
 | `--delete` | Remove remote project dirs (destructive; confirm unless `-y`) |
 | `--repo URL` | Clone URL (default: local `origin`) |
 | `--remote-path PATH` | Remote repo root (alias `--remote-dir`; or `DISTRIBUTED_REMOTE_PROJECT_ROOT`) |
@@ -59,3 +59,4 @@ host** to an absolute path. Prefer an absolute remote root when you can.
 
 No remote `.git/` — that is fine. `go` / `drive` do not pre-run sync or
 require git parity by default. Kit logs: `{project}/.distsshkit/setup/`.
+Ignore `.distsshkit/` in the job project ([User Guide](@ref Manual)).
