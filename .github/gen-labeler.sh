@@ -12,7 +12,8 @@
 #   - SSH E2E entry (`test/e2e.jl`, `test/support/ssh_e2e.jl`) also gets each
 #     CLI area (drive / go / setup / size): the suite is those commands on
 #     real SSH, not a fourth product-test tree.
-#   - product docs → docs (docs/**, README.md, demos markdown — not CONTRIBUTING)
+#   - product docs → docs (docs/**, README.md, NEWS.md, demos markdown — not
+#     CONTRIBUTING)
 #   - .github/** → ci
 # No catch-all area:kit — shared paths are typed via type labels only.
 #
@@ -63,6 +64,7 @@ docs:
       - any-glob-to-any-file:
           - "docs/**"
           - "README.md"
+          - "NEWS.md"
           - "demos/**/*.md"
 
 ci:

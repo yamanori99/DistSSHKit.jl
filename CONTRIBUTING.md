@@ -136,6 +136,7 @@ Helpers: `src/DistSSHKit/explain.jl`. Surface is `hint_surface(session)`. Keep d
   excludes (labeler ORs them and tags unrelated files).
 - `test/e2e.jl` and `test/support/ssh_e2e.jl` also get CLI areas (`drive` / `go` / `setup` / `size`)
 - Product tests under `unit/` and `integration/` keep only their `area:<area>`
+- `docs/**`, `README.md`, `NEWS.md`, `demos/**/*.md` → `docs` (not `CONTRIBUTING.md`)
 - `.github/**` → `ci`
 - No `area:kit`
 
