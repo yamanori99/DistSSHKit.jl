@@ -27,7 +27,10 @@ Suite inventory (what each `@testset` proves): [`test/README.md`](../../test/REA
   is checked by reading `e2e_sync_marker.txt` on the workers.
   The rsync path still excludes `.git/` and does not claim parity.
 
-Worker image pins Julia **1.12** (juliaup `--default-channel 1.12`) to match CI controllers so `--check` can run **without** `--ignore-julia-version`. Install policy: [Requirements](https://yamanori99.github.io/DistSSHKit.jl/dev/requirements/).
+Worker image pins Julia to CI slot **min** (juliaup `--default-channel`, today **1.12**)
+so `--check` can run **without** `--ignore-julia-version`. Pins live in
+[`.github/julia-slots.env`](../../.github/julia-slots.env). Install policy:
+[Requirements](https://yamanori99.github.io/DistSSHKit.jl/dev/requirements/).
 
 On macOS, publish ports on `127.0.0.1` (Docker Desktop / Colima defaults) so macOS 15 Local
 Network Privacy does not block SSH from the controller.
@@ -36,7 +39,7 @@ Network Privacy does not block SSH from the controller.
 
 | Path | Role |
 | --- | --- |
-| [`Dockerfile`](Dockerfile) / [`start.sh`](start.sh) | Worker image (sshd, rsync, git, Julia 1.12 via juliaup) |
+| [`Dockerfile`](Dockerfile) / [`start.sh`](start.sh) | Worker image (sshd, rsync, git, Julia min via juliaup) |
 | [`compose.yml`](compose.yml) | Two workers (`worker-1` / `worker-2`) |
 | [`scripts/gen-keys.sh`](scripts/gen-keys.sh) | Controller + inter-worker keys, SSH config |
 | [`scripts/up.sh`](scripts/up.sh) | Keys → compose up → wait (`--e2e` also runs the suite) |

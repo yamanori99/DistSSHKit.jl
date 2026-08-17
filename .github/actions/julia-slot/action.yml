@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+name: julia-slot
+description: Resolve min/max/tip from .github/julia-slots.env; optionally setup-julia
+
+inputs:
+  slot:
+    description: min, max, or tip
+    required: true
+  setup:
+    description: "true to run julia-actions/setup-julia"
+    required: false
+    default: "true"
+
+outputs:
+  version:
+    description: Pin from julia-slots.env
+    value: ${{ steps.pin.outputs.version }}
+  slot:
+    description: Slot name
+    value: ${{ steps.pin.outputs.slot }}
+
+runs:
+  using: composite
+  steps:
+    - id: pin
+      shell: bash
+      env:
+        SLOT: ${{ inputs.slot }}
+      run: |
+        set -euo pipefail
+        case "${SLOT}" in
+          min|max|tip) ;;
+          *) echo "unknown slot: ${SLOT}" >&2; exit 1 ;;
+        esac
+        file="${GITHUB_WORKSPACE}/.github/julia-slots.env"
+        var="JULIA_SLOT_$(printf '%s' "${SLOT}" | tr '[:lower:]' '[:upper:]')"
+        version="$(grep -E "^${var}=" "${file}" | cut -d= -f2- | tr -d '\r')"
+        if [ -z "${version}" ]; then
+          echo "missing ${var} in ${file}" >&2
+          exit 1
+        fi
+        echo "version=${version}" >> "${GITHUB_OUTPUT}"
+        echo "slot=${SLOT}" >> "${GITHUB_OUTPUT}"
+        echo "Julia slot ${SLOT} -> ${version}"
+    - uses: julia-actions/setup-julia@v3
+      if: ${{ inputs.setup == 'true' }}
+      with:
+        version: ${{ steps.pin.outputs.version }}

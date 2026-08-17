@@ -7,8 +7,7 @@ Internals of this repo. Users: [stable docs](https://yamanori99.github.io/DistSS
 macOS, Linux, or WSL2 Ubuntu. Not native Windows (the kit shells out to `ssh` / `rsync`).
 
 - Library, `Pkg.test()`, `julia -m DistSSHKit`, and docs: Julia **1.12+**
-  (`~1.13.0-0` when that channel exists)
-- SSH: Git, OpenSSH, rsync. Match remote **major.minor** (CI workers are 1.12)
+- SSH: Git, OpenSSH, rsync. Match remote **major.minor** (E2E workers = slot **min**)
 
 Prefer [juliaup](https://github.com/JuliaLang/juliaup). Details: [Requirements](https://yamanori99.github.io/DistSSHKit.jl/dev/requirements/).
 
@@ -34,7 +33,7 @@ On 1.12+, `julia --project=. -m DistSSHKit …` matches `Pkg.add`.
 julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
-Do this on 1.12 / 1.13. Layout: [test/README.md](test/README.md).
+Do this on slot **min** and **max** (and **tip** if you have nightly). Layout: [test/README.md](test/README.md).
 
 Smoke (1.12+; [`demos/README.md`](demos/README.md)):
 
@@ -57,13 +56,27 @@ DISTSSHKIT_CODE_COVERAGE=1 testenv/docker-ssh/scripts/up.sh --e2e
 
 See [testenv/docker-ssh/README.md](testenv/docker-ssh/README.md). Skip the image build with `DISTSSHKIT_WORKER_IMAGE=ghcr.io/yamanori99/distsshkit-linux-ssh-worker:latest`. Mac-only workers (not CI): [testenv/apple-container-ssh](testenv/apple-container-ssh).
 
+### Julia slots
+
+Exactly three pins, in [`.github/julia-slots.env`](.github/julia-slots.env). Do not add a fourth version job. Slide the pin; keep job names `min` / `max` / `tip`.
+
+| Slot | Role | Required |
+| --- | --- | --- |
+| **min** | `Project.toml` julia floor. Pkg.test, Aqua, JETLS, Documenter, bake, PR E2E, GHCR worker | yes |
+| **max** | Newest tagged or prerelease (`versions.json`). Pkg.test, Aqua, JETLS | yes |
+| **tip** | Next-minor nightly. Pkg.test, Aqua. `continue-on-error` | no |
+
+When a new RC lands, change `JULIA_SLOT_MAX` only. When bumping compat, raise `JULIA_SLOT_MIN` (and the worker Dockerfile / WSL `--default-channel`) in the same PR. JETLS has no **tip** until that runtime is listed.
+
 ### PR CI
 
-Ubuntu: `Pkg.test` (1.12–1.13), JETLS, Aqua, Documenter (1.12), Gitleaks. Linux E2E runs if `src/`, `test/`, `demos/`, `testenv/`, `Project.toml`, or the E2E workflow changed.
+Ubuntu: `Pkg.test` min / max / tip, JETLS min / max, Aqua min / max / tip, Documenter min, Gitleaks. Linux E2E (min) runs if `src/`, `test/`, `demos/`, `testenv/`, `Project.toml`, or the E2E workflow changed.
 
 These files alone skip the heavy steps (job still starts; Pkg.test / JETLS / Aqua / Documenter do not run): `README.md`, `CONTRIBUTING.md`, `NEWS.md`, `SECURITY.md`, `LICENSE`, `.gitignore`, `.github/pull_request_template.md`. A new root markdown file stays heavy until listed in [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml). Changes under `docs/src` still run those jobs. A `cut` label skips none of this: Pkg.test, JETLS, Aqua, Documenter, and Linux E2E all run. macOS / WSL stay on `E2E daily`, not the PR.
 
-Required to merge (job names): `Pkg.test` 1.12–1.13, `JETLS` 1.12–1.13, `Aqua` 1.12–1.13, `Documenter` 1.12, `Gitleaks`, `ubuntu-latest → ubuntu-24.04`, `PR label`. A skipped heavy step still leaves the job green.
+Required to merge (full job names): `Pkg.test - min - ubuntu-latest`, `Pkg.test - max - ubuntu-latest`, `JETLS - min - ubuntu-latest`, `JETLS - max - ubuntu-latest`, `Aqua - min - ubuntu-latest`, `Aqua - max - ubuntu-latest`, `Documenter - min - ubuntu-latest`, `Gitleaks`, `ubuntu-latest → ubuntu-24.04`, `PR label`. Tip jobs are allow-failure. A skipped heavy step still leaves the job green.
+
+**Once:** GitHub required checks used `Pkg.test - Julia 1.12 - ubuntu-latest` style names. After this lands, set protection to the slot names above.
 
 ### Local
 
@@ -91,7 +104,7 @@ JETLS is the type gate. Do not commit `.vscode/settings.json` to silence the Lan
 
 ### Weekly CI
 
-Sunday 10:00 JST or Run workflow `CI weekly`: same `Pkg.test` / JETLS / Aqua matrix as a PR (no coverage). Not a PR check. Catches Julia 1.13 / Aqua / JETLS `@release` drift when nothing merged that week. Failure opens Issue `CI weekly failed` (`ci`).
+Sunday 10:00 JST or Run workflow `CI weekly`: same `Pkg.test` / JETLS / Aqua slots as a PR (no coverage). Not a PR check. Catches max / Aqua / JETLS `@release` drift when nothing merged that week. Failure of min/max jobs opens Issue `CI weekly failed` (`ci`); tip is omitted from that notify.
 
 ## Workflow
 

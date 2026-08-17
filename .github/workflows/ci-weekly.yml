@@ -1,7 +1,8 @@
 name: CI weekly
 
-# Not on pull_request: insurance for toolchain drift (Julia 1.13, Aqua, JETLS
-# @release) when no PR ran that week. PR / main push stay the gate.
+# Not on pull_request: insurance for max / tip / Aqua / JETLS @release drift
+# when no PR ran that week. PR / main push stay the gate.
+# tip jobs are continue-on-error and omitted from notify.
 on:
   workflow_dispatch:
   # Sunday 10:00 JST (UTC 01:00). Misses E2E daily (UTC 19:00).
@@ -17,94 +18,131 @@ permissions:
   actions: write # julia-actions/cache delete-old-caches
 
 jobs:
-  test-1-12:
-    name: Pkg.test - Julia 1.12 - ubuntu-latest
+  test-min:
+    name: Pkg.test - min - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-      - uses: julia-actions/setup-julia@v3
+      - uses: ./.github/actions/julia-slot
         with:
-          version: "1.12"
+          slot: min
       - uses: julia-actions/cache@v3
       - uses: ./.github/actions/pkg-test
 
-  test-1-13:
-    name: Pkg.test - Julia 1.13 - ubuntu-latest
+  test-max:
+    name: Pkg.test - max - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-      - uses: julia-actions/setup-julia@v3
+      - uses: ./.github/actions/julia-slot
         with:
-          version: "~1.13.0-0"
+          slot: max
       - uses: julia-actions/cache@v3
       - uses: ./.github/actions/pkg-test
 
-  jetls-1-12:
-    name: JETLS - Julia 1.12 - ubuntu-latest
+  test-tip:
+    name: Pkg.test - tip - ubuntu-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/julia-slot
+        with:
+          slot: tip
+      - uses: julia-actions/cache@v3
+      - uses: ./.github/actions/pkg-test
+
+  jetls-min:
+    name: JETLS - min - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - id: files
         run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/julia-slot
+        id: julia
+        with:
+          slot: min
+          setup: "false"
       - uses: aviatesk/JETLS.jl/.github/actions/check@release
         with:
           files: ${{ steps.files.outputs.list }}
-          julia-version: "1.12"
+          julia-version: ${{ steps.julia.outputs.version }}
           exit-severity: hint
           progress: none
 
-  jetls-1-13:
-    name: JETLS - Julia 1.13 - ubuntu-latest
+  jetls-max:
+    name: JETLS - max - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - id: files
         run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/julia-slot
+        id: julia
+        with:
+          slot: max
+          setup: "false"
       - uses: aviatesk/JETLS.jl/.github/actions/check@release
         with:
           files: ${{ steps.files.outputs.list }}
-          julia-version: "~1.13.0-0"
+          julia-version: ${{ steps.julia.outputs.version }}
           exit-severity: hint
           progress: none
 
-  aqua-1-12:
-    name: Aqua - Julia 1.12 - ubuntu-latest
+  aqua-min:
+    name: Aqua - min - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - uses: julia-actions/setup-julia@v3
+      - uses: ./.github/actions/julia-slot
         with:
-          version: "1.12"
+          slot: min
       - uses: julia-actions/cache@v3
       - name: Aqua.test_all (latest Aqua)
         run: ./.github/aqua-check.sh
 
-  aqua-1-13:
-    name: Aqua - Julia 1.13 - ubuntu-latest
+  aqua-max:
+    name: Aqua - max - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - uses: julia-actions/setup-julia@v3
+      - uses: ./.github/actions/julia-slot
         with:
-          version: "~1.13.0-0"
+          slot: max
+      - uses: julia-actions/cache@v3
+      - name: Aqua.test_all (latest Aqua)
+        run: ./.github/aqua-check.sh
+
+  aqua-tip:
+    name: Aqua - tip - ubuntu-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/julia-slot
+        with:
+          slot: tip
       - uses: julia-actions/cache@v3
       - name: Aqua.test_all (latest Aqua)
         run: ./.github/aqua-check.sh
 
   notify:
     needs:
-      - test-1-12
-      - test-1-13
-      - jetls-1-12
-      - jetls-1-13
-      - aqua-1-12
-      - aqua-1-13
+      - test-min
+      - test-max
+      - jetls-min
+      - jetls-max
+      - aqua-min
+      - aqua-max
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

@@ -33,9 +33,9 @@ jobs:
         with:
           # Need full history so "last commit touching file" timestamps are correct.
           fetch-depth: 0
-      - uses: julia-actions/setup-julia@v3
+      - uses: ./.github/actions/julia-slot
         with:
-          version: "1.12"
+          slot: min
       - name: Bake SVG derivatives
         run: julia docs/src/assets/bake.jl
       - name: Check committed SVG assets match bake

@@ -46,12 +46,12 @@ jobs:
             echo "e2e=${FILTER_E2E}" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: julia-actions/setup-julia@v3
+      - uses: ./.github/actions/julia-slot
         if: steps.gate.outputs.e2e == 'true'
         id: julia
         with:
-          version: "1.12"
-      - name: Julia ${{ steps.julia.outputs.julia-version }}
+          slot: min
+      - name: Julia ${{ steps.julia.outputs.version }}
         if: steps.gate.outputs.e2e == 'true'
         run: julia --version
 

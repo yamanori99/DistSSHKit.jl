@@ -15,9 +15,10 @@ permissions:
   contents: read
 
 jobs:
-  # Literal names: skipped matrix jobs leave ${{ matrix.minor }} unexpanded.
-  jetls-1-12:
-    name: JETLS - Julia 1.12 - ubuntu-latest
+  # Literal names: skipped matrix jobs leave ${{ matrix.* }} unexpanded.
+  # No tip job until JETLS lists that runtime (today 1.12.2–1.13).
+  jetls-min:
+    name: JETLS - min - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -27,18 +28,23 @@ jobs:
       - id: files
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/julia-slot
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
+        id: julia
+        with:
+          slot: min
+          setup: "false"
       # Official check action: https://aviatesk.github.io/JETLS.jl/dev/cli-check/#cli-check/github-actions
-      # Supported runtimes: Julia 1.12.2–1.13. Action default julia-version is 1.12.
       - uses: aviatesk/JETLS.jl/.github/actions/check@release
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         with:
           files: ${{ steps.files.outputs.list }}
-          julia-version: "1.12"
+          julia-version: ${{ steps.julia.outputs.version }}
           exit-severity: hint
           progress: none
 
-  jetls-1-13:
-    name: JETLS - Julia 1.13 - ubuntu-latest
+  jetls-max:
+    name: JETLS - max - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -48,11 +54,16 @@ jobs:
       - id: files
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/julia-slot
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
+        id: julia
+        with:
+          slot: max
+          setup: "false"
       - uses: aviatesk/JETLS.jl/.github/actions/check@release
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         with:
           files: ${{ steps.files.outputs.list }}
-          # Same 1.13 channel as Pkg.test (includes RCs until 1.13 is stable).
-          julia-version: "~1.13.0-0"
+          julia-version: ${{ steps.julia.outputs.version }}
           exit-severity: hint
           progress: none
