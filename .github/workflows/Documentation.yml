@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   build:
-    name: Documenter - Julia 1.12 - ubuntu-latest
+    name: Documenter - min - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -29,10 +29,10 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/ci-heavy
         id: detect
-      - uses: julia-actions/setup-julia@v3
+      - uses: ./.github/actions/julia-slot
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         with:
-          version: "1.12"
+          slot: min
       - uses: julia-actions/cache@v3
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
       - name: Install docs dependencies
