@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   # Literal names: skipped matrix jobs leave ${{ matrix.* }} unexpanded.
-  # No tip job until JETLS lists that runtime (today 1.12.2–1.13).
+  # Ceiling is JULIA_SLOT_JETLS_MAX (JETLS 1.12.2–1.13), not slot max/tip.
   jetls-min:
     name: JETLS - min - ubuntu-latest
     runs-on: ubuntu-latest
@@ -58,7 +58,7 @@ jobs:
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         id: julia
         with:
-          slot: max
+          slot: jetls-max
           setup: "false"
       - uses: aviatesk/JETLS.jl/.github/actions/check@release
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'

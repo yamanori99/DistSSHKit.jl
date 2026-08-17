@@ -86,7 +86,7 @@ jobs:
       - uses: ./.github/actions/julia-slot
         id: julia
         with:
-          slot: max
+          slot: jetls-max
           setup: "false"
       - uses: aviatesk/JETLS.jl/.github/actions/check@release
         with:
