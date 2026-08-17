@@ -2,7 +2,7 @@
 # Prefer directory / stem globs; regenerate after adding src/cli/<area>/.
 # https://github.com/actions/labeler
 
-docs:
+"area:docs":
   - changed-files:
       - any-glob-to-any-file:
           - "docs/**"
@@ -10,10 +10,11 @@ docs:
           - "NEWS.md"
           - "demos/**/*.md"
 
-ci:
+"area:ci":
   - changed-files:
       - any-glob-to-any-file:
           - ".github/**"
+          - "codecov.yml"
 
 "area:test":
   - changed-files:
@@ -27,6 +28,34 @@ ci:
           - "test/runtests.jl"
           - "test/support/**"
           - "test/support.jl"
+
+"area:kit":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/DistSSHKit.jl"
+          - ".gitignore"
+          - ".vscode/**"
+          - "CONTRIBUTING.md"
+          - "LICENSE"
+          - "Project.toml"
+          - "SECURITY.md"
+          - "src/DistSSHKit/display.*"
+          - "src/DistSSHKit/distributed.*"
+          - "src/DistSSHKit/hosts.*"
+          - "src/DistSSHKit/remote.*"
+          - "src/DistSSHKit/argv/args.jl"
+          - "src/DistSSHKit/argv/session.jl"
+          - "test/unit/DistSSHKit/display.jl"
+          - "test/unit/DistSSHKit/distributed.jl"
+          - "test/unit/DistSSHKit/host_project_toml.jl"
+          - "test/unit/DistSSHKit/hosts.jl"
+          - "test/unit/DistSSHKit/main_dispatch.jl"
+          - "test/unit/DistSSHKit/module.jl"
+          - "test/unit/DistSSHKit/remote.jl"
+          - "test/unit/DistSSHKit/setup_api.jl"
+          - "test/unit/DistSSHKit/argv/args.jl"
+          - "test/unit/DistSSHKit/argv/session.jl"
+          - "test/integration/cli/help.jl"
 
 "area:demos":
   - changed-files:

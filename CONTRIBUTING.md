@@ -148,16 +148,25 @@ Maintainer memo: [#50](https://github.com/yamanori99/DistSSHKit.jl/issues/50) is
 ```
 
 - `src/cli/<area>/` → `area:<area>` (`explain` / `demos` too)
+- Shared kit (`src/DistSSHKit.jl`, leftover DistSSHKit / argv stems, matching
+  unit tests, shared `test/*/cli/` files, package meta) → `area:kit`
 - Harness under `test/` (not `unit/` / `integration/`) and `testenv/**` →
   `area:test`. Globs are positive paths from `gen-labeler.sh`; do not add `!`
-  excludes (labeler ORs them and tags unrelated files).
+  excludes (labeler ORs them as "not this path" and tags unrelated files).
 - `test/e2e.jl` and `test/support/ssh_e2e.jl` also get CLI areas (`drive` / `go` / `setup` / `size`)
 - Product tests under `unit/` and `integration/` keep only their `area:<area>`
-- `docs/**`, `README.md`, `NEWS.md`, `demos/**/*.md` → `docs` (not `CONTRIBUTING.md`)
-- `.github/**` → `ci`
-- No `area:kit`
+  (plus `area:kit` when the file is leftover shared kit)
+- `docs/**`, `README.md`, `NEWS.md`, `demos/**/*.md` → `area:docs`
+- `.github/**`, `codecov.yml` → `area:ci`
+- Every tracked path must match some `area:*` glob (`gen-labeler.sh --check`)
 
 New CLI area or a new product-test tree: edit the script, regenerate, create the GitHub label.
+Backfill every PR after a vocabulary change (dry-run, then apply):
+
+```bash
+./.github/retag-pr-areas.sh
+./.github/retag-pr-areas.sh --apply
+```
 
 Every PR needs one type label (`bug` / `enhancement` / `chore`). CI infers, in order: a unique type on a closing issue (`Fixes #N`); else the branch prefix (`feat/` → enhancement, `fix/` → bug, `breaking/` → breaking, `chore/` / `docs/` / `ci/` / `test/` / anything else → chore). `fix/` plus `Fixes` an enhancement issue gets `enhancement`. Override with `gh pr edit N --add-label …`. Dependabot skips the type check (`dependencies` only).
 
