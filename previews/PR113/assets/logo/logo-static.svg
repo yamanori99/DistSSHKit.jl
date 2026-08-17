@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+  <!-- Static end-state (no SMIL). Same geometry as logo-dynamic.svg. -->
+  <defs>
+    <style>
+      .stroke {
+        fill: none;
+        stroke: #1a1d21;
+        stroke-width: 3.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .link {
+        stroke: #1a1d21;
+        stroke-width: 1.4;
+        stroke-linecap: round;
+        fill: none;
+      }
+    </style>
+    <g id="laptop-body">
+      <rect class="stroke" x="-25" y="-22" width="50" height="34" rx="2.5"/>
+      <path class="stroke" d="M-31,13 L31,13 L27,17 L-27,17 Z"/>
+    </g>
+    <g id="minibox-body">
+      <rect class="stroke" x="-24" y="-16" width="48" height="32" rx="7"/>
+      <line class="stroke" x1="-16" y1="19.5" x2="16" y2="19.5"/>
+    </g>
+    <g id="desktop-body">
+      <rect class="stroke" x="-23" y="-22" width="46" height="28" rx="2.5"/>
+      <line class="stroke" x1="0" y1="7" x2="0" y2="13"/>
+      <line class="stroke" x1="-15" y1="15" x2="15" y2="15"/>
+    </g>
+    <g id="master-body">
+      <rect class="stroke" x="-32" y="-25" width="64" height="36" rx="4"/>
+      <!-- stem meets bottom bezel (y=11); start at 12 so round cap stays in stroke, not screen -->
+      <line class="stroke" x1="0" y1="12" x2="0" y2="22"/>
+      <line class="stroke" x1="-21" y1="24" x2="21" y2="24"/>
+    </g>
+    <g id="juliadot">
+      <!-- Remotes: spin-safe R=5.4, r=0.75R (matches logo-dynamic remote-dots) -->
+      <circle cx="0" cy="-5.4" r="4.05" fill="#cb3c33"/>
+      <circle cx="-4.677" cy="2.7" r="4.05" fill="#389826"/>
+      <circle cx="4.677" cy="2.7" r="4.05" fill="#9558b2"/>
+    </g>
+    <g id="juliadot-lg">
+      <!-- Master: Luxor juliacircles R=6.2, r=0.75R -->
+      <circle cx="0" cy="-6.2" r="4.65" fill="#cb3c33"/>
+      <circle cx="-5.369" cy="3.1" r="4.65" fill="#389826"/>
+      <circle cx="5.369" cy="3.1" r="4.65" fill="#9558b2"/>
+    </g>
+  </defs>
+
+  <path class="link" d="M99.1,159 L60.5,124"/>
+  <path class="link" d="M120,159 L120,107"/>
+  <path class="link" d="M139.5,159 L185.7,114"/>
+
+  <g transform="translate(44, 108)">
+    <use href="#minibox-body"/>
+    <use href="#juliadot" x="0" y="2"/>
+  </g>
+  <g transform="translate(120, 90)">
+    <use href="#laptop-body"/>
+    <use href="#juliadot" x="0" y="-3"/>
+  </g>
+  <g transform="translate(198, 108)">
+    <use href="#desktop-body"/>
+    <use href="#juliadot" x="0" y="-7"/>
+  </g>
+  <g transform="translate(120, 184)">
+    <use href="#master-body"/>
+    <use href="#juliadot-lg" x="0" y="-6"/>
+  </g>
+</svg>
