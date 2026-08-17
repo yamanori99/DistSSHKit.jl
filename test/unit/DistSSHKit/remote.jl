@@ -172,6 +172,19 @@ using Test
         @test DistSSHKit._remote_shell_path_word(meta) != meta
     end
 
+    # Compat: ordinary remote roots keep the same shell text after quoting via the helper.
+    @testset "compat remote git shells" begin
+        tilde = "~/App.jl"
+        abs = "/opt/App.jl"
+        pq_abs = DistSSHKit._remote_shell_path_word(abs)
+        @test DistSSHKit._git_pull_remote_inner(tilde) == "cd ~/App.jl && git pull"
+        @test DistSSHKit._git_pull_remote_inner(abs) == "cd $pq_abs && git pull"
+        @test DistSSHKit._remote_git_hash_inner(tilde) == "cd ~/App.jl && git rev-parse HEAD"
+        @test DistSSHKit._remote_git_hash_inner(abs) == "git -C $pq_abs rev-parse HEAD"
+        @test DistSSHKit._remote_git_hash_inner(abs; short=8) == "git -C $pq_abs rev-parse --short=8 HEAD"
+        @test pq_abs == abs
+    end
+
     @test DistSSHKit.get_remote_julia_version("no-such-host.invalid", "/usr/bin/julia") === nothing
     @test DistSSHKit.detect_julia_path("no-such-host.invalid") === nothing
     @test DistSSHKit.resolve_remote_julia("no-such-host.invalid", "auto") === nothing

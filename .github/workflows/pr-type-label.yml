@@ -18,6 +18,7 @@ concurrency:
 permissions:
   contents: read
   pull-requests: write
+  issues: write
 
 jobs:
   require-type:
@@ -27,6 +28,9 @@ jobs:
     steps:
       - uses: actions/github-script@v9
         with:
+          # 422 on a brand-new PR is often "Could not resolve … global id" (node
+          # not visible on the Issues API yet). github-script exempts 422 from
+          # its own retries, so this script backs off instead.
           script: |
             const login = context.payload.pull_request.user.login;
             if (login === "dependabot[bot]") {
@@ -37,12 +41,60 @@ jobs:
             const required = ["bug", "enhancement", "breaking", "chore"];
             const requiredSet = new Set(required);
             const n = context.issue.number;
-            const { data: current } = await github.rest.issues.listLabelsOnIssue({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: n,
-            });
-            const labels = current.map((l) => l.name);
+
+            async function retryPrNode(fn) {
+              let delayMs = 1000;
+              const tries = 8;
+              for (let i = 1; i <= tries; i++) {
+                try {
+                  return await fn();
+                } catch (err) {
+                  const msg = String(err.message || "");
+                  const transient =
+                    err.status === 422 &&
+                    msg.includes("Could not resolve to a node with the global id");
+                  if (!transient || i === tries) {
+                    throw err;
+                  }
+                  core.info(
+                    `PR node not ready (${i}/${tries}); retry in ${delayMs}ms`,
+                  );
+                  await new Promise((r) => setTimeout(r, delayMs));
+                  delayMs = Math.min(delayMs * 2, 8000);
+                }
+              }
+            }
+
+            async function listLabelNames() {
+              try {
+                const { data } = await retryPrNode(() =>
+                  github.rest.issues.listLabelsOnIssue({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: n,
+                  }),
+                );
+                return data.map((l) => l.name);
+              } catch (err) {
+                core.warning(
+                  `listLabelsOnIssue failed (${err.message}); using event payload`,
+                );
+                return (context.payload.pull_request.labels || []).map((l) => l.name);
+              }
+            }
+
+            async function addIssueLabels(names) {
+              await retryPrNode(() =>
+                github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: n,
+                  labels: names,
+                }),
+              );
+            }
+
+            const labels = await listLabelNames();
             let found = labels.filter((name) => requiredSet.has(name));
             if (found.length > 0) {
               core.info(`Type label(s): ${found.join(", ")}`);
@@ -50,12 +102,7 @@ jobs:
               const fromIssue = await typeFromClosingIssues(n);
               const branch = String(context.payload.pull_request.head.ref || "");
               const inferred = fromIssue !== null ? fromIssue : inferType(branch);
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: n,
-                labels: [inferred],
-              });
+              await addIssueLabels([inferred]);
               if (fromIssue !== null) {
                 core.info(`Applied type label "${inferred}" from a closing issue`);
               } else {
@@ -75,11 +122,13 @@ jobs:
                   }
                 }
               }`;
-              const result = await github.graphql(query, {
-                owner: context.repo.owner,
-                name: context.repo.repo,
-                n: num,
-              });
+              const result = await retryPrNode(() =>
+                github.graphql(query, {
+                  owner: context.repo.owner,
+                  name: context.repo.repo,
+                  n: num,
+                }),
+              );
               const nodes =
                 result.repository?.pullRequest?.closingIssuesReferences?.nodes ?? [];
               const types = new Set();
@@ -111,12 +160,7 @@ jobs:
                 );
                 return;
               }
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: n,
-                labels: ["cut"],
-              });
+              await addIssueLabels(["cut"]);
               core.info(
                 `Applied cut (${fmtVer(oldV)} → ${fmtVer(newV)})`,
               );

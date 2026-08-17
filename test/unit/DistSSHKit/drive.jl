@@ -60,6 +60,7 @@ using Test
                 @test session.hosts == ["host-a", "host-b"]
                 @test session.tokens == ["host-a", "host-b:4"]
                 @test session.remote === nothing
+                @test session.yes == true
             end
         end
     end
@@ -124,6 +125,8 @@ using Test
         default_session = DistSSHKit.kit_session_from_config(default_cfg)
         @test DistSSHKit.resolve_pipeline_sync(default_cfg, default_session) === false
         @test DistSSHKit.pipeline_skip_hash_check(default_cfg)
+        @test default_cfg.yes == true
+        @test DistSSHKit.kit_session_from_config(default_cfg).yes == true
         @test DistSSHKit.pipeline_skip_hash_check(
             DistSSHKit.PipelineConfig(driver="job.jl", workers=["host-a"], sync=:sync),
         )

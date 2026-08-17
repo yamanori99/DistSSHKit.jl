@@ -379,6 +379,21 @@ function resolve_remote_abs_path_on_host(host::String, remote_path::AbstractStri
     end
 end
 
+"""Remote login-shell snippet for [`get_remote_git_hash`](@ref)."""
+function _remote_git_hash_inner(
+    remote_repo_dir::AbstractString;
+    short::Union{Nothing,Int}=nothing,
+)::String
+    dir = strip(String(remote_repo_dir))
+    pq = _remote_shell_path_word(dir)
+    rev = short === nothing ? "HEAD" : "--short=$(short) HEAD"
+    return if startswith(dir, "~")
+        "cd $pq && git rev-parse $rev"
+    else
+        "git -C $pq rev-parse $rev"
+    end
+end
+
 """
 Get remote git commit hash via SSH.
 
@@ -387,13 +402,7 @@ otherwise uses `git -C DIR rev-parse …` (absolute path on the remote, same lay
 """
 function get_remote_git_hash(host::String, remote_repo_dir::AbstractString; short::Union{Nothing,Int}=nothing)::Union{Nothing,String}
     try
-        dir = strip(String(remote_repo_dir))
-        rev = short === nothing ? "HEAD" : "--short=$(short) HEAD"
-        inner = if startswith(dir, "~")
-            "cd $(dir) && git rev-parse $(rev)"
-        else
-            "git -C $(dir) rev-parse $(rev)"
-        end
+        inner = _remote_git_hash_inner(remote_repo_dir; short=short)
         s = strip(read(pipeline(Cmd(["ssh", ssh_opts()..., host, inner]); stderr=devnull), String))
         return isempty(s) ? nothing : s
     catch

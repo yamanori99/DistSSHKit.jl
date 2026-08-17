@@ -18,8 +18,13 @@ function git_pull_local_project!(project::AbstractString)::Bool
     end
 end
 
+"""Remote login-shell snippet for `git pull` at `remote_path`."""
+function _git_pull_remote_inner(remote_path::AbstractString)::String
+    return "cd $(_remote_shell_path_word(remote_path)) && git pull"
+end
+
 function git_pull_remote_host!(host::AbstractString, remote_path::AbstractString)::Bool
-    cmd = "cd $(String(remote_path)) && git pull"
+    cmd = _git_pull_remote_inner(remote_path)
     try
         run(pipeline(Cmd(["ssh", ssh_opts()..., String(host), cmd]), stdout=devnull, stderr=devnull))
         return true

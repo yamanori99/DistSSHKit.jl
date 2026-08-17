@@ -63,6 +63,7 @@ using Test
             session = DistSSHKit.default_kit_cli_session()
             @test session.verbosity === :progress
             @test !session.quiet
+            @test !session.yes
         end
         withenv("DISTSSHKIT_QUIET" => nothing, "DISTSSHKIT_PROGRESS" => nothing, "DISTSSHKIT_VERBOSE" => "1", "DISTSSHKIT_YES" => nothing) do
             session = DistSSHKit.default_kit_cli_session()
