@@ -234,8 +234,23 @@ function resolve_remote_julia(
     return path
 end
 
+# Process-local auto-detect results (`nothing` included). Same host in
+# `size!` then `drive!` / `--check` then `--instantiate` skips repeat SSH.
+const _DETECT_JULIA_PATH_CACHE = Dict{String,Union{Nothing,String}}()
+
 """Detect Julia path on remote host via SSH (executable + parseable `--version`)."""
 function detect_julia_path(host::String)::Union{Nothing,String}
+    h = String(strip(host))
+    isempty(h) && return nothing
+    if haskey(_DETECT_JULIA_PATH_CACHE, h)
+        return _DETECT_JULIA_PATH_CACHE[h]
+    end
+    found = _detect_julia_path_uncached(h)
+    _DETECT_JULIA_PATH_CACHE[h] = found
+    return found
+end
+
+function _detect_julia_path_uncached(host::String)::Union{Nothing,String}
     uname_s = try
         strip(read(pipeline(Cmd(["ssh", ssh_opts()..., host, "uname", "-s"]); stderr=devnull), String))
     catch
