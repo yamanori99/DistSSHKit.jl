@@ -17,10 +17,12 @@ Linux, and WSL2 Ubuntu** (not native Windows).
 
 These days, even small labs and individuals often have several high-performance
 machines or workstations. DistSSHKit helps you put that hardware to work.
+*When you want several of those runs in a row, we will start on DistSSHKitQueue.jl — line them up and keep those machines busy.*
 
-This package runs **one** job (`go` / `drive`). A sibling **DistSSHKitQueue**
-is in development for a small-lab FIFO across those jobs. It is not a DistSSHKit
-command; see [#50](https://github.com/yamanori99/DistSSHKit.jl/issues/50).
+**0.3** is frozen for now. The current commands stay put, and ordinary bugs
+still get fixed.
+[CONTRIBUTING.md](CONTRIBUTING.md#feature-freeze) ·
+[Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26).
 
 ## Install
 

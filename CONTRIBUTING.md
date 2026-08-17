@@ -2,6 +2,23 @@
 
 Internals of this repo. Users: [stable docs](https://yamanori99.github.io/DistSSHKit.jl/stable/) (`docs/`), [README.md](README.md), [NEWS.md](NEWS.md). Dev: [dev](https://yamanori99.github.io/DistSSHKit.jl/dev/).
 
+## Feature freeze
+
+`0.3` is the job kit (`go` / `drive` / `setup` and the bang APIs). New features
+are paused so [DistSSHKitQueue.jl](https://github.com/yamanori99/DistSSHKitQueue.jl)
+and other research can pin this surface. README points here.
+
+**Lands:** happy-path bugs (ordinary `~/` roots, default `drive` / `go` /
+`setup`); CI / Julia slots / Aqua / JETLS drift; a hook DistSSHKitQueue.jl cannot implement
+without the kit (Enhancement Issue first, then a small PR).
+
+**Does not land:** new job shapes, CLI areas, or scheduler-like flags; breaking
+API or behavior unless the current contract is unusable.
+
+Chat: [Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions).
+Tracked bugs stay Issues. Direction for the kit as a whole is still
+[Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26).
+
 ## Requirements
 
 macOS, Linux, or WSL2 Ubuntu. Not native Windows (the kit shells out to `ssh` / `rsync`).
@@ -119,6 +136,7 @@ Branch from `main`. Squash-merge only. One reviewable change per PR; split unles
 - `breaking`: incompatible behavior. Can land without a version bump.
 - `cut`: `Project.toml` `version` went up. CI adds this; other `Project.toml` edits do not. The PR suite does not path-skip (see PR CI).
 - On a breaking line bump `x` in `0.x.y`; otherwise bump `y`.
+- During the [feature freeze](#feature-freeze), cut happy-path bugs promptly. Prefer not to cut for opt-in flags, docs, or CI unless a General user or DistSSHKitQueue.jl needs them.
 - After merge: `@JuliaRegistrator register` on the **merge commit** (not the PR body), and paste the [NEWS.md](NEWS.md) section under `Release notes:`. TagBot tags once General has the release. Date NEWS `YYYY-MM-DD` UTC on the tag day.
 - TagBot uses SSH deploy key secret `DOCUMENTER_KEY` (write deploy key on this repo) so the `vX.Y.Z` tag starts Docs and `stable` updates. Docs still deploy with `GITHUB_TOKEN`. Do not add a `+doc1` tag unless that path failed. Manual rebuild: `gh workflow run Docs --ref vX.Y.Z`.
 - Repo Settings → Actions → Workflow permissions: **Read and write** (`GITHUB_TOKEN`).
