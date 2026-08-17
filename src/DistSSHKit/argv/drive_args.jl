@@ -364,6 +364,14 @@ function show_drive_requirements(; io::IO=stdout)
         "  Skip auto-collect: DISTRIBUTED_SKIP_COLLECT=1",
     )
     print_help_blank(io)
+    print_help_section("Environment"; io=io)
+    print_help_lines(io,
+        "  $(KIT_HOSTS_ENV_HELP)",
+        "  JULIA_DISTRIBUTED_EXE       default remote Julia",
+        "  DISTSSHKIT_QUIET / PROGRESS / VERBOSE / YES",
+        "  $(KIT_SKIP_PKILL_ENV_HELP)",
+    )
+    print_help_blank(io)
     print_help_lines(io,
         "Details: docs (manual/drive). See also: setup, size, go.",
     )

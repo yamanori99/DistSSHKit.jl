@@ -139,6 +139,7 @@ using Test
         @test occursin("DISTSSHKIT_VERBOSE", DistSSHKit.KIT_VERBOSE_ENV_HELP)
         @test occursin("--hosts", DistSSHKit.KIT_HOSTS_FLAG_HELP)
         @test occursin("DISTSSHKIT_HOSTS", DistSSHKit.KIT_HOSTS_ENV_HELP)
+        @test occursin("DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL", DistSSHKit.KIT_SKIP_PKILL_ENV_HELP)
     end
 
     @testset "hosts file" begin

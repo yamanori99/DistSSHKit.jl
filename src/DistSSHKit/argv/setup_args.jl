@@ -25,6 +25,7 @@ function show_requirements(; io::IO=stdout)
         "  --check              SSH, Julia, project, deps",
         "  --runtest            Pkg.test of the job project on remotes",
         "  --cleanup / --delete stale workers / remote tree",
+        "                       cleanup: $(KIT_SKIP_PKILL_ENV_HELP)",
     )
     print_help_blank(io)
     print_help_section("Options"; io=io)

@@ -50,6 +50,8 @@ Default batch root:
 
 `--output-dir PATH` replaces the **batch root**. Kit sets
 `DISTRIBUTED_OUTPUT_DIR` to each slot directory.
+Add `.distsshkit/` to the job project's `.gitignore` so these paths stay
+untracked ([User Guide](@ref Manual)).
 
 Collect after remote slots: **slot-overwrite** (rsync whole slot dir).
 

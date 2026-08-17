@@ -57,7 +57,9 @@ project tree and an instantiate. Prefer matching Julia **major.minor**.
 ## Workers
 
 `local:N` / `host:N` (or `-w` defaults). Size with
-[`size`](@ref Manual-size).
+[`size`](@ref Manual-size). Before adding workers, `drive` may `pkill` leftover
+Distributed processes; skip with `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1`
+([User Guide](@ref Manual)).
 
 ## Results / collect
 
