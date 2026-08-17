@@ -17,6 +17,8 @@ Prepare remotes with [`setup!`](@ref) or CLI `setup` first. Optional
 / `:rsync`) immediately before workers.
 Git parity is off by default (`skip_hash_check=true`). With `sync=:rsync`, parity
 stays off even if `skip_hash_check=false` (no remote `.git/`).
+`require_all_hosts=true` (CLI `--require-all-hosts`) fails if a listed SSH host
+did not join, or if collect reported an error (default: best-effort, exit 0).
 
 `julia` sets the remote Julia binary (`nothing` / `"auto"` → detect; same as
 CLI `--julia`). `plan` is an optional explicit [`WorkerPlan`](@ref).
@@ -34,6 +36,7 @@ function drive!(
     package::Union{Nothing,AbstractString}=nothing,
     sync::Union{Nothing,Symbol,Bool}=nothing,
     julia::Union{Nothing,AbstractString}=nothing,
+    require_all_hosts::Bool=false,
 )::DriveResult
     apply_session_env!(session)
     _ensure_drive_fragments!(session.project)
@@ -53,6 +56,7 @@ function drive!(
         package=package,
         sync=sync,
         julia=julia,
+        require_all_hosts=require_all_hosts,
     )
     apply_kit_cli_session!(parsed.cli_session)
     original_args = copy(ARGS)

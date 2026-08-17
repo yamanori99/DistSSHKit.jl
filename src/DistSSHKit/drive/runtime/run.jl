@@ -25,6 +25,7 @@ function run_drive_parsed!(
             parsed.collect_root::String,
             parsed.collect_hosts::Vector{String};
             merge=something(parsed.collect_overwrite, false),
+            strict=parsed.require_all_hosts,
         )
         return ok ? 0 : 1
     end
@@ -45,6 +46,7 @@ function run_drive_parsed!(
     log_dir = parsed.log_dir
     output_dir = parsed.output_dir
     explicit_package = parsed.explicit_package
+    require_all_hosts = parsed.require_all_hosts
 
     host_names = [h[1] for h in hosts]
 
@@ -185,6 +187,16 @@ function run_drive_parsed!(
         successful_hosts = add_drive_workers!(
             hosts, local_workers, default_workers, julia_exe, proj_dir, script_path,
         )
+        if require_all_hosts && !isempty(hosts)
+            missing = String[h[1] for h in hosts if !(h[1] in successful_hosts)]
+            missing = unique(missing)
+            if !isempty(missing)
+                print_err("ERROR: "; bold=true)
+                println_fatal("required hosts did not join: $(join(missing, ", "))")
+                println_fatal("Omit --require-all-hosts for best-effort (the default).")
+                return 1
+            end
+        end
         wait_for_worker_connections!()
         drive_atexit_cleanup = register_worker_cleanup!(successful_hosts)
 
@@ -204,7 +216,11 @@ function run_drive_parsed!(
         run_driver_script!(enable_log, drive_atexit_cleanup)
 
         kit_progress_step!("collect")
-        collect_drive_results!(successful_hosts, script_dir, sentinel_name, skip_collect, _PATH_ANCHOR)
+        collect_ok = collect_drive_results!(successful_hosts, script_dir, sentinel_name, skip_collect, _PATH_ANCHOR)
+        if require_all_hosts && !collect_ok
+            progress_ok = false
+            return 1
+        end
         progress_ok = true
         return 0
     finally

@@ -195,6 +195,25 @@ using Test
         @test occursin("--rsync", txt)
         @test occursin("post-run-new", txt)
         @test occursin("off by default", lowercase(txt))
+        @test occursin("--require-all-hosts", txt)
+        @test occursin("DISTSSHKIT_JOBS", txt)
+        @test occursin("DISTSSHKIT_REQUIRE_ALL_HOSTS", txt)
         @test !occursin("required after `setup --rsync`", txt)
+    end
+
+    @testset "require-all-hosts" begin
+        withenv("DISTSSHKIT_REQUIRE_ALL_HOSTS" => nothing) do
+            @test !parse_drive_args(["s.jl"]).require_all_hosts
+            @test parse_drive_args(["--require-all-hosts", "s.jl"]).require_all_hosts
+            @test_throws ArgumentError parse_drive_args(
+                ["--require-all-hosts", "--require-all-hosts", "s.jl"],
+            )
+            let r = parse_drive_args(["--require-all-hosts", "--collect-missing", "out", "h1"])
+                @test r.require_all_hosts
+            end
+        end
+        withenv("DISTSSHKIT_REQUIRE_ALL_HOSTS" => "1") do
+            @test parse_drive_args(["s.jl"]).require_all_hosts
+        end
     end
 end

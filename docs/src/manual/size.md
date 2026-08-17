@@ -38,6 +38,9 @@ It returns a [`WorkerPlan`](@ref) for
 `drive!(session, …; plan=…)`; day-to-day runs usually use tokens instead
 (`drive!("job.jl", "local:2"; …)`).
 
+`DISTSSHKIT_JOBS` (default 1) parallelizes Julia-path detection only; probe
+workers are still added one host at a time.
+
 ```bash
 julia --project=. -m DistSSHKit size --local host1 host2
 julia --project=. -m DistSSHKit size --probe warmup.jl --local

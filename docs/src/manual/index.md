@@ -57,6 +57,10 @@ and/or `DISTSSHKIT_HOSTS` (comma-separated) on setup / go / drive / size.
 strip `:N` and use host names only. Extra sources append after positional
 tokens, in order: `--hosts`, `DISTSSHKIT_HOSTS`, then the hosts file.
 
+**Jobs.** `DISTSSHKIT_JOBS` (default 1) is the max concurrent SSH host jobs for
+`setup --rsync`, drive post-run collect, and `size` Julia detection. Worker
+`addprocs` stays sequential.
+
 **Quiet / progress.** On a TTY the default is `--progress` (live status). Piped or
 `NO_COLOR` sessions default to full detail. `-q` hides terminal detail;
 `--verbose` forces the old chatter (`DISTSSHKIT_QUIET` / `DISTSSHKIT_PROGRESS` /

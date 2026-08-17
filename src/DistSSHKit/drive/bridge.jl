@@ -45,6 +45,7 @@ function drive_parsed_from_session(
     package::Union{Nothing,AbstractString}=nothing,
     sync::Union{Nothing,Symbol,Bool}=nothing,
     julia::Union{Nothing,AbstractString}=nothing,
+    require_all_hosts::Bool=false,
 )
     local_workers = 0
     hosts = Tuple{String,Union{Int,Nothing}}[]
@@ -92,6 +93,7 @@ function drive_parsed_from_session(
         collect_hosts=nothing,
         collect_overwrite=nothing,
         sync_mode=sync_mode,
+        require_all_hosts=require_all_hosts,
         help=false,
         show_version=false,
         cli_session=cli_session,

@@ -37,6 +37,10 @@ const KIT_HOSTS_ENV_HELP =
     "DISTSSHKIT_HOSTS                  Same as --hosts"
 const KIT_SKIP_PKILL_ENV_HELP =
     "DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL  1: skip pkill of julia --worker / --bind-to"
+const KIT_JOBS_ENV_HELP =
+    "DISTSSHKIT_JOBS                   max concurrent host jobs (rsync / collect / size detect; default 1)"
+const KIT_REQUIRE_ALL_HOSTS_ENV_HELP =
+    "DISTSSHKIT_REQUIRE_ALL_HOSTS      Same as --require-all-hosts"
 
 """CLI default when no verbosity flag/env is set: live bar on a TTY, else verbose."""
 kit_cli_auto_verbosity(; live::Union{Nothing,Bool}=nothing)::Symbol =
@@ -134,6 +138,39 @@ end
 function _env_flag(name::AbstractString)::Bool
     v = strip(get(ENV, String(name), ""))
     return v in ("1", "true", "yes", "on")
+end
+
+"""Max concurrent SSH host jobs (`DISTSSHKIT_JOBS`, default 1)."""
+function kit_host_jobs()::Int
+    raw = strip(get(ENV, "DISTSSHKIT_JOBS", "1"))
+    n = tryparse(Int, raw)
+    (n === nothing || n < 1) && return 1
+    return n
+end
+
+"""Call `f(i, host)` for each host, at most `kit_host_jobs()` at once (1 → sequential)."""
+function map_host_jobs(f, hosts::Vector{String})
+    n = length(hosts)
+    n == 0 && return nothing
+    jobs = min(kit_host_jobs(), n)
+    if jobs == 1
+        for i in 1:n
+            f(i, hosts[i])
+        end
+        return nothing
+    end
+    sem = Base.Semaphore(jobs)
+    @sync for i in 1:n
+        @async begin
+            Base.acquire(sem)
+            try
+                f(i, hosts[i])
+            finally
+                Base.release(sem)
+            end
+        end
+    end
+    return nothing
 end
 
 """Default session; honors `DISTSSHKIT_QUIET`, `DISTSSHKIT_PROGRESS`, `DISTSSHKIT_VERBOSE`, `DISTSSHKIT_YES`, `DISTSSHKIT_HOSTS_FILE`."""

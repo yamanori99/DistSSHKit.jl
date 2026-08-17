@@ -84,6 +84,7 @@ using Test
         @test occursin("--hosts", txt)
         @test occursin("Recommended:", txt)
         @test occursin("--require-git", txt)
+        @test occursin("DISTSSHKIT_JOBS", txt)
         @test !occursin("day-to-day default", lowercase(txt))
         @test !occursin("drive needs --skip-git-guard", lowercase(txt))
     end

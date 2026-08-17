@@ -92,8 +92,14 @@ function measure_rss(
 
     if !isempty(hosts)
         sshflags_cmd = Cmd(ssh_opts())
-        for host in hosts
-            julia_exe = detect_julia_path(host)
+        n_hosts = length(hosts)
+        detected = Vector{Union{Nothing,String}}(undef, n_hosts)
+        map_host_jobs(hosts) do i, host
+            detected[i] = detect_julia_path(host)
+        end
+        for i in 1:n_hosts
+            host = hosts[i]
+            julia_exe = detected[i]
             if julia_exe === nothing
                 @warn "Worker on $host failed: Julia not found (auto-detect)"
                 continue
