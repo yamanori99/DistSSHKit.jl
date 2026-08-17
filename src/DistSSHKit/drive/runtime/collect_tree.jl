@@ -82,21 +82,13 @@ function drive_collect_tree(local_root::AbstractString, host_names::Vector{Strin
                     d = dirname(joinpath(local_root, rel))
                     !isempty(d) && mkpath(d)
                 end
-                rsync_cmd = Cmd(vcat(
+                DistSSHKit._run_rsync_files_from(
                     rsync_bin,
-                    [
-                        "-az",
-                        "-e",
-                        transport,
-                        "--files-from=-",
-                        string(host, ":", host_remote, "/"),
-                        local_root * "/",
-                    ],
-                ))
-                buf = IOBuffer()
-                foreach(p -> println(buf, p), need)
-                seekstart(buf)
-                run(pipeline(rsync_cmd; stdin=buf, stderr=stderr))
+                    ["-az", "-e", transport],
+                    string(host, ":", host_remote, "/"),
+                    local_root * "/",
+                    need,
+                )
                 n = length(need)
                 print_ok("✓ ($n file$(n == 1 ? "" : "s"))")
                 writeln_both("")

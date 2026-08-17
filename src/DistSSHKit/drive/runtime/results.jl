@@ -198,21 +198,17 @@ function collect_drive_results!(
                         startswith(rel, "..") && continue
                         push!(rel_lines, rel)
                     end
-                    file_list = join(unique(rel_lines), '\n')
 
-                    if !isempty(file_list)
-                        remote_uri = string(host, ":", remote_rd_abs, "/")
-                        rsync_part = Cmd(vcat(
+                    if !isempty(rel_lines)
+                        uniq = unique(rel_lines)
+                        DistSSHKit._run_rsync_files_from(
                             rsync_bin,
-                            ["-az", "-e", ssh_cmd, "--files-from=-", remote_uri, local_abs * "/"],
-                        ))
-                        buf = IOBuffer()
-                        print(buf, strip(file_list))
-                        write(buf, '\n')
-                        seekstart(buf)
-                        run(pipeline(rsync_part; stdin=buf, stderr=stderr))
-                        total_for_host +=
-                            count(!isempty(strip(l)) for l in split(file_list, '\n'))
+                            ["-az", "-e", ssh_cmd],
+                            string(host, ":", remote_rd_abs, "/"),
+                            local_abs * "/",
+                            uniq,
+                        )
+                        total_for_host += length(uniq)
                     end
                 catch e
                     host_err === nothing && (host_err = e)
