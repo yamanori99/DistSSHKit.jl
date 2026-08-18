@@ -202,7 +202,7 @@ Maintainer memo: [#50](https://github.com/yamanori99/DistSSHKit.jl/issues/50) is
 ./.github/gen-labeler.sh --check  # CI drift
 ```
 
-Every tracked path must match some `area:*` glob (`gen-labeler.sh --check`). Globs are positive paths; do not add `!` excludes (labeler ORs them as "not this path" and tags unrelated files).
+Every tracked path must match some `area:*` glob (`gen-labeler.sh --check`). Globs are positive paths; do not add `!` excludes (labeler ORs them as "not this path" and tags unrelated files). Path labeler syncs only `area:*`. After `setLabels` it restores type / `cut` / other non-area labels so a concurrent Type job is not wiped.
 
 | Paths | Label |
 | --- | --- |
