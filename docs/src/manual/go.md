@@ -53,6 +53,11 @@ Default batch root:
 Add `.distsshkit/` to the job project's `.gitignore` so these paths stay
 untracked ([User Guide](@ref Manual)).
 
+From the API, `go!(...; output_dir=PATH)` sets the same batch root (matching
+[`drive!`](@ref Manual-drive)). `collect_spec::String` still works as a
+backward-compatible alias, but passing both `output_dir` and `collect_spec::String`
+is an error. `collect_spec=false` skips collect and is orthogonal to `output_dir`.
+
 Collect after remote slots: **slot-overwrite** (rsync whole slot dir).
 
 ## Hosts

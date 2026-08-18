@@ -64,6 +64,28 @@ using Dates
         end
     end
 
+    @testset "output_dir + collect_spec::String errors" begin
+        _with_tempdir() do proj
+            script = joinpath(proj, "job.jl")
+            write(script, "nothing\n")
+            err = try
+                DistSSHKit.go!(
+                    script,
+                    ["local:1"];
+                    project=proj,
+                    output_dir=joinpath(proj, "a"),
+                    collect_spec=joinpath(proj, "b"),
+                    quiet=true,
+                )
+                nothing
+            catch e
+                e
+            end
+            @test err isa ArgumentError
+            @test occursin("not both", sprint(showerror, err))
+        end
+    end
+
     @testset "_go_resolve_julia" begin
         real = DistSSHKit._go_julia_exe()
         @test DistSSHKit._go_resolve_julia(nothing) == real

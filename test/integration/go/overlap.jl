@@ -30,3 +30,53 @@ using Test
         @test wall < 8.0
     end
 end
+
+@testset "output_dir batch root (local:1)" begin
+    _with_tempdir() do proj
+        write(joinpath(proj, "Project.toml"), "name = \"GoOutputDir\"\n")
+        script = joinpath(proj, "job.jl")
+        write(script, """
+            out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", ".")
+            mkpath(out)
+            write(joinpath(out, "marker.txt"), "ok")
+            """)
+        custom = joinpath(proj, "runs", "custom")
+        result = DistSSHKit.go!(
+            script,
+            "local:1";
+            project=proj,
+            output_dir=custom,
+            quiet=true,
+            yes=true,
+        )
+        @test result.ok
+        @test result.output_dir == DistSSHKit.canonical_local_path(custom)
+        @test isfile(joinpath(result.output_dir, "local", "marker.txt"))
+    end
+end
+
+# `output_dir` is orthogonal to `collect_spec=false` (skip collect).
+@testset "output_dir with collect_spec=false" begin
+    _with_tempdir() do proj
+        write(joinpath(proj, "Project.toml"), "name = \"GoOutputDirSkip\"\n")
+        script = joinpath(proj, "job.jl")
+        write(script, """
+            out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", ".")
+            mkpath(out)
+            write(joinpath(out, "marker.txt"), "ok")
+            """)
+        custom = joinpath(proj, "runs", "skip_collect")
+        result = DistSSHKit.go!(
+            script,
+            "local:1";
+            project=proj,
+            output_dir=custom,
+            collect_spec=false,
+            quiet=true,
+            yes=true,
+        )
+        @test result.ok
+        @test result.output_dir == DistSSHKit.canonical_local_path(custom)
+        @test isfile(joinpath(result.output_dir, "local", "marker.txt"))
+    end
+end

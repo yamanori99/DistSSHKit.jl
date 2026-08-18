@@ -53,7 +53,7 @@ function go_main()::Cint
         sync=parsed.sync,
         args=parsed.script_args,
         path_anchor=_PATH_ANCHOR,
-        collect_spec=parsed.output_dir,
+        output_dir=parsed.output_dir,
         hosts_file=nothing,
         julia=parsed.julia,
         hint_surface=:cli,
