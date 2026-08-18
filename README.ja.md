@@ -24,9 +24,10 @@ SSH 分散実行の手順を簡単にし、揃えることで、再現しやす�
 DistSSHKit は、それらをまとめて小さな計算ノードとして使うためのものである。
 関連して、簡易スケジューラ `DistSSHKitQueue.jl` を開発中である。
 
-**0.3** では、現在大きな機能追加はしない。いまのコマンドは変えずに使い続けられる。通常のバグ修正は続ける。
-[CONTRIBUTING.md](CONTRIBUTING.md#feature-freeze) ·
-[Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26)。
+> [!NOTE]
+> **0.3** では、現在大きな機能追加はしない。いまのコマンドは変えずに使い続けられる。通常のバグ修正は続ける。
+> [CONTRIBUTING.md](CONTRIBUTING.md#feature-freeze) ·
+> [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26)。
 
 ## インストール
 

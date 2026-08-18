@@ -25,10 +25,11 @@ Even small labs and individuals often have a few high-performance machines or
 workstations. DistSSHKit helps you use that hardware as a small set of compute
 nodes. A lightweight scheduler, `DistSSHKitQueue.jl`, is also in progress.
 
-**0.3** is not getting major new features for now. The current commands stay put,
-and ordinary bugs still get fixed.
-[CONTRIBUTING.md](CONTRIBUTING.md#feature-freeze) ·
-[Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26).
+> [!NOTE]
+> **0.3** is not getting major new features for now. The current commands stay put,
+> and ordinary bugs still get fixed.
+> [CONTRIBUTING.md](CONTRIBUTING.md#feature-freeze) ·
+> [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26).
 
 ## Install
 
