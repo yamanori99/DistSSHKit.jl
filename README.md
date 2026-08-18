@@ -1,6 +1,6 @@
 # DistSSHKit.jl
 
-[English](README.md) · [日本語](README.ja.md)
+[English](README.md) | [日本語](README.ja.md)
 
 [![CI](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/CI.yml)
 [![codecov](https://codecov.io/gh/yamanori99/DistSSHKit.jl/graph/badge.svg?token=6OT4L5JDUW)](https://codecov.io/gh/yamanori99/DistSSHKit.jl)
