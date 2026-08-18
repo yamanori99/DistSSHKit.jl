@@ -2,6 +2,9 @@
 
 [English](README.md) | [日本語](README.ja.md)
 
+<!-- markdownlint-disable MD033 -->
+<div align="center">
+
 [![CI](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/CI.yml)
 [![codecov](https://codecov.io/gh/yamanori99/DistSSHKit.jl/graph/badge.svg?token=6OT4L5JDUW)](https://codecov.io/gh/yamanori99/DistSSHKit.jl)
 [![JETLS](https://img.shields.io/github/actions/workflow/status/yamanori99/DistSSHKit.jl/jetls.yml?branch=main&label=JETLS)](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/jetls.yml)
@@ -15,6 +18,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Discussions](https://img.shields.io/badge/GitHub-Discussions-blueviolet?logo=github)](https://github.com/yamanori99/DistSSHKit.jl/discussions)
 
+</div>
+<!-- markdownlint-enable MD033 -->
+
 DistSSHKit is a kit for running the same Julia project locally and over SSH,
 then collecting the results. It makes SSH-distributed runs easier and more
 uniform, which helps keep those runs reproducible. It uses Distributed.jl
@@ -25,10 +31,11 @@ Even small labs and individuals often have a few high-performance machines or
 workstations. DistSSHKit helps you use that hardware as a small set of compute
 nodes. A lightweight scheduler, `DistSSHKitQueue.jl`, is also in progress.
 
-**0.3** is not getting major new features for now. The current commands stay put,
-and ordinary bugs still get fixed.
-[CONTRIBUTING.md](CONTRIBUTING.md#feature-freeze) ·
-[Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26).
+> [!NOTE]
+> **0.3** is not getting major new features for now. The current commands stay put,
+> and ordinary bugs still get fixed.
+> [CONTRIBUTING.md](CONTRIBUTING.md#feature-freeze) ·
+> [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26).
 
 ## Install
 

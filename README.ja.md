@@ -2,6 +2,9 @@
 
 [English](README.md) · [日本語](README.ja.md)
 
+<!-- markdownlint-disable MD033 -->
+<div align="center">
+
 [![CI](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/CI.yml)
 [![codecov](https://codecov.io/gh/yamanori99/DistSSHKit.jl/graph/badge.svg?token=6OT4L5JDUW)](https://codecov.io/gh/yamanori99/DistSSHKit.jl)
 [![JETLS](https://img.shields.io/github/actions/workflow/status/yamanori99/DistSSHKit.jl/jetls.yml?branch=main&label=JETLS)](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/jetls.yml)
@@ -15,6 +18,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Discussions](https://img.shields.io/badge/GitHub-Discussions-blueviolet?logo=github)](https://github.com/yamanori99/DistSSHKit.jl/discussions)
 
+</div>
+<!-- markdownlint-enable MD033 -->
+
 DistSSHKit は、ローカルと SSH 先で同じ Julia プロジェクトを走らせ、結果を集めるキットである。
 SSH 分散実行の手順を簡単にし、揃えることで、再現しやすい実行を助ける。
 スレッドではなく Distributed.jl のプロセスを使う。
@@ -24,9 +30,10 @@ SSH 分散実行の手順を簡単にし、揃えることで、再現しやす�
 DistSSHKit は、それらをまとめて小さな計算ノードとして使うためのものである。
 関連して、簡易スケジューラ `DistSSHKitQueue.jl` を開発中である。
 
-**0.3** では、現在大きな機能追加はしない。いまのコマンドは変えずに使い続けられる。通常のバグ修正は続ける。
-[CONTRIBUTING.md](CONTRIBUTING.md#feature-freeze) ·
-[Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26)。
+> [!NOTE]
+> **0.3** では、現在大きな機能追加はしない。いまのコマンドは変えずに使い続けられる。通常のバグ修正は続ける。
+> [CONTRIBUTING.md](CONTRIBUTING.md#feature-freeze) ·
+> [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26)。
 
 ## インストール
 
