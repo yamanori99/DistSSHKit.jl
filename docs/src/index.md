@@ -83,8 +83,8 @@ Example: a local machine plus remotes. Each machine can run several workers
 
 ```@raw html
 <p style="text-align:center">
-<img class="diagram-light" alt="Master on the local controller, workers on local and remote machines" src="assets/diagram/topology.svg">
-<img class="diagram-dark" alt="Master on the local controller, workers on local and remote machines" src="assets/diagram/topology-dark.svg">
+<img class="docs-light-only" alt="Master on the local controller, workers on local and remote machines" src="assets/diagram/topology.svg">
+<img class="docs-dark-only" alt="Master on the local controller, workers on local and remote machines" src="assets/diagram/topology-dark.svg">
 </p>
 ```
 

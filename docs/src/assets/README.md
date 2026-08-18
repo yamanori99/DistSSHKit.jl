@@ -43,7 +43,7 @@ Documenter discovers bare `logo.svg` / `logo-dark.svg` at this directory’s top
 | `logo/logo-dynamic.svg` | Dynamic logo (SMIL) |
 | `logo/logo-static.svg` | Static geometry (feeds static PNG + social-static) |
 | `diagram/topology.svg` | Architecture diagram (English light; bake writes ja / dark SVGs + PNGs) |
-| `custom.css` | Sidebar logo size; topology light/dark swap |
+| `custom.css` | Sidebar logo size; topology diagram layout |
 
 ## Bake (`bake.jl`, Julia only — no Python)
 
