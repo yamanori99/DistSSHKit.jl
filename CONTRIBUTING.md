@@ -2,14 +2,14 @@
 
 Internals of this repo.
 
-- Users: [stable docs](https://yamanori99.github.io/DistSSHKit.jl/stable/) (`docs/`), [README.md](README.md), [NEWS.md](NEWS.md)
+- Users: [stable docs](https://yamanori99.github.io/DistSSHKit.jl/stable/) (`docs/`), [README.md](README.md), [README.ja.md](README.ja.md), [NEWS.md](NEWS.md)
 - Dev docs: [dev](https://yamanori99.github.io/DistSSHKit.jl/dev/)
 
 ## Feature freeze
 
 `0.3` is the job kit (`go` / `drive` / `setup` and the bang APIs). New features
 are paused so [DistSSHKitQueue.jl](https://github.com/yamanori99/DistSSHKitQueue.jl)
-and other research can pin this surface. README points here.
+and other research can pin this surface. README.md and README.ja.md point here.
 
 **Lands:** happy-path bugs (ordinary `~/` roots, default `drive` / `go` /
 `setup`); CI / Julia slots / Aqua / JETLS drift; a hook DistSSHKitQueue.jl cannot implement
@@ -98,7 +98,7 @@ Ubuntu: `Pkg.test` min / max / tip, JETLS min / max, Aqua min / max / tip, Docum
 
 These files **alone** skip the heavy steps (job still starts; Pkg.test / JETLS / Aqua / Documenter do not run):
 
-- `README.md`, `CONTRIBUTING.md`, `NEWS.md`, `SECURITY.md`, `LICENSE`
+- `README.md`, `README.ja.md`, `CONTRIBUTING.md`, `NEWS.md`, `SECURITY.md`, `LICENSE`
 - `.gitignore`, `.github/pull_request_template.md`
 
 A new root markdown file stays heavy until listed in [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml). Changes under `docs/src` still run those jobs. A `cut` label skips none of this: Pkg.test, JETLS, Aqua, Documenter, and Linux E2E all run. macOS / WSL stay on `E2E daily`, not the PR.
@@ -211,7 +211,7 @@ Every tracked path must match some `area:*` glob (`gen-labeler.sh --check`). Glo
 | Harness under `test/` (not `unit/` / `integration/`) and `testenv/**` | `area:test` |
 | `test/e2e.jl`, `test/support/ssh_e2e.jl` | CLI areas `drive` / `go` / `setup` / `size` as well |
 | Product tests under `unit/` and `integration/` | that `area:<area>` (plus `area:kit` when leftover shared kit) |
-| `docs/**`, `README.md`, `NEWS.md`, `demos/**/*.md` | `area:docs` |
+| `docs/**`, `README.md`, `README.ja.md`, `NEWS.md`, `demos/**/*.md` | `area:docs` |
 | `.github/**`, `codecov.yml` | `area:ci` |
 
 New CLI area or a new product-test tree: edit the script, regenerate, create the GitHub label.
@@ -236,4 +236,4 @@ CI infers, in order:
 
 ## Language
 
-`.jl` comments, docstrings, and errors: English. Install or Docs links: `docs/src` and README. User-visible behavior: NEWS (date the section when tagged). Generative AI is allowed; you own the diff. Keep docs plain.
+`.jl` comments, docstrings, and errors: English. Install or Docs links: `docs/src`, [README.md](README.md), and [README.ja.md](README.ja.md). User-visible behavior: NEWS (date the section when tagged). Generative AI is allowed; you own the diff. Keep docs plain.

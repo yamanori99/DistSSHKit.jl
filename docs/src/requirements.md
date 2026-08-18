@@ -30,6 +30,11 @@ as Linux (Docker Compose must be visible from WSL).
 
 ## Remotes
 
+No hard limit on the number of remote hosts — more hosts just means more time
+spent on SSH connections and deployment, so start with a few and scale up.
+If SSH disconnects are a risk, use machines that stay up and keep the master's
+run alive with something like `tmux`.
+
 When you use SSH hosts (not just `local:N`):
 
 **Where you run the kit** — also install:
