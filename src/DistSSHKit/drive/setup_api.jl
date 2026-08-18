@@ -23,8 +23,8 @@ Prepare SSH hosts — same jobs as `julia -m DistSSHKit setup --…`.
 | `:delete` | `--delete` | Destructive; confirm unless `session.yes` |
 | `:rsync` | `--rsync` | Refuses nonempty remote; delete first to replace |
 | `:clone` | `--clone` | Requires `repo=`; clone runs **on the remote** |
-| `:sync` | `--sync` | Local push + remote pull (git remotes) |
-| `:pull` | `--pull` | Local pull then remote pull |
+| `:sync` | `--sync` | Local push + remote pull (git remotes); confirm unless `session.yes` |
+| `:pull` | `--pull` | Local pull then remote pull; confirm unless `session.yes` |
 | `:instantiate` | `--instantiate` | `julia=` (default `"auto"`) |
 | `:check` | `--check` | `ignore_julia_version=`, `check_code_sync=` |
 | `:runtest` | `--runtest` | job `Pkg.test()` on remotes; `julia=` |
@@ -118,7 +118,11 @@ function _setup_one!(
             do_push=false,
             do_pull=true,
             do_local_pull=true,
+            confirm=!session.yes,
         )
+        if raw.cancelled
+            return SyncResult(true, HostResult[]; ok=false)
+        end
         return SyncResult(false, raw.host_results; ok=raw.ok)
     elseif mode === :instantiate
         return instantiate!(session; julia=julia_path)

@@ -19,7 +19,7 @@ driver contract, prefer [`go`](@ref Manual-go).
 
 | Flag | Meaning |
 | --- | --- |
-| `--sync` | Git push/pull immediately before the run (**optional**; default is none) |
+| `--sync` | Git push/pull immediately before the run (**optional**; default is none; confirm unless `-y`) |
 | `--rsync` | Rsync deploy first (empty/missing remote, or after `setup --delete`) |
 | `--require-git` | Opt-in git parity: dirty-tree warn + remote commit must match local |
 | `--require-all-hosts` | Fail if a listed SSH host did not join, or if collect reported an error (default: best-effort, exit 0) |

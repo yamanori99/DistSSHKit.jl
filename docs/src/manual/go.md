@@ -21,7 +21,7 @@ Prepare remotes with [`setup --rsync`](@ref Manual-setup) **or** `--clone`, then
 
 | Flag | Meaning |
 | --- | --- |
-| `--sync` | Git push/pull before remote slots (**opt-in**; default is none) |
+| `--sync` | Git push/pull before remote slots (**opt-in**; default is none; confirm unless `-y`) |
 | `--rsync` | Rsync working tree first (empty/missing remote, or after `setup --delete`) |
 | `--skip-sync` | Compat: no pre-run sync (already the default) |
 | `--skip-git-guard` | Alias of `--skip-sync` (shared name with drive) |

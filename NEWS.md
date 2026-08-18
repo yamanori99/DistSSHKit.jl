@@ -7,6 +7,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 - Docs: `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL`, and gitignore `.distsshkit/` in
   the job project.
+- `setup --sync` / `--pull` (and `go` / `drive` `--sync`, `sync!`,
+  `setup!(…, :sync|:pull)`): confirm before git push/pull, same as clone.
+  `-y` / `session.yes` skips the prompt.
 - Opt-in `drive --require-all-hosts` / `DISTSSHKIT_REQUIRE_ALL_HOSTS` (and
   `drive!(…; require_all_hosts=true)`): fail if a listed SSH host did not join
   or post-run collect reported an error. Default remains best-effort exit 0.
