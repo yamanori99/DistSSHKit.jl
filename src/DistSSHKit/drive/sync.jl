@@ -5,9 +5,10 @@
 
 Sync local project to SSH hosts (call explicitly; go/drive do not call this by default).
 
-- `mode=:sync` — git push + pull on remotes (default when calling `sync!`)
-- `mode=:rsync` — rsync working tree (no git). Refuses nonempty remote paths;
-  use `setup!(session, :delete)` / `setup --delete` first.
+- `mode=:sync` — git push + pull on remotes (confirm unless `session.yes`)
+- `mode=:rsync` — rsync working tree (no git; confirm unless `session.yes`).
+  Refuses nonempty remote paths; use `setup!(session, :delete)` /
+  `setup --delete` first.
 
 Also available as `setup!(session, :rsync)` / `setup!(session, :sync)`.
 
@@ -41,7 +42,11 @@ function sync!(session::KitSession; mode::Union{Symbol,Bool}=:sync)::SyncResult
             do_push=true,
             do_pull=true,
             do_local_pull=false,
+            confirm=!session.yes,
         )
+        if raw.cancelled
+            return SyncResult(true, HostResult[]; ok=false)
+        end
         return SyncResult(false, raw.host_results; ok=raw.ok)
     else
         throw(ArgumentError("sync! mode must be :rsync or :sync, got $(repr(mode))"))

@@ -195,6 +195,7 @@ if !isdefined(@__MODULE__, :setup_main)
                 do_pull=true,
                 do_local_pull=do_local_pull,
             )
+            raw.cancelled && return 0
             if !raw.ok
                 print_err("$mode_name failed.")
                 kit_println()

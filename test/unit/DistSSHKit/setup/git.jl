@@ -66,6 +66,49 @@ using Test
         end
     end
 
+    @testset "git_sync confirm abort" begin
+        withenv("DISTSSHKIT_YES" => nothing) do
+            prev_ni = DistSSHKit.kit_noninteractive()
+            DistSSHKit.set_kit_noninteractive!(false)
+            try
+                _with_tempdir() do tmp
+                    work = joinpath(tmp, "work")
+                    mkpath(work)
+                    _init_commit!(work)
+                    for v in (:quiet, :progress, :verbose)
+                        with_kit_verbosity(v) do
+                            out, raw = _capture_stdio() do stdin_io, _
+                                println(stdin_io, "n")
+                                flush(stdin_io)
+                                seekstart(stdin_io)
+                                DistSSHKit.git_sync_project_to_hosts!(
+                                    ["host1"], work, "~/App.jl";
+                                    do_push=true, do_pull=true, do_local_pull=false,
+                                )
+                            end
+                            @test !raw.ok
+                            @test raw.cancelled
+                            @test isempty(raw.host_results)
+                            @test occursin("Cancelled.", out)
+                            @test occursin("Proceed?", out)
+                            @test occursin("git push", out)
+                        end
+                    end
+                    _, raw_skip = _capture_stdio() do _, _
+                        DistSSHKit.git_sync_project_to_hosts!(
+                            ["192.0.2.1"], work, "~/App.jl";
+                            do_push=true, do_pull=false, do_local_pull=false, confirm=false,
+                        )
+                    end
+                    @test !raw_skip.ok
+                    @test !raw_skip.cancelled
+                end
+            finally
+                DistSSHKit.set_kit_noninteractive!(prev_ni)
+            end
+        end
+    end
+
     @testset "remote pull: unreachable host" begin
         _apply_quiet_setup_session!()
         withenv("DISTRIBUTED_SSH_OPTS" => "-o BatchMode=yes -o ConnectTimeout=1") do

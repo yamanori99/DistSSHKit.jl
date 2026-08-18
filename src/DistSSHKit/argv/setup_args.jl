@@ -20,7 +20,7 @@ function show_requirements(; io::IO=stdout)
     print_help_lines(io,
         "  --rsync / --clone    empty remote path only",
         "                       --delete first to replace",
-        "  --sync / --pull      git update",
+        "  --sync / --pull      git update (confirm unless -y)",
         "  --instantiate        Pkg.instantiate on remotes",
         "  --check              SSH, Julia, project, deps",
         "  --runtest            Pkg.test of the job project on remotes",

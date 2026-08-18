@@ -21,10 +21,10 @@ Pick **one mode** per invocation (except shared options).
 | Flag | Meaning |
 | --- | --- |
 | `--check` | Verify SSH, Julia, project files, deps; git commit parity when remotes have `.git/` |
-| `--clone` | `git clone` onto each remote at an empty/missing path |
-| `--rsync` | Rsync local tree onto missing/empty path (recommended first deploy; no remote `.git/`) |
-| `--sync` | Local `git push`, then `git pull` on remotes (git workflows) |
-| `--pull` | `git pull` on laptop first, then remotes (no push) |
+| `--clone` | `git clone` onto each remote at an empty/missing path (confirm unless `-y`) |
+| `--rsync` | Rsync local tree onto missing/empty path (recommended first deploy; no remote `.git/`; confirm unless `-y`) |
+| `--sync` | Local `git push`, then `git pull` on remotes (git workflows; confirm unless `-y`) |
+| `--pull` | `git pull` on laptop first, then remotes (no push; confirm unless `-y`) |
 | `--instantiate` | `Pkg.instantiate` on remotes after deploy |
 | `--runtest` | `Pkg.test()` of the **job** project on remotes (not DistSSHKit's tests) |
 | `--cleanup` | Kill stale Julia worker processes (local + remotes); `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` skips the `pkill` |

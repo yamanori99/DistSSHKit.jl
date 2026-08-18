@@ -41,14 +41,40 @@ function _git_remote_url(project::AbstractString)::String
     end
 end
 
+function _print_git_sync_banner!(
+    hosts::Vector{String},
+    project::AbstractString,
+    remote_path::AbstractString;
+    do_push::Bool,
+    do_pull::Bool,
+    do_local_pull::Bool,
+)
+    # Consent text: always on the terminal (same gate as `kit_confirm`).
+    println_fatal("  Repository: $(_git_remote_url(project))")
+    println_fatal("  Remote path: $remote_path")
+    println_fatal("  Hosts: $(join(hosts, ", "))")
+    println_fatal()
+    println_fatal("  This will:")
+    do_local_pull && println_fatal("    git pull on localhost")
+    if do_push
+        print_warn("    git push (local → origin; not only the listed hosts)\n")
+    end
+    do_pull && println_fatal("    git pull on remotes")
+    println_fatal()
+    return nothing
+end
+
 """
     git_sync_project_to_hosts!(
         hosts, project, remote_path;
-        do_push=true, do_pull=true, do_local_pull=false,
-    ) -> (; ok, host_results)
+        do_push=true, do_pull=true, do_local_pull=false, confirm=true,
+    ) -> (; ok, cancelled, host_results)
 
 Push/pull git so remotes match `project`. Used by `setup --sync` / `--pull` and
 [`sync!`](@ref) (`mode=:sync`).
+
+When `confirm=true`, prints the planned git steps and requires `y` (unless
+[`kit_noninteractive`](@ref) / `--yes` is active).
 """
 function git_sync_project_to_hosts!(
     hosts::Vector{String},
@@ -57,10 +83,23 @@ function git_sync_project_to_hosts!(
     do_push::Bool=true,
     do_pull::Bool=true,
     do_local_pull::Bool=false,
+    confirm::Bool=true,
 )
     proj = canonical_local_path(project)
     remote = String(remote_path)
     host_results = HostResult[]
+
+    if confirm && !kit_noninteractive()
+        _print_git_sync_banner!(
+            hosts, proj, remote;
+            do_push=do_push, do_pull=do_pull, do_local_pull=do_local_pull,
+        )
+        kit_confirm("Proceed? [y/N]: ") || begin
+            println_fatal("Cancelled.")
+            return (; ok=false, cancelled=true, host_results=HostResult[])
+        end
+        println_fatal()
+    end
 
     if do_local_pull
         ok_local = kit_spin!("  localhost git pull: ") do
@@ -72,7 +111,7 @@ function git_sync_project_to_hosts!(
         else
             print_progress_err("✗")
             kit_println()
-            return (; ok=false, host_results=host_results)
+            return (; ok=false, cancelled=false, host_results=host_results)
         end
     end
 
@@ -97,7 +136,7 @@ function git_sync_project_to_hosts!(
             println_fatal()
             println_fatal("  Team member?")
             println_fatal("    git pull --rebase && git push")
-            return (; ok=false, host_results=host_results)
+            return (; ok=false, cancelled=false, host_results=host_results)
         end
     end
 
@@ -114,11 +153,11 @@ function git_sync_project_to_hosts!(
                 print_progress_err("✗")
                 kit_println()
                 push!(host_results, HostResult(host, false, "git pull failed"))
-                return (; ok=false, host_results=host_results)
+                return (; ok=false, cancelled=false, host_results=host_results)
             end
         end
     end
 
     kit_println()
-    return (; ok=true, host_results=host_results)
+    return (; ok=true, cancelled=false, host_results=host_results)
 end
