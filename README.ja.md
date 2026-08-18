@@ -61,10 +61,12 @@ julia> import Pkg; Pkg.add("DistSSHKit")
 例: ローカルマシンと、リモートマシンを使う場合。
 ワーカーは1マシンに複数立てられ (ローカルはゼロでもよい)、リモートマシンは何台でも増やせる。
 
+<!-- markdownlint-disable MD033 -->
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/src/assets/diagram/topology-ja-dark.svg">
   <img alt="ローカルのコントローラ上のマスターと、ローカルおよびリモートのワーカー" src="docs/src/assets/diagram/topology-ja.svg">
 </picture>
+<!-- markdownlint-enable MD033 -->
 
 リモートホストの台数に上限はない。台数を増やすほど SSH 接続や配置にかかる時間は伸びるので、まずは数台で試すのが無難である。
 
