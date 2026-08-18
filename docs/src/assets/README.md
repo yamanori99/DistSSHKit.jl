@@ -9,6 +9,7 @@ assets/
   logo-dark.svg     → logo/logo-dark-dynamic.svg     (Documenter)
   logo/             sources + logo rasters
   social/           social-preview SVGs + rasters
+  diagram/          topology.svg (hand-edit) + ja / dark SVGs + PNGs (bake)
 ```
 
 Naming: **`static`** = end-state still; **`dynamic`** = SMIL / GIF motion.
@@ -30,7 +31,8 @@ Documenter discovers bare `logo.svg` / `logo-dark.svg` at this directory’s top
 | --- | --- |
 | `logo/logo-dynamic.svg` | Dynamic logo (SMIL) |
 | `logo/logo-static.svg` | Static geometry (feeds static PNG + social-static) |
-| `custom.css` | Sidebar logo size |
+| `diagram/topology.svg` | Architecture diagram (English light; bake writes ja / dark SVGs + PNGs) |
+| `custom.css` | Sidebar logo size; topology light/dark swap |
 
 ## Bake (`bake.jl`, Julia only — no Python)
 
@@ -43,7 +45,7 @@ julia docs/src/assets/bake.jl --png --gif  # + GIF (Chromium + ffmpeg)
 | Mode | Needs |
 | --- | --- |
 | default | Julia |
-| `--png` | `rsvg-convert` preferred, else Chrome; social PNG is 2560×1280 (2× OG), logo PNG is 960×960 |
+| `--png` | `rsvg-convert` preferred, else Chrome; social PNG is 2560×1280 (2× OG), logo PNG is 960×960, topology PNG is 1120×472 |
 | `--gif` | Chrome / Chromium (4 parallel workers) + `ffmpeg` |
 
 CI (`.github/workflows/assets-bake.yml`) re-runs the default bake when `docs/src/assets/` changes and fails if SVG/symlink outputs drift. It **warns** (does not fail) if PNG/GIF look older than their sources in git history. Bake `--png` / `--gif` locally before committing rasters.

@@ -15,16 +15,15 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Discussions](https://img.shields.io/badge/GitHub-Discussions-blueviolet?logo=github)](https://github.com/yamanori99/DistSSHKit.jl/discussions)
 
-DistSSHKit is a kit for running a single Julia project both locally and over SSH,
-then collecting the results. By making SSH-distributed execution easier and more
-standardized, it helps make your runs more reproducible. It uses Distributed.jl
+DistSSHKit is a kit for running the same Julia project locally and over SSH,
+then collecting the results. It makes SSH-distributed runs easier and more
+uniform, which helps keep those runs reproducible. It uses Distributed.jl
 processes, not threads. Supported on **macOS, Linux, and WSL2 Ubuntu** (not
 native Windows).
 
 Even small labs and individuals often have a few high-performance machines or
-workstations lying around. DistSSHKit helps you put that hardware to work as a
-small compute cluster.
-(A lightweight scheduler built on top of this is also in progress: `DistSSHKitQueue.jl`.)
+workstations. DistSSHKit helps you use that hardware as a small set of compute
+nodes. A lightweight scheduler, `DistSSHKitQueue.jl`, is also in progress.
 
 **0.3** is not getting major new features for now. The current commands stay put,
 and ordinary bugs still get fixed.
@@ -55,9 +54,8 @@ For everything else, see the **[Documentation](https://yamanori99.github.io/Dist
 
 ### Basic terms
 
-- **Host** — the machine that runs the work. Write `local` for your own machine,
-  or `user@host` for an SSH target
-  (`host` can be a `user@hostname`, an IP address, or an SSH config `Host` alias)
+- **Host** — the machine that runs the work. Local is `local`. An SSH target is
+  `user@hostname`, an IP address, or an SSH config `Host` alias
 - **Process** — one running `julia`. Each process has its own memory and runs
   independently at the OS level
   (this kit launches multiple `julia` processes, even on a single machine, to run
@@ -66,24 +64,13 @@ For everything else, see the **[Documentation](https://yamanori99.github.io/Dist
   workers and collects the results
 - **Worker** — a process that receives work from the master and runs it
 
-Example: one local machine plus two remote machines.
+Example: a local machine plus remotes. Each machine can run several workers
+(local may run none), and you can add as many remote machines as you like.
 
-```mermaid
-flowchart LR
-    subgraph H1["Local machine"]
-        M["Master"]
-        W1["Worker"]
-    end
-    subgraph H2["Remote machine (SSH)"]
-        W2["Worker"]
-    end
-    subgraph H3["Remote machine (SSH)"]
-        W3["Worker"]
-    end
-    M <-- work / results --> W1
-    M <-- work / results --> W2
-    M <-- work / results --> W3
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/src/assets/diagram/topology-dark.svg">
+  <img alt="Master on the local controller, workers on local and remote machines" src="docs/src/assets/diagram/topology.svg">
+</picture>
 
 There's no limit on the number of remote hosts — more hosts just means more time
 spent on SSH connections and deployment, so it's best to start with a few and
@@ -93,51 +80,56 @@ Before you use a remote host, it needs to satisfy the following:
 
 - Passwordless SSH login from your local machine
 - Julia installed, with the **same major.minor version** as your local machine
-  (checked by `setup --check`, more on that below)
+  (checked by `setup --check`)
 
 Details: [Requirements](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/).
 
-If SSH disconnects are a risk, use machines that stay up, and keep the master's
-run alive with something like `tmux`.
+> [!TIP]
+> If SSH disconnects are a worry, use machines that stay up, and keep the master
+> session alive with something like `tmux`.
 
-### go vs drive
+### go and drive
 
 There are two ways to run a script:
 
-- **go** — each host runs your standalone `.jl` file from start to finish
-- **drive** — one master farms out work to workers (built on Distributed.jl)
+- **go** — each host runs your `.jl` as-is from start to finish
+- **drive** — one master farms work to workers (built on Distributed.jl)
 
-`go` alone is plenty useful on its own. A common path is to first validate a
-standalone run with `go`, then move to `drive` / Distributed.jl once you need it.
+`go` alone is plenty useful. A common path is to first check a standalone run
+with `go`, then move to `drive` / Distributed.jl when you need it.
 
-### CLI vs Julia
+### How you call it
 
-- **CLI** — invoke the kit directly from the terminal.
-  Example: `julia -m DistSSHKit go user@host1:1 script.jl`.
-  Good for quick experiments or wiring into shell scripts
-- **Julia** — call the kit as functions from your own Julia code (a script, the
-  REPL, or another package), using the `!`-suffixed functions such as `setup!`,
-  `go!` / `drive!`.
-  CLI flags map one-to-one onto these: `setup --rsync` on the CLI corresponds to
-  `setup!(session, :rsync)` in Julia.
-  See [`demos/with_kit/pipeline_square.jl`](demos/with_kit/pipeline_square.jl) and
-  [`demos/without_kit/pipeline_pi.jl`](demos/without_kit/pipeline_pi.jl) for
-  working examples
+- **CLI** — invoke the kit from the terminal.
+  Example: `julia --project=. -m DistSSHKit go user@host1:1 script.jl`.
+  Good for a quick try or a shell script
+- **Julia** — call functions from your own Julia code (a script, the REPL, or
+  another package): `setup!`, `go!` / `drive!`, and other `!` functions
+- **`distsshkit` (experimental)** — after `pkg> app add DistSSHKit`, a
+  `distsshkit` command on the terminal. Same flags as `-m`, but always the Apps
+  copy, not `--project=.`. Fine for `go` / `setup` / `demo`; keep `drive` and
+  `size` on `julia --project=. -m DistSSHKit`. When to use it:
+  [User Guide](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/distsshkit/)
 
-Both do the same thing under the hood — only the calling convention differs.
-The CLI is the easiest place to start.
+CLI flags map one-to-one onto the Julia API: `setup --rsync` is
+`setup!(session, :rsync)`.
+See [`demos/with_kit/pipeline_square.jl`](demos/with_kit/pipeline_square.jl) and
+[`demos/without_kit/pipeline_pi.jl`](demos/without_kit/pipeline_pi.jl).
 
-## Preparing remotes
+Both do the same thing — only the calling convention differs. The CLI is the
+easiest place to start.
 
-You always need to `setup` before running a script; `setup` deploys your local
-Julia project to each remote host and initializes it.
+### Preparing remotes
+
+You need `setup` before running a script. It deploys your local Julia project to
+each remote and installs dependencies. Pick one deploy/init action per
+invocation.
 
 - First deploy: either `--rsync` (send the local tree as-is) or `--clone`
   (`git clone` a repository) — pick one
-- Initialize: `--instantiate` (runs `Pkg.instantiate` on the remote to install
-  dependencies)
-- Update (redeploy): `--sync` (`git push`, then `pull` on each remote), or
-  `--rsync` again
+- Dependencies: `--instantiate` (`Pkg.instantiate` on the remote)
+- Update (redeploy): `--sync` (`git push`, then `pull` on each remote),
+  `--pull` (`pull` only, no push), or `--rsync` again
 - Other modes:
   - `--check` (verify SSH / Julia / dependencies)
   - `--cleanup` (kill leftover worker processes)
@@ -148,20 +140,21 @@ before running. Pass `-y` / `--yes` to run non-interactively, e.g. from a script
 
 Details: [setup](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/setup/).
 
-**Not sure whether to use rsync or git?**
-
-- **`--rsync`** — just sends your local files as-is; no git needed on the
-  remote. Good for a first try or a one-off run
-- **`--clone` then `--sync`** — manages the remote as a git repository. Better
-  if you're updating the code continuously, or you want `drive --require-git`
-  to confirm the remote commit matches your local one for reproducibility
+> [!NOTE]
+> **Not sure whether to use rsync or git?**
+>
+> - **`--rsync`** — just sends your local files as-is; no git needed on the
+>   remote. Good for a first try or a one-off run
+> - **`--clone` then `--sync`** — manages the remote as a git repository. Better
+>   if you're updating the code continuously, or you want `drive --require-git`
+>   to confirm the remote commit matches your local one for reproducibility
 
 A typical first-time setup (rsync path) looks like this:
 
 ```bash
 # Copy the files over
 julia --project=. -m DistSSHKit setup --rsync user@host1 user@host2
-# Initialize
+# Install dependencies
 julia --project=. -m DistSSHKit setup --instantiate user@host1 user@host2
 # Sanity check
 julia --project=. -m DistSSHKit setup --check user@host1 user@host2
@@ -176,32 +169,24 @@ julia --project=. -m DistSSHKit setup --cleanup user@host1 user@host2
 julia --project=. -m DistSSHKit setup --delete user@host1 user@host2
 ```
 
-## Examples
+### Examples
 
-**CLI, go.** Copy the files to the remote with rsync (first time only),
-initialize Julia on each machine (`--instantiate`), then run `script.jl` once
-on each of `user@host1` and `user@host2`.
-(Pick a single `setup` mode per invocation.)
+After setup, run like this.
+
+**CLI, go.** One full run of `script.jl` on each host (`local:N` also works).
 
 ```bash
-julia --project=. -m DistSSHKit setup --rsync user@host1        # deploy files (first time only)
-julia --project=. -m DistSSHKit setup --instantiate user@host1  # initialize
-# Run script.jl once on each listed host (local:N also works)
 julia --project=. -m DistSSHKit go user@host1:1 user@host2:1 path/to/script.jl
 ```
 
-**CLI, drive.** For a git-based deploy, use `--clone` the first time and
-`--sync` for later updates. Plain `rsync` (as above) works too.
+**CLI, drive.** For a git deploy, later updates are `setup --sync`. `rsync` works
+too.
 
 ```bash
-julia --project=. -m DistSSHKit setup --clone user@host1        # clone the repo (first time only)
-julia --project=. -m DistSSHKit setup --instantiate user@host1  # initialize
 julia --project=. -m DistSSHKit drive local:2 user@host1:4 path/to/driver.jl
-julia --project=. -m DistSSHKit setup --sync user@host1         # later updates
 ```
 
-**Julia, go.** The same thing as the CLI example above, from Julia code.
-Keep `remote=` consistent with the `setup!` call (omit both to use the default
+**Julia, go.** Keep `remote=` consistent with `setup!` (omit both for the default
 path).
 
 ```julia
@@ -209,8 +194,8 @@ using DistSSHKit
 
 remote = "/path/to/project"
 session = KitSession(workers=["user@host1"], remote=remote, yes=true)
-setup!(session, :rsync, :instantiate)                   # deploy files + initialize
-go!("path/to/script.jl", "user@host1:1"; remote=remote)  # run
+setup!(session, :rsync, :instantiate)
+go!("path/to/script.jl", "user@host1:1"; remote=remote)
 ```
 
 **Julia, drive.**
@@ -220,14 +205,14 @@ using DistSSHKit
 
 remote = "/path/to/project"
 session = KitSession(workers=["user@host1"], remote=remote, yes=true)
-setup!(session, :clone; repo="https://github.com/org/proj.git")  # clone (first time only)
-setup!(session, :instantiate)                                    # initialize
-drive!("path/to/driver.jl", "local:2", "user@host1:4"; remote=remote)  # run
-setup!(session, :sync)                                           # later updates
+setup!(session, :clone; repo="https://github.com/org/proj.git")
+setup!(session, :instantiate)
+drive!("path/to/driver.jl", "local:2", "user@host1:4"; remote=remote)
+setup!(session, :sync)  # later updates
 ```
 
-`pipeline!` is optional sugar: optional sync → `size!` → `drive!` → optional
-collect. It does not run `setup!`; prepare remotes first.
+`pipeline!` is an optional one-shot: sync → `size!` → `drive!` → collect.
+It does not run `setup!`; prepare remotes first.
 Details: [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/).
 
 ### Try a demo
@@ -257,7 +242,7 @@ Walkthrough: [Demo](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/d
 ## Contributing
 
 Bugs and feature requests: [Issues](https://github.com/yamanori99/DistSSHKit.jl/issues).
-Questions, ideas, and other chat: [Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions).
+Questions and ideas: [Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions).
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to contribute.
 
 <!-- markdownlint-disable MD033 -->

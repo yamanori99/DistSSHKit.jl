@@ -1,7 +1,7 @@
 # Requirements
 
 Prerequisites for [Introduction](@ref DistSSHKit.jl) and
-[First Steps](@ref Tutorial-Prepare). You can start local-only; add the remote
+[Prepare](@ref Tutorial-Prepare). You can start local-only; add the remote
 pieces when you SSH to other hosts. `pkg> add DistSSHKit` does not install
 **`ssh`**, **`rsync`**, or **`git`**.
 

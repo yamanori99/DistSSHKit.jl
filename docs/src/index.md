@@ -1,15 +1,14 @@
 # [DistSSHKit.jl](@id DistSSHKit.jl)
 
-DistSSHKit makes it easy to run one Julia project locally and over SSH, then
-collect the results. It uses Distributed.jl processes (not threads). **macOS,
-Linux, and WSL2 Ubuntu** (not native Windows).
+DistSSHKit is a kit for running the same Julia project locally and over SSH,
+then collecting the results. It makes SSH-distributed runs easier and more
+uniform, which helps keep those runs reproducible. It uses Distributed.jl
+processes, not threads. Supported on **macOS, Linux, and WSL2 Ubuntu** (not
+native Windows).
 
-By making SSH-distributed execution easier and more standardized, it also helps
-make your runs more reproducible.
-
-These days, even small labs and individuals often have several high-performance
-machines or workstations. DistSSHKit helps you put that hardware to work.
-(A lightweight scheduler built on top of this is also in progress: `DistSSHKitQueue.jl`.)
+Even small labs and individuals often have a few high-performance machines or
+workstations. DistSSHKit helps you use that hardware as a small set of compute
+nodes. A lightweight scheduler, `DistSSHKitQueue.jl`, is also in progress.
 
 **0.3** is not getting major new features for now. The current commands stay put,
 and ordinary bugs still get fixed.
@@ -18,7 +17,7 @@ and ordinary bugs still get fixed.
 
 ## What is DistSSHKit?
 
-Two ways to run (job shape):
+Two ways to run a script:
 
 - **Same script on each machine** (`go`) — each host runs your `.jl` from start
   to finish. No rewrite needed. Prefer this when every run is already a complete
@@ -32,14 +31,17 @@ Use it from the terminal or from Julia code / notebooks.
 
 How you call it is a separate choice:
 
-- **Julia API** (**1.12+**) — `setup!` for remotes, `go!` / `drive!` to run, or
-  `pipeline!` for optional sync → size! → drive! → collect (not `setup!`)
-- **CLI** (**1.12+**) — `julia --project=. -m DistSSHKit go …` / `drive …`
-  (and `setup`, `demo`, …). This is the job-project kit.
-- **`distsshkit` (experimental, 1.12+)** — after `pkg> app add DistSSHKit`, a
+- **Julia API** — `setup!` for remotes, `go!` / `drive!` to run, or
+  `pipeline!` for optional sync → `size!` → `drive!` → collect (not `setup!`)
+- **CLI** — `julia --project=. -m DistSSHKit go …` / `drive …`
+  (and `setup`, `demo`, …)
+- **`distsshkit` (experimental)** — after `pkg> app add DistSSHKit`, a
   `distsshkit` command on the terminal. Same flags as `-m`, but always the
-  Apps copy, not `--project=.`. When to use it:
+  Apps copy, not `--project=.`. Fine for `go` / `setup` / `demo`; keep `drive`
+  and `size` on `julia --project=. -m DistSSHKit`. When to use it:
   [User Guide](@ref Manual-distsshkit).
+
+All of these need **Julia 1.12+** ([Requirements](@ref)).
 
 Same host tokens for all of these (`local:2`, `user@host:1`). Details:
 [API](@ref API), [User Guide](@ref Manual).
@@ -66,9 +68,8 @@ Also needs **`ssh`**, **`rsync`**, and **`git`** (git deploy only);
 
 ## Basic terms
 
-- **Host** — the machine that runs the work. Write `local` for your own machine,
-  or `user@host` for an SSH target (`host` can be a `user@hostname`, an IP
-  address, or an SSH config `Host` alias)
+- **Host** — the machine that runs the work. Local is `local`. An SSH target is
+  `user@hostname`, an IP address, or an SSH config `Host` alias
 - **Process** — one running `julia`. Each process has its own memory and runs
   independently at the OS level (this kit launches multiple `julia` processes,
   even on a single machine, to run work in parallel — built on Distributed.jl)
@@ -76,23 +77,14 @@ Also needs **`ssh`**, **`rsync`**, and **`git`** (git deploy only);
   workers and collects the results
 - **Worker** — a process that receives work from the master and runs it
 
-Example: one local machine plus two remote machines.
+Example: a local machine plus remotes. Each machine can run several workers
+(local may run none), and you can add as many remote machines as you like.
 
-```mermaid
-flowchart LR
-    subgraph H1["Local machine"]
-        M["Master"]
-        W1["Worker"]
-    end
-    subgraph H2["Remote machine (SSH)"]
-        W2["Worker"]
-    end
-    subgraph H3["Remote machine (SSH)"]
-        W3["Worker"]
-    end
-    M <-- work / results --> W1
-    M <-- work / results --> W2
-    M <-- work / results --> W3
+```@raw html
+<p>
+<img class="diagram-light" alt="Master on the local controller, workers on local and remote machines" src="assets/diagram/topology.svg">
+<img class="diagram-dark" alt="Master on the local controller, workers on local and remote machines" src="assets/diagram/topology-dark.svg">
+</p>
 ```
 
 There's no limit on the number of remote hosts — more hosts just means more
@@ -112,6 +104,6 @@ Later: [`setup`](@ref Manual-setup), [`go`](@ref Manual-go),
 
 ## Contributing
 
-Bugs and features to track: [Issues](https://github.com/yamanori99/DistSSHKit.jl/issues).
-Questions, ideas, and other chat: [Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions).
+Bugs and feature requests: [Issues](https://github.com/yamanori99/DistSSHKit.jl/issues).
+Questions and ideas: [Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions).
 See [CONTRIBUTING.md](https://github.com/yamanori99/DistSSHKit.jl/blob/main/CONTRIBUTING.md) for how to contribute.

@@ -26,7 +26,8 @@ julia --project=. -m DistSSHKit setup --instantiate YourHost1 YourHost2
 
 `--rsync` is the usual first deploy; `--clone` is the git path (later updates:
 `setup --sync`). Both need the same `--instantiate` afterward.
-Not sure which to pick? See [setup · rsync or git?](@ref Manual-setup).
+Not sure which to pick? See
+[setup · rsync or git?](@ref Manual-setup-rsync-or-git).
 Skipping instantiate is a common cause of remote failures such as
 `failed to find source of parent package: "…"`.
 `go` / `drive` and `setup --check` probe remotes first and fail fast with an
