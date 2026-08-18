@@ -68,10 +68,12 @@ Example: a local machine plus remotes. Each machine can run several workers
 (local may run none), and you can add as many remote machines as you like.
 
 <!-- markdownlint-disable MD033 -->
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/src/assets/diagram/topology-dark.svg">
-  <img alt="Master on the local controller, workers on local and remote machines" src="docs/src/assets/diagram/topology.svg">
-</picture>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/src/assets/diagram/topology-dark.svg">
+    <img alt="Master on the local controller, workers on local and remote machines" src="docs/src/assets/diagram/topology.svg">
+  </picture>
+</p>
 <!-- markdownlint-enable MD033 -->
 
 There's no limit on the number of remote hosts — more hosts just means more time
