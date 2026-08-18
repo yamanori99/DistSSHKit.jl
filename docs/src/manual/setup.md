@@ -14,7 +14,7 @@ From Julia, use [`setup!`](@ref) for the same modes as this CLI
 
 Also: [Requirements](@ref), `setup --help`. Flag vocabulary: [User Guide](@ref Manual).
 
-## rsync or git?
+## [rsync or git?](@id Manual-setup-rsync-or-git)
 
 - **`--rsync`** — just sends your local files as-is; no git needed on the
   remote. Good for a first try or a one-off run.

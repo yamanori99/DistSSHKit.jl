@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 236" width="560" height="236">
+  <!-- Hand-edit source. bake.jl writes ja / dark SVGs and PNGs. -->
+  <defs>
+    <style>
+      .box { fill: #1e293b; stroke: #94a3b8; stroke-width: 1.5; }
+      .link { fill: none; stroke: #64748b; stroke-width: 1.5; stroke-linecap: round; }
+      .link-more { fill: none; stroke: #475569; stroke-width: 1.2; stroke-linecap: round; }
+      .cluster { fill: #0f172a; stroke: #475569; stroke-width: 1.2; }
+      .master { fill: #3b82f6; stroke: #93c5fd; stroke-width: 1.2; }
+      .t { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; fill: #f8fafc; }
+      .t-sub { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; fill: #94a3b8; }
+      .t-on { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; fill: #ffffff; }
+      .halo { fill: #0f172a; }
+    </style>
+    <g id="juliadot">
+      <circle cx="0" cy="-4.2" r="3.15" fill="#cb3c33"/>
+      <circle cx="-3.637" cy="2.1" r="3.15" fill="#389826"/>
+      <circle cx="3.637" cy="2.1" r="3.15" fill="#9558b2"/>
+    </g>
+    <!-- Shared worker block: same geometry on every machine. Label is per-use. -->
+    <g id="worker">
+      <rect class="box" width="140" height="40" rx="8"/>
+    </g>
+  </defs>
+
+  <g transform="translate(18,12)">
+    <rect class="cluster" width="156" height="82" rx="12"/>
+    <text class="t" x="12" y="20" font-size="14" font-weight="600">リモート 1</text>
+    <use href="#juliadot" x="136" y="14"/>
+    <use href="#worker" x="8" y="34"/>
+    <text class="t-sub" x="78" y="60" text-anchor="middle" font-size="13">ワーカー x 1..n</text>
+  </g>
+  <g transform="translate(184,12)">
+    <rect class="cluster" width="156" height="82" rx="12"/>
+    <text class="t" x="12" y="20" font-size="14" font-weight="600">リモート 2</text>
+    <use href="#juliadot" x="136" y="14"/>
+    <use href="#worker" x="8" y="34"/>
+    <text class="t-sub" x="78" y="60" text-anchor="middle" font-size="13">ワーカー x 1..n</text>
+  </g>
+  <text class="t-sub" x="358" y="58" text-anchor="middle" font-size="20">...</text>
+  <g transform="translate(386,12)">
+    <rect class="cluster" width="156" height="82" rx="12"/>
+    <text class="t" x="12" y="20" font-size="14" font-weight="600">リモート n</text>
+    <use href="#juliadot" x="136" y="14"/>
+    <use href="#worker" x="8" y="34"/>
+    <text class="t-sub" x="78" y="60" text-anchor="middle" font-size="13">ワーカー x 1..n</text>
+  </g>
+
+  <g id="local">
+    <rect class="cluster" x="116" y="124" width="328" height="96" rx="12"/>
+    <!-- Master hub to remotes and the local worker (endpoints run a few px
+         into the filled shapes so they visibly merge). Drawn under the
+         header so lines do not cross labels. -->
+    <path class="link" d="M192,172 L96,94"/>
+    <path class="link" d="M192,172 L262,94"/>
+    <path class="link-more" d="M192,172 L358,94"/>
+    <path class="link" d="M192,172 L464,94"/>
+    <path class="link" d="M252,188 L268,188"/>
+    <rect class="halo" x="122" y="128" width="316" height="22"/>
+    <text class="t" x="132" y="144" font-size="14" font-weight="600">ローカルマシン (コントローラ)</text>
+    <use href="#juliadot" x="424" y="140"/>
+    <rect class="master" x="132" y="168" width="120" height="40" rx="8"/>
+    <text class="t-on" x="192" y="194" text-anchor="middle" font-size="15" font-weight="700">マスター</text>
+    <use href="#worker" x="268" y="168"/>
+    <text class="t-sub" x="338" y="194" text-anchor="middle" font-size="13">ワーカー x 0..n</text>
+  </g>
+</svg>
