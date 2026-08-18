@@ -1,13 +1,16 @@
 #!/usr/bin/env julia
 #=
-Regenerate DistSSHKit logo / social-preview derivatives.
+Regenerate DistSSHKit logo / social-preview / topology-diagram derivatives.
 
-Hand-edit sources (under logo/):
+Hand-edit sources (under logo/ and diagram/):
   logo/logo-dynamic.svg, logo/logo-static.svg
+  diagram/topology.svg
 
 Derived:
   logo/logo-dark-*.svg, logo/logo-static.png, logo/logo-dynamic.gif
   social/social-preview-*.svg|.png|.gif
+  diagram/topology-ja.svg, diagram/topology-dark.svg, diagram/topology-ja-dark.svg
+  diagram/topology.png, diagram/topology-ja.png
 
 Documenter looks for assets/logo.svg and assets/logo-dark.svg; bake makes
 **symlinks** to logo/logo-dynamic.svg and logo/logo-dark-dynamic.svg.
@@ -22,6 +25,38 @@ using Printf
 const ROOT = @__DIR__
 const LOGO_DIR = "logo"
 const SOCIAL_DIR = "social"
+const DIAGRAM_DIR = "diagram"
+const DIAGRAM_W, DIAGRAM_H = 560, 236
+const DIAGRAM_PNG_W, DIAGRAM_PNG_H = DIAGRAM_W * 2, DIAGRAM_H * 2
+
+const DIAGRAM_JA = (
+    "Remote 1" => "リモート 1",
+    "Remote 2" => "リモート 2",
+    "Remote n" => "リモート n",
+    "Local machine (controller)" => "ローカルマシン (コントローラ)",
+    ">Master</text>" => ">マスター</text>",
+    "Worker x 0..n" => "ワーカー x 0..n",
+    "Worker x 1..n" => "ワーカー x 1..n",
+)
+
+# Light (source) → dark surface. Master stays a strong blue so it still reads as hub.
+const DIAGRAM_DARK = (
+    ".box { fill: #ffffff; stroke: #475569;" =>
+        ".box { fill: #1e293b; stroke: #94a3b8;",
+    ".link { fill: none; stroke: #94a3b8;" =>
+        ".link { fill: none; stroke: #64748b;",
+    ".link-more { fill: none; stroke: #cbd5e1;" =>
+        ".link-more { fill: none; stroke: #475569;",
+    ".cluster { fill: #f8fafc; stroke: #cbd5e1;" =>
+        ".cluster { fill: #0f172a; stroke: #475569;",
+    ".master { fill: #1e40af; stroke: #1e3a8a;" =>
+        ".master { fill: #3b82f6; stroke: #93c5fd;",
+    ".t { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; fill: #0f172a;" =>
+        ".t { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; fill: #f8fafc;",
+    ".t-sub { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; fill: #475569;" =>
+        ".t-sub { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; fill: #94a3b8;",
+    ".halo { fill: #f8fafc; }" => ".halo { fill: #0f172a; }",
+)
 
 const SOCIAL_W, SOCIAL_H = 1280, 640
 # Gentle lift only — 112/36 read high; 140/18.5 read low.
@@ -65,6 +100,23 @@ die(msg) = (println(stderr, "error: ", msg); exit(1))
 
 logo_path(name::AbstractString) = joinpath(LOGO_DIR, name)
 social_path(name::AbstractString) = joinpath(SOCIAL_DIR, name)
+diagram_path(name::AbstractString) = joinpath(DIAGRAM_DIR, name)
+
+function topology_ja(svg::AbstractString)
+    out = svg
+    for (en, ja) in DIAGRAM_JA
+        out = replace(out, en => ja)
+    end
+    return out
+end
+
+function topology_dark(svg::AbstractString)
+    out = svg
+    for (light, dark) in DIAGRAM_DARK
+        out = replace(out, light => dark)
+    end
+    return out
+end
 
 function readfile(rel::AbstractString)
     p = joinpath(ROOT, rel)
@@ -202,6 +254,7 @@ end
 function bake_svgs!()
     mkpath(joinpath(ROOT, LOGO_DIR))
     mkpath(joinpath(ROOT, SOCIAL_DIR))
+    mkpath(joinpath(ROOT, DIAGRAM_DIR))
 
     logo = readfile(logo_path("logo-dynamic.svg"))
     logo_static = readfile(logo_path("logo-static.svg"))
@@ -218,7 +271,24 @@ function bake_svgs!()
     writefile(social_path("social-preview-static.svg"), social_static)
     writefile(social_path("social-preview-dynamic.svg"), social_dynamic)
 
-    return (; logo, logo_static, social_static, social_dynamic)
+    topology = readfile(diagram_path("topology.svg"))
+    topology_ja_svg = topology_ja(topology)
+    topology_dark_svg = topology_dark(topology)
+    topology_ja_dark_svg = topology_dark(topology_ja_svg)
+    writefile(diagram_path("topology-ja.svg"), topology_ja_svg)
+    writefile(diagram_path("topology-dark.svg"), topology_dark_svg)
+    writefile(diagram_path("topology-ja-dark.svg"), topology_ja_dark_svg)
+
+    return (;
+        logo,
+        logo_static,
+        social_static,
+        social_dynamic,
+        topology,
+        topology_ja_svg,
+        topology_dark_svg,
+        topology_ja_dark_svg,
+    )
 end
 
 function rsvg_png(
@@ -450,6 +520,30 @@ function bake_pngs!(arts)
         ok_any = true
     else
         println(stderr, "warn: skip social-preview-static.png (need rsvg-convert or Chromium)")
+    end
+
+    for (svg_rel, png_rel, svg_text) in (
+        (diagram_path("topology.svg"), diagram_path("topology.png"), arts.topology),
+        (diagram_path("topology-ja.svg"), diagram_path("topology-ja.png"), arts.topology_ja_svg),
+    )
+        html_body = replace(
+            strip_xml_decl(svg_text),
+            "width=\"$(DIAGRAM_W)\" height=\"$(DIAGRAM_H)\"" =>
+                "width=\"$(DIAGRAM_PNG_W)\" height=\"$(DIAGRAM_PNG_H)\"",
+            count=1,
+        )
+        if bake_static_png!(
+            svg_rel,
+            png_rel,
+            html_body;
+            w=DIAGRAM_PNG_W,
+            h=DIAGRAM_PNG_H,
+            scale=1,
+        )
+            ok_any = true
+        else
+            println(stderr, "warn: skip $png_rel (need rsvg-convert or Chromium)")
+        end
     end
     return ok_any
 end

@@ -3,6 +3,17 @@
   max-height: 8rem;
 }
 
+/* Topology diagram: light/dark pair (Documenter theme class, not OS only). */
+img.diagram-dark {
+  display: none;
+}
+html.theme--documenter-dark img.diagram-light {
+  display: none;
+}
+html.theme--documenter-dark img.diagram-dark {
+  display: inline;
+}
+
 /* Version selector: Documenter puts it at the bottom of the sidebar. */
 #documenter .docs-sidebar {
   display: flex;
