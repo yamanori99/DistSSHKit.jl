@@ -2,9 +2,6 @@
 
 [English](README.md) | [日本語](README.ja.md)
 
-<!-- markdownlint-disable MD033 -->
-<div align="center">
-
 [![CI](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/CI.yml)
 [![codecov](https://codecov.io/gh/yamanori99/DistSSHKit.jl/graph/badge.svg?token=6OT4L5JDUW)](https://codecov.io/gh/yamanori99/DistSSHKit.jl)
 [![JETLS](https://img.shields.io/github/actions/workflow/status/yamanori99/DistSSHKit.jl/jetls.yml?branch=main&label=JETLS)](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/jetls.yml)
@@ -17,9 +14,6 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Discussions](https://img.shields.io/badge/GitHub-Discussions-blueviolet?logo=github)](https://github.com/yamanori99/DistSSHKit.jl/discussions)
-
-</div>
-<!-- markdownlint-enable MD033 -->
 
 DistSSHKit is a kit for running the same Julia project locally and over SSH,
 then collecting the results. It makes SSH-distributed runs easier and more
