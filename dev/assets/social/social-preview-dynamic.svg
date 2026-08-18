@@ -9,6 +9,8 @@
     Send: one ぐるん per color (0.7s turns @ 2.4 / 3.1 / 3.8); remotes stay still
     and solidify on arrival. Then master + remotes spin together (~3 ぐるん).
     Collect: one quiet data-dot returns per link; master sparkles.
+    Julia dots: Copyright (c) 2012-2022 Stefan Karpinski, CC BY-NC-SA 4.0
+    (https://github.com/JuliaLang/julia-logo-graphics). DistSSHKit adapts them.
   -->
   <defs>
     <filter id="dot-glow" x="-100%" y="-100%" width="300%" height="300%">
