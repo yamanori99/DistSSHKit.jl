@@ -1,4 +1,5 @@
 using Documenter
+using DocumenterMermaid
 using DistSSHKit
 
 DocMeta.setdocmeta!(DistSSHKit, :DocTestSetup, :(using DistSSHKit); recursive=true)

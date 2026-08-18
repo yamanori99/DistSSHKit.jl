@@ -22,6 +22,7 @@ runs:
           heavy:
             - "**"
             - "!README.md"
+            - "!README.ja.md"
             - "!CONTRIBUTING.md"
             - "!NEWS.md"
             - "!SECURITY.md"

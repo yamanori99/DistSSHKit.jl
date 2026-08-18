@@ -14,7 +14,7 @@
 #   - SSH E2E entry (`test/e2e.jl`, `test/support/ssh_e2e.jl`) also gets each
 #     CLI area (drive / go / setup / size): the suite is those commands on
 #     real SSH, not a fourth product-test tree.
-#   - product docs → area:docs (docs/**, README.md, NEWS.md, demos markdown —
+#   - product docs → area:docs (docs/**, README.md, README.ja.md, NEWS.md, demos markdown —
 #     not CONTRIBUTING; that is area:kit)
 #   - .github/** and codecov.yml → area:ci
 #
@@ -81,6 +81,7 @@ trap 'rm -f "$tmp"' EXIT
       - any-glob-to-any-file:
           - "docs/**"
           - "README.md"
+          - "README.ja.md"
           - "NEWS.md"
           - "demos/**/*.md"
 

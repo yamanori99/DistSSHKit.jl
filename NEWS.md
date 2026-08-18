@@ -5,6 +5,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- Docs: Japanese README (`README.ja.md`); English README and Introduction
+  restructured around terms, `go` / `drive`, setup, and rsync vs git.
+  Documenter renders mermaid via DocumenterMermaid.
 - Docs: `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL`, and gitignore `.distsshkit/` in
   the job project.
 - `setup --sync` / `--pull` (and `go` / `drive` `--sync`, `sync!`,
