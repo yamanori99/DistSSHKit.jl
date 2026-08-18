@@ -233,6 +233,15 @@ julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_file.jl
 質問やアイデアは [Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions)。
 貢献の仕方は [CONTRIBUTING.md](CONTRIBUTING.md) を参照。
 
+## ライセンス
+
+ソースコードは [MIT](LICENSE)。ロゴと図に含まれる Julia ドットは
+Copyright (c) 2012-2022 Stefan Karpinski、
+[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)。
+DistSSHKit はそれを改変して使っている。
+詳細は [LICENSE](LICENSE) と
+[julia-logo-graphics](https://github.com/JuliaLang/julia-logo-graphics)。
+
 <!-- markdownlint-disable MD033 -->
 <p align="center">
   <img src="docs/src/assets/logo/logo-static.svg" width="180" alt="DistSSHKit.jl logo"/>

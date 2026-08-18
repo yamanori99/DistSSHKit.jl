@@ -1,5 +1,16 @@
 # Logo & social-preview assets
 
+The three-circle mark (`#juliadot`, `#juliadot-lg`) is the Julia logo
+(julia-circles), Copyright (c) 2012-2022 Stefan Karpinski,
+[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+DistSSHKit adapts it inside original machine / wire artwork.
+
+- Design: [julia-logo-graphics](https://github.com/JuliaLang/julia-logo-graphics)
+- Carve-out: [LICENSE](../../../LICENSE)
+
+Hand-edit sources and bake outputs that include those circles (logo, social,
+diagram, PNG/GIF) are CC BY-NC-SA 4.0, not MIT.
+
 Layout:
 
 ```text

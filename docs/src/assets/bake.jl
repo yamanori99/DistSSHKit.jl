@@ -12,6 +12,10 @@ Derived:
   diagram/topology-ja.svg, diagram/topology-dark.svg, diagram/topology-ja-dark.svg
   diagram/topology.png, diagram/topology-ja.png
 
+Julia dots in these files are Copyright (c) 2012-2022 Stefan Karpinski,
+CC BY-NC-SA 4.0 (https://github.com/JuliaLang/julia-logo-graphics), not MIT.
+See LICENSE and docs/src/assets/README.md.
+
 Documenter looks for assets/logo.svg and assets/logo-dark.svg; bake makes
 **symlinks** to logo/logo-dynamic.svg and logo/logo-dark-dynamic.svg.
 

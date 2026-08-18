@@ -19,3 +19,26 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+Julia logo designs (julia-circles / "julia dots")
+
+The three-circle Julia mark that appears in documentation and branding assets
+under docs/src/assets/ (package logo, topology diagrams, social preview, and
+derived PNG/GIF) is:
+
+  Copyright (c) 2012-2022 Stefan Karpinski <stefan@karpinski.org>
+
+licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+International (CC BY-NC-SA 4.0):
+
+  https://creativecommons.org/licenses/by-nc-sa/4.0/
+  https://github.com/JuliaLang/julia-logo-graphics
+
+DistSSHKit's machines, wires, and animation are original. Combined graphics
+that incorporate the julia-circles are a derivative work and are licensed
+CC BY-NC-SA 4.0. They are not licensed under the MIT License above.
+
+Commercial use of the Julia logo, or of a logo derived from it, requires
+permission from the licensor (see julia-logo-graphics).
