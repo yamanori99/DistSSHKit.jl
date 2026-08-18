@@ -107,3 +107,11 @@ Later: [`setup`](@ref Manual-setup), [`go`](@ref Manual-go),
 Bugs and feature requests: [Issues](https://github.com/yamanori99/DistSSHKit.jl/issues).
 Questions and ideas: [Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions).
 See [CONTRIBUTING.md](https://github.com/yamanori99/DistSSHKit.jl/blob/main/CONTRIBUTING.md) for how to contribute.
+
+## License
+
+Source code is [MIT](https://github.com/yamanori99/DistSSHKit.jl/blob/main/LICENSE).
+The Julia dots in the docs logo and topology diagram are Copyright (c) 2012-2022
+Stefan Karpinski, [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+DistSSHKit adapts them.
+[julia-logo-graphics](https://github.com/JuliaLang/julia-logo-graphics).

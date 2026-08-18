@@ -4,7 +4,9 @@
   <rect width="1280" height="640" fill="#ffffff"/>
   <svg x="100" y="150" width="340" height="340" viewBox="0 26 240 240">
 
-  <!-- Static end-state (no SMIL). Same geometry as logo-dynamic.svg. -->
+  <!-- Static end-state (no SMIL). Same geometry as logo-dynamic.svg.
+       Julia dots: Copyright (c) 2012-2022 Stefan Karpinski, CC BY-NC-SA 4.0
+       (https://github.com/JuliaLang/julia-logo-graphics). DistSSHKit adapts them. -->
   <defs>
     <style>
       .stroke {

@@ -5,6 +5,10 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- Docs: LICENSE carves out Julia dots (CC BY-NC-SA 4.0, Stefan Karpinski)
+  from the MIT source license. READMEs, Introduction, and
+  `docs/src/assets/README.md` credit
+  [julia-logo-graphics](https://github.com/JuliaLang/julia-logo-graphics).
 - Docs: Japanese README (`README.ja.md`). English README and Introduction
   restructured around terms, `go` / `drive`, setup, and rsync vs git.
   Topology diagram is a hand-edited SVG (`docs/src/assets/diagram/topology.svg`);

@@ -247,6 +247,14 @@ Bugs and feature requests: [Issues](https://github.com/yamanori99/DistSSHKit.jl/
 Questions and ideas: [Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions).
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to contribute.
 
+## License
+
+Source code is [MIT](LICENSE). The Julia dots in the project logo and diagrams
+are Copyright (c) 2012-2022 Stefan Karpinski,
+[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+DistSSHKit adapts them. Details: [LICENSE](LICENSE) and
+[julia-logo-graphics](https://github.com/JuliaLang/julia-logo-graphics).
+
 <!-- markdownlint-disable MD033 -->
 <p align="center">
   <img src="docs/src/assets/logo/logo-static.svg" width="180" alt="DistSSHKit.jl logo"/>

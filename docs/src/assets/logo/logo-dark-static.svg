@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
-  <!-- Static end-state (no SMIL). Same geometry as logo-dynamic.svg. -->
+  <!-- Static end-state (no SMIL). Same geometry as logo-dynamic.svg.
+       Julia dots: Copyright (c) 2012-2022 Stefan Karpinski, CC BY-NC-SA 4.0
+       (https://github.com/JuliaLang/julia-logo-graphics). DistSSHKit adapts them. -->
   <defs>
     <style>
       .stroke {

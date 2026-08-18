@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 236" width="560" height="236">
-  <!-- Hand-edit source. bake.jl writes ja / dark SVGs and PNGs. -->
+  <!-- Hand-edit source. bake.jl writes ja / dark SVGs and PNGs.
+       Julia dots: Copyright (c) 2012-2022 Stefan Karpinski, CC BY-NC-SA 4.0
+       (https://github.com/JuliaLang/julia-logo-graphics). DistSSHKit adapts them. -->
   <defs>
     <style>
       .box { fill: #ffffff; stroke: #475569; stroke-width: 1.5; }
