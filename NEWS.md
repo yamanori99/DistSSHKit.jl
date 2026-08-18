@@ -5,6 +5,11 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+## 0.3.1
+
+- `go!(…; output_dir=PATH)` sets the batch root (same keyword as `drive!`).
+  `collect_spec::String` remains a compat alias; both set is an error.
+  `collect_spec=false` still skips collect. CLI `--output-dir` is unchanged.
 - Docs: LICENSE carves out Julia dots (CC BY-NC-SA 4.0, Stefan Karpinski)
   from the MIT source license. READMEs, Introduction, and
   `docs/src/assets/README.md` credit

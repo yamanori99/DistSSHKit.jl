@@ -100,7 +100,8 @@ Coverage (`DISTSSHKIT_CODE_COVERAGE=1` on `up.sh --e2e`) writes `.cov` on the co
 | mixed `local:1` + two remotes | smoke `nw=3` |
 | `go pi_echo` | π on both hosts |
 | `go pi_file` | slot `pi_results.txt` after go collect |
-| API | `setup!` / `go!` / `pipeline!(collect=true)` on worker files |
+| `go --output-dir` | `pi_results.txt` under the given batch root |
+| API | `setup!` / `go!(output_dir=)` / `pipeline!(collect=true)` on worker files |
 
 ### Git (separate remote root)
 
