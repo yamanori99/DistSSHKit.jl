@@ -336,6 +336,26 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
             end
         end
 
+        @testset "go pi_file with --output-dir" begin
+            custom = joinpath(proj, "go_cli_output")
+            isdir(custom) && rm(custom; recursive=true)
+            proc, out = _run_kit_go(;
+                script=pi_file,
+                hosts=remote_tokens,
+                script_args=["32"],
+                project_root=proj,
+                go_flags=["-y", "--output-dir", custom],
+                extra_env=merge(e2e_env, Dict("DISTSSHKIT_QUIET" => "0")),
+            )
+            _assert_ssh_e2e_ok(suite, "go_pi_file_output_dir", proc, out; project=proj, kit=:go)
+            for host in hosts
+                slot = joinpath(custom, host)
+                @test isdir(slot)
+                @test isfile(joinpath(slot, "pi_results.txt"))
+                @test occursin("pi=", read(joinpath(slot, "pi_results.txt"), String))
+            end
+        end
+
         # `~/…` remote root: setup + drive still run. square_file CSV is local.
         @testset "drive square_file collect with tilde remote root" begin
             tilde_root = _ssh_e2e_tilde_remote_root()
@@ -401,6 +421,8 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
                 @test length(prep.hosts) == length(hosts)
                 @test all(h -> h.ok, prep.hosts)
 
+                go_out = joinpath(proj, "go_api_output")
+                isdir(go_out) && rm(go_out; recursive=true)
                 go_res = go!(
                     pi_file,
                     remote_tokens[1];
@@ -410,9 +432,11 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
                     yes=true,
                     quiet=true,
                     julia="auto",
+                    output_dir=go_out,
                 )
                 _assert_ssh_e2e_api_ok(suite, "api_go", go_res.ok)
                 @test go_res.ok
+                @test go_res.output_dir == DistSSHKit.canonical_local_path(go_out)
                 go_txt = joinpath(go_res.output_dir, hosts[1], "pi_results.txt")
                 @test isfile(go_txt)
                 @test occursin("pi=", read(go_txt, String))

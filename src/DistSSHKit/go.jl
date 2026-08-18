@@ -460,7 +460,10 @@ go!("job.jl", "user@h1:1", "user@h2:1"; remote="/path/to/project")
 
 Each slot gets `DISTRIBUTED_OUTPUT_DIR` pointing at
 `<project>/.distsshkit/go/<stem>_<UTC>/<slot>/`. Setup on remotes is assumed done.
-Override the batch root with `collect_spec::AbstractString` (CLI: `--output-dir`).
+Override the batch root with `output_dir` (CLI: `--output-dir`). For backward
+compatibility `collect_spec::AbstractString` also sets the batch root, but passing
+both `output_dir` and `collect_spec::String` is an error. `collect_spec === false`
+means "skip collect" and is orthogonal to `output_dir`.
 
 Default `sync` is `false` (no pre-run sync; prepare remotes with [`setup!`](@ref)
 or CLI `setup` first — `:rsync` / `--rsync` or `:clone` / `--clone`, then
@@ -486,6 +489,7 @@ function go!(
     verbosity::Union{Nothing,Symbol}=nothing,
     yes::Bool=true,
     sync::Union{Symbol,Bool,Nothing}=nothing,
+    output_dir::Union{Nothing,AbstractString}=nothing,
     collect_spec::Union{Bool,AbstractString,Nothing}=nothing,
     args::AbstractVector{<:AbstractString}=String[],
     path_anchor::Union{Nothing,AbstractString}=nothing,
@@ -516,7 +520,14 @@ function go!(
         end
     end
     slots = _go_plan_slots(tokens)
-    batch_dir = if collect_spec isa AbstractString
+    if output_dir !== nothing && collect_spec isa AbstractString
+        throw(ArgumentError(
+            "go!: set the batch root via output_dir OR collect_spec::String, not both",
+        ))
+    end
+    batch_dir = if output_dir !== nothing
+        canonical_local_path(output_dir)
+    elseif collect_spec isa AbstractString
         canonical_local_path(collect_spec)
     else
         _go_batch_output_dir(proj, script_path)
