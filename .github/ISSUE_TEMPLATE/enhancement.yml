@@ -32,6 +32,7 @@ body:
         - explain
         - go
         - kit
+        - project-docs
         - setup
         - size
         - test

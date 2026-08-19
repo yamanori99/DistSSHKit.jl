@@ -6,7 +6,8 @@
 #   - src/DistSSHKit/argv/<area>* → same area (drive_args.jl, size_report.jl, …)
 #   - kit modules explain / demos → area:explain, area:demos (path auto)
 #   - leftover DistSSHKit / argv / matching unit tests / shared CLI tests /
-#     package meta → area:kit (every tracked path must match some area:*)
+#     package meta (LICENSE, Project.toml, …) → area:kit (every tracked path
+#     must match some area:*)
 #   - test harness → area:test (`testenv/**` plus each `test/<name>` that is
 #     not a product-test tree). Do not emit `!` globs into
 #     any-glob-to-any-file: labeler ORs them as "not this path" and tags
@@ -14,8 +15,9 @@
 #   - SSH E2E entry (`test/e2e.jl`, `test/support/ssh_e2e.jl`) also gets each
 #     CLI area (drive / go / setup / size): the suite is those commands on
 #     real SSH, not a fourth product-test tree.
-#   - product docs → area:docs (docs/**, README.md, README.ja.md, NEWS.md, demos markdown —
-#     not CONTRIBUTING; that is area:kit)
+#   - Documenter → area:docs (docs/**)
+#   - GitHub / repo prose → area:project-docs (README, NEWS, CONTRIBUTING,
+#     SECURITY). demos markdown is area:demos only.
 #   - .github/** and codecov.yml → area:ci
 #
 # Product tests live only under the trees in `product_test_trees` and pick up
@@ -80,10 +82,15 @@ trap 'rm -f "$tmp"' EXIT
   - changed-files:
       - any-glob-to-any-file:
           - "docs/**"
+
+"area:project-docs":
+  - changed-files:
+      - any-glob-to-any-file:
           - "README.md"
           - "README.ja.md"
           - "NEWS.md"
-          - "demos/**/*.md"
+          - "CONTRIBUTING.md"
+          - "SECURITY.md"
 
 "area:ci":
   - changed-files:
@@ -122,10 +129,8 @@ EOF
           - "src/DistSSHKit.jl"
           - ".gitignore"
           - ".vscode/**"
-          - "CONTRIBUTING.md"
           - "LICENSE"
           - "Project.toml"
-          - "SECURITY.md"
 EOF
 
   shopt -s nullglob
@@ -295,4 +300,4 @@ if [[ "$coverage_ok" -ne 1 ]]; then
 fi
 
 cp "$tmp" "$OUT"
-echo "wrote $OUT (${#areas_sorted[@]} CLI/module areas + kit/docs/ci/test)"
+echo "wrote $OUT (${#areas_sorted[@]} CLI/module areas + kit/docs/project-docs/ci/test)"

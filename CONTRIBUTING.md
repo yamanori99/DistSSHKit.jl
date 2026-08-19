@@ -212,7 +212,8 @@ Every tracked path must match some `area:*` glob (`gen-labeler.sh --check`). Glo
 | Harness under `test/` (not `unit/` / `integration/`) and `testenv/**` | `area:test` |
 | `test/e2e.jl`, `test/support/ssh_e2e.jl` | CLI areas `drive` / `go` / `setup` / `size` as well |
 | Product tests under `unit/` and `integration/` | that `area:<area>` (plus `area:kit` when leftover shared kit) |
-| `docs/**`, `README.md`, `README.ja.md`, `NEWS.md`, `demos/**/*.md` | `area:docs` |
+| `docs/**` | `area:docs` |
+| `README.md`, `README.ja.md`, `NEWS.md`, `CONTRIBUTING.md`, `SECURITY.md` | `area:project-docs` |
 | `.github/**`, `codecov.yml` | `area:ci` |
 
 New CLI area or a new product-test tree: edit the script, regenerate, create the GitHub label.
