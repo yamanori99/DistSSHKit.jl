@@ -100,6 +100,20 @@ PipelineResult
 report_pipeline_errors
 ```
 
+## One seam over `go!` / `drive!` — `execute!`
+
+For callers that pick the kind at runtime (the queue layer): one function,
+one result type, instead of branching on `kind` yourself.
+
+```julia
+execute!(:go, "job.jl", ["local:2"]; args=["8"])
+execute!(:drive, "job.jl", ["local:2"]; args=["8"])
+```
+
+```@docs
+execute!
+```
+
 ## Inside a driver — `worker_pmap`
 
 World-age escape hatch when a driver needs `pmap`-like fan-out after defining
