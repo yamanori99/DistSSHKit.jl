@@ -5,6 +5,11 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- `drive` atexit: skip `rmprocs` when only the driver remains. Lone-master
+  Julia reports `nworkers() == 1` / `workers() == [1]`; the old
+  `nworkers() > 0` guard called `rmprocs([1])` and warned
+  `process 1 not removed`.
+
 ## 0.3.1
 
 - `go!(…; output_dir=PATH)` sets the batch root (same keyword as `drive!`).
