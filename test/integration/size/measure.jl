@@ -1,4 +1,5 @@
 using Test
+using Distributed
 
 # Oracle: `measure_rss` with a local probe worker returns localhost samples
 # with peak_gb >= baseline_gb. Does not assert a specific GB (rounding may
@@ -18,5 +19,21 @@ using Test
         @test s.baseline_gb >= DistSSHKit.WORKER_MEMORY_GB_FLOOR
         @test s.peak_gb >= s.baseline_gb
         @test DistSSHKit.effective_worker_gb(s) == max(s.baseline_gb, s.peak_gb)
+    end
+end
+
+@testset "measure_rss does not rmprocs pre-existing workers" begin
+    _with_tempdir() do tmp
+        write(joinpath(tmp, "Project.toml"), "name = \"ProbeKeep\"\nuuid = \"22222222-2222-2222-2222-222222222222\"\nversion = \"0.0.1\"\n")
+        mkdir(joinpath(tmp, "src"))
+        write(joinpath(tmp, "src", "ProbeKeep.jl"), "module ProbeKeep\nend\n")
+        addprocs(1; topology=:master_worker)
+        pre = workers()[end]
+        try
+            DistSSHKit.measure_rss(tmp, String[]; include_local=true)
+            @test pre in workers()
+        finally
+            pre in workers() && rmprocs(pre; waitfor=2.0)
+        end
     end
 end

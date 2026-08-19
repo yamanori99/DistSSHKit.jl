@@ -9,6 +9,8 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
   driver remains. Lone-master Julia reports `nworkers() == 1` /
   `workers() == [1]`; the old unconditional / `nworkers() > 0` guards called
   `rmprocs([1])` and warned `process 1 not removed`.
+  `measure_rss` now `rmprocs`es only the probe pids it added (not the whole
+  cluster) and always does so in `finally`.
 
 ## 0.3.1
 
