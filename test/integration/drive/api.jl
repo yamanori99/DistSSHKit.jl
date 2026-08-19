@@ -33,6 +33,9 @@ using Test
                     @test result.ok
                     @test result.exit_code == 0
                     @test occursin("DISTSSHKIT_RUNNER_SMOKE_OK nw=2", out)
+                    # No explicit output_dir=/log_dir= — still resolved (not the raw `nothing` kwarg).
+                    @test result.output_dir !== nothing
+                    @test result.log_dir !== nothing
                     # `@everywhere` must not redefine master helpers (warn-overwrite).
                     @test !occursin("overwritten", err)
                 end

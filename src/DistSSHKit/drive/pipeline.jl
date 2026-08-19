@@ -148,13 +148,8 @@ Print a short summary when [`pipeline!`](@ref) failed. Returns `result.ok`.
 """
 function report_pipeline_errors(result::PipelineResult; io::IO=stderr)::Bool
     result.ok && return true
-    step = something(result.failed_step, "unknown")
-    println(io, "pipeline! failed at step: $step")
-    if result.sync !== nothing && !result.sync.ok
-        for hr in result.sync.hosts
-            !hr.ok && println(io, "  sync $(hr.host): $(hr.message)")
-        end
-    end
+    _report_run_header!(io, kit_run_result(result))
+    _report_sync_host_errors!(io, result.sync)
     if result.drive !== nothing && !result.drive.ok
         println(io, "  drive exit $(result.drive.exit_code)")
     end
@@ -162,6 +157,10 @@ function report_pipeline_errors(result::PipelineResult; io::IO=stderr)::Bool
         println(io, "  collect exit $(result.collect.exit_code)")
     end
     return false
+end
+
+function report_run_errors(result::PipelineResult; io::IO=stderr)::Bool
+    return report_pipeline_errors(result; io=io)
 end
 
 """
@@ -213,6 +212,8 @@ function pipeline!(config::PipelineConfig)::PipelineResult
                 nothing,
                 driver;
                 failed_step="sync",
+                output_dir=config.output_dir,
+                log_dir=config.log_dir,
             )
         end
     end
@@ -289,7 +290,14 @@ function pipeline!(config::PipelineConfig)::PipelineResult
         end
     end
 
-    return PipelineResult(true, sync_result, plan, drive_result, collect_result, driver)
+    return PipelineResult(
+        true,
+        sync_result,
+        plan,
+        drive_result,
+        collect_result,
+        driver,
+    )
 end
 
 function pipeline!(

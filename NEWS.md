@@ -5,6 +5,13 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- Shared `KitRunResult` (`ok`, `kind`, `output_dir`, `log_dir`, `failed_step`,
+  `exit_code`) plus `kit_run_result` / `report_run_errors`.
+  `DriveResult` and `PipelineResult` now carry `output_dir` / `failed_step`
+  (and `PipelineResult.exit_code`). `DriveResult(ok, code)` still works.
+  `output_dir` / `log_dir` reflect the directory actually used (same
+  resolution `drive` uses for `Results:` / its log file), not just an
+  explicitly-passed `output_dir=` / `log_dir=` keyword.
 - `drive` atexit and `size!` / `measure_rss`: skip `rmprocs` when only the
   driver remains. Lone-master Julia reports `nworkers() == 1` /
   `workers() == [1]`; the old unconditional / `nworkers() > 0` guards called

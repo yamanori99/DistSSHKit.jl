@@ -171,5 +171,10 @@ using Dates
         @test occursin("sync h1: pull failed", txt)
         @test occursin("run exit 2", txt)
         @test occursin("collect exit 1", txt)
+        kr = DistSSHKit.kit_run_result(bad)
+        @test kr.kind === :go
+        @test kr.output_dir == "/tmp/go-out"
+        @test kr.exit_code == 2
+        @test !DistSSHKit.report_run_errors(bad; io=IOBuffer())
     end
 end

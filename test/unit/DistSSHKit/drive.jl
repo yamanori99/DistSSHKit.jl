@@ -320,6 +320,11 @@ using Test
             true, nothing, nothing, nothing, nothing, "job.jl",
         )
         @test DistSSHKit.report_pipeline_errors(ok)
+        @test DistSSHKit.kit_run_result(ok).exit_code == 0
+        dr = DistSSHKit.DriveResult(false, 7; output_dir="/out", failed_step="drive")
+        @test dr.output_dir == "/out"
+        @test DistSSHKit.kit_run_result(dr).kind === :drive
+        @test DistSSHKit.kit_run_result(dr).exit_code == 7
         bad = DistSSHKit.PipelineResult(
             false,
             DistSSHKit.SyncResult(false, [DistSSHKit.HostResult("h1", false, "rsync refuse")], false),
@@ -336,6 +341,11 @@ using Test
         @test occursin("sync h1: rsync refuse", txt)
         @test occursin("drive exit 1", txt)
         @test occursin("collect exit 1", txt)
+        kr = DistSSHKit.kit_run_result(bad)
+        @test kr.kind === :pipeline
+        @test kr.exit_code == 1
+        @test kr.failed_step == "drive"
+        @test !DistSSHKit.report_run_errors(bad; io=IOBuffer())
     end
 
     @testset "pipeline! missing driver surfaces" begin

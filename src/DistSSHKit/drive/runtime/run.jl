@@ -1,14 +1,24 @@
 # Core drive execution after argv parse (shared by CLI `drive_main` and API `drive!`).
 
 """
-    run_drive_parsed!(parsed; original_args=String[]) -> Cint
+    run_drive_parsed!(parsed; original_args=String[], resolved_output_dir=nothing, resolved_log_dir=nothing) -> Cint
 
 Run a driver from a `parse_drive_args`-shaped NamedTuple. Mutates `ARGS` to
 `script_args` while the driver runs; callers should restore `ARGS` in `finally`.
+
+`resolved_output_dir` / `resolved_log_dir` are optional `Ref{Union{Nothing,String}}`
+out-params: when a real run happens (script found, past argv-only branches),
+they are filled with the directory actually used — `resolve_drive_output_dir`
+(same value `collect_drive_results!` reports as `Results:`) and
+`resolve_drive_log_dir` (same value `init_log_file` writes to) respectively.
+Callers (`drive!`) use these to report an accurate `DriveResult.output_dir` /
+`.log_dir` even when the caller did not pass `output_dir=` / `log_dir=` explicitly.
 """
 function run_drive_parsed!(
     parsed;
     original_args::Vector{String}=String[],
+    resolved_output_dir::Union{Nothing,Base.RefValue{Union{Nothing,String}}}=nothing,
+    resolved_log_dir::Union{Nothing,Base.RefValue{Union{Nothing,String}}}=nothing,
 )::Cint
     if parsed.help
         show_drive_usage()
@@ -70,14 +80,7 @@ function run_drive_parsed!(
     end
 
     if enable_log
-        resolved_log_dir = log_dir
-        if resolved_log_dir === nothing
-            resolved_log_dir = get(ENV, "DISTRIBUTED_OUTPUT_DIR", nothing)
-        end
-        if resolved_log_dir === nothing
-            resolved_log_dir = joinpath(script_dir, "results")
-        end
-        init_log_file(String(resolved_log_dir); prefix="drive", path_anchor=_PATH_ANCHOR)
+        init_log_file(resolve_drive_log_dir(log_dir, script_dir); prefix="drive", path_anchor=_PATH_ANCHOR)
         atexit(close_log_file)
     end
 
@@ -178,10 +181,9 @@ function run_drive_parsed!(
         cleanup_stale_workers!(hosts)
 
         kit_progress_step!("workers")
-        if local_workers > 0 || !isempty(hosts)
-            if !check_memory_capacity(local_workers, hosts, default_workers)
-                return 1
-            end
+        if (local_workers > 0 || !isempty(hosts)) &&
+                !check_memory_capacity(local_workers, hosts, default_workers)
+            return 1
         end
 
         successful_hosts = add_drive_workers!(
@@ -224,6 +226,12 @@ function run_drive_parsed!(
         progress_ok = true
         return 0
     finally
+        if resolved_output_dir !== nothing
+            resolved_output_dir[] = resolve_drive_output_dir(script_dir)
+        end
+        if resolved_log_dir !== nothing
+            resolved_log_dir[] = enable_log ? resolve_drive_log_dir(log_dir, script_dir) : nothing
+        end
         kit_progress_done!(; ok=progress_ok)
     end
 end
