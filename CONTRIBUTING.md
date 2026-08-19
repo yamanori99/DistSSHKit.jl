@@ -101,7 +101,7 @@ These files **alone** skip the heavy steps (job still starts; Pkg.test / JETLS /
 - `README.md`, `README.ja.md`, `CONTRIBUTING.md`, `NEWS.md`, `SECURITY.md`, `LICENSE`
 - `.gitignore`, `.github/pull_request_template.md`
 
-A new root markdown file stays heavy until listed in [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml). Changes under `docs/src` still run those jobs. A `cut` label skips none of this: Pkg.test, JETLS, Aqua, Documenter, and Linux E2E all run. macOS / WSL stay on `E2E daily`, not the PR.
+A new root markdown file stays heavy until listed in [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml). Changes under `docs/src` still run those jobs. A `cut` label skips none of this: Pkg.test, JETLS, Aqua, Documenter, and Linux E2E all run. macOS / WSL stay on `E2E daily`, not the PR. Register only after that matrix is green on the merge commit.
 
 Required to merge (branch protection uses these names). Tip jobs are allow-failure. A skipped heavy step still leaves the job green.
 
@@ -137,7 +137,7 @@ JETLS is the type gate. Do not commit `.vscode/settings.json` to silence the Lan
 
 | When | Workflow | What |
 | --- | --- | --- |
-| 04:00 JST, or Run workflow | `E2E daily` | `ubuntu-latest`, `macos-15-intel`, WSL2 → `ubuntu-24.04`. Not a PR check. Failure opens (or comments on) Issue `E2E daily failed`; a later green run closes it. |
+| 04:00 JST, or Run workflow | `E2E daily` | `ubuntu-latest`, `macos-15-intel`, WSL2 → `ubuntu-24.04`. Not a PR check. Failure opens (or comments on) Issue `E2E daily failed`; a later green run closes it. After a `cut` merge, dispatch this on that commit and wait for green before register. |
 | Sunday 10:00 JST, or Run workflow | `CI weekly` | Same `Pkg.test` / JETLS / Aqua slots as a PR (no coverage). Not a PR check. Catches max / Aqua / JETLS `@release` drift when nothing merged that week. Failure of min/max jobs opens Issue `CI weekly failed` (`ci`); tip is omitted from that notify. |
 
 ## Pull requests
@@ -170,9 +170,10 @@ During the [feature freeze](#feature-freeze), still cut happy-path bugs promptly
 
 ### After a cut merges
 
-1. `@JuliaRegistrator register` on the **merge commit** (not the PR body).
-2. Paste the NEWS section under `Release notes:`.
-3. TagBot tags once General has the release. Date NEWS `YYYY-MM-DD` UTC on the tag day.
+1. Run **E2E daily** on the **merge commit** (`gh workflow run "E2E daily" --ref <sha>`). Do not register until Linux, macOS Intel, and WSL are green. The PR already ran Linux E2E; this is the other controllers plus a fresh image. A same-day green run on that SHA is enough; do not wait for the 04:00 JST cron if you dispatched.
+2. `@JuliaRegistrator register` on the **merge commit** (not the PR body).
+3. Paste the NEWS section under `Release notes:`.
+4. TagBot tags once General has the release. Date NEWS `YYYY-MM-DD` UTC on the tag day.
 
 TagBot uses SSH deploy key secret `DOCUMENTER_KEY` (write deploy key on this repo) so the `vX.Y.Z` tag starts Docs and `stable` updates. Docs still deploy with `GITHUB_TOKEN`. Do not add a `+doc1` tag unless that path failed. Manual rebuild: `gh workflow run Docs --ref vX.Y.Z`.
 

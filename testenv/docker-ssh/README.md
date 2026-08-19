@@ -94,7 +94,8 @@ ssh -F .generated/ssh_config distsshkit-w1 'echo ok; julia --version'
 (`E2E daily`) runs at 04:00 JST or via Run workflow: bake
 `ubuntu-latest (image)` to GHCR, then `ubuntu-latest`, `macos-15-intel`, and
 `windows-latest (WSL2)` pull that tag and run the suite. Daily Linux is the
-same suite as PR E2E, on the timer, not a PR check.
+same suite as PR E2E, on the timer, not a PR check. After a `cut` merge,
+dispatch it on that commit before `@JuliaRegistrator register`.
 
 Those controller jobs pull `ghcr.io/<owner>/distsshkit-linux-ssh-worker:<sha>`
 (retry until the image job has pushed) instead of building Julia-in-Docker on

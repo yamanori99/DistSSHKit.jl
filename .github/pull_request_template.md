@@ -9,5 +9,5 @@
 ## Checklist
 
 - [ ] Not breaking — or `breaking` label (incompatible behavior)
-- [ ] Version raise — or `cut` label (`Project.toml` `version` went up; register after merge)
+- [ ] Version raise — or `cut` label (`Project.toml` `version` went up; after merge, E2E daily green then register)
 - [ ] Remote / smoke tested if this PR needs it
