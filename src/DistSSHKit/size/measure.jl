@@ -179,6 +179,8 @@ function measure_rss(
         end
     end
 
-    rmprocs(workers(); waitfor=2.0)
+    # If every probe worker died mid-measurement, Distributed already dropped
+    # them from workers(); nprocs() > 1 avoids rmprocs([1]) (see #135).
+    nprocs() > 1 && rmprocs(workers(); waitfor=2.0)
     return samples
 end
