@@ -77,14 +77,48 @@ function measure_rss(
     worker_project = Dict{Int,String}()
     worker_probe = Dict{Int,Union{Nothing,String}}()
 
+    try
+        return _measure_rss!(
+            proj, hosts, include_local, probe_local,
+            worker_to_host, worker_project, worker_probe,
+        )
+    finally
+        _rmprocs_measure_probes!(worker_to_host)
+    end
+end
+
+"""Remove only probe pids this `measure_rss` added. Never `rmprocs(workers())`."""
+function _rmprocs_measure_probes!(worker_to_host::Dict{Int,String})
+    ids = Int[w for w in keys(worker_to_host) if w != 1 && w in workers()]
+    isempty(ids) && return
+    try
+        rmprocs(ids; waitfor=2.0)
+    catch
+    end
+    return nothing
+end
+
+function _measure_rss!(
+    proj::String,
+    hosts::Vector{String},
+    include_local::Bool,
+    probe_local::Union{Nothing,String},
+    worker_to_host::Dict{Int,String},
+    worker_project::Dict{Int,String},
+    worker_probe::Dict{Int,Union{Nothing,String}},
+)::Dict{String,WorkerMemorySample}
     if include_local
         try
             local_proj = something(resolve_host_project_abs("localhost", proj), proj)
+            before = Set(workers())
             addprocs(1; exeflags=`--project=$local_proj`, topology=:master_worker)
-            wid = workers()[end]
-            worker_to_host[wid] = "localhost"
-            worker_project[wid] = local_proj
-            worker_probe[wid] = probe_local
+            added = setdiff(Set(workers()), before)
+            if !isempty(added)
+                wid = first(added)
+                worker_to_host[wid] = "localhost"
+                worker_project[wid] = local_proj
+                worker_probe[wid] = probe_local
+            end
         catch e
             @warn "Local worker failed: $e"
         end
@@ -120,6 +154,7 @@ function measure_rss(
             try
                 use_tunnel = get(ENV, "DISTSSHKIT_SSH_TUNNEL", "1") != "0"
                 machine = ssh_addprocs_machine(host)
+                before = Set(workers())
                 addprocs([(machine, 1)];
                          exename=`$julia_exe`,
                          sshflags=sshflags_cmd,
@@ -127,7 +162,9 @@ function measure_rss(
                          tunnel=use_tunnel,
                          topology=:master_worker,
                          exeflags=`--project=$remote_proj`)
-                wid = workers()[end]
+                added = setdiff(Set(workers()), before)
+                isempty(added) && continue
+                wid = first(added)
                 worker_to_host[wid] = host
                 worker_project[wid] = remote_proj
                 worker_probe[wid] = remote_probe
@@ -179,6 +216,5 @@ function measure_rss(
         end
     end
 
-    rmprocs(workers(); waitfor=2.0)
     return samples
 end
