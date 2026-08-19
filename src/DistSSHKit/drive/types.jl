@@ -159,10 +159,58 @@ function per_worker_gb_dict(samples::Dict{String,WorkerMemorySample})::Dict{Stri
     return Dict{String,Float64}(h => effective_worker_gb(s) for (h, s) in samples)
 end
 
-"""Outcome of [`drive!`](@ref) (and similar CLI steps that return an exit code)."""
+"""Optional path string (`nothing` when unset or empty)."""
+function _optional_path(path::Union{Nothing,AbstractString})::Union{Nothing,String}
+    path === nothing && return nothing
+    s = String(path)
+    return isempty(s) ? nothing : s
+end
+
+"""
+Shared run outcome for the queue layer (`ok`, `kind`, dirs, `failed_step`, `exit_code`).
+
+`kind` is `:go`, `:drive`, or `:pipeline`. Convert with [`kit_run_result`](@ref).
+"""
+struct KitRunResult
+    ok::Bool
+    kind::Symbol
+    output_dir::Union{Nothing,String}
+    log_dir::Union{Nothing,String}
+    failed_step::Union{Nothing,String}
+    exit_code::Int
+end
+
+"""
+Outcome of [`drive!`](@ref) (and similar CLI steps that return an exit code).
+
+`output_dir` / `log_dir` are the directories actually used for this run —
+resolved the same way `drive` reports `Results:` / writes its log, even when
+`drive!` was not called with `output_dir=` / `log_dir=`. `nothing` when no
+real run happened (e.g. built by hand) or, for `log_dir`, when logging was
+disabled.
+"""
 struct DriveResult
     ok::Bool
     exit_code::Int
+    output_dir::Union{Nothing,String}
+    log_dir::Union{Nothing,String}
+    failed_step::Union{Nothing,String}
+end
+
+function DriveResult(
+    ok::Bool,
+    exit_code::Int;
+    output_dir::Union{Nothing,AbstractString}=nothing,
+    log_dir::Union{Nothing,AbstractString}=nothing,
+    failed_step::Union{Nothing,AbstractString}=nothing,
+)
+    return DriveResult(
+        ok,
+        exit_code,
+        _optional_path(output_dir),
+        _optional_path(log_dir),
+        failed_step === nothing ? nothing : String(failed_step),
+    )
 end
 
 """Outcome of `collect!`."""
@@ -285,9 +333,31 @@ struct PipelineResult
     collect::Union{Nothing,CollectResult}
     driver::String
     failed_step::Union{Nothing,String}
+    output_dir::Union{Nothing,String}
+    log_dir::Union{Nothing,String}
+    exit_code::Int
 end
 
-PipelineResult(
+function _result_exit_code(
+    ok::Bool,
+    drive::Union{Nothing,DriveResult},
+    collect::Union{Nothing,CollectResult},
+    failed_step::Union{Nothing,AbstractString}=nothing,
+)::Int
+    ok && return 0
+    step = failed_step === nothing ? nothing : String(failed_step)
+    if step in ("run", "drive") && drive !== nothing
+        return drive.exit_code
+    end
+    if step == "collect" && collect !== nothing
+        return collect.exit_code
+    end
+    collect !== nothing && !collect.ok && return collect.exit_code
+    drive !== nothing && !drive.ok && return drive.exit_code
+    return 1
+end
+
+function PipelineResult(
     ok::Bool,
     sync::Union{Nothing,SyncResult},
     plan::Union{Nothing,WorkerPlan},
@@ -295,7 +365,87 @@ PipelineResult(
     collect::Union{Nothing,CollectResult},
     driver::String;
     failed_step::Union{Nothing,String}=nothing,
-) = PipelineResult(ok, sync, plan, drive, collect, driver, failed_step)
+    output_dir::Union{Nothing,AbstractString}=nothing,
+    log_dir::Union{Nothing,AbstractString}=nothing,
+    exit_code::Union{Nothing,Integer}=nothing,
+)
+    od = _optional_path(output_dir)
+    ld = _optional_path(log_dir)
+    if drive !== nothing
+        od === nothing && (od = drive.output_dir)
+        ld === nothing && (ld = drive.log_dir)
+    end
+    code = exit_code === nothing ? _result_exit_code(ok, drive, collect, failed_step) : Int(exit_code)
+    return PipelineResult(ok, sync, plan, drive, collect, driver, failed_step, od, ld, code)
+end
+
+"""Build [`KitRunResult`](@ref) from a kit outcome (`:go` / `:drive` / `:pipeline`)."""
+function kit_run_result(result::DriveResult)::KitRunResult
+    return KitRunResult(
+        result.ok,
+        :drive,
+        result.output_dir,
+        result.log_dir,
+        result.failed_step,
+        result.exit_code,
+    )
+end
+
+function kit_run_result(result::PipelineResult)::KitRunResult
+    return KitRunResult(
+        result.ok,
+        :pipeline,
+        result.output_dir,
+        result.log_dir,
+        result.failed_step,
+        result.exit_code,
+    )
+end
+
+function _report_run_label(kind::Symbol)::String
+    return kind === :pipeline ? "pipeline!" : String(kind)
+end
+
+function _report_run_header!(io::IO, result::KitRunResult)
+    step = something(result.failed_step, "unknown")
+    println(io, "$(_report_run_label(result.kind)) failed at step: $step")
+    if result.output_dir !== nothing
+        println(io, "  output: $(result.output_dir)")
+    end
+    if result.log_dir !== nothing
+        println(io, "  log: $(result.log_dir)")
+    end
+    return nothing
+end
+
+function _report_sync_host_errors!(io::IO, sync::Union{Nothing,SyncResult})
+    sync === nothing && return
+    sync.ok && return
+    for hr in sync.hosts
+        !hr.ok && println(io, "  sync $(hr.host): $(hr.message)")
+    end
+    return nothing
+end
+
+"""
+    report_run_errors(result; io=stderr)
+
+Print a short summary when a kit run failed. Accepts [`KitRunResult`](@ref)
+or a typed outcome (`GoResult` / `DriveResult` / `PipelineResult`).
+Returns `result.ok`.
+"""
+function report_run_errors(result::KitRunResult; io::IO=stderr)::Bool
+    result.ok && return true
+    _report_run_header!(io, result)
+    if result.exit_code != 0
+        println(io, "  exit $(result.exit_code)")
+    end
+    return false
+end
+
+function report_run_errors(result::DriveResult; io::IO=stderr)::Bool
+    return report_run_errors(kit_run_result(result); io=io)
+end
 
 """Build `drive` host specs from a [`WorkerPlan`](@ref)."""
 function drive_host_specs(plan::WorkerPlan)::Vector{String}

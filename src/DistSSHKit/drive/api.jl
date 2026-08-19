@@ -60,10 +60,22 @@ function drive!(
     )
     apply_kit_cli_session!(parsed.cli_session)
     original_args = copy(ARGS)
+    resolved_output_dir = Ref{Union{Nothing,String}}(nothing)
+    resolved_log_dir = Ref{Union{Nothing,String}}(nothing)
     try
         run_fn = Main.eval(:(run_drive_parsed!))
-        code = Base.invokelatest(run_fn, parsed; original_args=original_args)
-        return DriveResult(code == 0, Int(code))
+        code = Base.invokelatest(
+            run_fn,
+            parsed;
+            original_args=original_args,
+            resolved_output_dir=resolved_output_dir,
+            resolved_log_dir=resolved_log_dir,
+        )
+        return DriveResult(code == 0, Int(code);
+            output_dir=resolved_output_dir[],
+            log_dir=resolved_log_dir[],
+            failed_step=code == 0 ? nothing : "drive",
+        )
     finally
         empty!(ARGS)
         append!(ARGS, original_args)

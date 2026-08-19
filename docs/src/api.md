@@ -31,6 +31,9 @@ No Kit imports in the job file. Each `local:N` / `host:N` slot is one full run, 
 go!
 GoResult
 report_go_errors
+KitRunResult
+kit_run_result
+report_run_errors
 ```
 
 ## Drive work across workers

@@ -28,6 +28,17 @@ GoResult(
     failed_step::Union{Nothing,String}=nothing,
 ) = GoResult(ok, sync, run, collect, script, output_dir, failed_step)
 
+function kit_run_result(result::GoResult)::KitRunResult
+    return KitRunResult(
+        result.ok,
+        :go,
+        _optional_path(result.output_dir),
+        nothing,
+        result.failed_step,
+        _result_exit_code(result.ok, result.run, result.collect, result.failed_step),
+    )
+end
+
 const _GO_IO_LOCK = ReentrantLock()
 
 _go_is_local_host(host_name::AbstractString)::Bool = is_local_host_name(host_name)
@@ -292,7 +303,7 @@ function _go_run_local_slot!(
         end
     end
     code = proc.exitcode isa Integer ? Int(proc.exitcode) : 1
-    return DriveResult(code == 0, code)
+    return DriveResult(code == 0, code; output_dir=slot_dir)
 end
 
 """Remote SSH shell snippet for one `go` slot (cd project root before mkdir/log paths)."""
@@ -367,7 +378,7 @@ function _go_run_remote_slot!(
         end
     catch
     end
-    return DriveResult(code == 0, code)
+    return DriveResult(code == 0, code; output_dir=slot_dir)
 end
 
 """Rsync one remote slot directory into the local slot directory (slot-overwrite collect)."""
@@ -718,16 +729,8 @@ Print a short summary when [`go!`](@ref) failed. Returns `result.ok`.
 """
 function report_go_errors(result::GoResult; io::IO=stderr)::Bool
     result.ok && return true
-    step = something(result.failed_step, "unknown")
-    println(io, "go failed at step: $step")
-    if !isempty(result.output_dir)
-        println(io, "  output: $(result.output_dir)")
-    end
-    if result.sync !== nothing && !result.sync.ok
-        for hr in result.sync.hosts
-            !hr.ok && println(io, "  sync $(hr.host): $(hr.message)")
-        end
-    end
+    _report_run_header!(io, kit_run_result(result))
+    _report_sync_host_errors!(io, result.sync)
     if result.run !== nothing && !result.run.ok
         println(io, "  run exit $(result.run.exit_code)")
     end
@@ -735,4 +738,8 @@ function report_go_errors(result::GoResult; io::IO=stderr)::Bool
         println(io, "  collect exit $(result.collect.exit_code)")
     end
     return false
+end
+
+function report_run_errors(result::GoResult; io::IO=stderr)::Bool
+    return report_go_errors(result; io=io)
 end

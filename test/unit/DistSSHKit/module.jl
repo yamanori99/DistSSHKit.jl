@@ -18,6 +18,7 @@ using Test
     # Public surface: sizing is `size!`; argv `go` / `drive` are unexported.
     ns = names(DistSSHKit)
     @test :size! in ns && :go! in ns && :drive! in ns
+    @test :KitRunResult in ns && :kit_run_result in ns && :report_run_errors in ns
     @test :size_plan ∉ ns && :go ∉ ns && :drive ∉ ns
     @test isdefined(DistSSHKit, :go) && isdefined(DistSSHKit, :drive)
     @test !isdefined(DistSSHKit, :size_plan)

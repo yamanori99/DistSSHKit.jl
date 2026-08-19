@@ -26,6 +26,8 @@ export SyncResult
 export WorkerPlan
 export DriveResult
 export CollectResult
+export KitRunResult
+export kit_run_result
 export PipelineConfig
 export PipelineResult
 export sync!
@@ -37,6 +39,7 @@ export collect!
 export pipeline!
 export pipeline_config_from_env
 export report_pipeline_errors
+export report_run_errors
 export go!
 export GoResult
 export report_go_errors

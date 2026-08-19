@@ -50,4 +50,44 @@ using Test
             @test got == abspath(from_args)
         end
     end
+
+    @testset "resolve_drive_output_dir" begin
+        # `resolve_drive_output_dir` lives in the Main-scoped drive runtime
+        # (`drive/runtime/results.jl`), loaded via `_ensure_drive_fragments!`.
+        _with_tempdir() do tmp
+            DistSSHKit._ensure_drive_fragments!(tmp)
+            script_dir = joinpath(tmp, "app")
+            mkpath(script_dir)
+            withenv("DISTRIBUTED_OUTPUT_DIR" => nothing) do
+                got = Base.invokelatest(Main.resolve_drive_output_dir, script_dir)
+                @test got == DistSSHKit.canonical_local_path(normpath(joinpath(script_dir, "..", "results")))
+            end
+            explicit = joinpath(tmp, "explicit-out")
+            withenv("DISTRIBUTED_OUTPUT_DIR" => explicit) do
+                got = Base.invokelatest(Main.resolve_drive_output_dir, script_dir)
+                @test got == DistSSHKit.canonical_local_path(explicit)
+            end
+        end
+    end
+
+    @testset "resolve_drive_log_dir" begin
+        # Single source of truth for the `init_log_file` priority in `run_drive_parsed!`
+        # (`drive/runtime/results.jl`), shared with the post-run `DriveResult.log_dir`.
+        _with_tempdir() do tmp
+            DistSSHKit._ensure_drive_fragments!(tmp)
+            script_dir = joinpath(tmp, "app")
+            mkpath(script_dir)
+            resolve_log_dir(log_dir) = Base.invokelatest(Main.resolve_drive_log_dir, log_dir, script_dir)
+
+            withenv("DISTRIBUTED_OUTPUT_DIR" => nothing) do
+                @test resolve_log_dir(nothing) == joinpath(script_dir, "results")
+            end
+            env_dir = joinpath(tmp, "env-out")
+            withenv("DISTRIBUTED_OUTPUT_DIR" => env_dir) do
+                @test resolve_log_dir(nothing) == env_dir
+                explicit = joinpath(tmp, "explicit-logs")
+                @test resolve_log_dir(explicit) == explicit
+            end
+        end
+    end
 end
