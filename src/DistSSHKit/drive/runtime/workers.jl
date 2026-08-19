@@ -29,7 +29,7 @@ function _pkill_stale_julia_workers_remote!(host_name::String)::Bool
     return DistSSHKit._pkill_remote_julia_workers!(host_name)
 end
 
-function cleanup_stale_workers!(hosts)
+function cleanup_stale_workers!(hosts::Vector{Tuple{String,Union{Int,Nothing}}})
     if _skip_global_worker_pkill()
         return
     end
@@ -53,7 +53,7 @@ function cleanup_stale_workers!(hosts)
 end
 
 function add_drive_workers!(
-    hosts,
+    hosts::Vector{Tuple{String,Union{Int,Nothing}}},
     local_workers::Int,
     default_workers,
     julia_exe,

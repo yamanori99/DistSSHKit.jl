@@ -45,6 +45,8 @@ end
         include(joinpath(@__DIR__, "unit", "DistSSHKit", "drive.jl"))
         _runtest_announce("unit/DistSSHKit/drive/collect_tree.jl")
         include(joinpath(@__DIR__, "unit", "DistSSHKit", "drive", "collect_tree.jl"))
+        _runtest_announce("unit/DistSSHKit/drive/workers.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "drive", "workers.jl"))
         _runtest_announce("unit/DistSSHKit/size.jl")
         include(joinpath(@__DIR__, "unit", "DistSSHKit", "size.jl"))
         _runtest_announce("unit/DistSSHKit/go.jl")

@@ -37,3 +37,42 @@ end
         end
     end
 end
+
+@testset "measure_rss removes its probe worker even when hosts is empty and include_local=false" begin
+    _with_tempdir() do tmp
+        write(joinpath(tmp, "Project.toml"), "name = \"ProbeNone\"\nuuid = \"33333333-3333-3333-3333-333333333333\"\nversion = \"0.0.1\"\n")
+        mkdir(joinpath(tmp, "src"))
+        write(joinpath(tmp, "src", "ProbeNone.jl"), "module ProbeNone\nend\n")
+        before = Set(workers())
+        samples = DistSSHKit.measure_rss(tmp, String[]; include_local=false)
+        @test isempty(samples)
+        # No probe worker requested: nothing added, nothing to remove.
+        @test Set(workers()) == before
+    end
+end
+
+@testset "measure_rss lone master leaves nprocs()==1 untouched" begin
+    _with_tempdir() do tmp
+        write(joinpath(tmp, "Project.toml"), "name = \"ProbeLone\"\nuuid = \"44444444-4444-4444-4444-444444444444\"\nversion = \"0.0.1\"\n")
+        mkdir(joinpath(tmp, "src"))
+        write(joinpath(tmp, "src", "ProbeLone.jl"), "module ProbeLone\nend\n")
+        @test nprocs() == 1
+        DistSSHKit.measure_rss(tmp, String[]; include_local=false)
+        # No addprocs happened here, so the master must never be touched by
+        # `_rmprocs_measure_probes!` (regression: it used to be possible to
+        # target the whole cluster instead of just the probes it added).
+        @test nprocs() == 1
+        @test workers() == [1]
+    end
+end
+
+@testset "measure_rss cleans up its own probe worker on package-load failure" begin
+    _with_tempdir() do tmp
+        # No Project.toml / package: probe still gets added and must still be
+        # removed by the `finally` in `measure_rss`, even though sampling fails.
+        before = Set(workers())
+        samples = DistSSHKit.measure_rss(tmp, String[]; include_local=true)
+        @test haskey(samples, "localhost")
+        @test Set(workers()) == before
+    end
+end
