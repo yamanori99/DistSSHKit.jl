@@ -29,7 +29,7 @@ function _pkill_stale_julia_workers_remote!(host_name::String)::Bool
     return DistSSHKit._pkill_remote_julia_workers!(host_name)
 end
 
-function cleanup_stale_workers!(hosts)
+function cleanup_stale_workers!(hosts::Vector{Tuple{String,Union{Int,Nothing}}})
     if _skip_global_worker_pkill()
         return
     end
@@ -53,7 +53,7 @@ function cleanup_stale_workers!(hosts)
 end
 
 function add_drive_workers!(
-    hosts,
+    hosts::Vector{Tuple{String,Union{Int,Nothing}}},
     local_workers::Int,
     default_workers,
     julia_exe,
@@ -196,7 +196,9 @@ function register_worker_cleanup!(successful_hosts::Vector{String})
         cleanup_registered[] && return
         cleanup_registered[] = true
 
-        if nworkers() > 0
+        # Alone, Julia reports nworkers()==1 and workers()==[1] (the driver).
+        # nworkers() > 0 would rmprocs([1]) and warn "process 1 not removed".
+        if nprocs() > 1
             try
                 @everywhere stop_heartbeat_monitor()
                 sleep(0.5)
@@ -204,7 +206,7 @@ function register_worker_cleanup!(successful_hosts::Vector{String})
             end
         end
 
-        if nworkers() > 0
+        if nprocs() > 1
             try
                 rmprocs(workers(); waitfor=5.0)
             catch
