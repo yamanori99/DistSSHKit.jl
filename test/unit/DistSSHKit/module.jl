@@ -19,7 +19,7 @@ using Test
     ns = names(DistSSHKit)
     @test :size! in ns && :go! in ns && :drive! in ns
     @test :KitRunResult in ns && :kit_run_result in ns && :report_run_errors in ns
-    @test :execute! in ns
+    @test :execute! in ns && :KitProcess in ns
     @test :parse_worker_tokens in ns && :ParsedWorkerTokens in ns
     @test :worker_tokens_fully_specified in ns && :remote_hosts_from_tokens in ns
     @test :worker_plan_from_tokens in ns

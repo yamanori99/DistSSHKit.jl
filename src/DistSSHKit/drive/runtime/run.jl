@@ -80,7 +80,7 @@ function run_drive_parsed!(
     end
 
     if enable_log
-        init_log_file(resolve_drive_log_dir(log_dir, script_dir); prefix="drive", path_anchor=_PATH_ANCHOR)
+        init_log_file(DistSSHKit.resolve_drive_log_dir(log_dir, script_dir); prefix="drive", path_anchor=_PATH_ANCHOR)
         atexit(close_log_file)
     end
 
@@ -227,10 +227,10 @@ function run_drive_parsed!(
         return 0
     finally
         if resolved_output_dir !== nothing
-            resolved_output_dir[] = resolve_drive_output_dir(script_dir)
+            resolved_output_dir[] = DistSSHKit.resolve_drive_output_dir(script_dir)
         end
         if resolved_log_dir !== nothing
-            resolved_log_dir[] = enable_log ? resolve_drive_log_dir(log_dir, script_dir) : nothing
+            resolved_log_dir[] = enable_log ? DistSSHKit.resolve_drive_log_dir(log_dir, script_dir) : nothing
         end
         kit_progress_done!(; ok=progress_ok)
     end

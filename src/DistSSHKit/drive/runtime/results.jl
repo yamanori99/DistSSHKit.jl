@@ -110,43 +110,6 @@ function run_driver_script!(enable_log::Bool, drive_atexit_cleanup)
     end
 end
 
-"""
-    resolve_drive_output_dir(script_dir) -> String
-
-Best-effort result root for a `drive` run: `ENV["DISTRIBUTED_OUTPUT_DIR"]` if
-set (explicit `--output-dir` / `output_dir=`, or a driver's own
-`init_output_dir!`), else `script_dir/../results`. Same priority
-`collect_drive_results!` uses to report `Results:` to the user.
-"""
-function resolve_drive_output_dir(script_dir::AbstractString)::String
-    results_dir = get(ENV, "DISTRIBUTED_OUTPUT_DIR", nothing)
-    if results_dir === nothing
-        results_dir = normpath(joinpath(script_dir, "..", "results"))
-    end
-    return DistSSHKit.canonical_local_path(results_dir)
-end
-
-"""
-    resolve_drive_log_dir(log_dir, script_dir) -> String
-
-Log directory a `drive` run actually uses (single source of truth for
-`init_log_file`'s priority): explicit `log_dir` (`--log-dir` / `log_dir=`),
-else `ENV["DISTRIBUTED_OUTPUT_DIR"]`, else `script_dir/results`.
-"""
-function resolve_drive_log_dir(
-    log_dir::Union{Nothing,AbstractString},
-    script_dir::AbstractString,
-)::String
-    resolved = log_dir
-    if resolved === nothing
-        resolved = get(ENV, "DISTRIBUTED_OUTPUT_DIR", nothing)
-    end
-    if resolved === nothing
-        resolved = joinpath(script_dir, "results")
-    end
-    return String(resolved)
-end
-
 function collect_drive_results!(
     successful_hosts::Vector{String},
     script_dir::String,
@@ -154,7 +117,7 @@ function collect_drive_results!(
     skip_collect::Bool,
     path_anchor::String,
 )
-    results_dir = resolve_drive_output_dir(script_dir)
+    results_dir = DistSSHKit.resolve_drive_output_dir(script_dir)
 
     if isempty(successful_hosts)
         writeln_both("")
