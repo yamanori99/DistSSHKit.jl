@@ -506,6 +506,51 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             end
         end
 
+        # #148: kill the detached master (SIGKILL so atexit rmprocs/pkill
+        # cannot help). Heartbeat deadline is shortened via ENV. Process-death
+        # path (socket EOF / ssh child); silent-stall logic is unit-tested.
+        @testset "detached drive kill reaps remote workers" begin
+            sleep_script = joinpath(proj, "sleep.jl")
+            host = hosts[1]
+            hb_env = merge(_e2e_base_env(), Dict(
+                "DISTRIBUTED_HEARTBEAT_INTERVAL_SEC" => "1",
+                "DISTRIBUTED_HEARTBEAT_DEADLINE_SEC" => "5",
+            ))
+            kp = withenv(hb_env...) do
+                DistSSHKit.execute!(
+                    :drive,
+                    sleep_script,
+                    ["$(host):1"];
+                    project=proj,
+                    remote=remote_root,
+                    detached=true,
+                    yes=true,
+                    quiet=true,
+                    enable_log=false,
+                )
+            end
+            saw = false
+            t0 = time()
+            while (time() - t0) < 90
+                _, body = _ssh_e2e_ssh(host, "pgrep -f 'julia.*--worker' || true")
+                if !isempty(strip(body))
+                    saw = true
+                    break
+                end
+                process_running(kp.process) || break
+                sleep(0.5)
+            end
+            _assert_ssh_e2e_api_ok(suite, "heartbeat_saw_worker", saw)
+            @test saw
+            kill(kp.process, Base.SIGKILL)
+            wait(kp.process)
+            sleep(12)
+            _, body = _ssh_e2e_ssh(host, "pgrep -f 'julia.*--worker' || true")
+            gone = isempty(strip(body))
+            _assert_ssh_e2e_api_ok(suite, "heartbeat_reap", gone, "pgrep=$(strip(body))")
+            @test gone
+        end
+
         @testset "setup --rsync refuses nonempty" begin
             proc, out = _run_kit_setup(;
                 setup_args=["--rsync", "--remote-path", remote_root, hosts[1]],

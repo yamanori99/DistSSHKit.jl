@@ -345,6 +345,7 @@ function _stage_ssh_e2e_remote_host!(
     cp(_fixture("drive_local_smoke.jl"), joinpath(proj, "smoke.jl"); force=true)
     cp(_fixture("drive_remote_error.jl"), joinpath(proj, "fail.jl"); force=true)
     cp(_fixture("drive_worker_file.jl"), joinpath(proj, "worker_file.jl"); force=true)
+    cp(_fixture("drive_sleep.jl"), joinpath(proj, "sleep.jl"); force=true)
 
     # Kit logs / demo outputs must not dirty the tree: setup --sync requires clean git.
     write(
