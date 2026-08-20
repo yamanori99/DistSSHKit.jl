@@ -16,7 +16,7 @@ function worker_plan_from_tokens(
 )::WorkerPlan
     parsed = parse_worker_tokens(tokens)
     local_n = parsed.local_workers
-    remotes = Dict{String,Int}(parsed.remote_fixed)
+    remotes = Dict{String,Int}(parsed.remote_workers)
 
     if worker_tokens_fully_specified(parsed)
         return WorkerPlan(local_n, remotes)

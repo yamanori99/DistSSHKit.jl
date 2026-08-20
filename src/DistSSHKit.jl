@@ -18,6 +18,7 @@ using TOML
 #   setup! — Julian mirror of `setup --delete|--rsync|…`
 #   pipeline! — optional sugar (sync → size! → drive → collect)
 #   execute! — one seam over go!/drive! for callers that pick kind at runtime
+#   worker tokens — parse/classify host:N grammar and build WorkerPlan
 #   go / drive — argv wrappers (not exported; tests / `main`)
 #   worker_pmap — world-age escape hatch inside drivers
 export worker_pmap
@@ -25,6 +26,13 @@ export KitSession
 export HostResult
 export SyncResult
 export WorkerPlan
+export parse_worker_tokens
+export ParsedWorkerTokens
+export worker_tokens_fully_specified
+export remote_hosts_from_tokens
+export worker_plan_from_tokens
+export split_worker_token
+export is_local_host_name
 export DriveResult
 export CollectResult
 export KitRunResult

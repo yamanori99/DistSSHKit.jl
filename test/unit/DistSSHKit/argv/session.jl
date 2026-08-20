@@ -169,7 +169,7 @@ using Test
         hosts_file = _sample_hosts_file()
         @test DistSSHKit.read_hosts_file_lines(hosts_file) == ["host-a", "host-b:4"]
         @test DistSSHKit.read_hosts_file(hosts_file) == ["host-a", "host-b"]
-        @test DistSSHKit.split_host_workers_spec("host-b:4") == ("host-b", 4)
+        @test DistSSHKit.split_worker_token("host-b:4") == ("host-b", 4)
 
         # go keeps host:N from the file when planning slots.
         let lines = DistSSHKit.read_hosts_file_lines(hosts_file)

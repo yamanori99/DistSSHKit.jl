@@ -5,7 +5,7 @@ using Test
         p = DistSSHKit.parse_worker_tokens(["local:2", "host-a:4", "host-b"])
         @test p.local_workers == 2
         @test !p.local_autosize
-        @test p.remote_fixed == Dict("host-a" => 4)
+        @test p.remote_workers == Dict("host-a" => 4)
         @test p.remote_auto == ["host-b"]
         @test p.remote_hosts == ["host-a", "host-b"]
         @test DistSSHKit.worker_tokens_fully_specified(p) == false
@@ -30,8 +30,20 @@ using Test
         auto = DistSSHKit.parse_worker_tokens(["local", "h1:3"])
         @test auto.local_autosize
         @test auto.local_workers == 0
-        @test auto.remote_fixed == Dict("h1" => 3)
+        @test auto.remote_workers == Dict("h1" => 3)
         @test DistSSHKit.remote_hosts_from_tokens(["local:2", "h1", "h2:4"]) == ["h1", "h2"]
+
+        let kw = DistSSHKit.ParsedWorkerTokens(;
+                local_workers=2,
+                remote_workers=Dict("h1" => 0x03),
+                remote_hosts=["h1"],
+                tokens=["local:2", "h1:3"],
+            )
+            @test kw.remote_workers isa Dict{String,Int}
+            @test kw.remote_workers == Dict("h1" => 3)
+            @test kw.remote_auto == String[]
+            @test !kw.local_autosize
+        end
 
         _with_tempdir() do tmp
             session = DistSSHKit.KitSession(

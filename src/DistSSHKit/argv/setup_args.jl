@@ -109,7 +109,7 @@ function parse_setup_args(args::Vector{String})
             show_help = true
             cli_consume!(c)
         else
-            push!(hosts, split_host_workers_spec(arg)[1])
+            push!(hosts, split_worker_token(arg)[1])
             cli_consume!(c)
         end
     end

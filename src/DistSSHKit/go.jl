@@ -69,7 +69,7 @@ function _go_plan_slots(host_tokens::AbstractVector{<:AbstractString})::Vector{G
     local_count = 0
     remote_runs = Vector{String}() # host repeated per run
     for raw in host_tokens
-        host_name, host_workers = split_host_workers_spec(String(raw))
+        host_name, host_workers = split_worker_token(String(raw))
         n = something(host_workers, 1)
         if _go_is_local_host(host_name)
             n < 0 &&

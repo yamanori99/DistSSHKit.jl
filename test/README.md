@@ -53,7 +53,7 @@ Green on one layer does not imply the others. `Pkg.test()` does not run `e2e.jl`
 
 | Layer | Proves | Not | Time |
 | --- | --- | --- | --- |
-| JETLS | types / hints on entry files | runtime | — |
+| JETLS | types / hints on entry files | runtime | ~25 s |
 | Aqua | ambiguities, exports, compat (latest registry Aqua) | CLI / workers | ~5 s |
 | unit | parse, paths, fake setup, throws | child julia, `addprocs`, SSH | ~30 s |
 | integration | child CLI and/or **local** `addprocs` | real SSH / rsync | ~2 min |
