@@ -23,17 +23,20 @@ jobs.
     there. `--julia` / `JULIA_DISTRIBUTED_EXE` override. Missing path or a
     related bug: [open an Issue](https://github.com/yamanori99/DistSSHKit.jl/issues).
 
-WSL2 is Linux. Run the kit **inside** the distro (not PowerShell). Keep the
-project on the Linux filesystem (`~/…`), not `/mnt/c/…`. Install `ssh` /
-`rsync` / Julia in WSL. SSH E2E: same `./testenv/docker-ssh/scripts/up.sh --e2e`
-as Linux (Docker Compose must be visible from WSL).
+WSL2 is Linux, with a few extra rules:
+
+- Run the kit **inside** the distro, not PowerShell
+- Keep the project on the Linux filesystem (`~/…`), not `/mnt/c/…`
+- Install `ssh` / `rsync` / Julia inside WSL
+- SSH E2E uses the same `./testenv/docker-ssh/scripts/up.sh --e2e` as Linux
+  (Docker Compose must be visible from WSL)
 
 ## Remotes
 
-No hard limit on the number of remote hosts — more hosts just means more time
+No hard limit on the number of remote hosts. More hosts just means more time
 spent on SSH connections and deployment, so start with a few and scale up.
-If SSH disconnects are a risk, use machines that stay up and keep the master's
-run alive with something like `tmux`.
+If SSH disconnects are a risk, use machines that stay up, and keep the
+master's run alive with something like `tmux`.
 
 When you use SSH hosts (not just `local:N`):
 
@@ -72,14 +75,14 @@ Demo scripts live under `./demos/` after `demo install with_kit` (or
 
 ## Checks
 
-The `ssh …` snippets below are **examples** you can type yourself. DistSSHKit
+The `ssh …` snippets below are **examples** you can type yourself — DistSSHKit
 does not run them. `USER@HOST` is a placeholder (`user@hostname`, an IP, or an
 SSH config `Host` alias). Timeouts and extra `-o` flags need not match the
 kit (`ConnectTimeout` here is `5`; the kit uses `10` plus keepalives).
 
-Local-only first run: the **Where you run the kit** list is enough. Add
-**Each SSH host** when you use remotes. For the kit's own probe, use
-`setup --check` at the end of that subsection.
+- Local-only first run: the **Where you run the kit** list is enough.
+- Using remotes: add **Each SSH host** too. For the kit's own probe, use
+  `setup --check` at the end of that subsection.
 
 ### Where you run the kit
 

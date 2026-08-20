@@ -56,19 +56,22 @@ setup!(session, :runtest)  # optional: job Pkg.test() on remotes
 ```
 
 [`setup!`](@ref) mirrors `julia -m DistSSHKit setup --…` (`:delete`, `:rsync`,
-`:clone`, `:sync`, `:pull`, `:instantiate`, `:check`, `:runtest`, `:cleanup`). Confirmations
-follow `session.yes`. **`:clone` requires `repo=`** (no silent `origin` lookup;
-clone runs on the remote). [`sync!`](@ref) / [`instantiate!`](@ref) remain as
-short aliases for the common deploy steps.
+`:clone`, `:sync`, `:pull`, `:instantiate`, `:check`, `:runtest`, `:cleanup`).
+Confirmations follow `session.yes`. **`:clone` requires `repo=`** — no silent
+`origin` lookup; clone runs on the remote. [`sync!`](@ref) / [`instantiate!`](@ref)
+remain as short aliases for the common deploy steps.
 
-[`go!`](@ref) / [`drive!`](@ref) / [`pipeline!`](@ref) do **not** pre-run sync or
-require git parity by default (same as CLI). Pass `sync=:sync` / `:rsync` when
-you want a one-shot deploy. Git parity (`skip_hash_check=false`, CLI:
-`drive --require-git`) is **drive** / **pipeline** only — `go!` stays simpler.
-Prefer positional worker tokens over building a [`WorkerPlan`](@ref) by hand
-(`WorkerPlan` is the return type of [`size!`](@ref)).
-Pass `julia=` on `go!` / `drive!` / `pipeline!` to pin the remote Julia binary
-(same as CLI `--julia`).
+A few points that carry over from the CLI:
+
+- [`go!`](@ref) / [`drive!`](@ref) / [`pipeline!`](@ref) do **not** pre-run
+  sync or require git parity by default. Pass `sync=:sync` / `:rsync` for a
+  one-shot deploy
+- Git parity (`skip_hash_check=false`, CLI: `drive --require-git`) is
+  **drive** / **pipeline** only — `go!` stays simpler
+- Prefer positional worker tokens over building a [`WorkerPlan`](@ref) by
+  hand (`WorkerPlan` is the return type of [`size!`](@ref))
+- Pass `julia=` on `go!` / `drive!` / `pipeline!` to pin the remote Julia
+  binary (same as CLI `--julia`)
 
 Or call [`pipeline!`](@ref) for optional sync → [`size!`](@ref) → [`drive!`](@ref)
 → collect in one shot (`pipeline!` does not call [`setup!`](@ref)).
@@ -134,13 +137,17 @@ execute!(:drive, "job.jl", ["local:2"]; args=["8"])
 wait(execute!(:go, "job.jl", ["local:1"]; detached=true, args=["8"]))
 ```
 
-`detached=true` is a child `julia -m DistSSHKit go|drive` (not in-process
-`go!` / `drive!`). Keywords are an allow-list; `yes` must stay `true`.
-Child stdio inherits the parent (`redirect_stdout` in the caller does not
-apply to the subprocess); pass `stdout` / `stderr` to capture.
-[`KitProcess`](@ref) holds the `Base.Process` and the dirs resolved before
-spawn. `wait` converts it to [`KitRunResult`](@ref). On a non-zero child
-exit, `failed_step` is `"go"` / `"drive"` only.
+`detached=true`:
+
+- Spawns a child `julia -m DistSSHKit go|drive` (not in-process `go!` /
+  `drive!`)
+- Keywords are an allow-list; `yes` must stay `true`
+- Child stdio inherits the parent — `redirect_stdout` in the caller does not
+  apply to the subprocess. Pass `stdout` / `stderr` to capture it instead
+- [`KitProcess`](@ref) holds the `Base.Process` and the dirs resolved before
+  spawn
+- `wait` converts it to [`KitRunResult`](@ref); on a non-zero child exit,
+  `failed_step` is `"go"` / `"drive"` only
 
 ```@docs
 execute!

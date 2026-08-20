@@ -42,17 +42,18 @@ driver contract, prefer [`go`](@ref Manual-go).
 | `-v` / `--version` | Print DistSSHKit version and exit |
 | `-h` / `--help` | Full help |
 
-`--sync` / `--rsync` are mutually exclusive (pre-run sync).
-`--require-git` cannot combine with `--rsync` or `--skip-git-guard`.
-`--skip-git-guard` is a compat no-op (parity already off) and may combine with
-`--sync` / `--rsync`.
-Default pre-run sync and git parity are both **none** (same idea as
-[`go`](@ref Manual-go)). Prepare remotes with [`setup`](@ref Manual-setup),
-or pass `--sync` / `--rsync`. Use `--require-git` only on git-managed remotes.
+- `--sync` / `--rsync` are mutually exclusive (pre-run sync)
+- `--require-git` cannot combine with `--rsync` or `--skip-git-guard`
+- `--skip-git-guard` is a compat no-op (parity already off) and may combine
+  with `--sync` / `--rsync`
+- Default pre-run sync and git parity are both **none** (same idea as
+  [`go`](@ref Manual-go)). Prepare remotes with [`setup`](@ref Manual-setup),
+  or pass `--sync` / `--rsync`. Use `--require-git` only on git-managed
+  remotes.
 
 `DISTSSHKIT_REQUIRE_ALL_HOSTS=1` is the same as `--require-all-hosts`.
-`DISTSSHKIT_JOBS` (default 1) caps concurrent SSH host work for rsync, post-run
-collect, and `size` Julia-path detection.
+`DISTSSHKIT_JOBS` (default 1) caps concurrent SSH host work for rsync,
+post-run collect, and `size` Julia-path detection.
 
 ## Prerequisites
 
@@ -61,11 +62,13 @@ project tree and an instantiate. Prefer matching Julia **major.minor**.
 
 ## Workers
 
-`local:N` / `host:N` (or `-w` defaults). Size with
-[`size`](@ref Manual-size). Local workers are torn down with `rmprocs` at
-atexit. Before adding SSH workers, `drive` may `pkill` leftover Distributed
-processes on those hosts; skip with `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1`
-([User Guide](@ref Manual)). Machine-wide local kill is `setup --cleanup`.
+`local:N` / `host:N` (or `-w` defaults). Size with [`size`](@ref Manual-size).
+
+- Local workers are torn down with `rmprocs` at the end of every `drive` run
+- Before adding SSH workers, `drive` may `pkill` leftover Distributed
+  processes on those hosts; skip with `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1`
+  ([User Guide](@ref Manual))
+- Machine-wide local kill is `setup --cleanup`
 
 ## Results / collect
 
