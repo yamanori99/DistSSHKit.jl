@@ -2,6 +2,10 @@ using Test
 
 # Oracle: `drive!(…, "local:2")` runs the smoke driver in this process.
 # CLI child is `local.jl`. Not SSH.
+#
+# First in-process `include` of a driver into `Main`. Later files (e.g.
+# `integration/drive/execute.jl`) share that `Main` and will warn-overwrite
+# `main()`. Keep this file before those includes in `runtests.jl`.
 
 @testset "drive! l:N" begin
     fixture = _fixture("drive_local_smoke.jl")

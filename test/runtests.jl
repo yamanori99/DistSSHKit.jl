@@ -22,7 +22,7 @@ DistSSHKit.set_kit_verbosity!(:progress)
 
 # Keep `include(joinpath(@__DIR__, …))` at this top level (JETLS). Only the
 # banner is counted. Update `_RUNTEST_N` when adding a file below.
-const _RUNTEST_N = 41
+const _RUNTEST_N = 43
 const _RUNTEST_I = Ref(0)
 function _runtest_announce(rel::AbstractString)
     _RUNTEST_I[] += 1
@@ -53,6 +53,8 @@ end
         include(joinpath(@__DIR__, "unit", "DistSSHKit", "go.jl"))
         _runtest_announce("unit/DistSSHKit/module.jl")
         include(joinpath(@__DIR__, "unit", "DistSSHKit", "module.jl"))
+        _runtest_announce("unit/DistSSHKit/execute.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "execute.jl"))
         _runtest_announce("unit/DistSSHKit/argv/args.jl")
         include(joinpath(@__DIR__, "unit", "DistSSHKit", "argv", "args.jl"))
         _runtest_announce("unit/DistSSHKit/argv/session.jl")
@@ -104,6 +106,8 @@ end
         include(joinpath(@__DIR__, "integration", "drive", "local.jl"))
         _runtest_announce("integration/drive/api.jl")
         include(joinpath(@__DIR__, "integration", "drive", "api.jl"))
+        _runtest_announce("integration/drive/execute.jl")
+        include(joinpath(@__DIR__, "integration", "drive", "execute.jl"))
         _runtest_announce("integration/drive/fail.jl")
         include(joinpath(@__DIR__, "integration", "drive", "fail.jl"))
         _runtest_announce("integration/drive/pkg.jl")

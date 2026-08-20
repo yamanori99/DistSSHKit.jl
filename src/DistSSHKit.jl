@@ -17,6 +17,7 @@ using TOML
 #   go! / drive! / sync! / instantiate! / collect! / size! — steps
 #   setup! — Julian mirror of `setup --delete|--rsync|…`
 #   pipeline! — optional sugar (sync → size! → drive → collect)
+#   execute! — one seam over go!/drive! for callers that pick kind at runtime
 #   go / drive — argv wrappers (not exported; tests / `main`)
 #   worker_pmap — world-age escape hatch inside drivers
 export worker_pmap
@@ -43,6 +44,7 @@ export report_run_errors
 export go!
 export GoResult
 export report_go_errors
+export execute!
 # `go` / `drive` argv wrappers stay unexported (`main` and tests).
 
 
@@ -66,6 +68,7 @@ include("DistSSHKit/argv/size_args.jl")
 include("DistSSHKit/drive.jl")
 include("DistSSHKit/argv/size_report.jl")
 include("DistSSHKit/go.jl")
+include("DistSSHKit/execute.jl")
 
 const _KIT_ROOT = dirname(@__DIR__)
 

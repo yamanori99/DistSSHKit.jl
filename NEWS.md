@@ -12,6 +12,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
   `output_dir` / `log_dir` reflect the directory actually used (same
   resolution `drive` uses for `Results:` / its log file), not just an
   explicitly-passed `output_dir=` / `log_dir=` keyword.
+- `execute!(kind, script, tokens; …)::KitRunResult`, `kind ∈ (:go, :drive)`:
+  one seam over `go!` / `drive!` for callers that pick the kind at runtime
+  (thin wrapper; `go!` / `drive!` are unchanged).
 - `drive` atexit and `size!` / `measure_rss`: skip `rmprocs` when only the
   driver remains. Lone-master Julia reports `nworkers() == 1` /
   `workers() == [1]`; the old unconditional / `nworkers() > 0` guards called
