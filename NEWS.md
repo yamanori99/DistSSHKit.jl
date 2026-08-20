@@ -5,6 +5,8 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+## 0.3.2
+
 - `drive` no longer `pkill`s local `julia --worker` processes before
   `addprocs`. Local teardown is `rmprocs`, run at the end of every `drive!` /
   `execute!(:drive)` call, so repeated calls in the same process leave no
