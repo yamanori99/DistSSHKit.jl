@@ -5,6 +5,11 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- `drive` worker heartbeat: leave if the master sends no pong for
+  `DISTRIBUTED_HEARTBEAT_DEADLINE_SEC` (default 600, same order as SSH
+  `ServerAlive`). Interval is `DISTRIBUTED_HEARTBEAT_INTERVAL_SEC` (default 30).
+  A blocked ping no longer stalls the watchdog.
+
 ## 0.3.2
 
 - `drive` no longer `pkill`s local `julia --worker` processes before

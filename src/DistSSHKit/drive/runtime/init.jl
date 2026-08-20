@@ -202,7 +202,10 @@ function init_drive_workers!(proj_dir::String, explicit_package, path_anchor::St
 
         write_both("  Starting heartbeat monitors... ")
         flush(stdout)
+        hb = DistSSHKit._heartbeat_config()
+        hb_src = read(joinpath(@__DIR__, "heartbeat.jl"), String)
         @eval @everywhere begin
+            include_string(@__MODULE__, $(hb_src))
             const HEARTBEAT_STOP = Ref(false)
 
             function stop_heartbeat_monitor()
@@ -211,23 +214,8 @@ function init_drive_workers!(proj_dir::String, explicit_package, path_anchor::St
 
             function start_heartbeat_monitor()
                 myid() == 1 && return
-                @async begin
-                    consecutive_failures = 0
-                    max_failures = 6
-                    while !HEARTBEAT_STOP[]
-                        sleep(10)
-                        HEARTBEAT_STOP[] && break
-                        try
-                            remotecall_fetch(() -> true, 1)
-                            consecutive_failures = 0
-                        catch
-                            consecutive_failures += 1
-                            if consecutive_failures >= max_failures
-                                exit(0)
-                            end
-                        end
-                    end
-                end
+                _run_heartbeat!(HEARTBEAT_STOP, $(hb.interval), $(hb.deadline))
+                return nothing
             end
         end
         @everywhere start_heartbeat_monitor()

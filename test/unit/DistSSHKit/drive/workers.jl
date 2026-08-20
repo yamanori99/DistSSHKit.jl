@@ -132,3 +132,104 @@ end
         end
     end
 end
+
+@testset "drive heartbeat" begin
+    @testset "_heartbeat_config" begin
+        cfg = DistSSHKit._heartbeat_config(Dict{String,String}())
+        @test cfg.interval == 30.0
+        @test cfg.deadline == 600.0
+        cfg = DistSSHKit._heartbeat_config(Dict(
+            "DISTRIBUTED_HEARTBEAT_INTERVAL_SEC" => "2",
+            "DISTRIBUTED_HEARTBEAT_DEADLINE_SEC" => "9",
+        ))
+        @test cfg.interval == 2.0
+        @test cfg.deadline == 9.0
+        cfg = DistSSHKit._heartbeat_config(Dict(
+            "DISTRIBUTED_HEARTBEAT_INTERVAL_SEC" => "nope",
+            "DISTRIBUTED_HEARTBEAT_DEADLINE_SEC" => "-1",
+        ))
+        @test cfg.interval == 30.0
+        @test cfg.deadline == 600.0
+    end
+
+    @testset "_master_alive" begin
+        @test DistSSHKit._master_alive(0.0, 10.0, 10.0)
+        @test DistSSHKit._master_alive(0.0, 10.0, 9.9)
+        @test !DistSSHKit._master_alive(0.0, 10.0, 10.1)
+    end
+
+    function _wait_flag(flag::Ref{Bool}; timeout::Float64=2.0)
+        t0 = time()
+        while !flag[] && (time() - t0) < timeout
+            sleep(0.02)
+        end
+        return flag[]
+    end
+
+    @testset "_run_heartbeat! silent stall trips on_dead" begin
+        stop = Ref(false)
+        dead = Ref(false)
+        ch = Channel{Nothing}(0)
+        hb = DistSSHKit._run_heartbeat!(
+            stop, 0.05, 0.12;
+            ping=() -> take!(ch),
+            on_dead=() -> (dead[] = true),
+        )
+        try
+            @test _wait_flag(dead)
+            @test istaskstarted(hb.prober)
+            @test istaskstarted(hb.watchdog)
+        finally
+            stop[] = true
+            close(ch)
+        end
+    end
+
+    @testset "_run_heartbeat! live ping does not trip" begin
+        stop = Ref(false)
+        dead = Ref(false)
+        DistSSHKit._run_heartbeat!(
+            stop, 0.05, 0.12;
+            ping=() -> true,
+            on_dead=() -> (dead[] = true),
+        )
+        try
+            sleep(0.35)
+            @test !dead[]
+        finally
+            stop[] = true
+        end
+    end
+
+    @testset "_run_heartbeat! blip then recover" begin
+        stop = Ref(false)
+        dead = Ref(false)
+        n = Ref(0)
+        DistSSHKit._run_heartbeat!(
+            stop, 0.04, 0.35;
+            ping=() -> (n[] += 1; n[] <= 2 && error("blip"); true),
+            on_dead=() -> (dead[] = true),
+        )
+        try
+            sleep(0.45)
+            @test !dead[]
+            @test n[] > 2
+        finally
+            stop[] = true
+        end
+    end
+
+    @testset "_run_heartbeat! stop ends both tasks" begin
+        stop = Ref(false)
+        hb = DistSSHKit._run_heartbeat!(
+            stop, 0.03, 10.0;
+            ping=() -> true,
+            on_dead=() -> error("should not die"),
+        )
+        stop[] = true
+        wait(hb.prober)
+        wait(hb.watchdog)
+        @test istaskdone(hb.prober)
+        @test istaskdone(hb.watchdog)
+    end
+end
