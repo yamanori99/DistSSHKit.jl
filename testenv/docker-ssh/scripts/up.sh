@@ -2,9 +2,9 @@
 # Build once, then start docker-ssh workers (ports 2222 / 2223).
 # Optional: ./scripts/up.sh --e2e  → also run the SSH E2E suite from kit root.
 #
-# CI: DISTSSHKIT_WORKER_IMAGE=ghcr.io/…:sha pulls instead of building (Linux /
-# macOS / WSL daily wait for the image job to push). DISTSSHKIT_PUSH_IMAGE=… tags+pushes after
-# a local build so those jobs can start in parallel.
+# CI: DISTSSHKIT_WORKER_IMAGE=ghcr.io/…:sha pulls instead of building.
+# DISTSSHKIT_PUSH_IMAGE=… tags+pushes after a local build (retries for GHCR).
+# DISTSSHKIT_SKIP_UP=1 skips compose up (image job: build+push only).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -18,7 +18,8 @@ for arg in "$@"; do
     -h|--help)
       echo "usage: $0 [--e2e]"
       echo "  DISTSSHKIT_WORKER_IMAGE  pull this tag (skip compose build)"
-      echo "  DISTSSHKIT_PUSH_IMAGE    after build, tag and push"
+      echo "  DISTSSHKIT_PUSH_IMAGE    after build, tag and push (retried)"
+      echo "  DISTSSHKIT_SKIP_UP=1     skip compose up (push-only)"
       echo "  DISTSSHKIT_CODE_COVERAGE=1  e2e with --code-coverage=user (child CLI too)"
       exit 0
       ;;
@@ -67,9 +68,13 @@ else
   # Build a single service so logs are not interleaved (both share the same image).
   "${COMPOSE[@]}" -f compose.yml build worker-1
   if [[ -n "${DISTSSHKIT_PUSH_IMAGE:-}" ]]; then
-    docker tag "$LOCAL_IMAGE" "$DISTSSHKIT_PUSH_IMAGE"
-    docker push "$DISTSSHKIT_PUSH_IMAGE"
+    DISTSSHKIT_LOCAL_IMAGE="$LOCAL_IMAGE" ./scripts/push-image.sh "$DISTSSHKIT_PUSH_IMAGE"
   fi
+fi
+
+if [[ "${DISTSSHKIT_SKIP_UP:-}" == "1" ]]; then
+  echo "DISTSSHKIT_SKIP_UP=1: image ready, not starting workers"
+  exit 0
 fi
 
 "${COMPOSE[@]}" -f compose.yml up -d --no-build
