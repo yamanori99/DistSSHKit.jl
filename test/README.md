@@ -131,7 +131,7 @@ Do not fake Julia SSH worker launch. Local workers stand in for drive/go; they c
 ## Writing tests
 
 1. Add under `unit/` (src mirror) or `integration/<area>/`.
-2. Top-level `include` in `runtests.jl` (JETLS follows that). Do not register `e2e.jl` there.
+2. Top-level `include` in `runtests.jl` (JETLS follows that). Do not register `e2e.jl` there (`Pkg.test` must not SSH). `e2e.jl` is its own JETLS entry in `.github/jetls-check.sh`.
 3. Subprocess helpers in `support/`; one-off scripts in `fixtures/`.
 4. Short Oracle / non-guarantee comment at the top of the file.
 5. Pin verbosity with `with_kit_verbosity` if you assert kit detail lines. `Pkg.test` defaults to `:progress`. `kit_confirm` and consent warnings must show in `:quiet`, `:progress`, and `:verbose`.
