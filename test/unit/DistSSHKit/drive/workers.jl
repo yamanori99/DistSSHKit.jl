@@ -71,11 +71,25 @@ end
             end
         end
 
+        @testset "cleanup_stale_workers! skips localhost with no SSH hosts" begin
+            withenv("DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL" => nothing) do
+                mktemp() do path, io
+                    redirect_stdout(io) do
+                        Main.cleanup_stale_workers!(_EMPTY_DRIVE_HOSTS)
+                    end
+                    flush(io)
+                    @test !occursin("Cleaning up stale workers", read(path, String))
+                end
+            end
+        end
+
         @testset "cleanup_stale_workers! DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL" begin
             withenv("DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL" => "1") do
                 mktemp() do path, io
                     redirect_stdout(io) do
-                        Main.cleanup_stale_workers!(_EMPTY_DRIVE_HOSTS)
+                        Main.cleanup_stale_workers!(
+                            Tuple{String,Union{Int,Nothing}}[("example.invalid", 1)],
+                        )
                     end
                     flush(io)
                     @test !occursin("Cleaning up stale workers", read(path, String))

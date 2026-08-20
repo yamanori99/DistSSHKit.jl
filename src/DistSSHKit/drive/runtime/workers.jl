@@ -21,24 +21,20 @@ function _skip_global_worker_pkill()::Bool
     return get(ENV, "DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL", "") == "1"
 end
 
-function _pkill_stale_julia_workers_local!()
-    DistSSHKit._pkill_local_julia_workers!()
-end
-
 function _pkill_stale_julia_workers_remote!(host_name::String)::Bool
     return DistSSHKit._pkill_remote_julia_workers!(host_name)
 end
 
+# Pre-run local `pkill -f julia.*--worker` is gone: it is not pid-scoped and
+# would reap workers belonging to other Julia processes on the same login
+# (parallel tests, another drive). Local teardown is `rmprocs` at atexit.
+# Remote hosts are treated as dedicated; skip with DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1.
+# Explicit machine-wide local kill remains `setup --cleanup`.
 function cleanup_stale_workers!(hosts::Vector{Tuple{String,Union{Int,Nothing}}})
-    if _skip_global_worker_pkill()
+    if _skip_global_worker_pkill() || isempty(hosts)
         return
     end
     writeln_both("Cleaning up stale workers..."; color=:light_black)
-
-    _pkill_stale_julia_workers_local!()
-    write_both("  localhost: ")
-    print_ok("✓")
-    writeln_both("")
 
     for (host_name, _) in hosts
         write_both("  $host_name: ")

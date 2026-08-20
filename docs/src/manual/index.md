@@ -65,11 +65,12 @@ tokens, in order: `--hosts`, `DISTSSHKIT_HOSTS`, then the hosts file.
 `DISTSSHKIT_VERBOSE`; at most one). Kit / slot logs still write. Fatals stay on
 the terminal. Confirm prompts always print (`-y` / `DISTSSHKIT_YES` skips them).
 
-**Stale workers.** `drive` and `setup --cleanup` send `pkill -9 -f` for
-`julia --worker` / `julia --bind-to` on localhost and SSH hosts (other
-Distributed jobs on the same login can match). Set
-`DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` to skip that sweep (`rmprocs` still
-runs for this drive).
+**Stale workers.** Local `drive` workers are torn down with `rmprocs` (not a
+pattern `pkill`). Before adding SSH workers, `drive` may `pkill -9 -f`
+`julia --worker` / `julia --bind-to` on those remotes. `setup --cleanup` still
+does that sweep on localhost and remotes (other Distributed jobs on the same
+login can match). Set `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` to skip those
+`pkill`s (`rmprocs` still runs for this drive).
 
 **Kit files.** Logs and go batches live under `{project}/.distsshkit/`. Add
 that directory to the **job** project's `.gitignore` (DistSSHKit's own repo

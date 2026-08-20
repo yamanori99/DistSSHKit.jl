@@ -139,7 +139,7 @@ Helpers (via `support.jl`): `_child_julia_env`, `_run_kit_drive` / `_run_kit_set
 
 | Variable | Default | Effect |
 | --- | --- | --- |
-| `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL` | `1` in test children | skip broad `pkill`; each child `rmprocs`es its own workers |
+| `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL` | `1` in test children | skip remote / `setup --cleanup` `pkill`; each child `rmprocs`es its own local workers |
 | `DISTSSHKIT_SSH_E2E` | unset | `1` runs `test/e2e.jl` (needs docker-ssh workers) |
 | `DISTSSHKIT_CODE_COVERAGE` | unset | `1` with `up.sh --e2e` → `--code-coverage=user` |
 
