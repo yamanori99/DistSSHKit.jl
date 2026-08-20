@@ -105,6 +105,12 @@ function run_drive_parsed!(
     # sync? + git + cleanup + workers + init + run + collect
     progress_steps = (do_sync ? 1 : 0) + 6
     progress_ok = false
+    # Set once `add_drive_workers!` returns (registers rmprocs-at-atexit for
+    # whatever joined). `finally` below always calls it so local/SSH workers
+    # from *this* run are torn down before `run_drive_parsed!` returns, not
+    # just at Julia process exit — callers (`drive!`, `execute!`) can run more
+    # than once per process (tests; long-lived services).
+    drive_atexit_cleanup = nothing
     kit_progress_begin!("drive"; steps=progress_steps)
     try
         if do_sync
@@ -189,6 +195,10 @@ function run_drive_parsed!(
         successful_hosts = add_drive_workers!(
             hosts, local_workers, default_workers, julia_exe, proj_dir, script_path,
         )
+        # Register before the `require_all_hosts` check below: that branch can
+        # `return 1` with workers already joined, and `finally` must still
+        # reach a non-`nothing` `drive_atexit_cleanup` to tear them down.
+        drive_atexit_cleanup = register_worker_cleanup!(successful_hosts)
         if require_all_hosts && !isempty(hosts)
             missing = String[h[1] for h in hosts if !(h[1] in successful_hosts)]
             missing = unique(missing)
@@ -200,7 +210,6 @@ function run_drive_parsed!(
             end
         end
         wait_for_worker_connections!()
-        drive_atexit_cleanup = register_worker_cleanup!(successful_hosts)
 
         kit_progress_step!("init")
         init_drive_workers!(proj_dir, explicit_package, _PATH_ANCHOR)
@@ -233,5 +242,9 @@ function run_drive_parsed!(
             resolved_log_dir[] = enable_log ? DistSSHKit.resolve_drive_log_dir(log_dir, script_dir) : nothing
         end
         kit_progress_done!(; ok=progress_ok)
+        # `nothing` when no workers were ever added (early `return` above
+        # `add_drive_workers!`). Otherwise idempotent (guarded by a `Ref`
+        # inside) — a harmless no-op if `atexit` already ran it.
+        drive_atexit_cleanup !== nothing && drive_atexit_cleanup()
     end
 end
