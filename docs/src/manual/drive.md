@@ -62,9 +62,10 @@ project tree and an instantiate. Prefer matching Julia **major.minor**.
 ## Workers
 
 `local:N` / `host:N` (or `-w` defaults). Size with
-[`size`](@ref Manual-size). Before adding workers, `drive` may `pkill` leftover
-Distributed processes; skip with `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1`
-([User Guide](@ref Manual)).
+[`size`](@ref Manual-size). Local workers are torn down with `rmprocs` at
+atexit. Before adding SSH workers, `drive` may `pkill` leftover Distributed
+processes on those hosts; skip with `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1`
+([User Guide](@ref Manual)). Machine-wide local kill is `setup --cleanup`.
 
 ## Results / collect
 

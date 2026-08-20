@@ -79,8 +79,9 @@ const JULIA_WORKER_PKILL_PATTERNS = ("julia.*--worker", "julia.*--bind-to")
 """
 Kill local Julia worker processes matching [`JULIA_WORKER_PKILL_PATTERNS`](@ref).
 
-`pkill -f` may match its own argv (patterns contain `--worker` / `--bind-to`); exit
-status is ignored.
+Used by `setup --cleanup` (explicit machine-wide sweep). `drive` does not call
+this: local workers are torn down with `rmprocs`. `pkill -f` may match its own
+argv (patterns contain `--worker` / `--bind-to`); exit status is ignored.
 """
 function _pkill_local_julia_workers!()
     for pattern in JULIA_WORKER_PKILL_PATTERNS

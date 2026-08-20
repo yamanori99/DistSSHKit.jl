@@ -36,7 +36,7 @@ const KIT_VERBOSE_ENV_HELP =
 const KIT_HOSTS_ENV_HELP =
     "DISTSSHKIT_HOSTS                  Same as --hosts"
 const KIT_SKIP_PKILL_ENV_HELP =
-    "DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL  1: skip pkill of julia --worker / --bind-to"
+    "DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL  1: skip leftover-worker pkill (drive remotes; setup --cleanup)"
 const KIT_JOBS_ENV_HELP =
     "DISTSSHKIT_JOBS                   max concurrent host jobs (rsync / collect / size detect; default 1)"
 const KIT_REQUIRE_ALL_HOSTS_ENV_HELP =

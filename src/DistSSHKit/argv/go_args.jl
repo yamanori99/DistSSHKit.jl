@@ -47,7 +47,6 @@ function show_go_usage(; io::IO=stdout)
         "  $(KIT_HOSTS_ENV_HELP)",
         "  JULIA_DISTRIBUTED_EXE       default remote Julia",
         "  DISTSSHKIT_QUIET / PROGRESS / VERBOSE / YES",
-        "  $(KIT_SKIP_PKILL_ENV_HELP)",
     )
     print_help_blank(io)
     print_help_lines(io,

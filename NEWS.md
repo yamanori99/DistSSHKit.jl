@@ -5,6 +5,10 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- `drive` no longer `pkill`s local `julia --worker` processes before
+  `addprocs`. Local teardown is `rmprocs` at atexit. Pre-run `pkill` remains
+  for SSH hosts (skip with `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1`).
+  Machine-wide local kill stays `setup --cleanup`.
 - Shared `KitRunResult` (`ok`, `kind`, `output_dir`, `log_dir`, `failed_step`,
   `exit_code`) plus `kit_run_result` / `report_run_errors`.
   `DriveResult` and `PipelineResult` now carry `output_dir` / `failed_step`
