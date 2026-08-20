@@ -13,6 +13,7 @@
 #   $(cat test/artifacts/ssh-e2e/LATEST)/SUMMARY.txt
 
 using Test
+using Distributed
 using DistSSHKit
 
 kit_root = abspath(joinpath(@__DIR__, ".."))
@@ -463,6 +464,43 @@ remote_tokens = ["$(hosts[1]):1", "$(hosts[2]):1"]
                 )
                 @test !isempty(worker_txts)
                 @test any(f -> occursin("DISTSSHKIT_E2E_WORKER_FILE", read(f, String)), worker_txts)
+            end
+        end
+
+        # #144: in-process `drive!` tears down its remote workers per call
+        # (not only at Julia exit). Two calls in this one process must each
+        # see `nw=2` — a leak from the first would surface as `nw=4` in the
+        # second. `pipeline!` above already did one in-process remote drive;
+        # these are the reentrant calls that guard the regression over SSH.
+        @testset "in-process drive! is reentrant (no worker leak)" begin
+            withenv(e2e_env...) do
+                for call in 1:2
+                    out = mktemp() do out_path, out_io
+                        res = redirect_stdout(out_io) do
+                            drive!(
+                                smoke,
+                                remote_tokens;
+                                project=proj,
+                                remote=remote_root,
+                                julia="auto",
+                                verbosity=:verbose,
+                                yes=true,
+                            )
+                        end
+                        flush(out_io)
+                        @test res.ok
+                        @test res.exit_code == 0
+                        read(out_path, String)
+                    end
+                    _assert_ssh_e2e_api_ok(
+                        suite,
+                        "drive_reentrant_call$(call)",
+                        occursin("DISTSSHKIT_RUNNER_SMOKE_OK nw=2", out),
+                        "call=$(call)",
+                    )
+                    @test occursin("DISTSSHKIT_RUNNER_SMOKE_OK nw=2", out)
+                    @test nworkers() == 1
+                end
             end
         end
 

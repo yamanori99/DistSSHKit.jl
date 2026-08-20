@@ -98,6 +98,7 @@ Coverage (`DISTSSHKIT_CODE_COVERAGE=1` on `up.sh --e2e`) writes `.cov` on the co
 | `worker_*.txt` | on the worker; `ssh cat`; `--collect-missing` restores; skip keeps junk; `--collect-overwrite` replaces |
 | worker `error(...)` | non-zero |
 | mixed `local:1` + two remotes | smoke `nw=3` |
+| in-process `drive!` twice (reentrant) | each call `nw=2`; no worker leak (#144) |
 | `go pi_echo` | π on both hosts |
 | `go pi_file` | slot `pi_results.txt` after go collect |
 | `go --output-dir` | `pi_results.txt` under the given batch root |
