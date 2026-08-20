@@ -506,15 +506,21 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             end
         end
 
-        # #148: kill the detached master (SIGKILL so atexit rmprocs/pkill
-        # cannot help). Heartbeat deadline is shortened via ENV. Process-death
-        # path (socket EOF / ssh child); silent-stall logic is unit-tested.
+        # #148: SIGKILL the detached master after heartbeat is *running*
+        # (`--worker` appears at addprocs, monitors start much later). atexit
+        # cannot help. The ssh child may keep the tunnel, so reap is the
+        # shortened deadline. Silent-stall scheduling is unit-tested.
         @testset "detached drive kill reaps remote workers" begin
             sleep_script = joinpath(proj, "sleep.jl")
             host = hosts[1]
+            log_dir = joinpath(suite.logs, "heartbeat-drive")
+            mkpath(log_dir)
+            # Detached drive skips global pkill; drop leftovers so pgrep is ours.
+            _ssh_e2e_ssh(host, "pkill -f 'julia.*--worker' || true")
             hb_env = merge(_e2e_base_env(), Dict(
                 "DISTRIBUTED_HEARTBEAT_INTERVAL_SEC" => "1",
                 "DISTRIBUTED_HEARTBEAT_DEADLINE_SEC" => "5",
+                "DISTRIBUTED_INIT_DELAY_SEC" => "0",
             ))
             kp = withenv(hb_env...) do
                 DistSSHKit.execute!(
@@ -526,28 +532,58 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
                     detached=true,
                     yes=true,
                     quiet=true,
-                    enable_log=false,
+                    enable_log=true,
+                    log_dir=log_dir,
                 )
             end
-            saw = false
+            function _hb_log_text()
+                isdir(log_dir) || return ""
+                buf = IOBuffer()
+                for f in readdir(log_dir; join=true)
+                    endswith(f, ".log") || continue
+                    print(buf, read(f, String))
+                end
+                return String(take!(buf))
+            end
+            function _worker_pids()
+                _, body = _ssh_e2e_ssh(host, "pgrep -f 'julia.*--worker' || true")
+                return Int[parse(Int, s) for s in split(strip(body); keepempty=false)]
+            end
+            ready = false
             t0 = time()
             while (time() - t0) < 90
-                _, body = _ssh_e2e_ssh(host, "pgrep -f 'julia.*--worker' || true")
-                if !isempty(strip(body))
-                    saw = true
+                # Prefix is logged before `@everywhere`; the ✓ is after monitors start.
+                if occursin("Starting heartbeat monitors... ✓", _hb_log_text())
+                    ready = true
                     break
                 end
                 process_running(kp.process) || break
                 sleep(0.5)
             end
-            _assert_ssh_e2e_api_ok(suite, "heartbeat_saw_worker", saw)
-            @test saw
+            pids = _worker_pids()
+            _assert_ssh_e2e_api_ok(
+                suite,
+                "heartbeat_ready",
+                ready && !isempty(pids),
+                "ready=$(ready) pids=$(pids) log=$(repr(_hb_log_text()[max(1, end - 400):end]))",
+            )
+            @test ready
+            @test !isempty(pids)
             kill(kp.process, Base.SIGKILL)
             wait(kp.process)
-            sleep(12)
-            _, body = _ssh_e2e_ssh(host, "pgrep -f 'julia.*--worker' || true")
-            gone = isempty(strip(body))
-            _assert_ssh_e2e_api_ok(suite, "heartbeat_reap", gone, "pgrep=$(strip(body))")
+            gone = false
+            t1 = time()
+            leftover = pids
+            while (time() - t1) < 30
+                live = Set(_worker_pids())
+                leftover = Int[p for p in pids if p in live]
+                if isempty(leftover)
+                    gone = true
+                    break
+                end
+                sleep(0.5)
+            end
+            _assert_ssh_e2e_api_ok(suite, "heartbeat_reap", gone, "leftover=$(leftover)")
             @test gone
         end
 
