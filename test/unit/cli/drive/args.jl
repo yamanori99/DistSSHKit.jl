@@ -22,8 +22,8 @@ using Test
     end
 
     @testset "parse hosts and flags" begin
-        @test DistSSHKit.split_host_workers_spec("host-a") == ("host-a", nothing)
-        @test DistSSHKit.split_host_workers_spec("host-a:10") == ("host-a", 10)
+        @test DistSSHKit.split_worker_token("host-a") == ("host-a", nothing)
+        @test DistSSHKit.split_worker_token("host-a:10") == ("host-a", 10)
 
         withenv("JULIA_DISTRIBUTED_EXE" => nothing) do
             let r = parse_drive_args(["--help"])

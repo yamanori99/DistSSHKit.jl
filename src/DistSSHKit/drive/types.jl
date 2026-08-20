@@ -67,14 +67,41 @@ end
 
 WorkerPlan() = WorkerPlan(0, Dict{String,Int}())
 
-"""Parsed drive/go worker tokens (counts may still need [`size!`](@ref))."""
+"""
+Parsed drive/go worker tokens (counts may still need [`size!`](@ref)).
+
+Build with [`parse_worker_tokens`](@ref); the keyword constructor here only
+coerces types (same convenience shape as [`DriveResult`](@ref) /
+[`PipelineResult`](@ref)), it does not re-validate cross-field consistency.
+
+Field name matches [`WorkerPlan`](@ref): a host with an explicit `:N` is
+`remote_workers[host] = N`, same key as `WorkerPlan.remote_workers`.
+"""
 struct ParsedWorkerTokens
     local_workers::Int
     local_autosize::Bool
-    remote_fixed::Dict{String,Int}
+    remote_workers::Dict{String,Int}
     remote_auto::Vector{String}
     remote_hosts::Vector{String}
     tokens::Vector{String}
+end
+
+function ParsedWorkerTokens(;
+    local_workers::Integer=0,
+    local_autosize::Bool=false,
+    remote_workers::AbstractDict{<:AbstractString,<:Integer}=Dict{String,Int}(),
+    remote_auto::AbstractVector{<:AbstractString}=String[],
+    remote_hosts::AbstractVector{<:AbstractString}=String[],
+    tokens::AbstractVector{<:AbstractString}=String[],
+)
+    return ParsedWorkerTokens(
+        Int(local_workers),
+        local_autosize,
+        Dict{String,Int}(String(h) => Int(n) for (h, n) in remote_workers),
+        String[String(h) for h in remote_auto],
+        String[String(h) for h in remote_hosts],
+        String[String(t) for t in tokens],
+    )
 end
 
 """
@@ -89,14 +116,14 @@ function parse_worker_tokens(
     local_workers = 0
     local_seen = false
     local_autosize = false
-    remote_fixed = Dict{String,Int}()
+    remote_workers = Dict{String,Int}()
     remote_auto = String[]
     remote_hosts = String[]
     seen_remote = Set{String}()
     out_tokens = String[String(t) for t in tokens]
 
     for raw in out_tokens
-        host, n = split_host_workers_spec(raw)
+        host, n = split_worker_token(raw)
         if is_local_host_name(host)
             local_seen && throw(ArgumentError(
                 "duplicate local worker token; use one of l:N, local:N, or localhost:N",
@@ -115,14 +142,14 @@ function parse_worker_tokens(
             if n === nothing
                 push!(remote_auto, host)
             else
-                remote_fixed[host] = Int(n)
+                remote_workers[host] = Int(n)
             end
         end
     end
     return ParsedWorkerTokens(
         local_workers,
         local_autosize,
-        remote_fixed,
+        remote_workers,
         remote_auto,
         remote_hosts,
         out_tokens,

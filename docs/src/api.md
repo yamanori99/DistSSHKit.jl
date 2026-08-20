@@ -100,6 +100,29 @@ PipelineResult
 report_pipeline_errors
 ```
 
+## Worker tokens — `local:N` / `host:N`
+
+Use this surface when callers need to classify tokens or decide whether
+`size!` is needed before building workers (e.g. the queue layer's own
+occupancy math), instead of re-parsing the grammar or reaching into
+private internals.
+
+`parse_worker_tokens` validates and classifies the grammar.
+`worker_tokens_fully_specified` says whether every token has an explicit `:N`.
+`remote_hosts_from_tokens` extracts only SSH host names.
+`worker_plan_from_tokens` resolves to a concrete [`WorkerPlan`](@ref).
+`split_worker_token` and `is_local_host_name` are the low-level primitives.
+
+```@docs
+parse_worker_tokens
+ParsedWorkerTokens
+worker_tokens_fully_specified
+remote_hosts_from_tokens
+worker_plan_from_tokens
+split_worker_token
+is_local_host_name
+```
+
 ## One seam over `go!` / `drive!` — `execute!`
 
 For callers that pick the kind at runtime (the queue layer): one function,

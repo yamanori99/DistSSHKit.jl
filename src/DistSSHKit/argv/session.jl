@@ -300,9 +300,9 @@ end
 Parse `host` or `host:N` into `(hostname, workers)`.
 
 `N` is a worker/slot count for `drive` / `go`. `setup` / `size` keep
-the hostname only (`split_host_workers_spec(…)[1]`).
+the hostname only (`split_worker_token(…)[1]`).
 """
-function split_host_workers_spec(spec::AbstractString)::Tuple{String,Union{Nothing,Int}}
+function split_worker_token(spec::AbstractString)::Tuple{String,Union{Nothing,Int}}
     s = strip(String(spec))
     if contains(s, ':')
         parts = split(s, ':', limit=2)
@@ -333,12 +333,12 @@ function read_hosts_file(
     path::AbstractString;
     surface::Symbol=:cli,
 )::Vector{String}
-    return [split_host_workers_spec(line)[1] for line in read_hosts_file_lines(path; surface=surface)]
+    return [split_worker_token(line)[1] for line in read_hosts_file_lines(path; surface=surface)]
 end
 
 function _kit_host_token(tok::AbstractString, keep_counts::Bool)::String
     keep_counts && return String(tok)
-    return split_host_workers_spec(tok)[1]
+    return split_worker_token(tok)[1]
 end
 
 """`--hosts`, `DISTSSHKIT_HOSTS`, then `--hosts-file` / `DISTSSHKIT_HOSTS_FILE`.

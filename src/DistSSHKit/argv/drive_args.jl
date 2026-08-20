@@ -1,7 +1,7 @@
 # Drive CLI argument parsing and help (module-owned; Main CLI re-exports).
 
-function _parse_host_workers_spec(spec::AbstractString)
-    return split_host_workers_spec(String(spec))
+function _parse_worker_token(spec::AbstractString)
+    return split_worker_token(String(spec))
 end
 
 """Parse `--flag:N` / `-f:N` into `N`; return `nothing` if `arg` is not that form."""
@@ -78,7 +78,7 @@ function _drive_push_host_token!(
     token::AbstractString,
     default_workers,
 )::Int
-    host_name, host_workers = _parse_host_workers_spec(String(token))
+    host_name, host_workers = _parse_worker_token(String(token))
     local_workers, absorbed = _drive_absorb_local_worker_spec(
         local_workers,
         host_name,
@@ -208,7 +208,7 @@ function parse_drive_args(args::Vector{String})
                 end
             end
             tree_root = canonical_local_path(tail[1])
-            tree_hosts = String[_parse_host_workers_spec(String(x))[1] for x in tail[2:end]]
+            tree_hosts = String[_parse_worker_token(String(x))[1] for x in tail[2:end]]
             isempty(tree_hosts) && throw(ArgumentError("`$(flag)` requires at least one HOST after ROOT"))
             if julia_exe === nothing
                 env_val = get(ENV, "JULIA_DISTRIBUTED_EXE", "auto")

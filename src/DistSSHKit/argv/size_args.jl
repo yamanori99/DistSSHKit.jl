@@ -76,7 +76,7 @@ function parse_size_args(args::Vector{String})
         elseif arg == "--master-gb"
             master_gb = parse(Float64, cli_take_value!(c, arg))
         elseif !startswith(arg, "-")
-            push!(hosts, split_host_workers_spec(arg)[1])
+            push!(hosts, split_worker_token(arg)[1])
             cli_consume!(c)
         else
             @warn "Unknown option: $arg (ignored)"
