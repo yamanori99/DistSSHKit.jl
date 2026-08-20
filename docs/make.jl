@@ -11,7 +11,13 @@ makedocs(;
         prettyurls=get(ENV, "CI", nothing) == "true",
         canonical="https://yamanori99.github.io/DistSSHKit.jl",
         edit_link="main",
-        assets=["assets/custom.css"],
+        assets=[
+            "assets/custom.css",
+            # Search Console (URL-prefix: https://yamanori99.github.io/DistSSHKit.jl/).
+            RawHTMLHeadContent(
+                """<meta name="google-site-verification" content="SEhAoEs5TRjapJed8oDcYx92uETJL_HC5MzAjVfPF8M" />""",
+            ),
+        ],
     ),
     pages=[
         "Introduction" => "index.md",
