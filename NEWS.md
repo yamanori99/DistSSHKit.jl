@@ -15,6 +15,8 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 - `execute!(kind, script, tokens; …)::KitRunResult`, `kind ∈ (:go, :drive)`:
   one seam over `go!` / `drive!` for callers that pick the kind at runtime
   (thin wrapper; `go!` / `drive!` are unchanged).
+  `detached=true` spawns `julia -m DistSSHKit go|drive` and returns a
+  `KitProcess`; `wait(kp)` yields the same `KitRunResult`.
 - Public worker-token API for `local:N` / `host:N`: `parse_worker_tokens`,
   `ParsedWorkerTokens`, `worker_tokens_fully_specified`,
   `remote_hosts_from_tokens`, `worker_plan_from_tokens`, plus primitives

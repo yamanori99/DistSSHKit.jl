@@ -131,10 +131,20 @@ one result type, instead of branching on `kind` yourself.
 ```julia
 execute!(:go, "job.jl", ["local:2"]; args=["8"])
 execute!(:drive, "job.jl", ["local:2"]; args=["8"])
+wait(execute!(:go, "job.jl", ["local:1"]; detached=true, args=["8"]))
 ```
+
+`detached=true` is a child `julia -m DistSSHKit go|drive` (not in-process
+`go!` / `drive!`). Keywords are an allow-list; `yes` must stay `true`.
+Child stdio inherits the parent (`redirect_stdout` in the caller does not
+apply to the subprocess); pass `stdout` / `stderr` to capture.
+[`KitProcess`](@ref) holds the `Base.Process` and the dirs resolved before
+spawn. `wait` converts it to [`KitRunResult`](@ref). On a non-zero child
+exit, `failed_step` is `"go"` / `"drive"` only.
 
 ```@docs
 execute!
+KitProcess
 ```
 
 ## Inside a driver — `worker_pmap`

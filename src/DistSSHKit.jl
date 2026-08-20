@@ -17,7 +17,7 @@ using TOML
 #   go! / drive! / sync! / instantiate! / collect! / size! — steps
 #   setup! — Julian mirror of `setup --delete|--rsync|…`
 #   pipeline! — optional sugar (sync → size! → drive → collect)
-#   execute! — one seam over go!/drive! for callers that pick kind at runtime
+#   execute! — one seam over go!/drive!; detached=true returns KitProcess
 #   worker tokens — parse/classify host:N grammar and build WorkerPlan
 #   go / drive — argv wrappers (not exported; tests / `main`)
 #   worker_pmap — world-age escape hatch inside drivers
@@ -36,6 +36,7 @@ export is_local_host_name
 export DriveResult
 export CollectResult
 export KitRunResult
+export KitProcess
 export kit_run_result
 export PipelineConfig
 export PipelineResult
