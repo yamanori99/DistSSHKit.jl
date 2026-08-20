@@ -45,37 +45,46 @@ Same **names** are shared on purpose; a few meanings differ by command:
 | `-l` / `--local` | **`drive`**: `local:N` worker count. **`size`**: include localhost (boolean). |
 | `--hosts` | CSV tokens. `setup` / `size` strip `:N`. `go` / `drive` keep `host:N`. |
 | `--hosts-file` | `setup` / `size` strip `:N`. `go` / `drive` keep `host:N` for slots / workers. |
-| Shared peel | `-q` / `--quiet`, `--progress`, `--verbose`, `-y` / `--yes`, `--hosts`, `--hosts-file`, `-v` / `--version` on setup / go / drive / size. |
+| Shared peel | `-q`/`--quiet`, `--progress`, `--verbose`, `-y`/`--yes`, `--hosts`, `--hosts-file`, `-v`/`--version` — same on setup / go / drive / size. |
 
 ## Shared concepts
 
-**Hosts.** CLI tokens (`local:N`, `host:N`), `--hosts` (CSV), `--hosts-file`,
-and/or `DISTSSHKIT_HOSTS` (comma-separated) on setup / go / drive / size.
-`DISTSSHKIT_HOSTS_FILE` sets the default hosts-file path. `setup` / `size`
-strip `:N` and use host names only. Extra sources append after positional
-tokens, in order: `--hosts`, `DISTSSHKIT_HOSTS`, then the hosts file.
+**Hosts.** Sources, in the order they append after positional tokens:
 
-**Jobs.** `DISTSSHKIT_JOBS` (default 1) is the max concurrent SSH host jobs for
-`setup --rsync`, drive post-run collect, and `size` Julia detection. Worker
-`addprocs` stays sequential.
+- CLI tokens (`local:N`, `host:N`) on setup / go / drive / size
+- `--hosts` (CSV)
+- `DISTSSHKIT_HOSTS` (comma-separated)
+- `--hosts-file` (default path from `DISTSSHKIT_HOSTS_FILE`)
 
-**Quiet / progress.** On a TTY the default is `--progress` (live status). Piped or
-`NO_COLOR` sessions default to full detail. `-q` hides terminal detail;
-`--verbose` forces the old chatter (`DISTSSHKIT_QUIET` / `DISTSSHKIT_PROGRESS` /
-`DISTSSHKIT_VERBOSE`; at most one). Kit / slot logs still write. Fatals stay on
-the terminal. Confirm prompts always print (`-y` / `DISTSSHKIT_YES` skips them).
+`setup` / `size` strip `:N` and use host names only.
 
-**Stale workers.** Local `drive` workers are torn down with `rmprocs` (not a
-pattern `pkill`). Before adding SSH workers, `drive` may `pkill -9 -f`
-`julia --worker` / `julia --bind-to` on those remotes. `setup --cleanup` still
-does that sweep on localhost and remotes (other Distributed jobs on the same
-login can match). Set `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` to skip those
-`pkill`s (`rmprocs` still runs for this drive).
+**Jobs.** `DISTSSHKIT_JOBS` (default 1) is the max concurrent SSH host jobs
+for `setup --rsync`, drive post-run collect, and `size` Julia detection.
+Worker `addprocs` stays sequential.
+
+**Quiet / progress.**
+
+- Default: `--progress` (live status) on a TTY; full detail when piped or
+  `NO_COLOR`
+- `-q` hides terminal detail; `--verbose` forces full detail — at most one
+  (`DISTSSHKIT_QUIET` / `DISTSSHKIT_PROGRESS` / `DISTSSHKIT_VERBOSE`)
+- Kit / slot logs still write regardless; fatals stay on the terminal
+- Confirm prompts always print (`-y` / `DISTSSHKIT_YES` skips them)
+
+**Stale workers.**
+
+- Local `drive` workers are torn down with `rmprocs`, not a pattern `pkill`
+- Before adding SSH workers, `drive` may `pkill -9 -f` `julia --worker` /
+  `julia --bind-to` on those remotes
+- `setup --cleanup` runs that same sweep on localhost and remotes (other
+  Distributed jobs on the same login can match)
+- `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` skips those `pkill`s; `rmprocs`
+  still runs for the current drive
 
 **Kit files.** Logs and go batches live under `{project}/.distsshkit/`. Add
-that directory to the **job** project's `.gitignore` (DistSSHKit's own repo
-already ignores it; `Pkg.add` does not). Otherwise `go` output can show up as
-untracked files, including under `drive --require-git`.
+that directory to the **job** project's `.gitignore` — DistSSHKit's own repo
+already ignores it, but `Pkg.add` does not. Otherwise `go` output can show up
+as untracked files, including under `drive --require-git`.
 
 **Collect modes:**
 

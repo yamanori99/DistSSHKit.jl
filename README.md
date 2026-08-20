@@ -81,7 +81,7 @@ There's no limit on the number of remote hosts — more hosts just means more ti
 spent on SSH connections and deployment, so it's best to start with a few and
 scale up from there.
 
-Before you use a remote host, it needs to satisfy the following:
+Before you use a remote host, it needs:
 
 - Passwordless SSH login from your local machine
 - Julia installed, with the **same major.minor version** as your local machine

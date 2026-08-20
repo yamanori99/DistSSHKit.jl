@@ -90,8 +90,12 @@ Example: a local machine plus remotes. Each machine can run several workers
 
 There's no limit on the number of remote hosts — more hosts just means more
 time spent on SSH connections and deployment, so it's best to start with a few
-and scale up. Each remote host needs passwordless SSH from your local machine
-and Julia with the same major.minor version (`setup --check` verifies this).
+and scale up. Each remote host needs:
+
+- Passwordless SSH from your local machine
+- Julia with the same major.minor version as your local machine
+  (`setup --check` verifies this)
+
 Details: [Requirements](@ref).
 
 ## Next

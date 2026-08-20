@@ -6,36 +6,31 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 ## Unreleased
 
 - `drive` no longer `pkill`s local `julia --worker` processes before
-  `addprocs`. Local teardown is `rmprocs`, now run at the end of every
-  `run_drive_parsed!` call (not just Julia process exit), so `drive!` /
-  `execute!(:drive)` leave no local workers behind even when called more
-  than once in the same process. Pre-run `pkill` remains for SSH hosts
-  (skip with `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1`). Machine-wide local
-  kill stays `setup --cleanup`.
+  `addprocs`. Local teardown is `rmprocs`, run at the end of every `drive!` /
+  `execute!(:drive)` call, so repeated calls in the same process leave no
+  workers behind. Pre-run `pkill` remains for SSH hosts (skip with
+  `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1`); machine-wide local kill stays
+  `setup --cleanup`.
 - Shared `KitRunResult` (`ok`, `kind`, `output_dir`, `log_dir`, `failed_step`,
-  `exit_code`) plus `kit_run_result` / `report_run_errors`.
-  `DriveResult` and `PipelineResult` now carry `output_dir` / `failed_step`
-  (and `PipelineResult.exit_code`). `DriveResult(ok, code)` still works.
-  `output_dir` / `log_dir` reflect the directory actually used (same
-  resolution `drive` uses for `Results:` / its log file), not just an
-  explicitly-passed `output_dir=` / `log_dir=` keyword.
+  `exit_code`) plus `kit_run_result` / `report_run_errors`. `DriveResult` and
+  `PipelineResult` now carry `output_dir` / `failed_step` (and
+  `PipelineResult.exit_code`); `DriveResult(ok, code)` still works.
+  `output_dir` / `log_dir` reflect the directory `drive` actually used, not
+  just an explicitly-passed keyword.
 - `execute!(kind, script, tokens; …)::KitRunResult`, `kind ∈ (:go, :drive)`:
-  one seam over `go!` / `drive!` for callers that pick the kind at runtime
-  (thin wrapper; `go!` / `drive!` are unchanged).
+  one seam over `go!` / `drive!` for callers that pick the kind at runtime.
   `detached=true` spawns `julia -m DistSSHKit go|drive` and returns a
   `KitProcess`; `wait(kp)` yields the same `KitRunResult`.
 - Public worker-token API for `local:N` / `host:N`: `parse_worker_tokens`,
   `ParsedWorkerTokens`, `worker_tokens_fully_specified`,
   `remote_hosts_from_tokens`, `worker_plan_from_tokens`, plus primitives
   `split_worker_token` / `is_local_host_name`.
-- `drive` atexit and `size!` / `measure_rss`: skip `rmprocs` when only the
-  driver remains. Lone-master Julia reports `nworkers() == 1` /
-  `workers() == [1]`; the old unconditional / `nworkers() > 0` guards called
-  `rmprocs([1])` and warned `process 1 not removed`.
-  `measure_rss` now `rmprocs`es only the probe pids it added (not the whole
-  cluster) and always does so in `finally`.
+- `drive` atexit and `size!` / `measure_rss` skip `rmprocs` when only the
+  driver remains, instead of warning `process 1 not removed`. `measure_rss`
+  now `rmprocs`es only its own probe pids (not the whole cluster), always in
+  `finally`.
 
-## 0.3.1
+## 0.3.1 (2026-08-18)
 
 - `go!(…; output_dir=PATH)` sets the batch root (same keyword as `drive!`).
   `collect_spec::String` remains a compat alias; both set is an error.
