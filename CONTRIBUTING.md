@@ -76,7 +76,7 @@ CI E2E (`DISTSSHKIT_CODE_COVERAGE=1`) writes `.cov` and uploads to Codecov (merg
 DISTSSHKIT_CODE_COVERAGE=1 testenv/docker-ssh/scripts/up.sh --e2e
 ```
 
-See [testenv/docker-ssh/README.md](testenv/docker-ssh/README.md). Skip the image build with `DISTSSHKIT_WORKER_IMAGE=ghcr.io/yamanori99/distsshkit-linux-ssh-worker:latest`. Mac-only workers (not CI): [testenv/apple-container-ssh](testenv/apple-container-ssh).
+See [testenv/docker-ssh/README.md](testenv/docker-ssh/README.md). Skip the image build with `DISTSSHKIT_WORKER_IMAGE=ghcr.io/yamanori99/distsshkit-linux-ssh-worker:latest`. Apple silicon, no Docker: [testenv/apple-container-ssh](testenv/apple-container-ssh) (`./scripts/up.sh --e2e`; same `test/e2e.jl`).
 
 ### Julia slots
 

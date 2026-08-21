@@ -57,13 +57,13 @@ Green on one layer does not imply the others. `Pkg.test()` does not run `e2e.jl`
 | Aqua | ambiguities, exports, compat (latest registry Aqua) | CLI / workers | ~5 s |
 | unit | parse, paths, fake setup, throws | child julia, `addprocs`, SSH | ~45 s |
 | integration | child CLI and/or **local** `addprocs` | real SSH / rsync | ~3 min |
-| e2e | real SSH + rsync, two Docker workers; every PR | local-only CLI wiring | ~15–25 min |
+| e2e | real SSH + rsync, two Linux workers; every PR (Compose) | local-only CLI wiring | ~15–25 min |
 | e2e daily | same `e2e.jl` from Linux, macOS Intel, or WSL2 (not a PR check; required after a `cut` merge before register) | macOS workers | 10–50 min |
 | doctests | `src/` docstring examples (Documenter, Julia 1.12) | workers / SSH | ~5 s |
 
 ## SSH E2E
 
-Two Linux Docker workers. `DISTSSHKIT_SSH_E2E=1`. Controller OS matrix: [`testenv/docker-ssh/README.md`](../testenv/docker-ssh/README.md).
+Two Linux workers. `DISTSSHKIT_SSH_E2E=1`. Controller OS matrix: [`testenv/docker-ssh/README.md`](../testenv/docker-ssh/README.md). Apple silicon without Compose: [`testenv/apple-container-ssh/README.md`](../testenv/apple-container-ssh/README.md) (`./scripts/up.sh --e2e`).
 
 Open logs with [`test/artifacts/README.md`](artifacts/README.md):
 

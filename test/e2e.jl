@@ -6,6 +6,7 @@
 # Local with_kit recipes are test/integration/demos/.
 #
 #   testenv/docker-ssh/scripts/up.sh --e2e
+#   testenv/apple-container-ssh/scripts/up.sh --e2e   # Mac Apple silicon; same suite
 #   DISTSSHKIT_SSH_E2E=1 julia --project=. test/e2e.jl   # from kit root
 #   DISTSSHKIT_CODE_COVERAGE=1 …/up.sh --e2e            # + .cov (child CLI too)
 #   ./.github/jetls-check.sh             # e2e.jl is a JETLS entry (not via runtests.jl)

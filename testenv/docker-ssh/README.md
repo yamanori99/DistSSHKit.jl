@@ -1,9 +1,10 @@
 # Docker SSH workers (CI E2E)
 
 Real OpenSSH + rsync Linux workers. CI remote SSH coverage uses this stack
-([`SSH E2E`](../../.github/workflows/ssh-e2e.yml)). Optional Mac-only path:
-[`../apple-container-ssh`](../apple-container-ssh) (Apple `container`, same image;
-**not CI**).
+([`SSH E2E`](../../.github/workflows/ssh-e2e.yml)). Optional Mac-only path (same image and `test/e2e.jl`):
+[`../apple-container-ssh`](../apple-container-ssh) — `./scripts/up.sh --e2e`
+(Apple `container`; **not CI**). Do not run both stacks at once (shared
+`ssh_config`).
 
 ## Coverage matrix
 
@@ -20,7 +21,9 @@ Suite inventory (what each `@testset` proves): [`test/README.md`](../../test/REA
 
 - CI macOS controller is **daily / dispatch** (`macos-15-intel` + Colima). Apple Silicon GitHub runners cannot nest VMs.
 - Remote Julia detection is exercised on **Linux workers**.
-- **Not covered (no free CI):** Linux controller → macOS worker; Mac workers (use apple-container locally).
+- **Not covered (no free CI):** Linux controller → macOS worker; Mac workers
+  (local: [`apple-container-ssh`](../apple-container-ssh/README.md)
+  `./scripts/up.sh --e2e`).
 - **Git parity (`--require-git`):** covered in the suite via a separate git remote root
   (`clone` from a bare on worker-1 → `--sync` → `drive --require-git`).
   Mismatch before `--sync` must fail. `--pull` after a controller `git push`
