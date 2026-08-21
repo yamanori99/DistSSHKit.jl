@@ -18,10 +18,11 @@ jobs.
   - Same **major.minor** on the controller and SSH hosts (`setup --check`
     fails on a mismatch unless `--ignore-julia-version`; patch-only
     differences warn)
-  - Prefer **[juliaup](https://github.com/JuliaLang/juliaup)**
-    (`$HOME/.juliaup/bin/julia`): E2E workers and remote auto-detect start
-    there. `--julia` / `JULIA_DISTRIBUTED_EXE` override. Missing path or a
-    related bug: [open an Issue](https://github.com/yamanori99/DistSSHKit.jl/issues).
+  - Prefer **[juliaup](https://github.com/JuliaLang/juliaup)** at
+    `$HOME/.juliaup/bin/julia`. If it is not there, put a 1.12+ binary at a
+    usual OS path ([Checks](@ref)) or set `--julia` /
+    `JULIA_DISTRIBUTED_EXE`. Missing path or a related bug:
+    [open an Issue](https://github.com/yamanori99/DistSSHKit.jl/issues).
 
 WSL2 is Linux, with a few extra rules:
 
@@ -99,23 +100,22 @@ Example — passwordless login (once per host):
 ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=accept-new USER@HOST echo ok
 ```
 
-Example — Julia **1.12+** (same major.minor as the kit machine, via juliaup).
-Log in, find the binary, then check with that **full path** (non-interactive
-`ssh` often has no login `PATH`, so bare `julia` fails):
+Example — Julia **1.12+**, same major.minor as the kit machine. Non-interactive
+`ssh` often has no login `PATH`, so the binary must be at a **full path**
+below (or you pass `--julia` / `JULIA_DISTRIBUTED_EXE`):
 
-- `ssh USER@HOST`
-- `which julia` (often `$HOME/.juliaup/bin/julia`)
-- `exit`
-
-Replace `/path/from/which/julia` with that path:
+- `$HOME/.juliaup/bin/julia`
+- macOS: `/opt/homebrew/bin/julia`, `/usr/local/bin/julia`, `/usr/bin/julia`
+- Linux / WSL2: `/usr/bin/julia`, `/usr/local/bin/julia`
 
 ```bash
-ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=accept-new USER@HOST '/path/from/which/julia --version'
+ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=accept-new USER@HOST '$HOME/.juliaup/bin/julia --version'
 ```
 
+If Julia is at another path above, put that path in the command instead.
+
 The kit covers the same ground (`ssh`, Julia path / version, remote project)
-with `setup --check` (probes common Julia locations; this **is** a DistSSHKit
-command):
+with `setup --check` (this **is** a DistSSHKit command):
 
 ```bash
 julia --project=. -m DistSSHKit setup --check USER@HOST
