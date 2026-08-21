@@ -9,7 +9,7 @@
 #
 # Same job via CLI:
 #
-#   julia --project=. -m DistSSHKit go local:2 demos/without_kit/pi_file.jl
+#   julia --project=. -m DistSSHKit go masterhost:2 demos/without_kit/pi_file.jl
 
 using DistSSHKit
 
@@ -17,7 +17,7 @@ script = joinpath(@__DIR__, "pi_file.jl")
 n = length(ARGS) >= 1 ? ARGS[1] : "1000"
 
 # Local-only: two concurrent full-job slots on this machine (not Distributed workers).
-result = go!(script, "local:2"; args=[n])
+result = go!(script, "masterhost:2"; args=[n])
 
 # First-time remotes: setup!, then go!.
 #

@@ -39,7 +39,7 @@ spent on SSH connections and deployment, so start with a few and scale up.
 If SSH disconnects are a risk, use machines that stay up, and keep the
 master's run alive with something like `tmux`.
 
-When you use SSH hosts (not just `local:N`):
+When you use SSH hosts (not just `masterhost:N`):
 
 **Where you run the kit** — also install:
 

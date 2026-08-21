@@ -48,7 +48,7 @@ using Test
         file_batch = _ssh_e2e_latest_go_batch(tmp)
         @test file_batch !== nothing
         file_batch === nothing && error("expected go batch for pi_file")
-        @test read(joinpath(file_batch, "local", "pi_results.txt"), String) == solo_body
+        @test read(joinpath(file_batch, "masterhost", "pi_results.txt"), String) == solo_body
 
         pipe_proc, pipe_out = _run_subprocess(setenv(
             Cmd(Cmd([julia, "--startup-file=no", "--project=$kit_root", pipe_script, "4"]); dir=tmp),
@@ -59,8 +59,8 @@ using Test
         pipe_batch = _ssh_e2e_latest_go_batch(tmp)
         @test pipe_batch !== nothing
         pipe_batch === nothing && error("expected go batch for pipeline_pi")
-        a = read(joinpath(pipe_batch, "local-1", "pi_results.txt"), String)
-        b = read(joinpath(pipe_batch, "local-2", "pi_results.txt"), String)
+        a = read(joinpath(pipe_batch, "masterhost-1", "pi_results.txt"), String)
+        b = read(joinpath(pipe_batch, "masterhost-2", "pi_results.txt"), String)
         @test occursin("pi=", a)
         @test a == b
     end

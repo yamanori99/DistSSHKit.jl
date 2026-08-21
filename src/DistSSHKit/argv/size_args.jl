@@ -1,3 +1,20 @@
+"""Pull `masterhost` / deprecated `local` out of the size host list into `include_local`."""
+function _size_absorb_parent_hosts!(hosts::Vector{String}, include_local::Bool)::Bool
+    kept = String[]
+    inc = include_local
+    for h in hosts
+        if is_local_host_name(h)
+            is_deprecated_local_host_name(h) && warn_deprecated_local_host!()
+            inc = true
+        else
+            push!(kept, h)
+        end
+    end
+    empty!(hosts)
+    append!(hosts, kept)
+    return inc
+end
+
 function show_size_usage(; io::IO=stdout)
     print_help_chrome("DistSSHKit size"; io=io)
     print_help_lines(io,
@@ -7,14 +24,14 @@ function show_size_usage(; io::IO=stdout)
     print_help_blank(io)
     print_help_section("Usage"; io=io)
     print_help_lines(io,
-        "  julia --project=. -m DistSSHKit size [--local] [hosts...]",
-        "  size --local host1 host2",
+        "  julia --project=. -m DistSSHKit size [masterhost] [hosts...]",
+        "  size masterhost host1 host2",
         "  size --gb-per-worker 1.5 host1",
     )
     print_help_blank(io)
     print_help_section("Options"; io=io)
     print_help_lines(io,
-        "  -l, --local         include localhost",
+        "  -l, --local         deprecated; use the masterhost token (removed in 0.4)",
         "  --gb-per-worker N   skip measure; assume N GB each",
         "  --probe PATH        warm-up script; peak RSS",
         "  --mem-headroom N    RAM fraction (default $(DEFAULT_MEM_HEADROOM))",
@@ -65,8 +82,13 @@ function parse_size_args(args::Vector{String})
                 hosts=hosts,
             )
         elseif cli_match(c, ["--local", "-l"])
+            warn_deprecated_local_host!()
             include_local = true
             cli_consume!(c)
+        elseif arg == "--masterhost"
+            throw(ArgumentError(
+                "size: pass the host token `masterhost` (e.g. size masterhost host1), not `--masterhost`.",
+            ))
         elseif arg == "--gb-per-worker"
             gb_per_worker = parse(Float64, cli_take_value!(c, arg))
         elseif arg == "--probe"
@@ -85,6 +107,7 @@ function parse_size_args(args::Vector{String})
     end
 
     append_kit_host_sources!(hosts, cli_session; keep_counts=false)
+    include_local = _size_absorb_parent_hosts!(hosts, include_local)
     apply_kit_cli_session!(cli_session)
 
     if probe === nothing

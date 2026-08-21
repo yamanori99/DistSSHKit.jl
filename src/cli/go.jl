@@ -5,7 +5,7 @@
 Outputs: `<project>/.distsshkit/go/<stem>_<UTC>/<slot>/` (or `--output-dir`).
 
   julia --project=. -m DistSSHKit go SCRIPT.jl
-  julia --project=. -m DistSSHKit go local:2 user@h1 SCRIPT.jl
+  julia --project=. -m DistSSHKit go masterhost:2 user@h1 SCRIPT.jl
   julia --project=. -m DistSSHKit SCRIPT.jl              # → go
 
 See `--help`.

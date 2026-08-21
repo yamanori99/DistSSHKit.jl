@@ -55,14 +55,17 @@ For everything else, see the **[Documentation](https://yamanori99.github.io/Dist
 
 ### Basic terms
 
-- **Host** — the machine that runs the work. Local is `local`. An SSH target is
-  `user@hostname`, an IP address, or an SSH config `Host` alias
+- **Host** — the machine that runs the work. This job's DistSSHKit parent is
+  `masterhost`. An SSH target is `user@hostname`, an IP address, or an SSH
+  config `Host` alias. `local` / `localhost` / `l` still mean the Julia process
+  that parsed the token (relative; removed in 0.4)
 - **Process** — one running `julia`. Each process has its own memory and runs
   independently at the OS level
   (this kit launches multiple `julia` processes, even on a single machine, to run
   work in parallel — built on Distributed.jl)
-- **Master** — the process that coordinates the whole run: it hands out work to
-  workers and collects the results
+- **Master** — this job's DistSSHKit parent: the process that plans slots
+  (`go`) or hands work to workers (`drive`) and collects results. When something
+  else starts that parent (a queue), Master is that machine, not the client
 - **Worker** — a process that receives work from the master and runs it
 
 Example: a local machine plus remotes. Each machine can run several workers
@@ -178,7 +181,7 @@ julia --project=. -m DistSSHKit setup --delete user@host1 user@host2
 
 After setup, run like this.
 
-**CLI, go.** One full run of `script.jl` on each host (`local:N` also works).
+**CLI, go.** One full run of `script.jl` on each host (`masterhost:N` also works).
 
 ```bash
 julia --project=. -m DistSSHKit go user@host1:1 user@host2:1 path/to/script.jl
@@ -188,7 +191,7 @@ julia --project=. -m DistSSHKit go user@host1:1 user@host2:1 path/to/script.jl
 too.
 
 ```bash
-julia --project=. -m DistSSHKit drive local:2 user@host1:4 path/to/driver.jl
+julia --project=. -m DistSSHKit drive masterhost:2 user@host1:4 path/to/driver.jl
 ```
 
 **Julia, go.** Keep `remote=` consistent with `setup!` (omit both for the default
@@ -212,7 +215,7 @@ remote = "/path/to/project"
 session = KitSession(workers=["user@host1"], remote=remote, yes=true)
 setup!(session, :clone; repo="https://github.com/org/proj.git")
 setup!(session, :instantiate)
-drive!("path/to/driver.jl", "local:2", "user@host1:4"; remote=remote)
+drive!("path/to/driver.jl", "masterhost:2", "user@host1:4"; remote=remote)
 setup!(session, :sync)  # later updates
 ```
 
@@ -229,7 +232,7 @@ julia --project=. -m DistSSHKit demo install with_kit
 ```
 
 ```bash
-julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_file.jl
+julia --project=. -m DistSSHKit drive masterhost:2 demos/with_kit/square_file.jl
 ```
 
 Walkthrough: [Demo](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/demo/).

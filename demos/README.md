@@ -12,11 +12,11 @@ demos/
   with_kit/
     square_file.jl      # file: square_results.csv
     square_echo.jl      # stdout only
-    pipeline_square.jl  # API: pipeline!(driver, "local:2")
+    pipeline_square.jl  # API: pipeline!(driver, "masterhost:2")
   without_kit/
     pi_file.jl          # file: pi_results.txt
     pi_echo.jl          # stdout only
-    pipeline_pi.jl      # API: go!(script, "local:2") → pi_file.jl
+    pipeline_pi.jl      # API: go!(script, "masterhost:2") → pi_file.jl
 ```
 
 Naming: `{topic}_{file|echo}` — `*_file` writes a file, `*_echo` prints only.
@@ -25,8 +25,8 @@ Naming: `{topic}_{file|echo}` — `*_file` writes a file, `*_echo` prints only.
 ```bash
 julia --project=. -m DistSSHKit demo install with_kit
 julia --project=. -m DistSSHKit demo install without_kit
-julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_file.jl
-julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_echo.jl
+julia --project=. -m DistSSHKit drive masterhost:2 demos/with_kit/square_file.jl
+julia --project=. -m DistSSHKit drive masterhost:2 demos/with_kit/square_echo.jl
 julia --project=. demos/with_kit/pipeline_square.jl
 julia demos/without_kit/pi_echo.jl
 julia --project=. -m DistSSHKit go demos/without_kit/pi_file.jl
@@ -44,7 +44,7 @@ julia --project=. demos/without_kit/pipeline_pi.jl
 Drivers use `init_output_dir!` + `main` + `pmap`. Optional hooks: `drive --help`.
 `pipeline_square.jl` is the thin API entry (optional sync → size! → drive! →
 collect) over `square_file.jl`.
-Same tokens as the CLI: `pipeline!(driver, "local:2"; args=[…])`. A commented remote
+Same tokens as the CLI: `pipeline!(driver, "masterhost:2"; args=[…])`. A commented remote
 example is at the bottom of that file (`setup!` first, or CLI `setup`).
 
 ## without_kit/
@@ -63,7 +63,7 @@ julia --project=. -m DistSSHKit go demos/without_kit/pi_file.jl
 julia --project=. demos/without_kit/pipeline_pi.jl
 ```
 
-`pipeline_pi.jl` mirrors `pipeline_square.jl` for as-is jobs: `go!(script, "local:2"; args=[…])`.
+`pipeline_pi.jl` mirrors `pipeline_square.jl` for as-is jobs: `go!(script, "masterhost:2"; args=[…])`.
 A commented remote example is at the bottom of that file (`setup!` first).
 
 Remote: set `DISTRIBUTED_REMOTE_PROJECT_ROOT` when needed. Optional: `DISTSSHKIT_HOSTS`

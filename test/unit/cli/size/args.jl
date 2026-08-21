@@ -4,6 +4,22 @@ using Test
     parse_size_args = DistSSHKit.parse_size_args
 
     @testset "parse_size_args" begin
+        let r = parse_size_args(["masterhost", "host1", "host2"])
+            @test r.show_help == false
+            @test r.include_local == true
+            @test r.hosts == ["host1", "host2"]
+            @test r.gb_per_worker === nothing
+            @test r.probe === nothing
+            @test r.mem_headroom == DistSSHKit.DEFAULT_MEM_HEADROOM
+            @test r.master_gb == DistSSHKit.DEFAULT_MASTER_GB
+        end
+        DistSSHKit._reset_deprecated_local_host_warning!()
+        let r = parse_size_args(["local", "host1"])
+            @test r.include_local == true
+            @test r.hosts == ["host1"]
+        end
+        @test_throws ArgumentError parse_size_args(["--masterhost", "host1"])
+        DistSSHKit._reset_deprecated_local_host_warning!()
         let r = parse_size_args(["--local", "host1", "host2"])
             @test r.show_help == false
             @test r.include_local == true
@@ -28,7 +44,8 @@ using Test
             @test r.include_local
         end
         # Unknown flags are warned and skipped (not an error).
-        let r = @test_logs (:warn, r"Unknown option") parse_size_args(["--nope", "--local"])
+        DistSSHKit._reset_deprecated_local_host_warning!()
+        let r = @test_logs (:warn, r"Unknown option") (:warn, r"0\.4") parse_size_args(["--nope", "--local"])
             @test r.include_local
             @test isempty(r.hosts)
         end
@@ -70,6 +87,8 @@ using Test
             help = read(path, String)
             rm(path; force=true)
             @test occursin("DistSSHKit size", help)
+            @test occursin("masterhost", help)
+            @test occursin("--local", help)
             @test occursin("--gb-per-worker", help)
             @test occursin("--probe", help)
             @test occursin("--hosts", help)
@@ -108,7 +127,8 @@ using Test
         out = read(path, String)
         rm(path; force=true)
         @test occursin("Workers", out)
-        @test occursin("local:$(plan.local_workers)", out)
+        @test occursin("masterhost", out)
+        @test occursin("masterhost:$(plan.local_workers)", out)
         @test occursin("Total: $(plan.local_workers) workers", out)
         @test !occursin("Suggested", out)
     end
@@ -146,7 +166,7 @@ using Test
             mem_headroom=DistSSHKit.DEFAULT_MEM_HEADROOM,
             master_gb=DistSSHKit.DEFAULT_MASTER_GB,
         )
-        @test occursin("local:$(plan.local_workers)", out)
+        @test occursin("masterhost:$(plan.local_workers)", out)
     end
 
     @testset "run_size --gb-per-worker --local" begin
@@ -166,7 +186,7 @@ using Test
                 local_total, local_nproc, 2.0; is_localhost=true,
             )
             @test code == 0
-            @test occursin("local:$(expected)", out)
+            @test occursin("masterhost:$(expected)", out)
             @test occursin("Total: $(expected) workers", out)
         end
     end

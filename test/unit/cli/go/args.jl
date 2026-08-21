@@ -95,7 +95,7 @@ using Test
         @test occursin("--output-dir", txt)
         @test occursin("--sync", txt)
         @test occursin("--hosts", txt)
-        @test occursin("SCRIPT.jl", txt)
+        @test occursin("masterhost", txt)
     end
 
     @testset "unknown option and missing script" begin

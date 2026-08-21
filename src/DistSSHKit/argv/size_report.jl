@@ -38,14 +38,15 @@ function print_size_report(
         res = host_resources[host]
         s = samples[host]
         n = host == "localhost" ? plan.local_workers : get(plan.remote_workers, host, 0)
+        shown = host == "localhost" ? "masterhost" : host
         if show_peak
             println(
-                "  $(lpad(host, host_col))  $(round(res.total_gb, digits=1)) GB   $(res.nproc)      ",
+                "  $(lpad(shown, host_col))  $(round(res.total_gb, digits=1)) GB   $(res.nproc)      ",
                 "$(s.baseline_gb) GB   $(s.peak_gb) GB   $n",
             )
         else
             println(
-                "  $(lpad(host, host_col))  $(round(res.total_gb, digits=1)) GB   $(res.nproc)      ",
+                "  $(lpad(shown, host_col))  $(round(res.total_gb, digits=1)) GB   $(res.nproc)      ",
                 "$(effective_worker_gb(s)) GB     $n",
             )
         end
@@ -58,7 +59,7 @@ function print_size_report(
 
     local_n = plan.local_workers
     remote_parts = ["$(h):$(plan.remote_workers[h])" for h in hosts if get(plan.remote_workers, h, 0) > 0]
-    local_arg = local_n > 0 ? "local:$local_n " : ""
+    local_arg = local_n > 0 ? "masterhost:$local_n " : ""
     remote_arg = isempty(remote_parts) ? "" : join(remote_parts, " ") * " "
     println("Command template:")
     worker_args = "$(local_arg)$(remote_arg)"

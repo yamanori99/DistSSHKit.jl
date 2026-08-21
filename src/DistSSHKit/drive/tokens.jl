@@ -4,7 +4,7 @@
 Build a [`WorkerPlan`](@ref) from tokens.
 
 When any host lacks `:N`, run [`size!`](@ref) on `session` (must list those
-hosts; set `include_local_for_size` for bare `local`). Explicit `:N` wins over size.
+hosts; set `include_local_for_size` for bare `masterhost`). Explicit `:N` wins over size.
 """
 function worker_plan_from_tokens(
     tokens::AbstractVector{<:AbstractString};

@@ -53,10 +53,10 @@ julia> import Pkg; Pkg.add("DistSSHKit")
 
 ### 基本用語
 
-- **ホスト** — 計算するマシン。ローカルは `local`。SSH 先は `user@hostname`、IP アドレス、または SSH config の `Host` エイリアス
+- **ホスト** — 計算するマシン。このジョブの DistSSHKit parent は `masterhost`。SSH 先は `user@hostname`、IP アドレス、または SSH config の `Host` エイリアス。`local` / `localhost` / `l` はトークンを解釈した Julia プロセス側 (相対。0.4 で削除)
 - **プロセス** — 起動した `julia` 1つ分のこと。それぞれ独立したメモリを持ち、OS 上で別々に動く
   (このキットは1台のマシンでも複数の `julia` プロセスを起動して並列に走らせる。Distributed.jl ベース)
-- **マスター** — 並列処理全体を指揮するプロセス。仕事を分けてワーカーに渡し、結果を集める側
+- **マスター** — このジョブの DistSSHKit parent。`go` ではスロットを計画し、`drive` では仕事をワーカーに渡して結果を集める。別のものが parent を起動しているとき (queue)、マスターはそのマシンでありクライアントではない
 - **ワーカー** — マスターから仕事を受け取って実行するプロセス
 
 例: ローカルマシンと、リモートマシンを使う場合。
@@ -164,7 +164,7 @@ julia --project=. -m DistSSHKit setup --delete user@host1 user@host2
 
 下準備のあと、次のように実行する。
 
-**CLI で go する例。** 各ホストで `script.jl` を1本ずつ実行する (`local:N` も指定可)。
+**CLI で go する例。** 各ホストで `script.jl` を1本ずつ実行する (`masterhost:N` も指定可)。
 
 ```bash
 julia --project=. -m DistSSHKit go user@host1:1 user@host2:1 path/to/script.jl
@@ -173,7 +173,7 @@ julia --project=. -m DistSSHKit go user@host1:1 user@host2:1 path/to/script.jl
 **CLI で drive する例。** git デプロイなら、あとからの更新は `setup --sync`。`rsync` でもよい。
 
 ```bash
-julia --project=. -m DistSSHKit drive local:2 user@host1:4 path/to/driver.jl
+julia --project=. -m DistSSHKit drive masterhost:2 user@host1:4 path/to/driver.jl
 ```
 
 **Julia コードで go する例。** `remote=` は `setup!` と揃える (どちらも省略すれば既定パス)。
@@ -196,7 +196,7 @@ remote = "/path/to/project"
 session = KitSession(workers=["user@host1"], remote=remote, yes=true)
 setup!(session, :clone; repo="https://github.com/org/proj.git")
 setup!(session, :instantiate)
-drive!("path/to/driver.jl", "local:2", "user@host1:4"; remote=remote)
+drive!("path/to/driver.jl", "masterhost:2", "user@host1:4"; remote=remote)
 setup!(session, :sync)  # 2回目以降の更新
 ```
 
@@ -213,7 +213,7 @@ julia --project=. -m DistSSHKit demo install with_kit
 ```
 
 ```bash
-julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_file.jl
+julia --project=. -m DistSSHKit drive masterhost:2 demos/with_kit/square_file.jl
 ```
 
 詳細: [Demo](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/demo/)。

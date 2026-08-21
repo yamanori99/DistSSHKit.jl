@@ -9,7 +9,7 @@
 #
 # Same driver via CLI:
 #
-#   julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_file.jl
+#   julia --project=. -m DistSSHKit drive masterhost:2 demos/with_kit/square_file.jl
 
 using DistSSHKit
 
@@ -17,7 +17,7 @@ driver = joinpath(@__DIR__, "square_file.jl")
 n = length(ARGS) >= 1 ? ARGS[1] : "8"
 
 # Local-only: two Distributed workers on this machine (collect off — outputs stay local).
-result = pipeline!(driver, "local:2"; args=[n], collect=false, enable_log=false)
+result = pipeline!(driver, "masterhost:2"; args=[n], collect=false, enable_log=false)
 
 # First-time remotes: setup!, then pipeline! (or drive!).
 #

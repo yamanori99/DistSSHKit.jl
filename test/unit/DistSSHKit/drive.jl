@@ -79,7 +79,7 @@ using Test
 
     @testset "drive_host_specs" begin
         plan = DistSSHKit.WorkerPlan(2, Dict("host-a" => 4, "host-b" => 0))
-        @test DistSSHKit.drive_host_specs(plan) == ["local:2", "host-a:4"]
+        @test DistSSHKit.drive_host_specs(plan) == ["masterhost:2", "host-a:4"]
     end
 
     @testset "apply_session_env!" begin

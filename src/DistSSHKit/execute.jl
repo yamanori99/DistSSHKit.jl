@@ -85,9 +85,9 @@ at runtime (`kind ∈ (:go, :drive)`), returning the shared [`KitRunResult`](@re
 instead of `GoResult` / `DriveResult`.
 
 ```julia
-execute!(:go, "job.jl", ["local:2"]; args=["8"])
-execute!(:drive, "job.jl", ["local:2"]; args=["8"])
-wait(execute!(:go, "job.jl", ["local:1"]; detached=true, args=["8"]))
+execute!(:go, "job.jl", ["masterhost:2"]; args=["8"])
+execute!(:drive, "job.jl", ["masterhost:2"]; args=["8"])
+wait(execute!(:go, "job.jl", ["masterhost:1"]; detached=true, args=["8"]))
 ```
 
 `output_dir`, `args`, `project`, `sync`, `julia` are the keywords [`go!`](@ref)

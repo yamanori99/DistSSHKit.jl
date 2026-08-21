@@ -14,18 +14,18 @@ REPL help also works
 The shape mirrors the CLI: **`go!`** for as-is scripts, **`drive!`** (and friends)
 for Distributed drivers. **`pipeline!`** is optional sugar that runs the usual
 remote order in one call. Worker placement uses the same tokens as the CLI
-(`local:2`, `user@host:1`):
+(`masterhost:2`, `user@host:1`):
 
 ```julia
-pipeline!(driver, "local:2"; args=["8"])
+pipeline!(driver, "masterhost:2"; args=["8"])
 pipeline!(driver, "user@h1:1", "user@h2:1"; remote="/path/to/project", args=["8"])
-go!("job.jl", "local:2"; args=["8"])
-drive!("job.jl", "local:2"; args=["8"])
+go!("job.jl", "masterhost:2"; args=["8"])
+drive!("job.jl", "masterhost:2"; args=["8"])
 ```
 
 ## Run a script as-is — `go!`
 
-No Kit imports in the job file. Each `local:N` / `host:N` slot is one full run, concurrent.
+No Kit imports in the job file. Each `masterhost:N` / `host:N` slot is one full run, concurrent.
 
 ```@docs
 go!
@@ -103,7 +103,7 @@ PipelineResult
 report_pipeline_errors
 ```
 
-## Worker tokens — `local:N` / `host:N`
+## Worker tokens — `masterhost:N` / `host:N`
 
 Use this surface when callers need to classify tokens or decide whether
 `size!` is needed before building workers (e.g. the queue layer's own
@@ -132,9 +132,9 @@ For callers that pick the kind at runtime (the queue layer): one function,
 one result type, instead of branching on `kind` yourself.
 
 ```julia
-execute!(:go, "job.jl", ["local:2"]; args=["8"])
-execute!(:drive, "job.jl", ["local:2"]; args=["8"])
-wait(execute!(:go, "job.jl", ["local:1"]; detached=true, args=["8"]))
+execute!(:go, "job.jl", ["masterhost:2"]; args=["8"])
+execute!(:drive, "job.jl", ["masterhost:2"]; args=["8"])
+wait(execute!(:go, "job.jl", ["masterhost:1"]; detached=true, args=["8"]))
 ```
 
 `detached=true`:

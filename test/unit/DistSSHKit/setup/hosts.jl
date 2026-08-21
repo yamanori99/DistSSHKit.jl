@@ -15,10 +15,11 @@ using Test
     @testset "validate_setup_hosts" begin
         # Representative refusals; DistSSHKit/hosts.jl covers the underlying predicates.
         @test_throws ArgumentError DistSSHKit.validate_setup_hosts(String[])
+        @test_throws ArgumentError DistSSHKit.validate_setup_hosts(["masterhost"])
         @test_throws ArgumentError DistSSHKit.validate_setup_hosts(["local"])
         @test_throws ArgumentError DistSSHKit.validate_setup_hosts(["demos/foo.jl"])
-            @test DistSSHKit.validate_setup_hosts(["root@192.0.2.10", "host-b"]) === nothing
-        end
+        @test DistSSHKit.validate_setup_hosts(["root@192.0.2.10", "host-b"]) === nothing
+    end
 
         @testset "finish_host_op!" begin
             _apply_quiet_setup_session!()

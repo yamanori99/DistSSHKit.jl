@@ -1,10 +1,16 @@
 # Host tokens & SSH failure summaries (drive / go / setup)
 
-"""Whether `host` denotes this machine in drive/go (`local` / `localhost` / `l`).
+"""Whether `host` denotes this job's DistSSHKit parent in drive/go.
+
+Prefer `masterhost`. Deprecated aliases `local` / `localhost` / `l` still
+match and will be removed in DistSSHKit 0.4.
 
 # Examples
 ```jldoctest
 julia> using DistSSHKit
+
+julia> DistSSHKit.is_local_host_name("masterhost")
+true
 
 julia> DistSSHKit.is_local_host_name("local")
 true
@@ -14,7 +20,32 @@ false
 ```
 """
 function is_local_host_name(host_name::AbstractString)::Bool
+    h = String(host_name)
+    return h == "masterhost" || h in ("localhost", "local", "l")
+end
+
+"""True for the deprecated relative names (`local` / `localhost` / `l`)."""
+function is_deprecated_local_host_name(host_name::AbstractString)::Bool
     return String(host_name) in ("localhost", "local", "l")
+end
+
+const DEPRECATED_LOCAL_HOST_WARN =
+    "`local` / `localhost` / `l` and `--local` / `-l` name this Julia process (relative) and will be removed in DistSSHKit 0.4. Use `masterhost` / `masterhost:N` for this job's DistSSHKit parent."
+
+const _DEPRECATED_LOCAL_HOST_WARNED = Ref(false)
+
+"""Reset the once-per-process deprecation flag (tests)."""
+function _reset_deprecated_local_host_warning!()
+    _DEPRECATED_LOCAL_HOST_WARNED[] = false
+    return nothing
+end
+
+"""Warn once per process that relative `local` tokens/flags go away in 0.4."""
+function warn_deprecated_local_host!()
+    _DEPRECATED_LOCAL_HOST_WARNED[] && return nothing
+    _DEPRECATED_LOCAL_HOST_WARNED[] = true
+    @warn DEPRECATED_LOCAL_HOST_WARN
+    return nothing
 end
 
 """True when a CLI token looks like a local `.jl` script path, not an SSH host.

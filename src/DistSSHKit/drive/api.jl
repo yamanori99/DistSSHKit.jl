@@ -5,10 +5,10 @@
     drive!(script, workers...; kwargs...)
     drive!(script, workers::AbstractVector; kwargs...)
 
-Run a driver script on workers. Tokens match the CLI (`local:2`, `user@host:1`).
+Run a driver script on workers. Tokens match the CLI (`masterhost:2`, `user@host:1`).
 
 ```julia
-drive!("job.jl", "local:2"; args=["8"])
+drive!("job.jl", "masterhost:2"; args=["8"])
 drive!(session, "job.jl")  # uses `session.tokens`
 ```
 
