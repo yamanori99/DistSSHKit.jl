@@ -9,12 +9,12 @@ using Dates
         let s = DistSSHKit._go_plan_slots(String[])
             @test length(s) == 1
             @test s[1].kind === :local
-            @test s[1].label == "local"
+            @test s[1].label == "masterhost"
         end
         let s = DistSSHKit._go_plan_slots(["local:2"])
             @test length(s) == 2
-            @test s[1].label == "local-1"
-            @test s[2].label == "local-2"
+            @test s[1].label == "masterhost-1"
+            @test s[2].label == "masterhost-2"
         end
         let s = DistSSHKit._go_plan_slots(["user@lab", "user@lab2:2"])
             @test length(s) == 3
@@ -38,7 +38,12 @@ using Dates
             e
         end
         @test err isa ArgumentError
-        @test occursin("did you mean local", sprint(showerror, err))
+        @test occursin("did you mean masterhost", sprint(showerror, err))
+        let s = DistSSHKit._go_plan_slots(["masterhost:2"])
+            @test length(s) == 2
+            @test s[1].label == "masterhost-1"
+            @test s[2].label == "masterhost-2"
+        end
         @test occursin("root@", DistSSHKit._go_host_ssh_hint("192.0.2.11"))
         @test isempty(DistSSHKit._go_host_ssh_hint("root@192.0.2.11"))
     end

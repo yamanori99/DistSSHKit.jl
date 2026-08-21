@@ -44,7 +44,7 @@ How you call it is a separate choice:
 
 All of these need **Julia 1.12+** ([Requirements](@ref)).
 
-Same host tokens for all of these (`local:2`, `user@host:1`). Details:
+Same host tokens for all of these (`masterhost:2`, `user@host:1`). Details:
 [API](@ref API), [User Guide](@ref Manual).
 
 ## Installation
@@ -69,13 +69,16 @@ Also needs **`ssh`**, **`rsync`**, and **`git`** (git deploy only);
 
 ## Basic terms
 
-- **Host** — the machine that runs the work. Local is `local`. An SSH target is
-  `user@hostname`, an IP address, or an SSH config `Host` alias
+- **Host** — the machine that runs the work. This job's DistSSHKit parent is
+  `masterhost`. An SSH target is `user@hostname`, an IP address, or an SSH
+  config `Host` alias. `local` / `localhost` / `l` still mean the Julia process
+  that parsed the token (relative; removed in 0.4)
 - **Process** — one running `julia`. Each process has its own memory and runs
   independently at the OS level (this kit launches multiple `julia` processes,
   even on a single machine, to run work in parallel — built on Distributed.jl)
-- **Master** — the process that coordinates the whole run: it hands out work to
-  workers and collects the results
+- **Master** — this job's DistSSHKit parent: the process that plans slots
+  (`go`) or hands work to workers (`drive`) and collects results. When something
+  else starts that parent (a queue), Master is that machine, not the client
 - **Worker** — a process that receives work from the master and runs it
 
 Example: a local machine plus remotes. Each machine can run several workers

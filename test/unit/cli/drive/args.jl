@@ -35,6 +35,17 @@ using Test
             let r = parse_drive_args(["s.jl"])
                 @test r.hint_surface === :cli
             end
+            let r = parse_drive_args(["masterhost:4", "myscript.jl", "a", "b"])
+                @test r.local_workers == 4
+                @test r.script_path == "myscript.jl"
+                @test r.script_args == ["a", "b"]
+            end
+            @test_throws ArgumentError parse_drive_args(["--masterhost", "4", "s.jl"])
+            @test_throws ArgumentError parse_drive_args(["--masterhost:5", "s.jl"])
+            let r = parse_drive_args(["masterhost:3", "host1:2", "s.jl"])
+                @test r.local_workers == 3
+                @test r.hosts == [("host1", 2)]
+            end
             let r = parse_drive_args(["--local", "4", "myscript.jl", "a", "b"])
                 @test r.local_workers == 4
                 @test r.script_path == "myscript.jl"
@@ -195,7 +206,8 @@ using Test
         @test occursin("--rsync", txt)
         @test occursin("post-run-new", txt)
         @test occursin("off by default", lowercase(txt))
-        @test occursin("--require-all-hosts", txt)
+        @test occursin("masterhost:N", txt)
+        @test !occursin("--masterhost", txt)
         @test occursin("DISTSSHKIT_JOBS", txt)
         @test occursin("DISTSSHKIT_REQUIRE_ALL_HOSTS", txt)
         @test !occursin("required after `setup --rsync`", txt)

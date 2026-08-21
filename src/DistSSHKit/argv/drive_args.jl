@@ -48,7 +48,7 @@ function _drive_set_local_workers!(
 )::Int
     local_workers > 0 &&
         throw(ArgumentError(
-            "duplicate local worker spec ($source); use one of l:N, local:N, localhost:N, or --local N",
+            "duplicate parent worker spec ($source); use one of masterhost:N (local / --local until 0.4)",
         ))
     count < 1 &&
         throw(ArgumentError("local worker count must be >= 1, got $count"))
@@ -64,6 +64,7 @@ function _drive_absorb_local_worker_spec(
     if !_drive_local_host_name(host_name)
         return local_workers, false
     end
+    is_deprecated_local_host_name(host_name) && warn_deprecated_local_host!()
     count = _drive_set_local_workers!(
         local_workers,
         something(workers, default_workers, 1),
@@ -115,7 +116,12 @@ function parse_drive_args(args::Vector{String})
     while i <= length(args)
         arg = String(args[i])
 
-        if arg == "--local" || arg == "-l"
+        if arg == "--masterhost" || startswith(arg, "--masterhost:")
+            throw(ArgumentError(
+                "drive: use the host token `masterhost:N` (e.g. drive masterhost:4 script.jl), not `--masterhost N`",
+            ))
+        elseif arg == "--local" || arg == "-l"
+            warn_deprecated_local_host!()
             local_workers = _drive_set_local_workers!(
                 local_workers,
                 _parse_drive_flag_count(arg, args, i),
@@ -123,6 +129,7 @@ function parse_drive_args(args::Vector{String})
             )
             i += 2
         elseif startswith(arg, "--local:") || startswith(arg, "-l:")
+            warn_deprecated_local_host!()
             count = _drive_flag_int_suffix(arg, ("--local", "-l"))
             count === nothing && throw(ArgumentError("local worker count missing in: $arg"))
             local_workers = _drive_set_local_workers!(local_workers, count, arg)
@@ -267,7 +274,7 @@ function parse_drive_args(args::Vector{String})
             break
         elseif startswith(arg, "-")
             throw(ArgumentError(
-                "unknown or incomplete drive option: $arg (use host:N form, e.g. l:2 local:2 host1:4)",
+                "unknown or incomplete drive option: $arg (use host:N form, e.g. masterhost:2 host1:4)",
             ))
         else
             local_workers = _drive_push_host_token!(
@@ -340,14 +347,14 @@ function show_drive_requirements(; io::IO=stdout)
     print_help_section("Usage"; io=io)
     print_help_lines(io,
         "  julia --project=. -m DistSSHKit drive [workers...] DRIVER.jl",
-        "  drive local:4 host1:8 jobs.jl",
+        "  drive masterhost:4 host1:8 jobs.jl",
         "  drive --collect-missing ROOT HOST...",
     )
     print_help_blank(io)
     print_help_section("Workers"; io=io)
     print_help_lines(io,
-        "  host:N / local:N    N Distributed workers (not go slots)",
-        "  l:N                 same as local:N",
+        "  host:N / masterhost:N  N Distributed workers (not go slots)",
+        "  local:N / --local   deprecated (relative; removed in 0.4)",
         "  host                1 worker, or --workers default",
         "  $(KIT_HOSTS_FLAG_HELP)",
         "  --hosts-file PATH   one token per line (host:N kept)",

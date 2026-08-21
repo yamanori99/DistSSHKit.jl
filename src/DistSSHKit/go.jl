@@ -49,31 +49,36 @@ function _go_sanitize_label(raw::AbstractString)::String
     return isempty(s) ? "host" : s
 end
 
-"""
-Build execution slots from host tokens.
-
-- No tokens → one local slot `local`
-- `local:N` / `l:N` → N local slots (`local:0` skips local when remotes are listed)
-- `user@host` → one remote slot
-- `user@host:N` → N remote slots on that host (`host`, or `host-1` … when N>1)
-"""
+"""True when a go token looks like a misspelling of `masterhost` / `local`."""
 function _go_local_host_typo_hint(host_name::AbstractString)::Union{Nothing,String}
     h = lowercase(String(host_name))
-    h in ("lacal", "loacl", "locahost", "locl") && return "did you mean local?"
+    h in ("lacal", "loacl", "locahost", "locl", "masterhos", "materhost") &&
+        return "did you mean masterhost?"
     return nothing
 end
 
+"""
+Build execution slots from host tokens.
+
+- No tokens → one parent slot (directory label `masterhost`)
+- `masterhost:N` → N slots on this job's DistSSHKit parent
+- deprecated `local:N` / `l:N` → same slots until 0.4 (`local:0` skips parent when remotes are listed)
+- `user@host` → one remote slot
+- `user@host:N` → N remote slots on that host (`host`, or `host-1` … when N>1)
+"""
 function _go_plan_slots(host_tokens::AbstractVector{<:AbstractString})::Vector{GoSlot}
-    isempty(host_tokens) && return [GoSlot(:local, nothing, "local")]
+    isempty(host_tokens) && return [GoSlot(:local, nothing, "masterhost")]
 
     local_count = 0
+    parent_label_base = "masterhost"
     remote_runs = Vector{String}() # host repeated per run
     for raw in host_tokens
         host_name, host_workers = split_worker_token(String(raw))
         n = something(host_workers, 1)
         if _go_is_local_host(host_name)
+            is_deprecated_local_host_name(host_name) && warn_deprecated_local_host!()
             n < 0 &&
-                throw(ArgumentError("local slot count must be >= 0, got $n in $(repr(raw))"))
+                throw(ArgumentError("parent slot count must be >= 0, got $n in $(repr(raw))"))
             local_count += n
         elseif n < 1
             hint = _go_local_host_typo_hint(host_name)
@@ -89,15 +94,15 @@ function _go_plan_slots(host_tokens::AbstractVector{<:AbstractString})::Vector{G
 
     local_count == 0 && isempty(remote_runs) &&
         throw(ArgumentError(
-            "no execution slots: list remotes after local:0, or omit local:0 to run locally",
+            "no execution slots: list remotes after masterhost:0, or omit the parent token to run on the parent",
         ))
 
     slots = GoSlot[]
     if local_count == 1 && isempty(remote_runs)
-        push!(slots, GoSlot(:local, nothing, "local"))
+        push!(slots, GoSlot(:local, nothing, parent_label_base))
     else
         for i in 1:local_count
-            label = local_count == 1 ? "local" : "local-$i"
+            label = local_count == 1 ? parent_label_base : "$(parent_label_base)-$i"
             push!(slots, GoSlot(:local, nothing, label))
         end
     end
@@ -255,7 +260,7 @@ function _go_write_batch_manifest!(
         println(io, "script=", script)
         println(io, "slots=", length(slots))
         for (i, s) in enumerate(slots)
-            host = s.host === nothing ? "local" : s.host
+            host = s.host === nothing ? "masterhost" : s.host
             println(io, "slot[$i]=", s.label, " kind=", s.kind, " host=", host)
         end
     end
@@ -464,8 +469,8 @@ end
 Run an as-is complete job on one or more slots (local and/or remote).
 
 ```julia
-go!("job.jl")                          # one local slot
-go!("job.jl", "local:2"; args=["8"])
+go!("job.jl")                          # one parent slot
+go!("job.jl", "masterhost:2"; args=["8"])
 go!("job.jl", "user@h1:1", "user@h2:1"; remote="/path/to/project")
 ```
 
@@ -487,7 +492,7 @@ when you need that.
 `julia` sets the Julia binary for each slot (`nothing` / `"auto"` → detect;
 same as CLI `--julia`).
 
-`local:N` and `host:N` mean N independent full-job runs (not Distributed workers),
+`masterhost:N` and `host:N` mean N independent full-job runs (not Distributed workers),
 started together. `path_anchor` shortens displayed paths (CLI passes kit project root).
 """
 function go!(
@@ -611,7 +616,7 @@ function go!(
         writeln_field("Script", display_path(script_path, anchor))
         writeln_field("Slots", string(length(slots)))
         for s in slots
-            where = s.kind === :local ? "local" : String(something(s.host, s.label))
+            where = s.kind === :local ? "masterhost" : String(something(s.host, s.label))
             writeln_both("  · $(s.label)  ($where)"; color=:light_black)
         end
         writeln_both("")

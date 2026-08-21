@@ -109,7 +109,7 @@ const DIST_SSH_KIT_VERSION = something(
 dist_ssh_kit_version()::VersionNumber = DIST_SSH_KIT_VERSION
 
 # CLI: load `src/cli/*.jl` into Main and run `*_main`.
-#   julia --project=. -m DistSSHKit drive local:2 script.jl
+#   julia --project=. -m DistSSHKit drive masterhost:2 script.jl
 
 const _KIT_CLI_LOADED = Set{String}()
 const _KIT_CLI_SCRIPTS = ("drive.jl", "go.jl", "setup.jl", "size.jl")
@@ -228,9 +228,9 @@ run_size(args::Vector{String}=copy(ARGS))::Cint = _run_kit_cli_script("size.jl",
 CLI entry. Prefer Julia 1.12+ and `julia -m DistSSHKit SUBCOMMAND …`:
 
     julia --project=. -m DistSSHKit go SCRIPT.jl
-    julia --project=. -m DistSSHKit drive local:2 script.jl
+    julia --project=. -m DistSSHKit drive masterhost:2 script.jl
     julia --project=. -m DistSSHKit setup --clone host1 host2
-    julia --project=. -m DistSSHKit size --local host1
+    julia --project=. -m DistSSHKit size masterhost host1
 
 `main` remains for wrappers and tests; prefer `-m` day-to-day.
 """

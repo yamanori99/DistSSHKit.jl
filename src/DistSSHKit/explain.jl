@@ -95,7 +95,7 @@ function explain_no_hosts(;
     if kind === :size
         head = "KitSession has no hosts for size!"
         hint = if surface === :api
-            "Hint: pass workers=[\"local:2\", …] or workers=[\"user@host\", …] (bare host → autosize)"
+            "Hint: pass workers=[\"masterhost:2\", …] or workers=[\"user@host\", …] (bare host → autosize)"
         else
             "Hint: pass local and/or SSH hosts (see size --help)"
         end

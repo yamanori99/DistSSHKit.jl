@@ -7,8 +7,8 @@ host_op_result(; cancelled::Bool=false, succeeded::Int=0, failed::Int=0) =
 """
 Validate setup CLI hosts.
 
-Setup hosts are **SSH targets only**. Unlike `drive` / `go`, `local` is not this
-machine — pass `user@host` (or an SSH config `Host` alias).
+Setup hosts are **SSH targets only**. Unlike `drive` / `go`, `masterhost` is not
+an SSH target — pass `user@host` (or an SSH config `Host` alias).
 """
 function validate_setup_hosts(hosts::AbstractVector{<:AbstractString})
     isempty(hosts) && throw(ArgumentError("No hosts specified"))
@@ -16,7 +16,7 @@ function validate_setup_hosts(hosts::AbstractVector{<:AbstractString})
         host = String(raw)
         if is_local_host_name(host)
             throw(ArgumentError(
-                "setup hosts are SSH targets only; $(repr(host)) means this machine in drive/go. " *
+                "setup hosts are SSH targets only; $(repr(host)) means this job's DistSSHKit parent in drive/go. " *
                 "Pass user@host (or an SSH config Host alias). " *
                 "To remove a local project tree, delete it on this machine yourself.",
             ))
