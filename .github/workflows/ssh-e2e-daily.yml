@@ -35,12 +35,14 @@ jobs:
       - name: docker-ssh build + push
         env:
           DISTSSHKIT_PUSH_IMAGE: ghcr.io/${{ github.repository_owner }}/distsshkit-linux-ssh-worker:${{ github.sha }}
+          DISTSSHKIT_SKIP_UP: "1"
         run: ./testenv/docker-ssh/scripts/up.sh
       - name: Teardown workers
         if: always()
         run: ./testenv/docker-ssh/scripts/down.sh || true
 
   linux-e2e:
+    needs: linux-image
     runs-on: ubuntu-latest
     timeout-minutes: 30
     name: ubuntu-latest → ubuntu-24.04
@@ -63,20 +65,21 @@ jobs:
       - name: docker-ssh up + SSH E2E
         env:
           DISTSSHKIT_WORKER_IMAGE: ghcr.io/${{ github.repository_owner }}/distsshkit-linux-ssh-worker:${{ github.sha }}
-          DISTSSHKIT_WORKER_PULL_RETRIES: "40"
+          DISTSSHKIT_WORKER_PULL_RETRIES: "8"
         run: ./testenv/docker-ssh/scripts/up.sh --e2e
       # SHA from the image job; latest after this Linux suite (package should be public).
       - name: Push latest
         env:
           IMAGE: ghcr.io/${{ github.repository_owner }}/distsshkit-linux-ssh-worker
         run: |
-          docker tag "${IMAGE}:${{ github.sha }}" "${IMAGE}:latest"
-          docker push "${IMAGE}:latest"
+          docker tag "${IMAGE}:${{ github.sha }}" local/linux-ssh-worker:latest
+          ./testenv/docker-ssh/scripts/push-image.sh "${IMAGE}:latest"
       - name: Teardown workers
         if: always()
         run: ./testenv/docker-ssh/scripts/down.sh || true
 
   macos-e2e:
+    needs: linux-image
     runs-on: macos-15-intel
     timeout-minutes: 60
     name: macos-15-intel → ubuntu-24.04
@@ -101,13 +104,14 @@ jobs:
       - name: docker-ssh up + SSH E2E
         env:
           DISTSSHKIT_WORKER_IMAGE: ghcr.io/${{ github.repository_owner }}/distsshkit-linux-ssh-worker:${{ github.sha }}
-          DISTSSHKIT_WORKER_PULL_RETRIES: "40"
+          DISTSSHKIT_WORKER_PULL_RETRIES: "8"
         run: ./testenv/docker-ssh/scripts/up.sh --e2e
       - name: Teardown workers
         if: always()
         run: ./testenv/docker-ssh/scripts/down.sh || true
 
   wsl-e2e:
+    needs: linux-image
     runs-on: windows-latest
     timeout-minutes: 60
     name: windows-latest (WSL2) → ubuntu-24.04
@@ -137,7 +141,7 @@ jobs:
           dest="$HOME/DistSSHKit.jl"
           cache="$src/.ci-cache/wsl-julia"
           export DISTSSHKIT_WORKER_IMAGE="ghcr.io/${{ github.repository_owner }}/distsshkit-linux-ssh-worker:${{ github.sha }}"
-          export DISTSSHKIT_WORKER_PULL_RETRIES="40"
+          export DISTSSHKIT_WORKER_PULL_RETRIES="8"
           mkdir -p "$cache"
           rm -rf "$dest"
           git clone "$src" "$dest"

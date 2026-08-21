@@ -97,9 +97,11 @@ ssh -F .generated/ssh_config distsshkit-w1 'echo ok; julia --version'
 same suite as PR E2E, on the timer, not a PR check. After a `cut` merge,
 dispatch it on that commit before `@JuliaRegistrator register`.
 
-Those controller jobs pull `ghcr.io/<owner>/distsshkit-linux-ssh-worker:<sha>`
-(retry until the image job has pushed) instead of building Julia-in-Docker on
-Colima / WSL `dockerd`. After the daily Linux suite, `:latest` is pushed for
+Those controller jobs wait for `ubuntu-latest (image)` then pull
+`ghcr.io/<owner>/distsshkit-linux-ssh-worker:<sha>` instead of building
+Julia-in-Docker on Colima / WSL `dockerd`. Push to GHCR is retried until the
+tag is inspectable (GHCR `unknown blob`). After the daily Linux suite, `:latest`
+is pushed for
 local pull. The package is meant to be **public** (one-time: package Settings →
 Change visibility). Local `./scripts/up.sh` still builds unless you set
 `DISTSSHKIT_WORKER_IMAGE`. Colima on Intel runners uses `--cpu 3 --memory 8`
