@@ -18,6 +18,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
   `DISTRIBUTED_HEARTBEAT_DEADLINE_SEC` (default 600, same order as SSH
   `ServerAlive`). Interval is `DISTRIBUTED_HEARTBEAT_INTERVAL_SEC` (default 30).
   A blocked ping no longer stalls the watchdog.
+- Docs: remote Julia auto-detect paths in `requirements.md` (juliaup first,
+  then usual OS locations; `setup --check` / `--julia` /
+  `JULIA_DISTRIBUTED_EXE`).
 
 ## 0.3.2
 
