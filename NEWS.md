@@ -5,6 +5,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- `go` / `drive` progress log lines use a stable `kind=` / `done=` / `total=`
+  format; the final `done` line is always written to the kit log regardless
+  of verbosity, for external process monitoring (e.g. DistSSHKitQueue.jl).
 - Host token `masterhost` is this job's DistSSHKit parent (same machine when you
   start the kit yourself). `local` / `localhost` / `l` and `--local` / `-l` still
   work but warn once; they go away in **0.4**. Prefer `masterhost` /

@@ -75,6 +75,11 @@ project tree and an instantiate. Prefer matching Julia **major.minor**.
 After `main()`: **post-run-new** collect. Standalone pull via the collect
 flags above. See [User Guide](@ref Manual) for mode names.
 
+External watchers: set `DISTSSHKIT_PROGRESS=1` so the kit log also gets
+`progress: begin` / `step` lines; `progress: done` is always written when
+logging is on (`--no-log` skips the file). Line format: [API](@ref API)
+(Progress lines).
+
 Collect expands remote `~/…` roots on each host before `find` / rsync so the
 controller never `relpath`s against a tilde base (same ENV as
 [setup remote path](@ref Manual-setup)).

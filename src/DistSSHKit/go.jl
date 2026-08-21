@@ -627,6 +627,7 @@ function go!(
                 "go";
                 steps=n_slots,
                 items=String[s.label for s in slots],
+                kind=:go,
             )
         end
         @sync for slot in slots

@@ -514,6 +514,7 @@ mutable struct KitProgressState
     steps::Int
     done::Int
     label::String
+    kind::Symbol
     active::Bool
     t0::Float64
     tick::Int
@@ -524,12 +525,19 @@ mutable struct KitProgressState
     cursor_hidden::Bool
 end
 
-function KitProgressState(title::AbstractString, steps::Int, done::Int, label::AbstractString)
+function KitProgressState(
+    title::AbstractString,
+    steps::Int,
+    done::Int,
+    label::AbstractString;
+    kind::Symbol=:unknown,
+)
     return KitProgressState(
         String(title),
         steps,
         done,
         String(label),
+        kind,
         false,
         time(),
         0,
@@ -794,10 +802,60 @@ function _progress_print_bar!(io::IO, done::Int, total::Int, tick::Int)
     return nothing
 end
 
-function _progress_log!(state::KitProgressState)
-    cur = _progress_current(state)
-    _kit_log_writeln(
-        "progress: $(state.label) ($(state.done)/$(state.steps) done, $(cur)/$(state.steps))",
+function _progress_log_line(event::AbstractString, kvs::Pair...)
+    parts = String["progress:", String(event)]
+    for (k, v) in kvs
+        push!(parts, "$k=$v")
+    end
+    return join(parts, " ")
+end
+
+function _progress_log_writeln(event::AbstractString, kvs::Pair...)
+    _kit_log_writeln(_progress_log_line(event, kvs...))
+    return nothing
+end
+
+function _progress_log_begin!(state::KitProgressState)
+    _progress_log_writeln(
+        "begin",
+        "kind" => state.kind,
+        "label" => state.label,
+        "total" => state.steps,
+    )
+    return nothing
+end
+
+function _progress_log_step!(state::KitProgressState)
+    _progress_log_writeln(
+        "step",
+        "kind" => state.kind,
+        "label" => state.label,
+        "done" => state.done,
+        "total" => state.steps,
+        "cur" => _progress_current(state),
+    )
+    return nothing
+end
+
+function _progress_log_item!(state::KitProgressState, item::KitProgressItem)
+    _progress_log_writeln(
+        "item",
+        "kind" => state.kind,
+        "label" => item.label,
+        "status" => item.status,
+        "done" => state.done,
+        "total" => state.steps,
+    )
+    return nothing
+end
+
+function _progress_log_done!(state::KitProgressState; ok::Bool)
+    _progress_log_writeln(
+        "done",
+        "kind" => state.kind,
+        "ok" => ok,
+        "done" => state.done,
+        "total" => state.steps,
     )
     return nothing
 end
@@ -812,21 +870,19 @@ function kit_progress_begin!(
     title::AbstractString;
     steps::Int,
     items::AbstractVector{<:AbstractString}=String[],
+    kind::Symbol=:unknown,
 )
     steps < 1 && throw(ArgumentError("kit_progress_begin!: steps must be ≥ 1"))
     prev = KIT_PROGRESS[]
     prev isa KitProgressState && _progress_stop_spinner!(prev)
-    state = KitProgressState(String(title), steps, 0, String(title))
+    state = KitProgressState(String(title), steps, 0, String(title); kind=kind)
     for name in items
         push!(state.items, KitProgressItem(String(name), :running, 0))
     end
     lock(KIT_PROGRESS_LOCK) do
         KIT_PROGRESS[] = state
         if kit_output_progress()
-            _progress_log!(state)
-            isempty(state.items) || _kit_log_writeln(
-                "progress: items $(join((it.label for it in state.items), ","))",
-            )
+            _progress_log_begin!(state)
             _progress_draw!(state)
         end
     end
@@ -867,7 +923,7 @@ function _kit_progress_step!(
         end
         state.label = String(label)
         if kit_output_progress()
-            _progress_log!(state)
+            _progress_log_step!(state)
             _progress_draw!(state)
         end
     end
@@ -899,9 +955,7 @@ function _kit_progress_apply_item!(
         state.done = min(state.done + 1, state.steps)
     end
     if kit_output_progress()
-        _kit_log_writeln(
-            "progress: $(item.label) $status ($(state.done)/$(state.steps) done)",
-        )
+        _progress_log_item!(state, item)
         _progress_draw!(state)
     end
     return nothing
@@ -944,8 +998,8 @@ function _kit_progress_done!(
         _progress_is_current(state) || return nothing
         state.done = state.steps
         state.label = state.title
+        _progress_log_done!(state; ok=ok)
         if kit_output_progress()
-            _progress_log!(state)
             _progress_draw!(state; newline=true, finished=true, ok=ok)
             if state.cursor_hidden
                 print(stdout, "\e[?25h")

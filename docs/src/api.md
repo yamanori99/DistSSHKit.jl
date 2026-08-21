@@ -149,6 +149,30 @@ wait(execute!(:go, "job.jl", ["masterhost:1"]; detached=true, args=["8"]))
 - `wait` converts it to [`KitRunResult`](@ref); on a non-zero child exit,
   `failed_step` is `"go"` / `"drive"` only
 
+### Progress lines (external watchers)
+
+When a kit log file is open (`go_*.log` / `drive_*.log`), `go` and `drive`
+append `progress:` lines. The last event (`done`) is written **regardless of
+verbosity**. `begin` / `step` / `item` lines appear only in `--progress`
+mode (`DISTSSHKIT_PROGRESS=1` for a child process).
+
+Each line is space-separated `key=value` fields after the event name:
+
+```text
+progress: begin kind=<go|drive> label=<label> total=<steps>
+progress: step kind=<go|drive> label=<label> done=<done> total=<steps> cur=<cur>
+progress: item kind=<go|drive> label=<item_label> status=<pending|running|ok|fail> done=<done> total=<steps>
+progress: done kind=<go|drive> ok=<true|false> done=<done> total=<steps>
+```
+
+`kind` is `go` or `drive` for those commands. Fields are not quoted; labels
+are kit-chosen (phase names or slot labels) and do not contain spaces.
+
+Queue-style watchers can set `DISTSSHKIT_PROGRESS=1` on `execute!(…;
+detached=true)` children, tail the kit log, and treat `progress: done` as
+the structured finish line. Slot-level `go` artifacts (`go_manifest.txt`,
+`{slot}/go.exitcode`) remain the source of truth for per-slot exit codes.
+
 ```@docs
 execute!
 KitProcess
