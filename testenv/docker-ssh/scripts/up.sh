@@ -77,6 +77,7 @@ if [[ "${DISTSSHKIT_SKIP_UP:-}" == "1" ]]; then
   exit 0
 fi
 
+./scripts/down.sh
 "${COMPOSE[@]}" -f compose.yml up -d --no-build
 ./scripts/wait-ready.sh
 echo "Workers ready: distsshkit-w1 (2222), distsshkit-w2 (2223)"
