@@ -5,6 +5,8 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+## 0.3.3
+
 - Host token `masterhost` is this job's DistSSHKit parent (same machine when you
   start the kit yourself). `local` / `localhost` / `l` and `--local` / `-l` still
   work but warn once; they go away in **0.4**. Prefer `masterhost` /
