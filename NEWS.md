@@ -5,6 +5,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- Detached `execute!` writes child stdio to `kit.out` / `kit.err` in
+  `output_dir` unless `stdout` / `stderr` are passed (`stdout=stdout`
+  inherits the parent).
 - Exported queue CLI surface: `parse_go_args` / `parse_drive_args`, SSH
   resolve, path helpers, and help chrome (`print_colored` is the public
   name for `_print_colored`). `go` / `drive` argv wrappers stay unexported.

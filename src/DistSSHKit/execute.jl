@@ -70,6 +70,8 @@ struct KitProcess
     kind::Symbol
     output_dir::Union{Nothing,String}
     log_dir::Union{Nothing,String}
+    stdout_owned::Union{Nothing,IO}
+    stderr_owned::Union{Nothing,IO}
 end
 
 function KitProcess(
@@ -77,9 +79,25 @@ function KitProcess(
     kind::Symbol,
     output_dir::Union{Nothing,AbstractString}=nothing,
     log_dir::Union{Nothing,AbstractString}=nothing,
+    stdout_owned::Union{Nothing,IO}=nothing,
+    stderr_owned::Union{Nothing,IO}=nothing,
 )
     kind in (:go, :drive) || throw(ArgumentError("KitProcess kind must be :go or :drive, got $(repr(kind))"))
-    return KitProcess(process, kind, _optional_path(output_dir), _optional_path(log_dir))
+    return KitProcess(
+        process, kind, _optional_path(output_dir), _optional_path(log_dir),
+        stdout_owned, stderr_owned,
+    )
+end
+
+function _close_owned_stdio!(kp::KitProcess)
+    for io in (kp.stdout_owned, kp.stderr_owned)
+        io === nothing && continue
+        try
+            close(io)
+        catch
+        end
+    end
+    return nothing
 end
 
 """
@@ -100,20 +118,24 @@ function Base.wait(kp::KitProcess)::KitRunResult
     catch
         nothing
     end
-    wait(kp.process)
-    recovered = kp.output_dir === nothing ? nothing : kit_result_from_dir(kp.output_dir)
-    child_pid !== nothing && _remove_kit_pid_file(child_pid, kp.output_dir, kp.log_dir)
-    recovered !== nothing && return recovered
-    code = Int(something(kp.process.exitcode, 1))
-    ok = code == 0
-    return KitRunResult(
-        ok,
-        kp.kind,
-        kp.output_dir,
-        kp.log_dir,
-        ok ? nothing : String(kp.kind),
-        code,
-    )
+    try
+        wait(kp.process)
+        recovered = kp.output_dir === nothing ? nothing : kit_result_from_dir(kp.output_dir)
+        child_pid !== nothing && _remove_kit_pid_file(child_pid, kp.output_dir, kp.log_dir)
+        recovered !== nothing && return recovered
+        code = Int(something(kp.process.exitcode, 1))
+        ok = code == 0
+        return KitRunResult(
+            ok,
+            kp.kind,
+            kp.output_dir,
+            kp.log_dir,
+            ok ? nothing : String(kp.kind),
+            code,
+        )
+    finally
+        _close_owned_stdio!(kp)
+    end
 end
 
 """
@@ -140,9 +162,10 @@ verbatim to the chosen function.
 `output_dir`, `args`, `project`, `sync`, `julia`, `quiet`, `verbosity`, `yes`,
 `remote`, `hosts_file`, `job_id`, and drive-only `log_dir`, `enable_log`,
 `package`, `require_all_hosts`, `skip_hash_check`. `yes` must be `true` (the
-default): an unattended child cannot answer a prompt. Child stdio inherits
-the parent; pass `stdout` / `stderr` (`IO`) to capture. Parent
-`redirect_stdout` does not apply to the subprocess.
+default): an unattended child cannot answer a prompt. Child stdio defaults to
+`kit.out` / `kit.err` in `output_dir`. Pass `stdout` / `stderr` (`IO`) to
+override; `stdout=stdout` inherits the parent. Parent `redirect_stdout` does
+not apply to the subprocess.
 
 `job_id`, if given, is passed to the child as `DISTSSHKIT_JOB_ID`, which
 adds `job=<id>` to every `progress:` log line — lets a caller running
@@ -290,25 +313,46 @@ function _execute_detached!(
         argv...,
     ])
     child = ignorestatus(setenv(cmd, env))
-    stdio_out = get(kwargs, :stdout, nothing)
-    stdio_err = get(kwargs, :stderr, nothing)
-    proc = if stdio_out === nothing && stdio_err === nothing
-        run(child; wait=false)
-    else
-        run(
-            pipeline(
-                child;
-                stdout=stdio_out === nothing ? Base.stdout : stdio_out,
-                stderr=stdio_err === nothing ? Base.stderr : stdio_err,
-            );
-            wait=false,
-        )
+    stdio_out, stdio_err, owned_out, owned_err = _execute_detached_stdio(kwargs, resolved_output)
+    proc = try
+        run(pipeline(child; stdout=stdio_out, stderr=stdio_err); wait=false)
+    catch
+        for io in (owned_out, owned_err)
+            io === nothing || close(io)
+        end
+        rethrow()
     end
     _write_kit_pid_file(
         getpid(proc), resolved_output, resolved_log;
         job_id=get(extra, "DISTSSHKIT_JOB_ID", nothing),
     )
-    return KitProcess(proc; kind=kind, output_dir=resolved_output, log_dir=resolved_log)
+    return KitProcess(
+        proc;
+        kind=kind,
+        output_dir=resolved_output,
+        log_dir=resolved_log,
+        stdout_owned=owned_out,
+        stderr_owned=owned_err,
+    )
+end
+
+"""Open `kit.out` / `kit.err` under `output_dir` when `stdout` / `stderr` are omitted."""
+function _execute_detached_stdio(kwargs, output_dir::AbstractString)
+    stdio_out = get(kwargs, :stdout, nothing)
+    stdio_err = get(kwargs, :stderr, nothing)
+    owned_out = nothing
+    owned_err = nothing
+    if stdio_out === nothing
+        mkpath(output_dir)
+        owned_out = open(joinpath(output_dir, "kit.out"), "w")
+        stdio_out = owned_out
+    end
+    if stdio_err === nothing
+        mkpath(output_dir)
+        owned_err = open(joinpath(output_dir, "kit.err"), "w")
+        stdio_err = owned_err
+    end
+    return stdio_out, stdio_err, owned_out, owned_err
 end
 
 """

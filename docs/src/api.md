@@ -150,8 +150,9 @@ wait(execute!(:go, "job.jl", ["parenthost:1"]; detached=true, args=["8"]))
 - Spawns a child `julia -m DistSSHKit go|drive` (not in-process `go!` /
   `drive!`)
 - Keywords are an allow-list; `yes` must stay `true`
-- Child stdio inherits the parent — `redirect_stdout` in the caller does not
-  apply to the subprocess. Pass `stdout` / `stderr` to capture it instead
+- Child stdio defaults to `kit.out` / `kit.err` in `output_dir`. Pass
+  `stdout` / `stderr` to override (`stdout=stdout` inherits the parent).
+  Parent `redirect_stdout` does not apply to the subprocess
 - [`KitProcess`](@ref) holds the `Base.Process` and the dirs resolved before
   spawn
 - `wait` converts it to [`KitRunResult`](@ref). If the child wrote `kit.result`,
@@ -215,6 +216,7 @@ Queue restart: files in `output_dir`, and `log_dir` if distinct.
 | `kit.job` | `job_id` when set (needed to reap tagged workers after a restart). |
 | `kit.hosts` | Remote hosts this run started (one name per line). Written after workers join. |
 | `kit.result` | TOML with the same fields as [`KitRunResult`](@ref). Read with [`kit_result_from_dir`](@ref). |
+| `kit.out` / `kit.err` | Detached child stdio when `stdout` / `stderr` were omitted. |
 
 Together: running (`kit.pid` live, no result), finished (result present),
 or died hard (leftover pid, no result). Per-host collect is not in
