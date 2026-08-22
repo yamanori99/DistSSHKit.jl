@@ -22,7 +22,9 @@ SSH argv flags for `ssh` / `scp` / rsync `-e`.
 Reads `DISTRIBUTED_SSH_OPTS` **live** (not frozen at package precompile). Prefer
 this over a `const` so E2E / ProxyJump overrides apply in the same process.
 """
-ssh_opts()::Vector{String} = String[String(x) for x in build_ssh_opts()]
+function ssh_opts()::Vector{String}
+    return String[String(x) for x in build_ssh_opts()]
+end
 
 """
 Effective SSH `User` for `host` from `ssh -G` (config / defaults).

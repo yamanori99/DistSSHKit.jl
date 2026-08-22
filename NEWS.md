@@ -5,6 +5,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- Exported queue CLI surface: `parse_go_args` / `parse_drive_args`, SSH
+  resolve, path helpers, and help chrome (`print_colored` is the public
+  name for `_print_colored`). `go` / `drive` argv wrappers stay unexported.
 - `terminate!` / `terminate_run!` cancel a detached run: SIGTERM, then
   grace, then SIGKILL, then `pkill` only processes tagged with that
   `job_id` (never machine-wide `julia.*--worker`). Pass `job_id` to reap

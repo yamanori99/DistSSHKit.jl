@@ -22,6 +22,18 @@ using Test
     @test :execute! in ns && :KitProcess in ns && :kit_result_from_dir in ns
     @test :execute_detached_accepts in ns && :kit_pid_alive in ns
     @test :terminate! in ns && :terminate_run! in ns
+    @test :parse_go_args in ns && :parse_drive_args in ns
+    @test :show_go_usage in ns && :show_drive_requirements in ns
+    @test :println_kit_version in ns && :ssh_opts in ns
+    @test :resolve_remote_julia in ns && :resolve_controller_julia in ns
+    @test :canonical_local_path in ns && :short_path in ns
+    @test :resolve_pkg_project_dir in ns && :explain_script_not_found in ns
+    @test :print_cli_error in ns && :print_help_chrome in ns
+    @test :print_help_section in ns && :print_help_lines in ns
+    @test :print_help_blank in ns && :print_colored in ns
+    @test :SPINNER_FRAMES in ns
+    @test :_print_colored ∉ ns
+    @test DistSSHKit._print_colored === DistSSHKit.print_colored
     @test :parse_worker_tokens in ns && :ParsedWorkerTokens in ns
     @test :worker_tokens_fully_specified in ns && :remote_hosts_from_tokens in ns
     @test :worker_plan_from_tokens in ns

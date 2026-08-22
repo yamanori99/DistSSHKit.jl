@@ -199,6 +199,7 @@ function apply_kit_cli_session!(session::KitCliSession)
     return session
 end
 
+"""Print `DistSSHKit <version>` (same as `julia -m DistSSHKit --version`)."""
 function println_kit_version(io::IO=stdout)
     println(io, "DistSSHKit $(dist_ssh_kit_version())")
     return nothing

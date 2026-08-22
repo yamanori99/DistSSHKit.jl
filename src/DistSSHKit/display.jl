@@ -450,9 +450,11 @@ end
 """Whether to use ANSI colors (false when NO_COLOR is set or output is piped)."""
 use_colors() = !haskey(ENV, "NO_COLOR") && stdout isa Base.TTY
 
-function _print_colored(io, msg, color, bold=false)
+"""Print `msg` with `color` when the kit would use ANSI (TTY, no `NO_COLOR`)."""
+function print_colored(io, msg, color, bold=false)
     use_colors() ? printstyled(io, msg; color=color, bold=bold) : print(io, msg)
 end
+const _print_colored = print_colored
 
 function print_ok(msg; io=stdout, bold=false)
     if kit_output_detail()
@@ -464,6 +466,7 @@ end
 
 # Wait spinner (`:verbose` TTY only)
 
+"""Frames for the kit TTY spinner (`kit_spin!`) and matching queue chrome."""
 const SPINNER_FRAMES = ('⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏')
 
 _spinner_can_draw()::Bool =
@@ -1145,6 +1148,7 @@ function print_help_lines(io::IO, lines::AbstractString...)
 end
 print_help_lines(lines::AbstractString...) = print_help_lines(stdout, lines...)
 
+"""One blank line in kit `--help` output."""
 print_help_blank(io::IO=stdout) = (println(io); nothing)
 
 """CLI user error on stderr (no stacktrace)."""
