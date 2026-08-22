@@ -57,6 +57,7 @@ export go!
 export GoResult
 export report_go_errors
 export execute!
+export allocate_output_dir
 export execute_detached_accepts
 export kit_pid_alive
 export terminate!

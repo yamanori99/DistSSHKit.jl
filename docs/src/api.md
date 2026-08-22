@@ -162,6 +162,7 @@ wait(execute!(:go, "job.jl", ["parenthost:1"]; detached=true, args=["8"]))
 
 ```@docs
 execute!
+allocate_output_dir
 execute_detached_accepts
 KitProcess
 kit_pid_alive
@@ -240,6 +241,10 @@ or after a hard death. [`terminate_run!`](@ref) reads `kit.pid` / `kit.job` /
 
 #### Before spawn
 
+- [`allocate_output_dir`](@ref): create a unique directory under
+  `.distsshkit/<kind>/` for a later `output_dir=`. Drive's omitted
+  `execute!` default is still the shared `../results` folder; queue
+  should allocate instead of sharing it.
 - [`execute_detached_accepts`](@ref): whether detached `execute!` accepts
   that keyword for `:go` / `:drive` (named parameters plus the throw-path
   allow-list). `:log_dir` is drive-only; `:plan` is never accepted.

@@ -36,6 +36,36 @@ using Test
         end
     end
 
+    @testset "allocate_output_dir" begin
+        _with_tempdir() do project
+            d1 = DistSSHKit.allocate_output_dir(:go, "batch.jl"; project)
+            @test isdir(d1)
+            @test occursin(joinpath(".distsshkit", "go"), d1)
+            @test startswith(basename(d1), "batch_")
+            d2 = DistSSHKit.allocate_output_dir(:drive, "run.jl"; project, job_id="q1")
+            @test isdir(d2)
+            @test occursin(joinpath(".distsshkit", "drive"), d2)
+            @test occursin("_q1", basename(d2))
+            d3 = DistSSHKit.allocate_output_dir(:go, "batch.jl"; project)
+            @test isdir(d3)
+            @test d1 != d3
+            err_kind = try
+                DistSSHKit.allocate_output_dir(:pipeline, "x.jl"; project)
+                nothing
+            catch e
+                e
+            end
+            @test err_kind isa ArgumentError
+            err_id = try
+                DistSSHKit.allocate_output_dir(:go, "x.jl"; project, job_id="bad id")
+                nothing
+            catch e
+                e
+            end
+            @test err_id isa ArgumentError
+        end
+    end
+
     @testset "execute_detached_accepts" begin
         @test DistSSHKit.execute_detached_accepts(:quiet; kind=:go)
         @test DistSSHKit.execute_detached_accepts(:quiet; kind=:drive)

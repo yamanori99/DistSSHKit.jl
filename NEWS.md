@@ -5,6 +5,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- `allocate_output_dir(kind, script; project, job_id)` creates a unique
+  directory under `.distsshkit/<kind>/` for a later detached
+  `output_dir=`. Optional `job_id` is appended (same charset as `execute!`).
 - `wait(kp; timeout=N)` returns `failed_step="hung"` / `exit_code=124` if
   the child is still running; it does not kill. Use `terminate!` for teardown.
 - `parse_progress_line` / `kit_progress_latest` read `progress:` kit log
