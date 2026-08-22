@@ -588,6 +588,51 @@ function kit_result_from_dir(output_dir::AbstractString)::Union{Nothing,KitRunRe
     end
 end
 
+"""
+    allocate_output_dir(kind, script; project=pwd(), job_id=nothing) -> String
+
+Create a unique output directory for a later detached [`execute!`](@ref)
+and return its path. `kind` is `:go` or `:drive` (the same values as
+`execute!`). The directory is created; pass it as `output_dir=`.
+
+Layout is `<project>/.distsshkit/<kind>/<script-stem>_<UTC-stamp>/`. When
+`job_id` is set it is appended after the stamp (same charset as
+[`execute!`](@ref) `job_id`). If that path already exists, a nanosecond
+suffix is added so two allocations in the same second do not share a
+directory.
+
+This is the unique sibling of the defaults used when `output_dir` is
+omitted: go uses the same `.distsshkit/go/` tree, while drive's omitted
+default remains `../results` next to the script (shared). Queue should
+call this instead of reusing that shared folder.
+"""
+function allocate_output_dir(
+    kind::Symbol,
+    script::AbstractString;
+    project::AbstractString=pwd(),
+    job_id::Union{Nothing,AbstractString}=nothing,
+)::String
+    kind in (:go, :drive) || throw(
+        ArgumentError("allocate_output_dir: kind must be :go or :drive, got $(repr(kind))"),
+    )
+    proj = canonical_local_path(project)
+    isdir(proj) || throw(ArgumentError("allocate_output_dir: project is not a directory: $proj"))
+    stem = splitext(basename(String(script)))[1]
+    isempty(stem) && throw(ArgumentError("allocate_output_dir: empty script basename"))
+    stamp = Dates.format(Dates.now(Dates.UTC), dateformat"yyyymmddTHHMMSS") * "Z"
+    leaf = if job_id !== nothing && !isempty(strip(String(job_id)))
+        "$(stem)_$(stamp)_$(_parse_kit_job_id(String(job_id)))"
+    else
+        "$(stem)_$(stamp)"
+    end
+    dir = joinpath(proj, ".distsshkit", String(kind), leaf)
+    if ispath(dir)
+        dir = dir * "-" * string(time_ns())
+    end
+    mkpath(dir)
+    return dir
+end
+
 function _execute_detached_dirs(
     kind::Symbol,
     script_dir::AbstractString,
