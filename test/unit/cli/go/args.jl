@@ -22,8 +22,12 @@ using Test
             @test r.hosts == ["host-a", "host-b:2"]
             @test r.script_path == "job.jl"
         end
+        let r = parse_go_args(["parenthost:4", "host1", "host2:2", "job.jl"])
+            @test DistSSHKit.host_tokens(r) == ["parenthost:4", "host1", "host2:2"]
+        end
         let r = parse_go_args(["local:2", "h1", "job.jl", "4"])
             @test r.hosts == ["local:2", "h1"]
+            @test DistSSHKit.host_tokens(r) == ["local:2", "h1"]
             @test r.script_path == "job.jl"
             @test r.script_args == ["4"]
         end

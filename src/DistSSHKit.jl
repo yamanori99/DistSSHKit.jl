@@ -32,6 +32,7 @@ export worker_tokens_fully_specified
 export remote_hosts_from_tokens
 export worker_plan_from_tokens
 export split_worker_token
+export host_tokens
 export is_local_host_name
 export DriveResult
 export HostRunResult

@@ -23,7 +23,7 @@ using Test
     @test :parse_worker_tokens in ns && :ParsedWorkerTokens in ns
     @test :worker_tokens_fully_specified in ns && :remote_hosts_from_tokens in ns
     @test :worker_plan_from_tokens in ns
-    @test :split_worker_token in ns && :is_local_host_name in ns
+    @test :split_worker_token in ns && :is_local_host_name in ns && :host_tokens in ns
     @test :size_plan ∉ ns && :go ∉ ns && :drive ∉ ns
     @test isdefined(DistSSHKit, :go) && isdefined(DistSSHKit, :drive)
     @test !isdefined(DistSSHKit, :size_plan)

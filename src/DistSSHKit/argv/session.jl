@@ -311,6 +311,32 @@ function split_worker_token(spec::AbstractString)::Tuple{String,Union{Nothing,In
     return s, nothing
 end
 
+"""
+    host_tokens(parsed) -> Vector{String}
+
+Rebuild CLI host tokens from [`parse_go_args`](@ref) / [`parse_drive_args`](@ref)
+for [`execute!`](@ref). Bare hosts stay bare (no invented `:1`). Drive
+`parenthost:N` and `--local N` become `parenthost:N` when `local_workers > 0`.
+Go keeps the parser's token strings (including deprecated `local:N`).
+"""
+function host_tokens(parsed)::Vector{String}
+    hosts = parsed.hosts
+    if hosts isa AbstractVector{<:Tuple}
+        specs = String[]
+        lw = parsed.local_workers
+        lw > 0 && push!(specs, "parenthost:$lw")
+        for (host, n) in hosts
+            if n === nothing
+                push!(specs, String(host))
+            else
+                push!(specs, "$(host):$n")
+            end
+        end
+        return specs
+    end
+    return String[String(h) for h in hosts]
+end
+
 """Non-comment host entries from a hosts file (may include `host:N` for drive/go)."""
 function read_hosts_file_lines(
     path::AbstractString;

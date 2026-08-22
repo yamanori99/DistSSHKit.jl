@@ -46,11 +46,16 @@ using Test
             let r = parse_drive_args(["parenthost:3", "host1:2", "s.jl"])
                 @test r.local_workers == 3
                 @test r.hosts == [("host1", 2)]
+                @test DistSSHKit.host_tokens(r) == ["parenthost:3", "host1:2"]
+            end
+            let r = parse_drive_args(["parenthost:4", "host1", "host2:2", "s.jl"])
+                @test DistSSHKit.host_tokens(r) == ["parenthost:4", "host1", "host2:2"]
             end
             let r = parse_drive_args(["--local", "4", "myscript.jl", "a", "b"])
                 @test r.local_workers == 4
                 @test r.script_path == "myscript.jl"
                 @test r.script_args == ["a", "b"]
+                @test DistSSHKit.host_tokens(r) == ["parenthost:4"]
             end
             # Compact flag forms (`--local:N` / `-l:N` / `--workers:N` / `-w:N`).
             let r = parse_drive_args(["--local:5", "s.jl"])
@@ -65,6 +70,7 @@ using Test
             let r = parse_drive_args(["--workers:7", "host1", "s.jl"])
                 @test r.default_workers == 7
                 @test r.hosts == [("host1", nothing)]
+                @test DistSSHKit.host_tokens(r) == ["host1"]
             end
             let r = parse_drive_args(["-w:4", "host1", "s.jl"])
                 @test r.default_workers == 4
@@ -73,6 +79,7 @@ using Test
             let r = parse_drive_args(["local:3", "host1:2", "s.jl"])
                 @test r.local_workers == 3
                 @test r.hosts == [("host1", 2)]
+                @test DistSSHKit.host_tokens(r) == ["parenthost:3", "host1:2"]
             end
             let r = parse_drive_args(["localhost:4", "s.jl"])
                 @test r.local_workers == 4

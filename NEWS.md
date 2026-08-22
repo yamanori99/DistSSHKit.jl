@@ -8,6 +8,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 - Detached `go` / `drive` write `kit.result` (TOML) next to `kit.pid` on a
   normal finish. `kit_result_from_dir` reads it; `wait` prefers it when present.
   A crash / SIGKILL leaves no file. Per-host collect is not in this file.
+- `host_tokens(parsed)` rebuilds CLI tokens from `parse_go_args` /
+  `parse_drive_args` for `execute!`. Bare hosts stay bare; drive
+  `local_workers > 0` becomes `parenthost:N`.
 - Detached `kit.pid` is removed when the child finishes (`go` / `drive`
   `finally`, and `wait` as backup). A leftover after SIGKILL can still look
   alive if the OS reuses the pid.
