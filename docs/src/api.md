@@ -157,7 +157,8 @@ wait(execute!(:go, "job.jl", ["parenthost:1"]; detached=true, args=["8"]))
   spawn
 - `wait` converts it to [`KitRunResult`](@ref). If the child wrote `kit.result`,
   that file wins (including `go!` `failed_step`). Otherwise a non-zero child
-  exit yields `failed_step` `"go"` / `"drive"` only
+  exit yields `failed_step` `"go"` / `"drive"` only. `wait(kp; timeout=N)`
+  returns `failed_step="hung"` / `exit_code=124` without killing the child
 
 ```@docs
 execute!

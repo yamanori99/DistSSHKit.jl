@@ -101,9 +101,14 @@ function _close_owned_stdio!(kp::KitProcess)
 end
 
 """
-    wait(kp::KitProcess) -> KitRunResult
+    wait(kp::KitProcess; timeout=nothing) -> KitRunResult
 
 Block until the detached child exits, then return a [`KitRunResult`](@ref).
+
+`timeout` is wall-clock seconds until the **child process** exits (not the
+drive worker heartbeat). `nothing` waits forever. On timeout the child is
+left running: `failed_step` is `"hung"`, `exit_code` is `124`, and owned
+stdio stays open. Call [`terminate!`](@ref) if the hang is fatal.
 
 If the child wrote `kit.result`, that file is the source of truth (including
 `failed_step` from `go!`). Otherwise `failed_step` is `"go"` / `"drive"` on a
@@ -111,12 +116,28 @@ non-zero exit — the parent cannot recover a more specific in-process step name
 
 Best-effort: remove `kit.pid` if it still names this child (pid captured
 before `wait` on the OS process; after reap `getpid` can throw ESRCH).
+Not on a hung timeout.
 """
-function Base.wait(kp::KitProcess)::KitRunResult
+function Base.wait(
+    kp::KitProcess;
+    timeout::Union{Nothing,Real}=nothing,
+)::KitRunResult
+    timeout !== nothing && timeout < 0 && throw(ArgumentError(
+        "wait timeout must be ≥ 0, got $timeout",
+    ))
     child_pid = try
         Int(getpid(kp.process))
     catch
         nothing
+    end
+    if timeout !== nothing && process_running(kp.process)
+        t0 = time()
+        while process_running(kp.process) && (time() - t0) < Float64(timeout)
+            sleep(0.05)
+        end
+        if process_running(kp.process)
+            return KitRunResult(false, kp.kind, kp.output_dir, kp.log_dir, "hung", 124)
+        end
     end
     try
         wait(kp.process)
