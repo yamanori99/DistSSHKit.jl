@@ -168,9 +168,10 @@ override; `stdout=stdout` inherits the parent. Parent `redirect_stdout` does
 not apply to the subprocess.
 
 `job_id`, if given, is passed to the child as `DISTSSHKIT_JOB_ID`, which
-adds `job=<id>` to every `progress:` log line — lets a caller running
-several jobs against a shared log (or multiplexing one `DISTSSHKIT_PROGRESS`
-watcher) tell them apart. Omitted entirely when unset.
+adds `job=<id>` to every `progress:` log line. `DISTSSHKIT_PROGRESS=1` is
+`--progress` verbosity, not a watcher; read lines with
+[`parse_progress_line`](@ref) / [`kit_progress_latest`](@ref).
+Omitted entirely when unset.
 """
 function execute!(
     kind::Symbol,

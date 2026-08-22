@@ -935,6 +935,110 @@ function _progress_log_done!(state::KitProgressState; ok::Bool)
 end
 
 """
+    parse_progress_line(line) -> Union{Nothing,NamedTuple}
+
+Parse one kit `progress:` log line. `nothing` if it is not that format.
+
+Always has `event`, `kind`, `job`, `label`, `total`, `done`, `cur`,
+`status`, `ok`. Missing keys are `nothing`. `event` is `:begin` / `:step` /
+`:item` / `:done`.
+"""
+function parse_progress_line(line::AbstractString)
+    s = strip(String(line))
+    startswith(s, "progress:") || return nothing
+    rest = strip(SubString(s, ncodeunits("progress:") + 1))
+    isempty(rest) && return nothing
+    tokens = split(rest; keepempty=false)
+    isempty(tokens) && return nothing
+    event_s = String(tokens[1])
+    event_s in ("begin", "step", "item", "done") || return nothing
+    event = Symbol(event_s)
+    kind = nothing
+    job = nothing
+    label = nothing
+    total = nothing
+    done = nothing
+    cur = nothing
+    status = nothing
+    ok = nothing
+    for tok in Iterators.drop(tokens, 1)
+        t = String(tok)
+        eq = findfirst(==('='), t)
+        eq === nothing && return nothing
+        k = SubString(t, 1, eq - 1)
+        v = SubString(t, eq + 1)
+        if k == "kind"
+            isempty(v) && return nothing
+            kind = Symbol(String(v))
+        elseif k == "job"
+            job = String(v)
+        elseif k == "label"
+            label = String(v)
+        elseif k == "total"
+            total = tryparse(Int, v)
+            total === nothing && return nothing
+        elseif k == "done"
+            done = tryparse(Int, v)
+            done === nothing && return nothing
+        elseif k == "cur"
+            cur = tryparse(Int, v)
+            cur === nothing && return nothing
+        elseif k == "status"
+            String(v) in ("pending", "running", "ok", "fail") || return nothing
+            status = Symbol(String(v))
+        elseif k == "ok"
+            if v == "true"
+                ok = true
+            elseif v == "false"
+                ok = false
+            else
+                return nothing
+            end
+        end
+    end
+    kind === nothing && return nothing
+    return (; event, kind, job, label, total, done, cur, status, ok)
+end
+
+"""
+    kit_progress_latest(log_dir_or_file; job_id=nothing) -> Union{Nothing,NamedTuple}
+
+Last [`parse_progress_line`](@ref) hit in a kit log file, or in `*.log` under
+a directory (files in `mtime` order). `job_id` keeps only `job=<id>` lines.
+"""
+function kit_progress_latest(
+    log_dir_or_file::AbstractString;
+    job_id::Union{Nothing,AbstractString}=nothing,
+)
+    path = String(log_dir_or_file)
+    files = String[]
+    if isfile(path)
+        push!(files, path)
+    elseif isdir(path)
+        for f in readdir(path; join=true)
+            isfile(f) && endswith(f, ".log") && push!(files, f)
+        end
+        sort!(files; by=f -> (mtime(f), f))
+    else
+        return nothing
+    end
+    want = job_id === nothing || isempty(strip(String(job_id))) ? nothing : String(strip(String(job_id)))
+    latest = nothing
+    for f in files
+        try
+            for line in eachline(f)
+                rec = parse_progress_line(line)
+                rec === nothing && continue
+                want !== nothing && rec.job != want && continue
+                latest = rec
+            end
+        catch
+        end
+    end
+    return latest
+end
+
+"""
 Start a live status line for `--progress` mode.
 
 `steps` is the total number of phases or slots. Pass `items` for concurrent

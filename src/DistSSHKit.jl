@@ -62,6 +62,8 @@ export kit_pid_alive
 export terminate!
 export terminate_run!
 export kit_result_from_dir
+export parse_progress_line
+export kit_progress_latest
 export parse_go_args
 export parse_drive_args
 export show_go_usage

@@ -5,6 +5,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- `parse_progress_line` / `kit_progress_latest` read `progress:` kit log
+  lines (`job_id` filter on the latter). `DISTSSHKIT_PROGRESS` is still
+  only `--progress` verbosity.
 - Detached `execute!` writes child stdio to `kit.out` / `kit.err` in
   `output_dir` unless `stdout` / `stderr` are passed (`stdout=stdout`
   inherits the parent).
