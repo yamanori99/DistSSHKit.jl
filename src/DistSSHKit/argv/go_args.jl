@@ -1,5 +1,6 @@
 # Argument parsing for `go` (as-is complete jobs).
 
+"""Print `go --help` (same chrome as `julia -m DistSSHKit go -h`)."""
 function show_go_usage(; io::IO=stdout)
     print_help_chrome("DistSSHKit go"; io=io)
     print_help_lines(io,

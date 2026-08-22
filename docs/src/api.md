@@ -241,6 +241,36 @@ or after a hard death. [`terminate_run!`](@ref) reads `kit.pid` / `kit.job` /
 - `.kit.lock` in the resolved `output_dir`: a second run against the same
   directory raises `ArgumentError`. A lock left by a dead pid is reclaimed.
 
+## Queue-layer CLI surface
+
+A second package may call these (DistSSHKitQueue does today). They are
+exported so a rename is a Semver break, not a silent `DistSSHKit._…` change.
+`go` / `drive` argv wrappers stay unexported.
+
+```@docs
+parse_go_args
+parse_drive_args
+show_go_usage
+show_drive_requirements
+println_kit_version
+ssh_opts
+resolve_remote_julia
+resolve_controller_julia
+canonical_local_path
+short_path
+resolve_pkg_project_dir
+explain_script_not_found
+print_cli_error
+print_help_chrome
+print_help_section
+print_help_lines
+print_help_blank
+print_colored
+SPINNER_FRAMES
+```
+
+`print_colored` is the public name; `_print_colored` is the same function.
+
 ## Inside a driver — `worker_pmap`
 
 World-age escape hatch when a driver needs `pmap`-like fan-out after defining

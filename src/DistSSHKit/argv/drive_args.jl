@@ -92,6 +92,7 @@ function _drive_push_host_token!(
     return local_workers
 end
 
+"""Parse `drive` CLI arguments (same shape as other kit CLI parsers)."""
 function parse_drive_args(args::Vector{String})
     cli_session, args = peel_kit_cli_flags(args)
     local_workers = 0
@@ -338,6 +339,7 @@ function parse_drive_args(args::Vector{String})
     )
 end
 
+"""Print `drive --help` (same chrome as `julia -m DistSSHKit drive -h`)."""
 function show_drive_requirements(; io::IO=stdout)
     print_help_chrome("DistSSHKit drive"; io=io)
     print_help_lines(io,

@@ -20,6 +20,7 @@ using TOML
 #   execute! — one seam over go!/drive!; detached=true returns KitProcess
 #   worker tokens — parse/classify host:N grammar and build WorkerPlan
 #   go / drive — argv wrappers (not exported; tests / `main`)
+#   queue CLI surface — parsers, SSH resolve, paths, help chrome
 #   worker_pmap — world-age escape hatch inside drivers
 export worker_pmap
 export KitSession
@@ -61,7 +62,27 @@ export kit_pid_alive
 export terminate!
 export terminate_run!
 export kit_result_from_dir
+export parse_go_args
+export parse_drive_args
+export show_go_usage
+export show_drive_requirements
+export println_kit_version
+export ssh_opts
+export resolve_remote_julia
+export resolve_controller_julia
+export canonical_local_path
+export short_path
+export resolve_pkg_project_dir
+export explain_script_not_found
+export print_cli_error
+export print_help_chrome
+export print_help_section
+export print_help_lines
+export print_help_blank
+export print_colored
+export SPINNER_FRAMES
 # `go` / `drive` argv wrappers stay unexported (`main` and tests).
+# `_print_colored` remains an alias of `print_colored`.
 
 
 # Implementation
