@@ -30,6 +30,32 @@ const _EXECUTE_DETACHED_ENV_SKIP = Set((
     "DISTSSHKIT_CLI_SUBCOMMAND_DONE",
     "DIST_SSH_KIT_CLI_INCLUDE",
 ))
+# Named `execute!` kwargs (not in `_EXECUTE_DETACHED_KW`; they are not `kwargs...`).
+const _EXECUTE_DETACHED_NAMED = (
+    :output_dir,
+    :args,
+    :project,
+    :sync,
+    :julia,
+    :detached,
+)
+
+"""
+    execute_detached_accepts(kw; kind) -> Bool
+
+Whether `execute!(kind, ...; detached=true)` accepts keyword `kw`.
+Uses the same tables as the detached throw path, plus the named parameters
+(`output_dir`, `args`, `project`, `sync`, `julia`, `detached`).
+"""
+function execute_detached_accepts(kw::Symbol; kind::Symbol)::Bool
+    kind in (:go, :drive) || throw(ArgumentError(
+        "execute! kind must be :go or :drive, got $(repr(kind))",
+    ))
+    kw in _EXECUTE_DETACHED_NAMED && return true
+    kw in _EXECUTE_DETACHED_KW || return false
+    kind === :go && return !(kw in _EXECUTE_DETACHED_DRIVE_ONLY)
+    return true
+end
 
 """
 Handle to a detached [`execute!`](@ref) child (`detached=true`).
