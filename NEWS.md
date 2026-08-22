@@ -5,6 +5,8 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- `wait(kp; timeout=N)` returns `failed_step="hung"` / `exit_code=124` if
+  the child is still running; it does not kill. Use `terminate!` for teardown.
 - `parse_progress_line` / `kit_progress_latest` read `progress:` kit log
   lines (`job_id` filter on the latter). `DISTSSHKIT_PROGRESS` is still
   only `--progress` verbosity.

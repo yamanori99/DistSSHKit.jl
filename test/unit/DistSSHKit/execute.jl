@@ -259,6 +259,34 @@ using Test
         @test err isa ArgumentError
     end
 
+    @testset "wait timeout hung" begin
+        _with_tempdir() do proj
+            write(joinpath(proj, "Project.toml"), "name = \"WaitHung\"\n")
+            script = joinpath(proj, "job.jl")
+            write(script, """
+                out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", ".")
+                mkpath(out)
+                sleep(60)
+                """)
+            kp = DistSSHKit.execute!(
+                :go,
+                script,
+                ["parenthost:1"];
+                detached=true,
+                project=proj,
+                quiet=true,
+            )
+            hung = wait(kp; timeout=0.4)
+            @test hung.ok === false
+            @test hung.failed_step == "hung"
+            @test hung.exit_code == 124
+            @test process_running(kp.process)
+            killed = DistSSHKit.terminate!(kp; grace=2)
+            @test !process_running(kp.process)
+            @test killed isa DistSSHKit.KitRunResult
+        end
+    end
+
     @testset "terminate! detached go" begin
         _with_tempdir() do proj
             write(joinpath(proj, "Project.toml"), "name = \"TerminateGo\"\n")
