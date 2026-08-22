@@ -197,7 +197,12 @@ few small, opt-in conveniences aimed at a queue running many jobs:
   spawn time. If a caller loses its in-memory `KitProcess` (e.g. a queue
   service restarts mid-job), read this file back and check liveness with the
   pid directly (e.g. `kill(pid, 0)`-equivalent) instead of re-deriving it
-  from logs.
+  from logs. The child deletes the file in `finally` when it still names this
+  pid (same rule as `.kit.lock`); `wait` does the same as backup. After a
+  normal exit the file is gone. A leftover means the child did not reach
+  `finally` (SIGKILL / crash). If that pid is dead, the job is not running;
+  if the OS has reused the pid, liveness can be wrong — starttime is not in
+  this file.
 - **Tell concurrent jobs apart in a shared log**: `job_id` (`execute!`
   keyword, or `ENV["DISTSSHKIT_JOB_ID"]` for in-process `go!` / `drive!`)
   adds `job=<id>` to every `progress:` log line.

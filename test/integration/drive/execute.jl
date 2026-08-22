@@ -82,6 +82,8 @@ end
                 @test result.output_dir == kp.output_dir
                 @test result.log_dir == kp.log_dir
                 @test occursin("DISTSSHKIT_RUNNER_SMOKE_OK nw=2", out)
+                @test !isfile(joinpath(result.output_dir, "kit.pid"))
+                @test !isfile(joinpath(result.log_dir, "kit.pid"))
             end
         end
     end

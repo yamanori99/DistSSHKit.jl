@@ -83,6 +83,11 @@ function run_drive_parsed!(
             require_all_hosts, resolved_output_dir, resolved_log_dir, resolved_hosts,
         )
     finally
+        DistSSHKit._remove_kit_pid_file(
+            getpid(),
+            DistSSHKit.resolve_drive_output_dir(script_dir),
+            enable_log ? DistSSHKit.resolve_drive_log_dir(log_dir, script_dir) : nothing,
+        )
         release_output_dir_lock()
     end
 end

@@ -5,6 +5,10 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- Detached `kit.pid` is removed when the child finishes (`go` / `drive`
+  `finally`, and `wait` as backup). A leftover after SIGKILL can still look
+  alive if the OS reuses the pid.
+
 ## 0.3.3
 
 - Host token `parenthost` is this job's DistSSHKit parent (same machine when you

@@ -718,6 +718,7 @@ function go!(
         kit_progress_done!(; ok=progress_ok, footer=footer)
         close_log_file()
         release_lock()
+        _remove_kit_pid_file(getpid(), batch_dir, nothing)
     end
 end
 

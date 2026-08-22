@@ -60,12 +60,20 @@ end
     wait(kp::KitProcess) -> KitRunResult
 
 Block until the detached child exits, then return a [`KitRunResult`](@ref).
+Best-effort: remove `kit.pid` if it still names this child (pid captured
+before `wait` on the OS process; after reap `getpid` can throw ESRCH).
 
 `failed_step` is `nothing` on success and `"go"` / `"drive"` on a non-zero
 exit — the parent cannot recover a more specific in-process step name.
 """
 function Base.wait(kp::KitProcess)::KitRunResult
+    child_pid = try
+        Int(getpid(kp.process))
+    catch
+        nothing
+    end
     wait(kp.process)
+    child_pid !== nothing && _remove_kit_pid_file(child_pid, kp.output_dir, kp.log_dir)
     code = Int(something(kp.process.exitcode, 1))
     ok = code == 0
     return KitRunResult(
@@ -278,6 +286,11 @@ Lets a caller that lost its in-memory [`KitProcess`](@ref) (e.g. a queue
 service restarted while a job was running) re-check liveness later via
 `kill(pid, 0)` / equivalent, without any other change to `execute!`. Never
 throws: a failure here must not fail the spawn that already happened.
+
+The child removes the file in `go!` / `drive!` `finally` when it still names
+this pid (same rule as `.kit.lock`). [`wait`](@ref) does the same as backup
+when the caller still has a [`KitProcess`](@ref). SIGKILL / crash can leave
+the file; a reused pid can then look alive.
 """
 function _write_kit_pid_file(
     pid::Integer,
@@ -289,6 +302,28 @@ function _write_kit_pid_file(
         try
             mkpath(d) # child creates it too, but may not have raced ahead of us yet
             write(joinpath(d, "kit.pid"), string(pid))
+        catch
+            # best-effort only
+        end
+    end
+    return nothing
+end
+
+"""Remove `kit.pid` in the same dirs as [`_write_kit_pid_file`](@ref), only if it still names `pid`."""
+function _remove_kit_pid_file(
+    pid::Integer,
+    output_dir::Union{Nothing,AbstractString},
+    log_dir::Union{Nothing,AbstractString},
+)
+    output_dir === nothing && return nothing
+    dirs = log_dir === nothing || log_dir == output_dir ? (output_dir,) : (output_dir, log_dir)
+    want = string(pid)
+    for d in dirs
+        path = joinpath(d, "kit.pid")
+        try
+            if isfile(path) && strip(read(path, String)) == want
+                rm(path; force=true)
+            end
         catch
             # best-effort only
         end

@@ -6,6 +6,17 @@ using Test
 # in-process `drive!` and owns the warn-overwrite check).
 
 @testset "execute!" begin
+    @testset "_remove_kit_pid_file" begin
+        _with_tempdir() do d
+            pid_path = joinpath(d, "kit.pid")
+            write(pid_path, "4242")
+            DistSSHKit._remove_kit_pid_file(99, d, nothing)
+            @test isfile(pid_path)
+            DistSSHKit._remove_kit_pid_file(4242, d, nothing)
+            @test !isfile(pid_path)
+        end
+    end
+
     @testset "kind not :go / :drive" begin
         err = try
             DistSSHKit.execute!(:pipeline, "job.jl", String[])
@@ -95,6 +106,16 @@ using Test
                         stdout=out_io,
                         stderr=err_io,
                     )
+                    pid_path = joinpath(kp.output_dir, "kit.pid")
+                    if process_running(kp.process)
+                        t0 = time()
+                        while !isfile(pid_path) && process_running(kp.process) && (time() - t0) < 5
+                            sleep(0.05)
+                        end
+                        if isfile(pid_path)
+                            @test strip(read(pid_path, String)) == string(getpid(kp.process))
+                        end
+                    end
                     result = wait(kp)
                     flush(out_io)
                     flush(err_io)
@@ -109,7 +130,7 @@ using Test
                     @test result.output_dir == kp.output_dir
                     @test result.log_dir === nothing
                     @test read(joinpath(result.output_dir, "parenthost", "args.txt"), String) == "8"
-                    @test isfile(joinpath(result.output_dir, "kit.pid"))
+                    @test !isfile(pid_path)
                 end
             end
         end
@@ -139,8 +160,7 @@ using Test
                     result = wait(kp)
                     @test result.ok
                     pid_path = joinpath(result.output_dir, "kit.pid")
-                    @test isfile(pid_path)
-                    @test strip(read(pid_path, String)) != ""
+                    @test !isfile(pid_path)
                     log_files = filter(f -> endswith(f, ".log"), readdir(result.output_dir))
                     @test !isempty(log_files)
                     log_body = read(joinpath(result.output_dir, first(log_files)), String)
