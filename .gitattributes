@@ -1,0 +1,2 @@
+# dash/sh on WSL treat CR as part of tokens (`then\r` → "expecting then").
+*.sh text eol=lf
