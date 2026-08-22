@@ -231,17 +231,17 @@ using Test
                 with_kit_verbosity(:progress) do
                     log_path = DistSSHKit.init_log_file(tmp; prefix="progress_bar")
                     redirect_stdout(devnull) do
-                        DistSSHKit.kit_progress_begin!("drive"; steps=2)
+                        DistSSHKit.kit_progress_begin!("drive"; steps=2, kind=:drive)
                         DistSSHKit.kit_progress_step!("sync")
                         DistSSHKit.kit_progress_step!("run")
                         DistSSHKit.kit_progress_done!(; ok=true, footer="out/batch")
                     end
                     DistSSHKit.close_log_file()
                     body = read(log_path, String)
-                    @test occursin("progress: drive (0/2 done, 1/2)", body)
-                    @test occursin("progress: sync (0/2 done, 1/2)", body)
-                    @test occursin("progress: run (1/2 done, 2/2)", body)
-                    @test occursin("progress: drive (2/2 done, 2/2)", body)
+                    @test occursin("progress: begin kind=drive label=drive total=2", body)
+                    @test occursin("progress: step kind=drive label=sync done=0 total=2 cur=1", body)
+                    @test occursin("progress: step kind=drive label=run done=1 total=2 cur=2", body)
+                    @test occursin("progress: done kind=drive ok=true done=2 total=2", body)
                     @test occursin("out/batch", body)
                     @test !occursin("→", body)
                 end
@@ -255,6 +255,7 @@ using Test
                             "go";
                             steps=2,
                             items=["local-1", "local-2"],
+                            kind=:go,
                         )
                         DistSSHKit.kit_progress_item!("local-1"; status=:ok)
                         DistSSHKit.kit_progress_item!("local-2"; status=:ok)
@@ -262,9 +263,15 @@ using Test
                     end
                     DistSSHKit.close_log_file()
                     body = read(log_path, String)
-                    @test occursin("progress: items local-1,local-2", body)
-                    @test occursin("progress: local-1 ok (1/2 done)", body)
-                    @test occursin("progress: local-2 ok (2/2 done)", body)
+                    @test occursin("progress: begin kind=go label=go total=2", body)
+                    @test occursin(
+                        "progress: item kind=go label=local-1 status=ok done=1 total=2",
+                        body,
+                    )
+                    @test occursin(
+                        "progress: item kind=go label=local-2 status=ok done=2 total=2",
+                        body,
+                    )
                     st = DistSSHKit.KitProgressState("go", 2, 0, "go")
                     push!(st.items, DistSSHKit.KitProgressItem("local-1", :running, 0))
                     push!(st.items, DistSSHKit.KitProgressItem("local-2", :running, 0))
@@ -274,20 +281,28 @@ using Test
                 end
             end
 
-            @testset "job_id prefixes progress: lines" begin
+            @testset "job_id on progress: lines" begin
                 _with_tempdir() do tmp
                     with_kit_verbosity(:progress) do
                         log_path = DistSSHKit.init_log_file(tmp; prefix="progress_job")
                         redirect_stdout(devnull) do
                             withenv("DISTSSHKIT_JOB_ID" => nothing) do
-                                DistSSHKit.kit_progress_begin!("drive"; steps=1, job_id="q-42")
+                                DistSSHKit.kit_progress_begin!(
+                                    "drive"; steps=1, kind=:drive, job_id="q-42",
+                                )
                                 DistSSHKit.kit_progress_done!(; ok=true)
                             end
                         end
                         DistSSHKit.close_log_file()
                         body = read(log_path, String)
-                        @test occursin("progress: job=q-42 drive (0/1 done, 1/1)", body)
-                        @test occursin("progress: job=q-42 drive (1/1 done, 1/1)", body)
+                        @test occursin(
+                            "progress: begin kind=drive job=q-42 label=drive total=1",
+                            body,
+                        )
+                        @test occursin(
+                            "progress: done kind=drive job=q-42 ok=true done=1 total=1",
+                            body,
+                        )
                     end
                 end
 
@@ -297,13 +312,13 @@ using Test
                         log_path = DistSSHKit.init_log_file(tmp; prefix="progress_job_env")
                         redirect_stdout(devnull) do
                             withenv("DISTSSHKIT_JOB_ID" => "env-7") do
-                                DistSSHKit.kit_progress_begin!("go"; steps=1)
+                                DistSSHKit.kit_progress_begin!("go"; steps=1, kind=:go)
                                 DistSSHKit.kit_progress_done!(; ok=true)
                             end
                         end
                         DistSSHKit.close_log_file()
                         body = read(log_path, String)
-                        @test occursin("progress: job=env-7 go", body)
+                        @test occursin("progress: begin kind=go job=env-7", body)
                     end
                 end
 
@@ -313,13 +328,34 @@ using Test
                         log_path = DistSSHKit.init_log_file(tmp; prefix="progress_no_job")
                         redirect_stdout(devnull) do
                             withenv("DISTSSHKIT_JOB_ID" => nothing) do
-                                DistSSHKit.kit_progress_begin!("go"; steps=1)
+                                DistSSHKit.kit_progress_begin!("go"; steps=1, kind=:go)
                                 DistSSHKit.kit_progress_done!(; ok=true)
                             end
                         end
                         DistSSHKit.close_log_file()
                         body = read(log_path, String)
                         @test !occursin("job=", body)
+                    end
+                end
+            end
+
+            _with_tempdir() do tmp
+                for v in (:quiet, :verbose)
+                    with_kit_verbosity(v) do
+                        log_path = DistSSHKit.init_log_file(tmp; prefix="progress_done_$v")
+                        redirect_stdout(devnull) do
+                            DistSSHKit.kit_progress_begin!("drive"; steps=2, kind=:drive)
+                            DistSSHKit.kit_progress_step!("sync")
+                            DistSSHKit.kit_progress_done!(; ok=false)
+                        end
+                        DistSSHKit.close_log_file()
+                        body = read(log_path, String)
+                        @test !occursin("progress: begin", body)
+                        @test !occursin("progress: step", body)
+                        @test occursin(
+                            "progress: done kind=drive ok=false done=2 total=2",
+                            body,
+                        )
                     end
                 end
             end

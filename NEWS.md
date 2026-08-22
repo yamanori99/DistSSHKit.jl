@@ -27,8 +27,11 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
     fail fast (`ArgumentError`) on a second concurrent run against the same
     directory; a lock left by a dead pid is reclaimed automatically.
   - `kit_progress_begin!` accepts `job_id` (or `ENV["DISTSSHKIT_JOB_ID"]`,
-    also forwarded by `execute!(...; detached=true, job_id=...)`) to prefix
-    `progress:` log lines with `job=<id>`.
+    also forwarded by `execute!(...; detached=true, job_id=...)`) to add
+    `job=<id>` on `progress:` log lines.
+- `go` / `drive` progress log lines use a stable `kind=` / `done=` / `total=`
+  format (`begin` / `step` / `item` / `done`); the final `done` line is
+  always written to the kit log regardless of verbosity.
 
 ## 0.3.2
 

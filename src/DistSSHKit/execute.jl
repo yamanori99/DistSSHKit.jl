@@ -107,7 +107,7 @@ the parent; pass `stdout` / `stderr` (`IO`) to capture. Parent
 `redirect_stdout` does not apply to the subprocess.
 
 `job_id`, if given, is passed to the child as `DISTSSHKIT_JOB_ID`, which
-prefixes every `progress:` log line with `job=<id>` — lets a caller running
+adds `job=<id>` to every `progress:` log line — lets a caller running
 several jobs against a shared log (or multiplexing one `DISTSSHKIT_PROGRESS`
 watcher) tell them apart. Omitted entirely when unset.
 """
