@@ -553,6 +553,7 @@ function go!(
         _go_batch_output_dir(proj, script_path)
     end
     mkpath(batch_dir)
+    release_lock = kit_output_dir_lock!(batch_dir)
     _go_write_batch_manifest!(batch_dir, script_path, slots)
     init_log_file(batch_dir; prefix="go", path_anchor=anchor)
 
@@ -715,6 +716,7 @@ function go!(
         footer = progress_ok ? display_path(batch_dir, anchor) : nothing
         kit_progress_done!(; ok=progress_ok, footer=footer)
         close_log_file()
+        release_lock()
     end
 end
 

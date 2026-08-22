@@ -335,8 +335,20 @@ using Test
         @test DistSSHKit.kit_run_result(ok).exit_code == 0
         dr = DistSSHKit.DriveResult(false, 7; output_dir="/out", failed_step="drive")
         @test dr.output_dir == "/out"
+        @test isempty(dr.hosts)
         @test DistSSHKit.kit_run_result(dr).kind === :drive
         @test DistSSHKit.kit_run_result(dr).exit_code == 7
+
+        hosts = [
+            DistSSHKit.HostRunResult("h1", true),
+            DistSSHKit.HostRunResult("h2", false, ErrorException("boom")),
+        ]
+        dr_hosts = DistSSHKit.DriveResult(false, 1; failed_step="drive", hosts=hosts)
+        @test length(dr_hosts.hosts) == 2
+        @test dr_hosts.hosts[1] == DistSSHKit.HostRunResult("h1", true, nothing)
+        @test dr_hosts.hosts[2].host == "h2"
+        @test !dr_hosts.hosts[2].ok
+        @test occursin("boom", something(dr_hosts.hosts[2].error, ""))
         bad = DistSSHKit.PipelineResult(
             false,
             DistSSHKit.SyncResult(false, [DistSSHKit.HostResult("h1", false, "rsync refuse")], false),

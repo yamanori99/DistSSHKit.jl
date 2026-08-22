@@ -62,6 +62,7 @@ function drive!(
     original_args = copy(ARGS)
     resolved_output_dir = Ref{Union{Nothing,String}}(nothing)
     resolved_log_dir = Ref{Union{Nothing,String}}(nothing)
+    resolved_hosts = Ref{Vector{HostRunResult}}(HostRunResult[])
     try
         run_fn = Main.eval(:(run_drive_parsed!))
         code = Base.invokelatest(
@@ -70,11 +71,13 @@ function drive!(
             original_args=original_args,
             resolved_output_dir=resolved_output_dir,
             resolved_log_dir=resolved_log_dir,
+            resolved_hosts=resolved_hosts,
         )
         return DriveResult(code == 0, Int(code);
             output_dir=resolved_output_dir[],
             log_dir=resolved_log_dir[],
             failed_step=code == 0 ? nothing : "drive",
+            hosts=resolved_hosts[],
         )
     finally
         empty!(ARGS)

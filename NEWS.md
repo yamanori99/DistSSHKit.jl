@@ -17,6 +17,18 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
   `DISTRIBUTED_HEARTBEAT_DEADLINE_SEC` (default 600, same order as SSH
   `ServerAlive`). Interval is `DISTRIBUTED_HEARTBEAT_INTERVAL_SEC` (default 30).
   A blocked ping no longer stalls the watchdog.
+- Queue-layer additions (no behavior change unless used):
+  - `execute!(...; detached=true)` drops a best-effort `kit.pid` file (child
+    OS pid) in `output_dir` (and `log_dir` if distinct), for liveness checks
+    after a caller restart loses its `KitProcess`.
+  - `DriveResult.hosts::Vector{HostRunResult}` reports per-host collect
+    outcome instead of one aggregate `ok`.
+  - `go!` / `drive!` (and `execute!`) write a `.kit.lock` in `output_dir` and
+    fail fast (`ArgumentError`) on a second concurrent run against the same
+    directory; a lock left by a dead pid is reclaimed automatically.
+  - `kit_progress_begin!` accepts `job_id` (or `ENV["DISTSSHKIT_JOB_ID"]`,
+    also forwarded by `execute!(...; detached=true, job_id=...)`) to prefix
+    `progress:` log lines with `job=<id>`.
 
 ## 0.3.2
 

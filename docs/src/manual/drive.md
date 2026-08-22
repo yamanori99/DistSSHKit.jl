@@ -83,3 +83,13 @@ controller never `relpath`s against a tilde base (same ENV as
 
 Expects `init_output_dir!` / `main` (and optional hooks). Details and ENV:
 `drive --help`. Embed with [`drive!`](@ref) / [`pipeline!`](@ref).
+
+## Concurrent runs
+
+Two `drive` runs (or `drive!` calls) against the same result root fail fast:
+a `.kit.lock` file (this run's pid) is written under the result root, and a
+second run against the same directory raises immediately instead of
+interleaving collect output. A lock left behind by a crashed/killed run is
+detected as stale (dead pid) and reclaimed automatically — no manual cleanup
+needed. Use distinct `--output-dir` per concurrent job if you intend to run
+more than one at a time.

@@ -493,6 +493,8 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
                         flush(out_io)
                         @test res.ok
                         @test res.exit_code == 0
+                        @test Set(h.host for h in res.hosts) == Set(hosts)
+                        @test all(h -> h.ok, res.hosts)
                         read(out_path, String)
                     end
                     _assert_ssh_e2e_api_ok(
@@ -550,6 +552,21 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
                 _, body = _ssh_e2e_ssh(host, "pgrep -f 'julia.*--worker' || true")
                 return Int[parse(Int, s) for s in split(strip(body); keepempty=false)]
             end
+            # A queue that lost its in-memory `KitProcess` (e.g. restarted
+            # mid-job) falls back to `kit.pid` — assert it names this run's
+            # real OS pid before using it below instead of `kp.process`.
+            pid_path = joinpath(log_dir, "kit.pid")
+            pid_ready = false
+            t0p = time()
+            while (time() - t0p) < 10
+                isfile(pid_path) && (pid_ready = true; break)
+                sleep(0.1)
+            end
+            _assert_ssh_e2e_api_ok(suite, "kit_pid_file", pid_ready, "path=$(pid_path)")
+            @test pid_ready
+            detached_pid = pid_ready ? parse(Int, strip(read(pid_path, String))) : -1
+            @test detached_pid == getpid(kp.process)
+
             ready = false
             t0 = time()
             while (time() - t0) < 90
@@ -570,7 +587,9 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             )
             @test ready
             @test !isempty(pids)
-            kill(kp.process, Base.SIGKILL)
+            # Kill by the `kit.pid`-derived pid, not `kp.process` — the path a
+            # queue without the original `KitProcess` handle would take.
+            run(`kill -9 $(detached_pid)`)
             wait(kp.process)
             gone = false
             t1 = time()

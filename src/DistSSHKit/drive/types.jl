@@ -210,6 +210,22 @@ struct KitRunResult
 end
 
 """
+Per-host outcome of the `drive` result-collection step.
+
+`ok` is `false` when collecting from `host` raised an error (nothing to
+collect is not an error). `error` is the error message
+(`sprint(showerror, e)`), or `nothing` on success.
+"""
+struct HostRunResult
+    host::String
+    ok::Bool
+    error::Union{Nothing,String}
+end
+
+HostRunResult(host::AbstractString, ok::Bool, error=nothing) =
+    HostRunResult(String(host), ok, error === nothing ? nothing : sprint(showerror, error))
+
+"""
 Outcome of [`drive!`](@ref) (and similar CLI steps that return an exit code).
 
 `output_dir` / `log_dir` are the directories actually used for this run —
@@ -217,6 +233,10 @@ resolved the same way `drive` reports `Results:` / writes its log, even when
 `drive!` was not called with `output_dir=` / `log_dir=`. `nothing` when no
 real run happened (e.g. built by hand) or, for `log_dir`, when logging was
 disabled.
+
+`hosts` is one [`HostRunResult`](@ref) per host that joined as a worker, in
+the order results were collected. Empty when no host-collection step ran
+(e.g. built by hand, or a run with no remote/local-only hosts).
 """
 struct DriveResult
     ok::Bool
@@ -224,6 +244,7 @@ struct DriveResult
     output_dir::Union{Nothing,String}
     log_dir::Union{Nothing,String}
     failed_step::Union{Nothing,String}
+    hosts::Vector{HostRunResult}
 end
 
 function DriveResult(
@@ -232,6 +253,7 @@ function DriveResult(
     output_dir::Union{Nothing,AbstractString}=nothing,
     log_dir::Union{Nothing,AbstractString}=nothing,
     failed_step::Union{Nothing,AbstractString}=nothing,
+    hosts::AbstractVector{HostRunResult}=HostRunResult[],
 )
     return DriveResult(
         ok,
@@ -239,6 +261,7 @@ function DriveResult(
         _optional_path(output_dir),
         _optional_path(log_dir),
         failed_step === nothing ? nothing : String(failed_step),
+        collect(HostRunResult, hosts),
     )
 end
 

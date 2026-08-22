@@ -19,6 +19,7 @@ function run_drive_parsed!(
     original_args::Vector{String}=String[],
     resolved_output_dir::Union{Nothing,Base.RefValue{Union{Nothing,String}}}=nothing,
     resolved_log_dir::Union{Nothing,Base.RefValue{Union{Nothing,String}}}=nothing,
+    resolved_hosts::Union{Nothing,Base.RefValue{Vector{DistSSHKit.HostRunResult}}}=nothing,
 )::Cint
     if parsed.help
         show_drive_usage()
@@ -73,7 +74,25 @@ function run_drive_parsed!(
     if output_dir !== nothing
         ENV["DISTRIBUTED_OUTPUT_DIR"] = DistSSHKit.canonical_local_path(String(output_dir))
     end
+    release_output_dir_lock = DistSSHKit.kit_output_dir_lock!(DistSSHKit.resolve_drive_output_dir(script_dir))
+    try
+        return _run_drive_parsed_locked!(
+            parsed, output_dir, script_path, script_dir, proj_dir, script_args,
+            enable_log, log_dir, original_args, host_names, hosts, local_workers,
+            default_workers, julia_exe, skip_hash_check, explicit_package,
+            require_all_hosts, resolved_output_dir, resolved_log_dir, resolved_hosts,
+        )
+    finally
+        release_output_dir_lock()
+    end
+end
 
+function _run_drive_parsed_locked!(
+    parsed, output_dir, script_path, script_dir, proj_dir, script_args,
+    enable_log, log_dir, original_args, host_names, hosts, local_workers,
+    default_workers, julia_exe, skip_hash_check, explicit_package,
+    require_all_hosts, resolved_output_dir, resolved_log_dir, resolved_hosts,
+)::Cint
     include(script_path)
     if isdefined(Main, :init_output_dir!)
         @invokelatest Main.init_output_dir!(script_args)
@@ -227,7 +246,8 @@ function run_drive_parsed!(
         run_driver_script!(enable_log, drive_atexit_cleanup)
 
         kit_progress_step!("collect")
-        collect_ok = collect_drive_results!(successful_hosts, script_dir, sentinel_name, skip_collect, _PATH_ANCHOR)
+        collect_ok, collect_hosts = collect_drive_results!(successful_hosts, script_dir, sentinel_name, skip_collect, _PATH_ANCHOR)
+        resolved_hosts !== nothing && (resolved_hosts[] = collect_hosts)
         if require_all_hosts && !collect_ok
             progress_ok = false
             return 1
