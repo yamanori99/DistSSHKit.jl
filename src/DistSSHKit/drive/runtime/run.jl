@@ -235,6 +235,11 @@ function _run_drive_parsed_locked!(
         # `return 1` with workers already joined, and `finally` must still
         # reach a non-`nothing` `drive_atexit_cleanup` to tear them down.
         drive_atexit_cleanup = register_worker_cleanup!(successful_hosts)
+        DistSSHKit._write_kit_hosts_file(
+            successful_hosts,
+            DistSSHKit.resolve_drive_output_dir(script_dir),
+            enable_log ? DistSSHKit.resolve_drive_log_dir(log_dir, script_dir) : nothing,
+        )
         if require_all_hosts && !isempty(hosts)
             missing = String[h[1] for h in hosts if !(h[1] in successful_hosts)]
             missing = unique(missing)

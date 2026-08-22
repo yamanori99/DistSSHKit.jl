@@ -128,6 +128,75 @@ function _pkill_remote_julia_workers!(host::String)::Bool
     return true
 end
 
+# Visible on worker / go-slot argv so `pkill -f` can be run-scoped (see `terminate!`).
+const KIT_JOB_CMDLINE_MARK::String = "distsshkit-job:"
+
+"""`DISTSSHKIT_JOB_ID` if set and non-empty. Restricted charset for `pkill -f`."""
+function _parse_kit_job_id(raw::AbstractString)::String
+    s = strip(String(raw))
+    isempty(s) && throw(ArgumentError("job_id must be non-empty"))
+    occursin(r"^[A-Za-z0-9._:@+-]+$", s) || throw(ArgumentError(
+        "job_id / DISTSSHKIT_JOB_ID must match [A-Za-z0-9._:@+-]+, got $(repr(raw))",
+    ))
+    return s
+end
+
+function resolved_kit_job_id()::Union{Nothing,String}
+    raw = strip(get(ENV, "DISTSSHKIT_JOB_ID", ""))
+    isempty(raw) && return nothing
+    return _parse_kit_job_id(raw)
+end
+
+"""One `julia` argv word that sets `ENV` and embeds [`KIT_JOB_CMDLINE_MARK`](@ref)."""
+function kit_job_eval_arg(job_id::AbstractString)::String
+    id = String(job_id)
+    return "--eval=ENV[\"DISTSSHKIT_JOB_ID\"]=$(repr(id))#$(KIT_JOB_CMDLINE_MARK)$(id)"
+end
+
+function kit_job_pkill_pattern(job_id::AbstractString)::String
+    return string(KIT_JOB_CMDLINE_MARK, String(job_id))
+end
+
+function _drive_worker_env()
+    id = resolved_kit_job_id()
+    id === nothing && return Pair{String,String}[]
+    return ["DISTSSHKIT_JOB_ID" => id]
+end
+
+function _drive_worker_exeflags(project::AbstractString)
+    id = resolved_kit_job_id()
+    id === nothing && return `--project=$project`
+    return `--project=$project $(kit_job_eval_arg(id))`
+end
+
+function _pkill_pattern!(pattern::AbstractString)
+    Sys.isunix() || return nothing
+    try
+        run(pipeline(Cmd(["pkill", "-9", "-f", String(pattern)]); stdout=devnull, stderr=devnull))
+    catch
+    end
+    return nothing
+end
+
+"""Kill local processes whose argv contains this run's job mark. No-op if `job_id` is unset."""
+function _pkill_local_tagged_workers!(job_id::AbstractString)
+    _pkill_pattern!(kit_job_pkill_pattern(job_id))
+    return nothing
+end
+
+"""SSH `pkill -f` for this run's job mark only (never `julia.*--worker`)."""
+function _pkill_remote_tagged_workers!(host::String, job_id::AbstractString)::Bool
+    if !_remote_ssh_ok(host)
+        return false
+    end
+    inner = "pkill -9 -f $(Base.shell_escape(kit_job_pkill_pattern(job_id)))"
+    try
+        run(pipeline(Cmd(["ssh", ssh_opts()..., host, inner]); stdout=devnull, stderr=devnull))
+    catch
+    end
+    return true
+end
+
 """Parse `julia --version` output (e.g. `"julia version 1.12.6"`) into a `VersionNumber`.
 Returns `nothing` if the text doesn't match the expected pattern.
 

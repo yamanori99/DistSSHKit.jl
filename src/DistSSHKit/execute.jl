@@ -275,7 +275,7 @@ function _execute_detached!(
     end
     job_id = get(kwargs, :job_id, nothing)
     if job_id !== nothing && !isempty(strip(String(job_id)))
-        extra["DISTSSHKIT_JOB_ID"] = String(strip(String(job_id)))
+        extra["DISTSSHKIT_JOB_ID"] = _parse_kit_job_id(String(job_id))
     end
     env = _execute_detached_env(extra)
     julia_bin = resolve_controller_julia(julia)
@@ -304,7 +304,10 @@ function _execute_detached!(
             wait=false,
         )
     end
-    _write_kit_pid_file(getpid(proc), resolved_output, resolved_log)
+    _write_kit_pid_file(
+        getpid(proc), resolved_output, resolved_log;
+        job_id=get(extra, "DISTSSHKIT_JOB_ID", nothing),
+    )
     return KitProcess(proc; kind=kind, output_dir=resolved_output, log_dir=resolved_log)
 end
 
@@ -322,18 +325,114 @@ this pid (same rule as `.kit.lock`). [`wait`](@ref) does the same as backup
 when the caller still has a [`KitProcess`](@ref). SIGKILL / crash can leave
 the file; a reused pid can then look alive.
 """
-function _write_kit_pid_file(
-    pid::Integer,
+function _kit_sidecar_dirs(
     output_dir::AbstractString,
     log_dir::Union{Nothing,AbstractString},
 )
-    dirs = log_dir === nothing || log_dir == output_dir ? (output_dir,) : (output_dir, log_dir)
+    log_dir === nothing || log_dir == output_dir ? (output_dir,) : (output_dir, log_dir)
+end
+
+function _write_kit_pid_file(
+    pid::Integer,
+    output_dir::AbstractString,
+    log_dir::Union{Nothing,AbstractString};
+    job_id::Union{Nothing,AbstractString}=nothing,
+)
+    dirs = _kit_sidecar_dirs(output_dir, log_dir)
     for d in dirs
         try
             mkpath(d) # child creates it too, but may not have raced ahead of us yet
             write(joinpath(d, "kit.pid"), string(pid))
+            if job_id !== nothing && !isempty(strip(String(job_id)))
+                write(joinpath(d, "kit.job"), strip(String(job_id)))
+            end
         catch
             # best-effort only
+        end
+    end
+    return nothing
+end
+
+function _write_kit_text_file!(
+    name::AbstractString,
+    body::AbstractString,
+    output_dir::AbstractString,
+    log_dir::Union{Nothing,AbstractString},
+)
+    for d in _kit_sidecar_dirs(output_dir, log_dir)
+        try
+            mkpath(d)
+            write(joinpath(d, name), body)
+        catch
+        end
+    end
+    return nothing
+end
+
+"""Best-effort host list for [`terminate_run!`](@ref) (SSH names, one per line)."""
+function _write_kit_hosts_file(
+    hosts::AbstractVector{<:AbstractString},
+    output_dir::AbstractString,
+    log_dir::Union{Nothing,AbstractString},
+)
+    isempty(hosts) && return nothing
+    names = unique!(String[String(h) for h in hosts])
+    body = sprint() do io
+        for h in names
+            println(io, h)
+        end
+    end
+    _write_kit_text_file!("kit.hosts", body, output_dir, log_dir)
+    return nothing
+end
+
+function _read_kit_text_file(output_dir::AbstractString, name::AbstractString)::Union{Nothing,String}
+    path = joinpath(String(output_dir), name)
+    isfile(path) || return nothing
+    s = try
+        strip(read(path, String))
+    catch
+        return nothing
+    end
+    return isempty(s) ? nothing : s
+end
+
+function _read_kit_hosts(output_dir::AbstractString)::Vector{String}
+    raw = _read_kit_text_file(output_dir, "kit.hosts")
+    raw === nothing && return String[]
+    return String[strip(line) for line in split(raw, '\n') if !isempty(strip(line))]
+end
+
+function _reap_tagged_workers!(job_id::Union{Nothing,AbstractString}, hosts::AbstractVector{<:AbstractString})
+    job_id === nothing && return nothing
+    id = String(job_id)
+    _pkill_local_tagged_workers!(id)
+    for host in hosts
+        _pkill_remote_tagged_workers!(String(host), id)
+    end
+    return nothing
+end
+
+function _signal_and_wait_pid!(pid::Integer, grace::Real)
+    pid <= 0 && return nothing
+    kit_pid_alive(pid) || return nothing
+    Sys.isunix() || return nothing
+    try
+        ccall(:kill, Cint, (Cint, Cint), Cint(pid), Cint(15))
+    catch
+    end
+    t0 = time()
+    while kit_pid_alive(pid) && (time() - t0) < Float64(grace)
+        sleep(0.05)
+    end
+    if kit_pid_alive(pid)
+        try
+            ccall(:kill, Cint, (Cint, Cint), Cint(pid), Cint(9))
+        catch
+        end
+        t1 = time()
+        while kit_pid_alive(pid) && (time() - t1) < 1.0
+            sleep(0.05)
         end
     end
     return nothing
@@ -527,4 +626,72 @@ function _execute_detached_env(extra::AbstractDict{<:AbstractString,<:AbstractSt
         env[String(k)] = String(v)
     end
     return env
+end
+
+"""
+    terminate!(kp::KitProcess; grace=10) -> KitRunResult
+
+Stop a detached run. SIGTERM the child, wait up to `grace` seconds for its
+own `rmprocs` path, then SIGKILL if needed. Then `pkill` only processes
+tagged with this run's `job_id` (from `kit.job`), never `julia.*--worker`.
+Without `job_id`, only the child is signaled.
+"""
+function terminate!(kp::KitProcess; grace::Real=10)::KitRunResult
+    grace >= 0 || throw(ArgumentError("grace must be ≥ 0, got $grace"))
+    if process_running(kp.process)
+        try
+            kill(kp.process, Base.SIGTERM)
+        catch
+        end
+        t0 = time()
+        while process_running(kp.process) && (time() - t0) < Float64(grace)
+            sleep(0.05)
+        end
+        if process_running(kp.process)
+            try
+                kill(kp.process, Base.SIGKILL)
+            catch
+            end
+        end
+    end
+    out = kp.output_dir
+    job_id = out === nothing ? nothing : _read_kit_text_file(out, "kit.job")
+    hosts = out === nothing ? String[] : _read_kit_hosts(out)
+    _reap_tagged_workers!(job_id, hosts)
+    return wait(kp)
+end
+
+"""
+    terminate_run!(output_dir; grace=10, log_dir=nothing, kind=:go) -> KitRunResult
+
+Like [`terminate!`](@ref) after losing [`KitProcess`](@ref): read `kit.pid` /
+`kit.job` / `kit.hosts` under `output_dir`. `kind` is only used when
+`kit.result` is missing.
+"""
+function terminate_run!(
+    output_dir::AbstractString;
+    grace::Real=10,
+    log_dir::Union{Nothing,AbstractString}=nothing,
+    kind::Symbol=:go,
+)::KitRunResult
+    grace >= 0 || throw(ArgumentError("grace must be ≥ 0, got $grace"))
+    kind in (:go, :drive) || throw(ArgumentError(
+        "execute! kind must be :go or :drive, got $(repr(kind))",
+    ))
+    d = canonical_local_path(output_dir)
+    pid_s = _read_kit_text_file(d, "kit.pid")
+    pid = pid_s === nothing ? nothing : tryparse(Int, pid_s)
+    pid !== nothing && _signal_and_wait_pid!(pid, grace)
+    job_id = _read_kit_text_file(d, "kit.job")
+    _reap_tagged_workers!(job_id, _read_kit_hosts(d))
+    recovered = kit_result_from_dir(d)
+    recovered !== nothing && return recovered
+    return KitRunResult(
+        false,
+        kind,
+        d,
+        log_dir === nothing ? nothing : canonical_local_path(String(log_dir)),
+        "terminated",
+        1,
+    )
 end

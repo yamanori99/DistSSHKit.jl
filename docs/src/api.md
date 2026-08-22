@@ -163,6 +163,8 @@ execute!
 execute_detached_accepts
 KitProcess
 kit_pid_alive
+terminate!
+terminate_run!
 kit_result_from_dir
 ```
 
@@ -198,8 +200,10 @@ that runs many jobs.
 
 #### Still holding `KitProcess`
 
-`kp.process` is a `Base.Process`. Use `kill` / `process_running`; `execute!`
-does not wrap them.
+[`terminate!`](@ref) SIGTERMs the child, waits `grace` for its `rmprocs`
+path, then SIGKILLs if needed, then `pkill`s only argv tagged with this
+run's `job_id`. `kp.process` is still a `Base.Process` if you need `kill`
+yourself.
 
 #### Handle gone
 
@@ -208,6 +212,8 @@ Queue restart: files in `output_dir`, and `log_dir` if distinct.
 | File | Meaning |
 | --- | --- |
 | `kit.pid` | Child OS pid (plain text). Probe with [`kit_pid_alive`](@ref); do not parse logs. |
+| `kit.job` | `job_id` when set (needed to reap tagged workers after a restart). |
+| `kit.hosts` | Remote hosts this run started (one name per line). Written after workers join. |
 | `kit.result` | TOML with the same fields as [`KitRunResult`](@ref). Read with [`kit_result_from_dir`](@ref). |
 
 Together: running (`kit.pid` live, no result), finished (result present),
@@ -219,7 +225,9 @@ or died hard (leftover pid, no result). Per-host collect is not in
 exit the file is gone. A leftover means SIGKILL / crash. A dead pid means
 the job is not running; a reused pid can still look alive (starttime is
 not in the file). [`kit_result_from_dir`](@ref) is `nothing` while running
-or after a hard death.
+or after a hard death. [`terminate_run!`](@ref) reads `kit.pid` / `kit.job` /
+`kit.hosts` and uses the same signal-then-tagged-`pkill` sequence. Without
+`job_id`, only the child pid is signaled.
 
 #### Before spawn
 
@@ -227,7 +235,9 @@ or after a hard death.
   that keyword for `:go` / `:drive` (named parameters plus the throw-path
   allow-list). `:log_dir` is drive-only; `:plan` is never accepted.
 - `job_id` (`execute!` keyword, or `ENV["DISTSSHKIT_JOB_ID"]` for in-process
-  `go!` / `drive!`): adds `job=<id>` to every `progress:` log line.
+  `go!` / `drive!`): `job=<id>` on every `progress:` line, and a cmdline
+  mark on workers / go slots so [`terminate!`](@ref) can reap only this run.
+  Unset: tagging is off; teardown cannot be host-scoped.
 - `.kit.lock` in the resolved `output_dir`: a second run against the same
   directory raises `ArgumentError`. A lock left by a dead pid is reclaimed.
 

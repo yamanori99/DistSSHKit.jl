@@ -58,6 +58,8 @@ export report_go_errors
 export execute!
 export execute_detached_accepts
 export kit_pid_alive
+export terminate!
+export terminate_run!
 export kit_result_from_dir
 # `go` / `drive` argv wrappers stay unexported (`main` and tests).
 
