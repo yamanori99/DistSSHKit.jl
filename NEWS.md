@@ -5,6 +5,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- `execute_detached_accepts` reports whether a keyword is allowed on
+  detached `execute!` (`:go` / `:drive`), including named parameters.
+  `kit_pid_alive` is the pid probe used for `.kit.lock` / leftover `kit.pid`.
 - Detached `go` / `drive` write `kit.result` (TOML) next to `kit.pid` on a
   normal finish. `kit_result_from_dir` reads it; `wait` prefers it when present.
   A crash / SIGKILL leaves no file. Per-host collect is not in this file.

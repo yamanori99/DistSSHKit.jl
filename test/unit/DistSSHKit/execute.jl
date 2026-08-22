@@ -36,6 +36,27 @@ using Test
         end
     end
 
+    @testset "execute_detached_accepts" begin
+        @test DistSSHKit.execute_detached_accepts(:quiet; kind=:go)
+        @test DistSSHKit.execute_detached_accepts(:quiet; kind=:drive)
+        @test DistSSHKit.execute_detached_accepts(:job_id; kind=:go)
+        @test DistSSHKit.execute_detached_accepts(:job_id; kind=:drive)
+        @test DistSSHKit.execute_detached_accepts(:output_dir; kind=:go)
+        @test DistSSHKit.execute_detached_accepts(:output_dir; kind=:drive)
+        @test DistSSHKit.execute_detached_accepts(:log_dir; kind=:drive)
+        @test !DistSSHKit.execute_detached_accepts(:log_dir; kind=:go)
+        @test !DistSSHKit.execute_detached_accepts(:plan; kind=:go)
+        @test !DistSSHKit.execute_detached_accepts(:plan; kind=:drive)
+        err = try
+            DistSSHKit.execute_detached_accepts(:quiet; kind=:pipeline)
+            nothing
+        catch e
+            e
+        end
+        @test err isa ArgumentError
+        @test occursin(":go or :drive", sprint(showerror, err))
+    end
+
     @testset "kind not :go / :drive" begin
         err = try
             DistSSHKit.execute!(:pipeline, "job.jl", String[])

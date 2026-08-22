@@ -160,7 +160,9 @@ wait(execute!(:go, "job.jl", ["parenthost:1"]; detached=true, args=["8"]))
 
 ```@docs
 execute!
+execute_detached_accepts
 KitProcess
+kit_pid_alive
 kit_result_from_dir
 ```
 
@@ -191,37 +193,43 @@ the structured finish line. Slot-level `go` artifacts (`go_manifest.txt`,
 
 ### Helpers for a queue layer
 
-Beyond `execute!` itself, `go!` / `drive!` (in-process or detached) carry a
-few small, opt-in conveniences aimed at a queue running many jobs:
+Opt-in extras on `go!` / `drive!` (in-process or detached) for a queue
+that runs many jobs.
 
-- **Cancel / check liveness**: `kp.process` is a plain `Base.Process` — pass
-  it directly to `kill` / `process_running`. `execute!` adds nothing on top
-  of what `Base` already gives you here.
-- **Survive losing the handle**: a best-effort `kit.pid` file (the child's OS
-  pid, plain text) is dropped in `output_dir` (and `log_dir` if distinct) at
-  spawn time. If a caller loses its in-memory `KitProcess` (e.g. a queue
-  service restarts mid-job), read this file back and check liveness with the
-  pid directly (e.g. `kill(pid, 0)`-equivalent) instead of re-deriving it
-  from logs. The child deletes the file in `finally` when it still names this
-  pid (same rule as `.kit.lock`); `wait` does the same as backup. After a
-  normal exit the file is gone. A leftover means the child did not reach
-  `finally` (SIGKILL / crash). If that pid is dead, the job is not running;
-  if the OS has reused the pid, liveness can be wrong — starttime is not in
-  this file.
-- **Recover the outcome after losing the handle**: the child writes `kit.result`
-  (TOML) in `output_dir` (and `log_dir` if distinct) on a normal finish, with
-  the same fields as [`KitRunResult`](@ref). [`kit_result_from_dir`](@ref)
-  returns `nothing` while the job is running or if the child died hard
-  (SIGKILL / crash). Together with `kit.pid`: running, finished with a known
-  result, or died without writing one. Per-host collect is not stored here.
-- **Tell concurrent jobs apart in a shared log**: `job_id` (`execute!`
-  keyword, or `ENV["DISTSSHKIT_JOB_ID"]` for in-process `go!` / `drive!`)
-  adds `job=<id>` to every `progress:` log line.
-- **Fail fast on a double-scheduled `output_dir`**: `go!` / `drive!` /
-  `execute!` write a `.kit.lock` file (this run's pid) in the resolved
-  `output_dir`. A second run against the same directory raises
-  `ArgumentError` immediately instead of interleaving results; a lock left
-  by a dead pid is reclaimed automatically.
+#### Still holding `KitProcess`
+
+`kp.process` is a `Base.Process`. Use `kill` / `process_running`; `execute!`
+does not wrap them.
+
+#### Handle gone
+
+Queue restart: files in `output_dir`, and `log_dir` if distinct.
+
+| File | Meaning |
+| --- | --- |
+| `kit.pid` | Child OS pid (plain text). Probe with [`kit_pid_alive`](@ref); do not parse logs. |
+| `kit.result` | TOML with the same fields as [`KitRunResult`](@ref). Read with [`kit_result_from_dir`](@ref). |
+
+Together: running (`kit.pid` live, no result), finished (result present),
+or died hard (leftover pid, no result). Per-host collect is not in
+`kit.result`.
+
+`kit.pid` is removed in the child's `finally` when it still names this pid
+(same rule as `.kit.lock`); `wait` does the same as backup. After a normal
+exit the file is gone. A leftover means SIGKILL / crash. A dead pid means
+the job is not running; a reused pid can still look alive (starttime is
+not in the file). [`kit_result_from_dir`](@ref) is `nothing` while running
+or after a hard death.
+
+#### Before spawn
+
+- [`execute_detached_accepts`](@ref): whether detached `execute!` accepts
+  that keyword for `:go` / `:drive` (named parameters plus the throw-path
+  allow-list). `:log_dir` is drive-only; `:plan` is never accepted.
+- `job_id` (`execute!` keyword, or `ENV["DISTSSHKIT_JOB_ID"]` for in-process
+  `go!` / `drive!`): adds `job=<id>` to every `progress:` log line.
+- `.kit.lock` in the resolved `output_dir`: a second run against the same
+  directory raises `ArgumentError`. A lock left by a dead pid is reclaimed.
 
 ## Inside a driver — `worker_pmap`
 

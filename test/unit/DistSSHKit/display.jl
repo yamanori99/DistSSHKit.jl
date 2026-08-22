@@ -1,6 +1,14 @@
 using Test
 
 @testset "display" begin
+    @testset "kit_pid_alive" begin
+        @test DistSSHKit.kit_pid_alive(0) === false
+        @test DistSSHKit.kit_pid_alive(-1) === false
+        if Sys.isunix()
+            @test DistSSHKit.kit_pid_alive(getpid()) === true
+        end
+    end
+
     @testset "paths" begin
         _with_tempdir() do tmp
             rel = joinpath(tmp, "nested")
