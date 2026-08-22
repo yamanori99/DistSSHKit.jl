@@ -55,6 +55,7 @@ export go!
 export GoResult
 export report_go_errors
 export execute!
+export kit_result_from_dir
 # `go` / `drive` argv wrappers stay unexported (`main` and tests).
 
 

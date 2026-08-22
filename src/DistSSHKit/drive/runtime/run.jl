@@ -75,18 +75,30 @@ function run_drive_parsed!(
         ENV["DISTRIBUTED_OUTPUT_DIR"] = DistSSHKit.canonical_local_path(String(output_dir))
     end
     release_output_dir_lock = DistSSHKit.kit_output_dir_lock!(DistSSHKit.resolve_drive_output_dir(script_dir))
+    code = Cint(1)
     try
-        return _run_drive_parsed_locked!(
+        code = _run_drive_parsed_locked!(
             parsed, output_dir, script_path, script_dir, proj_dir, script_args,
             enable_log, log_dir, original_args, host_names, hosts, local_workers,
             default_workers, julia_exe, skip_hash_check, explicit_package,
             require_all_hosts, resolved_output_dir, resolved_log_dir, resolved_hosts,
         )
+        return code
     finally
+        out = DistSSHKit.resolve_drive_output_dir(script_dir)
+        log = enable_log ? DistSSHKit.resolve_drive_log_dir(log_dir, script_dir) : nothing
+        DistSSHKit._write_kit_result_file(DistSSHKit.KitRunResult(
+            code == 0,
+            :drive,
+            out,
+            log,
+            code == 0 ? nothing : "drive",
+            Int(code),
+        ))
         DistSSHKit._remove_kit_pid_file(
             getpid(),
-            DistSSHKit.resolve_drive_output_dir(script_dir),
-            enable_log ? DistSSHKit.resolve_drive_log_dir(log_dir, script_dir) : nothing,
+            out,
+            log,
         )
         release_output_dir_lock()
     end

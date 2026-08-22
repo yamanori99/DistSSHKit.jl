@@ -60,11 +60,13 @@ end
     wait(kp::KitProcess) -> KitRunResult
 
 Block until the detached child exits, then return a [`KitRunResult`](@ref).
+
+If the child wrote `kit.result`, that file is the source of truth (including
+`failed_step` from `go!`). Otherwise `failed_step` is `"go"` / `"drive"` on a
+non-zero exit — the parent cannot recover a more specific in-process step name.
+
 Best-effort: remove `kit.pid` if it still names this child (pid captured
 before `wait` on the OS process; after reap `getpid` can throw ESRCH).
-
-`failed_step` is `nothing` on success and `"go"` / `"drive"` on a non-zero
-exit — the parent cannot recover a more specific in-process step name.
 """
 function Base.wait(kp::KitProcess)::KitRunResult
     child_pid = try
@@ -73,7 +75,9 @@ function Base.wait(kp::KitProcess)::KitRunResult
         nothing
     end
     wait(kp.process)
+    recovered = kp.output_dir === nothing ? nothing : kit_result_from_dir(kp.output_dir)
     child_pid !== nothing && _remove_kit_pid_file(child_pid, kp.output_dir, kp.log_dir)
+    recovered !== nothing && return recovered
     code = Int(something(kp.process.exitcode, 1))
     ok = code == 0
     return KitRunResult(
@@ -329,6 +333,68 @@ function _remove_kit_pid_file(
         end
     end
     return nothing
+end
+
+"""Best-effort `kit.result` TOML next to `kit.pid`. Never throws."""
+function _write_kit_result_file(result::KitRunResult)
+    output_dir = result.output_dir
+    output_dir === nothing && return nothing
+    dirs = result.log_dir === nothing || result.log_dir == output_dir ?
+        (output_dir,) : (output_dir, result.log_dir)
+    data = Dict{String,Any}(
+        "ok" => result.ok,
+        "kind" => String(result.kind),
+        "exit_code" => result.exit_code,
+        "output_dir" => String(output_dir),
+    )
+    result.failed_step !== nothing && (data["failed_step"] = result.failed_step)
+    result.log_dir !== nothing && (data["log_dir"] = result.log_dir)
+    for d in dirs
+        try
+            mkpath(d)
+            dest = joinpath(d, "kit.result")
+            tmp = dest * ".tmp"
+            open(tmp, "w") do io
+                TOML.print(io, data)
+            end
+            mv(tmp, dest; force=true)
+        catch
+            # best-effort only
+        end
+    end
+    return nothing
+end
+
+"""
+    kit_result_from_dir(output_dir) -> Union{Nothing,KitRunResult}
+
+Read `output_dir/kit.result` written by a finished `go` / `drive` child.
+`nothing` when the file is missing or unreadable (still running, or a hard death).
+"""
+function kit_result_from_dir(output_dir::AbstractString)::Union{Nothing,KitRunResult}
+    path = joinpath(canonical_local_path(output_dir), "kit.result")
+    isfile(path) || return nothing
+    try
+        raw = TOML.parsefile(path)
+        ok = raw["ok"]
+        ok isa Bool || return nothing
+        kind_s = raw["kind"]
+        kind_s isa AbstractString || return nothing
+        ks = String(kind_s)
+        (ks == "go" || ks == "drive" || ks == "pipeline") || return nothing
+        kind = Symbol(ks)
+        code = raw["exit_code"]
+        code isa Integer || return nothing
+        od = get(raw, "output_dir", nothing)
+        od_s = od isa AbstractString ? String(od) : nothing
+        ld = get(raw, "log_dir", nothing)
+        ld_s = ld isa AbstractString ? String(ld) : nothing
+        fs = get(raw, "failed_step", nothing)
+        fs_s = fs isa AbstractString ? String(fs) : nothing
+        return KitRunResult(ok, kind, od_s, ld_s, fs_s, Int(code))
+    catch
+        return nothing
+    end
 end
 
 function _execute_detached_dirs(
