@@ -49,9 +49,9 @@
     <text class="t-sub" x="78" y="60" text-anchor="middle" font-size="13">Worker x 1..n</text>
   </g>
 
-  <g id="local">
+  <g id="parent">
     <rect class="cluster" x="116" y="124" width="328" height="96" rx="12"/>
-    <!-- Master hub to remotes and the local worker (endpoints run a few px
+    <!-- Master hub to remotes and Parent workers (endpoints run a few px
          into the filled shapes so they visibly merge). Drawn under the
          header so lines do not cross labels. -->
     <path class="link" d="M192,172 L96,94"/>
@@ -59,8 +59,8 @@
     <path class="link-more" d="M192,172 L358,94"/>
     <path class="link" d="M192,172 L464,94"/>
     <path class="link" d="M252,188 L268,188"/>
-    <rect class="halo" x="122" y="128" width="316" height="22"/>
-    <text class="t" x="132" y="144" font-size="14" font-weight="600">Local machine (controller)</text>
+    <rect class="halo" x="122" y="128" width="76" height="22"/>
+    <text class="t" x="132" y="144" font-size="14" font-weight="600">Parent</text>
     <use href="#juliadot" x="424" y="140"/>
     <rect class="master" x="132" y="168" width="120" height="40" rx="8"/>
     <text class="t-on" x="192" y="194" text-anchor="middle" font-size="15" font-weight="700">Master</text>

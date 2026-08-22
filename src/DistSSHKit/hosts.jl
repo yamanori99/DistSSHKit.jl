@@ -2,14 +2,14 @@
 
 """Whether `host` denotes this job's DistSSHKit parent in drive/go.
 
-Prefer `masterhost`. Deprecated aliases `local` / `localhost` / `l` still
+Prefer `parenthost`. Deprecated aliases `local` / `localhost` / `l` still
 match and will be removed in DistSSHKit 0.4.
 
 # Examples
 ```jldoctest
 julia> using DistSSHKit
 
-julia> DistSSHKit.is_local_host_name("masterhost")
+julia> DistSSHKit.is_local_host_name("parenthost")
 true
 
 julia> DistSSHKit.is_local_host_name("local")
@@ -21,7 +21,7 @@ false
 """
 function is_local_host_name(host_name::AbstractString)::Bool
     h = String(host_name)
-    return h == "masterhost" || h in ("localhost", "local", "l")
+    return h == "parenthost" || h in ("localhost", "local", "l")
 end
 
 """True for the deprecated relative names (`local` / `localhost` / `l`)."""
@@ -30,7 +30,7 @@ function is_deprecated_local_host_name(host_name::AbstractString)::Bool
 end
 
 const DEPRECATED_LOCAL_HOST_WARN =
-    "`local` / `localhost` / `l` and `--local` / `-l` name this Julia process (relative) and will be removed in DistSSHKit 0.4. Use `masterhost` / `masterhost:N` for this job's DistSSHKit parent."
+    "`local` / `localhost` / `l` and `--local` / `-l` name this Julia process (relative) and will be removed in DistSSHKit 0.4. Use `parenthost` / `parenthost:N` for this job's DistSSHKit parent."
 
 const _DEPRECATED_LOCAL_HOST_WARNED = Ref(false)
 

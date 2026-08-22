@@ -24,8 +24,8 @@ using Test
         )
         wall = time() - t0
         @test result.ok
-        a = parse(Float64, read(joinpath(result.output_dir, "masterhost-1", "t0.txt"), String))
-        b = parse(Float64, read(joinpath(result.output_dir, "masterhost-2", "t0.txt"), String))
+        a = parse(Float64, read(joinpath(result.output_dir, "parenthost-1", "t0.txt"), String))
+        b = parse(Float64, read(joinpath(result.output_dir, "parenthost-2", "t0.txt"), String))
         @test abs(a - b) < 0.45  # sequential would be ~0.6s apart plus julia startup
         @test wall < 8.0
     end
@@ -51,7 +51,7 @@ end
         )
         @test result.ok
         @test result.output_dir == DistSSHKit.canonical_local_path(custom)
-        @test isfile(joinpath(result.output_dir, "masterhost", "marker.txt"))
+        @test isfile(joinpath(result.output_dir, "parenthost", "marker.txt"))
     end
 end
 
@@ -77,6 +77,6 @@ end
         )
         @test result.ok
         @test result.output_dir == DistSSHKit.canonical_local_path(custom)
-        @test isfile(joinpath(result.output_dir, "masterhost", "marker.txt"))
+        @test isfile(joinpath(result.output_dir, "parenthost", "marker.txt"))
     end
 end

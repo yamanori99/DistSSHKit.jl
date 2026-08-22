@@ -53,30 +53,33 @@ julia> import Pkg; Pkg.add("DistSSHKit")
 
 ### 基本用語
 
-- **ホスト** — 計算するマシン。このジョブの DistSSHKit parent は `masterhost`。SSH 先は `user@hostname`、IP アドレス、または SSH config の `Host` エイリアス。`local` / `localhost` / `l` はトークンを解釈した Julia プロセス側 (相対。0.4 で削除)
+- **ホスト** — 計算するマシン。このジョブの DistSSHKit parent は `parenthost`。SSH 先は `user@hostname`、IP アドレス、または SSH config の `Host` エイリアス。`local` / `localhost` / `l` はトークンを解釈した Julia プロセス側 (相対。0.4 で削除)
 - **プロセス** — 起動した `julia` 1つ分のこと。それぞれ独立したメモリを持ち、OS 上で別々に動く
   (このキットは1台のマシンでも複数の `julia` プロセスを起動して並列に走らせる。Distributed.jl ベース)
-- **マスター** — このジョブの DistSSHKit parent。`go` ではスロットを計画し、`drive` では仕事をワーカーに渡して結果を集める。別のものが parent を起動しているとき (queue)、マスターはそのマシンでありクライアントではない
+- **マスター** — `parenthost` 上のプロセス。`go` ではスロットを計画し、`drive` では仕事をワーカーに渡して結果を集める。queue がそのプロセスを起動するとき、`parenthost` は queue 側のマシンであり、手元のクライアントではない
 - **ワーカー** — マスターから仕事を受け取って実行するプロセス
 
-例: ローカルマシンと、リモートマシンを使う場合。
-ワーカーは1マシンに複数立てられ (ローカルはゼロでもよい)、リモートマシンは何台でも増やせる。
+例: 手元で `go` / `drive` を実行する場合、そのマシンが `parenthost` になる。
+ワーカーは1マシンに複数立てられ (`parenthost` 上はゼロでもよい)、リモートマシンは何台でも増やせる。
 
 <!-- markdownlint-disable MD033 -->
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/src/assets/diagram/topology-ja-dark.svg">
-    <img alt="ローカルのコントローラ上のマスターと、ローカルおよびリモートのワーカー" src="docs/src/assets/diagram/topology-ja.svg">
+    <img alt="drive の構成: parenthost 上のマスターと、parenthost およびリモートのワーカー" src="docs/src/assets/diagram/topology-ja.svg">
   </picture>
 </p>
 <!-- markdownlint-enable MD033 -->
+
+図は **drive** の構成である。`parenthost` にマスター1つ、各ホストにワーカー。
+**go** も同じ `parenthost` トークンを使うが、各ホストは独立したスロットを走らせる (Distributed のワーカーではない)。
 
 リモートホストの台数に上限はない。台数を増やすほど SSH 接続や配置にかかる時間は伸びるので、まずは数台で試すのが無難である。
 
 使う前に、各リモートホストで次を満たす必要がある。
 
-- ローカルマシンからパスワードなしで SSH ログインできること
-- Julia がインストールされていて、ローカルマシンと **メジャー.マイナーバージョンが一致**していること
+- `parenthost` からパスワードなしで SSH ログインできること
+- Julia がインストールされていて、`parenthost` と **メジャー.マイナーバージョンが一致**していること
   (`setup --check` で確認できる)
 
 詳細: [Requirements](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)。
@@ -164,7 +167,7 @@ julia --project=. -m DistSSHKit setup --delete user@host1 user@host2
 
 下準備のあと、次のように実行する。
 
-**CLI で go する例。** 各ホストで `script.jl` を1本ずつ実行する (`masterhost:N` も指定可)。
+**CLI で go する例。** 各ホストで `script.jl` を1本ずつ実行する (`parenthost:N` も指定可)。
 
 ```bash
 julia --project=. -m DistSSHKit go user@host1:1 user@host2:1 path/to/script.jl
@@ -173,7 +176,7 @@ julia --project=. -m DistSSHKit go user@host1:1 user@host2:1 path/to/script.jl
 **CLI で drive する例。** git デプロイなら、あとからの更新は `setup --sync`。`rsync` でもよい。
 
 ```bash
-julia --project=. -m DistSSHKit drive masterhost:2 user@host1:4 path/to/driver.jl
+julia --project=. -m DistSSHKit drive parenthost:2 user@host1:4 path/to/driver.jl
 ```
 
 **Julia コードで go する例。** `remote=` は `setup!` と揃える (どちらも省略すれば既定パス)。
@@ -196,7 +199,7 @@ remote = "/path/to/project"
 session = KitSession(workers=["user@host1"], remote=remote, yes=true)
 setup!(session, :clone; repo="https://github.com/org/proj.git")
 setup!(session, :instantiate)
-drive!("path/to/driver.jl", "masterhost:2", "user@host1:4"; remote=remote)
+drive!("path/to/driver.jl", "parenthost:2", "user@host1:4"; remote=remote)
 setup!(session, :sync)  # 2回目以降の更新
 ```
 
@@ -213,7 +216,7 @@ julia --project=. -m DistSSHKit demo install with_kit
 ```
 
 ```bash
-julia --project=. -m DistSSHKit drive masterhost:2 demos/with_kit/square_file.jl
+julia --project=. -m DistSSHKit drive parenthost:2 demos/with_kit/square_file.jl
 ```
 
 詳細: [Demo](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/demo/)。

@@ -48,7 +48,7 @@ function _drive_set_local_workers!(
 )::Int
     local_workers > 0 &&
         throw(ArgumentError(
-            "duplicate parent worker spec ($source); use one of masterhost:N (local / --local until 0.4)",
+            "duplicate parent worker spec ($source); use one of parenthost:N (local / --local until 0.4)",
         ))
     count < 1 &&
         throw(ArgumentError("local worker count must be >= 1, got $count"))
@@ -116,9 +116,10 @@ function parse_drive_args(args::Vector{String})
     while i <= length(args)
         arg = String(args[i])
 
-        if arg == "--masterhost" || startswith(arg, "--masterhost:")
+        if arg == "--parenthost" || startswith(arg, "--parenthost:") ||
+                arg == "--masterhost" || startswith(arg, "--masterhost:")
             throw(ArgumentError(
-                "drive: use the host token `masterhost:N` (e.g. drive masterhost:4 script.jl), not `--masterhost N`",
+                "drive: use the host token `parenthost:N` (e.g. drive parenthost:4 script.jl), not `--parenthost N`",
             ))
         elseif arg == "--local" || arg == "-l"
             warn_deprecated_local_host!()
@@ -274,7 +275,7 @@ function parse_drive_args(args::Vector{String})
             break
         elseif startswith(arg, "-")
             throw(ArgumentError(
-                "unknown or incomplete drive option: $arg (use host:N form, e.g. masterhost:2 host1:4)",
+                "unknown or incomplete drive option: $arg (use host:N form, e.g. parenthost:2 host1:4)",
             ))
         else
             local_workers = _drive_push_host_token!(
@@ -347,13 +348,13 @@ function show_drive_requirements(; io::IO=stdout)
     print_help_section("Usage"; io=io)
     print_help_lines(io,
         "  julia --project=. -m DistSSHKit drive [workers...] DRIVER.jl",
-        "  drive masterhost:4 host1:8 jobs.jl",
+        "  drive parenthost:4 host1:8 jobs.jl",
         "  drive --collect-missing ROOT HOST...",
     )
     print_help_blank(io)
     print_help_section("Workers"; io=io)
     print_help_lines(io,
-        "  host:N / masterhost:N  N Distributed workers (not go slots)",
+        "  host:N / parenthost:N  N Distributed workers (not go slots)",
         "  local:N / --local   deprecated (relative; removed in 0.4)",
         "  host                1 worker, or --workers default",
         "  $(KIT_HOSTS_FLAG_HELP)",

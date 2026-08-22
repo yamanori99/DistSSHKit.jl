@@ -302,7 +302,7 @@ function show_demo_usage(io::IO=stdout)
     print_help_blank(io)
     print_help_section("After install"; io=io)
     print_help_lines(io,
-        "  julia --project=. -m DistSSHKit drive masterhost:2 demos/with_kit/square_file.jl",
+        "  julia --project=. -m DistSSHKit drive parenthost:2 demos/with_kit/square_file.jl",
         "  julia --project=. demos/with_kit/pipeline_square.jl",
         "  julia --project=. demos/without_kit/pipeline_pi.jl",
         "  julia --project=. -m DistSSHKit go demos/without_kit/pi_file.jl",
@@ -316,7 +316,7 @@ end
 Install or list bundled demos. See [`(@main)`](@ref).
 
     julia --project=. -m DistSSHKit demo install with_kit
-    julia --project=. -m DistSSHKit drive masterhost:2 demos/with_kit/square_file.jl
+    julia --project=. -m DistSSHKit drive parenthost:2 demos/with_kit/square_file.jl
     julia --project=. demos/with_kit/pipeline_square.jl
     julia --project=. demos/without_kit/pipeline_pi.jl
 """
@@ -352,7 +352,7 @@ function demo(args::Vector{String}=copy(ARGS))::Cint
             println()
             println("Demos are in ", dest_demos, "; open and edit them, then run for example:")
             if family == "with_kit"
-                println("  julia --project=. -m DistSSHKit drive masterhost:2 $rel_demos/with_kit/square_file.jl")
+                println("  julia --project=. -m DistSSHKit drive parenthost:2 $rel_demos/with_kit/square_file.jl")
                 println("  julia --project=. $rel_demos/with_kit/pipeline_square.jl")
             else
                 println("  julia --project=. $rel_demos/without_kit/pipeline_pi.jl")

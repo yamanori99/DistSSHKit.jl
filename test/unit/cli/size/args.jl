@@ -4,7 +4,7 @@ using Test
     parse_size_args = DistSSHKit.parse_size_args
 
     @testset "parse_size_args" begin
-        let r = parse_size_args(["masterhost", "host1", "host2"])
+        let r = parse_size_args(["parenthost", "host1", "host2"])
             @test r.show_help == false
             @test r.include_local == true
             @test r.hosts == ["host1", "host2"]
@@ -18,6 +18,7 @@ using Test
             @test r.include_local == true
             @test r.hosts == ["host1"]
         end
+        @test_throws ArgumentError parse_size_args(["--parenthost", "host1"])
         @test_throws ArgumentError parse_size_args(["--masterhost", "host1"])
         DistSSHKit._reset_deprecated_local_host_warning!()
         let r = parse_size_args(["--local", "host1", "host2"])
@@ -87,7 +88,7 @@ using Test
             help = read(path, String)
             rm(path; force=true)
             @test occursin("DistSSHKit size", help)
-            @test occursin("masterhost", help)
+            @test occursin("parenthost", help)
             @test occursin("--local", help)
             @test occursin("--gb-per-worker", help)
             @test occursin("--probe", help)
@@ -127,8 +128,8 @@ using Test
         out = read(path, String)
         rm(path; force=true)
         @test occursin("Workers", out)
-        @test occursin("masterhost", out)
-        @test occursin("masterhost:$(plan.local_workers)", out)
+        @test occursin("parenthost", out)
+        @test occursin("parenthost:$(plan.local_workers)", out)
         @test occursin("Total: $(plan.local_workers) workers", out)
         @test !occursin("Suggested", out)
     end
@@ -166,7 +167,7 @@ using Test
             mem_headroom=DistSSHKit.DEFAULT_MEM_HEADROOM,
             master_gb=DistSSHKit.DEFAULT_MASTER_GB,
         )
-        @test occursin("masterhost:$(plan.local_workers)", out)
+        @test occursin("parenthost:$(plan.local_workers)", out)
     end
 
     @testset "run_size --gb-per-worker --local" begin
@@ -186,7 +187,7 @@ using Test
                 local_total, local_nproc, 2.0; is_localhost=true,
             )
             @test code == 0
-            @test occursin("masterhost:$(expected)", out)
+            @test occursin("parenthost:$(expected)", out)
             @test occursin("Total: $(expected) workers", out)
         end
     end

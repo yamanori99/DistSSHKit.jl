@@ -5,13 +5,14 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
-- Host token `masterhost` is this job's DistSSHKit parent (same machine when you
-  start the kit yourself). `local` / `localhost` / `l` and `--local` / `-l` still
-  work but warn once; they go away in **0.4**. Prefer `masterhost` /
-  `masterhost:N` (no `--masterhost` flag). `size` takes the same token
-  (`size masterhost host1`). Empty `go` host lists default to one parent slot
-  whose directory is `masterhost` (was `local`). `drive_host_specs` emits
-  `masterhost:N`. The `size` table labels that host `masterhost` too.
+- Host token `parenthost` is this job's DistSSHKit parent (same machine when you
+  start the kit yourself). Replaces the unreleased `masterhost` name (Master is
+  the process; `parenthost` is the machine). `local` / `localhost` / `l` and
+  `--local` / `-l` still work but warn once; they go away in **0.4**. Prefer
+  `parenthost` / `parenthost:N` (no `--parenthost` flag). `size` takes the same
+  token (`size parenthost host1`). Empty `go` host lists default to one parent
+  slot whose directory is `parenthost` (was `local`). `drive_host_specs` emits
+  `parenthost:N`. The `size` table labels that host `parenthost` too.
 - `drive` worker heartbeat: leave if the master sends no pong for
   `DISTRIBUTED_HEARTBEAT_DEADLINE_SEC` (default 600, same order as SSH
   `ServerAlive`). Interval is `DISTRIBUTED_HEARTBEAT_INTERVAL_SEC` (default 30).

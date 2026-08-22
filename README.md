@@ -56,29 +56,34 @@ For everything else, see the **[Documentation](https://yamanori99.github.io/Dist
 ### Basic terms
 
 - **Host** — the machine that runs the work. This job's DistSSHKit parent is
-  `masterhost`. An SSH target is `user@hostname`, an IP address, or an SSH
+  `parenthost`. An SSH target is `user@hostname`, an IP address, or an SSH
   config `Host` alias. `local` / `localhost` / `l` still mean the Julia process
   that parsed the token (relative; removed in 0.4)
 - **Process** — one running `julia`. Each process has its own memory and runs
   independently at the OS level
   (this kit launches multiple `julia` processes, even on a single machine, to run
   work in parallel — built on Distributed.jl)
-- **Master** — this job's DistSSHKit parent: the process that plans slots
-  (`go`) or hands work to workers (`drive`) and collects results. When something
-  else starts that parent (a queue), Master is that machine, not the client
+- **Master** — the process on `parenthost` that plans slots (`go`) or hands
+  work to workers (`drive`) and collects results. When a queue starts that
+  process, `parenthost` is the queue's runner, not your client machine
 - **Worker** — a process that receives work from the master and runs it
 
-Example: a local machine plus remotes. Each machine can run several workers
-(local may run none), and you can add as many remote machines as you like.
+Example: when you run `go` / `drive` on your own machine, that machine is
+`parenthost`. Each machine can run several workers (`parenthost` may run
+none), and you can add as many remote machines as you like.
 
 <!-- markdownlint-disable MD033 -->
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/src/assets/diagram/topology-dark.svg">
-    <img alt="Master on the local controller, workers on local and remote machines" src="docs/src/assets/diagram/topology.svg">
+    <img alt="Drive topology: Master process on parenthost, workers on parenthost and remotes" src="docs/src/assets/diagram/topology.svg">
   </picture>
 </p>
 <!-- markdownlint-enable MD033 -->
+
+The diagram is **drive**: one Master process on `parenthost`, workers on
+`parenthost` and remotes. **go** uses the same `parenthost` token, but each
+host runs independent slots (not Distributed workers).
 
 There's no limit on the number of remote hosts — more hosts just means more time
 spent on SSH connections and deployment, so it's best to start with a few and
@@ -86,8 +91,8 @@ scale up from there.
 
 Before you use a remote host, it needs:
 
-- Passwordless SSH login from your local machine
-- Julia installed, with the **same major.minor version** as your local machine
+- Passwordless SSH login from `parenthost`
+- Julia installed, with the **same major.minor version** as `parenthost`
   (checked by `setup --check`)
 
 Details: [Requirements](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/).
@@ -181,7 +186,7 @@ julia --project=. -m DistSSHKit setup --delete user@host1 user@host2
 
 After setup, run like this.
 
-**CLI, go.** One full run of `script.jl` on each host (`masterhost:N` also works).
+**CLI, go.** One full run of `script.jl` on each host (`parenthost:N` also works).
 
 ```bash
 julia --project=. -m DistSSHKit go user@host1:1 user@host2:1 path/to/script.jl
@@ -191,7 +196,7 @@ julia --project=. -m DistSSHKit go user@host1:1 user@host2:1 path/to/script.jl
 too.
 
 ```bash
-julia --project=. -m DistSSHKit drive masterhost:2 user@host1:4 path/to/driver.jl
+julia --project=. -m DistSSHKit drive parenthost:2 user@host1:4 path/to/driver.jl
 ```
 
 **Julia, go.** Keep `remote=` consistent with `setup!` (omit both for the default
@@ -215,7 +220,7 @@ remote = "/path/to/project"
 session = KitSession(workers=["user@host1"], remote=remote, yes=true)
 setup!(session, :clone; repo="https://github.com/org/proj.git")
 setup!(session, :instantiate)
-drive!("path/to/driver.jl", "masterhost:2", "user@host1:4"; remote=remote)
+drive!("path/to/driver.jl", "parenthost:2", "user@host1:4"; remote=remote)
 setup!(session, :sync)  # later updates
 ```
 
@@ -232,7 +237,7 @@ julia --project=. -m DistSSHKit demo install with_kit
 ```
 
 ```bash
-julia --project=. -m DistSSHKit drive masterhost:2 demos/with_kit/square_file.jl
+julia --project=. -m DistSSHKit drive parenthost:2 demos/with_kit/square_file.jl
 ```
 
 Walkthrough: [Demo](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/demo/).

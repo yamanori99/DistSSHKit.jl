@@ -157,7 +157,7 @@ using Test
             out = read(path, String)
             @test occursin("Total: 0 workers", out)
             @test occursin("drive <script.jl>", out)
-            @test !occursin("masterhost:", out)
+            @test !occursin("parenthost:", out)
             @test !occursin("local:", out)
         end
     end

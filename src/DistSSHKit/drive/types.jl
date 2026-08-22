@@ -108,7 +108,7 @@ end
     parse_worker_tokens(tokens) -> ParsedWorkerTokens
 
 Classify CLI-style tokens. Explicit `:N` is fixed; bare hosts are sized later.
-`masterhost` is this job's DistSSHKit parent; everything else is remote SSH.
+`parenthost` is this job's DistSSHKit parent; everything else is remote SSH.
 Deprecated `local` / `l` / `localhost` still classify as parent until 0.4.
 """
 function parse_worker_tokens(
@@ -128,7 +128,7 @@ function parse_worker_tokens(
         if is_local_host_name(host)
             is_deprecated_local_host_name(host) && warn_deprecated_local_host!()
             local_seen && throw(ArgumentError(
-                "duplicate parent worker token; use one of masterhost:N (or local:N until 0.4)",
+                "duplicate parent worker token; use one of parenthost:N (or local:N until 0.4)",
             ))
             local_seen = true
             if n === nothing
@@ -253,7 +253,7 @@ end
 
 Settings for [`pipeline!`](@ref): sync, worker tokens, driver run, and optional collect.
 
-Worker placement uses CLI-style tokens (`masterhost:2`, `user@host:1`). Bare hosts are
+Worker placement uses CLI-style tokens (`parenthost:2`, `user@host:1`). Bare hosts are
 sized via [`size!`](@ref). Set `sync=false` to skip sync. Set `collect=false`
 to skip rsync-back. Git parity is off by default; pass `skip_hash_check=false`
 (or CLI `--require-git`) to require matching remote commits.
@@ -480,7 +480,7 @@ end
 function drive_host_specs(plan::WorkerPlan)::Vector{String}
     specs = String[]
     if plan.local_workers > 0
-        push!(specs, "masterhost:$(plan.local_workers)")
+        push!(specs, "parenthost:$(plan.local_workers)")
     end
     for (host, n) in plan.remote_workers
         n > 0 && push!(specs, "$(host):$n")

@@ -10,14 +10,14 @@ function show_go_usage(; io::IO=stdout)
     print_help_section("Usage"; io=io)
     print_help_lines(io,
         "  julia --project=. -m DistSSHKit go [slots...] SCRIPT.jl",
-        "  go masterhost:2 SCRIPT.jl",
-        "  go masterhost:1 host1:2 host2:2 SCRIPT.jl",
+        "  go parenthost:2 SCRIPT.jl",
+        "  go parenthost:1 host1:2 host2:2 SCRIPT.jl",
     )
     print_help_blank(io)
     print_help_section("Slots"; io=io)
     print_help_lines(io,
-        "  masterhost:N / host:N  N full-script runs (not drive workers)",
-        "  masterhost:0        skip parent when remotes are listed",
+        "  parenthost:N / host:N  N full-script runs (not drive workers)",
+        "  parenthost:0        skip parent when remotes are listed",
         "  local:N             deprecated (relative; removed in 0.4)",
         "  $(KIT_HOSTS_FLAG_HELP)",
         "  --hosts-file PATH   one token per line (host:N kept)",
