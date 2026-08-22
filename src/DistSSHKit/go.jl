@@ -290,17 +290,16 @@ function _go_run_local_slot!(
     mkpath(slot_dir)
     log_path = joinpath(slot_dir, "julia.stdout.log")
     julia_bin = _go_resolve_julia(julia)
-    cmd = addenv(
-        ignorestatus(
-            Cmd(
-                vcat(
-                    [julia_bin, "--project=$(project)", String(script)],
-                    collect(String, script_args),
-                ),
-            ),
-        ),
-        "DISTRIBUTED_OUTPUT_DIR" => String(slot_dir),
-    )
+    argv = String[julia_bin, "--project=$(project)"]
+    job_id = resolved_kit_job_id()
+    if job_id !== nothing
+        push!(argv, kit_job_eval_arg(job_id))
+    end
+    push!(argv, String(script))
+    append!(argv, collect(String, script_args))
+    env_pairs = ["DISTRIBUTED_OUTPUT_DIR" => String(slot_dir)]
+    job_id !== nothing && push!(env_pairs, "DISTSSHKIT_JOB_ID" => job_id)
+    cmd = addenv(ignorestatus(Cmd(argv)), env_pairs...)
     proc = open(log_path, "w") do log
         return run(pipeline(cmd; stdout=log, stderr=log); wait=true)
     end
@@ -334,10 +333,18 @@ function _go_remote_slot_shell_inner(
     end
     jb = _remote_shell_path_word(julia_bin)
     log_q = _remote_shell_path_word(joinpath(slot_rel, "julia.stdout.log"))
+    job_id = resolved_kit_job_id()
+    job_export = ""
+    job_eval = ""
+    if job_id !== nothing
+        job_export = "export DISTSSHKIT_JOB_ID=$(_remote_shell_path_word(job_id)) && "
+        job_eval = " " * _remote_shell_path_word(kit_job_eval_arg(job_id))
+    end
     return string(
         "cd $rr && mkdir -p $slot_q && ",
         "export DISTRIBUTED_OUTPUT_DIR=$slot_q && ",
-        "$jb --project=. $rel_q$args_s >$log_q 2>&1; ",
+        job_export,
+        "$jb$job_eval --project=. $rel_q$args_s >$log_q 2>&1; ",
         "ec=\$?; echo \$ec > $slot_q/go.exitcode; cat $log_q; exit \$ec",
     )
 end
@@ -582,6 +589,7 @@ function go!(
         )
 
         remote_hosts = unique(String[s.host for s in slots if s.kind === :remote])
+        _write_kit_hosts_file(remote_hosts, batch_dir, nothing)
         _go_assert_remotes_ready!(remote_hosts, sess_rr)
 
         sync_result = nothing

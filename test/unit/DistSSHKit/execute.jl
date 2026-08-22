@@ -209,12 +209,69 @@ using Test
                     @test result.ok
                     pid_path = joinpath(result.output_dir, "kit.pid")
                     @test !isfile(pid_path)
+                    @test isfile(joinpath(result.output_dir, "kit.job"))
+                    @test strip(read(joinpath(result.output_dir, "kit.job"), String)) == "q-1"
                     log_files = filter(f -> endswith(f, ".log"), readdir(result.output_dir))
                     @test !isempty(log_files)
                     log_body = read(joinpath(result.output_dir, first(log_files)), String)
                     @test occursin("job=q-1", log_body)
                 end
             end
+        end
+    end
+
+    @testset "job_id charset / kit_job_eval_arg" begin
+        withenv("DISTSSHKIT_JOB_ID" => nothing) do
+            @test DistSSHKit.resolved_kit_job_id() === nothing
+        end
+        @test occursin("distsshkit-job:q-1", DistSSHKit.kit_job_eval_arg("q-1"))
+        err = try
+            DistSSHKit._parse_kit_job_id("has space")
+            nothing
+        catch e
+            e
+        end
+        @test err isa ArgumentError
+    end
+
+    @testset "terminate! detached go" begin
+        _with_tempdir() do proj
+            write(joinpath(proj, "Project.toml"), "name = \"TerminateGo\"\n")
+            script = joinpath(proj, "job.jl")
+            write(script, """
+                out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", ".")
+                mkpath(out)
+                sleep(60)
+                """)
+            mktemp() do _, out_io
+                mktemp() do _, err_io
+                    kp = DistSSHKit.execute!(
+                        :go,
+                        script,
+                        ["parenthost:1"];
+                        detached=true,
+                        project=proj,
+                        verbosity=:progress,
+                        job_id="t-1",
+                        stdout=out_io,
+                        stderr=err_io,
+                    )
+                    result = DistSSHKit.terminate!(kp; grace=2)
+                    @test result isa DistSSHKit.KitRunResult
+                    @test !process_running(kp.process)
+                    @test result.kind === :go
+                end
+            end
+        end
+    end
+
+    @testset "terminate_run! missing pid" begin
+        _with_tempdir() do d
+            r = DistSSHKit.terminate_run!(d; grace=0)
+            @test r isa DistSSHKit.KitRunResult
+            @test r.ok === false
+            @test r.failed_step == "terminated"
+            @test r.kind === :go
         end
     end
 end

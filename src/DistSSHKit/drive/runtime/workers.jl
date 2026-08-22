@@ -67,7 +67,10 @@ function add_drive_workers!(
         write_both("  localhost ($local_workers workers): ")
         try
             before = Set(workers())
-            addprocs(local_workers; exeflags=`--project=$proj_dir`, topology=:master_worker)
+            addprocs(local_workers;
+                exeflags=DistSSHKit._drive_worker_exeflags(proj_dir),
+                env=DistSSHKit._drive_worker_env(),
+                topology=:master_worker)
             _register_drive_workers!(before, proj_dir, script_path)
             print_ok("✓")
             writeln_both("")
@@ -141,7 +144,8 @@ function add_drive_workers!(
                      dir=remote_dir,
                      tunnel=use_tunnel,
                      topology=:master_worker,
-                     exeflags=`--project=$remote_proj`)
+                     env=DistSSHKit._drive_worker_env(),
+                     exeflags=DistSSHKit._drive_worker_exeflags(remote_proj))
             _register_drive_workers!(before, remote_proj, remote_script)
             print_ok("✓")
             writeln_both("")
@@ -210,6 +214,11 @@ function register_worker_cleanup!(successful_hosts::Vector{String})
         end
 
         for host in successful_hosts
+            job_id = DistSSHKit.resolved_kit_job_id()
+            if job_id !== nothing
+                DistSSHKit._pkill_remote_tagged_workers!(host, job_id)
+                continue
+            end
             _skip_global_worker_pkill() && continue
             _pkill_stale_julia_workers_remote!(host)
         end

@@ -5,6 +5,10 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- `terminate!` / `terminate_run!` cancel a detached run: SIGTERM, then
+  grace, then SIGKILL, then `pkill` only processes tagged with that
+  `job_id` (never machine-wide `julia.*--worker`). Pass `job_id` to reap
+  workers after a lost handle.
 - `execute_detached_accepts` reports whether a keyword is allowed on
   detached `execute!` (`:go` / `:drive`), including named parameters.
   `kit_pid_alive` is the pid probe used for `.kit.lock` / leftover `kit.pid`.
