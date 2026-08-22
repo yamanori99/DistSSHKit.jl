@@ -151,12 +151,14 @@ wait(execute!(:go, "job.jl", ["parenthost:1"]; detached=true, args=["8"]))
   apply to the subprocess. Pass `stdout` / `stderr` to capture it instead
 - [`KitProcess`](@ref) holds the `Base.Process` and the dirs resolved before
   spawn
-- `wait` converts it to [`KitRunResult`](@ref); on a non-zero child exit,
-  `failed_step` is `"go"` / `"drive"` only
+- `wait` converts it to [`KitRunResult`](@ref). If the child wrote `kit.result`,
+  that file wins (including `go!` `failed_step`). Otherwise a non-zero child
+  exit yields `failed_step` `"go"` / `"drive"` only
 
 ```@docs
 execute!
 KitProcess
+kit_result_from_dir
 ```
 
 ### Progress lines (external watchers)
@@ -203,6 +205,12 @@ few small, opt-in conveniences aimed at a queue running many jobs:
   `finally` (SIGKILL / crash). If that pid is dead, the job is not running;
   if the OS has reused the pid, liveness can be wrong — starttime is not in
   this file.
+- **Recover the outcome after losing the handle**: the child writes `kit.result`
+  (TOML) in `output_dir` (and `log_dir` if distinct) on a normal finish, with
+  the same fields as [`KitRunResult`](@ref). [`kit_result_from_dir`](@ref)
+  returns `nothing` while the job is running or if the child died hard
+  (SIGKILL / crash). Together with `kit.pid`: running, finished with a known
+  result, or died without writing one. Per-host collect is not stored here.
 - **Tell concurrent jobs apart in a shared log**: `job_id` (`execute!`
   keyword, or `ENV["DISTSSHKIT_JOB_ID"]` for in-process `go!` / `drive!`)
   adds `job=<id>` to every `progress:` log line.

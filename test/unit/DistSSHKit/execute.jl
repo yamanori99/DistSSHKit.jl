@@ -17,6 +17,25 @@ using Test
         end
     end
 
+    @testset "kit_result_from_dir" begin
+        _with_tempdir() do d
+            @test DistSSHKit.kit_result_from_dir(d) === nothing
+            DistSSHKit._write_kit_result_file(DistSSHKit.KitRunResult(
+                false, :drive, d, nothing, "drive", 42,
+            ))
+            got = DistSSHKit.kit_result_from_dir(d)
+            @test got isa DistSSHKit.KitRunResult
+            @test got.ok === false
+            @test got.kind === :drive
+            @test got.failed_step == "drive"
+            @test got.exit_code == 42
+            @test got.output_dir == d
+            @test got.log_dir === nothing
+            write(joinpath(d, "kit.result"), "not toml {")
+            @test DistSSHKit.kit_result_from_dir(d) === nothing
+        end
+    end
+
     @testset "kind not :go / :drive" begin
         err = try
             DistSSHKit.execute!(:pipeline, "job.jl", String[])
@@ -131,6 +150,14 @@ using Test
                     @test result.log_dir === nothing
                     @test read(joinpath(result.output_dir, "parenthost", "args.txt"), String) == "8"
                     @test !isfile(pid_path)
+                    recovered = DistSSHKit.kit_result_from_dir(result.output_dir)
+                    @test recovered isa DistSSHKit.KitRunResult
+                    @test recovered.ok
+                    @test recovered.kind === :go
+                    @test recovered.exit_code == 0
+                    @test recovered.output_dir == result.output_dir
+                    @test result.ok == recovered.ok
+                    @test result.failed_step === recovered.failed_step
                 end
             end
         end

@@ -84,6 +84,11 @@ end
                 @test occursin("DISTSSHKIT_RUNNER_SMOKE_OK nw=2", out)
                 @test !isfile(joinpath(result.output_dir, "kit.pid"))
                 @test !isfile(joinpath(result.log_dir, "kit.pid"))
+                recovered = DistSSHKit.kit_result_from_dir(result.output_dir)
+                @test recovered isa DistSSHKit.KitRunResult
+                @test recovered.ok
+                @test recovered.kind === :drive
+                @test recovered.exit_code == 0
             end
         end
     end
