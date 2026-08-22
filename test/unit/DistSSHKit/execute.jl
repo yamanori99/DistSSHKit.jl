@@ -171,6 +171,8 @@ using Test
                     @test result.log_dir === nothing
                     @test read(joinpath(result.output_dir, "parenthost", "args.txt"), String) == "8"
                     @test !isfile(pid_path)
+                    @test !isfile(joinpath(result.output_dir, "kit.out"))
+                    @test !isfile(joinpath(result.output_dir, "kit.err"))
                     recovered = DistSSHKit.kit_result_from_dir(result.output_dir)
                     @test recovered isa DistSSHKit.KitRunResult
                     @test recovered.ok
@@ -217,6 +219,29 @@ using Test
                     @test occursin("job=q-1", log_body)
                 end
             end
+        end
+    end
+
+    @testset ":go detached default stdio files" begin
+        _with_tempdir() do proj
+            write(joinpath(proj, "Project.toml"), "name = \"ExecuteGoStdio\"\n")
+            script = joinpath(proj, "job.jl")
+            write(script, """
+                out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", ".")
+                mkpath(out)
+                """)
+            kp = DistSSHKit.execute!(
+                :go,
+                script,
+                ["parenthost:1"];
+                detached=true,
+                project=proj,
+                quiet=true,
+            )
+            result = wait(kp)
+            @test result.ok
+            @test isfile(joinpath(result.output_dir, "kit.out"))
+            @test isfile(joinpath(result.output_dir, "kit.err"))
         end
     end
 
