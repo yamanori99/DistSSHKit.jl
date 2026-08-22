@@ -25,7 +25,8 @@ DistSSHKit は、それらをまとめて小さな計算ノードとして使う
 関連して、簡易スケジューラ `DistSSHKitQueue.jl` を開発中である。
 
 > [!NOTE]
-> **0.3** では、現在大きな機能追加はしない。いまのコマンドは変えずに使い続けられる。通常のバグ修正は続ける。
+> General 上の **0.3.x** はいまのコマンドのまま。**0.4** 向けの開発は再開する
+> (queue 層のフック、`local` / `--local` の削除)。通常のバグ修正は続ける。
 > [CONTRIBUTING.md](CONTRIBUTING.md#feature-freeze) ·
 > [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26)。
 

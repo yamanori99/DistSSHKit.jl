@@ -11,8 +11,8 @@ workstations. DistSSHKit helps you use that hardware as a small set of compute
 nodes. A lightweight scheduler, `DistSSHKitQueue.jl`, is also in progress.
 
 !!! note
-    **0.3** is not getting major new features for now. The current commands stay put,
-    and ordinary bugs still get fixed.
+    **0.3.x** on General keeps today's commands. Development toward **0.4** is open
+    (queue-layer hooks; `local` / `--local` go away). Ordinary bugs still get fixed.
     [CONTRIBUTING.md](https://github.com/yamanori99/DistSSHKit.jl/blob/main/CONTRIBUTING.md#feature-freeze) ·
     [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26).
 
