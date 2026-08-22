@@ -214,30 +214,30 @@ path, then SIGKILLs if needed, then `pkill`s only argv tagged with this
 run's `job_id`. `kp.process` is still a `Base.Process` if you need `kill`
 yourself.
 
-#### Handle gone
+#### Sidecar files (`output_dir`)
 
-Queue restart: files in `output_dir`, and `log_dir` if distinct.
+On-disk contract for a detached (or in-process) run. `kit.pid`, `kit.job`,
+`kit.hosts`, and `kit.result` are also written under `log_dir` when that
+path is distinct. `.kit.lock` and `kit.out` / `kit.err` stay in
+`output_dir`. Kit logs (`go_*.log` / `drive_*.log`) are not this list.
 
 | File | Meaning |
 | --- | --- |
-| `kit.pid` | Child OS pid (plain text). Probe with [`kit_pid_alive`](@ref); do not parse logs. |
-| `kit.job` | `job_id` when set (needed to reap tagged workers after a restart). |
-| `kit.hosts` | Remote hosts this run started (one name per line). Written after workers join. |
-| `kit.result` | TOML with the same fields as [`KitRunResult`](@ref). Read with [`kit_result_from_dir`](@ref). |
+| `.kit.lock` | Pid of the process holding the dir. A second run against the same path raises `ArgumentError`. A lock left by a dead pid is reclaimed. |
+| `kit.pid` | Child OS pid (plain text). Probe with [`kit_pid_alive`](@ref); do not parse logs. Removed on a normal finish (`finally`, same pid-match as the lock; `wait` is backup). A leftover is SIGKILL / crash. A dead pid means not running; a reused pid can still look alive (starttime is not in the file). |
+| `kit.job` | `job_id` when set. [`terminate_run!`](@ref) uses it for tagged `pkill` after a restart. |
+| `kit.hosts` | Remote hosts this run started (one name per line), written after workers join. `terminate_run!` reaps these. |
+| `kit.result` | TOML with the same fields as [`KitRunResult`](@ref). Read with [`kit_result_from_dir`](@ref). Missing while running or after a hard death. Per-host collect is not in this file (live membership is a later API). |
 | `kit.out` / `kit.err` | Detached child stdio when `stdout` / `stderr` were omitted. |
 
 Together: running (`kit.pid` live, no result), finished (result present),
-or died hard (leftover pid, no result). Per-host collect is not in
-`kit.result`.
+or died hard (leftover pid, no result).
 
-`kit.pid` is removed in the child's `finally` when it still names this pid
-(same rule as `.kit.lock`); `wait` does the same as backup. After a normal
-exit the file is gone. A leftover means SIGKILL / crash. A dead pid means
-the job is not running; a reused pid can still look alive (starttime is
-not in the file). [`kit_result_from_dir`](@ref) is `nothing` while running
-or after a hard death. [`terminate_run!`](@ref) reads `kit.pid` / `kit.job` /
-`kit.hosts` and uses the same signal-then-tagged-`pkill` sequence. Without
-`job_id`, only the child pid is signaled.
+#### Handle gone
+
+[`terminate_run!`](@ref) reads `kit.pid` / `kit.job` / `kit.hosts` and uses
+the same signal-then-tagged-`pkill` sequence as [`terminate!`](@ref).
+Without `job_id`, only the child pid is signaled.
 
 #### Before spawn
 

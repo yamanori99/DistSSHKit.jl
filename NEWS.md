@@ -5,6 +5,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- Detached sidecar files in `output_dir` (`kit.pid`, `kit.job`, `kit.hosts`,
+  `kit.result`, `kit.out` / `kit.err`, `.kit.lock`) are documented as the
+  on-disk contract (copies under `log_dir` when that path is distinct).
 - `allocate_output_dir(kind, script; project, job_id)` creates a unique
   directory under `.distsshkit/<kind>/` for a later detached
   `output_dir=`. Optional `job_id` is appended (same charset as `execute!`).
