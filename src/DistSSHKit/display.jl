@@ -32,8 +32,17 @@ function display_path(path::AbstractString, anchor::AbstractString)::String
     return short_path(String(path))
 end
 
-"""Best-effort liveness check for an OS pid (signal 0; never raises)."""
-function _kit_pid_alive(pid::Integer)::Bool
+"""
+    kit_pid_alive(pid) -> Bool
+
+Best-effort liveness check for an OS pid (signal 0; never raises).
+
+On Unix, `kill(pid, 0)`: alive if the call succeeds or the pid exists but is
+not owned by us (`EPERM`). `pid <= 0` is false. Windows has no cheap non-killing
+probe here, so the result is `true` (same for unexpected errors). A reused pid
+can still look alive; that is [#183](https://github.com/yamanori99/DistSSHKit.jl/issues/183), not this probe.
+"""
+function kit_pid_alive(pid::Integer)::Bool
     pid <= 0 && return false
     Sys.isunix() || return true # no cheap non-killing probe on Windows; assume alive
     try
@@ -74,7 +83,7 @@ function kit_output_dir_lock!(output_dir::AbstractString)
             ""
         end
         existing_pid = tryparse(Int, existing)
-        if existing_pid !== nothing && existing_pid != mypid && _kit_pid_alive(existing_pid)
+        if existing_pid !== nothing && existing_pid != mypid && kit_pid_alive(existing_pid)
             throw(ArgumentError(
                 "another DistSSHKit run (pid $(existing_pid)) already holds " *
                 "$(lock_path) — refusing to run concurrently against the same output_dir",
