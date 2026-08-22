@@ -5,6 +5,8 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+## 0.3.3
+
 - Host token `parenthost` is this job's DistSSHKit parent (same machine when you
   start the kit yourself). Replaces the unreleased `masterhost` name (Master is
   the process; `parenthost` is the machine). `local` / `localhost` / `l` and
@@ -32,8 +34,11 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 - `go` / `drive` progress log lines use a stable `kind=` / `done=` / `total=`
   format (`begin` / `step` / `item` / `done`); the final `done` line is
   always written to the kit log regardless of verbosity.
+- Docs: remote Julia auto-detect paths in `requirements.md` (juliaup first,
+  then usual OS locations; `setup --check` / `--julia` /
+  `JULIA_DISTRIBUTED_EXE`).
 
-## 0.3.2
+## 0.3.2 (2026-08-20)
 
 - `drive` no longer `pkill`s local `julia --worker` processes before
   `addprocs`. Local teardown is `rmprocs`, run at the end of every `drive!` /
