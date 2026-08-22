@@ -575,6 +575,7 @@ mutable struct KitProgressState
     steps::Int
     done::Int
     label::String
+    kind::Symbol
     active::Bool
     t0::Float64
     tick::Int
@@ -591,6 +592,7 @@ function KitProgressState(
     steps::Int,
     done::Int,
     label::AbstractString;
+    kind::Symbol=:unknown,
     job_id::Union{Nothing,AbstractString}=nothing,
 )
     return KitProgressState(
@@ -598,6 +600,7 @@ function KitProgressState(
         steps,
         done,
         String(label),
+        kind,
         false,
         time(),
         0,
@@ -609,10 +612,6 @@ function KitProgressState(
         job_id === nothing ? nothing : String(job_id),
     )
 end
-
-"""`"job=<id> "` when `state.job_id` is set, else `""` — prefix for `progress:` log lines."""
-_progress_job_prefix(state::KitProgressState)::String =
-    state.job_id === nothing ? "" : "job=$(state.job_id) "
 
 const KIT_PROGRESS = Ref{Union{Nothing,KitProgressState}}(nothing)
 const KIT_PROGRESS_LOCK = ReentrantLock()
@@ -867,10 +866,58 @@ function _progress_print_bar!(io::IO, done::Int, total::Int, tick::Int)
     return nothing
 end
 
-function _progress_log!(state::KitProgressState)
-    cur = _progress_current(state)
-    _kit_log_writeln(
-        "progress: $(_progress_job_prefix(state))$(state.label) ($(state.done)/$(state.steps) done, $(cur)/$(state.steps))",
+function _progress_log_line(state::KitProgressState, event::AbstractString, kvs::Pair...)
+    parts = String["progress:", String(event), "kind=$(state.kind)"]
+    if state.job_id !== nothing
+        push!(parts, "job=$(state.job_id)")
+    end
+    for (k, v) in kvs
+        push!(parts, "$k=$v")
+    end
+    return join(parts, " ")
+end
+
+function _progress_log_writeln(state::KitProgressState, event::AbstractString, kvs::Pair...)
+    _kit_log_writeln(_progress_log_line(state, event, kvs...))
+    return nothing
+end
+
+function _progress_log_begin!(state::KitProgressState)
+    _progress_log_writeln(state, "begin", "label" => state.label, "total" => state.steps)
+    return nothing
+end
+
+function _progress_log_step!(state::KitProgressState)
+    _progress_log_writeln(
+        state,
+        "step",
+        "label" => state.label,
+        "done" => state.done,
+        "total" => state.steps,
+        "cur" => _progress_current(state),
+    )
+    return nothing
+end
+
+function _progress_log_item!(state::KitProgressState, item::KitProgressItem)
+    _progress_log_writeln(
+        state,
+        "item",
+        "label" => item.label,
+        "status" => item.status,
+        "done" => state.done,
+        "total" => state.steps,
+    )
+    return nothing
+end
+
+function _progress_log_done!(state::KitProgressState; ok::Bool)
+    _progress_log_writeln(
+        state,
+        "done",
+        "ok" => ok,
+        "done" => state.done,
+        "total" => state.steps,
     )
     return nothing
 end
@@ -881,16 +928,15 @@ Start a live status line for `--progress` mode.
 `steps` is the total number of phases or slots. Pass `items` for concurrent
 slots (header + one live line each). Outside `:progress`, updates state only.
 
-`job_id` (default: `ENV["DISTSSHKIT_JOB_ID"]` if set, else `nothing`) is
-prefixed to every `progress:` log line as `job=<id>`, letting an external
-watcher (e.g. a queue) that runs several `go`/`drive` jobs against a shared
-log tell them apart. Omitted entirely when unset — no format change for
-existing callers/logs.
+`kind` is `:go` or `:drive` (written as `kind=` on every `progress:` log
+line). `job_id` (default: `ENV["DISTSSHKIT_JOB_ID"]` if set, else `nothing`)
+is written as `job=<id>` on those lines, omitted when unset.
 """
 function kit_progress_begin!(
     title::AbstractString;
     steps::Int,
     items::AbstractVector{<:AbstractString}=String[],
+    kind::Symbol=:unknown,
     job_id::Union{Nothing,AbstractString}=nothing,
 )
     steps < 1 && throw(ArgumentError("kit_progress_begin!: steps must be ≥ 1"))
@@ -901,17 +947,16 @@ function kit_progress_begin!(
         env_job_id = get(ENV, "DISTSSHKIT_JOB_ID", "")
         isempty(env_job_id) || (resolved_job_id = env_job_id)
     end
-    state = KitProgressState(String(title), steps, 0, String(title); job_id=resolved_job_id)
+    state = KitProgressState(
+        String(title), steps, 0, String(title); kind=kind, job_id=resolved_job_id,
+    )
     for name in items
         push!(state.items, KitProgressItem(String(name), :running, 0))
     end
     lock(KIT_PROGRESS_LOCK) do
         KIT_PROGRESS[] = state
         if kit_output_progress()
-            _progress_log!(state)
-            isempty(state.items) || _kit_log_writeln(
-                "progress: $(_progress_job_prefix(state))items $(join((it.label for it in state.items), ","))",
-            )
+            _progress_log_begin!(state)
             _progress_draw!(state)
         end
     end
@@ -952,7 +997,7 @@ function _kit_progress_step!(
         end
         state.label = String(label)
         if kit_output_progress()
-            _progress_log!(state)
+            _progress_log_step!(state)
             _progress_draw!(state)
         end
     end
@@ -984,9 +1029,7 @@ function _kit_progress_apply_item!(
         state.done = min(state.done + 1, state.steps)
     end
     if kit_output_progress()
-        _kit_log_writeln(
-            "progress: $(_progress_job_prefix(state))$(item.label) $status ($(state.done)/$(state.steps) done)",
-        )
+        _progress_log_item!(state, item)
         _progress_draw!(state)
     end
     return nothing
@@ -1029,8 +1072,8 @@ function _kit_progress_done!(
         _progress_is_current(state) || return nothing
         state.done = state.steps
         state.label = state.title
+        _progress_log_done!(state; ok=ok)
         if kit_output_progress()
-            _progress_log!(state)
             _progress_draw!(state; newline=true, finished=true, ok=ok)
             if state.cursor_hidden
                 print(stdout, "\e[?25h")

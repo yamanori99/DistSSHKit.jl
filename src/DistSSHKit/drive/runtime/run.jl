@@ -130,7 +130,7 @@ function _run_drive_parsed_locked!(
     # just at Julia process exit — callers (`drive!`, `execute!`) can run more
     # than once per process (tests; long-lived services).
     drive_atexit_cleanup = nothing
-    kit_progress_begin!("drive"; steps=progress_steps)
+    kit_progress_begin!("drive"; steps=progress_steps, kind=:drive)
     try
         if do_sync
             kit_progress_step!("sync")
