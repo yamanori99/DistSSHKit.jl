@@ -18,10 +18,10 @@ end
                quiet=false, verbosity=nothing, yes=true, include_local_for_size=false)
 
 Build a session for drive APIs. `workers` are CLI-style tokens
-(`masterhost:2`, `user@host:1`, or bare `user@host` for later [`size!`](@ref)).
+(`parenthost:2`, `user@host:1`, or bare `user@host` for later [`size!`](@ref)).
 
 `session.hosts` keeps remote SSH names only (for sync / collect).
-`session.tokens` keeps the original tokens (including `masterhost:N`).
+`session.tokens` keeps the original tokens (including `parenthost:N`).
 `remote` is the remote project path (`DISTRIBUTED_REMOTE_PROJECT_ROOT`).
 
 `hosts_file` defaults to `ENV["DISTSSHKIT_HOSTS_FILE"]` when unset.

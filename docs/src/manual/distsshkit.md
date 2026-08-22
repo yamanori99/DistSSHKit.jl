@@ -31,7 +31,7 @@ distsshkit demo install with_kit
 distsshkit setup --rsync user@host1                              # first deploy
 distsshkit setup --instantiate user@host1                        # remote Pkg
 # size / drive: job project, not the Apps copy
-julia --project=. -m DistSSHKit size masterhost user@host1
+julia --project=. -m DistSSHKit size parenthost user@host1
 distsshkit go user@host1:1 path/to/script.jl                     # one full run per slot
 ```
 

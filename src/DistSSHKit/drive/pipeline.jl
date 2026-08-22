@@ -171,12 +171,12 @@ end
 Run the usual remote workflow: optional sync, [`size!`](@ref), driver, optional collect.
 Does not call [`setup!`](@ref); prepare remotes first.
 
-Worker tokens match the CLI (`masterhost:2`, `user@host:1`). Bare hosts are sized with
+Worker tokens match the CLI (`parenthost:2`, `user@host:1`). Bare hosts are sized with
 [`size!`](@ref). Keyword `args` are passed to the driver; `remote` is the remote
 project path. Default `yes=true` skips confirm prompts.
 
 ```julia
-pipeline!(driver, "masterhost:2"; args=["8"])
+pipeline!(driver, "parenthost:2"; args=["8"])
 pipeline!(driver, "user@h1:1", "user@h2:1"; remote="/path/to/project", args=["8"], collect=true)
 ```
 

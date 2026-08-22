@@ -49,28 +49,32 @@ function _go_sanitize_label(raw::AbstractString)::String
     return isempty(s) ? "host" : s
 end
 
-"""True when a go token looks like a misspelling of `masterhost` / `local`."""
+"""True when a go token looks like a misspelling of `parenthost` / `local`."""
 function _go_local_host_typo_hint(host_name::AbstractString)::Union{Nothing,String}
     h = lowercase(String(host_name))
-    h in ("lacal", "loacl", "locahost", "locl", "masterhos", "materhost") &&
-        return "did you mean masterhost?"
+    h in (
+        "lacal", "loacl", "locahost", "locl",
+        "parenthos", "parnthost",
+        "masterhost", "masterhos", "materhost",
+    ) &&
+        return "did you mean parenthost?"
     return nothing
 end
 
 """
 Build execution slots from host tokens.
 
-- No tokens → one parent slot (directory label `masterhost`)
-- `masterhost:N` → N slots on this job's DistSSHKit parent
+- No tokens → one parent slot (directory label `parenthost`)
+- `parenthost:N` → N slots on this job's DistSSHKit parent
 - deprecated `local:N` / `l:N` → same slots until 0.4 (`local:0` skips parent when remotes are listed)
 - `user@host` → one remote slot
 - `user@host:N` → N remote slots on that host (`host`, or `host-1` … when N>1)
 """
 function _go_plan_slots(host_tokens::AbstractVector{<:AbstractString})::Vector{GoSlot}
-    isempty(host_tokens) && return [GoSlot(:local, nothing, "masterhost")]
+    isempty(host_tokens) && return [GoSlot(:local, nothing, "parenthost")]
 
     local_count = 0
-    parent_label_base = "masterhost"
+    parent_label_base = "parenthost"
     remote_runs = Vector{String}() # host repeated per run
     for raw in host_tokens
         host_name, host_workers = split_worker_token(String(raw))
@@ -94,7 +98,7 @@ function _go_plan_slots(host_tokens::AbstractVector{<:AbstractString})::Vector{G
 
     local_count == 0 && isempty(remote_runs) &&
         throw(ArgumentError(
-            "no execution slots: list remotes after masterhost:0, or omit the parent token to run on the parent",
+            "no execution slots: list remotes after parenthost:0, or omit the parent token to run on the parent",
         ))
 
     slots = GoSlot[]
@@ -260,7 +264,7 @@ function _go_write_batch_manifest!(
         println(io, "script=", script)
         println(io, "slots=", length(slots))
         for (i, s) in enumerate(slots)
-            host = s.host === nothing ? "masterhost" : s.host
+            host = s.host === nothing ? "parenthost" : s.host
             println(io, "slot[$i]=", s.label, " kind=", s.kind, " host=", host)
         end
     end
@@ -470,7 +474,7 @@ Run an as-is complete job on one or more slots (local and/or remote).
 
 ```julia
 go!("job.jl")                          # one parent slot
-go!("job.jl", "masterhost:2"; args=["8"])
+go!("job.jl", "parenthost:2"; args=["8"])
 go!("job.jl", "user@h1:1", "user@h2:1"; remote="/path/to/project")
 ```
 
@@ -492,7 +496,7 @@ when you need that.
 `julia` sets the Julia binary for each slot (`nothing` / `"auto"` → detect;
 same as CLI `--julia`).
 
-`masterhost:N` and `host:N` mean N independent full-job runs (not Distributed workers),
+`parenthost:N` and `host:N` mean N independent full-job runs (not Distributed workers),
 started together. `path_anchor` shortens displayed paths (CLI passes kit project root).
 """
 function go!(
@@ -616,7 +620,7 @@ function go!(
         writeln_field("Script", display_path(script_path, anchor))
         writeln_field("Slots", string(length(slots)))
         for s in slots
-            where = s.kind === :local ? "masterhost" : String(something(s.host, s.label))
+            where = s.kind === :local ? "parenthost" : String(something(s.host, s.label))
             writeln_both("  · $(s.label)  ($where)"; color=:light_black)
         end
         writeln_both("")

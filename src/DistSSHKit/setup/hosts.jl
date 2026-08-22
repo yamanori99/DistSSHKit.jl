@@ -7,7 +7,7 @@ host_op_result(; cancelled::Bool=false, succeeded::Int=0, failed::Int=0) =
 """
 Validate setup CLI hosts.
 
-Setup hosts are **SSH targets only**. Unlike `drive` / `go`, `masterhost` is not
+Setup hosts are **SSH targets only**. Unlike `drive` / `go`, `parenthost` is not
 an SSH target — pass `user@host` (or an SSH config `Host` alias).
 """
 function validate_setup_hosts(hosts::AbstractVector{<:AbstractString})

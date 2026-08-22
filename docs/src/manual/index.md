@@ -17,7 +17,7 @@ Each command page starts with a **Flags** table for that command.
 
 ## go vs drive (pick one)
 
-Both share host tokens (`masterhost:N`, `host:N`) and optional `--sync` / `--rsync`.
+Both share host tokens (`parenthost:N`, `host:N`) and optional `--sync` / `--rsync`.
 The difference is **what the script is**:
 
 | | [go](@ref Manual-go) | [drive](@ref Manual-drive) |
@@ -42,7 +42,7 @@ Same **names** are shared on purpose; a few meanings differ by command:
 | Git parity (drive) | **Off** by default. Opt-in: `--require-git`. Compat: `--skip-git-guard` (no-op; may combine with `--sync` / `--rsync`). |
 | Skip pre-run (go) | Compat: `--skip-sync` / `--skip-git-guard` (already the default; exclusive with `--sync` / `--rsync` on go). |
 | `--output-dir` | **`go`**: batch root (`PATH/{slot}/`). **`drive`**: result root (`DISTRIBUTED_OUTPUT_DIR`). Different on purpose. |
-| `-l` / `--local` | Deprecated relative alias (removed in 0.4). **`drive`**: count for `masterhost:N`. **`size`**: boolean include-parent. Prefer the `masterhost` token. |
+| `-l` / `--local` | Deprecated relative alias (removed in 0.4). **`drive`**: count for `parenthost:N`. **`size`**: boolean include-parent. Prefer the `parenthost` token. |
 | `--hosts` | CSV tokens. `setup` / `size` strip `:N`. `go` / `drive` keep `host:N`. |
 | `--hosts-file` | `setup` / `size` strip `:N`. `go` / `drive` keep `host:N` for slots / workers. |
 | Shared peel | `-q`/`--quiet`, `--progress`, `--verbose`, `-y`/`--yes`, `--hosts`, `--hosts-file`, `-v`/`--version` — same on setup / go / drive / size. |
@@ -51,7 +51,7 @@ Same **names** are shared on purpose; a few meanings differ by command:
 
 **Hosts.** Sources, in the order they append after positional tokens:
 
-- CLI tokens (`masterhost:N`, `host:N`) on setup / go / drive / size
+- CLI tokens (`parenthost:N`, `host:N`) on setup / go / drive / size
 - `--hosts` (CSV)
 - `DISTSSHKIT_HOSTS` (comma-separated)
 - `--hosts-file` (default path from `DISTSSHKIT_HOSTS_FILE`)

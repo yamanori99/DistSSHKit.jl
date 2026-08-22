@@ -69,7 +69,7 @@ using Test
             @test result.ok
             @test result.exit_code == 0
             @test result.output_dir !== nothing
-            @test read(joinpath(result.output_dir, "masterhost", "args.txt"), String) == "8"
+            @test read(joinpath(result.output_dir, "parenthost", "args.txt"), String) == "8"
         end
     end
 
@@ -108,7 +108,7 @@ using Test
                     @test result.exit_code == 0
                     @test result.output_dir == kp.output_dir
                     @test result.log_dir === nothing
-                    @test read(joinpath(result.output_dir, "masterhost", "args.txt"), String) == "8"
+                    @test read(joinpath(result.output_dir, "parenthost", "args.txt"), String) == "8"
                 end
             end
         end

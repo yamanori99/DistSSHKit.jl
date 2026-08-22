@@ -76,7 +76,7 @@ function add_drive_workers!(
             writeln_both("")
         end
     else
-        writeln_both("  localhost: master only (use masterhost:N for parent workers)")
+        writeln_both("  localhost: master only (use parenthost:N for parent workers)")
     end
 
     sshflags_cmd = Cmd(ssh_opts())

@@ -1,11 +1,11 @@
 # [go](@id Manual-go)
 
 Run a **standalone** script as-is (no Kit APIs in the job file). Each
-`masterhost:N` / `host:N` slot is one full script run, started **concurrently** —
+`parenthost:N` / `host:N` slot is one full script run, started **concurrently** —
 not Distributed workers.
 
 ```bash
-julia --project=. -m DistSSHKit go [options] [masterhost:N] [host:N...] SCRIPT.jl [script_args...]
+julia --project=. -m DistSSHKit go [options] [parenthost:N] [host:N...] SCRIPT.jl [script_args...]
 ```
 
 Also: [First Steps · Demo](@ref Tutorial-Demo), [drive](@ref Manual-drive),
@@ -62,6 +62,6 @@ Collect after remote slots: **slot-overwrite** (rsync whole slot dir).
 
 ## Hosts
 
-CLI tokens, `--hosts`, `--hosts-file`, and/or `DISTSSHKIT_HOSTS`. `masterhost:0` skips parent
-slots when remotes are listed. Omitting hosts is one parent slot (`masterhost/`).
+CLI tokens, `--hosts`, `--hosts-file`, and/or `DISTSSHKIT_HOSTS`. `parenthost:0` skips parent
+slots when remotes are listed. Omitting hosts is one parent slot (`parenthost/`).
 `local:N` is a deprecated relative alias (removed in 0.4).
