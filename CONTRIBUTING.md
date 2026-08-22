@@ -7,16 +7,20 @@ Internals of this repo.
 
 ## Feature freeze
 
-`0.3` is the job kit (`go` / `drive` / `setup` and the bang APIs). New features
-are paused so [DistSSHKitQueue.jl](https://github.com/yamanori99/DistSSHKitQueue.jl)
-and other research can pin this surface. README.md and README.ja.md point here.
+The 0.3 freeze is lifted. General still has `0.3.x`; new kit work targets
+**[0.4.0](https://github.com/yamanori99/DistSSHKit.jl/milestone/7)**. Queue
+research could not wait on a frozen detached contract. README.md and
+README.ja.md point here.
 
 **Lands:** happy-path bugs (ordinary `~/` roots, default `drive` / `go` /
-`setup`); CI / Julia slots / Aqua / JETLS drift; a hook DistSSHKitQueue.jl cannot implement
-without the kit (Enhancement Issue first, then a small PR).
+`setup`); CI / Julia slots / Aqua / JETLS drift; the 0.4.0 milestone (queue-layer
+detached contract, public consumer helpers, announced `local` / `--local`
+removal). Enhancement Issue first, then a PR.
 
-**Does not land:** new job shapes, CLI areas, or scheduler-like flags; breaking
-API or behavior unless the current contract is unusable.
+**Does not land here:** new job shapes, a scheduler, or `schedule` inside Kit.
+That stays [DistSSHKitQueue.jl](https://github.com/yamanori99/DistSSHKitQueue.jl).
+Windows and GPU-package help stay on the horizon
+([Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26)).
 
 Chat: [Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions).
 Tracked bugs stay Issues. Direction for the kit as a whole is still
@@ -166,7 +170,8 @@ Not a calendar. Cut when [NEWS.md](NEWS.md) **Unreleased** has something General
 | Happy-path bug (ordinary `~/` roots, default `drive` / `go` / `setup`) | Yes, that patch promptly |
 | Opt-in flags, docs, CI, labels, internal cache | When someone needs it on General, **or** those items have sat in Unreleased for **two weeks** |
 
-During the [feature freeze](#feature-freeze), still cut happy-path bugs promptly. Do not use the two-week rule for opt-in flags, docs, or CI unless a General user or DistSSHKitQueue.jl needs them.
+Cut happy-path bugs promptly. Opt-in flags, docs, and CI follow the two-week
+rule above unless a General user or DistSSHKitQueue.jl needs them sooner.
 
 ### After a cut merges
 
