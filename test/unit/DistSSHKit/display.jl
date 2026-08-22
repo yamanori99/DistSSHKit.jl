@@ -369,6 +369,41 @@ using Test
             end
         end
 
+        @testset "parse_progress_line / kit_progress_latest" begin
+            @test DistSSHKit.parse_progress_line("not progress") === nothing
+            rec = DistSSHKit.parse_progress_line(
+                "progress: step kind=drive job=q-1 label=sync done=0 total=2 cur=1",
+            )
+            @test rec !== nothing
+            @test rec.event === :step
+            @test rec.kind === :drive
+            @test rec.job == "q-1"
+            @test rec.label == "sync"
+            @test rec.done == 0
+            @test rec.total == 2
+            @test rec.cur == 1
+            @test rec.status === nothing
+            @test rec.ok === nothing
+            done = DistSSHKit.parse_progress_line(
+                "progress: done kind=go ok=true done=2 total=2",
+            )
+            @test done.event === :done
+            @test done.ok === true
+            @test done.job === nothing
+            _with_tempdir() do tmp
+                a = joinpath(tmp, "a.log")
+                b = joinpath(tmp, "b.log")
+                write(a, "noise\nprogress: begin kind=drive job=old label=drive total=1\n")
+                write(b, "progress: done kind=drive job=new ok=true done=1 total=1\n")
+                latest = DistSSHKit.kit_progress_latest(tmp)
+                @test latest.event === :done
+                @test latest.job == "new"
+                @test DistSSHKit.kit_progress_latest(a).event === :begin
+                @test DistSSHKit.kit_progress_latest(tmp; job_id="old").job == "old"
+                @test DistSSHKit.kit_progress_latest(tmp; job_id="missing") === nothing
+            end
+        end
+
         @testset "kit_output_dir_lock!" begin
             _with_tempdir() do tmp
                 lock_path = joinpath(tmp, ".kit.lock")

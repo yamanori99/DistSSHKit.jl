@@ -189,10 +189,16 @@ progress: done kind=<go|drive> [job=<id>] ok=<true|false> done=<done> total=<ste
 `DISTSSHKIT_JOB_ID` is set. Fields are not quoted; labels are kit-chosen
 (phase names or slot labels) and do not contain spaces.
 
-Queue-style watchers can set `DISTSSHKIT_PROGRESS=1` on `execute!(…;
-detached=true)` children, tail the kit log, and treat `progress: done` as
-the structured finish line. Slot-level `go` artifacts (`go_manifest.txt`,
-`{slot}/go.exitcode`) remain the source of truth for per-slot exit codes.
+Queue-style watchers can tail the kit log and use
+[`parse_progress_line`](@ref) / [`kit_progress_latest`](@ref).
+`DISTSSHKIT_PROGRESS=1` is `--progress` verbosity on the child, not a watcher.
+Slot-level `go` artifacts (`go_manifest.txt`, `{slot}/go.exitcode`) remain
+the source of truth for per-slot exit codes.
+
+```@docs
+parse_progress_line
+kit_progress_latest
+```
 
 ### Helpers for a queue layer
 
