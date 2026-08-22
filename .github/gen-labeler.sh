@@ -127,6 +127,7 @@ EOF
   - changed-files:
       - any-glob-to-any-file:
           - "src/DistSSHKit.jl"
+          - ".gitattributes"
           - ".gitignore"
           - ".vscode/**"
           - "LICENSE"

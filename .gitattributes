@@ -1,0 +1,10 @@
+# Windows checkouts must not turn text files into CRLF: dash/sh on WSL treat
+# CR as part of tokens (`then\r` → "expecting then"), and other text tooling
+# has similar issues. `text=auto` still lets Git skip files it detects as
+# binary; known binaries are pinned below so a future extension without a
+# rule cannot regress via autodetection.
+* text=auto eol=lf
+
+*.png binary
+*.gif binary
+*.ico binary
