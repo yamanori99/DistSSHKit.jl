@@ -60,6 +60,16 @@ is an error. `collect_spec=false` skips collect and is orthogonal to `output_dir
 
 Collect after remote slots: **slot-overwrite** (rsync whole slot dir).
 
+## Concurrent runs
+
+Two `go` runs (or `go!` calls) against the same batch root fail fast: a
+`.kit.lock` file (this run's pid) is written under the batch root, and a
+second run against the same directory raises immediately instead of
+interleaving slot output. A lock left behind by a crashed/killed run is
+detected as stale (dead pid) and reclaimed automatically. Since the default
+batch root already includes a UTC timestamp, this mainly matters when you
+pass an explicit `--output-dir` / `output_dir=`.
+
 ## Hosts
 
 CLI tokens, `--hosts`, `--hosts-file`, and/or `DISTSSHKIT_HOSTS`. `parenthost:0` skips parent

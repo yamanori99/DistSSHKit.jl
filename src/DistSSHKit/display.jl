@@ -32,6 +32,67 @@ function display_path(path::AbstractString, anchor::AbstractString)::String
     return short_path(String(path))
 end
 
+"""Best-effort liveness check for an OS pid (signal 0; never raises)."""
+function _kit_pid_alive(pid::Integer)::Bool
+    pid <= 0 && return false
+    Sys.isunix() || return true # no cheap non-killing probe on Windows; assume alive
+    try
+        Base.Libc.errno(0)
+        rc = ccall(:kill, Cint, (Cint, Cint), pid, 0)
+        rc == 0 && return true
+        return Base.Libc.errno() == Cint(1) # EPERM: pid exists, owned by someone else — still alive
+    catch
+        return true
+    end
+end
+
+"""
+    kit_output_dir_lock!(output_dir) -> release::Function
+
+Best-effort exclusive lock on `output_dir` for the duration of one `go!` /
+`drive!` run, so a caller that (mistakenly) schedules two runs into the same
+`output_dir` concurrently fails fast instead of interleaving/overwriting
+results — the failure mode a queue would otherwise only notice by diffing
+corrupted output.
+
+Writes `output_dir/.kit.lock` (this process's pid, plain text). An existing
+lock naming a still-alive pid throws `ArgumentError` immediately. A lock
+naming a dead pid is stale and gets overwritten.
+
+Returns a zero-arg closure that releases the lock; call it in a `finally`.
+Removal only happens if the file still names this process's pid (avoids
+deleting a newer run's lock after, e.g., a slow filesystem or a bug).
+"""
+function kit_output_dir_lock!(output_dir::AbstractString)
+    mkpath(output_dir)
+    lock_path = joinpath(output_dir, ".kit.lock")
+    mypid = getpid()
+    if isfile(lock_path)
+        existing = try
+            strip(read(lock_path, String))
+        catch
+            ""
+        end
+        existing_pid = tryparse(Int, existing)
+        if existing_pid !== nothing && existing_pid != mypid && _kit_pid_alive(existing_pid)
+            throw(ArgumentError(
+                "another DistSSHKit run (pid $(existing_pid)) already holds " *
+                "$(lock_path) — refusing to run concurrently against the same output_dir",
+            ))
+        end
+    end
+    write(lock_path, string(mypid))
+    return () -> begin
+        try
+            if isfile(lock_path) && strip(read(lock_path, String)) == string(mypid)
+                rm(lock_path; force=true)
+            end
+        catch
+            # best-effort only
+        end
+    end
+end
+
 """Read `name = "..."` from `proj_dir/Project.toml`; return `nothing` if missing or unreadable."""
 function project_package_name(proj_dir::AbstractString)::Union{Nothing,String}
     path = joinpath(proj_dir, "Project.toml")
@@ -522,9 +583,16 @@ mutable struct KitProgressState
     items::Vector{KitProgressItem}
     drawn::Int
     cursor_hidden::Bool
+    job_id::Union{Nothing,String}
 end
 
-function KitProgressState(title::AbstractString, steps::Int, done::Int, label::AbstractString)
+function KitProgressState(
+    title::AbstractString,
+    steps::Int,
+    done::Int,
+    label::AbstractString;
+    job_id::Union{Nothing,AbstractString}=nothing,
+)
     return KitProgressState(
         String(title),
         steps,
@@ -538,8 +606,13 @@ function KitProgressState(title::AbstractString, steps::Int, done::Int, label::A
         KitProgressItem[],
         0,
         false,
+        job_id === nothing ? nothing : String(job_id),
     )
 end
+
+"""`"job=<id> "` when `state.job_id` is set, else `""` — prefix for `progress:` log lines."""
+_progress_job_prefix(state::KitProgressState)::String =
+    state.job_id === nothing ? "" : "job=$(state.job_id) "
 
 const KIT_PROGRESS = Ref{Union{Nothing,KitProgressState}}(nothing)
 const KIT_PROGRESS_LOCK = ReentrantLock()
@@ -797,7 +870,7 @@ end
 function _progress_log!(state::KitProgressState)
     cur = _progress_current(state)
     _kit_log_writeln(
-        "progress: $(state.label) ($(state.done)/$(state.steps) done, $(cur)/$(state.steps))",
+        "progress: $(_progress_job_prefix(state))$(state.label) ($(state.done)/$(state.steps) done, $(cur)/$(state.steps))",
     )
     return nothing
 end
@@ -807,16 +880,28 @@ Start a live status line for `--progress` mode.
 
 `steps` is the total number of phases or slots. Pass `items` for concurrent
 slots (header + one live line each). Outside `:progress`, updates state only.
+
+`job_id` (default: `ENV["DISTSSHKIT_JOB_ID"]` if set, else `nothing`) is
+prefixed to every `progress:` log line as `job=<id>`, letting an external
+watcher (e.g. a queue) that runs several `go`/`drive` jobs against a shared
+log tell them apart. Omitted entirely when unset — no format change for
+existing callers/logs.
 """
 function kit_progress_begin!(
     title::AbstractString;
     steps::Int,
     items::AbstractVector{<:AbstractString}=String[],
+    job_id::Union{Nothing,AbstractString}=nothing,
 )
     steps < 1 && throw(ArgumentError("kit_progress_begin!: steps must be ≥ 1"))
     prev = KIT_PROGRESS[]
     prev isa KitProgressState && _progress_stop_spinner!(prev)
-    state = KitProgressState(String(title), steps, 0, String(title))
+    resolved_job_id = job_id
+    if resolved_job_id === nothing
+        env_job_id = get(ENV, "DISTSSHKIT_JOB_ID", "")
+        isempty(env_job_id) || (resolved_job_id = env_job_id)
+    end
+    state = KitProgressState(String(title), steps, 0, String(title); job_id=resolved_job_id)
     for name in items
         push!(state.items, KitProgressItem(String(name), :running, 0))
     end
@@ -825,7 +910,7 @@ function kit_progress_begin!(
         if kit_output_progress()
             _progress_log!(state)
             isempty(state.items) || _kit_log_writeln(
-                "progress: items $(join((it.label for it in state.items), ","))",
+                "progress: $(_progress_job_prefix(state))items $(join((it.label for it in state.items), ","))",
             )
             _progress_draw!(state)
         end
@@ -900,7 +985,7 @@ function _kit_progress_apply_item!(
     end
     if kit_output_progress()
         _kit_log_writeln(
-            "progress: $(item.label) $status ($(state.done)/$(state.steps) done)",
+            "progress: $(_progress_job_prefix(state))$(item.label) $status ($(state.done)/$(state.steps) done)",
         )
         _progress_draw!(state)
     end

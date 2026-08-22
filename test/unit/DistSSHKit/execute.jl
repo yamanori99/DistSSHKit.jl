@@ -109,6 +109,42 @@ using Test
                     @test result.output_dir == kp.output_dir
                     @test result.log_dir === nothing
                     @test read(joinpath(result.output_dir, "parenthost", "args.txt"), String) == "8"
+                    @test isfile(joinpath(result.output_dir, "kit.pid"))
+                end
+            end
+        end
+    end
+
+    @testset ":go detached job_id" begin
+        _with_tempdir() do proj
+            write(joinpath(proj, "Project.toml"), "name = \"ExecuteGoJobId\"\n")
+            script = joinpath(proj, "job.jl")
+            write(script, """
+                out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", ".")
+                mkpath(out)
+                """)
+            mktemp() do _, out_io
+                mktemp() do _, err_io
+                    kp = DistSSHKit.execute!(
+                        :go,
+                        script,
+                        ["local:1"];
+                        detached=true,
+                        project=proj,
+                        verbosity=:progress,
+                        job_id="q-1",
+                        stdout=out_io,
+                        stderr=err_io,
+                    )
+                    result = wait(kp)
+                    @test result.ok
+                    pid_path = joinpath(result.output_dir, "kit.pid")
+                    @test isfile(pid_path)
+                    @test strip(read(pid_path, String)) != ""
+                    log_files = filter(f -> endswith(f, ".log"), readdir(result.output_dir))
+                    @test !isempty(log_files)
+                    log_body = read(joinpath(result.output_dir, first(log_files)), String)
+                    @test occursin("job=q-1", log_body)
                 end
             end
         end

@@ -122,14 +122,14 @@ function collect_drive_results!(
     if isempty(successful_hosts)
         writeln_both("")
         writeln_field("Results", display_path(results_dir, path_anchor))
-        return true
+        return true, DistSSHKit.HostRunResult[]
     end
 
     writeln_both("")
     if skip_collect
         writeln_both("Results saved locally (no remote collection needed).")
         writeln_field("Results", display_path(results_dir, path_anchor))
-        return true
+        return true, [DistSSHKit.HostRunResult(h, true) for h in unique(successful_hosts)]
     end
 
     collect_roots = distributed_collect_root_dirs(script_dir, DistSSHKit.canonical_local_path(PROJECT_ROOT))
@@ -228,6 +228,7 @@ function collect_drive_results!(
     end
 
     collect_ok = true
+    host_results = Vector{DistSSHKit.HostRunResult}(undef, n_hosts)
     for i in 1:n_hosts
         host = hosts_u[i]
         total_for_host = totals[i]
@@ -242,11 +243,12 @@ function collect_drive_results!(
             print_ok("✓ ($total_for_host file$(total_for_host == 1 ? "" : "s"))")
         end
         writeln_both("")
+        host_results[i] = DistSSHKit.HostRunResult(host, host_err === nothing, host_err)
     end
     coll_disp = join(
         (display_path(String(p), path_anchor) for p in collect_roots),
         ", ",
     )
     writeln_field("Results", coll_disp)
-    return collect_ok
+    return collect_ok, host_results
 end

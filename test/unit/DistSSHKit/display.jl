@@ -273,6 +273,91 @@ using Test
                     @test DistSSHKit._progress_current(st) == 1
                 end
             end
+
+            @testset "job_id prefixes progress: lines" begin
+                _with_tempdir() do tmp
+                    with_kit_verbosity(:progress) do
+                        log_path = DistSSHKit.init_log_file(tmp; prefix="progress_job")
+                        redirect_stdout(devnull) do
+                            withenv("DISTSSHKIT_JOB_ID" => nothing) do
+                                DistSSHKit.kit_progress_begin!("drive"; steps=1, job_id="q-42")
+                                DistSSHKit.kit_progress_done!(; ok=true)
+                            end
+                        end
+                        DistSSHKit.close_log_file()
+                        body = read(log_path, String)
+                        @test occursin("progress: job=q-42 drive (0/1 done, 1/1)", body)
+                        @test occursin("progress: job=q-42 drive (1/1 done, 1/1)", body)
+                    end
+                end
+
+                # ENV fallback when `job_id` keyword is omitted.
+                _with_tempdir() do tmp
+                    with_kit_verbosity(:progress) do
+                        log_path = DistSSHKit.init_log_file(tmp; prefix="progress_job_env")
+                        redirect_stdout(devnull) do
+                            withenv("DISTSSHKIT_JOB_ID" => "env-7") do
+                                DistSSHKit.kit_progress_begin!("go"; steps=1)
+                                DistSSHKit.kit_progress_done!(; ok=true)
+                            end
+                        end
+                        DistSSHKit.close_log_file()
+                        body = read(log_path, String)
+                        @test occursin("progress: job=env-7 go", body)
+                    end
+                end
+
+                # No job_id → format unchanged (no "job=" anywhere).
+                _with_tempdir() do tmp
+                    with_kit_verbosity(:progress) do
+                        log_path = DistSSHKit.init_log_file(tmp; prefix="progress_no_job")
+                        redirect_stdout(devnull) do
+                            withenv("DISTSSHKIT_JOB_ID" => nothing) do
+                                DistSSHKit.kit_progress_begin!("go"; steps=1)
+                                DistSSHKit.kit_progress_done!(; ok=true)
+                            end
+                        end
+                        DistSSHKit.close_log_file()
+                        body = read(log_path, String)
+                        @test !occursin("job=", body)
+                    end
+                end
+            end
+        end
+
+        @testset "kit_output_dir_lock!" begin
+            _with_tempdir() do tmp
+                lock_path = joinpath(tmp, ".kit.lock")
+
+                release = DistSSHKit.kit_output_dir_lock!(tmp)
+                @test isfile(lock_path)
+                @test strip(read(lock_path, String)) == string(getpid())
+
+                # Re-locking under the same pid (re-entrant within one run) does not throw.
+                release2 = DistSSHKit.kit_output_dir_lock!(tmp)
+                @test isfile(lock_path)
+
+                release2()
+                @test !isfile(lock_path)
+                release() # already-removed lock: no-op, must not throw
+            end
+
+            _with_tempdir() do tmp
+                lock_path = joinpath(tmp, ".kit.lock")
+                # A stale lock (dead pid) is reclaimed, not fatal.
+                write(lock_path, "999999999")
+                release = DistSSHKit.kit_output_dir_lock!(tmp)
+                @test strip(read(lock_path, String)) == string(getpid())
+                release()
+                @test !isfile(lock_path)
+            end
+
+            _with_tempdir() do tmp
+                lock_path = joinpath(tmp, ".kit.lock")
+                write(lock_path, "1") # pid 1 (init/launchd) is always alive
+                @test_throws ArgumentError DistSSHKit.kit_output_dir_lock!(tmp)
+                @test strip(read(lock_path, String)) == "1" # left untouched on failure
+            end
         end
 
         @testset "kit_spin! skips animation off verbose TTY" begin

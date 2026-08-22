@@ -16,6 +16,7 @@ const _EXECUTE_DETACHED_KW = Set{Symbol}((
     :skip_hash_check,
     :stdout,
     :stderr,
+    :job_id,
 ))
 const _EXECUTE_DETACHED_DRIVE_ONLY = (
     :log_dir,
@@ -99,11 +100,16 @@ verbatim to the chosen function.
 `detached=true` spawns `julia -m DistSSHKit go|drive` and returns a
 [`KitProcess`](@ref). Keywords are then an allow-list (unknown names throw):
 `output_dir`, `args`, `project`, `sync`, `julia`, `quiet`, `verbosity`, `yes`,
-`remote`, `hosts_file`, and drive-only `log_dir`, `enable_log`, `package`,
-`require_all_hosts`, `skip_hash_check`. `yes` must be `true` (the default):
-an unattended child cannot answer a prompt. Child stdio inherits the
-parent; pass `stdout` / `stderr` (`IO`) to capture. Parent
+`remote`, `hosts_file`, `job_id`, and drive-only `log_dir`, `enable_log`,
+`package`, `require_all_hosts`, `skip_hash_check`. `yes` must be `true` (the
+default): an unattended child cannot answer a prompt. Child stdio inherits
+the parent; pass `stdout` / `stderr` (`IO`) to capture. Parent
 `redirect_stdout` does not apply to the subprocess.
+
+`job_id`, if given, is passed to the child as `DISTSSHKIT_JOB_ID`, which
+prefixes every `progress:` log line with `job=<id>` — lets a caller running
+several jobs against a shared log (or multiplexing one `DISTSSHKIT_PROGRESS`
+watcher) tell them apart. Omitted entirely when unset.
 """
 function execute!(
     kind::Symbol,
@@ -229,6 +235,10 @@ function _execute_detached!(
     if remote !== nothing && !isempty(strip(String(remote)))
         extra["DISTRIBUTED_REMOTE_PROJECT_ROOT"] = canonical_local_path(String(remote))
     end
+    job_id = get(kwargs, :job_id, nothing)
+    if job_id !== nothing && !isempty(strip(String(job_id)))
+        extra["DISTSSHKIT_JOB_ID"] = String(strip(String(job_id)))
+    end
     env = _execute_detached_env(extra)
     julia_bin = resolve_controller_julia(julia)
     kit_proj = pkgdir(DistSSHKit)
@@ -256,7 +266,34 @@ function _execute_detached!(
             wait=false,
         )
     end
+    _write_kit_pid_file(getpid(proc), resolved_output, resolved_log)
     return KitProcess(proc; kind=kind, output_dir=resolved_output, log_dir=resolved_log)
+end
+
+"""
+Best-effort `kit.pid` drop in `output_dir` (and `log_dir` if distinct) holding
+the detached child's OS pid as plain text.
+
+Lets a caller that lost its in-memory [`KitProcess`](@ref) (e.g. a queue
+service restarted while a job was running) re-check liveness later via
+`kill(pid, 0)` / equivalent, without any other change to `execute!`. Never
+throws: a failure here must not fail the spawn that already happened.
+"""
+function _write_kit_pid_file(
+    pid::Integer,
+    output_dir::AbstractString,
+    log_dir::Union{Nothing,AbstractString},
+)
+    dirs = log_dir === nothing || log_dir == output_dir ? (output_dir,) : (output_dir, log_dir)
+    for d in dirs
+        try
+            mkpath(d) # child creates it too, but may not have raced ahead of us yet
+            write(joinpath(d, "kit.pid"), string(pid))
+        catch
+            # best-effort only
+        end
+    end
+    return nothing
 end
 
 function _execute_detached_dirs(

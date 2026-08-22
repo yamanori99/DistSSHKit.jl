@@ -34,6 +34,7 @@ export worker_plan_from_tokens
 export split_worker_token
 export is_local_host_name
 export DriveResult
+export HostRunResult
 export CollectResult
 export KitRunResult
 export KitProcess

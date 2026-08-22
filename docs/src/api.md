@@ -80,6 +80,10 @@ Or call [`pipeline!`](@ref) for optional sync → [`size!`](@ref) → [`drive!`]
 remotes too), `JULIA_DISTRIBUTED_EXE` (same as CLI `--julia`), and the usual
 quiet / progress / yes flags — same vocabulary as the CLI.
 
+`DriveResult.hosts` is one [`HostRunResult`](@ref) per host that joined as a
+worker (empty when no host-collection step ran) — the queue layer can use it
+to tell which hosts failed without re-parsing logs.
+
 ```@docs
 KitSession
 setup!
@@ -91,6 +95,7 @@ size!
 WorkerPlan
 drive!
 DriveResult
+HostRunResult
 collect!
 CollectResult
 ```
@@ -153,6 +158,29 @@ wait(execute!(:go, "job.jl", ["parenthost:1"]; detached=true, args=["8"]))
 execute!
 KitProcess
 ```
+
+### Helpers for a queue layer
+
+Beyond `execute!` itself, `go!` / `drive!` (in-process or detached) carry a
+few small, opt-in conveniences aimed at a queue running many jobs:
+
+- **Cancel / check liveness**: `kp.process` is a plain `Base.Process` — pass
+  it directly to `kill` / `process_running`. `execute!` adds nothing on top
+  of what `Base` already gives you here.
+- **Survive losing the handle**: a best-effort `kit.pid` file (the child's OS
+  pid, plain text) is dropped in `output_dir` (and `log_dir` if distinct) at
+  spawn time. If a caller loses its in-memory `KitProcess` (e.g. a queue
+  service restarts mid-job), read this file back and check liveness with the
+  pid directly (e.g. `kill(pid, 0)`-equivalent) instead of re-deriving it
+  from logs.
+- **Tell concurrent jobs apart in a shared log**: `job_id` (`execute!`
+  keyword, or `ENV["DISTSSHKIT_JOB_ID"]` for in-process `go!` / `drive!`)
+  prefixes every `progress:` log line with `job=<id>`.
+- **Fail fast on a double-scheduled `output_dir`**: `go!` / `drive!` /
+  `execute!` write a `.kit.lock` file (this run's pid) in the resolved
+  `output_dir`. A second run against the same directory raises
+  `ArgumentError` immediately instead of interleaving results; a lock left
+  by a dead pid is reclaimed automatically.
 
 ## Inside a driver — `worker_pmap`
 
