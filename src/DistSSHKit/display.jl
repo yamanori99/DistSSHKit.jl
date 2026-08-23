@@ -270,6 +270,8 @@ rule_line(width::Int=OUTPUT_WIDTH)::String = string(RULE_CHAR)^width
 # Log file
 
 const LOG_FILE_HANDLE = Ref{Union{IO,Nothing}}(nothing)
+"""`output_dir/kit.progress` path, or `nothing`. Written even when `--no-log`."""
+const KIT_PROGRESS_SIDECAR = Ref{Union{Nothing,String}}(nothing)
 const KIT_OUTPUT_QUIET = Ref(false)
 const KIT_NONINTERACTIVE = Ref(false)
 """`:verbose` | `:progress` | `:quiet` — see [`kit_verbosity`](@ref)."""
@@ -312,6 +314,32 @@ function _kit_log_writeln(msg::AbstractString="")
     h === nothing && return
     println(h, msg)
     flush(h)
+    return nothing
+end
+
+"""Point `progress:` sidecar writes at `dir/kit.progress` (`nothing` clears)."""
+function _set_kit_progress_sidecar!(dir::Union{Nothing,AbstractString})
+    if dir === nothing
+        KIT_PROGRESS_SIDECAR[] = nothing
+        return nothing
+    end
+    d = strip(String(dir))
+    isempty(d) && (KIT_PROGRESS_SIDECAR[] = nothing; return nothing)
+    path = joinpath(canonical_local_path(d), "kit.progress")
+    mkpath(dirname(path))
+    KIT_PROGRESS_SIDECAR[] = path
+    return nothing
+end
+
+function _kit_progress_sidecar_writeln(msg::AbstractString)
+    path = KIT_PROGRESS_SIDECAR[]
+    path === nothing && return
+    try
+        open(path, "a") do io
+            println(io, msg)
+        end
+    catch
+    end
     return nothing
 end
 
@@ -928,7 +956,9 @@ function _progress_log_line(state::KitProgressState, event::AbstractString, kvs:
 end
 
 function _progress_log_writeln(state::KitProgressState, event::AbstractString, kvs::Pair...)
-    _kit_log_writeln(_progress_log_line(state, event, kvs...))
+    line = _progress_log_line(state, event, kvs...)
+    _kit_log_writeln(line)
+    _kit_progress_sidecar_writeln(line)
     return nothing
 end
 
@@ -1041,8 +1071,9 @@ end
 """
     kit_progress_latest(log_dir_or_file; job_id=nothing) -> Union{Nothing,NamedTuple}
 
-Last [`parse_progress_line`](@ref) hit in a kit log file, or in `*.log` under
-a directory (files in `mtime` order). `job_id` keeps only `job=<id>` lines.
+Last [`parse_progress_line`](@ref) hit in a kit log file, `kit.progress`,
+or `*.log` under a directory (files in `mtime` order). `job_id` keeps only
+`job=<id>` lines.
 """
 function kit_progress_latest(
     log_dir_or_file::AbstractString;
@@ -1053,6 +1084,8 @@ function kit_progress_latest(
     if isfile(path)
         push!(files, path)
     elseif isdir(path)
+        sidecar = joinpath(path, "kit.progress")
+        isfile(sidecar) && push!(files, sidecar)
         for f in readdir(path; join=true)
             isfile(f) && endswith(f, ".log") && push!(files, f)
         end

@@ -5,6 +5,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- `progress:` also appends `kit.progress` next to `kit.pid`, so `--no-log`
+  still has lines for [`kit_progress_latest`](@ref) (`done` always; `begin` /
+  `step` / `item` in `--progress`).
 - [`execute_kwargs_from_parsed`](@ref) maps `parse_go_args` /
   `parse_drive_args` onto detached `execute!` keywords (verbosity, `--no-log`,
   `--package`, `mem_headroom`, …). Hosts stay in [`host_tokens`](@ref), not

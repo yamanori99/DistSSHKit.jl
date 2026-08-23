@@ -78,6 +78,7 @@ function with_kit_verbosity(f, v::Symbol)
     finally
         DistSSHKit.close_log_file()
         DistSSHKit.kit_progress_done!()
+        DistSSHKit._set_kit_progress_sidecar!(nothing)
         DistSSHKit.set_kit_verbosity!(prev)
     end
 end
