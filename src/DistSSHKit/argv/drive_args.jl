@@ -108,6 +108,8 @@ function parse_drive_args(args::Vector{String})
     skip_git_guard = false
     require_all_hosts = _env_flag("DISTSSHKIT_REQUIRE_ALL_HOSTS")
     require_all_hosts_cli = false
+    mem_headroom = DEFAULT_MEM_HEADROOM
+    master_gb = DEFAULT_MASTER_GB
     hosts = Tuple{String,Union{Int,Nothing}}[]
     script_path = nothing
     script_args = String[]
@@ -168,6 +170,12 @@ function parse_drive_args(args::Vector{String})
             require_all_hosts_cli = true
             require_all_hosts = true
             i += 1
+        elseif arg == "--mem-headroom" && i < length(args)
+            mem_headroom = parse(Float64, args[i+1])
+            i += 2
+        elseif arg == "--master-gb" && i < length(args)
+            master_gb = parse(Float64, args[i+1])
+            i += 2
         elseif arg == "--no-log"
             enable_log = false
             i += 1
@@ -234,7 +242,8 @@ function parse_drive_args(args::Vector{String})
                 show_version=cli_session.show_version,
                 cli_session=cli_session,
                 hint_surface=:cli,
-                mem_headroom=DEFAULT_MEM_HEADROOM,
+                mem_headroom=mem_headroom,
+                master_gb=master_gb,
             )
         elseif arg == "--help" || arg == "-h"
             return (
@@ -259,6 +268,7 @@ function parse_drive_args(args::Vector{String})
                 cli_session=cli_session,
                 hint_surface=:cli,
                 mem_headroom=DEFAULT_MEM_HEADROOM,
+                master_gb=DEFAULT_MASTER_GB,
             )
         elseif endswith(arg, ".jl")
             script_path = arg
@@ -326,7 +336,8 @@ function parse_drive_args(args::Vector{String})
         show_version=cli_session.show_version,
         cli_session=cli_session,
         hint_surface=:cli,
-        mem_headroom=DEFAULT_MEM_HEADROOM,
+        mem_headroom=mem_headroom,
+        master_gb=master_gb,
     )
 end
 
@@ -361,6 +372,8 @@ function show_drive_requirements(; io::IO=stdout)
         "  --require-all-hosts fail if a listed SSH host did not join or collect failed",
         "  --output-dir PATH   result root (DISTRIBUTED_OUTPUT_DIR)",
         "  --julia PATH        remote Julia",
+        "  --mem-headroom N    RAM fraction (default $(DEFAULT_MEM_HEADROOM); same as size)",
+        "  --master-gb N       master reserve (default $(DEFAULT_MASTER_GB); same as size)",
         "  --no-log            skip drive_*.log",
         "  $(KIT_QUIET_FLAG_HELP)",
         "  $(KIT_PROGRESS_FLAG_HELP)",

@@ -143,6 +143,11 @@ using Test
             @test r.sync_mode === nothing
             @test r.skip_hash_check == true
             @test r.mem_headroom == DistSSHKit.DEFAULT_MEM_HEADROOM
+            @test r.master_gb == DistSSHKit.DEFAULT_MASTER_GB
+        end
+        let r = parse_drive_args(["--mem-headroom", "0.5", "--master-gb", "0.2", "s.jl"])
+            @test r.mem_headroom == 0.5
+            @test r.master_gb == 0.2
         end
         let r = parse_drive_args(["--sync", "host1", "s.jl"])
             @test r.sync_mode === :sync
@@ -203,6 +208,8 @@ using Test
         @test occursin("parenthost:N", txt)
         @test !occursin("--parenthost", txt)
         @test !occursin("--local", txt)
+        @test occursin("--mem-headroom", txt)
+        @test occursin("--master-gb", txt)
         @test occursin("DISTSSHKIT_JOBS", txt)
         @test occursin("DISTSSHKIT_REQUIRE_ALL_HOSTS", txt)
         @test !occursin("required after `setup --rsync`", txt)

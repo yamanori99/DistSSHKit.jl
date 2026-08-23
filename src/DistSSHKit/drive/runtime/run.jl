@@ -233,6 +233,7 @@ function _run_drive_parsed_locked!(
                 !check_memory_capacity(
                     local_workers, hosts, default_workers;
                     mem_headroom=parsed.mem_headroom,
+                    master_gb=parsed.master_gb,
                 )
             return 1
         end

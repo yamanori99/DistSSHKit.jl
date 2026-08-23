@@ -26,6 +26,8 @@ driver contract, prefer [`go`](@ref Manual-go).
 | `--skip-git-guard` | Compat no-op (parity already off) |
 | `-w` / `--workers N` | Default worker count for hosts without `:N` (also `-w:N`) |
 | `--julia PATH` | Julia on SSH workers |
+| `--mem-headroom N` | RAM fraction for memory preflight (default `0.75`; same as [`size`](@ref Manual-size)) |
+| `--master-gb N` | GB reserved for the master on parenthost (default `0.4`; same as size) |
 | `--output-dir PATH` | **Result root** → `DISTRIBUTED_OUTPUT_DIR` (not go batch root) |
 | `--log-dir PATH` | Log directory override |
 | `--no-log` | Do not write `drive_<timestamp>.log` |

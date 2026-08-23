@@ -142,6 +142,11 @@ using Test
         @test DistSSHKit.execute_detached_accepts(:output_dir; kind=:drive)
         @test DistSSHKit.execute_detached_accepts(:log_dir; kind=:drive)
         @test !DistSSHKit.execute_detached_accepts(:log_dir; kind=:go)
+        @test DistSSHKit.execute_detached_accepts(:skip_hash_check; kind=:drive)
+        @test DistSSHKit.execute_detached_accepts(:mem_headroom; kind=:drive)
+        @test DistSSHKit.execute_detached_accepts(:master_gb; kind=:drive)
+        @test !DistSSHKit.execute_detached_accepts(:mem_headroom; kind=:go)
+        @test !DistSSHKit.execute_detached_accepts(:master_gb; kind=:go)
         @test !DistSSHKit.execute_detached_accepts(:plan; kind=:go)
         @test !DistSSHKit.execute_detached_accepts(:plan; kind=:drive)
         err = try
@@ -152,6 +157,45 @@ using Test
         end
         @test err isa ArgumentError
         @test occursin(":go or :drive", sprint(showerror, err))
+    end
+
+    @testset "detached drive argv mem_headroom" begin
+        argv = DistSSHKit._execute_detached_argv(
+            :drive, "job.jl", ["parenthost:1"], String[];
+            output_dir="/tmp/out",
+            log_dir=nothing,
+            sync=nothing,
+            julia=nothing,
+            quiet=true,
+            verbosity=nothing,
+            hosts_file=nothing,
+            enable_log=false,
+            package=nothing,
+            require_all_hosts=false,
+            skip_hash_check=true,
+            mem_headroom=0.5,
+            master_gb=0.2,
+        )
+        @test "--mem-headroom" in argv
+        @test "0.5" in argv
+        @test "--master-gb" in argv
+        @test "0.2" in argv
+        argv0 = DistSSHKit._execute_detached_argv(
+            :drive, "job.jl", ["parenthost:1"], String[];
+            output_dir="/tmp/out",
+            log_dir=nothing,
+            sync=nothing,
+            julia=nothing,
+            quiet=true,
+            verbosity=nothing,
+            hosts_file=nothing,
+            enable_log=false,
+            package=nothing,
+            require_all_hosts=false,
+            skip_hash_check=true,
+        )
+        @test !("--mem-headroom" in argv0)
+        @test !("--master-gb" in argv0)
     end
 
     @testset "kind not :go / :drive" begin
@@ -192,6 +236,15 @@ using Test
         end
         @test err3 isa ArgumentError
         @test occursin(":log_dir", sprint(showerror, err3))
+
+        err4 = try
+            DistSSHKit.execute!(:go, "job.jl", ["parenthost:1"]; detached=true, mem_headroom=0.5)
+            nothing
+        catch e
+            e
+        end
+        @test err4 isa ArgumentError
+        @test occursin(":mem_headroom", sprint(showerror, err4))
     end
 
     @testset ":go dispatch" begin

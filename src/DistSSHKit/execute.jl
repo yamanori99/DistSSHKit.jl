@@ -14,6 +14,8 @@ const _EXECUTE_DETACHED_KW = Set{Symbol}((
     :package,
     :require_all_hosts,
     :skip_hash_check,
+    :mem_headroom,
+    :master_gb,
     :stdout,
     :stderr,
     :job_id,
@@ -24,6 +26,8 @@ const _EXECUTE_DETACHED_DRIVE_ONLY = (
     :package,
     :require_all_hosts,
     :skip_hash_check,
+    :mem_headroom,
+    :master_gb,
 )
 const _EXECUTE_DETACHED_ENV_SKIP = Set((
     "JULIA_LOAD_PATH",
@@ -182,7 +186,7 @@ verbatim to the chosen function.
 [`KitProcess`](@ref). Keywords are then an allow-list (unknown names throw):
 `output_dir`, `args`, `project`, `sync`, `julia`, `quiet`, `verbosity`, `yes`,
 `remote`, `hosts_file`, `job_id`, and drive-only `log_dir`, `enable_log`,
-`package`, `require_all_hosts`, `skip_hash_check`. `yes` must be `true` (the
+`package`, `require_all_hosts`, `skip_hash_check`, `mem_headroom`, `master_gb`. `yes` must be `true` (the
 default): an unattended child cannot answer a prompt. Child stdio defaults to
 `kit.out` / `kit.err` in `output_dir`. Pass `stdout` / `stderr` (`IO`) to
 override; `stdout=stdout` inherits the parent. Parent `redirect_stdout` does
@@ -284,6 +288,8 @@ function _execute_detached!(
     package = get(kwargs, :package, nothing)
     require_all_hosts = get(kwargs, :require_all_hosts, false)
     skip_hash_check = get(kwargs, :skip_hash_check, true)
+    mem_headroom = get(kwargs, :mem_headroom, nothing)
+    master_gb = get(kwargs, :master_gb, nothing)
 
     proj = canonical_local_path(project)
     script_path = canonical_local_path(script)
@@ -313,6 +319,8 @@ function _execute_detached!(
         package=package,
         require_all_hosts=require_all_hosts,
         skip_hash_check=skip_hash_check,
+        mem_headroom=mem_headroom,
+        master_gb=master_gb,
     )
     extra = Dict{String,String}("DISTRIBUTED_PROJECT_ROOT" => proj)
     if remote !== nothing && !isempty(strip(String(remote)))
@@ -936,6 +944,8 @@ function _execute_detached_argv(
     package,
     require_all_hosts,
     skip_hash_check,
+    mem_headroom=nothing,
+    master_gb=nothing,
 )::Vector{String}
     argv = String[String(kind)]
     push!(argv, "-y")
@@ -976,6 +986,12 @@ function _execute_detached_argv(
         end
         require_all_hosts === true && push!(argv, "--require-all-hosts")
         skip_hash_check === false && push!(argv, "--require-git")
+        if mem_headroom !== nothing
+            push!(argv, "--mem-headroom", string(Float64(mem_headroom)))
+        end
+        if master_gb !== nothing
+            push!(argv, "--master-gb", string(Float64(master_gb)))
+        end
     end
     for tok in tokens
         push!(argv, String(tok))

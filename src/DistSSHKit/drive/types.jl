@@ -2,12 +2,12 @@
 
 """Default RAM fraction usable for workers in [`size!`](@ref) / `size` / drive preflight.
 
-Leave a quarter of RAM for the OS and other jobs. Drive preflight takes the
-same `mem_headroom` as [`size!`](@ref) (`pipeline!` / `drive!`); CLI `drive`
-uses this default.
+Leave a quarter of RAM for the OS and other jobs. Drive preflight uses the
+same `mem_headroom` / `master_gb` / CPU reserve as `size_worker_count`
+(`pipeline!` / `drive!` / CLI `drive --mem-headroom`).
 """
 const DEFAULT_MEM_HEADROOM = 0.75
-"""GB reserved for the master on parenthost sizing (not a drive CLI flag)."""
+"""GB reserved for the master on parenthost sizing (`size` / drive preflight)."""
 const DEFAULT_MASTER_GB = 0.4
 """RSS→GB: 10% padding on the measured set (unexported; no CLI flag)."""
 const WORKER_RSS_SAFETY_FACTOR = 1.1

@@ -253,7 +253,8 @@ Without `job_id`, only the child pid is signaled.
   should allocate instead of sharing it.
 - [`execute_detached_accepts`](@ref): whether detached `execute!` accepts
   that keyword for `:go` / `:drive` (named parameters plus the throw-path
-  allow-list). `:log_dir` is drive-only; `:plan` is never accepted.
+  allow-list). `:log_dir` / `:mem_headroom` / `:master_gb` are drive-only;
+  `:plan` is never accepted.
 - `job_id` (`execute!` keyword, or `ENV["DISTSSHKIT_JOB_ID"]` for in-process
   `go!` / `drive!`): `job=<id>` on every `progress:` line, and a cmdline
   mark on workers / go slots so [`terminate!`](@ref) can reap only this run.
