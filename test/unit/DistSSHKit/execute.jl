@@ -53,6 +53,20 @@ using Test
             @test got.exit_code == 42
             @test got.output_dir == d
             @test got.log_dir === nothing
+            @test got.hosts == DistSSHKit.HostRunResult[]
+            DistSSHKit._write_kit_result_file(DistSSHKit.KitRunResult(
+                false, :drive, d, nothing, "drive", 1,
+                [
+                    DistSSHKit.HostRunResult("h1", true),
+                    DistSSHKit.HostRunResult("h2", false, ErrorException("boom")),
+                ],
+            ))
+            with_hosts = DistSSHKit.kit_result_from_dir(d)
+            @test length(with_hosts.hosts) == 2
+            @test with_hosts.hosts[1] == DistSSHKit.HostRunResult("h1", true, nothing)
+            @test with_hosts.hosts[2].host == "h2"
+            @test with_hosts.hosts[2].ok === false
+            @test occursin("boom", with_hosts.hosts[2].error)
             write(joinpath(d, "kit.result"), "not toml {")
             @test DistSSHKit.kit_result_from_dir(d) === nothing
         end

@@ -194,20 +194,6 @@ function _optional_path(path::Union{Nothing,AbstractString})::Union{Nothing,Stri
 end
 
 """
-Shared run outcome for the queue layer (`ok`, `kind`, dirs, `failed_step`, `exit_code`).
-
-`kind` is `:go`, `:drive`, or `:pipeline`. Convert with [`kit_run_result`](@ref).
-"""
-struct KitRunResult
-    ok::Bool
-    kind::Symbol
-    output_dir::Union{Nothing,String}
-    log_dir::Union{Nothing,String}
-    failed_step::Union{Nothing,String}
-    exit_code::Int
-end
-
-"""
 Per-host outcome of the `drive` result-collection step.
 
 `ok` is `false` when collecting from `host` raised an error (nothing to
@@ -222,6 +208,43 @@ end
 
 HostRunResult(host::AbstractString, ok::Bool, error=nothing) =
     HostRunResult(String(host), ok, error === nothing ? nothing : sprint(showerror, error))
+
+"""
+Shared run outcome for the queue layer (`ok`, `kind`, dirs, `failed_step`,
+`exit_code`, `hosts`).
+
+`kind` is `:go`, `:drive`, or `:pipeline`. Convert with [`kit_run_result`](@ref).
+`hosts` is post-run collect ([`HostRunResult`](@ref)); empty for `go`, hung
+`wait`, or a `drive` that never collected.
+"""
+struct KitRunResult
+    ok::Bool
+    kind::Symbol
+    output_dir::Union{Nothing,String}
+    log_dir::Union{Nothing,String}
+    failed_step::Union{Nothing,String}
+    exit_code::Int
+    hosts::Vector{HostRunResult}
+    function KitRunResult(
+        ok::Bool,
+        kind::Symbol,
+        output_dir::Union{Nothing,String},
+        log_dir::Union{Nothing,String},
+        failed_step::Union{Nothing,String},
+        exit_code::Integer,
+        hosts::AbstractVector{HostRunResult}=HostRunResult[],
+    )
+        return new(
+            ok,
+            kind,
+            output_dir,
+            log_dir,
+            failed_step,
+            Int(exit_code),
+            collect(HostRunResult, hosts),
+        )
+    end
+end
 
 """
 Live per-host membership during a `drive` (not the post-run collect outcome).
@@ -451,6 +474,7 @@ function kit_run_result(result::DriveResult)::KitRunResult
         result.log_dir,
         result.failed_step,
         result.exit_code,
+        result.hosts,
     )
 end
 

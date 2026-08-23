@@ -76,12 +76,15 @@ function run_drive_parsed!(
     end
     release_output_dir_lock = DistSSHKit.kit_output_dir_lock!(DistSSHKit.resolve_drive_output_dir(script_dir))
     code = Cint(1)
+    hosts_acc = resolved_hosts === nothing ?
+        Ref{Vector{DistSSHKit.HostRunResult}}(DistSSHKit.HostRunResult[]) :
+        resolved_hosts
     try
         code = _run_drive_parsed_locked!(
             parsed, output_dir, script_path, script_dir, proj_dir, script_args,
             enable_log, log_dir, original_args, host_names, hosts, local_workers,
             default_workers, julia_exe, skip_hash_check, explicit_package,
-            require_all_hosts, resolved_output_dir, resolved_log_dir, resolved_hosts,
+            require_all_hosts, resolved_output_dir, resolved_log_dir, hosts_acc,
         )
         return code
     finally
@@ -94,6 +97,7 @@ function run_drive_parsed!(
             log,
             code == 0 ? nothing : "drive",
             Int(code),
+            hosts_acc[],
         ))
         DistSSHKit._remove_kit_pid_file(
             getpid(),
