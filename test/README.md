@@ -79,6 +79,7 @@ Coverage (`DISTSSHKIT_CODE_COVERAGE=1` on `up.sh --e2e`) writes `.cov` on the co
 | Check | Fact |
 | --- | --- |
 | Julia resolve | controller and remotes share major.minor |
+| `run_on_host` | `--version` exit 0; `-e exit(3)` is `.exitcode == 3` (no throw) |
 | `--delete` | remote `Project.toml` is gone |
 | `--rsync` | remote `Project.toml` exists |
 | `--instantiate` / `--check` | job deps; Julia version (no `--ignore-julia-version`) |

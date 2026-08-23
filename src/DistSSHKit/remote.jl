@@ -402,6 +402,9 @@ with `argv` (Julia flags / script / args). Does not replace
 `julia=nothing` / `"auto"` with `detect=true` probes candidates on the remote.
 `detect=false` requires an explicit path. `tty=true` adds `ssh -t`.
 Process-local detect cache is not used (a new CLI process never hits it).
+
+SSH is `ignorestatus`: a non-zero remote or ssh exit returns the `Process`
+(`.exitcode`) instead of throwing `ProcessFailedException`.
 """
 function run_on_host(
     host::AbstractString,
@@ -419,7 +422,7 @@ function run_on_host(
     # `-t` is ssh-only (not in `ssh_opts`, which scp also uses).
     tty && push!(ssh, "-t")
     push!(ssh, h, inner)
-    return run(Cmd(ssh); wait=wait)
+    return run(ignorestatus(Cmd(ssh)); wait=wait)
 end
 
 # Process-local auto-detect results (`nothing` included). Same host in

@@ -236,6 +236,10 @@ using Test
             e
         end
         @test err2 isa ArgumentError
+        let p = DistSSHKit.run_on_host("no-such-host.invalid", ["--version"])
+            @test p isa Base.Process
+            @test p.exitcode != 0
+        end
     end
 
     @test !DistSSHKit._remote_ssh_ok("no-such-host.invalid")
