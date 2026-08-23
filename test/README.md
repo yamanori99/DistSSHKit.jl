@@ -95,7 +95,7 @@ Coverage (`DISTSSHKIT_CODE_COVERAGE=1` on `up.sh --e2e`) writes `.cov` on the co
 | `size` | both hosts, `GB`, `Total:` |
 | `square_echo` | remote compute; stdout has `param^2:` |
 | `square_file` | local CSV exists; absent on the remote |
-| `worker_*.txt` | on the worker; `ssh cat`; `--collect-missing` restores; skip keeps junk; `--collect-overwrite` replaces |
+| `worker_*.txt` | on the worker; `ssh cat`; `--collect-missing` restores; skip keeps junk; `--collect-overwrite` replaces; `kit.result` `hosts` names both remotes |
 | worker `error(...)` | non-zero |
 | mixed `parenthost:1` + two remotes | smoke `nw=3` |
 | in-process `drive!` twice (reentrant) | each call `nw=2`; no worker leak (#144) |
