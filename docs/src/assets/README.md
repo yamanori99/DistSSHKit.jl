@@ -33,6 +33,13 @@ Naming: **`static`** = end-state still; **`dynamic`** = SMIL / GIF motion.
 | Logo dark | `logo/logo-dark-dynamic.svg` | `logo/logo-dark-static.svg` |
 | Social preview | `social/social-preview-dynamic.svg`, `.gif` | `social/social-preview-static.svg`, `.png` |
 
+Derived dark SVGs prefix every `id` / `href="#…"` / `url(#…)` with `dark-`
+so light and dark copies can sit in one HTML document.
+
+GitHub README / README.ja footers use `#gh-light-mode-only` /
+`#gh-dark-mode-only` on `logo-static.svg` / `logo-dark-static.svg`.
+(`<picture>` is ignored there and would keep the light mark.)
+
 Documenter discovers bare `logo.svg` / `logo-dark.svg` at this directory’s top level only.
 `bake.jl` makes **symlinks** into `logo/` — do not edit the bare names.
 
@@ -43,7 +50,7 @@ Documenter discovers bare `logo.svg` / `logo-dark.svg` at this directory’s top
 | `logo/logo-dynamic.svg` | Dynamic logo (SMIL) |
 | `logo/logo-static.svg` | Static geometry (feeds static PNG + social-static) |
 | `diagram/topology.svg` | Architecture diagram (English light; bake writes ja / dark SVGs + PNGs) |
-| `custom.css` | Sidebar logo size; topology diagram layout |
+| `custom.css` | Sidebar logo size; topology layout; restore `.docs-dark-only` on dark themes |
 
 ## Bake (`bake.jl`, Julia only — no Python)
 

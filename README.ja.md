@@ -251,6 +251,7 @@ DistSSHKit はそれを改変して使っている。
 
 <!-- markdownlint-disable MD033 -->
 <p align="center">
-  <img src="docs/src/assets/logo/logo-static.svg" width="180" alt="DistSSHKit.jl logo"/>
+  <img src="docs/src/assets/logo/logo-static.svg#gh-light-mode-only" width="180" alt="DistSSHKit.jl logo"/>
+  <img src="docs/src/assets/logo/logo-dark-static.svg#gh-dark-mode-only" width="180" alt="DistSSHKit.jl logo"/>
 </p>
 <!-- markdownlint-enable MD033 -->

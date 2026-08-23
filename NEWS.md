@@ -5,6 +5,11 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- Dark-theme Documenter / Catppuccin shows `logo-dark.svg` and the topology
+  dark SVGs (`custom.css` restores `.docs-dark-only`). The dark mark uses
+  white hollow chassis (same cutout as light); bake prefixes dark SVG `id`s.
+  README / README.ja footers use `#gh-light-mode-only` / `#gh-dark-mode-only`
+  (GitHub README ignores `<picture>` and would keep the light mark).
 - `progress:` also appends `kit.progress` next to `kit.pid`, so `--no-log`
   still has lines for [`kit_progress_latest`](@ref) (`done` always; `begin` /
   `step` / `item` in `--progress`).
