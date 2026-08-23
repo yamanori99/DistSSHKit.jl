@@ -238,7 +238,9 @@ using Test
             e
         end
         @test err2 isa ArgumentError
-        let p = DistSSHKit.run_on_host("no-such-host.invalid", ["--version"])
+        let p = redirect_stderr(devnull) do
+                DistSSHKit.run_on_host("no-such-host.invalid", ["--version"])
+            end
             @test p isa Base.Process
             @test p.exitcode != 0
         end
