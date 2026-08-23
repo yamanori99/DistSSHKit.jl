@@ -61,6 +61,7 @@ export execute!
 export allocate_output_dir
 export execute_detached_accepts
 export kit_pid_alive
+export kit_pid_file_running
 export terminate!
 export terminate_run!
 export kit_result_from_dir

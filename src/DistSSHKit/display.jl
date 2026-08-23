@@ -39,8 +39,9 @@ Best-effort liveness check for an OS pid (signal 0; never raises).
 
 On Unix, `kill(pid, 0)`: alive if the call succeeds or the pid exists but is
 not owned by us (`EPERM`). `pid <= 0` is false. Windows has no cheap non-killing
-probe here, so the result is `true` (same for unexpected errors). A reused pid
-can still look alive; that is [#183](https://github.com/yamanori99/DistSSHKit.jl/issues/183), not this probe.
+probe here, so the result is `true` (same for unexpected errors). For a leftover
+`kit.pid` after SIGKILL, use [`kit_pid_file_running`](@ref) (pid plus start
+key) so a reused number does not look like this child.
 """
 function kit_pid_alive(pid::Integer)::Bool
     pid <= 0 && return false
@@ -52,6 +53,43 @@ function kit_pid_alive(pid::Integer)::Bool
         return Base.Libc.errno() == Cint(1) # EPERM: pid exists, owned by someone else — still alive
     catch
         return true
+    end
+end
+
+"""Linux `/proc/<pid>/stat` starttime field (clock ticks since boot), or `nothing`."""
+function _linux_proc_start_key(pid::Integer)::Union{Nothing,String}
+    path = string("/proc/", Int(pid), "/stat")
+    isfile(path) || return nothing
+    s = try
+        read(path, String)
+    catch
+        return nothing
+    end
+    r = findlast(')', s)
+    r === nothing && return nothing
+    parts = split(SubString(s, Int(r) + 1))
+    length(parts) < 20 && return nothing
+    key = String(parts[20])
+    return isempty(key) ? nothing : key
+end
+
+"""
+    kit_process_start_key(pid) -> Union{Nothing,String}
+
+Identity of this OS pid's start (Linux `/proc` starttime, else `ps -o lstart=`).
+`nothing` if the pid is gone, unreadable, or Windows.
+"""
+function kit_process_start_key(pid::Integer)::Union{Nothing,String}
+    pid <= 0 && return nothing
+    Sys.iswindows() && return nothing
+    if isfile(string("/proc/", Int(pid), "/stat"))
+        return _linux_proc_start_key(pid)
+    end
+    try
+        s = strip(read(`ps -o lstart= -p $(Int(pid))`, String))
+        return isempty(s) ? nothing : s
+    catch
+        return nothing
     end
 end
 

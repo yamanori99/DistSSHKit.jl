@@ -14,6 +14,28 @@ using Test
             @test isfile(pid_path)
             DistSSHKit._remove_kit_pid_file(4242, d, nothing)
             @test !isfile(pid_path)
+            write(pid_path, "4242\nold-start\n")
+            DistSSHKit._remove_kit_pid_file(4242, d, nothing)
+            @test !isfile(pid_path)
+        end
+    end
+
+    @testset "kit_pid_file_running" begin
+        _with_tempdir() do d
+            @test DistSSHKit.kit_pid_file_running(d) === false
+            me = getpid()
+            write(joinpath(d, "kit.pid"), string(me, '\n'))
+            @test DistSSHKit.kit_pid_file_running(d) === true
+            st = DistSSHKit.kit_process_start_key(me)
+            if st !== nothing
+                write(joinpath(d, "kit.pid"), string(me, '\n', st, '\n'))
+                @test DistSSHKit.kit_pid_file_running(d) === true
+                write(joinpath(d, "kit.pid"), string(me, '\n', "not-this-start", '\n'))
+                @test DistSSHKit.kit_pid_file_running(d) === false
+            end
+            rec = DistSSHKit._parse_kit_pid_text("7\nboot\n")
+            @test rec.pid == 7
+            @test rec.start == "boot"
         end
     end
 
@@ -213,7 +235,9 @@ using Test
                             sleep(0.05)
                         end
                         if isfile(pid_path)
-                            @test strip(read(pid_path, String)) == string(getpid(kp.process))
+                            rec = DistSSHKit._read_kit_pid_record(kp.output_dir)
+                            @test rec !== nothing
+                            @test rec.pid == getpid(kp.process)
                         end
                     end
                     result = wait(kp)

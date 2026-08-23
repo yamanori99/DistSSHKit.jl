@@ -6,6 +6,7 @@ using Test
         @test DistSSHKit.kit_pid_alive(-1) === false
         if Sys.isunix()
             @test DistSSHKit.kit_pid_alive(getpid()) === true
+            @test DistSSHKit.kit_process_start_key(getpid()) isa String
         end
     end
 

@@ -5,6 +5,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- `kit.pid` stores a start key under the pid. `kit_pid_file_running` is true
+  only when the pid is alive and the start key still matches (SIGKILL leftover
+  plus pid reuse). `kit_pid_alive` stays `kill(pid, 0)`.
 - `run_on_host(host, argv; julia, detect, tty)` detect-and-execs remote Julia
   in one SSH connection (same candidates as `detect_julia_path`). Does not
   replace `resolve_remote_julia`. Detect results are not persisted across

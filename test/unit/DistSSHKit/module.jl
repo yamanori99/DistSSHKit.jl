@@ -24,6 +24,7 @@ using Test
     @test :allocate_output_dir in ns
     @test :parse_progress_line in ns && :kit_progress_latest in ns
     @test :execute_detached_accepts in ns && :kit_pid_alive in ns
+    @test :kit_pid_file_running in ns
     @test :terminate! in ns && :terminate_run! in ns
     @test :parse_go_args in ns && :parse_drive_args in ns
     @test :show_go_usage in ns && :show_drive_requirements in ns
