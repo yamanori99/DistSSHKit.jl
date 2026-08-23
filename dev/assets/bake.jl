@@ -44,22 +44,21 @@ const DIAGRAM_JA = (
 )
 
 # Light (source) → dark surface. Master stays a strong blue so it still reads as hub.
+# Cluster/box fills sit above typical GitHub / Documenter dark chrome (#0d1117 / #1f2424).
 const DIAGRAM_DARK = (
     ".box { fill: #ffffff; stroke: #475569;" =>
-        ".box { fill: #1e293b; stroke: #94a3b8;",
-    ".link { fill: none; stroke: #94a3b8;" =>
-        ".link { fill: none; stroke: #64748b;",
+        ".box { fill: #334155; stroke: #cbd5e1;",
     ".link-more { fill: none; stroke: #cbd5e1;" =>
-        ".link-more { fill: none; stroke: #475569;",
+        ".link-more { fill: none; stroke: #64748b;",
     ".cluster { fill: #f8fafc; stroke: #cbd5e1;" =>
-        ".cluster { fill: #0f172a; stroke: #475569;",
+        ".cluster { fill: #1e293b; stroke: #94a3b8;",
     ".master { fill: #1e40af; stroke: #1e3a8a;" =>
         ".master { fill: #3b82f6; stroke: #93c5fd;",
     ".t { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; fill: #0f172a;" =>
         ".t { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; fill: #f8fafc;",
     ".t-sub { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; fill: #475569;" =>
-        ".t-sub { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; fill: #94a3b8;",
-    ".halo { fill: #f8fafc; }" => ".halo { fill: #0f172a; }",
+        ".t-sub { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; fill: #cbd5e1;",
+    ".halo { fill: #f8fafc; }" => ".halo { fill: #1e293b; }",
 )
 
 const SOCIAL_W, SOCIAL_H = 1280, 640
@@ -119,7 +118,7 @@ function topology_dark(svg::AbstractString)
     for (light, dark) in DIAGRAM_DARK
         out = replace(out, light => dark)
     end
-    return out
+    return prefix_svg_ids(out, "dark-")
 end
 
 function readfile(rel::AbstractString)
@@ -135,14 +134,33 @@ function writefile(rel::AbstractString, text::AbstractString)
     println("wrote $rel ($(sizeof(text)) bytes)")
 end
 
-to_dark(svg::AbstractString) =
-    replace(
-        replace(
-            replace(svg, "stroke: #1a1d21;" => "stroke: #eef0f3;"),
-            "fill: #1a1d21;" => "fill: #eef0f3;",
-        ),
-        "#a0a5ab" => "#7a8088",  # idle remote ring (light → dark surface)
-    )
+"""Prefix `id=` / `href="#…"` / `url(#…)` so light+dark SVGs can share a DOM."""
+function prefix_svg_ids(svg::AbstractString, prefix::AbstractString)
+    ids = String[]
+    for m in eachmatch(r"\bid=\"([^\"]+)\"", svg)
+        push!(ids, String(m.captures[1]))
+    end
+    unique!(ids)
+    sort!(ids; by=length, rev=true)
+    out = svg
+    for id in ids
+        out = replace(out, "id=\"$(id)\"" => "id=\"$(prefix)$(id)\"")
+        out = replace(out, "href=\"#$(id)\"" => "href=\"#$(prefix)$(id)\"")
+        out = replace(out, "url(#$(id))" => "url(#$(prefix)$(id))")
+    end
+    return out
+end
+
+function to_dark(svg::AbstractString)
+    dark = replace(svg, "stroke: #1a1d21;" => "stroke: #ffffff;")
+    dark = replace(dark, "fill: #1a1d21;" => "fill: #ffffff;")
+    dark = replace(dark, "stroke-width: 3.5;\n        stroke-linecap: round;\n        stroke-linejoin: round;" =>
+        "stroke-width: 4;\n        stroke-linecap: round;\n        stroke-linejoin: round;")
+    dark = replace(dark, ".link {\n        stroke: #ffffff;\n        stroke-width: 1.4;" =>
+        ".link {\n        stroke: #ffffff;\n        stroke-width: 2;")
+    dark = replace(dark, "#a0a5ab" => "#94a3b8")  # idle remote ring (legacy)
+    return prefix_svg_ids(dark, "dark-")
+end
 
 function strip_xml_decl(svg::AbstractString)
     startswith(svg, "<?xml") || return svg
