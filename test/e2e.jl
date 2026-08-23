@@ -564,7 +564,8 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             end
             _assert_ssh_e2e_api_ok(suite, "kit_pid_file", pid_ready, "path=$(pid_path)")
             @test pid_ready
-            detached_pid = pid_ready ? parse(Int, strip(read(pid_path, String))) : -1
+            rec = pid_ready ? DistSSHKit._read_kit_pid_record(log_dir) : nothing
+            detached_pid = rec === nothing ? -1 : rec.pid
             @test detached_pid == getpid(kp.process)
 
             ready = false

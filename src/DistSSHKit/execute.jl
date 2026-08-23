@@ -408,7 +408,15 @@ function _write_kit_pid_file(
     for d in dirs
         try
             mkpath(d) # child creates it too, but may not have raced ahead of us yet
-            write(joinpath(d, "kit.pid"), string(pid))
+            path = joinpath(d, "kit.pid")
+            body = sprint() do io
+                println(io, Int(pid))
+                st = kit_process_start_key(Int(pid))
+                if st !== nothing
+                    println(io, st)
+                end
+            end
+            write(path, body)
             if job_id !== nothing && !isempty(strip(String(job_id)))
                 write(joinpath(d, "kit.job"), strip(String(job_id)))
             end
@@ -607,6 +615,44 @@ function _read_kit_text_file(output_dir::AbstractString, name::AbstractString)::
     return isempty(s) ? nothing : s
 end
 
+function _parse_kit_pid_text(raw::AbstractString)
+    s = strip(String(raw))
+    isempty(s) && return nothing
+    lines = split(s, '\n')
+    pid = tryparse(Int, strip(String(lines[1])))
+    pid === nothing && return nothing
+    start = nothing
+    if length(lines) >= 2
+        st = strip(String(lines[2]))
+        !isempty(st) && (start = st)
+    end
+    return (pid=Int(pid), start=start)
+end
+
+function _read_kit_pid_record(output_dir::AbstractString)
+    raw = _read_kit_text_file(output_dir, "kit.pid")
+    raw === nothing && return nothing
+    return _parse_kit_pid_text(raw)
+end
+
+"""
+    kit_pid_file_running(output_dir) -> Bool
+
+Whether `kit.pid` names a still-running child of this run. Requires
+[`kit_pid_alive`](@ref) and, when a start key is in the file, a match with
+`kit_process_start_key`. A leftover after SIGKILL whose pid was reused
+is false. One-line (pid-only) files keep the old probe. Missing file is false.
+"""
+function kit_pid_file_running(output_dir::AbstractString)::Bool
+    rec = _read_kit_pid_record(output_dir)
+    rec === nothing && return false
+    kit_pid_alive(rec.pid) || return false
+    rec.start === nothing && return true
+    cur = kit_process_start_key(rec.pid)
+    cur === nothing && return false
+    return cur == rec.start
+end
+
 function _read_kit_hosts(output_dir::AbstractString)::Vector{String}
     raw = _read_kit_text_file(output_dir, "kit.hosts")
     raw === nothing && return String[]
@@ -656,11 +702,12 @@ function _remove_kit_pid_file(
 )
     output_dir === nothing && return nothing
     dirs = log_dir === nothing || log_dir == output_dir ? (output_dir,) : (output_dir, log_dir)
-    want = string(pid)
+    want = Int(pid)
     for d in dirs
         path = joinpath(d, "kit.pid")
         try
-            if isfile(path) && strip(read(path, String)) == want
+            rec = _parse_kit_pid_text(read(path, String))
+            if rec !== nothing && rec.pid == want
                 rm(path; force=true)
             end
         catch
@@ -975,9 +1022,10 @@ function terminate_run!(
         "execute! kind must be :go or :drive, got $(repr(kind))",
     ))
     d = canonical_local_path(output_dir)
-    pid_s = _read_kit_text_file(d, "kit.pid")
-    pid = pid_s === nothing ? nothing : tryparse(Int, pid_s)
-    pid !== nothing && _signal_and_wait_pid!(pid, grace)
+    rec = _read_kit_pid_record(d)
+    if rec !== nothing && kit_pid_file_running(d)
+        _signal_and_wait_pid!(rec.pid, grace)
+    end
     job_id = _read_kit_text_file(d, "kit.job")
     _reap_tagged_workers!(job_id, _read_kit_hosts(d))
     recovered = kit_result_from_dir(d)
