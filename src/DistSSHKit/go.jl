@@ -473,6 +473,22 @@ function _go_exec_slot!(
     return (run=run_res, collect=collect_res, collect_fail=collect_fail)
 end
 
+function _go_complete!(
+    result::GoResult,
+    batch_dir::AbstractString,
+    release_lock,
+    progress_ok::Bool,
+    anchor,
+)::GoResult
+    footer = progress_ok ? display_path(batch_dir, anchor) : nothing
+    kit_progress_done!(; ok=progress_ok, footer=footer)
+    close_log_file()
+    _write_kit_result_file(kit_run_result(result))
+    release_lock()
+    _remove_kit_pid_file(getpid(), batch_dir, nothing)
+    return result
+end
+
 """
     go!(script, workers...; kwargs...)
     go!(script, workers::AbstractVector; kwargs...)
@@ -565,7 +581,7 @@ function go!(
     init_log_file(batch_dir; prefix="go", path_anchor=anchor)
 
     progress_ok = false
-    go_result = Ref{Union{Nothing,GoResult}}(nothing)
+    completed = false
     try
         apply_session_env!(
             KitSession(
@@ -605,17 +621,22 @@ function go!(
             )
             sync_result = sync!(sync_session; mode=sync_mode)
             if !sync_result.ok
-                r = GoResult(
+                completed = true
+                return _go_complete!(
+                    GoResult(
+                        false,
+                        sync_result,
+                        nothing,
+                        nothing,
+                        script_path,
+                        batch_dir;
+                        failed_step="sync",
+                    ),
+                    batch_dir,
+                    release_lock,
                     false,
-                    sync_result,
-                    nothing,
-                    nothing,
-                    script_path,
-                    batch_dir;
-                    failed_step="sync",
+                    anchor,
                 )
-                go_result[] = r
-                return r
             end
             # Sync may refresh Manifest without installing; re-check deps before run.
             _go_assert_remotes_ready!(remote_hosts, sess_rr)
@@ -698,48 +719,61 @@ function go!(
         end
 
         if any_run_fail[]
-            r = GoResult(
+            completed = true
+            return _go_complete!(
+                GoResult(
+                    false,
+                    sync_result,
+                    last_run[],
+                    last_collect[],
+                    script_path,
+                    batch_dir;
+                    failed_step="run",
+                ),
+                batch_dir,
+                release_lock,
                 false,
-                sync_result,
-                last_run[],
-                last_collect[],
-                script_path,
-                batch_dir;
-                failed_step="run",
+                anchor,
             )
-            go_result[] = r
-            return r
         end
         if any_collect_fail[]
-            r = GoResult(
+            completed = true
+            return _go_complete!(
+                GoResult(
+                    false,
+                    sync_result,
+                    last_run[],
+                    last_collect[],
+                    script_path,
+                    batch_dir;
+                    failed_step="collect",
+                ),
+                batch_dir,
+                release_lock,
                 false,
-                sync_result,
-                last_run[],
-                last_collect[],
-                script_path,
-                batch_dir;
-                failed_step="collect",
+                anchor,
             )
-            go_result[] = r
-            return r
         end
 
         writeln_both("")
         writeln_both("Results: $(display_path(batch_dir, anchor))")
         progress_ok = true
-        r = GoResult(true, sync_result, last_run[], last_collect[], script_path, batch_dir)
-        go_result[] = r
-        return r
+        completed = true
+        return _go_complete!(
+            GoResult(true, sync_result, last_run[], last_collect[], script_path, batch_dir),
+            batch_dir,
+            release_lock,
+            true,
+            anchor,
+        )
     finally
-        footer = progress_ok ? display_path(batch_dir, anchor) : nothing
-        kit_progress_done!(; ok=progress_ok, footer=footer)
-        close_log_file()
-        r = go_result[]
-        if r isa GoResult
-            _write_kit_result_file(kit_run_result(r))
+        if !completed
+            footer = progress_ok ? display_path(batch_dir, anchor) : nothing
+            kit_progress_done!(; ok=progress_ok, footer=footer)
+            close_log_file()
+            release_lock()
+            _remove_kit_pid_file(getpid(), batch_dir, nothing)
         end
-        release_lock()
-        _remove_kit_pid_file(getpid(), batch_dir, nothing)
     end
 end
 

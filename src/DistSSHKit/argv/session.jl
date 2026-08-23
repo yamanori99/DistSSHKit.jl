@@ -313,29 +313,50 @@ function split_worker_token(spec::AbstractString)::Tuple{String,Union{Nothing,In
 end
 
 """
-    host_tokens(parsed) -> Vector{String}
+    host_tokens(hosts::AbstractVector{<:AbstractString}) -> Vector{String}
+    host_tokens(hosts::AbstractVector{Tuple{String,Union{Int,Nothing}}}; local_workers=0)
+    host_tokens(parsed; kind::Symbol) -> Vector{String}
 
-Rebuild CLI host tokens from [`parse_go_args`](@ref) / [`parse_drive_args`](@ref)
-for [`execute!`](@ref). Bare hosts stay bare (no invented `:1`). Drive
-`parenthost:N` and `--local N` become `parenthost:N` when `local_workers > 0`.
-Go keeps the parser's token strings (including deprecated `local:N`).
+Rebuild CLI host tokens for [`execute!`](@ref).
+
+Go tokens are the parser strings (including deprecated `local:N`). Drive
+tuples plus `local_workers` emit `parenthost:N` then remotes; bare hosts
+stay bare (no invented `:1`). `kind` must be `:go` or `:drive` — there is
+no `isa` guess on `parsed.hosts`.
 """
-function host_tokens(parsed)::Vector{String}
-    hosts = parsed.hosts
-    if hosts isa AbstractVector{<:Tuple}
-        specs = String[]
-        lw = parsed.local_workers
-        lw > 0 && push!(specs, "parenthost:$lw")
-        for (host, n) in hosts
-            if n === nothing
-                push!(specs, String(host))
-            else
-                push!(specs, "$(host):$n")
-            end
-        end
-        return specs
-    end
+function host_tokens(hosts::AbstractVector{<:AbstractString})::Vector{String}
     return String[String(h) for h in hosts]
+end
+
+function host_tokens(
+    hosts::AbstractVector{Tuple{String,Union{Int,Nothing}}};
+    local_workers::Integer=0,
+)::Vector{String}
+    specs = String[]
+    lw = Int(local_workers)
+    lw > 0 && push!(specs, string("parenthost:", lw))
+    for pair in hosts
+        host = pair[1]
+        n = pair[2]
+        if n === nothing
+            push!(specs, host)
+        else
+            push!(specs, string(host, ":", n))
+        end
+    end
+    return specs
+end
+
+function host_tokens(parsed; kind::Symbol)::Vector{String}
+    if kind === :go
+        return host_tokens(parsed.hosts::AbstractVector{<:AbstractString})
+    elseif kind === :drive
+        return host_tokens(
+            parsed.hosts::AbstractVector{Tuple{String,Union{Int,Nothing}}};
+            local_workers=parsed.local_workers,
+        )
+    end
+    throw(ArgumentError("host_tokens: kind must be :go or :drive, got $(repr(kind))"))
 end
 
 """Non-comment host entries from a hosts file (may include `host:N` for drive/go)."""
