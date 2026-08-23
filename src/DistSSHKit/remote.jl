@@ -341,7 +341,17 @@ end
 
 """POSIX single-quote a word so remote `sh` does not parse metacharacters."""
 function _remote_sh_quote(word::AbstractString)::String
-    return "'" * replace(String(word), "'" => "'\\''") * "'"
+    return sprint() do io
+        print(io, '\'')
+        for c in String(word)
+            if c == '\''
+                print(io, "'\\''")
+            else
+                print(io, c)
+            end
+        end
+        print(io, '\'')
+    end
 end
 
 function _remote_argv_sh(argv::AbstractVector{<:AbstractString})::String

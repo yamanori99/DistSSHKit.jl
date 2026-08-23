@@ -219,6 +219,7 @@ using Test
         @test occursin("/opt/homebrew/bin/julia", sh)
         @test occursin("-e", sh)
         @test DistSSHKit._remote_argv_sh(["-e", "exit(3)"]) == "'-e' 'exit(3)'"
+        @test DistSSHKit._remote_sh_quote("a'b") == raw"'a'\''b'"
         expl = DistSSHKit._run_on_host_remote_sh(["--version"]; julia="/opt/julia", detect=false)
         @test occursin("/opt/julia", expl)
         @test occursin("exec", expl)
