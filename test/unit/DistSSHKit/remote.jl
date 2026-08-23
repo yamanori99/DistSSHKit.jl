@@ -87,6 +87,7 @@ using Test
         opts = DistSSHKit.build_ssh_opts()
         @test "-o" in opts
         @test "BatchMode=yes" in opts
+        @test "RequestTTY=no" in opts
         @test DistSSHKit.ssh_opts() == String.(opts)
     end
     withenv("DISTRIBUTED_SSH_OPTS" => "-o Foo=bar -o Baz=qux") do

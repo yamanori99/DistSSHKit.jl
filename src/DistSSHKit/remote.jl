@@ -6,6 +6,7 @@ function build_ssh_opts()
     if isempty(custom)
         return [
             "-o", "BatchMode=yes",
+            "-o", "RequestTTY=no",
             "-o", "ConnectTimeout=10",
             "-o", "StrictHostKeyChecking=accept-new",
             "-o", "ServerAliveInterval=60",
@@ -21,6 +22,11 @@ SSH argv flags for `ssh` / `scp` / rsync `-e`.
 
 Reads `DISTRIBUTED_SSH_OPTS` **live** (not frozen at package precompile). Prefer
 this over a `const` so E2E / ProxyJump overrides apply in the same process.
+
+A non-empty `DISTRIBUTED_SSH_OPTS` **replaces** the default vector (it is not
+merged). Callers that pass only `-F` must add `-o RequestTTY=no` themselves
+if they want the same non-interactive TTY policy. Use `-o RequestTTY=no`,
+not `ssh -T`: these flags are also passed to `scp` (`scp -T` is unrelated).
 """
 function ssh_opts()::Vector{String}
     return String[String(x) for x in build_ssh_opts()]
@@ -401,8 +407,9 @@ function run_on_host(
     isempty(h) && throw(ArgumentError("run_on_host: host must be non-empty"))
     inner = _run_on_host_remote_sh(argv; julia=julia, detect=detect)
     ssh = String["ssh"]
-    tty && push!(ssh, "-t")
     append!(ssh, ssh_opts())
+    # After `ssh_opts()` so `-t` wins over default `RequestTTY=no`.
+    tty && push!(ssh, "-t")
     push!(ssh, h, inner)
     return run(Cmd(ssh); wait=wait)
 end

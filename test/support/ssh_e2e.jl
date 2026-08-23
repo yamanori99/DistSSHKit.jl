@@ -34,19 +34,20 @@ function _ssh_e2e_env(;
     base = Dict{String,String}(
         "DISTSSHKIT_YES" => "1",
         "DISTSSHKIT_QUIET" => get(ENV, "DISTSSHKIT_QUIET", "1"),
-        "DISTRIBUTED_SSH_OPTS" => "-F $(g.ssh_config)",
+        "DISTRIBUTED_SSH_OPTS" => "-F $(g.ssh_config) -o RequestTTY=no",
         "DISTRIBUTED_REMOTE_PROJECT_ROOT" => String(remote_project),
         # setup --sync / git push use this; DistSSHKit's git_push_project! has no -F flag.
-        "GIT_SSH_COMMAND" => "ssh -F $(g.ssh_config)",
+        "GIT_SSH_COMMAND" => "ssh -F $(g.ssh_config) -o RequestTTY=no",
     )
     return merge(base, extra)
 end
 
-"""`ssh -F docker-ssh config HOST REMOTE_CMD`."""
+"""`ssh -F docker-ssh config HOST REMOTE_CMD` (same RequestTTY policy as kit defaults)."""
 function _ssh_e2e_ssh(host::AbstractString, remote_cmd::AbstractString)
     g = _docker_ssh_generated()
     return _run_subprocess(Cmd([
-        "ssh", "-F", g.ssh_config, String(host), String(remote_cmd),
+        "ssh", "-F", g.ssh_config, "-o", "RequestTTY=no",
+        String(host), String(remote_cmd),
     ]))
 end
 
@@ -431,7 +432,7 @@ function _ssh_e2e_seed_git_origin!(proj::AbstractString)
     end
     isempty(branch) && (branch = "master")
 
-    git_ssh = "ssh -F $(g.ssh_config)"
+    git_ssh = "ssh -F $(g.ssh_config) -o RequestTTY=no"
     push_cmd = setenv(
         `git -C $proj push -u origin HEAD:$(branch)`,
         Dict("GIT_SSH_COMMAND" => git_ssh),
@@ -447,7 +448,7 @@ function _ssh_e2e_git_push!(proj::AbstractString)
     proj = abspath(proj)
     push_cmd = setenv(
         `git -C $proj push origin HEAD`,
-        Dict("GIT_SSH_COMMAND" => "ssh -F $(g.ssh_config)"),
+        Dict("GIT_SSH_COMMAND" => "ssh -F $(g.ssh_config) -o RequestTTY=no"),
     )
     proc, out = _run_subprocess(push_cmd)
     _assert_proc_ok(proc, out; label="ssh-e2e git push")
