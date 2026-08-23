@@ -36,8 +36,9 @@ Naming: **`static`** = end-state still; **`dynamic`** = SMIL / GIF motion.
 Derived dark SVGs prefix every `id` / `href="#…"` / `url(#…)` with `dark-`
 so light and dark copies can sit in one HTML document.
 
-GitHub README / README.ja footers use `<picture>` (`logo-static.svg` /
-`logo-dark-static.svg`), same as the topology diagram.
+GitHub README / README.ja footers use `#gh-light-mode-only` /
+`#gh-dark-mode-only` on `logo-static.svg` / `logo-dark-static.svg`.
+(`<picture>` is ignored there and would keep the light mark.)
 
 Documenter discovers bare `logo.svg` / `logo-dark.svg` at this directory’s top level only.
 `bake.jl` makes **symlinks** into `logo/` — do not edit the bare names.

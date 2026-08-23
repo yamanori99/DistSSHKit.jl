@@ -268,9 +268,7 @@ DistSSHKit adapts them. Details: [LICENSE](LICENSE) and
 
 <!-- markdownlint-disable MD033 -->
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/src/assets/logo/logo-dark-static.svg">
-    <img src="docs/src/assets/logo/logo-static.svg" width="180" alt="DistSSHKit.jl logo"/>
-  </picture>
+  <img src="docs/src/assets/logo/logo-static.svg#gh-light-mode-only" width="180" alt="DistSSHKit.jl logo"/>
+  <img src="docs/src/assets/logo/logo-dark-static.svg#gh-dark-mode-only" width="180" alt="DistSSHKit.jl logo"/>
 </p>
 <!-- markdownlint-enable MD033 -->
