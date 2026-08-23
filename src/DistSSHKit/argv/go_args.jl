@@ -91,16 +91,24 @@ function parse_go_args(args::AbstractVector{<:AbstractString})
             sync = _go_set_sync!(sync, false)
         elseif arg == "--help" || arg == "-h"
             cli_consume!(c)
+            append!(hosts, host_tokens)
+            append_kit_host_sources!(hosts, cli_session; keep_counts=true)
+            if julia_exe === nothing
+                env_val = get(ENV, "JULIA_DISTRIBUTED_EXE", "auto")
+                julia_exe = env_val == "auto" ? nothing : env_val
+            elseif julia_exe == "auto"
+                julia_exe = nothing
+            end
             return (
                 help=true,
                 show_version=cli_session.show_version,
                 cli_session=cli_session,
-                script_path=nothing,
-                script_args=String[],
-                hosts=String[],
-                sync=nothing,
-                output_dir=nothing,
-                julia=nothing,
+                script_path=script_path,
+                script_args=script_args,
+                hosts=hosts,
+                sync=sync,
+                output_dir=output_dir,
+                julia=julia_exe,
             )
         elseif endswith(arg, ".jl")
             script_path = arg
