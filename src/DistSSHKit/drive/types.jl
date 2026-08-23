@@ -197,8 +197,9 @@ end
 Per-host outcome of the `drive` result-collection step.
 
 `ok` is `false` when collecting from `host` raised an error (nothing to
-collect is not an error). `error` is the error message
-(`sprint(showerror, e)`), or `nothing` on success.
+collect is not an error). `error` is the message string, or `nothing` on
+success. An `AbstractString` is stored as-is so `kit.result` round-trips;
+other values use `sprint(showerror, error)`.
 """
 struct HostRunResult
     host::String
@@ -206,8 +207,14 @@ struct HostRunResult
     error::Union{Nothing,String}
 end
 
+function _host_run_error_text(error)::Union{Nothing,String}
+    error === nothing && return nothing
+    error isa AbstractString && return String(error)
+    return sprint(showerror, error)
+end
+
 HostRunResult(host::AbstractString, ok::Bool, error=nothing) =
-    HostRunResult(String(host), ok, error === nothing ? nothing : sprint(showerror, error))
+    HostRunResult(String(host), ok, _host_run_error_text(error))
 
 """
 Shared run outcome for the queue layer (`ok`, `kind`, dirs, `failed_step`,

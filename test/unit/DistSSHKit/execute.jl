@@ -66,7 +66,8 @@ using Test
             @test with_hosts.hosts[1] == DistSSHKit.HostRunResult("h1", true, nothing)
             @test with_hosts.hosts[2].host == "h2"
             @test with_hosts.hosts[2].ok === false
-            @test occursin("boom", with_hosts.hosts[2].error)
+            @test with_hosts.hosts[2].error == "boom"
+            @test DistSSHKit.HostRunResult("h2", false, "boom").error == "boom"
             write(joinpath(d, "kit.result"), "not toml {")
             @test DistSSHKit.kit_result_from_dir(d) === nothing
         end

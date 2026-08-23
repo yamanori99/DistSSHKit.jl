@@ -5,6 +5,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- [`HostRunResult`](@ref) stores an error `String` as-is (`sprint(showerror)`
+  only for non-strings), so `kit.result` `hosts[].error` round-trips without
+  extra quotes.
 - `kit.result` stores drive post-run collect as `hosts` ([`HostRunResult`](@ref)
   rows: host, ok, optional error). [`kit_result_from_dir`](@ref) round-trips
   it. `go` omits the table (empty vector).
