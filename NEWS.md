@@ -9,6 +9,8 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
   `parse_drive_args` onto detached `execute!` keywords (verbosity, `--no-log`,
   `--package`, `mem_headroom`, …). Hosts stay in [`host_tokens`](@ref), not
   `hosts_file`. Detached drive forwards `:workers` as `--workers N`.
+- `parse_go_args` `--help` keeps already-parsed hosts, sync, `--output-dir`,
+  and `--julia` (same class as drive `--help` / `mem_headroom`).
 - Drive memory preflight uses `size_worker_count` (`mem_headroom`,
   `master_gb`, CPU reserve). CLI `drive --mem-headroom` / `--master-gb`
   match `size`. Detached `execute!(:drive; mem_headroom=, master_gb=)`
