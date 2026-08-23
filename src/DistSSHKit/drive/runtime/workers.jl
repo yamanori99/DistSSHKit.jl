@@ -58,6 +58,7 @@ function add_drive_workers!(
 )::Vector{String}
     empty!(RUNNER_WORKER_PROJECT_DIRS)
     empty!(RUNNER_WORKER_SCRIPT_PATHS)
+    DistSSHKit._clear_drive_host_worker_ids!()
     script_path = abspath(String(script_path))
     writeln_both("Adding workers..."; color=:light_black)
 
@@ -147,6 +148,10 @@ function add_drive_workers!(
                      env=DistSSHKit._drive_worker_env(),
                      exeflags=DistSSHKit._drive_worker_exeflags(remote_proj))
             _register_drive_workers!(before, remote_proj, remote_script)
+            DistSSHKit._register_drive_host_worker_ids!(
+                host_name,
+                sort!(Int[w for w in workers() if w ∉ before]),
+            )
             print_ok("✓")
             writeln_both("")
             push!(successful_hosts, host_name)

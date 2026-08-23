@@ -20,6 +20,7 @@ using Test
     @test :size! in ns && :go! in ns && :drive! in ns
     @test :KitRunResult in ns && :kit_run_result in ns && :report_run_errors in ns
     @test :execute! in ns && :KitProcess in ns && :kit_result_from_dir in ns
+    @test :drive_host_status in ns && :DriveHostStatus in ns
     @test :allocate_output_dir in ns
     @test :parse_progress_line in ns && :kit_progress_latest in ns
     @test :execute_detached_accepts in ns && :kit_pid_alive in ns

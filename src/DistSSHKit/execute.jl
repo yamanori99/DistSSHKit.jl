@@ -452,6 +452,150 @@ function _write_kit_hosts_file(
     return nothing
 end
 
+const DRIVE_HOST_WORKER_IDS = Dict{String,Vector{Int}}()
+const DRIVE_HOST_LAST_SEEN = Dict{String,Float64}()
+const DRIVE_HOST_STATUS_STOP = Ref(true)
+const DRIVE_HOST_STATUS_TASK = Ref{Union{Nothing,Task}}(nothing)
+
+function _clear_drive_host_worker_ids!()
+    empty!(DRIVE_HOST_WORKER_IDS)
+    empty!(DRIVE_HOST_LAST_SEEN)
+    return nothing
+end
+
+function _register_drive_host_worker_ids!(host::AbstractString, ids::AbstractVector{<:Integer})
+    DRIVE_HOST_WORKER_IDS[String(host)] = Int[Int(i) for i in ids]
+    return nothing
+end
+
+function _last_seen_for(host::AbstractString)::Union{Nothing,Float64}
+    h = String(host)
+    return haskey(DRIVE_HOST_LAST_SEEN, h) ? DRIVE_HOST_LAST_SEEN[h] : nothing
+end
+
+"""`:alive` if any registered worker id is still in `Distributed.workers()`, else `:left`."""
+function _probe_drive_host(ids::AbstractVector{<:Integer})::Symbol
+    live = workers()
+    for w in ids
+        wid = Int(w)
+        for x in live
+            x == wid && return :alive
+        end
+    end
+    return :left
+end
+
+function _write_kit_hosts_status_file(
+    rows::AbstractVector{DriveHostStatus},
+    output_dir::AbstractString,
+    log_dir::Union{Nothing,AbstractString},
+)
+    tables = Vector{Dict{String,Any}}()
+    for r in rows
+        d = Dict{String,Any}("host" => r.host, "state" => String(r.state))
+        r.last_seen !== nothing && (d["last_seen"] = r.last_seen)
+        push!(tables, d)
+    end
+    data = Dict{String,Any}("hosts" => tables)
+    for d in _kit_sidecar_dirs(output_dir, log_dir)
+        try
+            mkpath(d)
+            dest = joinpath(d, "kit.hosts.status")
+            tmp = dest * ".tmp"
+            open(tmp, "w") do io
+                TOML.print(io, data)
+            end
+            mv(tmp, dest; force=true)
+        catch
+        end
+    end
+    return nothing
+end
+
+function _write_joined_drive_host_status!(
+    hosts::AbstractVector{<:AbstractString},
+    output_dir::AbstractString,
+    log_dir::Union{Nothing,AbstractString},
+)
+    rows = DriveHostStatus[DriveHostStatus(String(h), :joined, nothing) for h in unique(hosts)]
+    isempty(rows) && return nothing
+    _write_kit_hosts_status_file(rows, output_dir, log_dir)
+    return nothing
+end
+
+function _refresh_drive_host_status_file!(
+    output_dir::AbstractString,
+    log_dir::Union{Nothing,AbstractString};
+    now::Float64=time(),
+)
+    rows = DriveHostStatus[]
+    for host in sort!(collect(keys(DRIVE_HOST_WORKER_IDS)))
+        probe = _probe_drive_host(DRIVE_HOST_WORKER_IDS[host])
+        if probe === :alive
+            DRIVE_HOST_LAST_SEEN[host] = now
+            push!(rows, DriveHostStatus(host, :alive, now))
+        else
+            push!(rows, DriveHostStatus(host, :left, _last_seen_for(host)))
+        end
+    end
+    isempty(rows) || _write_kit_hosts_status_file(rows, output_dir, log_dir)
+    return nothing
+end
+
+function _mark_drive_hosts_collect_pending!(
+    output_dir::AbstractString,
+    log_dir::Union{Nothing,AbstractString};
+    now::Float64=time(),
+)
+    rows = DriveHostStatus[]
+    for host in sort!(collect(keys(DRIVE_HOST_WORKER_IDS)))
+        probe = _probe_drive_host(DRIVE_HOST_WORKER_IDS[host])
+        if probe === :alive
+            DRIVE_HOST_LAST_SEEN[host] = now
+            push!(rows, DriveHostStatus(host, :collect_pending, now))
+        else
+            push!(rows, DriveHostStatus(host, :left, _last_seen_for(host)))
+        end
+    end
+    isempty(rows) || _write_kit_hosts_status_file(rows, output_dir, log_dir)
+    return nothing
+end
+
+function _stop_drive_host_status_monitor!()
+    DRIVE_HOST_STATUS_STOP[] = true
+    t = DRIVE_HOST_STATUS_TASK[]
+    DRIVE_HOST_STATUS_TASK[] = nothing
+    if t !== nothing && !istaskdone(t)
+        timedwait(() -> istaskdone(t), 2.0)
+    end
+    return nothing
+end
+
+function _start_drive_host_status_monitor!(
+    output_dir::AbstractString,
+    log_dir::Union{Nothing,AbstractString},
+)
+    isempty(DRIVE_HOST_WORKER_IDS) && return nothing
+    _stop_drive_host_status_monitor!()
+    DRIVE_HOST_STATUS_STOP[] = false
+    interval = _heartbeat_config().interval
+    _refresh_drive_host_status_file!(output_dir, log_dir)
+    DRIVE_HOST_STATUS_TASK[] = @async begin
+        while !DRIVE_HOST_STATUS_STOP[]
+            t0 = time()
+            while !DRIVE_HOST_STATUS_STOP[] && (time() - t0) < interval
+                sleep(0.2)
+            end
+            DRIVE_HOST_STATUS_STOP[] && break
+            try
+                _refresh_drive_host_status_file!(output_dir, log_dir)
+            catch
+            end
+        end
+    end
+    return nothing
+end
+
 function _read_kit_text_file(output_dir::AbstractString, name::AbstractString)::Union{Nothing,String}
     path = joinpath(String(output_dir), name)
     isfile(path) || return nothing
@@ -586,6 +730,47 @@ function kit_result_from_dir(output_dir::AbstractString)::Union{Nothing,KitRunRe
     catch
         return nothing
     end
+end
+
+"""
+    drive_host_status(output_dir) -> Vector{DriveHostStatus}
+    drive_host_status(kp::KitProcess) -> Vector{DriveHostStatus}
+
+Live per-host membership for a running (or recently collecting) `drive`.
+Reads `kit.hosts.status`. Empty when the file is missing (too early, a `go`
+run, or a hard death before join). This is not [`DriveResult.hosts`](@ref)
+(post-run collect) and is not stored in `kit.result`.
+"""
+function drive_host_status(output_dir::AbstractString)::Vector{DriveHostStatus}
+    path = joinpath(canonical_local_path(output_dir), "kit.hosts.status")
+    isfile(path) || return DriveHostStatus[]
+    try
+        raw = TOML.parsefile(path)
+        rows = get(raw, "hosts", nothing)
+        rows isa AbstractVector || return DriveHostStatus[]
+        out = DriveHostStatus[]
+        for item in rows
+            item isa AbstractDict || continue
+            host = get(item, "host", nothing)
+            host isa AbstractString || continue
+            st = get(item, "state", nothing)
+            st isa AbstractString || continue
+            state = Symbol(String(st))
+            (state === :joined || state === :alive || state === :left ||
+                state === :collect_pending) || continue
+            ls = get(item, "last_seen", nothing)
+            last = ls isa Real ? Float64(ls) : nothing
+            push!(out, DriveHostStatus(String(host), state, last))
+        end
+        return out
+    catch
+        return DriveHostStatus[]
+    end
+end
+
+function drive_host_status(kp::KitProcess)::Vector{DriveHostStatus}
+    kp.output_dir === nothing && return DriveHostStatus[]
+    return drive_host_status(kp.output_dir)
 end
 
 """

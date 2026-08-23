@@ -169,6 +169,8 @@ kit_pid_alive
 terminate!
 terminate_run!
 kit_result_from_dir
+drive_host_status
+DriveHostStatus
 ```
 
 ### Progress lines (external watchers)
@@ -217,9 +219,9 @@ yourself.
 #### Sidecar files (`output_dir`)
 
 On-disk contract for a detached (or in-process) run. `kit.pid`, `kit.job`,
-`kit.hosts`, and `kit.result` are also written under `log_dir` when that
-path is distinct. `.kit.lock` and `kit.out` / `kit.err` stay in
-`output_dir`. Kit logs (`go_*.log` / `drive_*.log`) are not this list.
+`kit.hosts`, `kit.hosts.status`, and `kit.result` are also written under
+`log_dir` when that path is distinct. `.kit.lock` and `kit.out` / `kit.err`
+stay in `output_dir`. Kit logs (`go_*.log` / `drive_*.log`) are not this list.
 
 | File | Meaning |
 | --- | --- |
@@ -227,7 +229,8 @@ path is distinct. `.kit.lock` and `kit.out` / `kit.err` stay in
 | `kit.pid` | Child OS pid (plain text). Probe with [`kit_pid_alive`](@ref); do not parse logs. Removed on a normal finish (`finally`, same pid-match as the lock; `wait` is backup). A leftover is SIGKILL / crash. A dead pid means not running; a reused pid can still look alive (starttime is not in the file). |
 | `kit.job` | `job_id` when set. [`terminate_run!`](@ref) uses it for tagged `pkill` after a restart. |
 | `kit.hosts` | Remote hosts this run started (one name per line), written after workers join. `terminate_run!` reaps these. |
-| `kit.result` | TOML with the same fields as [`KitRunResult`](@ref). Read with [`kit_result_from_dir`](@ref). Missing while running or after a hard death. Per-host collect is not in this file (live membership is a later API). |
+| `kit.hosts.status` | Live per-host membership during `drive` (`:joined` / `:alive` / `:left` / `:collect_pending`). Read with [`drive_host_status`](@ref). Not the post-run collect vector. |
+| `kit.result` | TOML with the same fields as [`KitRunResult`](@ref). Read with [`kit_result_from_dir`](@ref). Missing while running or after a hard death. Per-host collect is not in this file. |
 | `kit.out` / `kit.err` | Detached child stdio when `stdout` / `stderr` were omitted. |
 
 Together: running (`kit.pid` live, no result), finished (result present),
