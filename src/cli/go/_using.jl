@@ -1,7 +1,9 @@
 # go CLI: kit-internal names in `Main` (see `go.jl`).
 using .DistSSHKit:
     cli_project_root,
+    execute_kwargs_from_parsed,
     go!,
+    host_tokens,
     kit_noninteractive,
     parse_go_args,
     println_kit_version,

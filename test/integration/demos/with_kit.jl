@@ -18,7 +18,7 @@ using Test
             julia=julia,
             kit_root=kit_root,
             script=file_script,
-            script_args=["3"],
+            script_args=["--n", "3"],
             host_root=tmp,
         )
         _assert_proc_ok(file_proc, file_out; label="square_file demo")
@@ -32,20 +32,23 @@ using Test
         ], '\n') * '\n'
         @test read(file_csv, String) == expected
         @test occursin("wrote ", file_out)
+        out_dir = joinpath(with_kit, "output")
+        _assert_kit_progress_done(out_dir; kind=:drive)
 
         echo_script = joinpath(with_kit, "square_echo.jl")
         echo_proc, echo_out = _run_kit_drive(;
             julia=julia,
             kit_root=kit_root,
             script=echo_script,
-            script_args=["3"],
+            script_args=["--n", "3"],
             host_root=tmp,
         )
         _assert_proc_ok(echo_proc, echo_out; label="square_echo demo")
         @test occursin("param^2:", echo_out)
+        _assert_kit_progress_done(out_dir; kind=:drive)
 
         pipe_script = joinpath(with_kit, "pipeline_square.jl")
-        pipe_cmd = Cmd([julia, "--startup-file=no", "--project=$tmp", pipe_script, "3"])
+        pipe_cmd = Cmd([julia, "--startup-file=no", "--project=$tmp", pipe_script, "--n", "3"])
         pipe_env = _child_julia_env(Dict(
             "DISTRIBUTED_INIT_DELAY_SEC" => "0",
             "DISTRIBUTED_PROJECT_ROOT" => tmp,
@@ -56,5 +59,6 @@ using Test
         pipe_csv = joinpath(with_kit, "output", "square_results.csv")
         @test isfile(pipe_csv)
         @test read(pipe_csv, String) == expected
+        _assert_kit_progress_done(out_dir; kind=:drive)
     end
 end

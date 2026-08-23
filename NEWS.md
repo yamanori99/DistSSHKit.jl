@@ -5,6 +5,17 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- Demo / E2E / `execute!` watchers use [`kit_progress_latest`](@ref) on the
+  run `output_dir` (`kit.progress` even with `--no-log`). Remote Julia reads
+  in SSH E2E go through `run_on_host` (setup `test -e`, git, rsync stay raw ssh).
+- Demo drivers take `--n N` (not a bare integer after the script). A bare
+  `4` looked like `parenthost:4`.
+- CLI `go` feeds [`go!`](@ref) through [`host_tokens`](@ref) and
+  [`execute_kwargs_from_parsed`](@ref) (same mapping as detached `execute!`).
+  [`go!`](@ref) / [`KitSession`](@ref) do not re-read `DISTSSHKIT_HOSTS_FILE`
+  when worker tokens are already non-empty. [`pipeline_config_from_env`](@ref)
+  builds those tokens with the same CLI host sources (`DISTSSHKIT_HOSTS` then
+  the hosts file).
 - Dark-theme Documenter / Catppuccin shows `logo-dark.svg` and the topology
   dark SVGs (`custom.css` restores `.docs-dark-only`). The dark mark uses
   white hollow chassis (same cutout as light); bake prefixes dark SVG `id`s.

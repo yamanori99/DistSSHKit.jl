@@ -50,4 +50,15 @@ function _sample_hosts_file()::String
     return path
 end
 
+"""Last `progress:` in `dir` (`kit.progress` even with `--no-log`) is `done`."""
+function _assert_kit_progress_done(dir::AbstractString; kind::Symbol)
+    rec = DistSSHKit.kit_progress_latest(dir)
+    @test rec !== nothing
+    rec === nothing && return
+    @test rec.event === :done
+    @test rec.kind === kind
+    @test rec.ok === true
+    return rec
+end
+
 end

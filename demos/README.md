@@ -25,12 +25,12 @@ Naming: `{topic}_{file|echo}` — `*_file` writes a file, `*_echo` prints only.
 ```bash
 julia --project=. -m DistSSHKit demo install with_kit
 julia --project=. -m DistSSHKit demo install without_kit
-julia --project=. -m DistSSHKit drive parenthost:2 demos/with_kit/square_file.jl
-julia --project=. -m DistSSHKit drive parenthost:2 demos/with_kit/square_echo.jl
-julia --project=. demos/with_kit/pipeline_square.jl
-julia demos/without_kit/pi_echo.jl
-julia --project=. -m DistSSHKit go demos/without_kit/pi_file.jl
-julia --project=. demos/without_kit/pipeline_pi.jl
+julia --project=. -m DistSSHKit drive parenthost:2 demos/with_kit/square_file.jl --n 4
+julia --project=. -m DistSSHKit drive parenthost:2 demos/with_kit/square_echo.jl --n 4
+julia --project=. demos/with_kit/pipeline_square.jl --n 4
+julia demos/without_kit/pi_echo.jl --n 5000
+julia --project=. -m DistSSHKit go demos/without_kit/pi_file.jl --n 5000
+julia --project=. demos/without_kit/pipeline_pi.jl --n 5000
 ```
 
 ## with_kit/
@@ -41,7 +41,8 @@ julia --project=. demos/without_kit/pipeline_pi.jl
 | `square_echo.jl` | stdout |
 | `pipeline_square.jl` | same CSV via `pipeline!` |
 
-Drivers use `init_output_dir!` + `main` + `pmap`. Optional hooks: `drive --help`.
+Drivers use `init_output_dir!` + `main` + `pmap`. Work count is `--n N`
+(default 8), not a positional integer. Optional hooks: `drive --help`.
 `pipeline_square.jl` is the thin API entry (optional sync → size! → drive! →
 collect) over `square_file.jl`.
 Same tokens as the CLI: `pipeline!(driver, "parenthost:2"; args=[…])`. A commented remote
@@ -63,7 +64,9 @@ julia --project=. -m DistSSHKit go demos/without_kit/pi_file.jl
 julia --project=. demos/without_kit/pipeline_pi.jl
 ```
 
-`pipeline_pi.jl` mirrors `pipeline_square.jl` for as-is jobs: `go!(script, "parenthost:2"; args=[…])`.
+`pipeline_pi.jl` mirrors `pipeline_square.jl` for as-is jobs:
+`go!(script, "parenthost:2"; args=["--n", "5000"])`. Monte Carlo samples are
+`--n N` (default 1000).
 A commented remote example is at the bottom of that file (`setup!` first).
 
 Remote: set `DISTRIBUTED_REMOTE_PROJECT_ROOT` when needed. Optional: `DISTSSHKIT_HOSTS`

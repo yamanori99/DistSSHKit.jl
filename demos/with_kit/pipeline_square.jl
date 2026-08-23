@@ -5,19 +5,41 @@
 # Local (this script):
 #
 #   julia --project=. demos/with_kit/pipeline_square.jl
-#   julia --project=. demos/with_kit/pipeline_square.jl 4
+#   julia --project=. demos/with_kit/pipeline_square.jl --n 4
 #
 # Same driver via CLI:
 #
-#   julia --project=. -m DistSSHKit drive parenthost:2 demos/with_kit/square_file.jl
+#   julia --project=. -m DistSSHKit drive parenthost:2 demos/with_kit/square_file.jl --n 4
 
 using DistSSHKit
 
+function _demo_n(args; default::Int)::Int
+    n = default
+    i = 1
+    while i <= length(args)
+        a = String(args[i])
+        if a == "--n"
+            i >= length(args) && throw(ArgumentError("--n needs an integer"))
+            n = parse(Int, args[i + 1])
+            i += 2
+        elseif startswith(a, "--n=")
+            n = parse(Int, chopprefix(a, "--n="))
+            i += 1
+        else
+            throw(ArgumentError(
+                "unknown $(repr(a)); pass --n N (a bare number looks like parenthost:N)",
+            ))
+        end
+    end
+    n < 1 && throw(ArgumentError("--n must be ≥ 1, got $n"))
+    return n
+end
+
 driver = joinpath(@__DIR__, "square_file.jl")
-n = length(ARGS) >= 1 ? ARGS[1] : "8"
+n = string(_demo_n(ARGS; default=8))
 
 # Local-only: two Distributed workers on this machine (collect off — outputs stay local).
-result = pipeline!(driver, "parenthost:2"; args=[n], collect=false, enable_log=false)
+result = pipeline!(driver, "parenthost:2"; args=["--n", n], collect=false, enable_log=false)
 
 # First-time remotes: setup!, then pipeline! (or drive!).
 #
@@ -33,7 +55,7 @@ result = pipeline!(driver, "parenthost:2"; args=[n], collect=false, enable_log=f
 #       "user@host1:1",
 #       "user@host2:1";
 #       remote="/path/to/project",
-#       args=[n],
+#       args=["--n", n],
 #       # julia=nothing,                  # or path / "auto" (same as CLI --julia)
 #   )
 #
@@ -44,7 +66,7 @@ result = pipeline!(driver, "parenthost:2"; args=[n], collect=false, enable_log=f
 #       "user@host1:1",
 #       "user@host2:1";   # or pipeline!(driver, ["user@host1:1", …]; …)
 #       remote="/path/to/project",
-#       args=[n],
+#       args=["--n", n],
 #       collect=true,                   # false → skip; path → collect root
 #       # project=pwd(),
 #       # hosts_file="hosts.txt",       # extra host / host:N lines

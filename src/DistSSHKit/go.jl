@@ -519,6 +519,10 @@ when you need that.
 `julia` sets the Julia binary for each slot (`nothing` / `"auto"` → detect;
 same as CLI `--julia`).
 
+When `workers` is empty and `hosts_file` is omitted, `DISTSSHKIT_HOSTS_FILE`
+is still read (API `go!("job.jl")`). Non-empty `workers` (CLI
+[`host_tokens`](@ref)) does not re-read that ENV.
+
 `parenthost:N` and `host:N` mean N independent full-job runs (not Distributed workers),
 started together. `path_anchor` shortens displayed paths (CLI passes kit project root).
 """
@@ -553,7 +557,10 @@ function go!(
 
     tokens = String[String(h) for h in workers]
     hf = hosts_file
-    if hf === nothing
+    # CLI / [`host_tokens`](@ref) already merged `--hosts-file` / ENV into
+    # `workers`. Re-reading `DISTSSHKIT_HOSTS_FILE` would duplicate slots.
+    # API `go!("job.jl")` with empty `workers` still honors the ENV file.
+    if hf === nothing && isempty(tokens)
         env_hf = strip(get(ENV, "DISTSSHKIT_HOSTS_FILE", ""))
         !isempty(env_hf) && (hf = env_hf)
     end

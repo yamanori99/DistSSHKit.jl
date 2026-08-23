@@ -423,5 +423,26 @@ using Test
         ) do
             @test DistSSHKit.pipeline_config_from_env().julia === nothing
         end
+        let hosts_file = _sample_hosts_file()
+            withenv(
+                "DRIVER" => "demos/job.jl",
+                "DISTSSHKIT_HOSTS" => "env-a:2",
+                "DISTSSHKIT_HOSTS_FILE" => hosts_file,
+                "SYNC_MODE" => "off",
+                "JULIA_DISTRIBUTED_EXE" => "",
+            ) do
+                cfg = DistSSHKit.pipeline_config_from_env()
+                @test cfg.tokens == ["env-a:2", "host-a", "host-b:4"]
+                @test cfg.hosts_file === nothing
+            end
+        end
+        let hosts_file = _sample_hosts_file()
+            withenv("DISTSSHKIT_HOSTS_FILE" => hosts_file) do
+                s = DistSSHKit.KitSession(workers=["parenthost:1"])
+                @test s.tokens == ["parenthost:1"]
+                empty = DistSSHKit.KitSession(workers=String[])
+                @test empty.tokens == ["host-a", "host-b:4"]
+            end
+        end
     end
 end

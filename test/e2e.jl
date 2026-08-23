@@ -1,7 +1,7 @@
 #!/usr/bin/env julia
 # Real-SSH E2E against testenv/docker-ssh workers. Not part of Pkg.test().
 # Oracle: OpenSSH + rsync + remote Julia (setup / drive / go / git). Assert
-# files workers write (`ssh cat` / collect). Controller-side demo CSV is not
+# files workers write (`run_on_host` / collect). Controller-side demo CSV is not
 # a remote collect. Inventory: test/README.md § SSH E2E.
 # Local with_kit recipes are test/integration/demos/.
 #
@@ -195,12 +195,13 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
                 host_root=proj,
                 local_workers=0,
                 remote_hosts=remote_tokens,
-                script_args=["4"],
+                script_args=["--n", "4"],
                 drive_flags=["-y", "-q"],
                 extra_env=_e2e_base_env(),
             )
             _assert_ssh_e2e_ok(suite, "drive_square_echo", proc, out)
             @test occursin("param^2:", out)
+            _assert_kit_progress_done(joinpath(proj, "demos", "with_kit", "output"); kind=:drive)
         end
 
         @testset "drive square_file CSV is local (controller main)" begin
@@ -212,7 +213,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
                 host_root=proj,
                 local_workers=0,
                 remote_hosts=remote_tokens,
-                script_args=["4"],
+                script_args=["--n", "4"],
                 drive_flags=["-y", "-q"],
                 extra_env=_e2e_base_env(),
             )
@@ -221,6 +222,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             @test occursin("param,result", read(out_csv, String))
             p, _ = _ssh_e2e_ssh(hosts[1], "test ! -e $(remote_root)/demos/with_kit/output/square_results.csv")
             _assert_proc_ok(p, ""; label="square_file CSV absent on remote")
+            _assert_kit_progress_done(dirname(out_csv); kind=:drive)
         end
 
         @testset "drive collect bytes written on workers" begin
@@ -237,12 +239,25 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
                 extra_env=_e2e_base_env(),
             )
             _assert_ssh_e2e_ok(suite, "drive_worker_file", proc, out)
+            _assert_kit_progress_done(collect_root; kind=:drive)
 
-            p, remote_body = _ssh_e2e_ssh(
-                hosts[1],
-                "find $(remote_root)/output -name 'worker_*.txt' -exec cat {} +",
-            )
-            _assert_proc_ok(p, remote_body; label="ssh cat worker files")
+            worker_jl = """
+                d = $(repr(joinpath(remote_root, "output")))
+                io = IOBuffer()
+                if isdir(d)
+                    for (root, _, files) in walkdir(d)
+                        for name in files
+                            startswith(name, "worker_") && endswith(name, ".txt") || continue
+                            write(io, read(joinpath(root, name)))
+                        end
+                    end
+                end
+                print(String(take!(io)))
+                """
+            p, remote_body = withenv(_e2e_base_env()...) do
+                _e2e_run_on_host(hosts[1], ["-e", worker_jl])
+            end
+            _assert_proc_ok(p, remote_body; label="run_on_host cat worker files")
             @test occursin("DISTSSHKIT_E2E_WORKER_FILE", remote_body)
 
             local_files = filter(f -> startswith(basename(f), "worker_"),
@@ -324,7 +339,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             proc, out = _run_kit_go(;
                 script=pi_echo,
                 hosts=remote_tokens,
-                script_args=["32"],
+                script_args=["--n", "32"],
                 project_root=proj,
                 go_flags=["-y"],
                 extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
@@ -333,13 +348,17 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             @test occursin(hosts[1], out)
             @test occursin(hosts[2], out)
             @test count(r"π ≈", out) >= 2
+            go_echo_batch = _ssh_e2e_latest_go_batch(proj)
+            @test go_echo_batch !== nothing
+            go_echo_batch === nothing && error("expected go batch for pi_echo")
+            _assert_kit_progress_done(go_echo_batch; kind=:go)
         end
 
         @testset "go pi_file both remotes + collect" begin
             proc, out = _run_kit_go(;
                 script=pi_file,
                 hosts=remote_tokens,
-                script_args=["32"],
+                script_args=["--n", "32"],
                 project_root=proj,
                 go_flags=["-y"],
                 extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
@@ -348,6 +367,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             batch = _ssh_e2e_latest_go_batch(proj)
             @test batch !== nothing
             batch === nothing && error("expected go batch for pi_file")
+            _assert_kit_progress_done(batch; kind=:go)
             for host in hosts
                 slot = joinpath(batch, host)
                 @test isdir(slot)
@@ -363,7 +383,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             proc, out = _run_kit_go(;
                 script=pi_file,
                 hosts=remote_tokens,
-                script_args=["32"],
+                script_args=["--n", "32"],
                 project_root=proj,
                 go_flags=["-y", "--output-dir", custom],
                 extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
@@ -411,7 +431,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
                 host_root=proj,
                 local_workers=0,
                 remote_hosts=remote_tokens,
-                script_args=["4"],
+                script_args=["--n", "4"],
                 drive_flags=["-y", "-q"],
                 extra_env=tilde_env,
             )
@@ -449,7 +469,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
                     remote_tokens[1];
                     project=proj,
                     remote=remote_root,
-                    args=["16"],
+                    args=["--n", "16"],
                     yes=true,
                     quiet=true,
                     julia="auto",
@@ -762,7 +782,12 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             )
             _assert_ssh_e2e_ok(suite, "git_pull", proc, out; project=proj, kit=:setup)
             for host in hosts
-                p, body = _ssh_e2e_ssh(host, "cat $(git_root)/e2e_sync_marker.txt")
+                p, body = withenv(git_env...) do
+                    _e2e_run_on_host(
+                        host,
+                        ["-e", "print(read($(repr(joinpath(git_root, "e2e_sync_marker.txt"))), String))"],
+                    )
+                end
                 _assert_proc_ok(p, body; label="pull marker $(host)")
                 @test body == marker
             end

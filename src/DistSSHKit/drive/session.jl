@@ -24,7 +24,9 @@ Build a session for drive APIs. `workers` are CLI-style tokens
 `session.tokens` keeps the original tokens (including `parenthost:N`).
 `remote` is the remote project path (`DISTRIBUTED_REMOTE_PROJECT_ROOT`).
 
-`hosts_file` defaults to `ENV["DISTSSHKIT_HOSTS_FILE"]` when unset.
+`hosts_file` is appended when given. `ENV["DISTSSHKIT_HOSTS_FILE"]` is used
+only when `hosts_file` is omitted **and** `workers` is empty (same as
+[`go!`](@ref)). Non-empty `workers` do not re-read that ENV.
 `verbosity` is `:verbose` | `:progress` | `:quiet` (`quiet=true` implies `:quiet`).
 API default `yes=true` skips confirm prompts.
 """
@@ -38,10 +40,13 @@ function KitSession(;
     yes::Bool=true,
     include_local_for_size::Bool=false,
 )
+    tokens = String[String(h) for h in workers]
     hf = if hosts_file !== nothing
         String(strip(hosts_file))
-    else
+    elseif isempty(tokens)
         strip(get(ENV, "DISTSSHKIT_HOSTS_FILE", ""))
+    else
+        ""
     end
     hf_path = isempty(hf) ? nothing : hf
     cli = KitCliSession(
