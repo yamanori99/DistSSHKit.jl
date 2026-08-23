@@ -183,4 +183,21 @@ using Dates
         @test kr.exit_code == 2
         @test !DistSSHKit.report_run_errors(bad; io=IOBuffer())
     end
+
+    @testset "quiet suppresses Log file on stdout" begin
+        _with_tempdir() do proj
+            write(joinpath(proj, "Project.toml"), "name = \"GoQuietLog\"\n")
+            script = joinpath(proj, "job.jl")
+            write(script, "true\n")
+            with_kit_verbosity(:verbose) do
+                out, _ = _capture_stdio() do _, _
+                    DistSSHKit.go!(
+                        script, ["parenthost:1"];
+                        project=proj, quiet=true, yes=true,
+                    )
+                end
+                @test !occursin("Log file:", out)
+            end
+        end
+    end
 end

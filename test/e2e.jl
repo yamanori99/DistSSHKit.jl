@@ -73,6 +73,22 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             end
         end
 
+        @testset "run_on_host exitcode" begin
+            withenv(_e2e_base_env()...) do
+                host = hosts[1]
+                ok = DistSSHKit.run_on_host(host, ["--version"])
+                @test ok.exitcode == 0
+                fail = DistSSHKit.run_on_host(host, ["-e", "exit(3)"])
+                @test fail.exitcode == 3
+                _assert_ssh_e2e_api_ok(
+                    suite,
+                    "run_on_host_exitcode",
+                    fail.exitcode == 3 && ok.exitcode == 0,
+                    "ok=$(ok.exitcode) fail=$(fail.exitcode)",
+                )
+            end
+        end
+
         # Remote suite (both docker workers). Local with_kit demos live in
         # test/integration/demos/with_kit.jl — not duplicated here.
         proj = suite.project_remote

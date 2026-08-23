@@ -5,6 +5,12 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- [`run_on_host`](@ref) uses `ignorestatus`, so a non-zero remote or ssh
+  exit returns `Process` (`.exitcode`) instead of `ProcessFailedException`.
+  Remote `argv` words are POSIX-quoted so expressions like `exit(3)` are
+  not parsed by the remote shell.
+- `go!` applies `quiet` / `verbosity` before [`init_log_file`](@ref), so
+  `quiet=true` does not print `Log file:` to the terminal.
 - `parse_go_args` `--help` keeps already-parsed hosts, sync, `--output-dir`,
   and `--julia` (same class as drive `--help` / `mem_headroom`).
 - Drive memory preflight uses `size_worker_count` (`mem_headroom`,

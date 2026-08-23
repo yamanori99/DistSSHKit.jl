@@ -218,6 +218,8 @@ using Test
         @test occursin(raw"$HOME/.juliaup/bin/julia", sh)
         @test occursin("/opt/homebrew/bin/julia", sh)
         @test occursin("-e", sh)
+        @test DistSSHKit._remote_argv_sh(["-e", "exit(3)"]) == "'-e' 'exit(3)'"
+        @test DistSSHKit._remote_sh_quote("a'b") == raw"'a'\''b'"
         expl = DistSSHKit._run_on_host_remote_sh(["--version"]; julia="/opt/julia", detect=false)
         @test occursin("/opt/julia", expl)
         @test occursin("exec", expl)
@@ -236,6 +238,12 @@ using Test
             e
         end
         @test err2 isa ArgumentError
+        let p = redirect_stderr(devnull) do
+                DistSSHKit.run_on_host("no-such-host.invalid", ["--version"])
+            end
+            @test p isa Base.Process
+            @test p.exitcode != 0
+        end
     end
 
     @test !DistSSHKit._remote_ssh_ok("no-such-host.invalid")
