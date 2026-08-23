@@ -142,6 +142,7 @@ using Test
         let r = parse_drive_args(["s.jl"])
             @test r.sync_mode === nothing
             @test r.skip_hash_check == true
+            @test r.mem_headroom == DistSSHKit.DEFAULT_MEM_HEADROOM
         end
         let r = parse_drive_args(["--sync", "host1", "s.jl"])
             @test r.sync_mode === :sync

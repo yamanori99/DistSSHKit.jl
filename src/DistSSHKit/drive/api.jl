@@ -20,6 +20,10 @@ stays off even if `skip_hash_check=false` (no remote `.git/`).
 `require_all_hosts=true` (CLI `--require-all-hosts`) fails if a listed SSH host
 did not join, or if collect reported an error (default: best-effort, exit 0).
 
+`mem_headroom` is the RAM fraction for the drive memory preflight (same meaning
+as [`size!`](@ref) / CLI `--mem-headroom`). CLI `drive` uses the default
+`0.75`. [`pipeline!`](@ref) passes `config.mem_headroom`.
+
 `julia` sets the remote Julia binary (`nothing` / `"auto"` → detect; same as
 CLI `--julia`). `plan` is an optional explicit [`WorkerPlan`](@ref).
 [`pipeline!`](@ref) syncs separately and does not pass `sync=` into `drive!`.
@@ -37,6 +41,7 @@ function drive!(
     sync::Union{Nothing,Symbol,Bool}=nothing,
     julia::Union{Nothing,AbstractString}=nothing,
     require_all_hosts::Bool=false,
+    mem_headroom::Real=DEFAULT_MEM_HEADROOM,
 )::DriveResult
     apply_session_env!(session)
     _ensure_drive_fragments!(session.project)
@@ -57,6 +62,7 @@ function drive!(
         sync=sync,
         julia=julia,
         require_all_hosts=require_all_hosts,
+        mem_headroom=mem_headroom,
     )
     apply_kit_cli_session!(parsed.cli_session)
     original_args = copy(ARGS)

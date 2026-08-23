@@ -46,6 +46,7 @@ function drive_parsed_from_session(
     sync::Union{Nothing,Symbol,Bool}=nothing,
     julia::Union{Nothing,AbstractString}=nothing,
     require_all_hosts::Bool=false,
+    mem_headroom::Real=DEFAULT_MEM_HEADROOM,
 )
     local_workers = 0
     hosts = Tuple{String,Union{Int,Nothing}}[]
@@ -98,5 +99,6 @@ function drive_parsed_from_session(
         show_version=false,
         cli_session=cli_session,
         hint_surface=hint_surface(session),
+        mem_headroom=Float64(mem_headroom),
     )
 end

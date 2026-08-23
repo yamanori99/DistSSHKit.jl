@@ -1,5 +1,5 @@
 using .DistSSHKit:
-    MEMORY_CAPACITY_FRACTION,
+    DEFAULT_MEM_HEADROOM,
     PARENT_HOST_NAME,
     WORKER_MEMORY_GB_FALLBACK,
     get_local_git_hash,
@@ -31,7 +31,13 @@ function estimate_available_gb()
     return (total, max(free, total * 0.5))
 end
 
-function check_memory_capacity(local_workers::Int, hosts::Vector{Tuple{String,Union{Int,Nothing}}}, default_workers::Union{Int,Nothing})::Bool
+function check_memory_capacity(
+    local_workers::Int,
+    hosts::Vector{Tuple{String,Union{Int,Nothing}}},
+    default_workers::Union{Int,Nothing};
+    mem_headroom::Real=DEFAULT_MEM_HEADROOM,
+)::Bool
+    frac = Float64(mem_headroom)
     per_worker = estimate_worker_memory_gb()
     r(x) = round(x, digits=1)
     writeln_both("Checking memory capacity...")
@@ -43,10 +49,10 @@ function check_memory_capacity(local_workers::Int, hosts::Vector{Tuple{String,Un
             writeln_both("  $label: (memory check failed)")
             return
         end
-        avail = total_gb * MEMORY_CAPACITY_FRACTION
+        avail = total_gb * frac
         estimated = n_workers * per_worker
         max_w = max(1, floor(Int, avail / per_worker))
-        pct = round(Int, MEMORY_CAPACITY_FRACTION * 100)
+        pct = round(Int, frac * 100)
         if estimated > avail
             push!(warnings, "  $label: $(n_workers) × $(r(per_worker))GB = $(r(estimated))GB > $(r(avail))GB ($(pct)% of $(r(total_gb))GB)")
             write_both("  $label: $(r(total_gb))GB, $(n_workers) workers → ")

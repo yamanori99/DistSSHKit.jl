@@ -230,7 +230,10 @@ function _run_drive_parsed_locked!(
 
         kit_progress_step!("workers")
         if (local_workers > 0 || !isempty(hosts)) &&
-                !check_memory_capacity(local_workers, hosts, default_workers)
+                !check_memory_capacity(
+                    local_workers, hosts, default_workers;
+                    mem_headroom=parsed.mem_headroom,
+                )
             return 1
         end
 

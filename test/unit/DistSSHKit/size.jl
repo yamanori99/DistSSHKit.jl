@@ -19,7 +19,7 @@ using Test
         one_gb = 1024^3
         @test DistSSHKit.rss_bytes_to_worker_gb(one_gb) ==
             round(max(1.0 * DistSSHKit.WORKER_RSS_SAFETY_FACTOR, DistSSHKit.WORKER_MEMORY_GB_FLOOR), digits=2)
-        @test DistSSHKit.MEMORY_CAPACITY_FRACTION == DistSSHKit.DEFAULT_MEM_HEADROOM
+        @test !isdefined(DistSSHKit, :MEMORY_CAPACITY_FRACTION)
     end
 
     @testset "resolve_host_project_abs parenthost" begin
