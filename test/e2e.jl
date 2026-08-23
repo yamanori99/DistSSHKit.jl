@@ -233,6 +233,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
                 isdir(collect_root) ? readdir(collect_root; join=true) : String[])
             @test !isempty(local_files)
             @test any(f -> occursin("DISTSSHKIT_E2E_WORKER_FILE", read(f, String)), local_files)
+            @test Set(h.host for h in DistSSHKit.kit_result_from_dir(collect_root).hosts) == Set(hosts)
 
             for f in local_files
                 rm(f)

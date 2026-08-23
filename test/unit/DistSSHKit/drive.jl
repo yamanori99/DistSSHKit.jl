@@ -349,6 +349,7 @@ using Test
         @test dr_hosts.hosts[2].host == "h2"
         @test !dr_hosts.hosts[2].ok
         @test occursin("boom", something(dr_hosts.hosts[2].error, ""))
+        @test DistSSHKit.kit_run_result(dr_hosts).hosts == dr_hosts.hosts
         bad = DistSSHKit.PipelineResult(
             false,
             DistSSHKit.SyncResult(false, [DistSSHKit.HostResult("h1", false, "rsync refuse")], false),

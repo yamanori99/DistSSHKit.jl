@@ -81,8 +81,8 @@ remotes too), `JULIA_DISTRIBUTED_EXE` (same as CLI `--julia`), and the usual
 quiet / progress / yes flags — same vocabulary as the CLI.
 
 `DriveResult.hosts` is one [`HostRunResult`](@ref) per host that joined as a
-worker (empty when no host-collection step ran) — the queue layer can use it
-to tell which hosts failed without re-parsing logs.
+worker (empty when no host-collection step ran). The same vector is in
+`kit.result` for a detached caller that only has `output_dir`.
 
 ```@docs
 KitSession
@@ -233,7 +233,7 @@ stay in `output_dir`. Kit logs (`go_*.log` / `drive_*.log`) are not this list.
 | `kit.job` | `job_id` when set. [`terminate_run!`](@ref) uses it for tagged `pkill` after a restart. |
 | `kit.hosts` | Remote hosts this run started (one name per line), written after workers join. `terminate_run!` reaps these. |
 | `kit.hosts.status` | Live per-host membership during `drive` (`:joined` / `:alive` / `:left` / `:collect_pending`). Read with [`drive_host_status`](@ref). Not the post-run collect vector. |
-| `kit.result` | TOML with the same fields as [`KitRunResult`](@ref). Read with [`kit_result_from_dir`](@ref). Missing while running or after a hard death. Per-host collect is not in this file. |
+| `kit.result` | TOML with the same fields as [`KitRunResult`](@ref), including `hosts` (post-run collect, [`HostRunResult`](@ref) rows). Omitted when empty (`go`, or a `drive` that never collected). Read with [`kit_result_from_dir`](@ref). Missing while running or after a hard death. |
 | `kit.out` / `kit.err` | Detached child stdio when `stdout` / `stderr` were omitted. |
 
 Together: running (`kit.pid` live and start matches, no result), finished (result present),

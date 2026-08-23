@@ -731,6 +731,16 @@ function _write_kit_result_file(result::KitRunResult)
     )
     result.failed_step !== nothing && (data["failed_step"] = result.failed_step)
     result.log_dir !== nothing && (data["log_dir"] = result.log_dir)
+    if !isempty(result.hosts)
+        rows = Vector{Dict{String,Any}}(undef, length(result.hosts))
+        for i in eachindex(result.hosts)
+            h = result.hosts[i]
+            row = Dict{String,Any}("host" => h.host, "ok" => h.ok)
+            h.error !== nothing && (row["error"] = h.error)
+            rows[i] = row
+        end
+        data["hosts"] = rows
+    end
     for d in dirs
         try
             mkpath(d)
@@ -773,10 +783,27 @@ function kit_result_from_dir(output_dir::AbstractString)::Union{Nothing,KitRunRe
         ld_s = ld isa AbstractString ? String(ld) : nothing
         fs = get(raw, "failed_step", nothing)
         fs_s = fs isa AbstractString ? String(fs) : nothing
-        return KitRunResult(ok, kind, od_s, ld_s, fs_s, Int(code))
+        hosts = _kit_result_hosts_from_toml(get(raw, "hosts", nothing))
+        return KitRunResult(ok, kind, od_s, ld_s, fs_s, Int(code), hosts)
     catch
         return nothing
     end
+end
+
+function _kit_result_hosts_from_toml(raw)::Vector{HostRunResult}
+    raw isa AbstractVector || return HostRunResult[]
+    out = HostRunResult[]
+    for item in raw
+        item isa AbstractDict || continue
+        host = get(item, "host", nothing)
+        host isa AbstractString || continue
+        ok = get(item, "ok", nothing)
+        ok isa Bool || continue
+        err = get(item, "error", nothing)
+        err_s = err isa AbstractString ? String(err) : nothing
+        push!(out, HostRunResult(String(host), ok, err_s))
+    end
+    return out
 end
 
 """
@@ -786,7 +813,7 @@ end
 Live per-host membership for a running (or recently collecting) `drive`.
 Reads `kit.hosts.status`. Empty when the file is missing (too early, a `go`
 run, or a hard death before join). This is not [`DriveResult.hosts`](@ref)
-(post-run collect) and is not stored in `kit.result`.
+(post-run collect); that vector is stored in `kit.result` as `hosts`.
 """
 function drive_host_status(output_dir::AbstractString)::Vector{DriveHostStatus}
     path = joinpath(canonical_local_path(output_dir), "kit.hosts.status")

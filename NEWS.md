@@ -5,6 +5,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- `kit.result` stores drive post-run collect as `hosts` ([`HostRunResult`](@ref)
+  rows: host, ok, optional error). [`kit_result_from_dir`](@ref) round-trips
+  it. `go` omits the table (empty vector).
 - **Breaking:** `parenthost` / `parenthost:N` is the only DistSSHKit parent
   token. `local` / `localhost` / `l` are ordinary SSH names.
   `--local` / `-l` raise `ArgumentError`. `is_local_host_name` matches
@@ -29,8 +32,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
   each `GoResult` return (no `Ref` in `finally`).
 - `drive_host_status` reads live per-host membership from `kit.hosts.status`
   during `drive` (`:joined` / `:alive` / `:left` / `:collect_pending`).
-  `Distributed.workers()` is the liveness probe. Post-run collect stays on
-  `DriveResult.hosts`, not in `kit.result`.
+  `Distributed.workers()` is the liveness probe. Post-run collect is
+  `DriveResult.hosts` and `kit.result` `hosts` (same [`HostRunResult`](@ref)
+  rows). `go` omits the table.
 - Detached sidecar files in `output_dir` (`kit.pid`, `kit.job`, `kit.hosts`,
   `kit.result`, `kit.out` / `kit.err`, `.kit.lock`) are documented as the
   on-disk contract (copies under `log_dir` when that path is distinct).
@@ -57,7 +61,8 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
   `kit_pid_alive` is the pid probe used for `.kit.lock` / leftover `kit.pid`.
 - Detached `go` / `drive` write `kit.result` (TOML) next to `kit.pid` on a
   normal finish. `kit_result_from_dir` reads it; `wait` prefers it when present.
-  A crash / SIGKILL leaves no file. Per-host collect is not in this file.
+  A crash / SIGKILL leaves no file. Drive post-run collect is `hosts` in that
+  file ([`HostRunResult`](@ref)); `go` leaves it empty.
 - `host_tokens(parsed)` rebuilds CLI tokens from `parse_go_args` /
   `parse_drive_args` for `execute!`. Bare hosts stay bare; drive
   `local_workers > 0` becomes `parenthost:N`.
