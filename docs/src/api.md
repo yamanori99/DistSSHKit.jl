@@ -292,10 +292,12 @@ SPINNER_FRAMES
 
 `print_colored` is the public name; `_print_colored` is the same function.
 
-Default `ssh_opts()` is BatchMode and `RequestTTY=no`. Setting
-`DISTRIBUTED_SSH_OPTS` replaces that vector; `-F` alone does not keep
-`RequestTTY=no`. Use `-o RequestTTY=no`, not `ssh -T` (`scp -T` means
-something else). `run_on_host(; tty=true)` still requests a pty.
+Default `ssh_opts()` is BatchMode and `RequestTTY=no`.
+`ssh_opts(; request_tty=true)` omits `RequestTTY=no` (does not insert `-t`;
+that is `ssh`-only). Setting `DISTRIBUTED_SSH_OPTS` replaces that vector;
+`-F` alone does not keep `RequestTTY=no`. Use `-o RequestTTY=no`, not
+`ssh -T` (`scp -T` means something else). `run_on_host(; tty=true)` still
+requests a pty.
 
 ## Inside a driver — `worker_pmap`
 
