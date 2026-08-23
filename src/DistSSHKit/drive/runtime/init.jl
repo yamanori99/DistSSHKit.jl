@@ -141,7 +141,26 @@ function init_drive_workers!(proj_dir::String, explicit_package, path_anchor::St
                 return nothing
             end
         end
+        mapped = Set{Int}()
+        for (host, ids) in DistSSHKit.DRIVE_HOST_WORKER_IDS
+            DistSSHKit._drive_host_span!(host, "init", :running)
+            try
+                for w in ids
+                    w in workers() || continue
+                    push!(mapped, Int(w))
+                    worker_proj = get(RUNNER_WORKER_PROJECT_DIRS, w, proj_dir)
+                    remotecall_fetch(w, worker_proj) do path
+                        Base.invokelatest(_drive_worker_activate!, path)
+                    end
+                end
+                DistSSHKit._drive_host_span!(host, "init", :ok)
+            catch
+                DistSSHKit._drive_host_span!(host, "init", :fail)
+                rethrow()
+            end
+        end
         for w in workers()
+            Int(w) in mapped && continue
             worker_proj = get(RUNNER_WORKER_PROJECT_DIRS, w, proj_dir)
             remotecall_fetch(w, worker_proj) do path
                 Base.invokelatest(_drive_worker_activate!, path)

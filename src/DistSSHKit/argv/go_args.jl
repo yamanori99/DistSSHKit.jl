@@ -28,6 +28,7 @@ function show_go_usage(; io::IO=stdout)
         "  --sync / --rsync    optional pre-run (default: none)",
         "  --julia PATH        remote Julia (ENV or auto)",
         "  --output-dir PATH   batch root; slots are PATH/<slot>/",
+        "  $(KIT_TIME_HELP)",
         "  $(KIT_QUIET_FLAG_HELP)",
         "  $(KIT_PROGRESS_FLAG_HELP)",
         "  $(KIT_VERBOSE_FLAG_HELP)",

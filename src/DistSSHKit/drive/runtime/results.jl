@@ -45,10 +45,13 @@ function run_driver_script!(enable_log::Bool, drive_atexit_cleanup)
                     while true
                         data = readavailable(rd)
                         if !isempty(data)
-                            # `:verbose` only: keep driver lines on the terminal.
-                            # `:quiet` / `:progress` → kit log only.
+                            # `:verbose`: live on the terminal. `:progress`: capture
+                            # and replay after the bar so the TTY stays a single line.
+                            # `:quiet`: kit log only.
                             if DistSSHKit.kit_output_detail()
                                 write(orig_stdout, data)
+                            elseif DistSSHKit.kit_output_progress()
+                                DistSSHKit._append_job_stdout_capture!(data)
                             end
                             for b in data
                                 if b == 0x0d
@@ -145,6 +148,7 @@ function collect_drive_results!(
     fill!(errs, nothing)
 
     DistSSHKit.map_host_jobs(hosts_u) do i, host
+        DistSSHKit._drive_host_span!(host, "collect", :running)
         total_for_host = 0
         host_err = nothing
         try
@@ -222,6 +226,10 @@ function collect_drive_results!(
             end
         catch e
             host_err === nothing && (host_err = e)
+        finally
+            DistSSHKit._drive_host_span!(
+                host, "collect", host_err === nothing ? :ok : :fail,
+            )
         end
         totals[i] = total_for_host
         errs[i] = host_err

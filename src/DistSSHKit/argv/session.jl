@@ -25,6 +25,8 @@ const KIT_PROGRESS_FLAG_HELP =
     "--progress          live status (TTY default)"
 const KIT_VERBOSE_FLAG_HELP =
     "--verbose           full detail (non-TTY default)"
+const KIT_TIME_HELP =
+    "Time table after the run (-q hides it); replay: progress DIR"
 const KIT_HOSTS_FLAG_HELP =
     "--hosts CSV         comma-separated tokens (host:N OK)"
 const KIT_QUIET_ENV_HELP =

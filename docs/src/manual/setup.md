@@ -53,6 +53,10 @@ Pick **one mode** per invocation (except shared options).
 
 `--clone` / `--rsync` never overwrite a nonempty remote path; use `--delete`
 first to replace. `DISTSSHKIT_JOBS` (default 1) may rsync several hosts at once.
+Time a `--rsync` then `--instantiate` twice (cold vs warm) and `JOBS=1` vs
+`>1` on two hosts with the wall clock or kit setup log; do not raise the
+default until that split is written next to the [drive](@ref Manual-drive)
+parenthost table.
 
 ## Remote path
 

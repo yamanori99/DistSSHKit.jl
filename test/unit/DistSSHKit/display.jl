@@ -1,6 +1,27 @@
 using Test
 
 @testset "display" begin
+    @testset "progress accent theme" begin
+        withenv("DISTSSHKIT_PROGRESS_BG" => "light", "COLORFGBG" => nothing) do
+            @test DistSSHKit._term_light_background()
+            rgb, idx = DistSSHKit._progress_accent_pair()
+            @test rgb == (3, 105, 161)
+            @test idx == 31
+        end
+        withenv("DISTSSHKIT_PROGRESS_BG" => "dark") do
+            @test !DistSSHKit._term_light_background()
+            rgb, idx = DistSSHKit._progress_accent_pair()
+            @test rgb == (56, 189, 248)
+            @test idx == 81
+        end
+        withenv("DISTSSHKIT_PROGRESS_BG" => nothing, "COLORFGBG" => "0;15") do
+            @test DistSSHKit._term_light_background()
+        end
+        withenv("DISTSSHKIT_PROGRESS_BG" => nothing, "COLORFGBG" => "15;0") do
+            @test !DistSSHKit._term_light_background()
+        end
+    end
+
     @testset "kit_pid_alive" begin
         @test DistSSHKit.kit_pid_alive(0) === false
         @test DistSSHKit.kit_pid_alive(-1) === false
@@ -196,7 +217,7 @@ using Test
             end
         end
 
-        @testset "thin progress bar" begin
+        @testset "progress bar glyphs" begin
             empty = DistSSHKit._progress_bar_string(0, 1; tick=0)
             @test length(empty) == DistSSHKit.PROGRESS_BAR_WIDTH
             @test startswith(empty, string(DistSSHKit.PROGRESS_HEAD_CHAR))
@@ -386,6 +407,127 @@ using Test
             @test rec.cur == 1
             @test rec.status === nothing
             @test rec.ok === nothing
+            @test rec.t === nothing
+            timed = DistSSHKit.parse_progress_line(
+                "progress: done kind=drive ok=true done=1 total=1 t=1710000000.5",
+            )
+            @test timed.t == 1710000000.5
+            _with_tempdir() do tmp
+                p = joinpath(tmp, "kit.progress")
+                write(
+                    p,
+                    "progress: begin kind=drive label=drive total=2 t=1.0\n" *
+                    "progress: step kind=drive label=workers done=0 total=2 cur=1 t=2.5\n" *
+                    "progress: done kind=drive ok=true done=2 total=2 t=3.0\n",
+                )
+                rows = DistSSHKit.kit_progress_phases(tmp)
+                @test length(rows) == 2
+                @test rows[1].label == "start"
+                @test rows[1].seconds == 1.5
+                @test rows[2].label == "workers"
+                @test rows[2].seconds == 0.5
+                open(p, "a") do io
+                    write(
+                        io,
+                        "progress: begin kind=drive label=drive total=2 t=100.0\n" *
+                        "progress: step kind=drive label=workers done=0 total=2 cur=1 t=101.0\n" *
+                        "progress: done kind=drive ok=true done=2 total=2 t=104.0\n",
+                    )
+                end
+                rows2 = DistSSHKit.kit_progress_phases(tmp)
+                @test length(rows2) == 2
+                @test rows2[2].seconds == 3.0
+                mktemp() do out_path, out_io
+                    code = redirect_stdout(out_io) do
+                        DistSSHKit.progress([tmp])
+                    end
+                    flush(out_io)
+                    @test code == 0
+                    out = read(out_path, String)
+                    @test occursin("Time", out)
+                    @test occursin("3.00s", out)
+                    @test occursin("workers", out)
+                    @test occursin("%", out)
+                    @test occursin("█", out)
+                    @test !occursin("→", out)
+                    @test !occursin("latest", out)
+                end
+                mktemp() do out_path, out_io
+                    DistSSHKit._reset_job_stdout_capture!()
+                    DistSSHKit._append_job_stdout_capture!(codeunits("param^2: [1, 4]\n"))
+                    with_kit_verbosity(:progress) do
+                        redirect_stdout(out_io) do
+                            DistSSHKit._maybe_print_kit_progress_phases(tmp)
+                        end
+                    end
+                    flush(out_io)
+                    out = read(out_path, String)
+                    @test occursin("param^2: [1, 4]", out)
+                    @test occursin("workers", out)
+                    @test occursin("progress  ", out)
+                    @test findfirst("param^2", out) < findfirst("Time", out)
+                end
+                mktemp() do out_path, out_io
+                    with_kit_verbosity(:progress) do
+                        redirect_stdout(out_io) do
+                            DistSSHKit._maybe_print_kit_progress_phases(tmp)
+                        end
+                    end
+                    flush(out_io)
+                    @test occursin("workers", read(out_path, String))
+                    @test occursin("progress  ", read(out_path, String))
+                end
+                write(
+                    p,
+                    "progress: begin kind=go label=go total=2 t=1.0\n" *
+                    "progress: step kind=go label=sync done=0 total=2 cur=0 t=1.2\n" *
+                    "progress: item kind=go label=local-1 status=running done=0 total=2 t=2.0\n" *
+                    "progress: item kind=go label=local-1/run status=running done=0 total=2 t=2.0\n" *
+                    "progress: item kind=go label=local-2 status=running done=0 total=2 t=2.1\n" *
+                    "progress: item kind=go label=local-2/run status=running done=0 total=2 t=2.1\n" *
+                    "progress: item kind=go label=local-1/run status=ok done=0 total=2 t=4.5\n" *
+                    "progress: item kind=go label=local-1/collect status=running done=0 total=2 t=4.5\n" *
+                    "progress: item kind=go label=local-1/collect status=ok done=0 total=2 t=5.0\n" *
+                    "progress: item kind=go label=local-1 status=ok done=1 total=2 t=5.0\n" *
+                    "progress: item kind=go label=local-2/run status=ok done=1 total=2 t=8.0\n" *
+                    "progress: item kind=go label=local-2 status=ok done=2 total=2 t=8.0\n" *
+                    "progress: done kind=go ok=true done=2 total=2 t=8.1\n",
+                )
+                grows = DistSSHKit.kit_progress_phases(tmp)
+                labs = [r.label for r in grows]
+                @test "sync" in labs
+                @test "local-1" in labs
+                @test "local-1/run" in labs
+                @test "local-1/collect" in labs
+                @test "local-2" in labs
+                @test grows[findfirst(==("local-1"), labs)].seconds == 3.0
+                @test grows[findfirst(==("local-1/run"), labs)].seconds == 2.5
+                @test grows[findfirst(==("local-1/collect"), labs)].seconds == 0.5
+                @test grows[findfirst(==("local-2"), labs)].seconds == 5.9
+                grouped = DistSSHKit._format_kit_progress_phases(grows; wall=7.1)
+                @test occursin("local-1", grouped)
+                @test occursin("  run", grouped)
+                @test occursin("  collect", grouped)
+                @test occursin("script", grouped)
+                @test occursin("pull results", grouped)
+                @test occursin("slot", grouped)
+                write(
+                    p,
+                    "progress: begin kind=drive label=drive total=7 t=1.0\n" *
+                    "progress: step kind=drive label=workers done=3 total=7 cur=4 t=8.0\n" *
+                    "progress: item kind=drive label=parenthost/workers status=running done=3 total=7 t=8.0\n" *
+                    "progress: item kind=drive label=parenthost/workers status=ok done=3 total=7 t=10.5\n" *
+                    "progress: item kind=drive label=parenthost/init status=running done=5 total=7 t=15.5\n" *
+                    "progress: item kind=drive label=parenthost/init status=ok done=5 total=7 t=16.0\n" *
+                    "progress: done kind=drive ok=true done=7 total=7 t=16.0\n",
+                )
+                drows = DistSSHKit.kit_progress_phases(tmp)
+                dtext = DistSSHKit._format_kit_progress_phases(drows)
+                @test occursin("parenthost", dtext)
+                @test occursin("  workers", dtext)
+                @test occursin("  init", dtext)
+                @test occursin("activate project", dtext)
+            end
             done = DistSSHKit.parse_progress_line(
                 "progress: done kind=go ok=true done=2 total=2",
             )
@@ -414,7 +556,7 @@ using Test
                     sidecar = joinpath(tmp, "kit.progress")
                     @test isfile(sidecar)
                     body = read(sidecar, String)
-                    @test !occursin("progress: begin", body)
+                    @test occursin("progress: begin kind=drive", body)
                     @test occursin("progress: done kind=drive ok=true", body)
                     @test DistSSHKit.kit_progress_latest(tmp).event === :done
                     @test DistSSHKit.kit_progress_latest(sidecar).event === :done

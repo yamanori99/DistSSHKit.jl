@@ -76,10 +76,10 @@ project tree and an instantiate. Prefer matching Julia **major.minor**.
 After `main()`: **post-run-new** collect. Standalone pull via the collect
 flags above. See [User Guide](@ref Manual) for mode names.
 
-External watchers: set `DISTSSHKIT_PROGRESS=1` so `begin` / `step` lines
-appear (in the kit log and in `kit.progress`). `progress: done` is always
-written to `kit.progress` even with `--no-log`. Line format: [API](@ref API)
-(Progress lines).
+External watchers: `progress: begin` / `step` / `item` always go to
+`kit.progress` (even `-q` / `--no-log`). The kit log still gets those lines
+only with `--progress` (TTY default) or `DISTSSHKIT_PROGRESS=1`. `progress: done`
+is always in both. Line format: [API](@ref API) (Progress lines).
 
 Collect expands remote `~/…` roots on each host before `find` / rsync so the
 controller never `relpath`s against a tilde base (same ENV as
@@ -89,6 +89,49 @@ controller never `relpath`s against a tilde base (same ENV as
 
 Expects `init_output_dir!` / `main` (and optional hooks). Details and ENV:
 `drive --help`. Embed with [`drive!`](@ref) / [`pipeline!`](@ref).
+
+## Wall time (before changing delay defaults)
+
+Do not change `DISTRIBUTED_INIT_DELAY_SEC` (default 5) or `DISTSSHKIT_JOBS`
+(default 1) until a split exists. Run drive as usual (`-q` hides the table).
+The Time table prints at the end, after job stdout, with a `progress DIR` line
+to replay:
+
+```bash
+julia --project=. -m DistSSHKit drive -y parenthost:4 demos/with_kit/square_echo.jl --n 4
+julia --project=. -m DistSSHKit progress DIR
+```
+
+`DIR` is the result root (`--output-dir`, or the default under the project).
+`--progress` is the TTY default; you do not need a scratch `--output-dir` just
+to time a run.
+
+`progress:` lines end with `t=<unix>` ([API](@ref API)). Drive labels:
+`sync` (optional), `git`, `cleanup`, `workers` (`addprocs` + Julia detect),
+`wait` (connection grace; `DISTRIBUTED_INIT_DELAY_SEC`, default 5), `init`,
+`run`, `collect`. Nested rows under each host: `workers` / `init` / `collect`
+(and `cleanup` on remotes).
+
+Local TTY `drive -y`, `demos/with_kit/square_echo.jl --n 4`,
+2026-08-24 (this checkout, no SSH). `DISTSSHKIT_JOBS` default 1.
+
+| Phase | parenthost:2 | parenthost:4 |
+| --- | ---: | ---: |
+| start | 0.08 | 0.08 |
+| git | 0.01 | 0.01 |
+| cleanup | 0.00 | 0.00 |
+| workers (`addprocs`) | 1.7 | 2.5 |
+| wait (connections) | 5.0 | 5.0 |
+| init | 3.39 | 4.97 |
+| run | 1.36 | 1.33 |
+| collect | 0.02 | 0.11 |
+| Time (begin→done) | 11.56 | 14.0 |
+
+`wait` is a fixed 5 s (connection grace). `workers` and `init` grow with slot count; at
+`:4`, `init` is about the same as that wait. `run` is the script (~1.3 s
+either way). Remote detect / rsync / instantiate were not timed here; use
+`time` on `setup --rsync` / `--instantiate` twice, and `DISTSSHKIT_JOBS=1`
+vs `2` on two hosts, before changing that default.
 
 ## Concurrent runs
 

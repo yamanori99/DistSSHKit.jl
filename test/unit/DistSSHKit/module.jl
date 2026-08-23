@@ -23,6 +23,7 @@ using Test
     @test :drive_host_status in ns && :DriveHostStatus in ns
     @test :allocate_output_dir in ns
     @test :parse_progress_line in ns && :kit_progress_latest in ns
+    @test :kit_progress_phases in ns
     @test :execute_detached_accepts in ns && :kit_pid_alive in ns
     @test :kit_pid_file_running in ns
     @test :terminate! in ns && :terminate_run! in ns
