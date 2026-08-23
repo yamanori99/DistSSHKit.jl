@@ -6,7 +6,7 @@
   <defs>
     <style>
       .stroke {
-        fill: #334155;
+        fill: none;
         stroke: #ffffff;
         stroke-width: 4;
         stroke-linecap: round;

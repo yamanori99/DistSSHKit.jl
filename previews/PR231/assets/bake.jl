@@ -154,8 +154,6 @@ end
 function to_dark(svg::AbstractString)
     dark = replace(svg, "stroke: #1a1d21;" => "stroke: #ffffff;")
     dark = replace(dark, "fill: #1a1d21;" => "fill: #ffffff;")
-    # Chassis must be filled: outline-only + dark chrome looks like floating Julia dots.
-    dark = replace(dark, ".stroke {\n        fill: none;" => ".stroke {\n        fill: #334155;")
     dark = replace(dark, "stroke-width: 3.5;\n        stroke-linecap: round;\n        stroke-linejoin: round;" =>
         "stroke-width: 4;\n        stroke-linecap: round;\n        stroke-linejoin: round;")
     dark = replace(dark, ".link {\n        stroke: #ffffff;\n        stroke-width: 1.4;" =>
