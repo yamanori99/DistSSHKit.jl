@@ -61,10 +61,9 @@ function check_memory_capacity(
             writeln_both("  $label: (memory check failed)")
             return
         end
-        nproc_eff = nproc === nothing ? 10^9 : Int(nproc)
         cap = size_worker_count(
             total_gb,
-            nproc_eff,
+            nproc,
             per_worker;
             mem_headroom=frac,
             master_gb=mgb,

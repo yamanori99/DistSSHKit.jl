@@ -149,6 +149,11 @@ using Test
             @test r.mem_headroom == 0.5
             @test r.master_gb == 0.2
         end
+        let r = parse_drive_args(["--mem-headroom", "0.5", "--master-gb", "0.2", "--help"])
+            @test r.help
+            @test r.mem_headroom == 0.5
+            @test r.master_gb == 0.2
+        end
         let r = parse_drive_args(["--sync", "host1", "s.jl"])
             @test r.sync_mode === :sync
             @test r.skip_hash_check == true

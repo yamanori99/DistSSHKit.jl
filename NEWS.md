@@ -9,6 +9,10 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
   `master_gb`, CPU reserve). CLI `drive --mem-headroom` / `--master-gb`
   match `size`. Detached `execute!(:drive; mem_headroom=, master_gb=)`
   forwards those flags. `MEMORY_CAPACITY_FRACTION` is gone.
+- `parse_drive_args` `--help` keeps already-parsed `--mem-headroom` /
+  `--master-gb`. Drive preflight skips the CPU cap when remote `nproc` is
+  missing (`size_worker_count(..., nothing, …)`), instead of a fake huge
+  core count.
 - [`HostRunResult`](@ref) stores an error `String` as-is (`sprint(showerror)`
   only for non-strings), so `kit.result` `hosts[].error` round-trips without
   extra quotes.
