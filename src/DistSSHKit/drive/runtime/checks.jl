@@ -1,9 +1,12 @@
 using .DistSSHKit:
+    DEFAULT_MASTER_GB,
     DEFAULT_MEM_HEADROOM,
     PARENT_HOST_NAME,
     WORKER_MEMORY_GB_FALLBACK,
     get_local_git_hash,
+    get_local_resources,
     get_remote_git_hash,
+    get_remote_nproc,
     get_remote_total_gb,
     print_ok,
     print_progress_err,
@@ -11,6 +14,7 @@ using .DistSSHKit:
     print_warn,
     println_fatal,
     rss_bytes_to_worker_gb,
+    size_worker_count,
     write_both,
     writeln_both
 
@@ -36,27 +40,41 @@ function check_memory_capacity(
     hosts::Vector{Tuple{String,Union{Int,Nothing}}},
     default_workers::Union{Int,Nothing};
     mem_headroom::Real=DEFAULT_MEM_HEADROOM,
+    master_gb::Real=DEFAULT_MASTER_GB,
 )::Bool
     frac = Float64(mem_headroom)
+    mgb = Float64(master_gb)
     per_worker = estimate_worker_memory_gb()
     r(x) = round(x, digits=1)
     writeln_both("Checking memory capacity...")
     writeln_both("  Per-worker estimate: $(round(per_worker, digits=2))GB")
     warnings = String[]
 
-    function check_host(label::String, n_workers::Int, total_gb)
+    function check_host(
+        label::String,
+        n_workers::Int,
+        total_gb,
+        nproc;
+        is_parenthost::Bool=false,
+    )
         if total_gb === nothing
             writeln_both("  $label: (memory check failed)")
             return
         end
-        avail = total_gb * frac
-        estimated = n_workers * per_worker
-        max_w = max(1, floor(Int, avail / per_worker))
+        nproc_eff = nproc === nothing ? 10^9 : Int(nproc)
+        cap = size_worker_count(
+            total_gb,
+            nproc_eff,
+            per_worker;
+            mem_headroom=frac,
+            master_gb=mgb,
+            is_parenthost=is_parenthost,
+        )
         pct = round(Int, frac * 100)
-        if estimated > avail
-            push!(warnings, "  $label: $(n_workers) × $(r(per_worker))GB = $(r(estimated))GB > $(r(avail))GB ($(pct)% of $(r(total_gb))GB)")
+        if n_workers > cap
+            push!(warnings, "  $label: $(n_workers) workers > size cap $(cap) ($(r(per_worker))GB each, $(pct)% of $(r(total_gb))GB)")
             write_both("  $label: $(r(total_gb))GB, $(n_workers) workers → ")
-            print_progress_warn("⚠ (max ~$(max_w))")
+            print_progress_warn("⚠ (max ~$(cap))")
             writeln_both("")
         else
             write_both("  $label: $(r(total_gb))GB, $(n_workers) workers → ")
@@ -66,8 +84,8 @@ function check_memory_capacity(
     end
 
     if local_workers > 0
-        total, _ = estimate_available_gb()
-        check_host(PARENT_HOST_NAME, local_workers + 1, total)
+        res = get_local_resources()
+        check_host(PARENT_HOST_NAME, local_workers, res.total_gb, res.nproc; is_parenthost=true)
     end
 
     host_totals = Dict{String,Int}()
@@ -77,7 +95,13 @@ function check_memory_capacity(
     end
 
     for (host_name, host_workers) in host_totals
-        check_host(host_name, host_workers, get_remote_total_gb(host_name))
+        check_host(
+            host_name,
+            host_workers,
+            get_remote_total_gb(host_name),
+            get_remote_nproc(host_name);
+            is_parenthost=false,
+        )
     end
     writeln_both("")
 

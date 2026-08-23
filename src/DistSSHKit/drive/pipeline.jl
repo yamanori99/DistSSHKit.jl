@@ -249,6 +249,7 @@ function pipeline!(config::PipelineConfig)::PipelineResult
             package=config.package,
             julia=config.julia,
             mem_headroom=config.mem_headroom,
+            master_gb=config.master_gb,
         )
     finally
         if do_collect

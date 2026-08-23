@@ -12,6 +12,9 @@ using Test
         @test DistSSHKit.size_worker_count(1.0, 4, 2.0; is_parenthost=false) == 0
         # CPU reserve on localhost with 2 cores → max(1, 0) = 1 caps the result.
         @test DistSSHKit.size_worker_count(32.0, 2, 1.0; is_parenthost=true) == 1
+        @test DistSSHKit.size_worker_count(16.0, 8, 2.0; mem_headroom=0.0, master_gb=0.4, is_parenthost=true) == 0
+        @test DistSSHKit.size_worker_count(16.0, 8, 2.0; mem_headroom=0.5, master_gb=0.4, is_parenthost=true) <
+            DistSSHKit.size_worker_count(16.0, 8, 2.0; mem_headroom=0.75, master_gb=0.4, is_parenthost=true)
     end
 
     @testset "rss_bytes_to_worker_gb" begin

@@ -231,9 +231,13 @@ using Test
             @test parsed.hint_surface === :api
             @test parsed.julia === nothing
             @test parsed.mem_headroom == DistSSHKit.DEFAULT_MEM_HEADROOM
+            @test parsed.master_gb == DistSSHKit.DEFAULT_MASTER_GB
             @test DistSSHKit.drive_parsed_from_session(
-                session, script; mem_headroom=0.5,
+                session, script; mem_headroom=0.5, master_gb=0.2,
             ).mem_headroom == 0.5
+            @test DistSSHKit.drive_parsed_from_session(
+                session, script; mem_headroom=0.5, master_gb=0.2,
+            ).master_gb == 0.2
 
             parsed_jl = DistSSHKit.drive_parsed_from_session(
                 session,
@@ -293,9 +297,6 @@ using Test
             redirect_stdout(devnull) do
                 redirect_stderr(devnull) do
                     @test Main.check_memory_capacity(1, Tuple{String,Union{Int,Nothing}}[], nothing)
-                    @test Main.check_memory_capacity(
-                        1, Tuple{String,Union{Int,Nothing}}[], nothing; mem_headroom=0.0,
-                    )
                     ok, mm, uv = Main.check_git_hashes(String[], tmp)
                     @test ok
                     @test isempty(mm)

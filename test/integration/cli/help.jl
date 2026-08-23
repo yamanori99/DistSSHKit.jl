@@ -16,4 +16,12 @@ using Test
         @test proc.exitcode == 0
         @test occursin("DistSSHKit $(DistSSHKit.dist_ssh_kit_version())", out)
     end
+
+    proc, out = _run_subprocess(setenv(_kit_cli_cmd([
+        "drive", "--mem-headroom", "0.5", "--master-gb", "0.2", "--help",
+    ]), env))
+    @test proc.exitcode == 0
+    @test occursin("Usage", out)
+    @test occursin("--mem-headroom", out)
+    @test occursin("--master-gb", out)
 end
