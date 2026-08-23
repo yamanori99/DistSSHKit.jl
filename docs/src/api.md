@@ -166,6 +166,7 @@ wait(execute!(:go, "job.jl", ["parenthost:1"]; detached=true, args=["8"]))
 execute!
 allocate_output_dir
 execute_detached_accepts
+execute_kwargs_from_parsed
 KitProcess
 kit_pid_alive
 kit_pid_file_running
@@ -251,9 +252,10 @@ Without `job_id`, only the child pid is signaled.
   `.distsshkit/<kind>/` for a later `output_dir=`. Drive's omitted
   `execute!` default is still the shared `../results` folder; queue
   should allocate instead of sharing it.
-- [`execute_detached_accepts`](@ref): whether detached `execute!` accepts
-  that keyword for `:go` / `:drive` (named parameters plus the throw-path
-  allow-list). `:log_dir` / `:mem_headroom` / `:master_gb` are drive-only;
+- [`execute_kwargs_from_parsed`](@ref): map `parse_go_args` /
+  `parse_drive_args` onto detached `execute!` keywords. Hosts stay in
+  [`host_tokens`](@ref); `:workers` is drive `--workers` when set.
+  `:log_dir` / `:mem_headroom` / `:master_gb` / `:workers` are drive-only;
   `:plan` is never accepted.
 - `job_id` (`execute!` keyword, or `ENV["DISTSSHKIT_JOB_ID"]` for in-process
   `go!` / `drive!`): `job=<id>` on every `progress:` line, and a cmdline
