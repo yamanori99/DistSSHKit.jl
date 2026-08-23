@@ -9,30 +9,13 @@
 
 using Random
 
-function _demo_n(args; default::Int)::Int
-    n = default
-    i = 1
-    while i <= length(args)
-        a = String(args[i])
-        if a == "--n"
-            i >= length(args) && throw(ArgumentError("--n needs an integer"))
-            n = parse(Int, args[i + 1])
-            i += 2
-        elseif startswith(a, "--n=")
-            n = parse(Int, chopprefix(a, "--n="))
-            i += 1
-        else
-            throw(ArgumentError(
-                "unknown $(repr(a)); pass --n N (a bare number looks like parenthost:N)",
-            ))
-        end
-    end
-    n < 1 && throw(ArgumentError("--n must be ≥ 1, got $n"))
-    return n
-end
-
 function main()
-    n = _demo_n(ARGS; default=1000)
+    n = 1000
+    if !isempty(ARGS)
+        length(ARGS) == 2 && ARGS[1] == "--n" ||
+            error("pass --n N (a bare number looks like parenthost:N)")
+        n = parse(Int, ARGS[2])
+    end
 
     env = strip(get(ENV, "DISTRIBUTED_OUTPUT_DIR", ""))
     outdir = isempty(env) ? joinpath(@__DIR__, "output") : env
