@@ -1,8 +1,8 @@
 #!/usr/bin/env julia
 # DistSSHKit driver: pmap p→p² and print only (pair with square_file.jl).
 #
-#   julia --project=. -m DistSSHKit drive parenthost:4 demos/with_kit/square_echo.jl
-#   julia --project=. -m DistSSHKit drive parenthost:4 demos/with_kit/square_echo.jl 4
+#   julia --project=. -m DistSSHKit drive parenthost:2 demos/with_kit/square_echo.jl
+#   julia --project=. -m DistSSHKit drive parenthost:2 demos/with_kit/square_echo.jl --n 4
 
 using Distributed
 using DistSSHKit
@@ -12,7 +12,12 @@ function init_output_dir!(_)
 end
 
 function main()
-    n = length(ARGS) >= 1 ? parse(Int, ARGS[1]) : 8
+    n = 8
+    if !isempty(ARGS)
+        length(ARGS) == 2 && ARGS[1] == "--n" ||
+            error("pass --n N (a bare number looks like parenthost:N)")
+        n = parse(Int, ARGS[2])
+    end
     results = pmap(p -> p^2, 1:n)
     println("param^2: ", results)
 end

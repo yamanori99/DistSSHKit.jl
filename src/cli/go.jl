@@ -43,19 +43,20 @@ function go_main()::Cint
         return 0
     end
     yes = parsed.cli_session.yes || kit_noninteractive()
+    kw = execute_kwargs_from_parsed(parsed; kind=:go)
     result = go!(
         parsed.script_path,
-        parsed.hosts;
+        host_tokens(parsed; kind=:go);
         project=PROJECT_ROOT,
-        quiet=parsed.cli_session.quiet,
-        verbosity=parsed.cli_session.verbosity,
+        quiet=kw[:quiet],
+        verbosity=kw[:verbosity],
         yes=yes,
-        sync=parsed.sync,
-        args=parsed.script_args,
+        sync=kw[:sync],
+        args=kw[:args],
         path_anchor=_PATH_ANCHOR,
-        output_dir=parsed.output_dir,
+        output_dir=kw[:output_dir],
         hosts_file=nothing,
-        julia=parsed.julia,
+        julia=kw[:julia],
         hint_surface=:cli,
     )
     report_go_errors(result)

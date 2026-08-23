@@ -200,4 +200,22 @@ using Dates
             end
         end
     end
+
+    @testset "DISTSSHKIT_HOSTS_FILE not reapplied when workers set" begin
+        _with_tempdir() do proj
+            script = joinpath(proj, "job.jl")
+            write(script, "true\n")
+            hf = joinpath(proj, "hosts")
+            write(hf, "no-such-host.invalid:1\n")
+            withenv("DISTSSHKIT_HOSTS_FILE" => hf) do
+                redirect_stdout(devnull) do
+                    r = DistSSHKit.go!(
+                        script, ["parenthost:1"];
+                        project=proj, quiet=true, yes=true,
+                    )
+                    @test r.ok
+                end
+            end
+        end
+    end
 end

@@ -32,7 +32,9 @@ using Test
         let r = @test_logs (:warn, r"Unknown option") parse_size_args(["--nope"])
             @test isempty(r.hosts)
         end
-        @test_throws ArgumentError parse_size_args(["--nope", "--local"])
+        @test_logs (:warn, r"Unknown option") begin
+            @test_throws ArgumentError parse_size_args(["--nope", "--local"])
+        end
         @test_throws ArgumentError parse_size_args(["--gb-per-worker"])
         @test_throws ArgumentError parse_size_args(["--probe"])
         withenv("DISTSSHKIT_HOSTS" => "env-h:2") do

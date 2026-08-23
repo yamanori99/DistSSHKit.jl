@@ -5,12 +5,17 @@
 #
 #   julia demos/without_kit/pi_echo.jl
 #   julia --project=. -m DistSSHKit go demos/without_kit/pi_echo.jl
-#   julia --project=. -m DistSSHKit go demos/without_kit/pi_echo.jl 5000
+#   julia --project=. -m DistSSHKit go demos/without_kit/pi_echo.jl --n 5000
 
 using Random
 
 function main()
-    n = length(ARGS) >= 1 ? parse(Int, ARGS[1]) : 1000
+    n = 1000
+    if !isempty(ARGS)
+        length(ARGS) == 2 && ARGS[1] == "--n" ||
+            error("pass --n N (a bare number looks like parenthost:N)")
+        n = parse(Int, ARGS[2])
+    end
     Random.seed!(42)
 
     inside = 0

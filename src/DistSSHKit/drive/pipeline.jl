@@ -1,11 +1,5 @@
 # pipeline! — sync → size! → drive → collect.
 
-function _parse_env_hosts(raw::AbstractString)::Vector{String}
-    s = strip(String(raw))
-    isempty(s) && return String[]
-    return [strip(h) for h in split(s, ',') if !isempty(strip(h))]
-end
-
 function _parse_env_sync_mode(raw::AbstractString)::Union{Symbol,Bool,Nothing}
     s = lowercase(strip(String(raw)))
     isempty(s) && return nothing
@@ -39,7 +33,7 @@ Build [`PipelineConfig`](@ref) from environment variables.
 | Variable | Role |
 |----------|------|
 | `DISTSSHKIT_HOSTS` | Comma-separated worker tokens (`host` / `host:N`) |
-| `DISTSSHKIT_HOSTS_FILE` | Hosts file (appended after `DISTSSHKIT_HOSTS`) |
+| `DISTSSHKIT_HOSTS_FILE` | Hosts file (appended after `DISTSSHKIT_HOSTS`, same order as CLI) |
 | `DISTRIBUTED_REMOTE_PROJECT_ROOT` | Remote repo root |
 | `DISTRIBUTED_PROJECT_ROOT` | Local project root |
 | `DRIVER` | Driver script path |
@@ -54,24 +48,19 @@ function pipeline_config_from_env(;
 )::PipelineConfig
     driver_path = _pipeline_config_driver_path(driver)
     remote_raw = strip(get(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT", ""))
-    hf_raw = strip(get(ENV, "DISTSSHKIT_HOSTS_FILE", ""))
     sync_raw = strip(get(ENV, "SYNC_MODE", ""))
     project_root = strip(get(ENV, "DISTRIBUTED_PROJECT_ROOT", ""))
-    want_quiet = _env_flag("DISTSSHKIT_QUIET")
-    want_progress = _env_flag("DISTSSHKIT_PROGRESS")
-    want_verbose = _env_flag("DISTSSHKIT_VERBOSE")
-    n = count(identity, (want_quiet, want_progress, want_verbose))
-    n > 1 &&
-        throw(ArgumentError("cannot combine DISTSSHKIT_QUIET, DISTSSHKIT_PROGRESS, and DISTSSHKIT_VERBOSE"))
-    verbosity = want_quiet ? :quiet : want_progress ? :progress : want_verbose ? :verbose : nothing
+    cli = default_kit_cli_session()
+    cli.hint_surface = :api
+    env_v = _env_verbosity()
     return PipelineConfig(
         project=isempty(project_root) ? pwd() : String(project_root),
-        workers=_parse_env_hosts(get(ENV, "DISTSSHKIT_HOSTS", "")),
+        workers=kit_host_source_tokens(cli; keep_counts=true),
         remote=isempty(remote_raw) ? nothing : String(remote_raw),
-        hosts_file=isempty(hf_raw) ? nothing : String(hf_raw),
+        hosts_file=nothing,
         yes=true,
-        quiet=want_quiet,
-        verbosity=verbosity,
+        quiet=env_v === :quiet,
+        verbosity=env_v,
         driver=String(driver_path),
         gb_per_worker=_optional_env_float("GB_PER_WORKER"),
         size_probe=let p = strip(get(ENV, "DISTSSHKIT_SIZE_PROBE", ""))

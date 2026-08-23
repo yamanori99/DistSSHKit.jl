@@ -38,6 +38,10 @@ using Test
                     @test result.exit_code == 0
                     @test result.output_dir !== nothing
                     @test result.log_dir !== nothing
+                    let od = result.output_dir
+                        od === nothing && error("expected execute! output_dir")
+                        _assert_kit_progress_done(od; kind=:drive)
+                    end
                     @test occursin("DISTSSHKIT_RUNNER_SMOKE_OK nw=2", out)
                     # stderr: second `main` include after `api.jl` (warn-overwrite)
                     # plus Distributed worker teardown. Captured, not asserted.

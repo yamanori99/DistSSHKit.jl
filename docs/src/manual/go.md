@@ -60,9 +60,9 @@ is an error. `collect_spec=false` skips collect and is orthogonal to `output_dir
 
 Collect after remote slots: **slot-overwrite** (rsync whole slot dir).
 
-External watchers: set `DISTSSHKIT_PROGRESS=1` so the kit log also gets
-`progress: begin` / `item` lines; `progress: done` is always written when a
-log file is open. Line format: [API](@ref API) (Progress lines).
+External watchers: set `DISTSSHKIT_PROGRESS=1` so `begin` / `item` lines
+appear (in the kit log and in `kit.progress`). `progress: done` is always
+written to `kit.progress`. Line format: [API](@ref API) (Progress lines).
 
 ## Concurrent runs
 

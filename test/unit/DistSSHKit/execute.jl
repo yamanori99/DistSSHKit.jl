@@ -231,6 +231,9 @@ using Test
         @test !haskey(gkw, :hosts_file)
         @test !haskey(gkw, :workers)
         @test DistSSHKit.host_tokens(go; kind=:go) == ["h1"]
+        @test Set(keys(gkw)) == Set([
+            :output_dir, :args, :julia, :quiet, :verbosity, :sync,
+        ])
 
         hosts_file = _sample_hosts_file()
         drive = DistSSHKit.parse_drive_args([

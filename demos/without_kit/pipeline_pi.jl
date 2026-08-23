@@ -5,19 +5,21 @@
 # Local (this script):
 #
 #   julia --project=. demos/without_kit/pipeline_pi.jl
-#   julia --project=. demos/without_kit/pipeline_pi.jl 5000
+#   julia --project=. demos/without_kit/pipeline_pi.jl --n 5000
 #
 # Same job via CLI:
 #
-#   julia --project=. -m DistSSHKit go parenthost:2 demos/without_kit/pi_file.jl
+#   julia --project=. -m DistSSHKit go parenthost:2 demos/without_kit/pi_file.jl --n 5000
 
 using DistSSHKit
 
+isempty(ARGS) || (length(ARGS) == 2 && ARGS[1] == "--n") ||
+    error("pass --n N (a bare number looks like parenthost:N)")
+
 script = joinpath(@__DIR__, "pi_file.jl")
-n = length(ARGS) >= 1 ? ARGS[1] : "1000"
 
 # Local-only: two concurrent full-job slots on this machine (not Distributed workers).
-result = go!(script, "parenthost:2"; args=[n])
+result = go!(script, "parenthost:2"; args=ARGS)
 
 # First-time remotes: setup!, then go!.
 #
@@ -33,7 +35,7 @@ result = go!(script, "parenthost:2"; args=[n])
 #       "user@host1:1",
 #       "user@host2:1";
 #       remote="/path/to/project",
-#       args=[n],
+#       args=ARGS,
 #       # julia=nothing,                  # or path / "auto" (same as CLI --julia)
 #   )
 #
@@ -44,7 +46,7 @@ result = go!(script, "parenthost:2"; args=[n])
 #       "user@host1:1",
 #       "user@host2:1";   # or go!(script, ["user@host1:1", "user@host2:1"]; …)
 #       remote="/path/to/project",
-#       args=[n],
+#       args=ARGS,
 #       # project=pwd(),
 #       # hosts_file="hosts.txt",       # extra host / host:N lines
 #       # yes=true,                     # skip confirm prompts (API default)

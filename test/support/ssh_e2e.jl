@@ -42,13 +42,26 @@ function _ssh_e2e_env(;
     return merge(base, extra)
 end
 
-"""`ssh -F docker-ssh config HOST REMOTE_CMD` (same RequestTTY policy as kit defaults)."""
+"""`ssh -F docker-ssh config HOST REMOTE_CMD` (same RequestTTY policy as kit defaults).
+
+Setup existence checks (`test -e` / `test -d`), git, rsync, and `pgrep` stay
+here. Remote Julia work uses `_e2e_run_on_host`.
+"""
 function _ssh_e2e_ssh(host::AbstractString, remote_cmd::AbstractString)
     g = _docker_ssh_generated()
     return _run_subprocess(Cmd([
         "ssh", "-F", g.ssh_config, "-o", "RequestTTY=no",
         String(host), String(remote_cmd),
     ]))
+end
+
+"""Capture stdout of remote Julia via kit `ssh_opts` + `run_on_host` inner sh.
+
+Call under `withenv` that sets `DISTRIBUTED_SSH_OPTS` (E2E `_ssh_e2e_env`).
+"""
+function _e2e_run_on_host(host::AbstractString, argv::AbstractVector{<:AbstractString})
+    inner = DistSSHKit._run_on_host_remote_sh(String[String(a) for a in argv])
+    return _run_subprocess(Cmd(vcat(["ssh"], DistSSHKit.ssh_opts(), [String(host), inner])))
 end
 
 _ssh_e2e_hosts() = ("distsshkit-w1", "distsshkit-w2")
