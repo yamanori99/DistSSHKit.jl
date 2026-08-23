@@ -371,6 +371,7 @@ function show_drive_requirements(; io::IO=stdout)
         "  --require-git       $(REQUIRE_GIT_MEANING)",
         "  --require-all-hosts fail if a listed SSH host did not join or collect failed",
         "  --output-dir PATH   result root (DISTRIBUTED_OUTPUT_DIR)",
+        "  $(KIT_TIME_HELP)",
         "  --julia PATH        remote Julia",
         "  --mem-headroom N    RAM fraction (default $(DEFAULT_MEM_HEADROOM); same as size)",
         "  --master-gb N       master reserve (default $(DEFAULT_MASTER_GB); same as size)",

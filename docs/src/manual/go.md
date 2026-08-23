@@ -60,9 +60,28 @@ is an error. `collect_spec=false` skips collect and is orthogonal to `output_dir
 
 Collect after remote slots: **slot-overwrite** (rsync whole slot dir).
 
-External watchers: set `DISTSSHKIT_PROGRESS=1` so `begin` / `item` lines
-appear (in the kit log and in `kit.progress`). `progress: done` is always
-written to `kit.progress`. Line format: [API](@ref API) (Progress lines).
+External watchers: `begin` / `item` always go to `kit.progress` (even `-q`).
+The kit log still gets those lines only with `--progress` or
+`DISTSSHKIT_PROGRESS=1`. `progress: done` is always written.
+
+## Wall time
+
+Same as [drive](@ref Manual-drive): run go as usual (`-q` hides the table).
+The Time table prints at the end, after slot stdout, with a `progress DIR` line
+to replay:
+
+```bash
+julia --project=. -m DistSSHKit go -y parenthost:2 demos/without_kit/pi_echo.jl --n 5000
+julia --project=. -m DistSSHKit progress DIR
+```
+
+`DIR` is the batch root (`--output-dir`, or the default under `.distsshkit/go/`).
+`--progress` is the TTY default; you do not need a scratch `--output-dir` just
+to time a run.
+
+Labels: `ready` (remote project / Julia, when remotes are listed), `sync`
+(optional), then each slot with nested `run` (script) and `collect` (remote
+pull). Slots overlap; percentages are of the whole run and may sum past 100%.
 
 ## Concurrent runs
 

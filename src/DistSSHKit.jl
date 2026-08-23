@@ -69,6 +69,7 @@ export kit_result_from_dir
 export drive_host_status
 export parse_progress_line
 export kit_progress_latest
+export kit_progress_phases
 export parse_go_args
 export parse_drive_args
 export show_go_usage
@@ -267,6 +268,7 @@ CLI entry. Prefer Julia 1.12+ and `julia -m DistSSHKit SUBCOMMAND …`:
     julia --project=. -m DistSSHKit drive parenthost:2 script.jl
     julia --project=. -m DistSSHKit setup --clone host1 host2
     julia --project=. -m DistSSHKit size parenthost host1
+    julia --project=. -m DistSSHKit progress DIR
 
 `main` remains for wrappers and tests; prefer `-m` day-to-day.
 """
@@ -277,6 +279,7 @@ function main(args::Vector{String}=copy(ARGS))::Cint
         "demo",
         "setup",
         "size",
+        "progress",
     )
     # Shorthand: hosts… SCRIPT.jl → go (as-is complete job)
     if length(args) >= 1 &&
@@ -316,9 +319,11 @@ function main(args::Vector{String}=copy(ARGS))::Cint
         return setup(rest)
     elseif subcommand == "size"
         return run_size(rest)
+    elseif subcommand == "progress"
+        return progress(rest)
     else
         print_cli_error("Unknown subcommand: $subcommand")
-        println(stderr, "Expected: go | drive | setup | size | demo")
+        println(stderr, "Expected: go | drive | setup | size | demo | progress")
         println(stderr)
         print_kit_root_usage()
         return 1

@@ -142,8 +142,8 @@ function _run_drive_parsed_locked!(
 
     sync_mode = get(parsed, :sync_mode, nothing)
     do_sync = sync_mode isa Symbol && !isempty(host_names)
-    # sync? + git + cleanup + workers + init + run + collect
-    progress_steps = (do_sync ? 1 : 0) + 6
+    # sync? + git + cleanup + workers + wait + init + run + collect
+    progress_steps = (do_sync ? 1 : 0) + 7
     progress_ok = false
     # Set once `add_drive_workers!` returns (registers rmprocs-at-atexit for
     # whatever joined). `finally` below always calls it so local/SSH workers
@@ -258,6 +258,7 @@ function _run_drive_parsed_locked!(
                 return 1
             end
         end
+        kit_progress_step!("wait")
         wait_for_worker_connections!()
 
         kit_progress_step!("init")
@@ -295,6 +296,7 @@ function _run_drive_parsed_locked!(
             resolved_log_dir[] = enable_log ? DistSSHKit.resolve_drive_log_dir(log_dir, script_dir) : nothing
         end
         kit_progress_done!(; ok=progress_ok)
+        DistSSHKit._maybe_print_kit_progress_phases(kit_out)
         DistSSHKit._set_kit_progress_sidecar!(nothing)
         DistSSHKit._stop_drive_host_status_monitor!()
         # `nothing` when no workers were ever added (early `return` above

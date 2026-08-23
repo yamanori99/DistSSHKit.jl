@@ -343,6 +343,40 @@ function _kit_progress_sidecar_writeln(msg::AbstractString)
     return nothing
 end
 
+function _kit_progress_sidecar_truncate!()
+    path = KIT_PROGRESS_SIDECAR[]
+    path === nothing && return
+    try
+        open(path, "w") do _
+        end
+    catch
+    end
+    return nothing
+end
+
+const KIT_JOB_STDOUT = Ref{IOBuffer}(IOBuffer())
+
+function _reset_job_stdout_capture!()
+    KIT_JOB_STDOUT[] = IOBuffer()
+    return nothing
+end
+
+function _append_job_stdout_capture!(data)
+    write(KIT_JOB_STDOUT[], data)
+    return nothing
+end
+
+"""Replay job stdout after the live bar (`:progress` only). Always drains the buffer."""
+function _print_job_stdout_after_progress!()
+    s = String(take!(KIT_JOB_STDOUT[]))
+    KIT_JOB_STDOUT[] = IOBuffer()
+    kit_output_progress() || return nothing
+    isempty(strip(s)) && return nothing
+    print(stdout, s)
+    endswith(s, '\n') || println(stdout)
+    return nothing
+end
+
 """Kit text → terminal when `:verbose`, always to kit log when open."""
 function write_both(msg::String; color::Symbol=:normal, bold::Bool=false)
     if kit_output_detail()
@@ -638,9 +672,52 @@ print_help_title(msg; io=stdout) = _print_colored(io, msg, :cyan, true)
 
 const PROGRESS_BAR_WIDTH = 20
 const PROGRESS_LABEL_WIDTH = 14
-const PROGRESS_FILL_CHAR = '─'
-const PROGRESS_HEAD_CHAR = '╶'
-const PROGRESS_EMPTY_CHAR = '─'
+const PROGRESS_FILL_CHAR = '━'
+const PROGRESS_HEAD_CHAR = '╺'
+const PROGRESS_EMPTY_CHAR = '━'
+
+# Ice (sky). Dark bg uses sky-400; light bg uses sky-700.
+# `DISTSSHKIT_PROGRESS_BG=dark|light` overrides `COLORFGBG`.
+function _term_light_background()::Bool
+    v = lowercase(strip(get(ENV, "DISTSSHKIT_PROGRESS_BG", "")))
+    v == "light" && return true
+    v == "dark" && return false
+    fgbg = get(ENV, "COLORFGBG", "")
+    m = match(r";(\d+)\s*$", fgbg)
+    m === nothing && return false
+    cap = m.captures[1]
+    cap === nothing && return false
+    bg = tryparse(Int, cap)
+    bg === nothing && return false
+    return bg == 7 || bg == 15
+end
+
+function _term_truecolor()::Bool
+    ct = lowercase(get(ENV, "COLORTERM", ""))
+    return occursin("truecolor", ct) || occursin("24bit", ct)
+end
+
+function _progress_accent_pair()
+    if _term_light_background()
+        return ((3, 105, 161), 31)    # sky-700
+    end
+    return ((56, 189, 248), 81)       # sky-400
+end
+
+function _print_progress_accent(io::IO, x)
+    if !use_colors()
+        print(io, x)
+        return nothing
+    end
+    rgb, idx = _progress_accent_pair()
+    if _term_truecolor()
+        r, g, b = rgb
+        print(io, "\e[1;38;2;$(r);$(g);$(b)m", x, "\e[0m")
+    else
+        printstyled(io, x; color=idx, bold=true)
+    end
+    return nothing
+end
 
 mutable struct KitProgressItem
     label::String
@@ -770,7 +847,7 @@ end
 function _progress_item_color(item::KitProgressItem)::Symbol
     item.status === :ok && return :green
     item.status === :fail && return :red
-    return :cyan
+    return :light_black
 end
 
 function _progress_header_label(state::KitProgressState; finished::Bool=false)::String
@@ -811,10 +888,13 @@ function _progress_print_header!(
     cur = _progress_current(state)
     counts = "$cur/$(state.steps)"
     elapsed = _progress_elapsed(state.t0)
-    glyph_color = finished ? (ok ? :green : :red) : :cyan
     print(io, "  ")
     if use_colors()
-        printstyled(io, glyph; color=glyph_color)
+        if finished
+            printstyled(io, glyph; color=ok ? :green : :red)
+        else
+            _print_progress_accent(io, glyph)
+        end
         print(io, "  ", label, "  ")
         if !finished
             _progress_print_bar!(io, state.done, state.steps, state.tick)
@@ -851,7 +931,11 @@ function _progress_draw_items!(
         g = _progress_item_glyph(it)
         print(stdout, "     ")
         if use_colors()
-            printstyled(stdout, g; color=_progress_item_color(it))
+            if it.status === :running
+                _print_progress_accent(stdout, g)
+            else
+                printstyled(stdout, g; color=_progress_item_color(it))
+            end
         else
             print(stdout, g)
         end
@@ -931,11 +1015,9 @@ function _progress_print_bar!(io::IO, done::Int, total::Int, tick::Int)
     head = _progress_head_index(done, total, tick; width=width)
     for i in 1:width
         if i == head
-            ch = string(PROGRESS_HEAD_CHAR)
-            use_colors() ? printstyled(io, ch; color=:cyan) : print(io, ch)
+            _print_progress_accent(io, string(PROGRESS_HEAD_CHAR))
         elseif i <= filled
-            ch = string(PROGRESS_FILL_CHAR)
-            use_colors() ? printstyled(io, ch; color=:cyan) : print(io, ch)
+            _print_progress_accent(io, string(PROGRESS_FILL_CHAR))
         else
             ch = string(PROGRESS_EMPTY_CHAR)
             use_colors() ? printstyled(io, ch; color=:light_black) : print(io, ch)
@@ -952,18 +1034,31 @@ function _progress_log_line(state::KitProgressState, event::AbstractString, kvs:
     for (k, v) in kvs
         push!(parts, "$k=$v")
     end
+    push!(parts, "t=$(round(time(); digits=3))")
     return join(parts, " ")
 end
 
-function _progress_log_writeln(state::KitProgressState, event::AbstractString, kvs::Pair...)
+function _progress_log_writeln(
+    state::KitProgressState,
+    event::AbstractString,
+    kvs::Pair...;
+    to_log::Bool=true,
+)
     line = _progress_log_line(state, event, kvs...)
-    _kit_log_writeln(line)
+    to_log && _kit_log_writeln(line)
     _kit_progress_sidecar_writeln(line)
     return nothing
 end
 
 function _progress_log_begin!(state::KitProgressState)
-    _progress_log_writeln(state, "begin", "label" => state.label, "total" => state.steps)
+    _kit_progress_sidecar_truncate!()
+    _progress_log_writeln(
+        state,
+        "begin",
+        "label" => state.label,
+        "total" => state.steps;
+        to_log=kit_output_progress(),
+    )
     return nothing
 end
 
@@ -974,8 +1069,50 @@ function _progress_log_step!(state::KitProgressState)
         "label" => state.label,
         "done" => state.done,
         "total" => state.steps,
-        "cur" => _progress_current(state),
+        "cur" => _progress_current(state);
+        to_log=kit_output_progress(),
     )
+    return nothing
+end
+
+"""Write a `progress: step` timing mark without changing the live bar."""
+function _kit_progress_mark!(label::AbstractString)
+    raw = KIT_PROGRESS[]
+    raw isa KitProgressState || return nothing
+    lab = String(label)
+    lock(KIT_PROGRESS_LOCK) do
+        _progress_is_current(raw) || return nothing
+        _progress_log_writeln(
+            raw,
+            "step",
+            "label" => lab,
+            "done" => raw.done,
+            "total" => raw.steps,
+            "cur" => _progress_current(raw);
+            to_log=kit_output_progress(),
+        )
+    end
+    return nothing
+end
+
+"""Log an `item` span (`slot/run`, `slot/collect`) without moving the live bar."""
+function _kit_progress_span!(label::AbstractString, status::Symbol)
+    status in (:running, :ok, :fail) || return nothing
+    raw = KIT_PROGRESS[]
+    raw isa KitProgressState || return nothing
+    lab = String(label)
+    lock(KIT_PROGRESS_LOCK) do
+        _progress_is_current(raw) || return nothing
+        _progress_log_writeln(
+            raw,
+            "item",
+            "label" => lab,
+            "status" => status,
+            "done" => raw.done,
+            "total" => raw.steps;
+            to_log=kit_output_progress(),
+        )
+    end
     return nothing
 end
 
@@ -986,7 +1123,8 @@ function _progress_log_item!(state::KitProgressState, item::KitProgressItem)
         "label" => item.label,
         "status" => item.status,
         "done" => state.done,
-        "total" => state.steps,
+        "total" => state.steps;
+        to_log=kit_output_progress(),
     )
     return nothing
 end
@@ -1008,8 +1146,9 @@ end
 Parse one kit `progress:` log line. `nothing` if it is not that format.
 
 Always has `event`, `kind`, `job`, `label`, `total`, `done`, `cur`,
-`status`, `ok`. Missing keys are `nothing`. `event` is `:begin` / `:step` /
-`:item` / `:done`.
+`status`, `ok`, `t`. Missing keys are `nothing`. `event` is `:begin` / `:step` /
+`:item` / `:done`. `t` is Unix time (seconds, ms in the fraction) when the
+line was written.
 """
 function parse_progress_line(line::AbstractString)
     s = strip(String(line))
@@ -1029,12 +1168,13 @@ function parse_progress_line(line::AbstractString)
     cur = nothing
     status = nothing
     ok = nothing
+    t = nothing
     for tok in Iterators.drop(tokens, 1)
-        t = String(tok)
-        eq = findfirst(==('='), t)
+        tok_s = String(tok)
+        eq = findfirst(==('='), tok_s)
         eq === nothing && return nothing
-        k = SubString(t, 1, eq - 1)
-        v = SubString(t, eq + 1)
+        k = SubString(tok_s, 1, eq - 1)
+        v = SubString(tok_s, eq + 1)
         if k == "kind"
             isempty(v) && return nothing
             kind = Symbol(String(v))
@@ -1062,10 +1202,51 @@ function parse_progress_line(line::AbstractString)
             else
                 return nothing
             end
+        elseif k == "t"
+            t = tryparse(Float64, v)
+            t === nothing && return nothing
         end
     end
     kind === nothing && return nothing
-    return (; event, kind, job, label, total, done, cur, status, ok)
+    return (; event, kind, job, label, total, done, cur, status, ok, t)
+end
+
+function _kit_progress_files(log_dir_or_file::AbstractString)::Vector{String}
+    path = String(log_dir_or_file)
+    files = String[]
+    if isfile(path)
+        push!(files, path)
+    elseif isdir(path)
+        sidecar = joinpath(path, "kit.progress")
+        isfile(sidecar) && push!(files, sidecar)
+        for f in readdir(path; join=true)
+            isfile(f) && endswith(f, ".log") && push!(files, f)
+        end
+        sort!(files; by=f -> (mtime(f), f))
+    end
+    return files
+end
+
+function _kit_progress_records(
+    log_dir_or_file::AbstractString;
+    job_id::Union{Nothing,AbstractString}=nothing,
+)
+    files = _kit_progress_files(log_dir_or_file)
+    isempty(files) && return NamedTuple[]
+    want = job_id === nothing || isempty(strip(String(job_id))) ? nothing : String(strip(String(job_id)))
+    recs = NamedTuple[]
+    for f in files
+        try
+            for line in eachline(f)
+                rec = parse_progress_line(line)
+                rec === nothing && continue
+                want !== nothing && rec.job != want && continue
+                push!(recs, rec)
+            end
+        catch
+        end
+    end
+    return recs
 end
 
 """
@@ -1079,41 +1260,407 @@ function kit_progress_latest(
     log_dir_or_file::AbstractString;
     job_id::Union{Nothing,AbstractString}=nothing,
 )
+    recs = _kit_progress_records(log_dir_or_file; job_id=job_id)
+    return isempty(recs) ? nothing : recs[end]
+end
+
+function _kit_progress_last_run(recs)
+    isempty(recs) && return recs
+    start = 1
+    for i in eachindex(recs)
+        recs[i].event === :begin && (start = i)
+    end
+    return recs[start:end]
+end
+
+"""
+    kit_progress_phases(log_dir_or_file; job_id=nothing) -> Vector{NamedTuple}
+
+Last `begin`…`done` in `kit.progress` (prefers the sidecar over `*.log`).
+Each row is `label` and `seconds` (≥ 0). Sequential `step` lines are
+pipeline intervals; concurrent `item` lines are per-slot spans (running→ok/fail).
+CLI: `julia -m DistSSHKit progress DIR`.
+"""
+function kit_progress_phases(
+    log_dir_or_file::AbstractString;
+    job_id::Union{Nothing,AbstractString}=nothing,
+)
     path = String(log_dir_or_file)
-    files = String[]
-    if isfile(path)
-        push!(files, path)
-    elseif isdir(path)
+    src = if isdir(path)
         sidecar = joinpath(path, "kit.progress")
-        isfile(sidecar) && push!(files, sidecar)
-        for f in readdir(path; join=true)
-            isfile(f) && endswith(f, ".log") && push!(files, f)
-        end
-        sort!(files; by=f -> (mtime(f), f))
+        isfile(sidecar) ? sidecar : path
     else
+        path
+    end
+    recs = _kit_progress_last_run(_kit_progress_records(src; job_id=job_id))
+    return _kit_progress_phase_rows(recs)
+end
+
+function _kit_progress_wall(recs)::Float64
+    ts = Float64[r.t for r in recs if r.t !== nothing]
+    isempty(ts) && return 0.0
+    return max(0.0, ts[end] - ts[1])
+end
+
+function _kit_progress_item_spans(recs)
+    begin_t = nothing
+    t0 = Dict{String,Float64}()
+    t1 = Dict{String,Float64}()
+    kinds = Dict{String,Symbol}()
+    order = String[]
+    for r in recs
+        if r.event === :begin && r.t !== nothing
+            begin_t = r.t
+        end
+        r.event === :item || continue
+        lab = r.label
+        lab === nothing && continue
+        r.t === nothing && continue
+        haskey(t0, lab) || push!(order, lab)
+        if r.status === :running || !haskey(t0, lab)
+            t0[lab] = r.t
+        end
+        if r.status === :ok || r.status === :fail
+            t1[lab] = r.t
+        end
+        r.kind !== nothing && (kinds[lab] = r.kind)
+    end
+    rows = NamedTuple[]
+    for lab in order
+        a = get(t0, lab, begin_t)
+        b = get(t1, lab, nothing)
+        a === nothing && continue
+        b === nothing && continue
+        dt = b - a
+        dt < 0 && continue
+        push!(rows, (; label=lab, seconds=dt, event=:item, kind=get(kinds, lab, :unknown)))
+    end
+    return rows
+end
+
+function _kit_progress_phase_rows(recs)
+    item_rows = _kit_progress_item_spans(recs)
+    first_item_t = nothing
+    for r in recs
+        if r.event === :item && r.t !== nothing
+            first_item_t = first_item_t === nothing ? r.t : min(first_item_t, r.t)
+        end
+    end
+    seq = [r for r in recs if r.event !== :item]
+    rows = NamedTuple[]
+    for i in 1:(length(seq) - 1)
+        a = seq[i]
+        b = seq[i + 1]
+        a.t === nothing && continue
+        b.t === nothing && continue
+        a.event === :done && continue
+        end_t = b.t
+        if b.event === :done && first_item_t !== nothing
+            end_t = first_item_t
+        end
+        dt = end_t - a.t
+        dt < 0 && continue
+        lab = if a.event === :begin
+            "start"
+        elseif a.label === nothing
+            string(a.event)
+        else
+            String(a.label)
+        end
+        push!(rows, (; label=lab, seconds=dt, event=a.event, kind=a.kind))
+    end
+    append!(rows, item_rows)
+    return rows
+end
+
+function _format_phase_duration(sec::Float64)::String
+    if sec < 0.995
+        return string(max(0, round(Int, sec * 1000)), "ms")
+    end
+    x = round(sec; digits=2)
+    ip = trunc(Int, x)
+    frac = round(Int, (x - ip) * 100 + 1e-9)
+    if frac >= 100
+        ip += 1
+        frac = 0
+    end
+    return string(ip, ".", lpad(string(frac), 2, '0'), "s")
+end
+
+function _kit_progress_phase_group(label::AbstractString)
+    s = String(label)
+    i = findlast('/', s)
+    i === nothing && return nothing
+    return String(SubString(s, 1, prevind(s, i)))
+end
+
+function _kit_progress_phase_leaf(label::AbstractString)
+    s = String(label)
+    i = findlast('/', s)
+    i === nothing && return s
+    return String(SubString(s, nextind(s, i)))
+end
+
+function _kit_progress_phase_hint(
+    label::AbstractString,
+    event::Symbol=:step;
+    indent::Int=0,
+    kind::Symbol=:unknown,
+)::String
+    indent > 0 && label == "run" && return "script"
+    indent > 0 && label == "collect" && return "pull results"
+    indent > 0 && label == "workers" && return "addprocs + Julia detect"
+    indent > 0 && label == "init" && return "activate project"
+    indent > 0 && label == "cleanup" && return "stale workers"
+    event === :item && kind === :go && return "slot"
+    event === :item && return "host"
+    label == "start" && return "kit"
+    label == "ready" && return "remote project / Julia"
+    label == "sync" && return "rsync / git deploy"
+    label == "git" && return "require-git / working tree"
+    label == "cleanup" && return "stale Distributed workers"
+    label == "workers" && return "addprocs + Julia detect"
+    label == "wait" && return "connection grace (default 5s)"
+    label == "delay" && return "connection grace (default 5s)"
+    label == "init" && return "using, driver sync, prepare"
+    label == "run" && return "driver script"
+    label == "collect" && return "gather results"
+    return ""
+end
+
+function _phase_row_kind(r)::Symbol
+    hasproperty(r, :kind) || return :unknown
+    k = getfield(r, :kind)
+    return k isa Symbol ? k : :unknown
+end
+
+function _kit_progress_display_rows(rows)
+    isempty(rows) && return NamedTuple[]
+    has_kids = Set{String}()
+    parent_sec = Dict{String,Float64}()
+    kid_sum = Dict{String,Float64}()
+    for r in rows
+        g = _kit_progress_phase_group(r.label)
+        if g === nothing
+            parent_sec[String(r.label)] = r.seconds
+        else
+            push!(has_kids, g)
+            kid_sum[g] = get(kid_sum, g, 0.0) + r.seconds
+        end
+    end
+    out = NamedTuple[]
+    emitted = Set{String}()
+    for r in rows
+        g = _kit_progress_phase_group(r.label)
+        if g === nothing
+            String(r.label) in has_kids && continue
+            push!(
+                out,
+                (;
+                    indent=0,
+                    label=String(r.label),
+                    seconds=r.seconds,
+                    event=r.event,
+                    kind=_phase_row_kind(r),
+                ),
+            )
+            continue
+        end
+        if !(g in emitted)
+            sec = get(parent_sec, g, get(kid_sum, g, 0.0))
+            push!(out, (; indent=0, label=g, seconds=sec, event=:item, kind=_phase_row_kind(r)))
+            push!(emitted, g)
+        end
+        push!(
+            out,
+            (;
+                indent=2,
+                label=_kit_progress_phase_leaf(r.label),
+                seconds=r.seconds,
+                event=r.event,
+                kind=_phase_row_kind(r),
+            ),
+        )
+    end
+    return out
+end
+
+function _phase_share_filled(sec::Float64, peak::Float64; width::Int=PROGRESS_BAR_WIDTH)::Int
+    peak <= 0 && return 0
+    n = round(Int, width * sec / peak)
+    sec > 0 && n == 0 && (n = 1)
+    return clamp(n, 0, width)
+end
+
+function _phase_share_bar(sec::Float64, peak::Float64; width::Int=PROGRESS_BAR_WIDTH)::String
+    n = _phase_share_filled(sec, peak; width=width)
+    return rpad(repeat("█", n), width)
+end
+
+function _print_phase_share_bar!(io::IO, sec::Float64, peak::Float64; width::Int=PROGRESS_BAR_WIDTH)
+    n = _phase_share_filled(sec, peak; width=width)
+    n > 0 && _print_progress_accent(io, repeat("█", n))
+    rest = width - n
+    rest == 0 && return nothing
+    if use_colors()
+        printstyled(io, repeat("░", rest); color=:light_black)
+    else
+        print(io, " "^rest)
+    end
+    return nothing
+end
+
+function _format_kit_progress_phases(
+    rows;
+    wall::Union{Nothing,Float64}=nothing,
+)::String
+    disp = _kit_progress_display_rows(rows)
+    isempty(disp) && return ""
+    summed = sum(r -> r.seconds, rows; init=0.0)
+    total_sec = wall === nothing || wall <= 0 ? summed : Float64(wall)
+    peak = maximum(r -> r.seconds, disp)
+    shown = String[" "^r.indent * r.label for r in disp]
+    lab_w = maximum(length, shown)
+    durs = [_format_phase_duration(r.seconds) for r in disp]
+    dur_w = max(maximum(length, durs), length(_format_phase_duration(total_sec)))
+    buf = IOBuffer()
+    println(buf, "  Time  ", _format_phase_duration(total_sec))
+    println(buf)
+    for (r, dur, shown_lab) in zip(disp, durs, shown)
+        pct = total_sec > 0 ? round(Int, 100 * r.seconds / total_sec) : 0
+        hint = _kit_progress_phase_hint(
+            r.label, r.event; indent=r.indent, kind=_phase_row_kind(r),
+        )
+        print(
+            buf,
+            "    ",
+            rpad(shown_lab, lab_w),
+            "  ",
+            lpad(dur, dur_w),
+            "  ",
+            _phase_share_bar(r.seconds, peak),
+            "  ",
+            lpad(string(pct), 3),
+            "%",
+        )
+        isempty(hint) || print(buf, "  ", hint)
+        println(buf)
+    end
+    return String(take!(buf))
+end
+
+function _print_kit_progress_phases(
+    io::IO,
+    rows;
+    wall::Union{Nothing,Float64}=nothing,
+)
+    isempty(rows) && return nothing
+    if !(io isa Base.TTY && use_colors())
+        print(io, _format_kit_progress_phases(rows; wall=wall))
         return nothing
     end
-    want = job_id === nothing || isempty(strip(String(job_id))) ? nothing : String(strip(String(job_id)))
-    latest = nothing
-    for f in files
-        try
-            for line in eachline(f)
-                rec = parse_progress_line(line)
-                rec === nothing && continue
-                want !== nothing && rec.job != want && continue
-                latest = rec
-            end
-        catch
-        end
+    disp = _kit_progress_display_rows(rows)
+    isempty(disp) && return nothing
+    summed = sum(r -> r.seconds, rows; init=0.0)
+    total_sec = wall === nothing || wall <= 0 ? summed : Float64(wall)
+    peak = maximum(r -> r.seconds, disp)
+    shown = String[" "^r.indent * r.label for r in disp]
+    lab_w = maximum(length, shown)
+    durs = [_format_phase_duration(r.seconds) for r in disp]
+    dur_w = max(maximum(length, durs), length(_format_phase_duration(total_sec)))
+    print(io, "  ")
+    _print_progress_accent(io, "Time")
+    printstyled(io, "  ", _format_phase_duration(total_sec); color=:light_black)
+    println(io)
+    println(io)
+    for (r, dur, shown_lab) in zip(disp, durs, shown)
+        pct = total_sec > 0 ? round(Int, 100 * r.seconds / total_sec) : 0
+        hint = _kit_progress_phase_hint(
+            r.label, r.event; indent=r.indent, kind=_phase_row_kind(r),
+        )
+        print(io, "    ", rpad(shown_lab, lab_w), "  ", lpad(dur, dur_w), "  ")
+        _print_phase_share_bar!(io, r.seconds, peak)
+        printstyled(io, "  ", lpad(string(pct), 3), "%"; color=:light_black)
+        isempty(hint) || printstyled(io, "  ", hint; color=:light_black)
+        println(io)
     end
-    return latest
+    return nothing
+end
+
+"""Print phase wall times from `kit.progress` (`:progress` / `:verbose` only)."""
+function _maybe_print_kit_progress_phases(dir::AbstractString)
+    _print_job_stdout_after_progress!()
+    kit_output_quiet() && return nothing
+    recs = _kit_progress_last_run(_kit_progress_records(dir))
+    rows = _kit_progress_phase_rows(recs)
+    wall = _kit_progress_wall(recs)
+    text = String(rstrip(_format_kit_progress_phases(rows; wall=wall)))
+    isempty(text) && return nothing
+    replay = "  progress  $(dir)"
+    if kit_output_progress()
+        _print_kit_progress_phases(stdout, rows; wall=wall)
+        println(stdout, replay)
+        _kit_log_writeln(text)
+        _kit_log_writeln(String(strip(replay)))
+    else
+        writeln_both(text)
+        writeln_both(String(strip(replay)))
+    end
+    return nothing
+end
+
+function show_progress_usage(io::IO=stdout)
+    print_help_chrome("DistSSHKit progress"; io=io)
+    print_help_section("Usage"; io=io)
+    print_help_lines(io,
+        "  julia -m DistSSHKit progress [DIR]",
+    )
+    print_help_blank(io)
+    print_help_section("Args"; io=io)
+    print_help_lines(io,
+        "  DIR   output_dir (reads kit.progress) or a kit.progress / *.log file",
+        "        default: current directory",
+    )
+    print_help_blank(io)
+    println(io, "Last run in kit.progress: phase share of wall time.")
+    return nothing
+end
+
+"""
+    progress(args=ARGS) -> Cint
+
+CLI: print [`kit_progress_phases`](@ref) for `DIR` / `kit.progress`.
+"""
+function progress(args::Vector{String}=copy(ARGS))::Cint
+    if !isempty(args) && args[1] in ("-h", "--help", "help")
+        show_progress_usage()
+        return 0
+    end
+    if length(args) > 1
+        print_cli_error("progress: extra args $(repr(args[2:end]))")
+        return 1
+    end
+    target = isempty(args) ? pwd() : String(args[1])
+    recs = _kit_progress_last_run(_kit_progress_records(target))
+    if isempty(recs)
+        print_cli_error("progress: no progress: lines in $(target)")
+        return 1
+    end
+    rows = _kit_progress_phase_rows(recs)
+    wall = _kit_progress_wall(recs)
+    text = _format_kit_progress_phases(rows; wall=wall)
+    isempty(text) && (print_cli_error("progress: no timed phases in $(target)"); return 1)
+    _print_kit_progress_phases(stdout, rows; wall=wall)
+    return 0
 end
 
 """
 Start a live status line for `--progress` mode.
 
 `steps` is the total number of phases or slots. Pass `items` for concurrent
-slots (header + one live line each). Outside `:progress`, updates state only.
+slots (header + one live line each). Items start `:pending` until
+[`kit_progress_item!`](@ref) sets `:running`. Outside `:progress`, updates state
+only.
 
 `kind` is `:go` or `:drive` (written as `kind=` on every `progress:` log
 line). `job_id` (default: `ENV["DISTSSHKIT_JOB_ID"]` if set, else `nothing`)
@@ -1129,6 +1676,7 @@ function kit_progress_begin!(
     steps < 1 && throw(ArgumentError("kit_progress_begin!: steps must be ≥ 1"))
     prev = KIT_PROGRESS[]
     prev isa KitProgressState && _progress_stop_spinner!(prev)
+    _reset_job_stdout_capture!()
     resolved_job_id = job_id
     if resolved_job_id === nothing
         env_job_id = get(ENV, "DISTSSHKIT_JOB_ID", "")
@@ -1138,12 +1686,12 @@ function kit_progress_begin!(
         String(title), steps, 0, String(title); kind=kind, job_id=resolved_job_id,
     )
     for name in items
-        push!(state.items, KitProgressItem(String(name), :running, 0))
+        push!(state.items, KitProgressItem(String(name), :pending, 0))
     end
     lock(KIT_PROGRESS_LOCK) do
         KIT_PROGRESS[] = state
+        _progress_log_begin!(state)
         if kit_output_progress()
-            _progress_log_begin!(state)
             _progress_draw!(state)
         end
     end
@@ -1183,8 +1731,8 @@ function _kit_progress_step!(
             state.active = true
         end
         state.label = String(label)
+        _progress_log_step!(state)
         if kit_output_progress()
-            _progress_log_step!(state)
             _progress_draw!(state)
         end
     end
@@ -1215,8 +1763,8 @@ function _kit_progress_apply_item!(
     if (status === :ok || status === :fail) && prev !== :ok && prev !== :fail
         state.done = min(state.done + 1, state.steps)
     end
+    _progress_log_item!(state, item)
     if kit_output_progress()
-        _progress_log_item!(state, item)
         _progress_draw!(state)
     end
     return nothing
@@ -1376,6 +1924,7 @@ function print_kit_root_usage(io::IO=stderr)
         "  setup              Clone / sync / check remotes",
         "  size               Estimate worker counts",
         "  demo               Install or list example scripts",
+        "  progress           Phase seconds from kit.progress",
     )
     print_help_blank(io)
     print_help_section("Examples"; io=io)

@@ -211,6 +211,7 @@ using Test
         @test occursin("post-run-new", txt)
         @test occursin("off by default", lowercase(txt))
         @test occursin("parenthost:N", txt)
+        @test occursin("progress DIR", txt)
         @test !occursin("--parenthost", txt)
         @test !occursin("--local", txt)
         @test occursin("--mem-headroom", txt)

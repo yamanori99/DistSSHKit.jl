@@ -185,13 +185,14 @@ append `progress:` lines. The same lines go to `kit.progress` in `output_dir`
 verbosity**. `begin` / `step` / `item` lines appear only in `--progress`
 mode (`DISTSSHKIT_PROGRESS=1` for a child process).
 
-Each line is space-separated `key=value` fields after the event name:
+Each line is space-separated `key=value` fields after the event name.
+`t=` is Unix time (seconds) at the end of every line:
 
 ```text
-progress: begin kind=<go|drive> [job=<id>] label=<label> total=<steps>
-progress: step kind=<go|drive> [job=<id>] label=<label> done=<done> total=<steps> cur=<cur>
-progress: item kind=<go|drive> [job=<id>] label=<item_label> status=<pending|running|ok|fail> done=<done> total=<steps>
-progress: done kind=<go|drive> [job=<id>] ok=<true|false> done=<done> total=<steps>
+progress: begin kind=<go|drive> [job=<id>] label=<label> total=<steps> t=<unix>
+progress: step kind=<go|drive> [job=<id>] label=<label> done=<done> total=<steps> cur=<cur> t=<unix>
+progress: item kind=<go|drive> [job=<id>] label=<item_label> status=<pending|running|ok|fail> done=<done> total=<steps> t=<unix>
+progress: done kind=<go|drive> [job=<id>] ok=<true|false> done=<done> total=<steps> t=<unix>
 ```
 
 `kind` is `go` or `drive`. `job=` is present only when `job_id` /
@@ -199,7 +200,8 @@ progress: done kind=<go|drive> [job=<id>] ok=<true|false> done=<done> total=<ste
 (phase names or slot labels) and do not contain spaces.
 
 Queue-style watchers can tail `kit.progress` (or the kit log) and use
-[`parse_progress_line`](@ref) / [`kit_progress_latest`](@ref).
+[`parse_progress_line`](@ref) / [`kit_progress_latest`](@ref) /
+[`kit_progress_phases`](@ref), or `julia -m DistSSHKit progress DIR`.
 `DISTSSHKIT_PROGRESS=1` is `--progress` verbosity on the child, not a watcher.
 Slot-level `go` artifacts (`go_manifest.txt`, `{slot}/go.exitcode`) remain
 the source of truth for per-slot exit codes.
@@ -207,6 +209,7 @@ the source of truth for per-slot exit codes.
 ```@docs
 parse_progress_line
 kit_progress_latest
+kit_progress_phases
 ```
 
 ### Helpers for a queue layer

@@ -37,6 +37,7 @@ using Test
         @test code == 0
         @test occursin("Usage", err)
         @test occursin("julia -m DistSSHKit <command>", err)
+        @test occursin("progress", err)
     end
     let (code, out, _) = _main_capture(["--version"])
         @test code == 0
@@ -64,6 +65,10 @@ using Test
                 @test code == 0
                 @test occursin("DistSSHKit $(DistSSHKit.dist_ssh_kit_version())", out)
             end
+        end
+        let (code, out, _) = _main_capture(["progress", "--help"])
+            @test code == 0
+            @test occursin("kit.progress", out)
         end
     end
 end

@@ -5,6 +5,15 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- Drive `progress:` lines end with `t=<unix>`. `wait` is the worker-connection
+  sleep (`DISTRIBUTED_INIT_DELAY_SEC`). `begin` / `step` / `item` always go to
+  `kit.progress` (not only `--progress`). Non-quiet drive/go print the Time
+  table and a `progress DIR` replay line (`go` and `drive` `--help` say the
+  same). After the live bar, `:progress` reprints job stdout (drive script /
+  go slot logs) then the Time table. `julia -m DistSSHKit progress DIR`
+  reprints the last run (`go` lists slots, not consecutive item deltas).
+  Defaults for `DISTRIBUTED_INIT_DELAY_SEC` and
+  `DISTSSHKIT_JOBS` are unchanged; snapshot: [User Guide · drive](@ref Manual-drive).
 - Demo / E2E / `execute!` watchers use [`kit_progress_latest`](@ref) on the
   run `output_dir` (`kit.progress` even with `--no-log`). Remote Julia reads
   in SSH E2E go through `run_on_host` (setup `test -e`, git, rsync stay raw ssh).

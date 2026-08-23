@@ -37,11 +37,14 @@ function cleanup_stale_workers!(hosts::Vector{Tuple{String,Union{Int,Nothing}}})
     writeln_both("Cleaning up stale workers..."; color=:light_black)
 
     for (host_name, _) in hosts
+        DistSSHKit._drive_host_span!(host_name, "cleanup", :running)
         write_both("  $host_name: ")
         if _pkill_stale_julia_workers_remote!(host_name)
             print_ok("✓")
+            DistSSHKit._drive_host_span!(host_name, "cleanup", :ok)
         else
             print_progress_warn("(SSH unreachable)")
+            DistSSHKit._drive_host_span!(host_name, "cleanup", :fail)
         end
         writeln_both("")
     end
@@ -66,6 +69,7 @@ function add_drive_workers!(
 
     if local_workers > 0
         write_both("  $(DistSSHKit.PARENT_HOST_NAME) ($local_workers workers): ")
+        DistSSHKit._drive_host_span!(DistSSHKit.PARENT_HOST_NAME, "workers", :running)
         try
             before = Set(workers())
             addprocs(local_workers;
@@ -73,9 +77,15 @@ function add_drive_workers!(
                 env=DistSSHKit._drive_worker_env(),
                 topology=:master_worker)
             _register_drive_workers!(before, proj_dir, script_path)
+            DistSSHKit._register_drive_host_worker_ids!(
+                DistSSHKit.PARENT_HOST_NAME,
+                sort!(Int[w for w in workers() if w ∉ before]),
+            )
             print_ok("✓")
             writeln_both("")
+            DistSSHKit._drive_host_span!(DistSSHKit.PARENT_HOST_NAME, "workers", :ok)
         catch e
+            DistSSHKit._drive_host_span!(DistSSHKit.PARENT_HOST_NAME, "workers", :fail)
             print_progress_err("✗ ($e)")
             writeln_both("")
         end
@@ -86,6 +96,9 @@ function add_drive_workers!(
     sshflags_cmd = Cmd(ssh_opts())
 
     for (host_name, host_workers_spec) in hosts
+        DistSSHKit._drive_host_span!(host_name, "workers", :running)
+        host_ok = false
+        try
         host_julia = julia_exe
         if host_julia === nothing
             write_both("  $host_name: detecting Julia... ")
@@ -155,6 +168,7 @@ function add_drive_workers!(
             print_ok("✓")
             writeln_both("")
             push!(successful_hosts, host_name)
+            host_ok = true
         catch e
             print_progress_err("✗")
             writeln_both("")
@@ -169,6 +183,9 @@ function add_drive_workers!(
             else
                 writeln_both("    $(sprint(showerror, e))")
             end
+        end
+        finally
+            DistSSHKit._drive_host_span!(host_name, "workers", host_ok ? :ok : :fail)
         end
     end
 

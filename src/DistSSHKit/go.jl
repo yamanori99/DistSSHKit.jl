@@ -278,6 +278,29 @@ function _go_echo_script_log!(log_path::AbstractString)
     return nothing
 end
 
+"""Replay each slot's `julia.stdout.log` after the live bar (`:progress` only)."""
+function _print_go_slot_stdout_after_progress!(batch_dir::AbstractString)
+    kit_output_progress() || return nothing
+    logs = String[]
+    isdir(batch_dir) || return nothing
+    for (root, _, files) in walkdir(batch_dir)
+        "julia.stdout.log" in files && push!(logs, joinpath(root, "julia.stdout.log"))
+    end
+    sort!(logs)
+    isempty(logs) && return nothing
+    many = length(logs) > 1
+    for path in logs
+        body = read(path, String)
+        isempty(strip(body)) && continue
+        if many
+            println(stdout, relpath(dirname(path), batch_dir), ":")
+        end
+        print(stdout, body)
+        endswith(body, '\n') || println(stdout)
+    end
+    return nothing
+end
+
 function _go_run_local_slot!(
     project::AbstractString,
     script::AbstractString,
@@ -442,10 +465,13 @@ function _go_exec_slot!(
     mkpath(slot_dir)
     collect_res = nothing
     collect_fail = false
+    run_lab = string(slot.label, "/run")
+    _kit_progress_span!(run_lab, :running)
     if slot.kind === :local
         run_res = _go_run_local_slot!(
             proj, script_path, args, slot_dir; quiet=quiet, julia=julia,
         )
+        _kit_progress_span!(run_lab, run_res.ok ? :ok : :fail)
     else
         host = slot.host::String
         slot_rel = relpath(slot_dir, proj)
@@ -460,12 +486,17 @@ function _go_exec_slot!(
             quiet=quiet,
             julia=julia,
         )
+        _kit_progress_span!(run_lab, run_res.ok ? :ok : :fail)
         if run_res.ok && !skip_collect
+            col_lab = string(slot.label, "/collect")
+            _kit_progress_span!(col_lab, :running)
             if _go_pull_slot!(host, sess_rr, slot_rel, slot_dir)
                 collect_res = CollectResult(true, 0)
+                _kit_progress_span!(col_lab, :ok)
             else
                 collect_fail = true
                 collect_res = CollectResult(false, 1)
+                _kit_progress_span!(col_lab, :fail)
             end
         end
     end
@@ -481,6 +512,8 @@ function _go_complete!(
 )::GoResult
     footer = progress_ok ? display_path(batch_dir, anchor) : nothing
     kit_progress_done!(; ok=progress_ok, footer=footer)
+    _print_go_slot_stdout_after_progress!(batch_dir)
+    _maybe_print_kit_progress_phases(batch_dir)
     close_log_file()
     _set_kit_progress_sidecar!(nothing)
     _write_kit_result_file(kit_run_result(result))
@@ -614,11 +647,41 @@ function go!(
 
         remote_hosts = unique(String[s.host for s in slots if s.kind === :remote])
         _write_kit_hosts_file(remote_hosts, batch_dir, nothing)
+
+        skip_collect = collect_spec === false
+        any_run_fail = Ref(false)
+        any_collect_fail = Ref(false)
+        last_run = Ref(DriveResult(true, 0))
+        last_collect = Ref{Union{Nothing,CollectResult}}(nothing)
+
+        print_header("DistSSHKit go")
+        writeln_both("")
+        writeln_field("Script", display_path(script_path, anchor))
+        writeln_field("Slots", string(length(slots)))
+        for s in slots
+            where = s.kind === :local ? "parenthost" : String(something(s.host, s.label))
+            writeln_both("  · $(s.label)  ($where)"; color=:light_black)
+        end
+        writeln_both("")
+
+        n_slots = length(slots)
+        if n_slots > 0
+            kit_progress_begin!(
+                "go";
+                steps=n_slots,
+                items=String[s.label for s in slots],
+                kind=:go,
+            )
+            if !isempty(remote_hosts)
+                _kit_progress_mark!("ready")
+            end
+        end
         _go_assert_remotes_ready!(remote_hosts, sess_rr)
 
         sync_result = nothing
         sync_mode = something(sync, false)
         if !isempty(remote_hosts) && sync_mode !== false
+            n_slots > 0 && _kit_progress_mark!("sync")
             sync_session = KitSession(
                 project=proj,
                 workers=remote_hosts,
@@ -650,33 +713,9 @@ function go!(
             _go_assert_remotes_ready!(remote_hosts, sess_rr)
         end
 
-        skip_collect = collect_spec === false
-        any_run_fail = Ref(false)
-        any_collect_fail = Ref(false)
-        last_run = Ref(DriveResult(true, 0))
-        last_collect = Ref{Union{Nothing,CollectResult}}(nothing)
-
-        print_header("DistSSHKit go")
-        writeln_both("")
-        writeln_field("Script", display_path(script_path, anchor))
-        writeln_field("Slots", string(length(slots)))
-        for s in slots
-            where = s.kind === :local ? "parenthost" : String(something(s.host, s.label))
-            writeln_both("  · $(s.label)  ($where)"; color=:light_black)
-        end
-        writeln_both("")
-
-        n_slots = length(slots)
-        if n_slots > 0
-            kit_progress_begin!(
-                "go";
-                steps=n_slots,
-                items=String[s.label for s in slots],
-                kind=:go,
-            )
-        end
         @sync for slot in slots
             @async begin
+                kit_progress_item!(slot.label; status=:running)
                 err = nothing
                 outcome = try
                     _go_exec_slot!(
@@ -778,6 +817,8 @@ function go!(
         if !completed
             footer = progress_ok ? display_path(batch_dir, anchor) : nothing
             kit_progress_done!(; ok=progress_ok, footer=footer)
+            _print_go_slot_stdout_after_progress!(batch_dir)
+            _maybe_print_kit_progress_phases(batch_dir)
             close_log_file()
             _set_kit_progress_sidecar!(nothing)
             release_lock()

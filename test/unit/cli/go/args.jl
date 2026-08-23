@@ -114,6 +114,7 @@ using Test
         @test occursin("--sync", txt)
         @test occursin("--hosts", txt)
         @test occursin("parenthost", txt)
+        @test occursin("progress DIR", txt)
     end
 
     @testset "unknown option and missing script" begin

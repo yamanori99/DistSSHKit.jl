@@ -538,6 +538,11 @@ function _register_drive_host_worker_ids!(host::AbstractString, ids::AbstractVec
     return nothing
 end
 
+function _drive_host_span!(host::AbstractString, leaf::AbstractString, status::Symbol)
+    _kit_progress_span!(string(host, "/", leaf), status)
+    return nothing
+end
+
 function _last_seen_for(host::AbstractString)::Union{Nothing,Float64}
     h = String(host)
     return haskey(DRIVE_HOST_LAST_SEEN, h) ? DRIVE_HOST_LAST_SEEN[h] : nothing
