@@ -5,6 +5,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- Drive takes the output-dir lock after `init_output_dir!`, so a driver
+  that sets `DISTRIBUTED_OUTPUT_DIR` (demos: `output/`) is not locked on empty
+  `script_dir/../results`.
 - Drive `progress:` lines end with `t=<unix>`. `wait` is the worker-connection
   sleep (`DISTRIBUTED_INIT_DELAY_SEC`). `begin` / `step` / `item` always go to
   `kit.progress` (not only `--progress`). Non-quiet drive/go print the Time

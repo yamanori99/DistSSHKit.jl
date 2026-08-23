@@ -44,7 +44,8 @@ end
 Best-effort result root for a `drive` run: `ENV["DISTRIBUTED_OUTPUT_DIR"]` if
 set (explicit `--output-dir` / `output_dir=`, or a driver's own
 `init_output_dir!`), else `script_dir/../results`. Same priority
-`collect_drive_results!` uses to report `Results:` to the user.
+`collect_drive_results!` uses to report `Results:` to the user. The
+`.kit.lock` is taken after `init_output_dir!` so that ENV is already set.
 """
 function resolve_drive_output_dir(script_dir::AbstractString)::String
     results_dir = get(ENV, "DISTRIBUTED_OUTPUT_DIR", nothing)
