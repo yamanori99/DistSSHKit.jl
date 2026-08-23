@@ -29,10 +29,11 @@ end
     size_worker_count(total_gb, nproc, per_worker_gb; mem_headroom, master_gb, is_parenthost)
 
 Pure RAM/CPU cap for one host (shared by CLI and `compute_worker_plan`).
+`nproc === nothing` skips the CPU term (RAM budget only).
 """
 function size_worker_count(
     total_gb::Real,
-    nproc::Integer,
+    nproc::Union{Nothing,Integer},
     per_worker_gb::Real;
     mem_headroom::Real=DEFAULT_MEM_HEADROOM,
     master_gb::Real=DEFAULT_MASTER_GB,
@@ -41,11 +42,10 @@ function size_worker_count(
     pw = Float64(per_worker_gb)
     pw <= 0 && return 0
     avail = Float64(total_gb) * Float64(mem_headroom) - (is_parenthost ? Float64(master_gb) : 0.0)
+    ram = max(0, floor(Int, avail / pw))
+    nproc === nothing && return ram
     cpu_reserve = is_parenthost ? 2 : 1
-    return min(
-        max(0, floor(Int, avail / pw)),
-        max(1, Int(nproc) - cpu_reserve),
-    )
+    return min(ram, max(1, Int(nproc) - cpu_reserve))
 end
 
 """Per-host outcome for sync and similar operations."""

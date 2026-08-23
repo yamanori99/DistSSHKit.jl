@@ -15,6 +15,9 @@ using Test
         @test DistSSHKit.size_worker_count(16.0, 8, 2.0; mem_headroom=0.0, master_gb=0.4, is_parenthost=true) == 0
         @test DistSSHKit.size_worker_count(16.0, 8, 2.0; mem_headroom=0.5, master_gb=0.4, is_parenthost=true) <
             DistSSHKit.size_worker_count(16.0, 8, 2.0; mem_headroom=0.75, master_gb=0.4, is_parenthost=true)
+        ram_only = DistSSHKit.size_worker_count(32.0, nothing, 1.0; is_parenthost=true)
+        @test ram_only == max(0, floor(Int, (32.0 * DistSSHKit.DEFAULT_MEM_HEADROOM - DistSSHKit.DEFAULT_MASTER_GB) / 1.0))
+        @test ram_only > DistSSHKit.size_worker_count(32.0, 2, 1.0; is_parenthost=true)
     end
 
     @testset "rss_bytes_to_worker_gb" begin
