@@ -248,6 +248,7 @@ function pipeline!(config::PipelineConfig)::PipelineResult
             log_dir=config.log_dir,
             package=config.package,
             julia=config.julia,
+            mem_headroom=config.mem_headroom,
         )
     finally
         if do_collect

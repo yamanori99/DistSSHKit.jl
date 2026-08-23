@@ -27,6 +27,11 @@ Flag vocabulary: [User Guide](@ref Manual).
 | `-v` / `--version` | Print DistSSHKit version and exit |
 | `-h` / `--help` | Full help |
 
+Drive preflight uses the same RAM fraction as `--mem-headroom` (`pipeline!` /
+`drive!(; mem_headroom=)`). CLI `drive` has no `--mem-headroom`; it uses the
+default `0.75`. RSS safety / floor / fallback stay unexported constants (not
+flags).
+
 Remote project paths use the same resolution as [`drive`](@ref Manual-drive)
 (`DISTRIBUTED_REMOTE_PROJECT_ROOT` / setup remote root).
 

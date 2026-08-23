@@ -234,6 +234,7 @@ function parse_drive_args(args::Vector{String})
                 show_version=cli_session.show_version,
                 cli_session=cli_session,
                 hint_surface=:cli,
+                mem_headroom=DEFAULT_MEM_HEADROOM,
             )
         elseif arg == "--help" || arg == "-h"
             return (
@@ -257,6 +258,7 @@ function parse_drive_args(args::Vector{String})
                 show_version=cli_session.show_version,
                 cli_session=cli_session,
                 hint_surface=:cli,
+                mem_headroom=DEFAULT_MEM_HEADROOM,
             )
         elseif endswith(arg, ".jl")
             script_path = arg
@@ -324,6 +326,7 @@ function parse_drive_args(args::Vector{String})
         show_version=cli_session.show_version,
         cli_session=cli_session,
         hint_surface=:cli,
+        mem_headroom=DEFAULT_MEM_HEADROOM,
     )
 end
 

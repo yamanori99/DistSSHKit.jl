@@ -1,16 +1,19 @@
 # Result types for the drive / sync API.
 
-"""Default RAM fraction usable for workers in [`size!`](@ref) / `size`."""
+"""Default RAM fraction usable for workers in [`size!`](@ref) / `size` / drive preflight.
+
+Leave a quarter of RAM for the OS and other jobs. Drive preflight takes the
+same `mem_headroom` as [`size!`](@ref) (`pipeline!` / `drive!`); CLI `drive`
+uses this default.
+"""
 const DEFAULT_MEM_HEADROOM = 0.75
-"""Default GB reserved for the master process on parenthost sizing."""
+"""GB reserved for the master on parenthost sizing (not a drive CLI flag)."""
 const DEFAULT_MASTER_GB = 0.4
-"""Drive preflight: same fraction as [`DEFAULT_MEM_HEADROOM`](@ref)."""
-const MEMORY_CAPACITY_FRACTION = DEFAULT_MEM_HEADROOM
-"""Multiplier applied to measured RSS when estimating per-worker GB."""
+"""RSS→GB: 10% padding on the measured set (unexported; no CLI flag)."""
 const WORKER_RSS_SAFETY_FACTOR = 1.1
-"""Floor for estimated per-worker GB after RSS measurement."""
+"""RSS→GB floor after the safety factor (unexported; no CLI flag)."""
 const WORKER_MEMORY_GB_FLOOR = 0.5
-"""Fallback per-worker GB when RSS is unavailable (drive preflight)."""
+"""RSS→GB when RSS is unavailable (drive preflight / size fallback)."""
 const WORKER_MEMORY_GB_FALLBACK = 1.5
 
 """

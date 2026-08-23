@@ -5,6 +5,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- Drive memory preflight uses the same `mem_headroom` as [`size!`](@ref)
+  (`pipeline!` / `drive!(; mem_headroom=)`). CLI `drive` still uses
+  `DEFAULT_MEM_HEADROOM` (0.75). `MEMORY_CAPACITY_FRACTION` is gone.
 - [`HostRunResult`](@ref) stores an error `String` as-is (`sprint(showerror)`
   only for non-strings), so `kit.result` `hosts[].error` round-trips without
   extra quotes.
