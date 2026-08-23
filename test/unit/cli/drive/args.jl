@@ -51,22 +51,10 @@ using Test
             let r = parse_drive_args(["parenthost:4", "host1", "host2:2", "s.jl"])
                 @test DistSSHKit.host_tokens(r; kind=:drive) == ["parenthost:4", "host1", "host2:2"]
             end
-            let r = parse_drive_args(["--local", "4", "myscript.jl", "a", "b"])
-                @test r.local_workers == 4
-                @test r.script_path == "myscript.jl"
-                @test r.script_args == ["a", "b"]
-                @test DistSSHKit.host_tokens(r; kind=:drive) == ["parenthost:4"]
-            end
-            # Compact flag forms (`--local:N` / `-l:N` / `--workers:N` / `-w:N`).
-            let r = parse_drive_args(["--local:5", "s.jl"])
-                @test r.local_workers == 5
-            end
-            let r = parse_drive_args(["-l:2", "s.jl"])
-                @test r.local_workers == 2
-            end
-            let r = parse_drive_args(["-l", "3", "s.jl"])
-                @test r.local_workers == 3
-            end
+            @test_throws ArgumentError parse_drive_args(["--local", "4", "myscript.jl", "a", "b"])
+            @test_throws ArgumentError parse_drive_args(["--local:5", "s.jl"])
+            @test_throws ArgumentError parse_drive_args(["-l:2", "s.jl"])
+            @test_throws ArgumentError parse_drive_args(["-l", "3", "s.jl"])
             let r = parse_drive_args(["--workers:7", "host1", "s.jl"])
                 @test r.default_workers == 7
                 @test r.hosts == [("host1", nothing)]
@@ -75,20 +63,17 @@ using Test
             let r = parse_drive_args(["-w:4", "host1", "s.jl"])
                 @test r.default_workers == 4
             end
-            # One local-alias form; DistSSHKit/hosts.jl covers the predicate set.
             let r = parse_drive_args(["local:3", "host1:2", "s.jl"])
-                @test r.local_workers == 3
-                @test r.hosts == [("host1", 2)]
-                @test DistSSHKit.host_tokens(r; kind=:drive) == ["parenthost:3", "host1:2"]
+                @test r.local_workers == 0
+                @test r.hosts == [("local", 3), ("host1", 2)]
+                @test DistSSHKit.host_tokens(r; kind=:drive) == ["local:3", "host1:2"]
             end
             let r = parse_drive_args(["localhost:4", "s.jl"])
-                @test r.local_workers == 4
-                @test isempty(r.hosts)
+                @test r.local_workers == 0
+                @test r.hosts == [("localhost", 4)]
             end
-            @test_throws ArgumentError parse_drive_args(["--local", "2", "local:2", "s.jl"])
-            @test_throws ArgumentError parse_drive_args(["--local", "s.jl"])
+            @test_throws ArgumentError parse_drive_args(["--local", "2", "s.jl"])
             @test_throws ArgumentError parse_drive_args(["--local:"])
-            @test_throws ArgumentError parse_drive_args(["--local", "0", "s.jl"])
             @test_throws ArgumentError parse_drive_args(["--workers", "s.jl"])
             @test_throws ArgumentError parse_drive_args(["--workers", "x", "s.jl"])
             @test_throws ArgumentError parse_drive_args(["--nope", "s.jl"])
@@ -134,7 +119,7 @@ using Test
                 DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession())
             end
             withenv("DISTSSHKIT_HOSTS" => "env-host:3, env-b") do
-                let r = parse_drive_args(["local:2", "s.jl"])
+                let r = parse_drive_args(["parenthost:2", "s.jl"])
                     @test r.local_workers == 2
                     @test ("env-host", 3) in r.hosts
                     @test ("env-b", nothing) in r.hosts
@@ -216,6 +201,7 @@ using Test
         @test occursin("off by default", lowercase(txt))
         @test occursin("parenthost:N", txt)
         @test !occursin("--parenthost", txt)
+        @test !occursin("--local", txt)
         @test occursin("DISTSSHKIT_JOBS", txt)
         @test occursin("DISTSSHKIT_REQUIRE_ALL_HOSTS", txt)
         @test !occursin("required after `setup --rsync`", txt)

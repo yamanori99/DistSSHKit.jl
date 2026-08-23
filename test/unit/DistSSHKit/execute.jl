@@ -152,7 +152,7 @@ using Test
 
     @testset "detached rejects unknown / yes=false" begin
         err = try
-            DistSSHKit.execute!(:go, "job.jl", ["local:1"]; detached=true, plan=nothing)
+            DistSSHKit.execute!(:go, "job.jl", ["parenthost:1"]; detached=true, plan=nothing)
             nothing
         catch e
             e
@@ -161,7 +161,7 @@ using Test
         @test occursin("does not accept keyword :plan", sprint(showerror, err))
 
         err2 = try
-            DistSSHKit.execute!(:go, "job.jl", ["local:1"]; detached=true, yes=false)
+            DistSSHKit.execute!(:go, "job.jl", ["parenthost:1"]; detached=true, yes=false)
             nothing
         catch e
             e
@@ -170,7 +170,7 @@ using Test
         @test occursin("yes=true", sprint(showerror, err2))
 
         err3 = try
-            DistSSHKit.execute!(:go, "job.jl", ["local:1"]; detached=true, log_dir="x")
+            DistSSHKit.execute!(:go, "job.jl", ["parenthost:1"]; detached=true, log_dir="x")
             nothing
         catch e
             e
@@ -191,7 +191,7 @@ using Test
             result = DistSSHKit.execute!(
                 :go,
                 script,
-                ["local:1"];
+                ["parenthost:1"];
                 project=proj,
                 args=["8"],
                 quiet=true,
@@ -220,7 +220,7 @@ using Test
                     kp = DistSSHKit.execute!(
                         :go,
                         script,
-                        ["local:1"];
+                        ["parenthost:1"];
                         detached=true,
                         project=proj,
                         args=["8"],
@@ -283,7 +283,7 @@ using Test
                     kp = DistSSHKit.execute!(
                         :go,
                         script,
-                        ["local:1"];
+                        ["parenthost:1"];
                         detached=true,
                         project=proj,
                         verbosity=:progress,

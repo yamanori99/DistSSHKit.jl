@@ -3,7 +3,7 @@
 `julia -m DistSSHKit drive` — run a driver on local/SSH workers, then collect remote outputs.
 
   julia --project=. -m DistSSHKit drive
-  julia --project=. -m DistSSHKit drive l:9 host1:10 script.jl
+  julia --project=. -m DistSSHKit drive parenthost:9 host1:10 script.jl
   julia --project=. -m DistSSHKit drive --collect-missing data/out host1 host2
 
 See `--help`.

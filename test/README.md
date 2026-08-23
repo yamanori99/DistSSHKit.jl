@@ -97,7 +97,7 @@ Coverage (`DISTSSHKIT_CODE_COVERAGE=1` on `up.sh --e2e`) writes `.cov` on the co
 | `square_file` | local CSV exists; absent on the remote |
 | `worker_*.txt` | on the worker; `ssh cat`; `--collect-missing` restores; skip keeps junk; `--collect-overwrite` replaces |
 | worker `error(...)` | non-zero |
-| mixed `local:1` + two remotes | smoke `nw=3` |
+| mixed `parenthost:1` + two remotes | smoke `nw=3` |
 | in-process `drive!` twice (reentrant) | each call `nw=2`; no worker leak (#144) |
 | detached drive SIGKILL | wait until heartbeat monitors start, then remote `--worker` gone (#148) |
 | `go pi_echo` | π on both hosts |

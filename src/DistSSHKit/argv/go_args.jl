@@ -19,7 +19,6 @@ function show_go_usage(; io::IO=stdout)
     print_help_lines(io,
         "  parenthost:N / host:N  N full-script runs (not drive workers)",
         "  parenthost:0        skip parent when remotes are listed",
-        "  local:N             deprecated (relative; removed in 0.4)",
         "  $(KIT_HOSTS_FLAG_HELP)",
         "  --hosts-file PATH   one token per line (host:N kept)",
     )

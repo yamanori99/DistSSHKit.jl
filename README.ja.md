@@ -26,7 +26,7 @@ DistSSHKit は、それらをまとめて小さな計算ノードとして使う
 
 > [!NOTE]
 > General 上の **0.3.x** はいまのコマンドのまま。**0.4** 向けの開発は再開する
-> (queue 層のフック、`local` / `--local` の削除)。通常のバグ修正は続ける。
+> (queue 層のフック)。通常のバグ修正は続ける。
 > [CONTRIBUTING.md](CONTRIBUTING.md#feature-freeze) ·
 > [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26)。
 
@@ -54,7 +54,7 @@ julia> import Pkg; Pkg.add("DistSSHKit")
 
 ### 基本用語
 
-- **ホスト** — 計算するマシン。このジョブの DistSSHKit parent は `parenthost`。SSH 先は `user@hostname`、IP アドレス、または SSH config の `Host` エイリアス。`local` / `localhost` / `l` はトークンを解釈した Julia プロセス側 (相対。0.4 で削除)
+- **ホスト** — 計算するマシン。このジョブの DistSSHKit parent は `parenthost`。SSH 先は `user@hostname`、IP アドレス、または SSH config の `Host` エイリアス。手元でキットを起動したとき、`parenthost` はその Julia プロセス側である。
 - **プロセス** — 起動した `julia` 1つ分のこと。それぞれ独立したメモリを持ち、OS 上で別々に動く
   (このキットは1台のマシンでも複数の `julia` プロセスを起動して並列に走らせる。Distributed.jl ベース)
 - **マスター** — `parenthost` 上のプロセス。`go` ではスロットを計画し、`drive` では仕事をワーカーに渡して結果を集める。queue がそのプロセスを起動するとき、`parenthost` は queue 側のマシンであり、手元のクライアントではない

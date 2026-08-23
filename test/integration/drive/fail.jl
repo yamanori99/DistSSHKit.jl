@@ -1,6 +1,6 @@
 using Test
 
-# Oracle: host `drive.jl` + `local:2` exits non-zero when the driver throws.
+# Oracle: host `drive.jl` + `parenthost:2` exits non-zero when the driver throws.
 # Happy path is `local.jl`. Not SSH.
 
 @testset "drive l:N driver error" begin

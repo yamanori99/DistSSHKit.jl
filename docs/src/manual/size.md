@@ -14,7 +14,6 @@ Flag vocabulary: [User Guide](@ref Manual).
 | Flag | Meaning |
 | --- | --- |
 | `parenthost` | Include this job's DistSSHKit parent (same token as `go` / `drive`; `:N` stripped) |
-| `-l` / `--local` | Deprecated; use the `parenthost` token (removed in 0.4) |
 | `--gb-per-worker N` | Assume N GB per worker instead of measuring RSS |
 | `--probe PATH` | After package load, `include` this script on each probe worker and record peak RSS |
 | `--mem-headroom N` | Fraction of RAM usable for workers (default `0.75`) |

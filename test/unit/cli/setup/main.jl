@@ -31,7 +31,7 @@ using Test
         @test code == 0
         @test occursin("--instantiate", out)
     end
-    let (code, out, err) = _setup_capture(["--delete", "local"])
+    let (code, out, err) = _setup_capture(["--delete", "parenthost"])
         @test code == 1
         @test occursin("SSH targets only", out * err)
     end

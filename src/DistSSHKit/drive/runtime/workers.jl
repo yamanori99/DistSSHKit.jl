@@ -65,7 +65,7 @@ function add_drive_workers!(
     successful_hosts = String[]
 
     if local_workers > 0
-        write_both("  localhost ($local_workers workers): ")
+        write_both("  $(DistSSHKit.PARENT_HOST_NAME) ($local_workers workers): ")
         try
             before = Set(workers())
             addprocs(local_workers;
@@ -80,7 +80,7 @@ function add_drive_workers!(
             writeln_both("")
         end
     else
-        writeln_both("  localhost: master only (use parenthost:N for parent workers)")
+        writeln_both("  $(DistSSHKit.PARENT_HOST_NAME): master only (use $(DistSSHKit.PARENT_HOST_NAME):N for parent workers)")
     end
 
     sshflags_cmd = Cmd(ssh_opts())

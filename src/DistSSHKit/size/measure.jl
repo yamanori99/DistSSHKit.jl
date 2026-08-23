@@ -109,13 +109,13 @@ function _measure_rss!(
 )::Dict{String,WorkerMemorySample}
     if include_local
         try
-            local_proj = something(resolve_host_project_abs("localhost", proj), proj)
+            local_proj = something(resolve_host_project_abs(PARENT_HOST_NAME, proj), proj)
             before = Set(workers())
             addprocs(1; exeflags=`--project=$local_proj`, topology=:master_worker)
             added = setdiff(Set(workers()), before)
             if !isempty(added)
                 wid = first(added)
-                worker_to_host[wid] = "localhost"
+                worker_to_host[wid] = PARENT_HOST_NAME
                 worker_project[wid] = local_proj
                 worker_probe[wid] = probe_local
             end

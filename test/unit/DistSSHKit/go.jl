@@ -13,8 +13,8 @@ using Dates
         end
         let s = DistSSHKit._go_plan_slots(["local:2"])
             @test length(s) == 2
-            @test s[1].label == "parenthost-1"
-            @test s[2].label == "parenthost-2"
+            @test s[1].kind === :remote && s[1].label == "local-1"
+            @test s[2].kind === :remote && s[2].label == "local-2"
         end
         let s = DistSSHKit._go_plan_slots(["user@lab", "user@lab2:2"])
             @test length(s) == 3
@@ -22,10 +22,11 @@ using Dates
             @test s[2].label == "user@lab2-1"
             @test s[3].label == "user@lab2-2"
         end
-        let s = DistSSHKit._go_plan_slots(["local:0", "h1", "h2"])
+        let s = DistSSHKit._go_plan_slots(["parenthost:0", "h1", "h2"])
             @test length(s) == 2
             @test all(x -> x.kind === :remote, s)
         end
+        @test_throws ArgumentError DistSSHKit._go_plan_slots(["parenthost:0"])
         @test_throws ArgumentError DistSSHKit._go_plan_slots(["local:0"])
         @test_throws ArgumentError DistSSHKit._go_plan_slots(["local:-1"])
         @test DistSSHKit._go_sanitize_label("user@lab") == "user@lab"
@@ -76,7 +77,7 @@ using Dates
             err = try
                 DistSSHKit.go!(
                     script,
-                    ["local:1"];
+                    ["parenthost:1"];
                     project=proj,
                     output_dir=joinpath(proj, "a"),
                     collect_spec=joinpath(proj, "b"),

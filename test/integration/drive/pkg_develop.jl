@@ -1,6 +1,6 @@
 using Test
 
-# Oracle: Pkg.develop(kit) then kit CLI `drive local:2` prints SMOKE_OK.
+# Oracle: Pkg.develop(kit) then kit CLI `drive parenthost:2` prints SMOKE_OK.
 # Does not cover host `drive.jl` without develop (local.jl).
 
 @testset "Pkg.develop" begin

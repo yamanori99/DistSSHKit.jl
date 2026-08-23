@@ -42,7 +42,6 @@ Same **names** are shared on purpose; a few meanings differ by command:
 | Git parity (drive) | **Off** by default. Opt-in: `--require-git`. Compat: `--skip-git-guard` (no-op; may combine with `--sync` / `--rsync`). |
 | Skip pre-run (go) | Compat: `--skip-sync` / `--skip-git-guard` (already the default; exclusive with `--sync` / `--rsync` on go). |
 | `--output-dir` | **`go`**: batch root (`PATH/{slot}/`). **`drive`**: result root (`DISTRIBUTED_OUTPUT_DIR`). Different on purpose. |
-| `-l` / `--local` | Deprecated relative alias (removed in 0.4). **`drive`**: count for `parenthost:N`. **`size`**: boolean include-parent. Prefer the `parenthost` token. |
 | `--hosts` | CSV tokens. `setup` / `size` strip `:N`. `go` / `drive` keep `host:N`. |
 | `--hosts-file` | `setup` / `size` strip `:N`. `go` / `drive` keep `host:N` for slots / workers. |
 | Shared peel | `-q`/`--quiet`, `--progress`, `--verbose`, `-y`/`--yes`, `--hosts`, `--hosts-file`, `-v`/`--version` — same on setup / go / drive / size. |

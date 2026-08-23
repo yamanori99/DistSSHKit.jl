@@ -49,7 +49,7 @@ function _go_sanitize_label(raw::AbstractString)::String
     return isempty(s) ? "host" : s
 end
 
-"""True when a go token looks like a misspelling of `parenthost` / `local`."""
+"""True when a go token looks like a misspelling of `parenthost`."""
 function _go_local_host_typo_hint(host_name::AbstractString)::Union{Nothing,String}
     h = lowercase(String(host_name))
     h in (
@@ -66,21 +66,20 @@ Build execution slots from host tokens.
 
 - No tokens → one parent slot (directory label `parenthost`)
 - `parenthost:N` → N slots on this job's DistSSHKit parent
-- deprecated `local:N` / `l:N` → same slots until 0.4 (`local:0` skips parent when remotes are listed)
+- `parenthost:0` skips parent when remotes are listed
 - `user@host` → one remote slot
 - `user@host:N` → N remote slots on that host (`host`, or `host-1` … when N>1)
 """
 function _go_plan_slots(host_tokens::AbstractVector{<:AbstractString})::Vector{GoSlot}
-    isempty(host_tokens) && return [GoSlot(:local, nothing, "parenthost")]
+    isempty(host_tokens) && return [GoSlot(:local, nothing, PARENT_HOST_NAME)]
 
     local_count = 0
-    parent_label_base = "parenthost"
+    parent_label_base = PARENT_HOST_NAME
     remote_runs = Vector{String}() # host repeated per run
     for raw in host_tokens
         host_name, host_workers = split_worker_token(String(raw))
         n = something(host_workers, 1)
         if _go_is_local_host(host_name)
-            is_deprecated_local_host_name(host_name) && warn_deprecated_local_host!()
             n < 0 &&
                 throw(ArgumentError("parent slot count must be >= 0, got $n in $(repr(raw))"))
             local_count += n
