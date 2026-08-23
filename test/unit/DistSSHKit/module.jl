@@ -29,6 +29,7 @@ using Test
     @test :show_go_usage in ns && :show_drive_requirements in ns
     @test :println_kit_version in ns && :ssh_opts in ns
     @test :resolve_remote_julia in ns && :resolve_controller_julia in ns
+    @test :run_on_host in ns
     @test :canonical_local_path in ns && :short_path in ns
     @test :resolve_pkg_project_dir in ns && :explain_script_not_found in ns
     @test :print_cli_error in ns && :print_help_chrome in ns

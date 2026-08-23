@@ -5,6 +5,10 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- `run_on_host(host, argv; julia, detect, tty)` detect-and-execs remote Julia
+  in one SSH connection (same candidates as `detect_julia_path`). Does not
+  replace `resolve_remote_julia`. Detect results are not persisted across
+  processes.
 - `host_tokens` takes `kind=:go` or `kind=:drive` (and vector methods) instead
   of guessing from `parsed.hosts isa Tuple`. `go!` writes `kit.result` at
   each `GoResult` return (no `Ref` in `finally`).

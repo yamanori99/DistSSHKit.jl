@@ -203,5 +203,32 @@ using Test
     @test DistSSHKit.detect_julia_path("no-such-host.invalid") === nothing
     @test DistSSHKit.resolve_remote_julia("no-such-host.invalid", "auto") === nothing
 
+    @testset "run_on_host remote sh" begin
+        sh = DistSSHKit._run_on_host_remote_sh(["-e", "1"]; detect=true)
+        @test occursin("uname -s", sh)
+        @test occursin("exec", sh)
+        @test occursin(raw"$HOME/.juliaup/bin/julia", sh)
+        @test occursin("/opt/homebrew/bin/julia", sh)
+        @test occursin("-e", sh)
+        expl = DistSSHKit._run_on_host_remote_sh(["--version"]; julia="/opt/julia", detect=false)
+        @test occursin("/opt/julia", expl)
+        @test occursin("exec", expl)
+        @test !occursin("uname", expl)
+        err = try
+            DistSSHKit._run_on_host_remote_sh(String[]; detect=false, julia=nothing)
+            nothing
+        catch e
+            e
+        end
+        @test err isa ArgumentError
+        err2 = try
+            DistSSHKit.run_on_host("", ["--version"])
+            nothing
+        catch e
+            e
+        end
+        @test err2 isa ArgumentError
+    end
+
     @test DistSSHKit._remote_ssh_ok("no-such-host.invalid") == false
 end

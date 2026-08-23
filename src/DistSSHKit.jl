@@ -74,6 +74,7 @@ export show_drive_requirements
 export println_kit_version
 export ssh_opts
 export resolve_remote_julia
+export run_on_host
 export resolve_controller_julia
 export canonical_local_path
 export short_path
