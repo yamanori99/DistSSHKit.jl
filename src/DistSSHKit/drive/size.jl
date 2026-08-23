@@ -20,7 +20,7 @@ function compute_worker_plan(
     local_total, local_nproc = get_local_resources()
 
     for host in all_hosts
-        if host == "localhost"
+        if is_local_host_name(host)
             res = (total_gb=local_total, nproc=local_nproc)
         else
             res = (
@@ -35,9 +35,9 @@ function compute_worker_plan(
             pw;
             mem_headroom=mem_headroom,
             master_gb=master_gb,
-            is_localhost=(host == "localhost"),
+            is_parenthost=is_local_host_name(host),
         )
-        if host == "localhost"
+        if is_local_host_name(host)
             local_workers = n
         elseif host in remote_hosts
             remote_workers[host] = n

@@ -76,7 +76,7 @@ using Test
     @testset "resolve_host_path_abs" begin
         _with_tempdir() do tmp
             p = DistSSHKit.canonical_local_path(tmp)
-            @test DistSSHKit.resolve_host_project_abs("localhost", p) == p
+            @test DistSSHKit.resolve_host_project_abs("parenthost", p) == p
             withenv("DISTRIBUTED_REMOTE_PROJECT_ROOT" => "/Volumes/z/clone/MyRepo") do
                 @test DistSSHKit.resolve_host_project_abs("host", p) == "/Volumes/z/clone/MyRepo"
             end

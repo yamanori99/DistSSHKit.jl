@@ -14,8 +14,7 @@ README.ja.md point here.
 
 **Lands:** happy-path bugs (ordinary `~/` roots, default `drive` / `go` /
 `setup`); CI / Julia slots / Aqua / JETLS drift; the 0.4.0 milestone (queue-layer
-detached contract, public consumer helpers, announced `local` / `--local`
-removal). Enhancement Issue first, then a PR.
+detached contract, public consumer helpers). Enhancement Issue first, then a PR.
 
 **Does not land here:** new job shapes, a scheduler, or `schedule` inside Kit.
 That stays [DistSSHKitQueue.jl](https://github.com/yamanori99/DistSSHKitQueue.jl).

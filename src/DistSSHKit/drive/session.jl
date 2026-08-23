@@ -96,11 +96,11 @@ end
 """Explain surface for this session (`:cli` or `:api`)."""
 hint_surface(session::KitSession)::Symbol = session.cli_session.hint_surface
 
-"""SSH host names used for [`size!`](@ref) (`localhost` first when `include_local_for_size`)."""
+"""SSH host names used for [`size!`](@ref) (`parenthost` first when `include_local_for_size`)."""
 function session_size_hosts(session::KitSession)::Tuple{Vector{String},Vector{String}}
     remote_hosts = copy(session.hosts)
     if session.include_local_for_size
-        return ["localhost"; remote_hosts], remote_hosts
+        return [PARENT_HOST_NAME; remote_hosts], remote_hosts
     end
     return remote_hosts, remote_hosts
 end

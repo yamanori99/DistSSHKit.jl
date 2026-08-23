@@ -25,7 +25,6 @@ driver contract, prefer [`go`](@ref Manual-go).
 | `--require-all-hosts` | Fail if a listed SSH host did not join, or if collect reported an error (default: best-effort, exit 0) |
 | `--skip-git-guard` | Compat no-op (parity already off) |
 | `-w` / `--workers N` | Default worker count for hosts without `:N` (also `-w:N`) |
-| `-l` / `--local N` | Deprecated alias of `parenthost:N` (relative; removed in 0.4; **count**, not size) |
 | `--julia PATH` | Julia on SSH workers |
 | `--output-dir PATH` | **Result root** → `DISTRIBUTED_OUTPUT_DIR` (not go batch root) |
 | `--log-dir PATH` | Log directory override |

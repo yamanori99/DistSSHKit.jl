@@ -7,7 +7,7 @@ function print_size_report(
 )
     local_total, local_nproc = get_local_resources()
     host_resources = Dict{String,NamedTuple}(
-        "localhost" => (total_gb=local_total, nproc=local_nproc)
+        PARENT_HOST_NAME => (total_gb=local_total, nproc=local_nproc)
     )
     for host in hosts
         host_resources[host] = (
@@ -37,8 +37,8 @@ function print_size_report(
     for host in all_hosts
         res = host_resources[host]
         s = samples[host]
-        n = host == "localhost" ? plan.local_workers : get(plan.remote_workers, host, 0)
-        shown = host == "localhost" ? "parenthost" : host
+        n = is_local_host_name(host) ? plan.local_workers : get(plan.remote_workers, host, 0)
+        shown = is_local_host_name(host) ? PARENT_HOST_NAME : host
         if show_peak
             println(
                 "  $(lpad(shown, host_col))  $(round(res.total_gb, digits=1)) GB   $(res.nproc)      ",

@@ -27,7 +27,7 @@ nodes. A lightweight scheduler, `DistSSHKitQueue.jl`, is also in progress.
 
 > [!NOTE]
 > **0.3.x** on General keeps today's commands. Development toward **0.4** is open
-> (queue-layer hooks; `local` / `--local` go away). Ordinary bugs still get fixed.
+> (queue-layer hooks). Ordinary bugs still get fixed.
 > [CONTRIBUTING.md](CONTRIBUTING.md#feature-freeze) ·
 > [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26).
 
@@ -57,8 +57,8 @@ For everything else, see the **[Documentation](https://yamanori99.github.io/Dist
 
 - **Host** — the machine that runs the work. This job's DistSSHKit parent is
   `parenthost`. An SSH target is `user@hostname`, an IP address, or an SSH
-  config `Host` alias. `local` / `localhost` / `l` still mean the Julia process
-  that parsed the token (relative; removed in 0.4)
+  config `Host` alias. `parenthost` is this job's DistSSHKit parent (the Julia
+  process that parsed the token when you start the kit yourself)
 - **Process** — one running `julia`. Each process has its own memory and runs
   independently at the OS level
   (this kit launches multiple `julia` processes, even on a single machine, to run

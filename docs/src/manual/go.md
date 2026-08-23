@@ -78,4 +78,3 @@ pass an explicit `--output-dir` / `output_dir=`.
 
 CLI tokens, `--hosts`, `--hosts-file`, and/or `DISTSSHKIT_HOSTS`. `parenthost:0` skips parent
 slots when remotes are listed. Omitting hosts is one parent slot (`parenthost/`).
-`local:N` is a deprecated relative alias (removed in 0.4).

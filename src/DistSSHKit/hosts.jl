@@ -1,9 +1,12 @@
 # Host tokens & SSH failure summaries (drive / go / setup)
 
+"""CLI / size-dict name of this job's DistSSHKit parent (not an SSH host)."""
+const PARENT_HOST_NAME = "parenthost"
+
 """Whether `host` denotes this job's DistSSHKit parent in drive/go.
 
-Prefer `parenthost`. Deprecated aliases `local` / `localhost` / `l` still
-match and will be removed in DistSSHKit 0.4.
+Only `parenthost` matches. A token `local` /
+`localhost` / `l` is an ordinary SSH host.
 
 # Examples
 ```jldoctest
@@ -13,39 +16,22 @@ julia> DistSSHKit.is_local_host_name("parenthost")
 true
 
 julia> DistSSHKit.is_local_host_name("local")
-true
+false
 
 julia> DistSSHKit.is_local_host_name("worker1")
 false
 ```
 """
 function is_local_host_name(host_name::AbstractString)::Bool
-    h = String(host_name)
-    return h == "parenthost" || h in ("localhost", "local", "l")
+    return String(host_name) == PARENT_HOST_NAME
 end
 
-"""True for the deprecated relative names (`local` / `localhost` / `l`)."""
-function is_deprecated_local_host_name(host_name::AbstractString)::Bool
-    return String(host_name) in ("localhost", "local", "l")
-end
-
-const DEPRECATED_LOCAL_HOST_WARN =
-    "`local` / `localhost` / `l` and `--local` / `-l` name this Julia process (relative) and will be removed in DistSSHKit 0.4. Use `parenthost` / `parenthost:N` for this job's DistSSHKit parent."
-
-const _DEPRECATED_LOCAL_HOST_WARNED = Ref(false)
-
-"""Reset the once-per-process deprecation flag (tests)."""
-function _reset_deprecated_local_host_warning!()
-    _DEPRECATED_LOCAL_HOST_WARNED[] = false
-    return nothing
-end
-
-"""Warn once per process that relative `local` tokens/flags go away in 0.4."""
-function warn_deprecated_local_host!()
-    _DEPRECATED_LOCAL_HOST_WARNED[] && return nothing
-    _DEPRECATED_LOCAL_HOST_WARNED[] = true
-    @warn DEPRECATED_LOCAL_HOST_WARN
-    return nothing
+"""`ArgumentError` for removed `--local` / `-l` (0.4)."""
+function throw_removed_local_flag(arg::AbstractString)
+    a = String(arg)
+    throw(ArgumentError(
+        "$(a) was removed in DistSSHKit 0.4; use $(PARENT_HOST_NAME) / $(PARENT_HOST_NAME):N",
+    ))
 end
 
 """True when a CLI token looks like a local `.jl` script path, not an SSH host.

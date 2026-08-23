@@ -2,7 +2,7 @@
 
 """Default RAM fraction usable for workers in [`size!`](@ref) / `size`."""
 const DEFAULT_MEM_HEADROOM = 0.75
-"""Default GB reserved for the master process on localhost sizing."""
+"""Default GB reserved for the master process on parenthost sizing."""
 const DEFAULT_MASTER_GB = 0.4
 """Drive preflight: same fraction as [`DEFAULT_MEM_HEADROOM`](@ref)."""
 const MEMORY_CAPACITY_FRACTION = DEFAULT_MEM_HEADROOM
@@ -23,7 +23,7 @@ function rss_bytes_to_worker_gb(rss_bytes::Integer)::Float64
 end
 
 """
-    size_worker_count(total_gb, nproc, per_worker_gb; mem_headroom, master_gb, is_localhost)
+    size_worker_count(total_gb, nproc, per_worker_gb; mem_headroom, master_gb, is_parenthost)
 
 Pure RAM/CPU cap for one host (shared by CLI and `compute_worker_plan`).
 """
@@ -33,12 +33,12 @@ function size_worker_count(
     per_worker_gb::Real;
     mem_headroom::Real=DEFAULT_MEM_HEADROOM,
     master_gb::Real=DEFAULT_MASTER_GB,
-    is_localhost::Bool=false,
+    is_parenthost::Bool=false,
 )::Int
     pw = Float64(per_worker_gb)
     pw <= 0 && return 0
-    avail = Float64(total_gb) * Float64(mem_headroom) - (is_localhost ? Float64(master_gb) : 0.0)
-    cpu_reserve = is_localhost ? 2 : 1
+    avail = Float64(total_gb) * Float64(mem_headroom) - (is_parenthost ? Float64(master_gb) : 0.0)
+    cpu_reserve = is_parenthost ? 2 : 1
     return min(
         max(0, floor(Int, avail / pw)),
         max(1, Int(nproc) - cpu_reserve),
@@ -109,7 +109,6 @@ end
 
 Classify CLI-style tokens. Explicit `:N` is fixed; bare hosts are sized later.
 `parenthost` is this job's DistSSHKit parent; everything else is remote SSH.
-Deprecated `local` / `l` / `localhost` still classify as parent until 0.4.
 """
 function parse_worker_tokens(
     tokens::AbstractVector{<:AbstractString},
@@ -126,9 +125,8 @@ function parse_worker_tokens(
     for raw in out_tokens
         host, n = split_worker_token(raw)
         if is_local_host_name(host)
-            is_deprecated_local_host_name(host) && warn_deprecated_local_host!()
             local_seen && throw(ArgumentError(
-                "duplicate parent worker token; use one of parenthost:N (or local:N until 0.4)",
+                "duplicate parent worker token; use one of $(PARENT_HOST_NAME):N",
             ))
             local_seen = true
             if n === nothing
@@ -516,7 +514,7 @@ end
 function drive_host_specs(plan::WorkerPlan)::Vector{String}
     specs = String[]
     if plan.local_workers > 0
-        push!(specs, "parenthost:$(plan.local_workers)")
+        push!(specs, string(PARENT_HOST_NAME, ":", plan.local_workers))
     end
     for (host, n) in plan.remote_workers
         n > 0 && push!(specs, "$(host):$n")

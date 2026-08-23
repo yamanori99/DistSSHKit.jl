@@ -48,7 +48,7 @@ function _drive_set_local_workers!(
 )::Int
     local_workers > 0 &&
         throw(ArgumentError(
-            "duplicate parent worker spec ($source); use one of parenthost:N (local / --local until 0.4)",
+            "duplicate parent worker spec ($source); use one of $(PARENT_HOST_NAME):N",
         ))
     count < 1 &&
         throw(ArgumentError("local worker count must be >= 1, got $count"))
@@ -64,7 +64,6 @@ function _drive_absorb_local_worker_spec(
     if !_drive_local_host_name(host_name)
         return local_workers, false
     end
-    is_deprecated_local_host_name(host_name) && warn_deprecated_local_host!()
     count = _drive_set_local_workers!(
         local_workers,
         something(workers, default_workers, 1),
@@ -122,20 +121,9 @@ function parse_drive_args(args::Vector{String})
             throw(ArgumentError(
                 "drive: use the host token `parenthost:N` (e.g. drive parenthost:4 script.jl), not `--parenthost N`",
             ))
-        elseif arg == "--local" || arg == "-l"
-            warn_deprecated_local_host!()
-            local_workers = _drive_set_local_workers!(
-                local_workers,
-                _parse_drive_flag_count(arg, args, i),
-                arg,
-            )
-            i += 2
-        elseif startswith(arg, "--local:") || startswith(arg, "-l:")
-            warn_deprecated_local_host!()
-            count = _drive_flag_int_suffix(arg, ("--local", "-l"))
-            count === nothing && throw(ArgumentError("local worker count missing in: $arg"))
-            local_workers = _drive_set_local_workers!(local_workers, count, arg)
-            i += 1
+        elseif arg == "--local" || arg == "-l" ||
+                startswith(arg, "--local:") || startswith(arg, "-l:")
+            throw_removed_local_flag(arg)
         elseif arg == "--workers" || arg == "-w"
             default_workers = _parse_drive_flag_count(arg, args, i)
             i += 2
@@ -357,7 +345,6 @@ function show_drive_requirements(; io::IO=stdout)
     print_help_section("Workers"; io=io)
     print_help_lines(io,
         "  host:N / parenthost:N  N Distributed workers (not go slots)",
-        "  local:N / --local   deprecated (relative; removed in 0.4)",
         "  host                1 worker, or --workers default",
         "  $(KIT_HOSTS_FLAG_HELP)",
         "  --hosts-file PATH   one token per line (host:N kept)",

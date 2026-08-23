@@ -35,7 +35,7 @@ function size_main()::Cint
         return 0
     end
     hosts = opts.hosts
-    all_hosts = opts.include_local ? ["localhost"; hosts] : hosts
+    all_hosts = opts.include_local ? [DistSSHKit.PARENT_HOST_NAME; hosts] : hosts
 
     if isempty(all_hosts)
         show_size_usage()

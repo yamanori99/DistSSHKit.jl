@@ -1,6 +1,6 @@
 using Test
 
-# Oracle: `go!(…, "local:2")` runs two local slots concurrently (slot t0.txt
+# Oracle: `go!(…, "parenthost:2")` runs two local slots concurrently (slot t0.txt
 # timestamps within 0.45s). Does not cover SSH, CLI `go`, or slot-plan math
 # (those live in unit/DistSSHKit/go.jl).
 
@@ -17,7 +17,7 @@ using Test
         t0 = time()
         result = DistSSHKit.go!(
             script,
-            "local:2";
+            "parenthost:2";
             project=proj,
             quiet=true,
             yes=true,
@@ -43,7 +43,7 @@ end
         custom = joinpath(proj, "runs", "custom")
         result = DistSSHKit.go!(
             script,
-            "local:1";
+            "parenthost:1";
             project=proj,
             output_dir=custom,
             quiet=true,
@@ -68,7 +68,7 @@ end
         custom = joinpath(proj, "runs", "skip_collect")
         result = DistSSHKit.go!(
             script,
-            "local:1";
+            "parenthost:1";
             project=proj,
             output_dir=custom,
             collect_spec=false,

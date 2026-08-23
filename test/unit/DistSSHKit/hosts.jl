@@ -3,20 +3,16 @@ using Test
 @testset "hosts helpers" begin
     @testset "is_local_host_name" begin
         @test DistSSHKit.is_local_host_name("parenthost")
-        @test DistSSHKit.is_local_host_name("local")
-        @test DistSSHKit.is_local_host_name("localhost")
-        @test DistSSHKit.is_local_host_name("l")
-        @test DistSSHKit.is_deprecated_local_host_name("local")
-        @test !DistSSHKit.is_deprecated_local_host_name("parenthost")
+        @test !DistSSHKit.is_local_host_name("local")
+        @test !DistSSHKit.is_local_host_name("localhost")
+        @test !DistSSHKit.is_local_host_name("l")
         @test !DistSSHKit.is_local_host_name("root@192.0.2.10")
         @test !DistSSHKit.is_local_host_name("worker-node-a")
-        DistSSHKit._reset_deprecated_local_host_warning!()
-        @test_logs (:warn, r"0\.4") DistSSHKit.warn_deprecated_local_host!()
-        @test_nowarn DistSSHKit.warn_deprecated_local_host!()  # once per process
-        DistSSHKit._reset_deprecated_local_host_warning!()
-        @test_nowarn DistSSHKit.parse_worker_tokens(["parenthost:1"])
-        DistSSHKit._reset_deprecated_local_host_warning!()
-        @test_logs (:warn, r"parenthost") DistSSHKit.parse_worker_tokens(["local:1"])
+        @test DistSSHKit.parse_worker_tokens(["parenthost:1"]).local_workers == 1
+        let p = DistSSHKit.parse_worker_tokens(["localhost:1"])
+            @test p.local_workers == 0
+            @test p.remote_workers == Dict("localhost" => 1)
+        end
     end
 
     @testset "looks_like_path_host / script" begin

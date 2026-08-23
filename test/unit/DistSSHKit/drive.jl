@@ -2,7 +2,7 @@ using Test
 
 @testset "drive API" begin
     @testset "parse_worker_tokens" begin
-        p = DistSSHKit.parse_worker_tokens(["local:2", "host-a:4", "host-b"])
+        p = DistSSHKit.parse_worker_tokens(["parenthost:2", "host-a:4", "host-b"])
         @test p.local_workers == 2
         @test !p.local_autosize
         @test p.remote_workers == Dict("host-a" => 4)
@@ -10,9 +10,9 @@ using Test
         @test p.remote_hosts == ["host-a", "host-b"]
         @test DistSSHKit.worker_tokens_fully_specified(p) == false
 
-        fixed = DistSSHKit.parse_worker_tokens(["local:2", "h1:1"])
+        fixed = DistSSHKit.parse_worker_tokens(["parenthost:2", "h1:1"])
         @test DistSSHKit.worker_tokens_fully_specified(fixed)
-        let plan = DistSSHKit.worker_plan_from_tokens(["local:2", "h1:1"])
+        let plan = DistSSHKit.worker_plan_from_tokens(["parenthost:2", "h1:1"])
             @test plan.local_workers == 2
             @test plan.remote_workers == Dict("h1" => 1)
         end
@@ -25,19 +25,19 @@ using Test
         @test err isa ArgumentError
         @test occursin("KitSession", sprint(showerror, err))
 
-        @test_throws ArgumentError DistSSHKit.parse_worker_tokens(["local:1", "l:2"])
+        @test_throws ArgumentError DistSSHKit.parse_worker_tokens(["parenthost:1", "parenthost:2"])
 
-        auto = DistSSHKit.parse_worker_tokens(["local", "h1:3"])
+        auto = DistSSHKit.parse_worker_tokens(["parenthost", "h1:3"])
         @test auto.local_autosize
         @test auto.local_workers == 0
         @test auto.remote_workers == Dict("h1" => 3)
-        @test DistSSHKit.remote_hosts_from_tokens(["local:2", "h1", "h2:4"]) == ["h1", "h2"]
+        @test DistSSHKit.remote_hosts_from_tokens(["parenthost:2", "h1", "h2:4"]) == ["h1", "h2"]
 
         let kw = DistSSHKit.ParsedWorkerTokens(;
                 local_workers=2,
                 remote_workers=Dict("h1" => 0x03),
                 remote_hosts=["h1"],
-                tokens=["local:2", "h1:3"],
+                tokens=["parenthost:2", "h1:3"],
             )
             @test kw.remote_workers isa Dict{String,Int}
             @test kw.remote_workers == Dict("h1" => 3)
@@ -48,17 +48,17 @@ using Test
         _with_tempdir() do tmp
             session = DistSSHKit.KitSession(
                 project=tmp,
-                workers=["local"],
+                workers=["parenthost"],
                 include_local_for_size=true,
             )
             plan = DistSSHKit.worker_plan_from_tokens(
-                ["local"];
+                ["parenthost"];
                 session=session,
                 gb_per_worker=2.0,
             )
             local_total, local_nproc = DistSSHKit.get_local_resources()
             @test plan.local_workers == DistSSHKit.size_worker_count(
-                local_total, local_nproc, 2.0; is_localhost=true,
+                local_total, local_nproc, 2.0; is_parenthost=true,
             )
             @test isempty(plan.remote_workers)
         end
@@ -113,7 +113,7 @@ using Test
             )
             @test DistSSHKit.session_remote_root(session) == "/remote/App.jl"
             all_h, remotes = DistSSHKit.session_size_hosts(session)
-            @test all_h == ["localhost", "h1"]
+            @test all_h == ["parenthost", "h1"]
             @test remotes == ["h1"]
             remote_only = DistSSHKit.KitSession(project=tmp, workers=["h1:1"])
             a2, r2 = DistSSHKit.session_size_hosts(remote_only)
@@ -152,7 +152,7 @@ using Test
 
         local_cfg = DistSSHKit.PipelineConfig(
             driver="job.jl",
-            workers=["local:2"],
+            workers=["parenthost:2"],
             sync=false,
             collect=false,
         )
@@ -269,7 +269,7 @@ using Test
 
     @testset "sync! refusals" begin
         _with_tempdir() do tmp
-            local_only = DistSSHKit.KitSession(project=tmp, workers=["local:2"])
+            local_only = DistSSHKit.KitSession(project=tmp, workers=["parenthost:2"])
             @test_throws ArgumentError DistSSHKit.sync!(local_only)
             @test_throws ArgumentError DistSSHKit.sync!(local_only; mode=false)
             remote = DistSSHKit.KitSession(project=tmp, workers=["h1"])
@@ -308,14 +308,14 @@ using Test
 
     @testset "instantiate! requires SSH hosts" begin
         _with_tempdir() do tmp
-            session = DistSSHKit.KitSession(project=tmp, workers=["local:2"])
+            session = DistSSHKit.KitSession(project=tmp, workers=["parenthost:2"])
             @test_throws ArgumentError DistSSHKit.instantiate!(session)
         end
     end
 
     @testset "collect! requires hosts" begin
         _with_tempdir() do tmp
-            session = DistSSHKit.KitSession(project=tmp, workers=["local:2"])
+            session = DistSSHKit.KitSession(project=tmp, workers=["parenthost:2"])
             err = try
                 DistSSHKit.collect!(session, joinpath(tmp, "out"))
                 nothing

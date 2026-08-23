@@ -6,7 +6,7 @@ using Test
 
 @testset "setup CLI exit codes" begin
     @testset "host validation wiring" begin
-        proc, combined = _run_kit_setup(setup_args=["--delete", "local"])
+        proc, combined = _run_kit_setup(setup_args=["--delete", "parenthost"])
         @test proc.exitcode == 1
         @test occursin("SSH targets only", combined)
     end

@@ -1,5 +1,6 @@
 using .DistSSHKit:
     MEMORY_CAPACITY_FRACTION,
+    PARENT_HOST_NAME,
     WORKER_MEMORY_GB_FALLBACK,
     get_local_git_hash,
     get_remote_git_hash,
@@ -60,7 +61,7 @@ function check_memory_capacity(local_workers::Int, hosts::Vector{Tuple{String,Un
 
     if local_workers > 0
         total, _ = estimate_available_gb()
-        check_host("localhost", local_workers + 1, total)
+        check_host(PARENT_HOST_NAME, local_workers + 1, total)
     end
 
     host_totals = Dict{String,Int}()

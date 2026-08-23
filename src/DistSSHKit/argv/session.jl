@@ -319,7 +319,7 @@ end
 
 Rebuild CLI host tokens for [`execute!`](@ref).
 
-Go tokens are the parser strings (including deprecated `local:N`). Drive
+Go tokens are the parser strings. Drive
 tuples plus `local_workers` emit `parenthost:N` then remotes; bare hosts
 stay bare (no invented `:1`). `kind` must be `:go` or `:drive` — there is
 no `isa` guess on `parsed.hosts`.
@@ -334,7 +334,7 @@ function host_tokens(
 )::Vector{String}
     specs = String[]
     lw = Int(local_workers)
-    lw > 0 && push!(specs, string("parenthost:", lw))
+    lw > 0 && push!(specs, string(PARENT_HOST_NAME, ":", lw))
     for pair in hosts
         host = pair[1]
         n = pair[2]

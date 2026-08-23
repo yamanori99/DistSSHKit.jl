@@ -14,8 +14,8 @@ using Distributed
         # ~8 MiB allocation — may or may not move rounded GB; peak >= baseline still holds.
         write(probe, "const _SIZE_WARMUP = zeros(Float64, 1_000_000)\n")
         samples = DistSSHKit.measure_rss(tmp, String[]; include_local=true, probe=probe)
-        @test haskey(samples, "localhost")
-        s = samples["localhost"]
+        @test haskey(samples, "parenthost")
+        s = samples["parenthost"]
         @test s.baseline_gb >= DistSSHKit.WORKER_MEMORY_GB_FLOOR
         @test s.peak_gb >= s.baseline_gb
         @test DistSSHKit.effective_worker_gb(s) == max(s.baseline_gb, s.peak_gb)
@@ -72,7 +72,7 @@ end
         # removed by the `finally` in `measure_rss`, even though sampling fails.
         before = Set(workers())
         samples = DistSSHKit.measure_rss(tmp, String[]; include_local=true)
-        @test haskey(samples, "localhost")
+        @test haskey(samples, "parenthost")
         @test Set(workers()) == before
     end
 end

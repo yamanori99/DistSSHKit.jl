@@ -5,6 +5,13 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- **Breaking:** `parenthost` / `parenthost:N` is the only DistSSHKit parent
+  token. `local` / `localhost` / `l` are ordinary SSH names.
+  `--local` / `-l` raise `ArgumentError`. `is_local_host_name` matches
+  `parenthost` only. Size/measure dict keys and path resolve use
+  `parenthost`, not `localhost`. `size_worker_count` takes `is_parenthost`.
+  `WorkerPlan.local_workers` / `include_local` still mean this-process
+  workers.
 - Default `ssh_opts()` includes `-o RequestTTY=no` (non-interactive; also
   used by `scp` / rsync `-e`, so not `ssh -T`). A non-empty
   `DISTRIBUTED_SSH_OPTS` still **replaces** the defaults. `run_on_host(;

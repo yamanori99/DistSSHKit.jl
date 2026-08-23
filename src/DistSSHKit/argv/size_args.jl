@@ -1,10 +1,9 @@
-"""Pull `parenthost` / deprecated `local` out of the size host list into `include_local`."""
+"""Pull `parenthost` out of the size host list into `include_local`."""
 function _size_absorb_parent_hosts!(hosts::Vector{String}, include_local::Bool)::Bool
     kept = String[]
     inc = include_local
     for h in hosts
         if is_local_host_name(h)
-            is_deprecated_local_host_name(h) && warn_deprecated_local_host!()
             inc = true
         else
             push!(kept, h)
@@ -31,7 +30,6 @@ function show_size_usage(; io::IO=stdout)
     print_help_blank(io)
     print_help_section("Options"; io=io)
     print_help_lines(io,
-        "  -l, --local         deprecated; use the parenthost token (removed in 0.4)",
         "  --gb-per-worker N   skip measure; assume N GB each",
         "  --probe PATH        warm-up script; peak RSS",
         "  --mem-headroom N    RAM fraction (default $(DEFAULT_MEM_HEADROOM))",
@@ -81,10 +79,8 @@ function parse_size_args(args::Vector{String})
                 include_local=include_local,
                 hosts=hosts,
             )
-        elseif cli_match(c, ["--local", "-l"])
-            warn_deprecated_local_host!()
-            include_local = true
-            cli_consume!(c)
+        elseif cli_match(c, ["--local", "-l"]) || startswith(arg, "--local:") || startswith(arg, "-l:")
+            throw_removed_local_flag(arg)
         elseif arg == "--parenthost" || arg == "--masterhost"
             throw(ArgumentError(
                 "size: pass the host token `parenthost` (e.g. size parenthost host1), not `--parenthost`.",
