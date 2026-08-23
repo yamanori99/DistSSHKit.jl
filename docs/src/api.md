@@ -180,7 +180,8 @@ DriveHostStatus
 ### Progress lines (external watchers)
 
 When a kit log file is open (`go_*.log` / `drive_*.log`), `go` and `drive`
-append `progress:` lines. The last event (`done`) is written **regardless of
+append `progress:` lines. The same lines go to `kit.progress` in `output_dir`
+(even with `--no-log`). The last event (`done`) is written **regardless of
 verbosity**. `begin` / `step` / `item` lines appear only in `--progress`
 mode (`DISTSSHKIT_PROGRESS=1` for a child process).
 
@@ -197,7 +198,7 @@ progress: done kind=<go|drive> [job=<id>] ok=<true|false> done=<done> total=<ste
 `DISTSSHKIT_JOB_ID` is set. Fields are not quoted; labels are kit-chosen
 (phase names or slot labels) and do not contain spaces.
 
-Queue-style watchers can tail the kit log and use
+Queue-style watchers can tail `kit.progress` (or the kit log) and use
 [`parse_progress_line`](@ref) / [`kit_progress_latest`](@ref).
 `DISTSSHKIT_PROGRESS=1` is `--progress` verbosity on the child, not a watcher.
 Slot-level `go` artifacts (`go_manifest.txt`, `{slot}/go.exitcode`) remain
@@ -235,6 +236,7 @@ stay in `output_dir`. Kit logs (`go_*.log` / `drive_*.log`) are not this list.
 | `kit.hosts` | Remote hosts this run started (one name per line), written after workers join. `terminate_run!` reaps these. |
 | `kit.hosts.status` | Live per-host membership during `drive` (`:joined` / `:alive` / `:left` / `:collect_pending`). Read with [`drive_host_status`](@ref). Not the post-run collect vector. |
 | `kit.result` | TOML with the same fields as [`KitRunResult`](@ref), including `hosts` (post-run collect, [`HostRunResult`](@ref) rows). Omitted when empty (`go`, or a `drive` that never collected). Read with [`kit_result_from_dir`](@ref). Missing while running or after a hard death. |
+| `kit.progress` | `progress:` lines for watchers (`kit_progress_latest`). Written even when `--no-log` skips `drive_*.log`. |
 | `kit.out` / `kit.err` | Detached child stdio when `stdout` / `stderr` were omitted. |
 
 Together: running (`kit.pid` live and start matches, no result), finished (result present),

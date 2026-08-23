@@ -404,6 +404,40 @@ using Test
                 @test DistSSHKit.kit_progress_latest(tmp; job_id="old").job == "old"
                 @test DistSSHKit.kit_progress_latest(tmp; job_id="missing") === nothing
             end
+            _with_tempdir() do tmp
+                DistSSHKit._set_kit_progress_sidecar!(tmp)
+                try
+                    with_kit_verbosity(:quiet) do
+                        DistSSHKit.kit_progress_begin!("drive"; steps=1, kind=:drive)
+                        DistSSHKit.kit_progress_done!(; ok=true)
+                    end
+                    sidecar = joinpath(tmp, "kit.progress")
+                    @test isfile(sidecar)
+                    body = read(sidecar, String)
+                    @test !occursin("progress: begin", body)
+                    @test occursin("progress: done kind=drive ok=true", body)
+                    @test DistSSHKit.kit_progress_latest(tmp).event === :done
+                    @test DistSSHKit.kit_progress_latest(sidecar).event === :done
+                finally
+                    DistSSHKit._set_kit_progress_sidecar!(nothing)
+                end
+            end
+            _with_tempdir() do tmp
+                DistSSHKit._set_kit_progress_sidecar!(tmp)
+                try
+                    redirect_stdout(devnull) do
+                        with_kit_verbosity(:progress) do
+                            DistSSHKit.kit_progress_begin!("drive"; steps=1, kind=:drive)
+                            DistSSHKit.kit_progress_done!(; ok=true)
+                        end
+                    end
+                    body = read(joinpath(tmp, "kit.progress"), String)
+                    @test occursin("progress: begin kind=drive", body)
+                    @test occursin("progress: done kind=drive ok=true", body)
+                finally
+                    DistSSHKit._set_kit_progress_sidecar!(nothing)
+                end
+            end
         end
 
         @testset "kit_output_dir_lock!" begin

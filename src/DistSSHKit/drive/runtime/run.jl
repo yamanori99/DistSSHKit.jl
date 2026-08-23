@@ -153,6 +153,7 @@ function _run_drive_parsed_locked!(
     drive_atexit_cleanup = nothing
     kit_out = DistSSHKit.resolve_drive_output_dir(script_dir)
     kit_log = enable_log ? DistSSHKit.resolve_drive_log_dir(log_dir, script_dir) : nothing
+    DistSSHKit._set_kit_progress_sidecar!(kit_out)
     kit_progress_begin!("drive"; steps=progress_steps, kind=:drive)
     try
         if do_sync
@@ -294,6 +295,7 @@ function _run_drive_parsed_locked!(
             resolved_log_dir[] = enable_log ? DistSSHKit.resolve_drive_log_dir(log_dir, script_dir) : nothing
         end
         kit_progress_done!(; ok=progress_ok)
+        DistSSHKit._set_kit_progress_sidecar!(nothing)
         DistSSHKit._stop_drive_host_status_monitor!()
         # `nothing` when no workers were ever added (early `return` above
         # `add_drive_workers!`). Otherwise idempotent (guarded by a `Ref`

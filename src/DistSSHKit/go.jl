@@ -482,6 +482,7 @@ function _go_complete!(
     footer = progress_ok ? display_path(batch_dir, anchor) : nothing
     kit_progress_done!(; ok=progress_ok, footer=footer)
     close_log_file()
+    _set_kit_progress_sidecar!(nothing)
     _write_kit_result_file(kit_run_result(result))
     release_lock()
     _remove_kit_pid_file(getpid(), batch_dir, nothing)
@@ -577,6 +578,7 @@ function go!(
     mkpath(batch_dir)
     release_lock = kit_output_dir_lock!(batch_dir)
     _go_write_batch_manifest!(batch_dir, script_path, slots)
+    _set_kit_progress_sidecar!(batch_dir)
     apply_session_env!(
         KitSession(
             project=proj,
@@ -770,6 +772,7 @@ function go!(
             footer = progress_ok ? display_path(batch_dir, anchor) : nothing
             kit_progress_done!(; ok=progress_ok, footer=footer)
             close_log_file()
+            _set_kit_progress_sidecar!(nothing)
             release_lock()
             _remove_kit_pid_file(getpid(), batch_dir, nothing)
         end
