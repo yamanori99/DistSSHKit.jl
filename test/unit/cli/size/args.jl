@@ -5,8 +5,8 @@ using Test
 
     @testset "parse_size_args" begin
         let r = parse_size_args(["parenthost", "host1", "host2"])
-            @test r.show_help == false
-            @test r.include_local == true
+            @test !r.show_help
+            @test r.include_local
             @test r.hosts == ["host1", "host2"]
             @test r.gb_per_worker === nothing
             @test r.probe === nothing
@@ -14,7 +14,7 @@ using Test
             @test r.master_gb == DistSSHKit.DEFAULT_MASTER_GB
         end
         let r = parse_size_args(["local", "host1"])
-            @test r.include_local == false
+            @test !r.include_local
             @test r.hosts == ["local", "host1"]
         end
         @test_throws ArgumentError parse_size_args(["--parenthost", "host1"])
@@ -55,7 +55,7 @@ using Test
         withenv("DISTSSHKIT_SIZE_PROBE" => "env_warmup.jl") do
             r = parse_size_args(["parenthost"])
             @test r.probe == "env_warmup.jl"
-            @test r.include_local == true
+            @test r.include_local
         end
         withenv("DISTSSHKIT_SIZE_PROBE" => "env_warmup.jl") do
             r = parse_size_args(["--probe", "cli_warmup.jl", "parenthost"])
@@ -63,8 +63,8 @@ using Test
         end
         let path = tempname()
             r = parse_size_args(["--help"])
-            @test r.show_help == true
-            @test parse_size_args(["-h"]).show_help == true
+            @test r.show_help
+            @test parse_size_args(["-h"]).show_help
             open(path, "w") do io
                 DistSSHKit.show_size_usage(; io=io)
             end
