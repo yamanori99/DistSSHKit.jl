@@ -152,14 +152,14 @@ function prefix_svg_ids(svg::AbstractString, prefix::AbstractString)
 end
 
 function to_dark(svg::AbstractString)
-    dark = replace(svg, "stroke: #1a1d21;" => "stroke: #f8fafc;")
-    dark = replace(dark, "fill: #1a1d21;" => "fill: #f8fafc;")
+    dark = replace(svg, "stroke: #1a1d21;" => "stroke: #ffffff;")
+    dark = replace(dark, "fill: #1a1d21;" => "fill: #ffffff;")
     # Chassis must be filled: outline-only + dark chrome looks like floating Julia dots.
     dark = replace(dark, ".stroke {\n        fill: none;" => ".stroke {\n        fill: #334155;")
     dark = replace(dark, "stroke-width: 3.5;\n        stroke-linecap: round;\n        stroke-linejoin: round;" =>
         "stroke-width: 4;\n        stroke-linecap: round;\n        stroke-linejoin: round;")
-    dark = replace(dark, ".link {\n        stroke: #f8fafc;\n        stroke-width: 1.4;" =>
-        ".link {\n        stroke: #e2e8f0;\n        stroke-width: 2;")
+    dark = replace(dark, ".link {\n        stroke: #ffffff;\n        stroke-width: 1.4;" =>
+        ".link {\n        stroke: #ffffff;\n        stroke-width: 2;")
     dark = replace(dark, "#a0a5ab" => "#94a3b8")  # idle remote ring (legacy)
     return prefix_svg_ids(dark, "dark-")
 end

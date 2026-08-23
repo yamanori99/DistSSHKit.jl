@@ -7,13 +7,13 @@
     <style>
       .stroke {
         fill: #334155;
-        stroke: #f8fafc;
+        stroke: #ffffff;
         stroke-width: 4;
         stroke-linecap: round;
         stroke-linejoin: round;
       }
       .link {
-        stroke: #e2e8f0;
+        stroke: #ffffff;
         stroke-width: 2;
         stroke-linecap: round;
         fill: none;

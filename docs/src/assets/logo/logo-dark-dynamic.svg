@@ -19,20 +19,20 @@
     <style>
       .stroke {
         fill: #334155;
-        stroke: #f8fafc;
+        stroke: #ffffff;
         stroke-width: 4;
         stroke-linecap: round;
         stroke-linejoin: round;
       }
       .link {
-        stroke: #e2e8f0;
+        stroke: #ffffff;
         stroke-width: 2;
         stroke-linecap: round;
         fill: none;
       }
       .pkt { filter: url(#dark-dot-glow); }
       .pkt-data {
-        fill: #f8fafc;
+        fill: #ffffff;
         /* no glow — quieter than outbound Julia packets */
       }
       .attach { fill: none; stroke: none; }
