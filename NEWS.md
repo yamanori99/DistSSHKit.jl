@@ -6,8 +6,8 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 ## Unreleased
 
 - Dark-theme Documenter / Catppuccin shows `logo-dark.svg` and the topology
-  dark SVGs (`custom.css` restores `.docs-dark-only`). Bake prefixes dark SVG
-  `id`s so light and dark marks can share a page.
+  dark SVGs (`custom.css` restores `.docs-dark-only`). The dark mark fills
+  chassis so machines read on a dark sidebar; bake prefixes dark SVG `id`s.
 - `progress:` also appends `kit.progress` next to `kit.pid`, so `--no-log`
   still has lines for [`kit_progress_latest`](@ref) (`done` always; `begin` /
   `step` / `item` in `--progress`).
