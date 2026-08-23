@@ -685,7 +685,9 @@ function _term_light_background()::Bool
     fgbg = get(ENV, "COLORFGBG", "")
     m = match(r";(\d+)\s*$", fgbg)
     m === nothing && return false
-    bg = tryparse(Int, m.captures[1])
+    cap = m.captures[1]
+    cap === nothing && return false
+    bg = tryparse(Int, cap)
     bg === nothing && return false
     return bg == 7 || bg == 15
 end
