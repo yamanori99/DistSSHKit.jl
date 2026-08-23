@@ -145,8 +145,10 @@ using Test
         @test DistSSHKit.execute_detached_accepts(:skip_hash_check; kind=:drive)
         @test DistSSHKit.execute_detached_accepts(:mem_headroom; kind=:drive)
         @test DistSSHKit.execute_detached_accepts(:master_gb; kind=:drive)
+        @test DistSSHKit.execute_detached_accepts(:workers; kind=:drive)
         @test !DistSSHKit.execute_detached_accepts(:mem_headroom; kind=:go)
         @test !DistSSHKit.execute_detached_accepts(:master_gb; kind=:go)
+        @test !DistSSHKit.execute_detached_accepts(:workers; kind=:go)
         @test !DistSSHKit.execute_detached_accepts(:plan; kind=:go)
         @test !DistSSHKit.execute_detached_accepts(:plan; kind=:drive)
         err = try
@@ -196,6 +198,63 @@ using Test
         )
         @test !("--mem-headroom" in argv0)
         @test !("--master-gb" in argv0)
+        argvw = DistSSHKit._execute_detached_argv(
+            :drive, "job.jl", ["host1"], String[];
+            output_dir="/tmp/out",
+            log_dir=nothing,
+            sync=nothing,
+            julia=nothing,
+            quiet=true,
+            verbosity=nothing,
+            hosts_file=nothing,
+            enable_log=false,
+            package=nothing,
+            require_all_hosts=false,
+            skip_hash_check=true,
+            workers=4,
+        )
+        @test "--workers" in argvw
+        @test "4" in argvw
+    end
+
+    @testset "execute_kwargs_from_parsed" begin
+        go = DistSSHKit.parse_go_args([
+            "--progress", "--julia", "/opt/julia/bin/julia",
+            "--output-dir", "my_runs", "--sync", "h1", "job.jl", "8",
+        ])
+        gkw = DistSSHKit.execute_kwargs_from_parsed(go; kind=:go)
+        @test gkw[:verbosity] === :progress
+        @test gkw[:julia] == "/opt/julia/bin/julia"
+        @test gkw[:output_dir] == "my_runs"
+        @test gkw[:sync] === :sync
+        @test gkw[:args] == ["8"]
+        @test !haskey(gkw, :hosts_file)
+        @test !haskey(gkw, :workers)
+        @test DistSSHKit.host_tokens(go; kind=:go) == ["h1"]
+
+        hosts_file = _sample_hosts_file()
+        drive = DistSSHKit.parse_drive_args([
+            "--no-log", "--package", "Foo", "--mem-headroom", "0.5",
+            "--master-gb", "0.2", "--workers", "4",
+            "--hosts-file", hosts_file, "s.jl",
+        ])
+        dkw = DistSSHKit.execute_kwargs_from_parsed(drive; kind=:drive)
+        @test dkw[:enable_log] === false
+        @test dkw[:package] == "Foo"
+        @test dkw[:mem_headroom] == 0.5
+        @test dkw[:master_gb] == 0.2
+        @test dkw[:workers] == 4
+        @test !haskey(dkw, :hosts_file)
+        @test DistSSHKit.host_tokens(drive; kind=:drive) == ["host-a", "host-b:4"]
+        bare = DistSSHKit.parse_drive_args(["host1", "s.jl"])
+        @test !haskey(DistSSHKit.execute_kwargs_from_parsed(bare; kind=:drive), :workers)
+        errk = try
+            DistSSHKit.execute_kwargs_from_parsed(go; kind=:pipeline)
+            nothing
+        catch e
+            e
+        end
+        @test errk isa ArgumentError
     end
 
     @testset "kind not :go / :drive" begin
@@ -245,6 +304,15 @@ using Test
         end
         @test err4 isa ArgumentError
         @test occursin(":mem_headroom", sprint(showerror, err4))
+
+        err5 = try
+            DistSSHKit.execute!(:go, "job.jl", ["parenthost:1"]; detached=true, workers=4)
+            nothing
+        catch e
+            e
+        end
+        @test err5 isa ArgumentError
+        @test occursin(":workers", sprint(showerror, err5))
     end
 
     @testset ":go dispatch" begin

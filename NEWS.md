@@ -5,6 +5,10 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- [`execute_kwargs_from_parsed`](@ref) maps `parse_go_args` /
+  `parse_drive_args` onto detached `execute!` keywords (verbosity, `--no-log`,
+  `--package`, `mem_headroom`, …). Hosts stay in [`host_tokens`](@ref), not
+  `hosts_file`. Detached drive forwards `:workers` as `--workers N`.
 - [`run_on_host`](@ref) uses `ignorestatus`, so a non-zero remote or ssh
   exit returns `Process` (`.exitcode`) instead of `ProcessFailedException`.
   Remote `argv` words are POSIX-quoted so expressions like `exit(3)` are

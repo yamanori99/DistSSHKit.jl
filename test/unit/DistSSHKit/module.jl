@@ -27,6 +27,7 @@ using Test
     @test :kit_pid_file_running in ns
     @test :terminate! in ns && :terminate_run! in ns
     @test :parse_go_args in ns && :parse_drive_args in ns
+    @test :execute_kwargs_from_parsed in ns
     @test :show_go_usage in ns && :show_drive_requirements in ns
     @test :println_kit_version in ns && :ssh_opts in ns
     @test :resolve_remote_julia in ns && :resolve_controller_julia in ns

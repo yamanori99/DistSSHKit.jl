@@ -16,6 +16,7 @@ const _EXECUTE_DETACHED_KW = Set{Symbol}((
     :skip_hash_check,
     :mem_headroom,
     :master_gb,
+    :workers,
     :stdout,
     :stderr,
     :job_id,
@@ -28,6 +29,7 @@ const _EXECUTE_DETACHED_DRIVE_ONLY = (
     :skip_hash_check,
     :mem_headroom,
     :master_gb,
+    :workers,
 )
 const _EXECUTE_DETACHED_ENV_SKIP = Set((
     "JULIA_LOAD_PATH",
@@ -59,6 +61,47 @@ function execute_detached_accepts(kw::Symbol; kind::Symbol)::Bool
     kw in _EXECUTE_DETACHED_KW || return false
     kind === :go && return !(kw in _EXECUTE_DETACHED_DRIVE_ONLY)
     return true
+end
+
+"""
+    execute_kwargs_from_parsed(parsed; kind) -> Dict{Symbol,Any}
+
+Keywords for [`execute!`](@ref) (`detached=true`) from `parse_go_args` /
+`parse_drive_args`. Keys are a subset of [`execute_detached_accepts`](@ref).
+
+Does not include `hosts_file` / `--hosts`: those tokens belong in
+[`host_tokens`](@ref) (`kind` required). Does not set `project`, `detached`,
+`yes`, `job_id`, `remote`, or stdio. Drive `--workers` is `:workers` only
+when the parser set `default_workers`.
+"""
+function execute_kwargs_from_parsed(parsed; kind::Symbol)::Dict{Symbol,Any}
+    kind in (:go, :drive) || throw(ArgumentError(
+        "execute! kind must be :go or :drive, got $(repr(kind))",
+    ))
+    session = parsed.cli_session
+    args = String[String(a) for a in parsed.script_args]
+    kw = Dict{Symbol,Any}(
+        :output_dir => parsed.output_dir,
+        :args => args,
+        :julia => parsed.julia,
+        :quiet => session.quiet,
+        :verbosity => session.verbosity,
+    )
+    if kind === :go
+        kw[:sync] = parsed.sync
+        return kw
+    end
+    kw[:sync] = parsed.sync_mode
+    kw[:log_dir] = parsed.log_dir
+    kw[:enable_log] = parsed.enable_log
+    kw[:package] = parsed.explicit_package
+    kw[:require_all_hosts] = parsed.require_all_hosts
+    kw[:skip_hash_check] = parsed.skip_hash_check
+    kw[:mem_headroom] = parsed.mem_headroom
+    kw[:master_gb] = parsed.master_gb
+    dw = parsed.default_workers
+    dw === nothing || (kw[:workers] = Int(dw))
+    return kw
 end
 
 """
@@ -186,7 +229,8 @@ verbatim to the chosen function.
 [`KitProcess`](@ref). Keywords are then an allow-list (unknown names throw):
 `output_dir`, `args`, `project`, `sync`, `julia`, `quiet`, `verbosity`, `yes`,
 `remote`, `hosts_file`, `job_id`, and drive-only `log_dir`, `enable_log`,
-`package`, `require_all_hosts`, `skip_hash_check`, `mem_headroom`, `master_gb`. `yes` must be `true` (the
+`package`, `require_all_hosts`, `skip_hash_check`, `mem_headroom`, `master_gb`,
+`workers`. `yes` must be `true` (the
 default): an unattended child cannot answer a prompt. Child stdio defaults to
 `kit.out` / `kit.err` in `output_dir`. Pass `stdout` / `stderr` (`IO`) to
 override; `stdout=stdout` inherits the parent. Parent `redirect_stdout` does
@@ -290,6 +334,15 @@ function _execute_detached!(
     skip_hash_check = get(kwargs, :skip_hash_check, true)
     mem_headroom = get(kwargs, :mem_headroom, nothing)
     master_gb = get(kwargs, :master_gb, nothing)
+    workers = get(kwargs, :workers, nothing)
+    if workers !== nothing
+        (workers isa Integer && !(workers isa Bool)) || throw(ArgumentError(
+            "workers must be an integer, got $(repr(workers))",
+        ))
+        w = Int(workers)
+        w < 1 && throw(ArgumentError("workers must be >= 1, got $w"))
+        workers = w
+    end
 
     proj = canonical_local_path(project)
     script_path = canonical_local_path(script)
@@ -321,6 +374,7 @@ function _execute_detached!(
         skip_hash_check=skip_hash_check,
         mem_headroom=mem_headroom,
         master_gb=master_gb,
+        workers=workers,
     )
     extra = Dict{String,String}("DISTRIBUTED_PROJECT_ROOT" => proj)
     if remote !== nothing && !isempty(strip(String(remote)))
@@ -946,6 +1000,7 @@ function _execute_detached_argv(
     skip_hash_check,
     mem_headroom=nothing,
     master_gb=nothing,
+    workers=nothing,
 )::Vector{String}
     argv = String[String(kind)]
     push!(argv, "-y")
@@ -991,6 +1046,9 @@ function _execute_detached_argv(
         end
         if master_gb !== nothing
             push!(argv, "--master-gb", string(Float64(master_gb)))
+        end
+        if workers !== nothing
+            push!(argv, "--workers", string(Int(workers)))
         end
     end
     for tok in tokens

@@ -60,6 +60,7 @@ export report_go_errors
 export execute!
 export allocate_output_dir
 export execute_detached_accepts
+export execute_kwargs_from_parsed
 export kit_pid_alive
 export kit_pid_file_running
 export terminate!
