@@ -6,6 +6,18 @@ using Test
     @testset "help flags" begin
         @test parse_go_args(["--help"]).help
         @test parse_go_args(["-h"]).help
+        let r = parse_go_args([
+                "--julia", "/opt/julia/bin/julia",
+                "--output-dir", "my_runs",
+                "--sync", "h1",
+                "--help",
+            ])
+            @test r.help
+            @test r.julia == "/opt/julia/bin/julia"
+            @test r.output_dir == "my_runs"
+            @test r.sync === :sync
+            @test r.hosts == ["h1"]
+        end
     end
 
     @testset "script and hosts" begin

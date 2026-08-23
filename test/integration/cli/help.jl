@@ -24,4 +24,12 @@ using Test
     @test occursin("Usage", out)
     @test occursin("--mem-headroom", out)
     @test occursin("--master-gb", out)
+
+    proc, out = _run_subprocess(setenv(_kit_cli_cmd([
+        "go", "--julia", "/opt/julia/bin/julia", "--output-dir", "my_runs", "--help",
+    ]), env))
+    @test proc.exitcode == 0
+    @test occursin("Usage", out)
+    @test occursin("--julia", out)
+    @test occursin("--output-dir", out)
 end
