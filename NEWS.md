@@ -19,10 +19,12 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
   `WorkerPlan.local_workers` / `include_local` still mean this-process
   workers.
 - Default `ssh_opts()` includes `-o RequestTTY=no` (non-interactive; also
-  used by `scp` / rsync `-e`, so not `ssh -T`). A non-empty
-  `DISTRIBUTED_SSH_OPTS` still **replaces** the defaults. `run_on_host(;
-  tty=true)` puts `-t` after those flags. E2E passes `RequestTTY=no` with
-  `-F` so CI stdin is not a TTY.
+  used by `scp` / rsync `-e`, so not `ssh -T`). `ssh_opts(;
+  request_tty=true)` omits that option so `ssh -t` may come before or
+  after the vector. A non-empty `DISTRIBUTED_SSH_OPTS` still **replaces**
+  the defaults (`request_tty` does not rewrite ENV). `run_on_host(;
+  tty=true)` uses `request_tty=true` and puts `-t` after the flags. E2E
+  passes `RequestTTY=no` with `-F` so CI stdin is not a TTY.
 - `kit.pid` stores a start key under the pid. `kit_pid_file_running` is true
   only when the pid is alive and the start key still matches (SIGKILL leftover
   plus pid reuse). `kit_pid_alive` stays `kill(pid, 0)`.

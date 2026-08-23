@@ -89,13 +89,20 @@ using Test
         @test "BatchMode=yes" in opts
         @test "RequestTTY=no" in opts
         @test DistSSHKit.ssh_opts() == String.(opts)
+        tty = DistSSHKit.ssh_opts(; request_tty=true)
+        @test !("RequestTTY=no" in tty)
+        @test "BatchMode=yes" in tty
+        @test DistSSHKit.build_ssh_opts(; request_tty=true) == tty
+        @test DistSSHKit.ssh_opts(; request_tty=false) == DistSSHKit.ssh_opts()
     end
     withenv("DISTRIBUTED_SSH_OPTS" => "-o Foo=bar -o Baz=qux") do
         @test DistSSHKit.build_ssh_opts() == ["-o", "Foo=bar", "-o", "Baz=qux"]
         @test DistSSHKit.ssh_opts() == ["-o", "Foo=bar", "-o", "Baz=qux"]
+        @test DistSSHKit.ssh_opts(; request_tty=true) == ["-o", "Foo=bar", "-o", "Baz=qux"]
     end
     withenv("DISTRIBUTED_SSH_OPTS" => "-F /tmp/ssh_config") do
         @test DistSSHKit.ssh_opts() == ["-F", "/tmp/ssh_config"]
+        @test DistSSHKit.ssh_opts(; request_tty=true) == ["-F", "/tmp/ssh_config"]
     end
 
     let r = DistSSHKit.get_local_resources()
@@ -107,22 +114,22 @@ using Test
         d = tmp
         @test DistSSHKit.get_local_git_hash(d) === nothing
         @test DistSSHKit.clone_url_from_local_origin(d) === nothing
-        @test DistSSHKit.local_git_clean(d) == true
+        @test DistSSHKit.local_git_clean(d)
 
         run(Cmd(["git", "-C", d, "init", "-q"]))
         run(Cmd(["git", "-C", d, "config", "user.email", "test@example.com"]))
         run(Cmd(["git", "-C", d, "config", "user.name", "Test"]))
-        @test DistSSHKit.local_git_clean(d) == true
+        @test DistSSHKit.local_git_clean(d)
 
         write(joinpath(d, "f.txt"), "hi")
-        @test DistSSHKit.local_git_clean(d) == false
+        @test !DistSSHKit.local_git_clean(d)
 
         run(Cmd(["git", "-C", d, "add", "f.txt"]))
         run(Cmd(["git", "-C", d, "commit", "-q", "-m", "init"]))
-        @test DistSSHKit.local_git_clean(d) == true
+        @test DistSSHKit.local_git_clean(d)
 
         write(joinpath(d, "f.txt"), "hi2")
-        @test DistSSHKit.local_git_clean(d) == false
+        @test !DistSSHKit.local_git_clean(d)
 
         full = DistSSHKit.get_local_git_hash(d)
         @test full isa String
@@ -231,5 +238,5 @@ using Test
         @test err2 isa ArgumentError
     end
 
-    @test DistSSHKit._remote_ssh_ok("no-such-host.invalid") == false
+    @test !DistSSHKit._remote_ssh_ok("no-such-host.invalid")
 end

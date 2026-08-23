@@ -1,35 +1,43 @@
 # SSH configuration
 
-"""Build SSH options for non-interactive connections."""
-function build_ssh_opts()
+"""Build SSH options. `request_tty=false` (default) adds `RequestTTY=no`."""
+function build_ssh_opts(; request_tty::Bool=false)
     custom = strip(get(ENV, "DISTRIBUTED_SSH_OPTS", ""))
     if isempty(custom)
-        return [
-            "-o", "BatchMode=yes",
-            "-o", "RequestTTY=no",
+        opts = String["-o", "BatchMode=yes"]
+        if !request_tty
+            push!(opts, "-o", "RequestTTY=no")
+        end
+        append!(opts, (
             "-o", "ConnectTimeout=10",
             "-o", "StrictHostKeyChecking=accept-new",
             "-o", "ServerAliveInterval=60",
             "-o", "ServerAliveCountMax=10",
             "-o", "TCPKeepAlive=yes",
-        ]
+        ))
+        return opts
     end
     return split(custom)
 end
 
 """
+    ssh_opts(; request_tty=false) -> Vector{String}
+
 SSH argv flags for `ssh` / `scp` / rsync `-e`.
 
 Reads `DISTRIBUTED_SSH_OPTS` **live** (not frozen at package precompile). Prefer
 this over a `const` so E2E / ProxyJump overrides apply in the same process.
 
 A non-empty `DISTRIBUTED_SSH_OPTS` **replaces** the default vector (it is not
-merged). Callers that pass only `-F` must add `-o RequestTTY=no` themselves
-if they want the same non-interactive TTY policy. Use `-o RequestTTY=no`,
+merged). `request_tty` only changes the default vector: `false` includes
+`-o RequestTTY=no`; `true` omits it so a caller may put `ssh -t` before or
+after these flags. The ENV replacement is unchanged (if it contains
+`RequestTTY=no`, put `-t` **after** the vector). Use `-o RequestTTY=no`,
 not `ssh -T`: these flags are also passed to `scp` (`scp -T` is unrelated).
+Does not insert `-t` (that flag is `ssh`-only).
 """
-function ssh_opts()::Vector{String}
-    return String[String(x) for x in build_ssh_opts()]
+function ssh_opts(; request_tty::Bool=false)::Vector{String}
+    return String[String(x) for x in build_ssh_opts(; request_tty=request_tty)]
 end
 
 """
@@ -407,8 +415,8 @@ function run_on_host(
     isempty(h) && throw(ArgumentError("run_on_host: host must be non-empty"))
     inner = _run_on_host_remote_sh(argv; julia=julia, detect=detect)
     ssh = String["ssh"]
-    append!(ssh, ssh_opts())
-    # After `ssh_opts()` so `-t` wins over default `RequestTTY=no`.
+    append!(ssh, ssh_opts(; request_tty=tty))
+    # `-t` is ssh-only (not in `ssh_opts`, which scp also uses).
     tty && push!(ssh, "-t")
     push!(ssh, h, inner)
     return run(Cmd(ssh); wait=wait)
