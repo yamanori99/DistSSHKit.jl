@@ -3,13 +3,24 @@
   max-height: 8rem;
 }
 
-/* Topology diagram: Documenter hides .docs-light-only / .docs-dark-only per theme
-   (including catppuccin). Only layout here. */
+/* Topology diagram layout. Visibility is below (not Documenter-only). */
 .content img.docs-light-only,
 .content img.docs-dark-only {
   margin-left: auto;
   margin-right: auto;
   max-width: 100%;
+}
+
+/*
+  documenter-light.css is unscoped: `.docs-dark-only { display: none !important }`
+  applies on every theme. Dark theme sheets hide `.docs-light-only` but never
+  restore `.docs-dark-only`, so the dark logo and topology vanish.
+*/
+html.theme--documenter-dark .docs-dark-only,
+html.theme--catppuccin-frappe .docs-dark-only,
+html.theme--catppuccin-macchiato .docs-dark-only,
+html.theme--catppuccin-mocha .docs-dark-only {
+  display: revert !important;
 }
 
 /* Version selector: Documenter puts it at the bottom of the sidebar. */
