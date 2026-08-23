@@ -339,13 +339,18 @@ function _remote_julia_candidates_sh(uname_s::AbstractString)::String
     end
 end
 
+"""POSIX single-quote a word so remote `sh` does not parse metacharacters."""
+function _remote_sh_quote(word::AbstractString)::String
+    return "'" * replace(String(word), "'" => "'\\''") * "'"
+end
+
 function _remote_argv_sh(argv::AbstractVector{<:AbstractString})::String
     return sprint() do io
         first = true
         for a in argv
             first || print(io, ' ')
             first = false
-            print(io, Base.shell_escape(String(a)))
+            print(io, _remote_sh_quote(a))
         end
     end
 end

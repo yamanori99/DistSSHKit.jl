@@ -7,6 +7,8 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 - [`run_on_host`](@ref) uses `ignorestatus`, so a non-zero remote or ssh
   exit returns `Process` (`.exitcode`) instead of `ProcessFailedException`.
+  Remote `argv` words are POSIX-quoted so expressions like `exit(3)` are
+  not parsed by the remote shell.
 - `parse_go_args` `--help` keeps already-parsed hosts, sync, `--output-dir`,
   and `--julia` (same class as drive `--help` / `mem_headroom`).
 - Drive memory preflight uses `size_worker_count` (`mem_headroom`,
