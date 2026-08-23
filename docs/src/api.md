@@ -120,8 +120,9 @@ private internals.
 `remote_hosts_from_tokens` extracts only SSH host names.
 `worker_plan_from_tokens` resolves to a concrete [`WorkerPlan`](@ref).
 `split_worker_token` and `is_local_host_name` are the low-level primitives.
-`host_tokens` rebuilds `execute!` token strings from `parse_go_args` /
-`parse_drive_args` (bare hosts stay bare).
+`host_tokens(parsed; kind=:go|:drive)` rebuilds `execute!` token strings from
+`parse_go_args` / `parse_drive_args` (bare hosts stay bare). Go keeps parser
+strings; drive emits `parenthost:N` from `local_workers`.
 
 ```@docs
 parse_worker_tokens

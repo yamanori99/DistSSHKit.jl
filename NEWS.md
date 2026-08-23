@@ -5,6 +5,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- `host_tokens` takes `kind=:go` or `kind=:drive` (and vector methods) instead
+  of guessing from `parsed.hosts isa Tuple`. `go!` writes `kit.result` at
+  each `GoResult` return (no `Ref` in `finally`).
 - `drive_host_status` reads live per-host membership from `kit.hosts.status`
   during `drive` (`:joined` / `:alive` / `:left` / `:collect_pending`).
   `Distributed.workers()` is the liveness probe. Post-run collect stays on
