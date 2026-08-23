@@ -339,13 +339,28 @@ function _remote_julia_candidates_sh(uname_s::AbstractString)::String
     end
 end
 
+"""POSIX single-quote a word so remote `sh` does not parse metacharacters."""
+function _remote_sh_quote(word::AbstractString)::String
+    return sprint() do io
+        print(io, '\'')
+        for c in String(word)
+            if c == '\''
+                print(io, "'\\''")
+            else
+                print(io, c)
+            end
+        end
+        print(io, '\'')
+    end
+end
+
 function _remote_argv_sh(argv::AbstractVector{<:AbstractString})::String
     return sprint() do io
         first = true
         for a in argv
             first || print(io, ' ')
             first = false
-            print(io, Base.shell_escape(String(a)))
+            print(io, _remote_sh_quote(a))
         end
     end
 end
@@ -402,6 +417,9 @@ with `argv` (Julia flags / script / args). Does not replace
 `julia=nothing` / `"auto"` with `detect=true` probes candidates on the remote.
 `detect=false` requires an explicit path. `tty=true` adds `ssh -t`.
 Process-local detect cache is not used (a new CLI process never hits it).
+
+SSH is `ignorestatus`: a non-zero remote or ssh exit returns the `Process`
+(`.exitcode`) instead of throwing `ProcessFailedException`.
 """
 function run_on_host(
     host::AbstractString,
@@ -419,7 +437,7 @@ function run_on_host(
     # `-t` is ssh-only (not in `ssh_opts`, which scp also uses).
     tty && push!(ssh, "-t")
     push!(ssh, h, inner)
-    return run(Cmd(ssh); wait=wait)
+    return run(ignorestatus(Cmd(ssh)); wait=wait)
 end
 
 # Process-local auto-detect results (`nothing` included). Same host in

@@ -300,7 +300,8 @@ Default `ssh_opts()` is BatchMode and `RequestTTY=no`.
 that is `ssh`-only). Setting `DISTRIBUTED_SSH_OPTS` replaces that vector;
 `-F` alone does not keep `RequestTTY=no`. Use `-o RequestTTY=no`, not
 `ssh -T` (`scp -T` means something else). `run_on_host(; tty=true)` still
-requests a pty.
+requests a pty. Non-zero exit is `.exitcode` on the returned `Process`
+(no `ProcessFailedException`).
 
 ## Inside a driver — `worker_pmap`
 

@@ -351,11 +351,12 @@ using Test
             _with_tempdir() do tmp
                 for v in (:quiet, :verbose)
                     with_kit_verbosity(v) do
-                        log_path = DistSSHKit.init_log_file(tmp; prefix="progress_done_$v")
-                        redirect_stdout(devnull) do
+                        log_path = redirect_stdout(devnull) do
+                            p = DistSSHKit.init_log_file(tmp; prefix="progress_done_$v")
                             DistSSHKit.kit_progress_begin!("drive"; steps=2, kind=:drive)
                             DistSSHKit.kit_progress_step!("sync")
                             DistSSHKit.kit_progress_done!(; ok=false)
+                            p
                         end
                         DistSSHKit.close_log_file()
                         body = read(log_path, String)

@@ -577,21 +577,21 @@ function go!(
     mkpath(batch_dir)
     release_lock = kit_output_dir_lock!(batch_dir)
     _go_write_batch_manifest!(batch_dir, script_path, slots)
+    apply_session_env!(
+        KitSession(
+            project=proj,
+            workers=String[],
+            remote=remote,
+            quiet=quiet,
+            verbosity=verbosity,
+            yes=yes,
+        ),
+    )
     init_log_file(batch_dir; prefix="go", path_anchor=anchor)
 
     progress_ok = false
     completed = false
     try
-        apply_session_env!(
-            KitSession(
-                project=proj,
-                workers=String[],
-                remote=remote,
-                quiet=quiet,
-                verbosity=verbosity,
-                yes=yes,
-            ),
-        )
         sess_rr = session_remote_root(
             KitSession(
                 project=proj,
