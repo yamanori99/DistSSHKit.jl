@@ -306,6 +306,107 @@ function resolve_remote_julia(
     return path
 end
 
+function _remote_julia_path_sh(path::AbstractString)::String
+    s = String(path)
+    if startswith(s, raw"$HOME") || startswith(s, "\$HOME")
+        return string("\"", s, "\"")
+    end
+    return Base.shell_escape(s)
+end
+
+function _remote_julia_candidates_sh(uname_s::AbstractString)::String
+    return sprint() do io
+        first = true
+        for p in remote_julia_candidates(uname_s)
+            first || print(io, ' ')
+            first = false
+            print(io, _remote_julia_path_sh(p))
+        end
+    end
+end
+
+function _remote_argv_sh(argv::AbstractVector{<:AbstractString})::String
+    return sprint() do io
+        first = true
+        for a in argv
+            first || print(io, ' ')
+            first = false
+            print(io, Base.shell_escape(String(a)))
+        end
+    end
+end
+
+"""Remote `sh -c` body: find Julia (same candidates as detect) then `exec` it with `argv`."""
+function _run_on_host_remote_sh(
+    argv::AbstractVector{<:AbstractString};
+    julia::Union{Nothing,AbstractString}=nothing,
+    detect::Bool=true,
+)::String
+    extra = _remote_argv_sh(argv)
+    spec = julia
+    use_detect = detect && _julia_spec_is_auto(spec)
+    if use_detect
+        darwin_set = sprint() do io
+            print(io, "set -- ")
+            print(io, _remote_julia_candidates_sh("Darwin"))
+        end
+        linux_set = sprint() do io
+            print(io, "set -- ")
+            print(io, _remote_julia_candidates_sh("Linux"))
+        end
+        return sprint() do io
+            print(io, "u=\$(uname -s); case \"\$u\" in Darwin*) ")
+            print(io, darwin_set)
+            print(io, " ;; *) ")
+            print(io, linux_set)
+            print(io, " ;; esac; JULIA=; for p in \"\$@\"; do if [ -x \"\$p\" ] && \"\$p\" --version 2>/dev/null | grep -q 'julia version'; then JULIA=\$p; break; fi; done; ")
+            print(io, "if [ -z \"\$JULIA\" ]; then JULIA=\$(command -v julia 2>/dev/null || true); fi; ")
+            print(io, "[ -n \"\$JULIA\" ] && [ -x \"\$JULIA\" ] && \"\$JULIA\" --version 2>/dev/null | grep -q 'julia version' || exit 127; exec \"\$JULIA\"")
+            isempty(extra) || (print(io, ' '); print(io, extra))
+        end
+    end
+    path = spec === nothing ? "" : String(strip(String(spec)))
+    isempty(path) && throw(ArgumentError(
+        "run_on_host: detect=false requires julia= to a remote path (not auto)",
+    ))
+    q = Base.shell_escape(path)
+    return sprint() do io
+        print(io, "JULIA="); print(io, q)
+        print(io, "; [ -x \"\$JULIA\" ] && \"\$JULIA\" --version 2>/dev/null | grep -q 'julia version' || exit 127; exec \"\$JULIA\"")
+        isempty(extra) || (print(io, ' '); print(io, extra))
+    end
+end
+
+"""
+    run_on_host(host, argv; julia=nothing, detect=true, tty=false, wait=true) -> Base.Process
+
+One SSH connection: resolve remote Julia the same way as
+[`resolve_remote_julia`](@ref) / `detect_julia_path`, then `exec` it
+with `argv` (Julia flags / script / args). Does not replace
+`resolve_remote_julia` when the caller only needs the path.
+
+`julia=nothing` / `"auto"` with `detect=true` probes candidates on the remote.
+`detect=false` requires an explicit path. `tty=true` adds `ssh -t`.
+Process-local detect cache is not used (a new CLI process never hits it).
+"""
+function run_on_host(
+    host::AbstractString,
+    argv::AbstractVector{<:AbstractString}=String[];
+    julia::Union{Nothing,AbstractString}=nothing,
+    detect::Bool=true,
+    tty::Bool=false,
+    wait::Bool=true,
+)::Base.Process
+    h = String(strip(host))
+    isempty(h) && throw(ArgumentError("run_on_host: host must be non-empty"))
+    inner = _run_on_host_remote_sh(argv; julia=julia, detect=detect)
+    ssh = String["ssh"]
+    tty && push!(ssh, "-t")
+    append!(ssh, ssh_opts())
+    push!(ssh, h, inner)
+    return run(Cmd(ssh); wait=wait)
+end
+
 # Process-local auto-detect results (`nothing` included). Same host in
 # `size!` then `drive!` / `--check` then `--instantiate` skips repeat SSH.
 const _DETECT_JULIA_PATH_CACHE = Dict{String,Union{Nothing,String}}()

@@ -273,6 +273,7 @@ show_drive_requirements
 println_kit_version
 ssh_opts
 resolve_remote_julia
+run_on_host
 resolve_controller_julia
 canonical_local_path
 short_path
