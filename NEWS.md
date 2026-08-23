@@ -5,6 +5,10 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- `drive_host_status` reads live per-host membership from `kit.hosts.status`
+  during `drive` (`:joined` / `:alive` / `:left` / `:collect_pending`).
+  `Distributed.workers()` is the liveness probe. Post-run collect stays on
+  `DriveResult.hosts`, not in `kit.result`.
 - Detached sidecar files in `output_dir` (`kit.pid`, `kit.job`, `kit.hosts`,
   `kit.result`, `kit.out` / `kit.err`, `.kit.lock`) are documented as the
   on-disk contract (copies under `log_dir` when that path is distinct).

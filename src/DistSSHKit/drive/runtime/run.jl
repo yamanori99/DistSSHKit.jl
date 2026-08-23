@@ -147,6 +147,8 @@ function _run_drive_parsed_locked!(
     # just at Julia process exit — callers (`drive!`, `execute!`) can run more
     # than once per process (tests; long-lived services).
     drive_atexit_cleanup = nothing
+    kit_out = DistSSHKit.resolve_drive_output_dir(script_dir)
+    kit_log = enable_log ? DistSSHKit.resolve_drive_log_dir(log_dir, script_dir) : nothing
     kit_progress_begin!("drive"; steps=progress_steps, kind=:drive)
     try
         if do_sync
@@ -235,11 +237,8 @@ function _run_drive_parsed_locked!(
         # `return 1` with workers already joined, and `finally` must still
         # reach a non-`nothing` `drive_atexit_cleanup` to tear them down.
         drive_atexit_cleanup = register_worker_cleanup!(successful_hosts)
-        DistSSHKit._write_kit_hosts_file(
-            successful_hosts,
-            DistSSHKit.resolve_drive_output_dir(script_dir),
-            enable_log ? DistSSHKit.resolve_drive_log_dir(log_dir, script_dir) : nothing,
-        )
+        DistSSHKit._write_kit_hosts_file(successful_hosts, kit_out, kit_log)
+        DistSSHKit._write_joined_drive_host_status!(successful_hosts, kit_out, kit_log)
         if require_all_hosts && !isempty(hosts)
             missing = String[h[1] for h in hosts if !(h[1] in successful_hosts)]
             missing = unique(missing)
@@ -254,6 +253,7 @@ function _run_drive_parsed_locked!(
 
         kit_progress_step!("init")
         init_drive_workers!(proj_dir, explicit_package, _PATH_ANCHOR)
+        DistSSHKit._start_drive_host_status_monitor!(kit_out, kit_log)
         sync_driver_to_workers!(script_path)
         run_prepare_workers!()
 
@@ -268,6 +268,8 @@ function _run_drive_parsed_locked!(
         run_driver_script!(enable_log, drive_atexit_cleanup)
 
         kit_progress_step!("collect")
+        DistSSHKit._stop_drive_host_status_monitor!()
+        DistSSHKit._mark_drive_hosts_collect_pending!(kit_out, kit_log)
         collect_ok, collect_hosts = collect_drive_results!(successful_hosts, script_dir, sentinel_name, skip_collect, _PATH_ANCHOR)
         resolved_hosts !== nothing && (resolved_hosts[] = collect_hosts)
         if require_all_hosts && !collect_ok
@@ -284,6 +286,7 @@ function _run_drive_parsed_locked!(
             resolved_log_dir[] = enable_log ? DistSSHKit.resolve_drive_log_dir(log_dir, script_dir) : nothing
         end
         kit_progress_done!(; ok=progress_ok)
+        DistSSHKit._stop_drive_host_status_monitor!()
         # `nothing` when no workers were ever added (early `return` above
         # `add_drive_workers!`). Otherwise idempotent (guarded by a `Ref`
         # inside) — a harmless no-op if `atexit` already ran it.

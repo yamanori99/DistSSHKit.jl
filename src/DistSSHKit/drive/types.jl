@@ -226,6 +226,19 @@ HostRunResult(host::AbstractString, ok::Bool, error=nothing) =
     HostRunResult(String(host), ok, error === nothing ? nothing : sprint(showerror, error))
 
 """
+Live per-host membership during a `drive` (not the post-run collect outcome).
+
+`state` is `:joined`, `:alive`, `:left`, or `:collect_pending`.
+`last_seen` is Unix time when this host last appeared in `Distributed.workers()`,
+or `nothing` if it has not been observed since join.
+"""
+struct DriveHostStatus
+    host::String
+    state::Symbol
+    last_seen::Union{Nothing,Float64}
+end
+
+"""
 Outcome of [`drive!`](@ref) (and similar CLI steps that return an exit code).
 
 `output_dir` / `log_dir` are the directories actually used for this run —

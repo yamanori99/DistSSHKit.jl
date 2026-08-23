@@ -36,6 +36,36 @@ using Test
         end
     end
 
+    @testset "drive_host_status" begin
+        @test DistSSHKit._probe_drive_host(Int[]) === :left
+        @test DistSSHKit._probe_drive_host([999999]) === :left
+        @test DistSSHKit._probe_drive_host([1]) === :alive
+        DistSSHKit._clear_drive_host_worker_ids!()
+        _with_tempdir() do d
+            @test DistSSHKit.drive_host_status(d) == DistSSHKit.DriveHostStatus[]
+            DistSSHKit._write_joined_drive_host_status!(["h1", "h2"], d, nothing)
+            got = DistSSHKit.drive_host_status(d)
+            @test length(got) == 2
+            @test got[1].host == "h1"
+            @test got[1].state === :joined
+            @test got[1].last_seen === nothing
+            DistSSHKit._register_drive_host_worker_ids!("h1", [1])
+            DistSSHKit._register_drive_host_worker_ids!("h2", [999999])
+            DistSSHKit._refresh_drive_host_status_file!(d, nothing; now=1.5)
+            live = DistSSHKit.drive_host_status(d)
+            by = Dict(r.host => r for r in live)
+            @test by["h1"].state === :alive
+            @test by["h1"].last_seen == 1.5
+            @test by["h2"].state === :left
+            DistSSHKit._mark_drive_hosts_collect_pending!(d, nothing; now=2.0)
+            pending = DistSSHKit.drive_host_status(d)
+            by2 = Dict(r.host => r for r in pending)
+            @test by2["h1"].state === :collect_pending
+            @test by2["h2"].state === :left
+        end
+        DistSSHKit._clear_drive_host_worker_ids!()
+    end
+
     @testset "allocate_output_dir" begin
         _with_tempdir() do project
             d1 = DistSSHKit.allocate_output_dir(:go, "batch.jl"; project)

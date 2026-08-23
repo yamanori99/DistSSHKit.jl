@@ -37,6 +37,7 @@ export host_tokens
 export is_local_host_name
 export DriveResult
 export HostRunResult
+export DriveHostStatus
 export CollectResult
 export KitRunResult
 export KitProcess
@@ -63,6 +64,7 @@ export kit_pid_alive
 export terminate!
 export terminate_run!
 export kit_result_from_dir
+export drive_host_status
 export parse_progress_line
 export kit_progress_latest
 export parse_go_args
