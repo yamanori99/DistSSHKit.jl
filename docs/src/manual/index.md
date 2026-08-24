@@ -80,6 +80,10 @@ Worker `addprocs` stays sequential.
   Distributed jobs on the same login can match)
 - `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` skips those `pkill`s; `rmprocs`
   still runs for the current drive
+- Detached `execute!(…; job_id=)` is a different contract: `pkill` only
+  argv containing `distsshkit-job:<id>` ([`terminate!`](@ref)). Go slots
+  `-L` a no-op file of that name so the script still runs; drive workers
+  get `--eval=#distsshkit-job:<id>`
 
 **Kit files.** Setup logs: `{project}/.distsshkit/setup/`. Go:
 `{script}/.distsshkit/go/{stem}_{UTC}/`. Drive (no `--output-dir`):
