@@ -45,7 +45,7 @@ if !isdefined(@__MODULE__, :setup_main)
             return 0
         end
 
-        if opts.mode === nothing || opts.mode == :requirements
+        if opts.mode === nothing || opts.mode === :requirements
             show_requirements()
             return 0
         end
@@ -69,12 +69,7 @@ if !isdefined(@__MODULE__, :setup_main)
             cli_override=opts.remote_path_override,
         )
 
-        init_log_file(
-            joinpath(project, ".distsshkit", "setup");
-            prefix="setup",
-            path_anchor=path_anchor,
-        )
-        try
+        function setup_job!(mode::Symbol)::Cint
             mode_name = Dict(
                 :clone => "Clone",
                 :delete => "Delete",
@@ -85,26 +80,27 @@ if !isdefined(@__MODULE__, :setup_main)
                 :instantiate => "Instantiate",
                 :runtest => "Pkg.test (job)",
                 :cleanup => "Cleanup Workers",
-            )[opts.mode]
+            )[mode]
             print_header("DistSSHKit setup · $mode_name")
             kit_println()
             writeln_field("Remote path", remote_path)
             kit_println()
 
             # Mutating / multi-host SSH ops: fail fast before confirmations.
-            if opts.mode in (:delete, :clone, :rsync_push, :instantiate, :runtest)
+            if mode === :delete || mode === :clone || mode === :rsync_push ||
+               mode === :instantiate || mode === :runtest
                 if !preflight_setup_ssh(opts.hosts)
                     print_err("SSH preflight failed. Fix connectivity, then retry.")
                     kit_println()
-                    return 1
+                    return Cint(1)
                 end
             end
 
-            if opts.mode == :delete
-                return finish_host_op!("Delete", delete_remotes(opts.hosts, remote_path)) ? 0 : 1
+            if mode === :delete
+                return Cint(finish_host_op!("Delete", delete_remotes(opts.hosts, remote_path)) ? 0 : 1)
             end
 
-            if opts.mode == :clone
+            if mode === :clone
                 clone_url = resolve_clone_url(opts.repo_url, project)
                 result = clone_to_remotes(opts.hosts, remote_path, clone_url)
                 ok = finish_host_op!("Clone", result)
@@ -115,44 +111,44 @@ if !isdefined(@__MODULE__, :setup_main)
                     kit_println("       so drive.jl uses the same remote root for workers / collect.")
                     kit_println()
                 end
-                return ok ? 0 : 1
+                return Cint(ok ? 0 : 1)
             end
 
-            if opts.mode == :rsync_push
-                return finish_host_op!(
+            if mode === :rsync_push
+                return Cint(finish_host_op!(
                     "rsync",
                     rsync_push_to_remotes(opts.hosts, remote_path, project; path_anchor=path_anchor),
-                ) ? 0 : 1
+                ) ? 0 : 1)
             end
 
-            if opts.mode == :instantiate
-                return finish_host_op!(
+            if mode === :instantiate
+                return Cint(finish_host_op!(
                     "Instantiate",
                     instantiate_remotes(
                         opts.hosts, opts.julia_path, remote_path, project;
                         path_anchor=path_anchor,
                     ),
-                ) ? 0 : 1
+                ) ? 0 : 1)
             end
 
-            if opts.mode == :runtest
-                return finish_host_op!(
+            if mode === :runtest
+                return Cint(finish_host_op!(
                     "Pkg.test",
                     runtest_remotes(
                         opts.hosts, opts.julia_path, remote_path, project;
                         path_anchor=path_anchor,
                     ),
-                ) ? 0 : 1
+                ) ? 0 : 1)
             end
 
-            if opts.mode == :cleanup
-                return finish_host_op!("Cleanup", cleanup_remote_workers(opts.hosts)) ? 0 : 1
+            if mode === :cleanup
+                return Cint(finish_host_op!("Cleanup", cleanup_remote_workers(opts.hosts)) ? 0 : 1)
             end
 
             # --pull/--sync: allow commit mismatch (fixed by the op). --check: require sync.
             # --sync also requires a clean local tree.
-            require_clean = (opts.mode == :sync)
-            check_code_sync = (opts.mode == :check)
+            require_clean = (mode === :sync)
+            check_code_sync = (mode === :check)
             result = check_prerequisites(
                 opts.hosts, opts.julia_path, remote_path, project;
                 path_anchor=path_anchor,
@@ -164,19 +160,19 @@ if !isdefined(@__MODULE__, :setup_main)
             if !result.ok
                 print_err("Prerequisites not met. Fix issues above and retry.")
                 kit_println()
-                return 1
+                return Cint(1)
             end
 
-            if opts.mode == :check
+            if mode === :check
                 print_ok("All prerequisites met.")
                 kit_println()
-                return 0
+                return Cint(0)
             end
 
             if !result.needs_sync
                 print_ok("Already up to date.")
                 kit_println()
-                return 0
+                return Cint(0)
             end
 
             print_ok("Ready to proceed.")
@@ -185,8 +181,8 @@ if !isdefined(@__MODULE__, :setup_main)
 
             # --pull: pull on localhost first, then on remotes
             # --sync: push from localhost, then pull on remotes
-            do_push = (opts.mode == :sync)
-            do_local_pull = (opts.mode == :pull)
+            do_push = (mode === :sync)
+            do_local_pull = (mode === :pull)
             raw = git_sync_project_to_hosts!(
                 opts.hosts,
                 project,
@@ -195,16 +191,32 @@ if !isdefined(@__MODULE__, :setup_main)
                 do_pull=true,
                 do_local_pull=do_local_pull,
             )
-            raw.cancelled && return 0
+            raw.cancelled && return Cint(0)
             if !raw.ok
                 print_err("$mode_name failed.")
                 kit_println()
-                return 1
+                return Cint(1)
             end
 
             print_ok("$mode_name complete.")
             kit_println()
-            return 0
+            return Cint(0)
+        end
+
+        log_dir = joinpath(project, ".distsshkit", "setup")
+        init_log_file(
+            log_dir;
+            prefix="setup",
+            path_anchor=path_anchor,
+        )
+        try
+            return DistSSHKit.with_kit_setup_progress(
+                log_dir,
+                DistSSHKit.setup_progress_step_name(opts.mode::Symbol);
+                path_anchor=path_anchor,
+            ) do
+                setup_job!(opts.mode::Symbol)
+            end
         finally
             close_log_file()
         end

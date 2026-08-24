@@ -190,6 +190,8 @@ function check_prerequisites(
 
     # Remote checks
     for host in hosts
+        host_ok = Ref(true)
+        _setup_host_span!(host, :running)
         kit_println("$host:")
 
         ssh_err = probe_setup_ssh(host)
@@ -199,7 +201,9 @@ function check_prerequisites(
             fail("SSH connection failed")
             kit_println("    $ssh_err")
             all_ok = false
+            host_ok[] = false
             kit_println()
+            _setup_host_span!(host, :fail)
             continue
         end
 
@@ -216,10 +220,12 @@ function check_prerequisites(
             fail("Julia not found (checked: $(host_julia === nothing ? "auto-detect" : host_julia))")
             kit_println("    Fix: Install Julia or use --julia PATH or set JULIA_DISTRIBUTED_EXE")
             all_ok = false
+            host_ok[] = false
         elseif julia_check.mismatch_kind == :minor && !ignore_julia_version
             fail("Julia version mismatch: local $(VERSION), $host has $(julia_check.version) (at $host_julia)")
             kit_println("    Fix: install a matching Julia on $host, or pass --ignore-julia-version to continue anyway")
             all_ok = false
+            host_ok[] = false
         elseif julia_check.mismatch_kind == :minor
             warn("Julia version differs: local $(VERSION), $host has $(julia_check.version) (--ignore-julia-version)")
         elseif julia_check.mismatch_kind == :patch
@@ -234,13 +240,16 @@ function check_prerequisites(
             fail("Project not found at $project_path")
             kit_println("    Fix: --clone $host  (or --rsync $host)")
             all_ok = false
+            host_ok[] = false
             kit_println()
+            _setup_host_span!(host, :fail)
             continue
         end
 
         if host_julia === nothing || !julia_check.found
             fail("Skipping dependency check (no usable remote Julia)")
             all_ok = false
+            host_ok[] = false
         else
             deps_err = probe_remote_project_deps(
                 host, remote_path; julia_path=String(host_julia),
@@ -251,6 +260,7 @@ function check_prerequisites(
                 fail(deps_err)
                 kit_println("    Fix: julia --project=. -m DistSSHKit setup --instantiate $host")
                 all_ok = false
+                host_ok[] = false
             end
         end
 
@@ -266,6 +276,7 @@ function check_prerequisites(
                 fail("Git commit differs (local: $local_hash, remote: $remote_hash)")
                 kit_println("    Fix: --pull or --sync to update remote")
                 all_ok = false
+                host_ok[] = false
             else
                 warn("Git commit differs (local: $local_hash, remote: $remote_hash)")
                 kit_println("    Will be synced by this operation")
@@ -273,6 +284,7 @@ function check_prerequisites(
         end
 
         kit_println()
+        _setup_host_span!(host, host_ok[] ? :ok : :fail)
     end
 
     return (ok=all_ok, needs_sync=needs_sync)

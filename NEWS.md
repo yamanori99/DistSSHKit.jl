@@ -5,9 +5,27 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- **Breaking:** omitted go/drive kit dirs sit next to the script:
+  `{script}/.distsshkit/go/<stem>_<UTC>/` (slots + `kit.progress`) and
+  `{script}/.distsshkit/drive` (shared result root unless
+  `--output-dir` / `init_output_dir!`). Script outside the project →
+  `{project}/.distsshkit/go/…`. `allocate_output_dir` uses the same
+  `{script}/.distsshkit/<kind>/` tree. Setup logs stay
+  `{project}/.distsshkit/setup/`.
+- Root / `demos/` / SSH E2E job `.gitignore` ignore `.distsshkit/` anywhere
+  (script-local go/drive, project setup). `output/` stays for demo
+  `init_output_dir!`. `results/` stays for leftover trees from the old
+  omitted default. `setup --rsync` always excludes `.distsshkit/` (and
+  `.git/`), and still honors `.gitignore`.
+- CLI `setup` and [`setup!`](@ref) print the same Time table as go/drive
+  (`kind=setup` in `kit.progress` under `.distsshkit/setup/`). One step per
+  mode (`rsync`, `instantiate`, …), plus `mode/host` item rows so
+  `DISTSSHKIT_JOBS=1` vs `>1` is visible. Default `DISTSSHKIT_JOBS` is
+  unchanged. `sync!` / `instantiate!` called from drive/go do not start a
+  second progress run.
 - Drive takes the output-dir lock after `init_output_dir!`, so a driver
   that sets `DISTRIBUTED_OUTPUT_DIR` (demos: `output/`) is not locked on empty
-  `script_dir/../results`.
+  `{script}/.distsshkit/drive`.
 - Drive `progress:` lines end with `t=<unix>`. `wait` is the worker-connection
   sleep (`DISTRIBUTED_INIT_DELAY_SEC`). `begin` / `step` / `item` always go to
   `kit.progress` (not only `--progress`). Non-quiet drive/go print the Time

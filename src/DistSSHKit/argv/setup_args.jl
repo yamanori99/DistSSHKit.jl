@@ -36,6 +36,7 @@ function show_requirements(; io::IO=stdout)
         "  $(KIT_QUIET_FLAG_HELP)",
         "  $(KIT_PROGRESS_FLAG_HELP)",
         "  $(KIT_VERBOSE_FLAG_HELP)",
+        "  $(KIT_TIME_HELP)",
         "  -y, --yes            skip confirmations",
         "  --hosts CSV         comma-separated hosts (`:N` stripped)",
         "  --hosts-file PATH    one host per line (`:N` stripped)",

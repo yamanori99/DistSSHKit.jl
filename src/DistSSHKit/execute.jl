@@ -921,16 +921,17 @@ Create a unique output directory for a later detached [`execute!`](@ref)
 and return its path. `kind` is `:go` or `:drive` (the same values as
 `execute!`). The directory is created; pass it as `output_dir=`.
 
-Layout is `<project>/.distsshkit/<kind>/<script-stem>_<UTC-stamp>/`. When
+Layout is `{script dir}/.distsshkit/<kind>/<script-stem>_<UTC-stamp>/`. When
 `job_id` is set it is appended after the stamp (same charset as
 [`execute!`](@ref) `job_id`). If that path already exists, a nanosecond
 suffix is added so two allocations in the same second do not share a
 directory.
 
-This is the unique sibling of the defaults used when `output_dir` is
-omitted: go uses the same `.distsshkit/go/` tree, while drive's omitted
-default remains `../results` next to the script (shared). Queue should
-call this instead of reusing that shared folder.
+This matches omitted in-process defaults: go uses
+`{script}/.distsshkit/go/<stem>_<UTC>/`; drive uses the shared
+`{script}/.distsshkit/drive` unless `output_dir` / `init_output_dir!` set
+`DISTRIBUTED_OUTPUT_DIR`. Queue should allocate instead of reusing drive's
+shared folder.
 """
 function allocate_output_dir(
     kind::Symbol,
@@ -951,7 +952,9 @@ function allocate_output_dir(
     else
         "$(stem)_$(stamp)"
     end
-    dir = joinpath(proj, ".distsshkit", String(kind), leaf)
+    raw = String(script)
+    script_path = isabspath(raw) ? raw : joinpath(proj, raw)
+    dir = joinpath(kit_dir_beside_script(dirname(canonical_local_path(script_path)), kind), leaf)
     if ispath(dir)
         dir = dir * "-" * string(time_ns())
     end

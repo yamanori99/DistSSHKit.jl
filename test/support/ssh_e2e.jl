@@ -177,8 +177,9 @@ end
 
 """Save capture as `logs/NN_<slug>.log` and append a SUMMARY row.
 
-When `project` + `kit` (`:setup` / `:go`) are set, prefer the kit log under
-`project/.distsshkit/<kit>/` (full detail under quiet CLI) as the log body.
+When `project` + `kit` (`:setup` / `:go`) are set, prefer the kit log:
+setup under `project/.distsshkit/setup/`, go under the latest go batch
+(`go_*.log` next to `kit.progress`).
 """
 function _ssh_e2e_record!(
     suite::SshE2ESuite,
@@ -200,7 +201,13 @@ function _ssh_e2e_record!(
     body = String(out)
     kit_src = nothing
     if project !== nothing && kit !== nothing
-        newest = _ssh_e2e_newest_log(joinpath(project, ".distsshkit", String(kit)))
+        log_dir = if kit === :go
+            batch = _ssh_e2e_latest_go_batch(project)
+            batch === nothing ? nothing : batch
+        else
+            joinpath(project, ".distsshkit", String(kit))
+        end
+        newest = log_dir === nothing ? nothing : _ssh_e2e_newest_log(log_dir)
         if newest !== nothing
             kit_src = newest
             body = read(newest, String)
@@ -366,8 +373,8 @@ function _stage_ssh_e2e_remote_host!(
         joinpath(proj, ".gitignore"),
         """
         .distsshkit/
-        demos/**/output/
         output/
+        results/
         """,
     )
 
@@ -382,13 +389,20 @@ function _stage_ssh_e2e_remote_host!(
     return nothing
 end
 
-"""Newest go batch dir under `proj/.distsshkit/go/`, or `nothing`."""
+"""Newest go batch dir (`go_manifest.txt` under `.distsshkit/go/`), or `nothing`."""
 function _ssh_e2e_latest_go_batch(proj::AbstractString)::Union{Nothing,String}
-    root = joinpath(proj, ".distsshkit", "go")
-    isdir(root) || return nothing
-    batches = filter(isdir, readdir(root; join=true))
-    isempty(batches) && return nothing
-    return last(sort(batches; by=mtime))
+    candidates = String[]
+    isdir(proj) || return nothing
+    for (root, dirs, _) in walkdir(proj)
+        basename(root) == "go" || continue
+        occursin(".distsshkit", root) || continue
+        for name in dirs
+            p = joinpath(root, name)
+            isfile(joinpath(p, "go_manifest.txt")) && push!(candidates, p)
+        end
+    end
+    isempty(candidates) && return nothing
+    return last(sort(candidates; by=mtime))
 end
 
 """Controller → bare URL using docker-ssh Host alias (`User`/`Port` from ssh_config)."""

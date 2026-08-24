@@ -38,19 +38,24 @@ function resolve_distributed_output_dir!(
     return dir
 end
 
+"""`{script_dir}/.distsshkit/{kind}` (go batches / drive results when unset)."""
+function kit_dir_beside_script(script_dir::AbstractString, kind::Symbol)::String
+    return canonical_local_path(joinpath(String(script_dir), ".distsshkit", String(kind)))
+end
+
 """
     resolve_drive_output_dir(script_dir) -> String
 
 Best-effort result root for a `drive` run: `ENV["DISTRIBUTED_OUTPUT_DIR"]` if
 set (explicit `--output-dir` / `output_dir=`, or a driver's own
-`init_output_dir!`), else `script_dir/../results`. Same priority
+`init_output_dir!`), else `{script_dir}/.distsshkit/drive`. Same priority
 `collect_drive_results!` uses to report `Results:` to the user. The
 `.kit.lock` is taken after `init_output_dir!` so that ENV is already set.
 """
 function resolve_drive_output_dir(script_dir::AbstractString)::String
     results_dir = get(ENV, "DISTRIBUTED_OUTPUT_DIR", nothing)
     if results_dir === nothing
-        results_dir = normpath(joinpath(script_dir, "..", "results"))
+        results_dir = kit_dir_beside_script(script_dir, :drive)
     end
     return canonical_local_path(results_dir)
 end
@@ -60,7 +65,7 @@ end
 
 Log directory a `drive` run actually uses (single source of truth for
 `init_log_file`'s priority): explicit `log_dir` (`--log-dir` / `log_dir=`),
-else `ENV["DISTRIBUTED_OUTPUT_DIR"]`, else `script_dir/results`.
+else `ENV["DISTRIBUTED_OUTPUT_DIR"]`, else `{script_dir}/.distsshkit/drive`.
 """
 function resolve_drive_log_dir(
     log_dir::Union{Nothing,AbstractString},
@@ -71,7 +76,7 @@ function resolve_drive_log_dir(
         resolved = get(ENV, "DISTRIBUTED_OUTPUT_DIR", nothing)
     end
     if resolved === nothing
-        resolved = joinpath(script_dir, "results")
+        resolved = kit_dir_beside_script(script_dir, :drive)
     end
     return String(resolved)
 end

@@ -42,16 +42,18 @@ prepare remotes with [`setup`](@ref Manual-setup), or pass `--sync` / `--rsync`.
 
 ## Output
 
-Default batch root:
+Default batch root (next to the script):
 
 ```text
-{project}/.distsshkit/go/{stem}_{UTC}/{slot}/
+{script}/.distsshkit/go/{stem}_{UTC}/{slot}/
 ```
 
+If the script is outside the project, `{project}/.distsshkit/go/{stem}_{UTC}/`.
 `--output-dir PATH` replaces the **batch root**. Kit sets
 `DISTRIBUTED_OUTPUT_DIR` to each slot directory.
 Add `.distsshkit/` to the job project's `.gitignore` so these paths stay
-untracked ([User Guide](@ref Manual)).
+untracked and `setup --rsync` does not push them (rsync also excludes that
+name). See [User Guide](@ref Manual).
 
 From the API, `go!(...; output_dir=PATH)` sets the same batch root (matching
 [`drive!`](@ref Manual-drive)). `collect_spec::String` still works as a
@@ -75,7 +77,7 @@ julia --project=. -m DistSSHKit go -y parenthost:2 demos/without_kit/pi_echo.jl 
 julia --project=. -m DistSSHKit progress DIR
 ```
 
-`DIR` is the batch root (`--output-dir`, or the default under `.distsshkit/go/`).
+`DIR` is the batch root (`--output-dir`, or `{script}/.distsshkit/go/…`).
 `--progress` is the TTY default; you do not need a scratch `--output-dir` just
 to time a run.
 

@@ -1425,6 +1425,12 @@ function _kit_progress_phase_hint(
     label == "init" && return "using, driver sync, prepare"
     label == "run" && return "driver script"
     label == "collect" && return "gather results"
+    label == "rsync" && return "push tree"
+    label == "instantiate" && return "Pkg.instantiate"
+    label == "check" && return "SSH, Julia, project"
+    label == "clone" && return "git clone"
+    label == "delete" && return "remote tree"
+    label == "runtest" && return "job Pkg.test"
     return ""
 end
 

@@ -4,14 +4,19 @@ docs/Manifest.toml
 docs/build/
 docs/site/
 
-# Local runs (drive/go logs default to <script-dir>/results/; demos write output/)
+# Kit dumps (matches any path named these):
+#   {script}/.distsshkit/go/     go batches
+#   {script}/.distsshkit/drive   omitted drive result root
+#   {project}/.distsshkit/setup  setup logs
+# Demo drivers still set output/ via init_output_dir!.
+# results/ is the old omitted drive/go default (leftover trees).
+.distsshkit/
+output/
+results/
 data/
 runner_*.log
 drive_*.log
 go_*.log
-results/
-output/
-.distsshkit/
 
 # Tests & CI artifacts
 .ci-cache/

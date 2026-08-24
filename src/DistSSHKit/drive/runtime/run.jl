@@ -75,7 +75,8 @@ function run_drive_parsed!(
         ENV["DISTRIBUTED_OUTPUT_DIR"] = DistSSHKit.canonical_local_path(String(output_dir))
     end
     # Drivers set `DISTRIBUTED_OUTPUT_DIR` in `init_output_dir!` (demos: `output/`).
-    # Lock after that so `.kit.lock` is not `script_dir/../results`.
+    # Lock after that so `.kit.lock` is not `{script}/.distsshkit/drive`
+    # when the driver chose `output/` (or `--output-dir`).
     include(script_path)
     if isdefined(Main, :init_output_dir!)
         @invokelatest Main.init_output_dir!(script_args)

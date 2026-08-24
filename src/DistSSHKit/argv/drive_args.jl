@@ -370,7 +370,7 @@ function show_drive_requirements(; io::IO=stdout)
         "  --sync / --rsync    optional pre-run (default: none)",
         "  --require-git       $(REQUIRE_GIT_MEANING)",
         "  --require-all-hosts fail if a listed SSH host did not join or collect failed",
-        "  --output-dir PATH   result root (DISTRIBUTED_OUTPUT_DIR)",
+        "  --output-dir PATH   result root (default: {script}/.distsshkit/drive)",
         "  $(KIT_TIME_HELP)",
         "  --julia PATH        remote Julia",
         "  --mem-headroom N    RAM fraction (default $(DEFAULT_MEM_HEADROOM); same as size)",

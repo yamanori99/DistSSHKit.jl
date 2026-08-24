@@ -137,16 +137,31 @@ function _go_script_relpath(project::AbstractString, script::AbstractString)::St
     return rel == "." ? basename(path) : rel
 end
 
-"""Batch output directory: `<project>/.distsshkit/go/<stem>_<UTC>/`."""
+"""`{script}/.distsshkit/go` when the script is in `project`, else `{project}/.distsshkit/go`."""
+function _go_kit_parent(
+    project::AbstractString,
+    script::AbstractString,
+)::String
+    proj = canonical_local_path(project)
+    script_path = canonical_local_path(script)
+    proj_prefix = joinpath(proj, "")
+    dir = if startswith(script_path, proj_prefix) || dirname(script_path) == proj
+        dirname(script_path)
+    else
+        proj
+    end
+    return kit_dir_beside_script(dir, :go)
+end
+
+"""Batch output directory: `{.distsshkit/go}/<stem>_<UTC>/` (`kit.progress` + slots)."""
 function _go_batch_output_dir(
     project::AbstractString,
     script::AbstractString;
     now::DateTime=Dates.now(Dates.UTC),
 )::String
-    proj = canonical_local_path(project)
     stem = splitext(basename(canonical_local_path(script)))[1]
     stamp = Dates.format(now, dateformat"yyyymmddTHHMMSS") * "Z"
-    return joinpath(proj, ".distsshkit", "go", "$(stem)_$(stamp)")
+    return joinpath(_go_kit_parent(project, script), "$(stem)_$(stamp)")
 end
 
 function _go_host_ssh_hint(host::AbstractString)::String
@@ -535,7 +550,7 @@ go!("job.jl", "user@h1:1", "user@h2:1"; remote="/path/to/project")
 ```
 
 Each slot gets `DISTRIBUTED_OUTPUT_DIR` pointing at
-`<project>/.distsshkit/go/<stem>_<UTC>/<slot>/`. Setup on remotes is assumed done.
+`{script}/.distsshkit/go/<stem>_<UTC>/<slot>/`. Setup on remotes is assumed done.
 Override the batch root with `output_dir` (CLI: `--output-dir`). For backward
 compatibility `collect_spec::AbstractString` also sets the batch root, but passing
 both `output_dir` and `collect_spec::String` is an error. `collect_spec === false`

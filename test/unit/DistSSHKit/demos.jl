@@ -46,6 +46,8 @@ using Test
         @test isfile(joinpath(tmp, "demos", "with_kit", "pipeline_square.jl"))
         @test !isdir(joinpath(tmp, "demos", "without_kit"))
         @test isfile(joinpath(tmp, "demos", ".gitignore"))
+        @test occursin(".distsshkit/", read(joinpath(tmp, "demos", ".gitignore"), String))
+        @test occursin("output/", read(joinpath(tmp, "demos", ".gitignore"), String))
         @test occursin("init_output_dir!", read(joinpath(tmp, "demos", "with_kit", "square_file.jl"), String))
 
         edited_path = joinpath(tmp, "demos", "with_kit", "square_file.jl")

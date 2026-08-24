@@ -45,6 +45,11 @@ using Test
                 @test del.ok && !del.cancelled
                 @test length(del.hosts) == 1 && del.hosts[1].ok
                 @test !isdir(joinpath(state_dir, slot))
+                prog = joinpath(proj, ".distsshkit", "setup", "kit.progress")
+                @test isfile(prog)
+                body = read(prog, String)
+                @test occursin("kind=setup", body)
+                @test occursin("label=delete/$host", body)
 
                 # Fresh empty remote then rsync+instantiate path (fake rsync creates tree).
                 chained = DistSSHKit.setup!(session, :rsync)

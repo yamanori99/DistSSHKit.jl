@@ -102,7 +102,7 @@ julia --project=. -m DistSSHKit drive -y parenthost:4 demos/with_kit/square_echo
 julia --project=. -m DistSSHKit progress DIR
 ```
 
-`DIR` is the result root (`--output-dir`, or the default under the project).
+`DIR` is the result root (`--output-dir`, or `{script}/.distsshkit/drive`).
 `--progress` is the TTY default; you do not need a scratch `--output-dir` just
 to time a run.
 

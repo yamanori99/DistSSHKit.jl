@@ -873,7 +873,8 @@ If `ENV["DISTRIBUTED_COLLECT_DIRS"]` is non-empty: colon-separated list (same co
 Each token is `canonical_local_path(token)` when absolute, otherwise `canonical_local_path(joinpath(project_root, token))`.
 Empty tokens are skipped; duplicates removed (first occurrence order preserved).
 
-If unset or blank after trimming: a single root from `DISTRIBUTED_OUTPUT_DIR`, or `joinpath(script_dir, "..", "results")` when that env is unset.
+If unset or blank after trimming: a single root from [`resolve_drive_output_dir`](@ref)
+(`DISTRIBUTED_OUTPUT_DIR`, else `{script_dir}/.distsshkit/drive`).
 
 Scripts should set `DISTRIBUTED_COLLECT_DIRS` to every tree that may receive new files on workers during the run
 (e.g. sweep output plus figures). Logs may stay under `DISTRIBUTED_OUTPUT_DIR` only; omit that path here if logs
@@ -905,7 +906,5 @@ function distributed_collect_root_dirs(
             return uniq
         end
     end
-    rd = get(ENV, "DISTRIBUTED_OUTPUT_DIR", nothing)
-    rd = rd === nothing ? normpath(joinpath(String(script_dir), "..", "results")) : String(rd)
-    return [canonical_local_path(rd)]
+    return String[resolve_drive_output_dir(script_dir)]
 end
