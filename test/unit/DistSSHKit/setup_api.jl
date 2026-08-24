@@ -63,6 +63,56 @@ using Test
         end
     end
 
+    @testset "quiet suppresses Log file on stdout" begin
+        _with_fake_remotes() do state_dir
+            _with_tempdir() do proj
+                host = "host1"
+                slot = replace(host, r"[@:/]" => "_")
+                tree = joinpath(state_dir, slot, "tree")
+                mkpath(tree)
+                touch(joinpath(tree, "keepme.txt"))
+                write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\n")
+                session = DistSSHKit.KitSession(
+                    project=proj,
+                    workers=["child:$host"],
+                    remote="~/App.jl",
+                    yes=true,
+                    quiet=true,
+                )
+                with_kit_verbosity(:verbose) do
+                    out, del = _capture_stdio() do _, _
+                        DistSSHKit.setup!(session, :delete)
+                    end
+                    @test del.ok && !del.cancelled
+                    @test !occursin("Log file:", out)
+                    @test isfile(joinpath(proj, ".distsshkit", "setup", "kit.progress"))
+                end
+            end
+        end
+    end
+
+    @testset "ambient progress keeps Log file off stdout" begin
+        _with_fake_remotes() do _
+            _with_tempdir() do proj
+                write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\n")
+                # No quiet=: auto session would resolve to :verbose under a pipe.
+                session = DistSSHKit.KitSession(
+                    project=proj,
+                    workers=["child:host1"],
+                    remote="~/App.jl",
+                    yes=true,
+                )
+                with_kit_verbosity(:progress) do
+                    out, _ = _capture_stdio() do _, _
+                        DistSSHKit.setup!(session, :cleanup)
+                    end
+                    @test !occursin("Log file:", out)
+                    @test DistSSHKit.kit_verbosity() === :progress
+                end
+            end
+        end
+    end
+
     @testset "multi-mode stops after rsync refuse" begin
         _with_fake_remotes() do state_dir
             _with_tempdir() do proj
@@ -157,6 +207,7 @@ using Test
                 @test !res.cancelled
                 @test !res.ok
                 @test occursin("Prerequisites not met", out)
+                @test !occursin("Log file:", out)
 
                 @test_throws ArgumentError DistSSHKit.setup!(session, :nope)
                 @test_throws ArgumentError DistSSHKit.setup!(session, :delete, :check; ignore_julia_version=true)

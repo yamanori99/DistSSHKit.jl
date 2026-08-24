@@ -97,6 +97,18 @@ using Test
             @test DistSSHKit.kit_output_quiet()
             @test DistSSHKit.kit_noninteractive()
         end
+        _with_tempdir() do tmp
+            ambient = DistSSHKit.KitSession(
+                project=tmp,
+                workers=["child:host-a"],
+                yes=true,
+            )
+            with_kit_verbosity(:progress) do
+                DistSSHKit.apply_session_env!(ambient)
+                @test DistSSHKit.kit_verbosity() === :progress
+                @test ambient.verbosity === :progress
+            end
+        end
         delete!(ENV, "DISTRIBUTED_PROJECT_ROOT")
         delete!(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT")
         DistSSHKit.set_kit_output_quiet!(false)
