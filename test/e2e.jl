@@ -355,25 +355,38 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         end
 
         @testset "go pi_file both remotes + collect" begin
+            # Queue always sets job_id. The mark is `-L` on the remote, not `--eval`.
+            job_id = "e2e-go-1"
             proc, out = _run_kit_go(;
                 script=pi_file,
                 hosts=remote_tokens,
                 script_args=["--n", "32"],
                 project_root=proj,
                 go_flags=["-y"],
-                extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
+                extra_env=merge(
+                    _e2e_base_env(),
+                    Dict(
+                        "DISTSSHKIT_QUIET" => "0",
+                        "DISTSSHKIT_JOB_ID" => job_id,
+                    ),
+                ),
             )
             _assert_ssh_e2e_ok(suite, "go_pi_file", proc, out; project=proj, kit=:go)
             batch = _ssh_e2e_latest_go_batch(proj)
             @test batch !== nothing
             batch === nothing && error("expected go batch for pi_file")
             _assert_kit_progress_done(batch; kind=:go)
+            mark = DistSSHKit.kit_job_pkill_pattern(job_id)
             for host in hosts
                 slot = joinpath(batch, host)
+                results = joinpath(slot, "pi_results.txt")
+                mark_path = joinpath(slot, mark)
                 @test isdir(slot)
-                @test isfile(joinpath(slot, "pi_results.txt"))
-                body = read(joinpath(slot, "pi_results.txt"), String)
-                @test occursin("pi=", body)
+                @test isfile(results)
+                isfile(results) && @test occursin("pi=", read(results, String))
+                @test isfile(mark_path)
+                isfile(mark_path) && @test strip(read(mark_path, String)) ==
+                    DistSSHKit.kit_job_mark_comment(job_id)
             end
         end
 

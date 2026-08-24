@@ -109,10 +109,10 @@ container system start
 
 "${DOCKER_ROOT}/scripts/gen-keys.sh"
 
-if ! container image ls | grep -q "local/linux-ssh-worker"; then
-  echo "Building ${LOCAL_IMAGE} from docker-ssh/Dockerfile..."
-  (cd "${DOCKER_ROOT}" && container build -t "${LOCAL_IMAGE}" .)
-fi
+# Always build so Dockerfile pin changes (e.g. Julia 1.12 → 1.13) take effect.
+# Layer cache keeps this cheap when the file is unchanged.
+echo "Building ${LOCAL_IMAGE} from docker-ssh/Dockerfile..."
+(cd "${DOCKER_ROOT}" && container build -t "${LOCAL_IMAGE}" .)
 
 "${APPLE_ROOT}/scripts/down.sh"
 MOUNT="type=bind,source=${DOCKER_ROOT}/mounted-keys,target=/mounted-keys,readonly"

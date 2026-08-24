@@ -5,6 +5,10 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- `go` with `job_id` / `DISTSSHKIT_JOB_ID` runs the slot script. The pkill
+  mark is a no-op `-L` file so the script stays `PROGRAM_FILE`. Drive workers
+  still use a comment-only `--eval=#distsshkit-job:<id>`.
+
 ## 0.4.0
 
 Breaking cut after `0.3.3`. Date this heading `YYYY-MM-DD` (UTC) on the tag day.

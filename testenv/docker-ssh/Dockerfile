@@ -4,7 +4,7 @@ FROM ubuntu:24.04
 # https://docs.github.com/packages/working-with-a-github-packages-registry/working-with-the-container-registry
 LABEL org.opencontainers.image.source="https://github.com/yamanori99/DistSSHKit.jl"
 LABEL org.opencontainers.image.documentation="https://github.com/yamanori99/DistSSHKit.jl/blob/main/testenv/docker-ssh/README.md"
-LABEL org.opencontainers.image.description="Linux SSH worker for DistSSHKit E2E (sshd, rsync, git, Julia 1.12). Not the DistSSHKit runtime."
+LABEL org.opencontainers.image.description="Linux SSH worker for DistSSHKit E2E (sshd, rsync, git, Julia 1.13). Not the DistSSHKit runtime."
 LABEL org.opencontainers.image.licenses="MIT"
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -26,12 +26,12 @@ RUN useradd -m -s /bin/bash "${SSH_USER}" \
     && echo "${SSH_USER} ALL=(ALL) NOPASSWD:ALL" > "/etc/sudoers.d/${SSH_USER}" \
     && chmod 440 "/etc/sudoers.d/${SSH_USER}"
 
-# Pin major.minor to JULIA_SLOT_MIN in .github/julia-slots.env (E2E is the min
+# Pin major.minor to JULIA_SLOT_MAX in .github/julia-slots.env (E2E is the max
 # pair). Patch floats; setup --check fails on major.minor mismatch without
 # --ignore-julia-version.
 RUN su - "${SSH_USER}" -c \
     'curl --retry 5 --retry-delay 5 --retry-connrefused --connect-timeout 10 \
-        -fsSL https://install.julialang.org | sh -s -- --yes --default-channel 1.12' \
+        -fsSL https://install.julialang.org | sh -s -- --yes --default-channel 1.13' \
     && ln -sf "/home/${SSH_USER}/.juliaup/bin/julia" /usr/local/bin/julia
 
 RUN mkdir -p /run/sshd /mounted-keys \

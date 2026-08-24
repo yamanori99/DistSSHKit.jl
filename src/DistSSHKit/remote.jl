@@ -163,10 +163,32 @@ function resolved_kit_job_id()::Union{Nothing,String}
     return _parse_kit_job_id(raw)
 end
 
-"""One `julia` argv word that sets `ENV` and embeds [`KIT_JOB_CMDLINE_MARK`](@ref)."""
+"""Julia comment whose text is [`kit_job_pkill_pattern`](@ref). Eval is a no-op."""
+function kit_job_mark_comment(job_id::AbstractString)::String
+    return "#" * kit_job_pkill_pattern(job_id)
+end
+
+"""Drive-worker `exeflags` word: `--eval` of [`kit_job_mark_comment`](@ref).
+
+A comment-only `--eval` does not replace Distributed's worker bootstrap.
+Do not put real code here, and do not pass this flag to a go slot — any
+`--eval` makes Julia skip `programfile`. Go uses [`kit_write_job_mark_file`](@ref)
+plus `-L` instead, so the user script stays the program file.
+`DISTSSHKIT_JOB_ID` is process env (`addenv` / `addprocs` `env`), not `--eval`.
+"""
 function kit_job_eval_arg(job_id::AbstractString)::String
-    id = String(job_id)
-    return "--eval=ENV[\"DISTSSHKIT_JOB_ID\"]=$(repr(id))#$(KIT_JOB_CMDLINE_MARK)$(id)"
+    return "--eval=$(kit_job_mark_comment(job_id))"
+end
+
+"""Write a no-op Julia file named [`kit_job_pkill_pattern`](@ref) under `dir`.
+
+Go passes `-L` this path so `pkill -f` sees the tag without `--eval`.
+"""
+function kit_write_job_mark_file(dir::AbstractString, job_id::AbstractString)::String
+    path = joinpath(dir, kit_job_pkill_pattern(job_id))
+    mkpath(dir)
+    write(path, kit_job_mark_comment(job_id) * "\n")
+    return path
 end
 
 function kit_job_pkill_pattern(job_id::AbstractString)::String
