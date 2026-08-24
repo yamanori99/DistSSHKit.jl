@@ -4,7 +4,11 @@ description: Pkg.test after the caller has run setup-julia and julia-actions/cac
 
 inputs:
   coverage:
-    description: "true to run coverage + Codecov"
+    description: "true to instrument Pkg.test and write lcov.info"
+    required: false
+    default: "false"
+  upload:
+    description: "true to upload lcov.info to Codecov (requires coverage)"
     required: false
     default: "false"
 
@@ -21,7 +25,7 @@ runs:
       if: inputs.coverage == 'true'
     # Public repo + OIDC. A failed upload fails the job (no silent green).
     - name: Upload coverage to Codecov
-      if: inputs.coverage == 'true'
+      if: inputs.upload == 'true'
       uses: codecov/codecov-action@v7
       with:
         files: lcov.info
@@ -30,7 +34,7 @@ runs:
         flags: pkgtest
         fail_ci_if_error: true
     - name: Coverage summary
-      if: inputs.coverage == 'true'
+      if: inputs.upload == 'true'
       shell: bash
       run: |
         julia --color=no -e '

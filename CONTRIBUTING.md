@@ -73,7 +73,9 @@ julia --project=. -m DistSSHKit drive parenthost:2 demos/with_kit/square_file.jl
 testenv/docker-ssh/scripts/up.sh --e2e
 ```
 
-CI E2E (`DISTSSHKIT_CODE_COVERAGE=1`) writes `.cov` and uploads to Codecov (merged with `Pkg.test`). Local coverage:
+CI uploads Codecov on **main push** only (`Pkg.test` max slot, flag `pkgtest`). PR
+`Pkg.test` runs without coverage instrumentation. E2E coverage (flag `e2e`) runs
+on **E2E daily** and **`cut` PR** E2E — not on ordinary PR E2E. Local coverage:
 
 ```bash
 DISTSSHKIT_CODE_COVERAGE=1 testenv/docker-ssh/scripts/up.sh --e2e
@@ -87,8 +89,8 @@ Exactly three pins, in [`.github/julia-slots.env`](.github/julia-slots.env). Do 
 
 | Slot | Role | Required |
 | --- | --- | --- |
-| **min** | `Project.toml` julia floor. Pkg.test, Aqua, JETLS, Documenter, bake, PR E2E, GHCR worker | yes |
-| **max** | Newest tagged or prerelease (`versions.json`). Pkg.test, Aqua | yes |
+| **min** | `Project.toml` julia floor. Pkg.test (no coverage), Aqua, JETLS, Documenter, bake, PR E2E, GHCR worker | yes |
+| **max** | Newest tagged or prerelease (`versions.json`). Pkg.test, Aqua. Codecov `pkgtest` on **main push** only | yes |
 | **tip** | Next-minor nightly. Pkg.test, Aqua. `continue-on-error` | no |
 
 JETLS is min plus `JULIA_SLOT_JETLS_MAX` (job name still `JETLS - max`). That pin lags when `max` / `tip` move past what JETLS lists (today 1.12.2–1.13). Raise it only after JETLS supports that runtime. No JETLS **tip**.
@@ -140,7 +142,7 @@ JETLS is the type gate. Do not commit `.vscode/settings.json` to silence the Lan
 
 | When | Workflow | What |
 | --- | --- | --- |
-| 04:00 JST, or Run workflow | `E2E daily` | `ubuntu-latest`, `macos-15-intel`, WSL2 → `ubuntu-24.04`. Not a PR check. Failure opens (or comments on) Issue `E2E daily failed`; a later green run closes it. After a `cut` merge, dispatch this on that commit and wait for green before register. |
+| 04:00 JST, or Run workflow | `E2E daily` | `ubuntu-latest`, `macos-15-intel`, WSL2 → `ubuntu-24.04`. Linux job uploads E2E Codecov. Not a PR check. Failure opens (or comments on) Issue `E2E daily failed`; a later green run closes it. After a `cut` merge, dispatch this on that commit and wait for green before register. |
 | Sunday 10:00 JST, or Run workflow | `CI weekly` | Same `Pkg.test` / JETLS / Aqua slots as a PR (no coverage). Not a PR check. Catches max / Aqua / JETLS `@release` drift when nothing merged that week. Failure of min/max jobs opens Issue `CI weekly failed` (`ci`); tip is omitted from that notify. |
 
 ## Pull requests

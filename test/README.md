@@ -72,7 +72,13 @@ open "$(cat test/artifacts/ssh-e2e/LATEST)/SUMMARY.txt"
 rm -rf test/artifacts/ssh-e2e
 ```
 
-Coverage (`DISTSSHKIT_CODE_COVERAGE=1` on `up.sh --e2e`) writes `.cov` on the controller (child CLI too) and merges with `Pkg.test` on Codecov.
+Coverage uploads on **main push** (`Pkg.test` max) and **E2E daily** / **`cut` PR**
+E2E (`DISTSSHKIT_CODE_COVERAGE=1` on `up.sh --e2e`). Ordinary PR E2E has no
+coverage. Local:
+
+```bash
+DISTSSHKIT_CODE_COVERAGE=1 testenv/docker-ssh/scripts/up.sh --e2e
+```
 
 ### Setup (rsync tree)
 

@@ -14,7 +14,6 @@ concurrency:
 
 permissions:
   contents: read
-  id-token: write # Codecov OIDC upload (see Upload coverage step)
   actions: write # julia-actions/cache delete-old-caches
 
 jobs:
@@ -22,6 +21,7 @@ jobs:
   # PRs run `E2E / ubuntu-latest → ubuntu-24.04`.
   # Detect runs in each job (no `needs` hop). Docs-only PRs skip Pkg.test steps.
   # Required check names are slot literals (min/max), not Julia versions.
+  # Codecov (flag pkgtest): main push, max slot only — not on pull_request.
   test-min:
     name: Pkg.test - min - ubuntu-latest
     runs-on: ubuntu-latest
@@ -38,13 +38,15 @@ jobs:
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
       - uses: ./.github/actions/pkg-test
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        with:
-          coverage: "true"
 
   test-max:
     name: Pkg.test - max - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write # Codecov OIDC on main push
+      actions: write
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/ci-heavy
@@ -57,6 +59,9 @@ jobs:
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
       - uses: ./.github/actions/pkg-test
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
+        with:
+          coverage: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          upload: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
   test-tip:
     name: Pkg.test - tip - ubuntu-latest

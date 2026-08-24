@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+name: e2e-codecov
+description: Process E2E .cov and upload to Codecov (flag e2e)
+
+runs:
+  using: composite
+  steps:
+    - uses: julia-actions/julia-processcoverage@v1
+    - name: Upload E2E coverage to Codecov
+      uses: codecov/codecov-action@v7
+      with:
+        files: lcov.info
+        slug: ${{ github.repository }}
+        use_oidc: true
+        flags: e2e
+        fail_ci_if_error: true
+    - name: E2E coverage summary
+      shell: bash
+      run: |
+        julia --color=no -e '
+        using Pkg
+        Pkg.add("Coverage")
+        using Coverage, Printf
+        files = process_folder("src")
+        for fc in files
+            c, t = get_summary(fc)
+            t == 0 && continue
+            @printf("%-32s %5.1f%%\n", basename(fc.filename), 100 * c / t)
+        end
+        c, t = get_summary(files)
+        @printf("%-32s %5.1f%%  (%d/%d lines)\n", "TOTAL", 100 * c / t, c, t)
+        '

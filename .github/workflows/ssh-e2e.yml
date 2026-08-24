@@ -13,7 +13,6 @@ concurrency:
 
 permissions:
   contents: read
-  id-token: write # Codecov OIDC (E2E .cov merge with Pkg.test)
   actions: write # julia-actions/cache delete-old-caches
 
 jobs:
@@ -21,6 +20,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     name: ubuntu-latest → ubuntu-24.04
+    permissions:
+      contents: read
+      actions: write
+      id-token: write # Codecov OIDC when cut PR runs E2E coverage
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
@@ -45,6 +48,11 @@ jobs:
           else
             echo "e2e=${FILTER_E2E}" >> "$GITHUB_OUTPUT"
           fi
+          if [ "$CUT" = "true" ]; then
+            echo "coverage=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "coverage=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: ./.github/actions/julia-slot
         if: steps.gate.outputs.e2e == 'true'
@@ -65,36 +73,11 @@ jobs:
         id: e2e
         if: steps.gate.outputs.e2e == 'true'
         env:
-          DISTSSHKIT_CODE_COVERAGE: "1"
+          DISTSSHKIT_CODE_COVERAGE: ${{ steps.gate.outputs.coverage == 'true' && '1' || '' }}
         run: ./testenv/docker-ssh/scripts/up.sh --e2e
 
-      - uses: julia-actions/julia-processcoverage@v1
-        if: ${{ always() && steps.e2e.outcome == 'success' }}
-      - name: Upload E2E coverage to Codecov
-        if: ${{ always() && steps.e2e.outcome == 'success' }}
-        uses: codecov/codecov-action@v7
-        with:
-          files: lcov.info
-          slug: ${{ github.repository }}
-          use_oidc: true
-          flags: e2e
-          fail_ci_if_error: true
-      - name: E2E coverage summary
-        if: ${{ always() && steps.e2e.outcome == 'success' }}
-        run: |
-          julia --color=no -e '
-          using Pkg
-          Pkg.add("Coverage")
-          using Coverage, Printf
-          files = process_folder("src")
-          for fc in files
-              c, t = get_summary(fc)
-              t == 0 && continue
-              @printf("%-32s %5.1f%%\n", basename(fc.filename), 100 * c / t)
-          end
-          c, t = get_summary(files)
-          @printf("%-32s %5.1f%%  (%d/%d lines)\n", "TOTAL", 100 * c / t, c, t)
-          '
+      - uses: ./.github/actions/e2e-codecov
+        if: ${{ always() && steps.e2e.outcome == 'success' && steps.gate.outputs.coverage == 'true' }}
 
       - name: Teardown workers
         if: ${{ always() && steps.gate.outputs.e2e == 'true' }}
