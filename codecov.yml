@@ -10,8 +10,9 @@ coverage:
 # GitHub emails every subscriber when Codecov posts a *new* PR comment.
 comment: false
 
-# Pkg.test (flag pkgtest) and PR SSH E2E (flag e2e) upload separately and merge.
-# Carryforward: docs-only PRs skip E2E and would otherwise drop SSH-line hits.
+# Pkg.test (flag pkgtest) uploads on main push (max slot only).
+# E2E (flag e2e) uploads on E2E daily and cut PRs — not ordinary PR E2E.
+# Carryforward: docs-only PRs skip heavy CI and would otherwise drop line hits.
 flag_management:
   default_rules:
     carryforward: true

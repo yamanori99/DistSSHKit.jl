@@ -50,6 +50,7 @@ jobs:
       contents: read
       packages: write
       actions: write
+      id-token: write # Codecov OIDC (E2E coverage; not on PR E2E)
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/julia-slot
@@ -63,10 +64,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
       - name: docker-ssh up + SSH E2E
+        id: e2e
         env:
           DISTSSHKIT_WORKER_IMAGE: ghcr.io/${{ github.repository_owner }}/distsshkit-linux-ssh-worker:${{ github.sha }}
           DISTSSHKIT_WORKER_PULL_RETRIES: "8"
+          DISTSSHKIT_CODE_COVERAGE: "1"
         run: ./testenv/docker-ssh/scripts/up.sh --e2e
+      - uses: ./.github/actions/e2e-codecov
+        if: ${{ always() && steps.e2e.outcome == 'success' }}
       # SHA from the image job; latest after this Linux suite (package should be public).
       - name: Push latest
         env:
