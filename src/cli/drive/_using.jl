@@ -30,7 +30,6 @@ using .DistSSHKit:
     remote_path_for_ssh_collect,
     resolve_host_path_abs,
     resolve_pkg_project_dir,
-    show_drive_requirements,
     show_drive_usage,
     ssh_opts,
     subcommand_args_record,
