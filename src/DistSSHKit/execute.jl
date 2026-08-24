@@ -1,5 +1,5 @@
 # execute! — one seam over `go!` / `drive!` for callers that pick the kind at runtime
-# (the queue layer; see https://github.com/yamanori99/DistSSHKit.jl/issues/129).
+# (see https://github.com/yamanori99/DistSSHKit.jl/issues/129).
 # Thin wrapper only: `go!` / `drive!` / `src/cli/*` are untouched.
 # `detached=true` spawns `julia -m DistSSHKit go|drive` and returns [`KitProcess`](@ref).
 

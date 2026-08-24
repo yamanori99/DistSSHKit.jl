@@ -7,17 +7,10 @@ Internals of this repo.
 
 ## Feature freeze
 
-The 0.3 freeze is lifted. General still has `0.3.x`; new kit work targets
-**[0.4.0](https://github.com/yamanori99/DistSSHKit.jl/milestone/7)**. Queue
-research could not wait on a frozen detached contract. README.md and
-README.ja.md point here.
-
-**Lands:** happy-path bugs (ordinary `~/` roots, default `drive` / `go` /
-`setup`); CI / Julia slots / Aqua / JETLS drift; the 0.4.0 milestone (queue-layer
-detached contract, public consumer helpers). Enhancement Issue first, then a PR.
+Happy-path bugs (ordinary `~/` roots, default `drive` / `go` / `setup`);
+CI / Julia slots / Aqua / JETLS drift. Enhancement Issue first, then a PR.
 
 **Does not land here:** new job shapes, a scheduler, or `schedule` inside Kit.
-That stays [DistSSHKitQueue.jl](https://github.com/yamanori99/DistSSHKitQueue.jl).
 Windows and GPU-package help stay on the horizon
 ([Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26)).
 
@@ -172,7 +165,7 @@ Not a calendar. Cut when [NEWS.md](NEWS.md) **Unreleased** has something General
 | Opt-in flags, docs, CI, labels, internal cache | When someone needs it on General, **or** those items have sat in Unreleased for **two weeks** |
 
 Cut happy-path bugs promptly. Opt-in flags, docs, and CI follow the two-week
-rule above unless a General user or DistSSHKitQueue.jl needs them sooner.
+rule above unless a General user needs them sooner.
 
 ### After a cut merges
 

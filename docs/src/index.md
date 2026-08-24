@@ -10,12 +10,6 @@ Even small labs and individuals often have a few high-performance machines or
 workstations. DistSSHKit helps you use that hardware as a small set of compute
 nodes. A lightweight scheduler, `DistSSHKitQueue.jl`, is also in progress.
 
-!!! note
-    **0.3.x** on General keeps today's commands. Development toward **0.4** is open
-    (queue-layer hooks). Ordinary bugs still get fixed.
-    [CONTRIBUTING.md](https://github.com/yamanori99/DistSSHKit.jl/blob/main/CONTRIBUTING.md#feature-freeze) ·
-    [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26).
-
 ## What is DistSSHKit?
 
 Two ways to run a script:
@@ -77,8 +71,8 @@ Also needs **`ssh`**, **`rsync`**, and **`git`** (git deploy only);
   independently at the OS level (this kit launches multiple `julia` processes,
   even on a single machine, to run work in parallel — built on Distributed.jl)
 - **Master** — the process on `parent` that plans slots (`go`) or hands
-  work to workers (`drive`) and collects results. When a queue starts that
-  process, `parent` is the queue's runner, not your client machine
+  work to workers (`drive`) and collects results. `parent` is the machine
+  that started that process.
 - **Worker** — a process that receives work from the master and runs it
 
 Example: when you run `go` / `drive` on your own machine, that machine is

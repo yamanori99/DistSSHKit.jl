@@ -5,167 +5,75 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
-- **Breaking:** `is_parent_host_name` replaces `is_local_host_name`. Size / drive
-  RAM reserve is `parent_gb` / `--parent-gb` / `DEFAULT_PARENT_GB` (was
-  `master_gb` / `--master-gb`). `size_worker_count` takes `is_parent`.
-  `--master-gb` raises `ArgumentError`. [`WorkerPlan`](@ref) /
-  [`ParsedWorkerTokens`](@ref) use `parent_workers` / `child_workers` (was
-  `local_workers` / `remote_workers`). `include_parent` /
-  `include_parent_for_size` replace `include_local*`. `child_hosts_from_tokens`
-  replaces `remote_hosts_from_tokens`. `show_drive_usage` replaces
-  `show_drive_requirements`. Go slots are `:parent` / `:child`.
-  Filesystem [`canonical_local_path`](@ref), `execute!(…; remote=)` (project
-  path on the SSH host), [`HostResult`](@ref) vs [`HostRunResult`](@ref), and
-  `cleanup_remote_workers` are unchanged: they are not placement-role names.
-- **Breaking:** go/drive/size placement tokens are `parent[:N]` (Kit) and
-  `child:NAME[:N]` (SSH). `parenthost` is removed. setup and collect-only
-  still take bare SSH names. `-w` fills omitted `:N` on both. `kit.result`
-  stores resolved `tokens`.
-- [`setup!`](@ref) rejects a bad mode or `:clone` without `repo=` before
-  applying session verbosity or opening `.distsshkit/setup/`.
-- `apply_session_env!` keeps an ambient `:progress` / `:quiet` pin when the
-  session did not set verbosity (or `quiet=true`). Under `Pkg.test`, that
-  stopped [`setup!`](@ref) from printing `Log file:` after an auto `:verbose`
-  resolve. `quiet=true` still suppresses the banner the same way as
-  [`go!`](@ref).
-- **Breaking:** omitted go/drive kit dirs sit next to the script:
+## 0.4.0
+
+Breaking cut after `0.3.3`. Date this heading `YYYY-MM-DD` (UTC) on the tag day.
+
+### Breaking
+
+- go / drive / size placement tokens are `parent[:N]` (Kit) and
+  `child:NAME[:N]` (SSH). `parenthost` is gone. `local` / `localhost` / `l`
+  are ordinary SSH names (`child:local`). `--local` / `-l` raise
+  `ArgumentError`. setup and collect-only still take a bare SSH name.
+  `-w` fills omitted `:N`. `kit.result` stores resolved `tokens`.
+- Omitted go / drive dirs sit next to the script:
   `{script}/.distsshkit/go/<stem>_<UTC>/` (slots + `kit.progress`) and
-  `{script}/.distsshkit/drive` (shared result root unless
-  `--output-dir` / `init_output_dir!`). Script outside the project →
-  `{project}/.distsshkit/go/…`. `allocate_output_dir` uses the same
-  `{script}/.distsshkit/<kind>/` tree. Setup logs stay
-  `{project}/.distsshkit/setup/`.
-- Root / `demos/` / SSH E2E job `.gitignore` ignore `.distsshkit/` anywhere
-  (script-local go/drive, project setup). `output/` stays for demo
-  `init_output_dir!`. `results/` stays for leftover trees from the old
-  omitted default. `setup --rsync` always excludes `.distsshkit/` (and
-  `.git/`), and still honors `.gitignore`.
-- CLI `setup` and [`setup!`](@ref) print the same Time table as go/drive
-  (`kind=setup` in `kit.progress` under `.distsshkit/setup/`). One step per
-  mode (`rsync`, `instantiate`, …), plus `mode/host` item rows so
-  `DISTSSHKIT_JOBS=1` vs `>1` is visible. Default `DISTSSHKIT_JOBS` is
-  unchanged. `sync!` / `instantiate!` called from drive/go do not start a
-  second progress run.
-- Drive takes the output-dir lock after `init_output_dir!`, so a driver
-  that sets `DISTRIBUTED_OUTPUT_DIR` (demos: `output/`) is not locked on empty
-  `{script}/.distsshkit/drive`.
-- Drive `progress:` lines end with `t=<unix>`. `wait` is the worker-connection
-  sleep (`DISTRIBUTED_INIT_DELAY_SEC`). `begin` / `step` / `item` always go to
-  `kit.progress` (not only `--progress`). Non-quiet drive/go print the Time
-  table and a `progress DIR` replay line (`go` and `drive` `--help` say the
-  same). After the live bar, `:progress` reprints job stdout (drive script /
-  go slot logs) then the Time table. `julia -m DistSSHKit progress DIR`
-  reprints the last run (`go` lists slots, not consecutive item deltas).
-  Defaults for `DISTRIBUTED_INIT_DELAY_SEC` and
-  `DISTSSHKIT_JOBS` are unchanged.
-- Demo / E2E / `execute!` watchers use [`kit_progress_latest`](@ref) on the
-  run `output_dir` (`kit.progress` even with `--no-log`). Remote Julia reads
-  in SSH E2E go through `run_on_host` (setup `test -e`, git, rsync stay raw ssh).
-- Demo drivers take `--n N` (not a bare integer after the script). A bare
-  `4` looked like `parenthost:4`.
-- CLI `go` feeds [`go!`](@ref) through [`host_tokens`](@ref) and
-  [`execute_kwargs_from_parsed`](@ref) (same mapping as detached `execute!`).
-  [`go!`](@ref) / [`KitSession`](@ref) do not re-read `DISTSSHKIT_HOSTS_FILE`
-  when worker tokens are already non-empty. [`pipeline_config_from_env`](@ref)
-  builds those tokens with the same CLI host sources (`DISTSSHKIT_HOSTS` then
-  the hosts file).
-- Dark-theme Documenter / Catppuccin shows `logo-dark.svg` and the topology
-  dark SVGs (`custom.css` restores `.docs-dark-only`). The dark mark uses
-  white hollow chassis (same cutout as light); bake prefixes dark SVG `id`s.
-  README / README.ja footers use `#gh-light-mode-only` / `#gh-dark-mode-only`
-  (GitHub README ignores `<picture>` and would keep the light mark).
-- `progress:` also appends `kit.progress` next to `kit.pid`, so `--no-log`
-  still has lines for [`kit_progress_latest`](@ref) (`done` always; `begin` /
-  `step` / `item` in `--progress`).
-- [`execute_kwargs_from_parsed`](@ref) maps `parse_go_args` /
-  `parse_drive_args` onto detached `execute!` keywords (verbosity, `--no-log`,
-  `--package`, `mem_headroom`, …). Hosts stay in [`host_tokens`](@ref), not
-  `hosts_file`. Detached drive forwards `:workers` as `--workers N`.
-- [`run_on_host`](@ref) uses `ignorestatus`, so a non-zero remote or ssh
-  exit returns `Process` (`.exitcode`) instead of `ProcessFailedException`.
-  Remote `argv` words are POSIX-quoted so expressions like `exit(3)` are
-  not parsed by the remote shell.
-- `go!` applies `quiet` / `verbosity` before [`init_log_file`](@ref), so
-  `quiet=true` does not print `Log file:` to the terminal.
-- `parse_go_args` `--help` keeps already-parsed hosts, sync, `--output-dir`,
-  and `--julia` (same class as drive `--help` / `mem_headroom`).
-- Drive memory preflight uses `size_worker_count` (`mem_headroom`,
-  `master_gb`, CPU reserve). CLI `drive --mem-headroom` / `--master-gb`
-  match `size`. Detached `execute!(:drive; mem_headroom=, master_gb=)`
-  forwards those flags. `MEMORY_CAPACITY_FRACTION` is gone.
-- `parse_drive_args` `--help` keeps already-parsed `--mem-headroom` /
-  `--master-gb`. Drive preflight skips the CPU cap when remote `nproc` is
-  missing (`size_worker_count(..., nothing, …)`), instead of a fake huge
-  core count.
-- [`HostRunResult`](@ref) stores an error `String` as-is (`sprint(showerror)`
-  only for non-strings), so `kit.result` `hosts[].error` round-trips without
-  extra quotes.
-- `kit.result` stores drive post-run collect as `hosts` ([`HostRunResult`](@ref)
-  rows: host, ok, optional error). [`kit_result_from_dir`](@ref) round-trips
-  it. `go` omits the table (empty vector).
-- **Breaking:** `parenthost` / `parenthost:N` is the only DistSSHKit parent
-  token. `local` / `localhost` / `l` are ordinary SSH names.
-  `--local` / `-l` raise `ArgumentError`. `is_local_host_name` matches
-  `parenthost` only. Size/measure dict keys and path resolve use
-  `parenthost`, not `localhost`. `size_worker_count` takes `is_parenthost`.
-  `WorkerPlan.local_workers` / `include_local` still mean this-process
-  workers.
-- Default `ssh_opts()` includes `-o RequestTTY=no` (non-interactive; also
-  used by `scp` / rsync `-e`, so not `ssh -T`). `ssh_opts(;
-  request_tty=true)` omits that option so `ssh -t` may come before or
-  after the vector. A non-empty `DISTRIBUTED_SSH_OPTS` still **replaces**
-  the defaults (`request_tty` does not rewrite ENV). `run_on_host(;
-  tty=true)` uses `request_tty=true` and puts `-t` after the flags. E2E
-  passes `RequestTTY=no` with `-F` so CI stdin is not a TTY.
-- `kit.pid` stores a start key under the pid. `kit_pid_file_running` is true
-  only when the pid is alive and the start key still matches (SIGKILL leftover
-  plus pid reuse). `kit_pid_alive` stays `kill(pid, 0)`.
-- `run_on_host(host, argv; julia, detect, tty)` detect-and-execs remote Julia
-  in one SSH connection (same candidates as `detect_julia_path`). Does not
-  replace `resolve_remote_julia`. Detect results are not persisted across
-  processes.
-- `host_tokens` takes `kind=:go` or `kind=:drive` (and vector methods) instead
-  of guessing from `parsed.hosts isa Tuple`. `go!` writes `kit.result` at
-  each `GoResult` return (no `Ref` in `finally`).
-- `drive_host_status` reads live per-host membership from `kit.hosts.status`
-  during `drive` (`:joined` / `:alive` / `:left` / `:collect_pending`).
-  `Distributed.workers()` is the liveness probe. Post-run collect is
-  `DriveResult.hosts` and `kit.result` `hosts` (same [`HostRunResult`](@ref)
-  rows). `go` omits the table.
-- Detached sidecar files in `output_dir` (`kit.pid`, `kit.job`, `kit.hosts`,
-  `kit.result`, `kit.out` / `kit.err`, `.kit.lock`) are documented as the
-  on-disk contract (copies under `log_dir` when that path is distinct).
-- `allocate_output_dir(kind, script; project, job_id)` creates a unique
-  directory under `.distsshkit/<kind>/` for a later detached
-  `output_dir=`. Optional `job_id` is appended (same charset as `execute!`).
-- `wait(kp; timeout=N)` returns `failed_step="hung"` / `exit_code=124` if
-  the child is still running; it does not kill. Use `terminate!` for teardown.
-- `parse_progress_line` / `kit_progress_latest` read `progress:` kit log
-  lines (`job_id` filter on the latter). `DISTSSHKIT_PROGRESS` is still
-  only `--progress` verbosity.
-- Detached `execute!` writes child stdio to `kit.out` / `kit.err` in
-  `output_dir` unless `stdout` / `stderr` are passed (`stdout=stdout`
-  inherits the parent).
-- Exported queue CLI surface: `parse_go_args` / `parse_drive_args`, SSH
-  resolve, path helpers, and help chrome (`print_colored` is the public
-  name for `_print_colored`). `go` / `drive` argv wrappers stay unexported.
-- `terminate!` / `terminate_run!` cancel a detached run: SIGTERM, then
-  grace, then SIGKILL, then `pkill` only processes tagged with that
-  `job_id` (never machine-wide `julia.*--worker`). Pass `job_id` to reap
-  workers after a lost handle.
-- `execute_detached_accepts` reports whether a keyword is allowed on
-  detached `execute!` (`:go` / `:drive`), including named parameters.
-  `kit_pid_alive` is the pid probe used for `.kit.lock` / leftover `kit.pid`.
-- Detached `go` / `drive` write `kit.result` (TOML) next to `kit.pid` on a
-  normal finish. `kit_result_from_dir` reads it; `wait` prefers it when present.
-  A crash / SIGKILL leaves no file. Drive post-run collect is `hosts` in that
-  file ([`HostRunResult`](@ref)); `go` leaves it empty.
-- `host_tokens(parsed)` rebuilds CLI tokens from `parse_go_args` /
-  `parse_drive_args` for `execute!`. Bare hosts stay bare; drive
-  `local_workers > 0` becomes `parenthost:N`.
-- Detached `kit.pid` is removed when the child finishes (`go` / `drive`
-  `finally`, and `wait` as backup). A leftover after SIGKILL can still look
-  alive if the OS reuses the pid.
+  `{script}/.distsshkit/drive` (unless `--output-dir` / `init_output_dir!`).
+  Script outside the project → `{project}/.distsshkit/go/…`. Setup logs stay
+  `{project}/.distsshkit/setup/`. `allocate_output_dir` uses the same
+  `{script}/.distsshkit/<kind>/` tree.
+- Public names match those tokens: [`is_parent_host_name`](@ref),
+  `parent_gb` / `--parent-gb` / `DEFAULT_PARENT_GB`,
+  [`WorkerPlan`](@ref) `parent_workers` / `child_workers`,
+  `include_parent` / `include_parent_for_size`,
+  [`child_hosts_from_tokens`](@ref), [`show_drive_usage`](@ref).
+  `size_worker_count` takes `is_parent`. `--master-gb` raises
+  `ArgumentError`. Filesystem [`canonical_local_path`](@ref),
+  `execute!(…; remote=)` (project path on the SSH host),
+  [`HostResult`](@ref) vs [`HostRunResult`](@ref), and
+  `cleanup_remote_workers` are unchanged.
+
+### Also in this cut
+
+- CLI `setup` / [`setup!`](@ref) print the same Time table as go / drive
+  (`kind=setup` in `kit.progress`). `sync!` / `instantiate!` from drive / go
+  do not start a second progress run. Defaults for `DISTSSHKIT_JOBS` and
+  `DISTRIBUTED_INIT_DELAY_SEC` are unchanged.
+- `progress:` lines end with `t=<unix>` and append `kit.progress` next to
+  `kit.pid` (so `--no-log` still has lines). Non-quiet drive / go print the
+  Time table and a `progress DIR` replay line.
+  `julia -m DistSSHKit progress DIR` reprints the last run.
+- Detached `execute!` writes `kit.result` (TOML) on a normal finish;
+  [`kit_result_from_dir`](@ref) / `wait` read it. Drive collect is `hosts`
+  there ([`HostRunResult`](@ref); error strings as-is). `go` leaves `hosts`
+  empty. `kit.pid` stores a start key; [`kit_pid_file_running`](@ref) needs
+  the pid and the key. [`terminate!`](@ref) / [`terminate_run!`](@ref) then
+  `pkill` only `job_id`-tagged processes. `wait(kp; timeout=N)` returns
+  `failed_step="hung"` / `exit_code=124` without killing.
+  Child stdio defaults to `kit.out` / `kit.err`. Sidecars
+  (`kit.pid`, `kit.job`, `kit.hosts`, `kit.result`, `.kit.lock`) stay in
+  `output_dir`.
+- [`drive_host_status`](@ref) reads live membership from `kit.hosts.status`.
+  Drive takes the output-dir lock after `init_output_dir!`.
+- Drive / size RAM preflight share `mem_headroom` / `parent_gb` / CPU
+  reserve (`MEMORY_CAPACITY_FRACTION` is gone). Missing remote `nproc`
+  skips the CPU cap instead of inventing a huge core count.
+- [`run_on_host`](@ref) detect-and-execs remote Julia in one SSH connection
+  (`ignorestatus`; POSIX-quoted argv). Default [`ssh_opts`](@ref) includes
+  `-o RequestTTY=no`; `request_tty=true` / `tty=true` omit it.
+- [`setup!`](@ref) rejects a bad mode or `:clone` without `repo=` before
+  opening the setup log. Ambient `:progress` / `:quiet` is kept so
+  `Pkg.test` does not print `Log file:`. `go!` `quiet=true` still
+  suppresses that banner.
+- Root / `demos/` / SSH E2E `.gitignore` ignore `.distsshkit/` anywhere.
+  `setup --rsync` always excludes `.distsshkit/` and `.git/`.
+- Demo drivers take `--n N` (a bare `4` looked like a parent token).
+- Dark-theme Documenter / README footers use `logo-dark.svg` and
+  `#gh-light-mode-only` / `#gh-dark-mode-only`.
+- [`host_tokens`](@ref) takes `kind=:go` or `:drive`. CLI `go` uses the same
+  mapping as detached [`execute!`](@ref). [`parse_go_args`](@ref) /
+  [`parse_drive_args`](@ref), SSH resolve, path helpers, and help chrome
+  stay exported; `go` / `drive` argv wrappers stay unexported.
 
 ## 0.3.3
 
