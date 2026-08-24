@@ -11,6 +11,11 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
   stores resolved `tokens`.
 - [`setup!`](@ref) rejects a bad mode or `:clone` without `repo=` before
   applying session verbosity or opening `.distsshkit/setup/`.
+- `apply_session_env!` keeps an ambient `:progress` / `:quiet` pin when the
+  session did not set verbosity (or `quiet=true`). Under `Pkg.test`, that
+  stopped [`setup!`](@ref) from printing `Log file:` after an auto `:verbose`
+  resolve. `quiet=true` still suppresses the banner the same way as
+  [`go!`](@ref).
 - **Breaking:** omitted go/drive kit dirs sit next to the script:
   `{script}/.distsshkit/go/<stem>_<UTC>/` (slots + `kit.progress`) and
   `{script}/.distsshkit/drive` (shared result root unless

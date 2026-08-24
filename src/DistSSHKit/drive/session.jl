@@ -87,8 +87,19 @@ function apply_session_env!(session::KitSession)
         ENV["DISTRIBUTED_REMOTE_PROJECT_ROOT"] = session.remote
     end
     session.cli_session.quiet = session.quiet
-    session.cli_session.verbosity = session.verbosity
     session.cli_session.yes = session.yes
+    # Non-explicit sessions auto-resolve to `:verbose` when stdout is a pipe
+    # (Pkg.test). Do not wipe an ambient `:progress` / `:quiet` pin — that
+    # flipped `writeln_field("Log file", …)` back on under `setup!` (#238).
+    if !(session.cli_session.verbosity_explicit || session.quiet)
+        ambient = kit_verbosity()
+        if ambient in (:progress, :quiet) && session.verbosity === :verbose
+            session.verbosity = ambient
+            session.quiet = ambient === :quiet
+            session.cli_session.quiet = session.quiet
+        end
+    end
+    session.cli_session.verbosity = session.verbosity
     apply_kit_cli_session!(session.cli_session)
     return session
 end
