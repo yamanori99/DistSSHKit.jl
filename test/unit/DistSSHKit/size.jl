@@ -80,8 +80,11 @@ using Test
                 project=tmp,
                 workers=String[],
                 include_local_for_size=true,
+                quiet=true,
             )
-            plan = DistSSHKit.size!(session; gb_per_worker=2.0)
+            plan = with_kit_verbosity(:progress) do
+                DistSSHKit.size!(session; gb_per_worker=2.0)
+            end
             local_total, local_nproc = DistSSHKit.get_local_resources()
             @test plan.local_workers == DistSSHKit.size_worker_count(
                 local_total, local_nproc, 2.0; is_parenthost=true,

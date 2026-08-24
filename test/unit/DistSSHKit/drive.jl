@@ -277,11 +277,15 @@ using Test
 
     @testset "sync! refusals" begin
         _with_tempdir() do tmp
-            local_only = DistSSHKit.KitSession(project=tmp, workers=["parenthost:2"])
-            @test_throws ArgumentError DistSSHKit.sync!(local_only)
-            @test_throws ArgumentError DistSSHKit.sync!(local_only; mode=false)
-            remote = DistSSHKit.KitSession(project=tmp, workers=["h1"])
-            @test_throws ArgumentError DistSSHKit.sync!(remote; mode=:nope)
+            local_only = DistSSHKit.KitSession(
+                project=tmp, workers=["parenthost:2"], quiet=true,
+            )
+            remote = DistSSHKit.KitSession(project=tmp, workers=["h1"], quiet=true)
+            with_kit_verbosity(:progress) do
+                @test_throws ArgumentError DistSSHKit.sync!(local_only)
+                @test_throws ArgumentError DistSSHKit.sync!(local_only; mode=false)
+                @test_throws ArgumentError DistSSHKit.sync!(remote; mode=:nope)
+            end
         end
     end
 
@@ -293,18 +297,22 @@ using Test
             total, avail = Main.estimate_available_gb()
             @test total > 0
             @test avail > 0
-            DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(yes=true))
-            redirect_stdout(devnull) do
-                redirect_stderr(devnull) do
-                    @test Main.check_memory_capacity(1, Tuple{String,Union{Int,Nothing}}[], nothing)
-                    ok, mm, uv = Main.check_git_hashes(String[], tmp)
-                    @test ok
-                    @test isempty(mm)
-                    @test isempty(uv)
-                    @test !Main._skip_global_worker_pkill()
-                    withenv("DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL" => "1") do
-                        @test Main._skip_global_worker_pkill()
-                        Main.cleanup_stale_workers!(Tuple{String,Union{Int,Nothing}}[])
+            with_kit_verbosity(:progress) do
+                DistSSHKit.apply_kit_cli_session!(
+                    DistSSHKit.KitCliSession(quiet=true, yes=true),
+                )
+                redirect_stdout(devnull) do
+                    redirect_stderr(devnull) do
+                        @test Main.check_memory_capacity(1, Tuple{String,Union{Int,Nothing}}[], nothing)
+                        ok, mm, uv = Main.check_git_hashes(String[], tmp)
+                        @test ok
+                        @test isempty(mm)
+                        @test isempty(uv)
+                        @test !Main._skip_global_worker_pkill()
+                        withenv("DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL" => "1") do
+                            @test Main._skip_global_worker_pkill()
+                            Main.cleanup_stale_workers!(Tuple{String,Union{Int,Nothing}}[])
+                        end
                     end
                 end
             end
@@ -316,16 +324,24 @@ using Test
 
     @testset "instantiate! requires SSH hosts" begin
         _with_tempdir() do tmp
-            session = DistSSHKit.KitSession(project=tmp, workers=["parenthost:2"])
-            @test_throws ArgumentError DistSSHKit.instantiate!(session)
+            session = DistSSHKit.KitSession(
+                project=tmp, workers=["parenthost:2"], quiet=true,
+            )
+            with_kit_verbosity(:progress) do
+                @test_throws ArgumentError DistSSHKit.instantiate!(session)
+            end
         end
     end
 
     @testset "collect! requires hosts" begin
         _with_tempdir() do tmp
-            session = DistSSHKit.KitSession(project=tmp, workers=["parenthost:2"])
+            session = DistSSHKit.KitSession(
+                project=tmp, workers=["parenthost:2"], quiet=true,
+            )
             err = try
-                DistSSHKit.collect!(session, joinpath(tmp, "out"))
+                with_kit_verbosity(:progress) do
+                    DistSSHKit.collect!(session, joinpath(tmp, "out"))
+                end
                 nothing
             catch e
                 e
