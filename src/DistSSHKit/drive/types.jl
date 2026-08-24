@@ -246,8 +246,7 @@ HostRunResult(host::AbstractString, ok::Bool, error=nothing) =
     HostRunResult(String(host), ok, _host_run_error_text(error))
 
 """
-Shared run outcome for the queue layer (`ok`, `kind`, dirs, `failed_step`,
-`exit_code`, `hosts`).
+Shared run outcome (`ok`, `kind`, dirs, `failed_step`, `exit_code`, `hosts`).
 
 `kind` is `:go`, `:drive`, or `:pipeline`. Convert with [`kit_run_result`](@ref).
 `hosts` is post-run collect ([`HostRunResult`](@ref)); empty for `go`, hung

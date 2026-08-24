@@ -24,12 +24,6 @@ SSH 分散実行の手順を簡単にし、揃えることで、再現しやす�
 DistSSHKit は、それらをまとめて小さな計算ノードとして使うためのものである。
 関連して、簡易スケジューラ `DistSSHKitQueue.jl` を開発中である。
 
-> [!NOTE]
-> General 上の **0.3.x** はいまのコマンドのまま。**0.4** 向けの開発は再開する
-> (queue 層のフック)。通常のバグ修正は続ける。
-> [CONTRIBUTING.md](CONTRIBUTING.md#feature-freeze) ·
-> [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26)。
-
 ## インストール
 
 Julia REPL で `]` を押して Pkg モードに入り、次を実行する。
@@ -57,7 +51,7 @@ julia> import Pkg; Pkg.add("DistSSHKit")
 - **ホスト** — 計算するマシン。Kit 側は `parent`。SSH 先 (child) は `child:user@hostname` のように書く。setup だけは接頭辞なしの SSH 名。
 - **プロセス** — 起動した `julia` 1つ分のこと。それぞれ独立したメモリを持ち、OS 上で別々に動く
   (このキットは1台のマシンでも複数の `julia` プロセスを起動して並列に走らせる。Distributed.jl ベース)
-- **マスター** — `parent` 上のプロセス。`go` ではスロットを計画し、`drive` では仕事をワーカーに渡して結果を集める。queue がそのプロセスを起動するとき、`parent` は queue 側のマシンであり、手元のクライアントではない
+- **マスター** — `parent` 上のプロセス。`go` ではスロットを計画し、`drive` では仕事をワーカーに渡して結果を集める。`parent` は、そのプロセスを起動したマシンである。
 - **ワーカー** — マスターから仕事を受け取って実行するプロセス
 
 例: 手元で `go` / `drive` を実行する場合、そのマシンが `parent` になる。

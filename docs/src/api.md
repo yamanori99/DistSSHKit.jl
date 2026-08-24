@@ -112,7 +112,7 @@ report_pipeline_errors
 ## Worker tokens — `parent:N` / `child:NAME:N`
 
 Use this surface when callers need to classify tokens or decide whether
-`size!` is needed before building workers (e.g. the queue layer's own
+`size!` is needed before building workers (occupancy math), instead of
 occupancy math), instead of re-parsing the grammar or reaching into
 private internals.
 
@@ -139,7 +139,7 @@ host_tokens
 
 ## One seam over `go!` / `drive!` — `execute!`
 
-For callers that pick the kind at runtime (the queue layer): one function,
+For callers that pick the kind at runtime: one function,
 one result type, instead of branching on `kind` yourself.
 
 ```julia
@@ -200,7 +200,7 @@ progress: done kind=<go|drive> [job=<id>] ok=<true|false> done=<done> total=<ste
 `DISTSSHKIT_JOB_ID` is set. Fields are not quoted; labels are kit-chosen
 (phase names or slot labels) and do not contain spaces.
 
-Queue-style watchers can tail `kit.progress` (or the kit log) and use
+Watchers can tail `kit.progress` (or the kit log) and use
 [`parse_progress_line`](@ref) / [`kit_progress_latest`](@ref) /
 [`kit_progress_phases`](@ref), or `julia -m DistSSHKit progress DIR`.
 `DISTSSHKIT_PROGRESS=1` is `--progress` verbosity on the child, not a watcher.
@@ -213,9 +213,9 @@ kit_progress_latest
 kit_progress_phases
 ```
 
-### Helpers for a queue layer
+### Helpers for detached runs
 
-Opt-in extras on `go!` / `drive!` (in-process or detached) for a queue
+Opt-in extras on `go!` / `drive!` (in-process or detached) for a caller
 that runs many jobs.
 
 #### Still holding `KitProcess`
@@ -257,7 +257,7 @@ Without `job_id`, only the child pid is signaled.
 - [`allocate_output_dir`](@ref): create a unique directory under
   `{script}/.distsshkit/<kind>/` for a later `output_dir=`. Omitted `go`
   default is `{script}/.distsshkit/go/<stem>_<UTC>/`; drive's omitted
-  default is the shared `{script}/.distsshkit/drive`. Queue should allocate
+  default is the shared `{script}/.distsshkit/drive`. Allocate a unique dir
   instead of sharing the drive folder.
 - [`execute_kwargs_from_parsed`](@ref): map `parse_go_args` /
   `parse_drive_args` onto detached `execute!` keywords. Hosts stay in
@@ -271,11 +271,11 @@ Without `job_id`, only the child pid is signaled.
 - `.kit.lock` in the resolved `output_dir`: a second run against the same
   directory raises `ArgumentError`. A lock left by a dead pid is reclaimed.
 
-## Queue-layer CLI surface
+## CLI parsers and helpers
 
-A second package may call these (DistSSHKitQueue does today). They are
-exported so a rename is a Semver break, not a silent `DistSSHKit._…` change.
-`go` / `drive` argv wrappers stay unexported.
+A second package may call these. They are exported so a rename is a Semver
+break, not a silent `DistSSHKit._…` change. `go` / `drive` argv wrappers stay
+unexported.
 
 ```@docs
 parse_go_args
