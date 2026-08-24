@@ -1,6 +1,6 @@
 using Test
 
-# Oracle: `go!(…, "parenthost:2")` runs two local slots concurrently (slot t0.txt
+# Oracle: `go!(…, "parent:2")` runs two local slots concurrently (slot t0.txt
 # timestamps within 0.45s). Does not cover SSH, CLI `go`, or slot-plan math
 # (those live in unit/DistSSHKit/go.jl).
 
@@ -17,15 +17,15 @@ using Test
         t0 = time()
         result = DistSSHKit.go!(
             script,
-            "parenthost:2";
+            "parent:2";
             project=proj,
             quiet=true,
             yes=true,
         )
         wall = time() - t0
         @test result.ok
-        a = parse(Float64, read(joinpath(result.output_dir, "parenthost-1", "t0.txt"), String))
-        b = parse(Float64, read(joinpath(result.output_dir, "parenthost-2", "t0.txt"), String))
+        a = parse(Float64, read(joinpath(result.output_dir, "parent-1", "t0.txt"), String))
+        b = parse(Float64, read(joinpath(result.output_dir, "parent-2", "t0.txt"), String))
         @test abs(a - b) < 0.45  # sequential would be ~0.6s apart plus julia startup
         @test wall < 8.0
     end
@@ -43,7 +43,7 @@ end
         custom = joinpath(proj, "runs", "custom")
         result = DistSSHKit.go!(
             script,
-            "parenthost:1";
+            "parent:1";
             project=proj,
             output_dir=custom,
             quiet=true,
@@ -51,7 +51,7 @@ end
         )
         @test result.ok
         @test result.output_dir == DistSSHKit.canonical_local_path(custom)
-        @test isfile(joinpath(result.output_dir, "parenthost", "marker.txt"))
+        @test isfile(joinpath(result.output_dir, "parent", "marker.txt"))
     end
 end
 
@@ -68,7 +68,7 @@ end
         custom = joinpath(proj, "runs", "skip_collect")
         result = DistSSHKit.go!(
             script,
-            "parenthost:1";
+            "parent:1";
             project=proj,
             output_dir=custom,
             collect_spec=false,
@@ -77,6 +77,6 @@ end
         )
         @test result.ok
         @test result.output_dir == DistSSHKit.canonical_local_path(custom)
-        @test isfile(joinpath(result.output_dir, "parenthost", "marker.txt"))
+        @test isfile(joinpath(result.output_dir, "parent", "marker.txt"))
     end
 end

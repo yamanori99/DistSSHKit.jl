@@ -163,7 +163,7 @@ using Test
 
     @testset "detached drive argv mem_headroom" begin
         argv = DistSSHKit._execute_detached_argv(
-            :drive, "job.jl", ["parenthost:1"], String[];
+            :drive, "job.jl", ["parent:1"], String[];
             output_dir="/tmp/out",
             log_dir=nothing,
             sync=nothing,
@@ -183,7 +183,7 @@ using Test
         @test "--master-gb" in argv
         @test "0.2" in argv
         argv0 = DistSSHKit._execute_detached_argv(
-            :drive, "job.jl", ["parenthost:1"], String[];
+            :drive, "job.jl", ["parent:1"], String[];
             output_dir="/tmp/out",
             log_dir=nothing,
             sync=nothing,
@@ -199,7 +199,7 @@ using Test
         @test !("--mem-headroom" in argv0)
         @test !("--master-gb" in argv0)
         argvw = DistSSHKit._execute_detached_argv(
-            :drive, "job.jl", ["host1"], String[];
+            :drive, "job.jl", ["child:host1"], String[];
             output_dir="/tmp/out",
             log_dir=nothing,
             sync=nothing,
@@ -220,7 +220,7 @@ using Test
     @testset "execute_kwargs_from_parsed" begin
         go = DistSSHKit.parse_go_args([
             "--progress", "--julia", "/opt/julia/bin/julia",
-            "--output-dir", "my_runs", "--sync", "h1", "job.jl", "8",
+            "--output-dir", "my_runs", "--sync", "child:h1", "job.jl", "8",
         ])
         gkw = DistSSHKit.execute_kwargs_from_parsed(go; kind=:go)
         @test gkw[:verbosity] === :progress
@@ -230,7 +230,7 @@ using Test
         @test gkw[:args] == ["8"]
         @test !haskey(gkw, :hosts_file)
         @test !haskey(gkw, :workers)
-        @test DistSSHKit.host_tokens(go; kind=:go) == ["h1"]
+        @test DistSSHKit.host_tokens(go; kind=:go) == ["child:h1"]
         @test Set(keys(gkw)) == Set([
             :output_dir, :args, :julia, :quiet, :verbosity, :sync,
         ])
@@ -248,8 +248,8 @@ using Test
         @test dkw[:master_gb] == 0.2
         @test dkw[:workers] == 4
         @test !haskey(dkw, :hosts_file)
-        @test DistSSHKit.host_tokens(drive; kind=:drive) == ["host-a", "host-b:4"]
-        bare = DistSSHKit.parse_drive_args(["host1", "s.jl"])
+        @test DistSSHKit.host_tokens(drive; kind=:drive) == ["child:host-a", "child:host-b:4"]
+        bare = DistSSHKit.parse_drive_args(["child:host1", "s.jl"])
         @test !haskey(DistSSHKit.execute_kwargs_from_parsed(bare; kind=:drive), :workers)
         errk = try
             DistSSHKit.execute_kwargs_from_parsed(go; kind=:pipeline)
@@ -273,7 +273,7 @@ using Test
 
     @testset "detached rejects unknown / yes=false" begin
         err = try
-            DistSSHKit.execute!(:go, "job.jl", ["parenthost:1"]; detached=true, plan=nothing)
+            DistSSHKit.execute!(:go, "job.jl", ["parent:1"]; detached=true, plan=nothing)
             nothing
         catch e
             e
@@ -282,7 +282,7 @@ using Test
         @test occursin("does not accept keyword :plan", sprint(showerror, err))
 
         err2 = try
-            DistSSHKit.execute!(:go, "job.jl", ["parenthost:1"]; detached=true, yes=false)
+            DistSSHKit.execute!(:go, "job.jl", ["parent:1"]; detached=true, yes=false)
             nothing
         catch e
             e
@@ -291,7 +291,7 @@ using Test
         @test occursin("yes=true", sprint(showerror, err2))
 
         err3 = try
-            DistSSHKit.execute!(:go, "job.jl", ["parenthost:1"]; detached=true, log_dir="x")
+            DistSSHKit.execute!(:go, "job.jl", ["parent:1"]; detached=true, log_dir="x")
             nothing
         catch e
             e
@@ -300,7 +300,7 @@ using Test
         @test occursin(":log_dir", sprint(showerror, err3))
 
         err4 = try
-            DistSSHKit.execute!(:go, "job.jl", ["parenthost:1"]; detached=true, mem_headroom=0.5)
+            DistSSHKit.execute!(:go, "job.jl", ["parent:1"]; detached=true, mem_headroom=0.5)
             nothing
         catch e
             e
@@ -309,7 +309,7 @@ using Test
         @test occursin(":mem_headroom", sprint(showerror, err4))
 
         err5 = try
-            DistSSHKit.execute!(:go, "job.jl", ["parenthost:1"]; detached=true, workers=4)
+            DistSSHKit.execute!(:go, "job.jl", ["parent:1"]; detached=true, workers=4)
             nothing
         catch e
             e
@@ -330,7 +330,7 @@ using Test
             result = DistSSHKit.execute!(
                 :go,
                 script,
-                ["parenthost:1"];
+                ["parent:1"];
                 project=proj,
                 args=["8"],
                 quiet=true,
@@ -341,7 +341,7 @@ using Test
             @test result.ok
             @test result.exit_code == 0
             @test result.output_dir !== nothing
-            @test read(joinpath(result.output_dir, "parenthost", "args.txt"), String) == "8"
+            @test read(joinpath(result.output_dir, "parent", "args.txt"), String) == "8"
         end
     end
 
@@ -359,7 +359,7 @@ using Test
                     kp = DistSSHKit.execute!(
                         :go,
                         script,
-                        ["parenthost:1"];
+                        ["parent:1"];
                         detached=true,
                         project=proj,
                         args=["8"],
@@ -392,7 +392,7 @@ using Test
                     @test result.exit_code == 0
                     @test result.output_dir == kp.output_dir
                     @test result.log_dir === nothing
-                    @test read(joinpath(result.output_dir, "parenthost", "args.txt"), String) == "8"
+                    @test read(joinpath(result.output_dir, "parent", "args.txt"), String) == "8"
                     @test !isfile(pid_path)
                     @test !isfile(joinpath(result.output_dir, "kit.out"))
                     @test !isfile(joinpath(result.output_dir, "kit.err"))
@@ -422,7 +422,7 @@ using Test
                     kp = DistSSHKit.execute!(
                         :go,
                         script,
-                        ["parenthost:1"];
+                        ["parent:1"];
                         detached=true,
                         project=proj,
                         verbosity=:progress,
@@ -456,7 +456,7 @@ using Test
             kp = DistSSHKit.execute!(
                 :go,
                 script,
-                ["parenthost:1"];
+                ["parent:1"];
                 detached=true,
                 project=proj,
                 quiet=true,
@@ -494,7 +494,7 @@ using Test
             kp = DistSSHKit.execute!(
                 :go,
                 script,
-                ["parenthost:1"];
+                ["parent:1"];
                 detached=true,
                 project=proj,
                 quiet=true,
@@ -524,7 +524,7 @@ using Test
                     kp = DistSSHKit.execute!(
                         :go,
                         script,
-                        ["parenthost:1"];
+                        ["parent:1"];
                         detached=true,
                         project=proj,
                         verbosity=:progress,

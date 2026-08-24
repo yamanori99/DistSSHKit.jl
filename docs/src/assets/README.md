@@ -20,7 +20,7 @@ assets/
   logo-dark.svg     → logo/logo-dark-dynamic.svg     (Documenter)
   logo/             sources + logo rasters
   social/           social-preview SVGs + rasters
-  diagram/          topology.svg (hand-edit) + ja / dark SVGs + PNGs (bake)
+  diagram/          topology.svg (hand-edit) + dark SVG + PNG (bake)
 ```
 
 Naming: **`static`** = end-state still; **`dynamic`** = SMIL / GIF motion.
@@ -49,7 +49,7 @@ Documenter discovers bare `logo.svg` / `logo-dark.svg` at this directory’s top
 | --- | --- |
 | `logo/logo-dynamic.svg` | Dynamic logo (SMIL) |
 | `logo/logo-static.svg` | Static geometry (feeds static PNG + social-static) |
-| `diagram/topology.svg` | Architecture diagram (English light; bake writes ja / dark SVGs + PNGs) |
+| `diagram/topology.svg` | Architecture diagram (English light; bake writes dark SVG + PNG). README.ja uses this file too. |
 | `custom.css` | Sidebar logo size; topology layout; restore `.docs-dark-only` on dark themes |
 
 ## Bake (`bake.jl`, Julia only — no Python)

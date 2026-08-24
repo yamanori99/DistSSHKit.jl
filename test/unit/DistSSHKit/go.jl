@@ -9,26 +9,26 @@ using Dates
         let s = DistSSHKit._go_plan_slots(String[])
             @test length(s) == 1
             @test s[1].kind === :local
-            @test s[1].label == "parenthost"
+            @test s[1].label == "parent"
         end
-        let s = DistSSHKit._go_plan_slots(["local:2"])
+        let s = DistSSHKit._go_plan_slots(["child:local:2"])
             @test length(s) == 2
             @test s[1].kind === :remote && s[1].label == "local-1"
             @test s[2].kind === :remote && s[2].label == "local-2"
         end
-        let s = DistSSHKit._go_plan_slots(["user@lab", "user@lab2:2"])
+        let s = DistSSHKit._go_plan_slots(["child:user@lab", "child:user@lab2:2"])
             @test length(s) == 3
             @test s[1].kind === :remote && s[1].label == "user@lab"
             @test s[2].label == "user@lab2-1"
             @test s[3].label == "user@lab2-2"
         end
-        let s = DistSSHKit._go_plan_slots(["parenthost:0", "h1", "h2"])
+        let s = DistSSHKit._go_plan_slots(["parent:0", "child:h1", "child:h2"])
             @test length(s) == 2
             @test all(x -> x.kind === :remote, s)
         end
-        @test_throws ArgumentError DistSSHKit._go_plan_slots(["parenthost:0"])
-        @test_throws ArgumentError DistSSHKit._go_plan_slots(["local:0"])
-        @test_throws ArgumentError DistSSHKit._go_plan_slots(["local:-1"])
+        @test_throws ArgumentError DistSSHKit._go_plan_slots(["parent:0"])
+        @test_throws ArgumentError DistSSHKit._go_plan_slots(["child:local:0"])
+        @test_throws ArgumentError DistSSHKit._go_plan_slots(["child:local:-1"])
         @test DistSSHKit._go_sanitize_label("user@lab") == "user@lab"
         @test DistSSHKit._go_sanitize_label("a/b c") == "a_b_c"
         @test DistSSHKit._go_sanitize_label("***") == "_"
@@ -39,11 +39,11 @@ using Dates
             e
         end
         @test err isa ArgumentError
-        @test occursin("did you mean parenthost", sprint(showerror, err))
-        let s = DistSSHKit._go_plan_slots(["parenthost:2"])
+        @test occursin("child:NAME", sprint(showerror, err))
+        let s = DistSSHKit._go_plan_slots(["parent:2"])
             @test length(s) == 2
-            @test s[1].label == "parenthost-1"
-            @test s[2].label == "parenthost-2"
+            @test s[1].label == "parent-1"
+            @test s[2].label == "parent-2"
         end
         @test occursin("root@", DistSSHKit._go_host_ssh_hint("192.0.2.11"))
         @test isempty(DistSSHKit._go_host_ssh_hint("root@192.0.2.11"))
@@ -86,7 +86,7 @@ using Dates
             err = try
                 DistSSHKit.go!(
                     script,
-                    ["parenthost:1"];
+                    ["parent:1"];
                     project=proj,
                     output_dir=joinpath(proj, "a"),
                     collect_spec=joinpath(proj, "b"),
@@ -201,7 +201,7 @@ using Dates
             with_kit_verbosity(:verbose) do
                 out, _ = _capture_stdio() do _, _
                     DistSSHKit.go!(
-                        script, ["parenthost:1"];
+                        script, ["parent:1"];
                         project=proj, quiet=true, yes=true,
                     )
                 end
@@ -215,11 +215,11 @@ using Dates
             script = joinpath(proj, "job.jl")
             write(script, "true\n")
             hf = joinpath(proj, "hosts")
-            write(hf, "no-such-host.invalid:1\n")
+            write(hf, "child:no-such-host.invalid:1\n")
             withenv("DISTSSHKIT_HOSTS_FILE" => hf) do
                 redirect_stdout(devnull) do
                     r = DistSSHKit.go!(
-                        script, ["parenthost:1"];
+                        script, ["parent:1"];
                         project=proj, quiet=true, yes=true,
                     )
                     @test r.ok

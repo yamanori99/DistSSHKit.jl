@@ -22,7 +22,7 @@ using Test
                             DistSSHKit.execute!(
                                 :drive,
                                 script,
-                                ["parenthost:2"];
+                                ["parent:2"];
                                 project=proj,
                                 verbosity=:verbose,
                                 yes=true,
@@ -64,7 +64,7 @@ end
                 kp = DistSSHKit.execute!(
                     :drive,
                     script,
-                    ["parenthost:2"];
+                    ["parent:2"];
                     detached=true,
                     project=proj,
                     verbosity=:verbose,

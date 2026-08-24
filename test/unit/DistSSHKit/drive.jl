@@ -2,7 +2,7 @@ using Test
 
 @testset "drive API" begin
     @testset "parse_worker_tokens" begin
-        p = DistSSHKit.parse_worker_tokens(["parenthost:2", "host-a:4", "host-b"])
+        p = DistSSHKit.parse_worker_tokens(["parent:2", "child:host-a:4", "child:host-b"])
         @test p.local_workers == 2
         @test !p.local_autosize
         @test p.remote_workers == Dict("host-a" => 4)
@@ -10,14 +10,14 @@ using Test
         @test p.remote_hosts == ["host-a", "host-b"]
         @test DistSSHKit.worker_tokens_fully_specified(p) == false
 
-        fixed = DistSSHKit.parse_worker_tokens(["parenthost:2", "h1:1"])
+        fixed = DistSSHKit.parse_worker_tokens(["parent:2", "child:h1:1"])
         @test DistSSHKit.worker_tokens_fully_specified(fixed)
-        let plan = DistSSHKit.worker_plan_from_tokens(["parenthost:2", "h1:1"])
+        let plan = DistSSHKit.worker_plan_from_tokens(["parent:2", "child:h1:1"])
             @test plan.local_workers == 2
             @test plan.remote_workers == Dict("h1" => 1)
         end
         err = try
-            DistSSHKit.worker_plan_from_tokens(["h1"])
+            DistSSHKit.worker_plan_from_tokens(["child:h1"])
             nothing
         catch e
             e
@@ -25,19 +25,19 @@ using Test
         @test err isa ArgumentError
         @test occursin("KitSession", sprint(showerror, err))
 
-        @test_throws ArgumentError DistSSHKit.parse_worker_tokens(["parenthost:1", "parenthost:2"])
+        @test_throws ArgumentError DistSSHKit.parse_worker_tokens(["parent:1", "parent:2"])
 
-        auto = DistSSHKit.parse_worker_tokens(["parenthost", "h1:3"])
+        auto = DistSSHKit.parse_worker_tokens(["parent", "child:h1:3"])
         @test auto.local_autosize
         @test auto.local_workers == 0
         @test auto.remote_workers == Dict("h1" => 3)
-        @test DistSSHKit.remote_hosts_from_tokens(["parenthost:2", "h1", "h2:4"]) == ["h1", "h2"]
+        @test DistSSHKit.remote_hosts_from_tokens(["parent:2", "child:h1", "child:h2:4"]) == ["h1", "h2"]
 
         let kw = DistSSHKit.ParsedWorkerTokens(;
                 local_workers=2,
                 remote_workers=Dict("h1" => 0x03),
                 remote_hosts=["h1"],
-                tokens=["parenthost:2", "h1:3"],
+                tokens=["parent:2", "child:h1:3"],
             )
             @test kw.remote_workers isa Dict{String,Int}
             @test kw.remote_workers == Dict("h1" => 3)
@@ -48,11 +48,11 @@ using Test
         _with_tempdir() do tmp
             session = DistSSHKit.KitSession(
                 project=tmp,
-                workers=["parenthost"],
+                workers=["parent"],
                 include_local_for_size=true,
             )
             plan = DistSSHKit.worker_plan_from_tokens(
-                ["parenthost"];
+                ["parent"];
                 session=session,
                 gb_per_worker=2.0,
             )
@@ -67,10 +67,10 @@ using Test
     @testset "KitSession" begin
         _with_tempdir() do tmp
             withenv("DISTSSHKIT_HOSTS_FILE" => "") do
-                session = DistSSHKit.KitSession(project=tmp, workers=["host-a", "host-b:4"])
+                session = DistSSHKit.KitSession(project=tmp, workers=["child:host-a", "child:host-b:4"])
                 @test session.project == abspath(tmp)
                 @test session.hosts == ["host-a", "host-b"]
-                @test session.tokens == ["host-a", "host-b:4"]
+                @test session.tokens == ["child:host-a", "child:host-b:4"]
                 @test session.remote === nothing
                 @test session.yes == true
             end
@@ -79,14 +79,14 @@ using Test
 
     @testset "drive_host_specs" begin
         plan = DistSSHKit.WorkerPlan(2, Dict("host-a" => 4, "host-b" => 0))
-        @test DistSSHKit.drive_host_specs(plan) == ["parenthost:2", "host-a:4"]
+        @test DistSSHKit.drive_host_specs(plan) == ["parent:2", "child:host-a:4"]
     end
 
     @testset "apply_session_env!" begin
         _with_tempdir() do tmp
             session = DistSSHKit.KitSession(
                 project=tmp,
-                workers=["host-a"],
+                workers=["child:host-a"],
                 remote="/remote/App.jl",
                 quiet=true,
                 yes=true,
@@ -107,15 +107,15 @@ using Test
         _with_tempdir() do tmp
             session = DistSSHKit.KitSession(
                 project=tmp,
-                workers=["h1:1"],
+                workers=["child:h1:1"],
                 remote="/remote/App.jl",
                 include_local_for_size=true,
             )
             @test DistSSHKit.session_remote_root(session) == "/remote/App.jl"
             all_h, remotes = DistSSHKit.session_size_hosts(session)
-            @test all_h == ["parenthost", "h1"]
+            @test all_h == ["parent", "h1"]
             @test remotes == ["h1"]
-            remote_only = DistSSHKit.KitSession(project=tmp, workers=["h1:1"])
+            remote_only = DistSSHKit.KitSession(project=tmp, workers=["child:h1:1"])
             a2, r2 = DistSSHKit.session_size_hosts(remote_only)
             @test a2 == ["h1"]
             @test r2 == ["h1"]
@@ -125,7 +125,7 @@ using Test
     @testset "pipeline helpers" begin
         cfg = DistSSHKit.PipelineConfig(
             driver="job.jl",
-            workers=["host-a"],
+            workers=["child:host-a"],
             sync=:rsync,
         )
         session = DistSSHKit.kit_session_from_config(cfg)
@@ -133,26 +133,26 @@ using Test
         @test DistSSHKit.resolve_pipeline_collect(cfg, session)
 
         # Git parity off by default; sync mode does not flip it.
-        default_cfg = DistSSHKit.PipelineConfig(driver="job.jl", workers=["host-a"])
+        default_cfg = DistSSHKit.PipelineConfig(driver="job.jl", workers=["child:host-a"])
         default_session = DistSSHKit.kit_session_from_config(default_cfg)
         @test DistSSHKit.resolve_pipeline_sync(default_cfg, default_session) === false
         @test DistSSHKit.pipeline_skip_hash_check(default_cfg)
         @test default_cfg.yes == true
         @test DistSSHKit.kit_session_from_config(default_cfg).yes == true
         @test DistSSHKit.pipeline_skip_hash_check(
-            DistSSHKit.PipelineConfig(driver="job.jl", workers=["host-a"], sync=:sync),
+            DistSSHKit.PipelineConfig(driver="job.jl", workers=["child:host-a"], sync=:sync),
         )
         @test !DistSSHKit.pipeline_skip_hash_check(
             DistSSHKit.PipelineConfig(
                 driver="job.jl",
-                workers=["host-a"],
+                workers=["child:host-a"],
                 skip_hash_check=false,
             ),
         )
 
         local_cfg = DistSSHKit.PipelineConfig(
             driver="job.jl",
-            workers=["parenthost:2"],
+            workers=["parent:2"],
             sync=false,
             collect=false,
         )
@@ -210,7 +210,7 @@ using Test
 
         cfg_jl = DistSSHKit.PipelineConfig(
             driver="job.jl",
-            workers=["host-a"],
+            workers=["child:host-a"],
             julia="/opt/julia/bin/julia",
         )
         @test cfg_jl.julia == "/opt/julia/bin/julia"
@@ -222,7 +222,7 @@ using Test
         _with_tempdir() do tmp
             script = joinpath(tmp, "job.jl")
             write(script, "")
-            session = DistSSHKit.KitSession(project=tmp, workers=["host-a"])
+            session = DistSSHKit.KitSession(project=tmp, workers=["child:host-a"])
             DistSSHKit._ensure_drive_fragments!(tmp)
 
             parsed = DistSSHKit.drive_parsed_from_session(session, script)
@@ -278,9 +278,9 @@ using Test
     @testset "sync! refusals" begin
         _with_tempdir() do tmp
             local_only = DistSSHKit.KitSession(
-                project=tmp, workers=["parenthost:2"], quiet=true,
+                project=tmp, workers=["parent:2"], quiet=true,
             )
-            remote = DistSSHKit.KitSession(project=tmp, workers=["h1"], quiet=true)
+            remote = DistSSHKit.KitSession(project=tmp, workers=["child:h1"], quiet=true)
             with_kit_verbosity(:progress) do
                 @test_throws ArgumentError DistSSHKit.sync!(local_only)
                 @test_throws ArgumentError DistSSHKit.sync!(local_only; mode=false)
@@ -325,7 +325,7 @@ using Test
     @testset "instantiate! requires SSH hosts" begin
         _with_tempdir() do tmp
             session = DistSSHKit.KitSession(
-                project=tmp, workers=["parenthost:2"], quiet=true,
+                project=tmp, workers=["parent:2"], quiet=true,
             )
             with_kit_verbosity(:progress) do
                 @test_throws ArgumentError DistSSHKit.instantiate!(session)
@@ -336,7 +336,7 @@ using Test
     @testset "collect! requires hosts" begin
         _with_tempdir() do tmp
             session = DistSSHKit.KitSession(
-                project=tmp, workers=["parenthost:2"], quiet=true,
+                project=tmp, workers=["parent:2"], quiet=true,
             )
             err = try
                 with_kit_verbosity(:progress) do
@@ -415,7 +415,7 @@ using Test
 
     @testset "pipeline_config_from_env" begin
         withenv(
-            "DISTSSHKIT_HOSTS" => "host-a, host-b",
+            "DISTSSHKIT_HOSTS" => "child:host-a, child:host-b",
             "DISTRIBUTED_REMOTE_PROJECT_ROOT" => "/remote/App",
             "DRIVER" => "demos/job.jl",
             "SYNC_MODE" => "off",
@@ -424,7 +424,7 @@ using Test
             "JULIA_DISTRIBUTED_EXE" => "/opt/julia/bin/julia",
         ) do
             cfg = DistSSHKit.pipeline_config_from_env()
-            @test cfg.tokens == ["host-a", "host-b"]
+            @test cfg.tokens == ["child:host-a", "child:host-b"]
             @test cfg.remote == "/remote/App"
             @test cfg.driver == "demos/job.jl"
             @test cfg.sync === false
@@ -442,22 +442,22 @@ using Test
         let hosts_file = _sample_hosts_file()
             withenv(
                 "DRIVER" => "demos/job.jl",
-                "DISTSSHKIT_HOSTS" => "env-a:2",
+                "DISTSSHKIT_HOSTS" => "child:env-a:2",
                 "DISTSSHKIT_HOSTS_FILE" => hosts_file,
                 "SYNC_MODE" => "off",
                 "JULIA_DISTRIBUTED_EXE" => "",
             ) do
                 cfg = DistSSHKit.pipeline_config_from_env()
-                @test cfg.tokens == ["env-a:2", "host-a", "host-b:4"]
+                @test cfg.tokens == ["child:env-a:2", "child:host-a", "child:host-b:4"]
                 @test cfg.hosts_file === nothing
             end
         end
         let hosts_file = _sample_hosts_file()
             withenv("DISTSSHKIT_HOSTS_FILE" => hosts_file) do
-                s = DistSSHKit.KitSession(workers=["parenthost:1"])
-                @test s.tokens == ["parenthost:1"]
+                s = DistSSHKit.KitSession(workers=["parent:1"])
+                @test s.tokens == ["parent:1"]
                 empty = DistSSHKit.KitSession(workers=String[])
-                @test empty.tokens == ["host-a", "host-b:4"]
+                @test empty.tokens == ["child:host-a", "child:host-b:4"]
             end
         end
     end

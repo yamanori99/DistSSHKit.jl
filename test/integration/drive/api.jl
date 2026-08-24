@@ -1,6 +1,6 @@
 using Test
 
-# Oracle: `drive!(…, "parenthost:2")` runs the smoke driver in this process.
+# Oracle: `drive!(…, "parent:2")` runs the smoke driver in this process.
 # CLI child is `local.jl`. Not SSH.
 #
 # First in-process `include` of a driver into `Main`. Later files (e.g.
@@ -23,7 +23,7 @@ using Test
                         redirect_stderr(err_io) do
                             DistSSHKit.drive!(
                                 script,
-                                "parenthost:2";
+                                "parent:2";
                                 project=proj,
                                 verbosity=:verbose,
                                 yes=true,

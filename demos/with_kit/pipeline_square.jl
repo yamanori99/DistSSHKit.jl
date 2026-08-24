@@ -9,22 +9,22 @@
 #
 # Same driver via CLI:
 #
-#   julia --project=. -m DistSSHKit drive parenthost:2 demos/with_kit/square_file.jl --n 4
+#   julia --project=. -m DistSSHKit drive parent:2 demos/with_kit/square_file.jl --n 4
 
 using DistSSHKit
 
 isempty(ARGS) || (length(ARGS) == 2 && ARGS[1] == "--n") ||
-    error("pass --n N (a bare number looks like parenthost:N)")
+    error("pass --n N (a bare number looks like parent:N)")
 
 driver = joinpath(@__DIR__, "square_file.jl")
 
 # Local-only: two Distributed workers on this machine (collect off — outputs stay local).
-result = pipeline!(driver, "parenthost:2"; args=ARGS, collect=false, enable_log=false)
+result = pipeline!(driver, "parent:2"; args=ARGS, collect=false, enable_log=false)
 
 # First-time remotes: setup!, then pipeline! (or drive!).
 #
 #   session = KitSession(
-#       workers=["user@host1", "user@host2"],
+#       workers=["child:user@host1", "child:user@host2"],
 #       remote="/path/to/project",
 #       yes=true,
 #   )
@@ -32,8 +32,8 @@ result = pipeline!(driver, "parenthost:2"; args=ARGS, collect=false, enable_log=
 #   # or: setup!(session, :clone; repo="https://…"); setup!(session, :instantiate)
 #   result = pipeline!(
 #       driver,
-#       "user@host1:1",
-#       "user@host2:1";
+#       "child:user@host1:1",
+#       "child:user@host2:1";
 #       remote="/path/to/project",
 #       args=ARGS,
 #       # julia=nothing,                  # or path / "auto" (same as CLI --julia)
@@ -43,13 +43,13 @@ result = pipeline!(driver, "parenthost:2"; args=ARGS, collect=false, enable_log=
 #
 #   result = pipeline!(
 #       driver,
-#       "user@host1:1",
-#       "user@host2:1";   # or pipeline!(driver, ["user@host1:1", …]; …)
+#       "child:user@host1:1",
+#       "child:user@host2:1";   # or pipeline!(driver, ["child:user@host1:1", …]; …)
 #       remote="/path/to/project",
 #       args=ARGS,
 #       collect=true,                   # false → skip; path → collect root
 #       # project=pwd(),
-#       # hosts_file="hosts.txt",       # extra host / host:N lines
+#       # hosts_file="hosts.txt",       # extra parent / child:NAME[:N] lines
 #       # yes=true,                     # skip confirm prompts (API default)
 #       # quiet=false,
 #       # verbosity=nothing,            # :quiet | :progress | :verbose

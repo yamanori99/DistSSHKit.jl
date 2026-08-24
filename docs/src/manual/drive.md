@@ -4,14 +4,14 @@ One master plus [Distributed.jl](https://docs.julialang.org/en/v1/manual/distrib
 workers. The script is a **driver** that farms work (e.g. `pmap`).
 
 ```bash
-julia --project=. -m DistSSHKit drive [options] [parenthost:N] [host:N...] SCRIPT.jl [script_args...]
+julia --project=. -m DistSSHKit drive [options] [parent:N] [child:NAME[:N]...] SCRIPT.jl [script_args...]
 ```
 
 Also: [First Steps · Demo](@ref Tutorial-Demo), [go](@ref Manual-go),
 [API](@ref API) (`drive!`, `pipeline!`), `drive --help`.
 Flag vocabulary and a short **go vs drive** table: [User Guide](@ref Manual).
 
-**vs go:** one master plus Distributed workers; `host:N` is worker count.
+**vs go:** one master plus Distributed workers; `child:NAME:N` is worker count.
 Opt-in git parity is here only (`--require-git`). For a plain script with no
 driver contract, prefer [`go`](@ref Manual-go).
 
@@ -27,7 +27,7 @@ driver contract, prefer [`go`](@ref Manual-go).
 | `-w` / `--workers N` | Default worker count for hosts without `:N` (also `-w:N`) |
 | `--julia PATH` | Julia on SSH workers |
 | `--mem-headroom N` | RAM fraction for memory preflight (default `0.75`; same as [`size`](@ref Manual-size)) |
-| `--master-gb N` | GB reserved for the master on parenthost (default `0.4`; same as size) |
+| `--master-gb N` | GB reserved for the master on parent (default `0.4`; same as size) |
 | `--output-dir PATH` | **Result root** → `DISTRIBUTED_OUTPUT_DIR` (not go batch root) |
 | `--log-dir PATH` | Log directory override |
 | `--no-log` | Do not write `drive_<timestamp>.log` |
@@ -39,7 +39,7 @@ driver contract, prefer [`go`](@ref Manual-go).
 | `--verbose` | Full detail (non-TTY default) |
 | `-y` / `--yes` | Auto-accept memory-pressure and other prompts |
 | `--hosts CSV` | Comma-separated worker specs (same form as CLI tokens / `DISTSSHKIT_HOSTS`) |
-| `--hosts-file PATH` | Append worker specs (`host:N` preserved) |
+| `--hosts-file PATH` | Append worker specs (`child:NAME:N` preserved) |
 | `-v` / `--version` | Print DistSSHKit version and exit |
 | `-h` / `--help` | Full help |
 
@@ -63,7 +63,7 @@ project tree and an instantiate. Prefer matching Julia **major.minor**.
 
 ## Workers
 
-`parenthost:N` / `host:N` (or `-w` defaults). Size with [`size`](@ref Manual-size).
+`parent:N` / `child:NAME:N` (or `-w` defaults). Size with [`size`](@ref Manual-size).
 
 - Local workers are torn down with `rmprocs` at the end of every `drive` run
 - Before adding SSH workers, `drive` may `pkill` leftover Distributed
@@ -96,7 +96,7 @@ Run drive as usual (`-q` hides the table). The Time table prints at the end,
 after job stdout, with a `progress DIR` line to replay:
 
 ```bash
-julia --project=. -m DistSSHKit drive -y parenthost:4 demos/with_kit/square_echo.jl --n 4
+julia --project=. -m DistSSHKit drive -y parent:4 demos/with_kit/square_echo.jl --n 4
 julia --project=. -m DistSSHKit progress DIR
 ```
 

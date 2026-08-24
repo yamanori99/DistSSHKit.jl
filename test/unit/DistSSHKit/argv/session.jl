@@ -9,17 +9,17 @@ using Test
 
     @testset "peel flags" begin
         withenv(clear_verbosity_env..., "DISTSSHKIT_YES" => nothing) do
-            let (session, rest) = DistSSHKit.peel_kit_cli_flags(["--quiet", "--yes", "host1", "s.jl"])
+            let (session, rest) = DistSSHKit.peel_kit_cli_flags(["--quiet", "--yes", "child:host1", "s.jl"])
                 @test session.quiet
                 @test session.verbosity === :quiet
                 @test session.yes
-                @test rest == ["host1", "s.jl"]
+                @test rest == ["child:host1", "s.jl"]
             end
 
-            let (session, rest) = DistSSHKit.peel_kit_cli_flags(["--verbose", "host1"])
+            let (session, rest) = DistSSHKit.peel_kit_cli_flags(["--verbose", "child:host1"])
                 @test session.verbosity === :verbose
                 @test !session.quiet
-                @test rest == ["host1"]
+                @test rest == ["child:host1"]
             end
 
             let (session, rest) = DistSSHKit.peel_kit_cli_flags(["--hosts", "a:1, b", "s.jl"])
@@ -167,23 +167,23 @@ using Test
 
     @testset "hosts file" begin
         hosts_file = _sample_hosts_file()
-        @test DistSSHKit.read_hosts_file_lines(hosts_file) == ["host-a", "host-b:4"]
-        @test DistSSHKit.read_hosts_file(hosts_file) == ["host-a", "host-b"]
+        @test DistSSHKit.read_hosts_file_lines(hosts_file) == ["child:host-a", "child:host-b:4"]
         @test DistSSHKit.split_worker_token("host-b:4") == ("host-b", 4)
+        @test DistSSHKit.parse_placement_token("child:host-b:4") ==
+            (role=:child, name="host-b", n=4)
 
-        # go keeps host:N from the file when planning slots.
         let lines = DistSSHKit.read_hosts_file_lines(hosts_file)
             slots = DistSSHKit._go_plan_slots(lines)
             @test length(slots) == 5  # host-a + host-b:4
             @test count(s -> s.host == "host-b", slots) == 4
         end
 
-        withenv("DISTSSHKIT_HOSTS" => "env-a:2, env-b", "DISTSSHKIT_HOSTS_FILE" => nothing) do
-            session = DistSSHKit.KitCliSession(hosts_flag=["flag:3"], hosts_file=hosts_file)
+        withenv("DISTSSHKIT_HOSTS" => "child:env-a:2, child:env-b", "DISTSSHKIT_HOSTS_FILE" => nothing) do
+            session = DistSSHKit.KitCliSession(hosts_flag=["parent:3"], hosts_file=hosts_file)
             @test DistSSHKit.kit_host_source_tokens(session; keep_counts=true) ==
-                ["flag:3", "env-a:2", "env-b", "host-a", "host-b:4"]
-            @test DistSSHKit.kit_host_source_tokens(session; keep_counts=false) ==
-                ["flag", "env-a", "env-b", "host-a", "host-b"]
+                ["parent:3", "child:env-a:2", "child:env-b", "child:host-a", "child:host-b:4"]
+            @test DistSSHKit.kit_host_source_tokens(session; keep_counts=false, roles=true) ==
+                ["parent", "env-a", "env-b", "host-a", "host-b"]
         end
     end
 end

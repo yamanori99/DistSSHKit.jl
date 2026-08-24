@@ -29,7 +29,7 @@ using Test
         @test code == 1
         @test occursin("Unknown subcommand: bogus", err)
     end
-    let (code, _, err) = _main_capture(["rysnc", "host1"])
+    let (code, _, err) = _main_capture(["rysnc", "child:host1"])
         @test code == 1
         @test occursin("Unknown subcommand: rysnc", err)
     end

@@ -35,7 +35,7 @@ end
 
 const hosts = collect(String, _ssh_e2e_hosts())
 const remote_root = _ssh_e2e_remote_root()
-const remote_tokens = String["$(hosts[1]):1", "$(hosts[2]):1"]
+const remote_tokens = String["child:$(hosts[1]):1", "child:$(hosts[2]):1"]
 _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
 
 @testset "SSH E2E (docker-ssh)" verbose=true begin

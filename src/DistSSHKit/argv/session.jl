@@ -28,7 +28,7 @@ const KIT_VERBOSE_FLAG_HELP =
 const KIT_TIME_HELP =
     "Time table after the run (-q hides it); replay: progress DIR"
 const KIT_HOSTS_FLAG_HELP =
-    "--hosts CSV         comma-separated tokens (host:N OK)"
+    "--hosts CSV         parent[:N] / child:NAME[:N]"
 const KIT_QUIET_ENV_HELP =
     "DISTSSHKIT_QUIET                  Same as --quiet"
 const KIT_PROGRESS_ENV_HELP =
@@ -38,9 +38,9 @@ const KIT_VERBOSE_ENV_HELP =
 const KIT_HOSTS_ENV_HELP =
     "DISTSSHKIT_HOSTS                  Same as --hosts"
 const KIT_SKIP_PKILL_ENV_HELP =
-    "DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL  1: skip leftover-worker pkill (drive remotes; setup --cleanup)"
+    "DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL  skip leftover-worker pkill"
 const KIT_JOBS_ENV_HELP =
-    "DISTSSHKIT_JOBS                   max concurrent host jobs (rsync / collect / size detect; default 1)"
+    "DISTSSHKIT_JOBS                   max concurrent host jobs (default 1)"
 const KIT_REQUIRE_ALL_HOSTS_ENV_HELP =
     "DISTSSHKIT_REQUIRE_ALL_HOSTS      Same as --require-all-hosts"
 
@@ -321,10 +321,9 @@ end
 
 Rebuild CLI host tokens for [`execute!`](@ref).
 
-Go tokens are the parser strings. Drive
-tuples plus `local_workers` emit `parenthost:N` then remotes; bare hosts
-stay bare (no invented `:1`). `kind` must be `:go` or `:drive` — there is
-no `isa` guess on `parsed.hosts`.
+Go tokens are the parser strings. Drive tuples plus `local_workers` emit
+`parent:N` then `child:NAME[:N]`; omitted counts stay omitted (no invented `:1`).
+`kind` must be `:go` or `:drive`.
 """
 function host_tokens(hosts::AbstractVector{<:AbstractString})::Vector{String}
     return String[String(h) for h in hosts]
@@ -336,15 +335,11 @@ function host_tokens(
 )::Vector{String}
     specs = String[]
     lw = Int(local_workers)
-    lw > 0 && push!(specs, string(PARENT_HOST_NAME, ":", lw))
+    lw > 0 && push!(specs, format_placement_token(:parent, PARENT_HOST_NAME, lw))
     for pair in hosts
         host = pair[1]
         n = pair[2]
-        if n === nothing
-            push!(specs, host)
-        else
-            push!(specs, string(host, ":", n))
-        end
+        push!(specs, format_placement_token(:child, host, n))
     end
     return specs
 end
@@ -386,27 +381,42 @@ function read_hosts_file(
     return [split_worker_token(line)[1] for line in read_hosts_file_lines(path; surface=surface)]
 end
 
-function _kit_host_token(tok::AbstractString, keep_counts::Bool)::String
+function _kit_host_token(
+    tok::AbstractString,
+    keep_counts::Bool;
+    roles::Bool=false,
+)::String
     keep_counts && return String(tok)
+    if roles
+        p = parse_placement_token(tok)
+        return p.role === :parent ? PARENT_HOST_NAME : p.name
+    end
     return split_worker_token(tok)[1]
 end
 
 """`--hosts`, `DISTSSHKIT_HOSTS`, then `--hosts-file` / `DISTSSHKIT_HOSTS_FILE`.
 
-`keep_counts=true` (go / drive) keeps `host:N`. `false` (setup / size) keeps names.
+`keep_counts=true` (go / drive) keeps tokens as written. `false` (setup / size)
+strips `:N`. Size passes `roles=true` so `child:NAME[:N]` becomes `NAME` and
+`parent` stays `parent`. Setup keeps bare SSH names (`roles=false`).
 """
 function kit_host_source_tokens(
     session::KitCliSession;
     keep_counts::Bool=true,
+    roles::Bool=false,
 )::Vector{String}
-    out = String[_kit_host_token(t, keep_counts) for t in session.hosts_flag]
+    out = String[_kit_host_token(t, keep_counts; roles=roles) for t in session.hosts_flag]
     for t in split_hosts_csv(get(ENV, "DISTSSHKIT_HOSTS", ""))
-        push!(out, _kit_host_token(t, keep_counts))
+        push!(out, _kit_host_token(t, keep_counts; roles=roles))
     end
     hosts_file = session.hosts_file
     if hosts_file !== nothing
         if keep_counts
             append!(out, read_hosts_file_lines(hosts_file; surface=session.hint_surface))
+        elseif roles
+            for line in read_hosts_file_lines(hosts_file; surface=session.hint_surface)
+                push!(out, _kit_host_token(line, false; roles=true))
+            end
         else
             append!(out, read_hosts_file(hosts_file; surface=session.hint_surface))
         end
@@ -418,8 +428,9 @@ function append_kit_host_sources!(
     hosts::Vector{String},
     session::KitCliSession;
     keep_counts::Bool=true,
+    roles::Bool=false,
 )
-    append!(hosts, kit_host_source_tokens(session; keep_counts=keep_counts))
+    append!(hosts, kit_host_source_tokens(session; keep_counts=keep_counts, roles=roles))
     return hosts
 end
 

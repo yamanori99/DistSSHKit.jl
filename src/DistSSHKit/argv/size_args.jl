@@ -1,4 +1,4 @@
-"""Pull `parenthost` out of the size host list into `include_local`."""
+"""Pull `parent` out of the size host list into `include_local`."""
 function _size_absorb_parent_hosts!(hosts::Vector{String}, include_local::Bool)::Bool
     kept = String[]
     inc = include_local
@@ -23,9 +23,9 @@ function show_size_usage(; io::IO=stdout)
     print_help_blank(io)
     print_help_section("Usage"; io=io)
     print_help_lines(io,
-        "  julia --project=. -m DistSSHKit size [parenthost] [hosts...]",
-        "  size parenthost host1 host2",
-        "  size --gb-per-worker 1.5 host1",
+        "  julia --project=. -m DistSSHKit size [parent] [child:NAME...]",
+        "  size parent child:host1 child:host2",
+        "  size --gb-per-worker 1.5 child:host1",
     )
     print_help_blank(io)
     print_help_section("Options"; io=io)
@@ -34,8 +34,8 @@ function show_size_usage(; io::IO=stdout)
         "  --probe PATH        warm-up script; peak RSS",
         "  --mem-headroom N    RAM fraction (default $(DEFAULT_MEM_HEADROOM))",
         "  --master-gb N       master reserve (default $(DEFAULT_MASTER_GB))",
-        "  --hosts CSV         comma-separated hosts (`:N` stripped)",
-        "  --hosts-file PATH   one host per line (`:N` stripped)",
+        "  --hosts CSV         parent / child:NAME[:N] (`:N` stripped)",
+        "  --hosts-file PATH   same, one token per line",
         "  $(KIT_QUIET_FLAG_HELP)",
         "  $(KIT_PROGRESS_FLAG_HELP)",
         "  $(KIT_VERBOSE_FLAG_HELP)",
@@ -81,9 +81,9 @@ function parse_size_args(args::Vector{String})
             )
         elseif cli_match(c, ["--local", "-l"]) || startswith(arg, "--local:") || startswith(arg, "-l:")
             throw_removed_local_flag(arg)
-        elseif arg == "--parenthost" || arg == "--masterhost"
+        elseif arg == "--parenthost" || arg == "--masterhost" || arg == "--parent"
             throw(ArgumentError(
-                "size: pass the host token `parenthost` (e.g. size parenthost host1), not `--parenthost`.",
+                "size: pass the token `parent` (e.g. size parent child:host1), not `--parenthost`.",
             ))
         elseif arg == "--gb-per-worker"
             gb_per_worker = parse(Float64, cli_take_value!(c, arg))
@@ -94,7 +94,9 @@ function parse_size_args(args::Vector{String})
         elseif arg == "--master-gb"
             master_gb = parse(Float64, cli_take_value!(c, arg))
         elseif !startswith(arg, "-")
-            push!(hosts, split_worker_token(arg)[1])
+            let p = parse_placement_token(arg)
+                push!(hosts, p.role === :parent ? PARENT_HOST_NAME : p.name)
+            end
             cli_consume!(c)
         else
             @warn "Unknown option: $arg (ignored)"
@@ -102,7 +104,7 @@ function parse_size_args(args::Vector{String})
         end
     end
 
-    append_kit_host_sources!(hosts, cli_session; keep_counts=false)
+    append_kit_host_sources!(hosts, cli_session; keep_counts=false, roles=true)
     include_local = _size_absorb_parent_hosts!(hosts, include_local)
     apply_kit_cli_session!(cli_session)
 

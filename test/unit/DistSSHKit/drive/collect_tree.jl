@@ -50,7 +50,7 @@ using Test
             mkpath(out_dir)
             with_kit_verbosity(:verbose) do
                 captured, result = _capture_stdio() do _, _
-                    _collect!(proj, out_dir, ["host1"])
+                    _collect!(proj, out_dir, ["child:host1"])
                 end
                 @test result.ok
                 @test occursin("no directory on host", captured)
@@ -65,7 +65,7 @@ using Test
             mkpath(out_dir)
             with_kit_verbosity(:verbose) do
                 captured, result = _capture_stdio() do _, _
-                    _collect!(proj, out_dir, ["host1"])
+                    _collect!(proj, out_dir, ["child:host1"])
                 end
                 @test result.ok
                 @test occursin("no files found", captured)
@@ -80,7 +80,7 @@ using Test
             mkpath(out_dir)
             with_kit_verbosity(:verbose) do
                 captured, result = _capture_stdio() do _, _
-                    _collect!(proj, out_dir, ["host1"])
+                    _collect!(proj, out_dir, ["child:host1"])
                 end
                 @test result.ok
                 @test occursin("1 file", captured)
@@ -98,7 +98,7 @@ using Test
             write(joinpath(out_dir, "a.txt"), "local\n")
             with_kit_verbosity(:verbose) do
                 captured, result = _capture_stdio() do _, _
-                    _collect!(proj, out_dir, ["host1"])
+                    _collect!(proj, out_dir, ["child:host1"])
                 end
                 @test result.ok
                 @test occursin("nothing new", captured)
@@ -114,7 +114,7 @@ using Test
             mkpath(out_dir)
             with_kit_verbosity(:verbose) do
                 captured, result = _capture_stdio() do _, _
-                    _collect!(proj, out_dir, ["host1"]; merge=true)
+                    _collect!(proj, out_dir, ["child:host1"]; merge=true)
                 end
                 @test result.ok
                 @test occursin("synced", captured)
@@ -135,7 +135,7 @@ using Test
             mkpath(out_dir)
             with_kit_verbosity(:verbose) do
                 captured, result = _capture_stdio() do _, _
-                    _collect!(proj, out_dir, ["host1"]; merge=true)
+                    _collect!(proj, out_dir, ["child:host1"]; merge=true)
                 end
                 @test !result.ok
                 @test result.exit_code == 1

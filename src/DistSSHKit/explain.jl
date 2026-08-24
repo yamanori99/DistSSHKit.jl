@@ -95,7 +95,7 @@ function explain_no_hosts(;
     if kind === :size
         head = "KitSession has no hosts for size!"
         hint = if surface === :api
-            "Hint: pass workers=[\"parenthost:2\", …] or workers=[\"user@host\", …] (bare host → autosize)"
+            "Hint: pass workers=[\"parent:2\", …] or workers=[\"child:user@host\", …] (omit :N → autosize)"
         else
             "Hint: pass local and/or SSH hosts (see size --help)"
         end
@@ -103,7 +103,7 @@ function explain_no_hosts(;
     elseif kind === :collect
         head = "collect! needs hosts in session or hosts= keyword"
         hint = if surface === :api
-            "Hint: KitSession(workers=[\"user@host\", …]) or collect!(…; hosts=[…])"
+            "Hint: KitSession(workers=[\"child:user@host\", …]) or collect!(…; hosts=[…])"
         else
             "Hint: pass HOST after --collect-missing / --collect-overwrite ROOT"
         end
@@ -111,9 +111,9 @@ function explain_no_hosts(;
     end
     head = "KitSession has no SSH hosts"
     hint = if surface === :api
-        "Hint: pass workers= with remote tokens (user@host), or hosts_file="
+        "Hint: pass workers= with child:NAME tokens, or hosts_file="
     else
-        "Hint: pass user@host tokens, or --hosts-file / DISTSSHKIT_HOSTS_FILE"
+        "Hint: pass child:NAME tokens, or --hosts-file / DISTSSHKIT_HOSTS_FILE"
     end
     return join_explained_message(head, hint)
 end

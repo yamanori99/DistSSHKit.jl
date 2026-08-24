@@ -28,12 +28,12 @@ using Test
         @test !isdefined(DistSSHKit, :MEMORY_CAPACITY_FRACTION)
     end
 
-    @testset "resolve_host_project_abs parenthost" begin
+    @testset "resolve_host_project_abs parent" begin
         _with_tempdir() do tmp
             p = abspath(tmp)
-            @test DistSSHKit.resolve_host_project_abs("parenthost", p) ==
+            @test DistSSHKit.resolve_host_project_abs("parent", p) ==
                 DistSSHKit.canonical_local_path(p)
-            @test DistSSHKit.resolve_host_path_abs("parenthost", joinpath(p, "sub"), p) ==
+            @test DistSSHKit.resolve_host_path_abs("parent", joinpath(p, "sub"), p) ==
                 DistSSHKit.canonical_local_path(joinpath(p, "sub"))
             @test !DistSSHKit.is_local_host_name("localhost")
         end
@@ -64,9 +64,9 @@ using Test
             is_parenthost=true,
         )
         plan = DistSSHKit.compute_worker_plan(
-            ["parenthost"],
+            ["parent"],
             String[],
-            Dict("parenthost" => pw);
+            Dict("parent" => pw);
             mem_headroom=0.75,
             master_gb=0.4,
         )
@@ -102,7 +102,7 @@ using Test
             local_total, local_nproc, 2.0; is_parenthost=true,
         )
         plan = DistSSHKit.compute_worker_plan(
-            ["parenthost"], String[], DistSSHKit.per_worker_gb_dict(Dict("parenthost" => s)),
+            ["parent"], String[], DistSSHKit.per_worker_gb_dict(Dict("parent" => s)),
         )
         @test plan.local_workers == expected
     end
@@ -110,7 +110,7 @@ using Test
     @testset "WorkerMemorySample effective" begin
         s = DistSSHKit.WorkerMemorySample(0.5, 1.2)
         @test DistSSHKit.effective_worker_gb(s) == 1.2
-        @test DistSSHKit.per_worker_gb_dict(Dict("parenthost" => s))["parenthost"] == 1.2
+        @test DistSSHKit.per_worker_gb_dict(Dict("parent" => s))["parent"] == 1.2
     end
 
     @testset "resolve_worker_memory_samples gb_per_worker" begin
@@ -128,12 +128,12 @@ using Test
         mktemp() do path, io
             samples = with_kit_verbosity(:verbose) do
                 redirect_stdout(io) do
-                    DistSSHKit.resolve_worker_memory_samples("/unused", ["parenthost"], String[], opts)
+                    DistSSHKit.resolve_worker_memory_samples("/unused", ["parent"], String[], opts)
                 end
             end
             flush(io)
             @test samples !== nothing
-            @test samples["parenthost"] == DistSSHKit.WorkerMemorySample(1.5, 1.5)
+            @test samples["parent"] == DistSSHKit.WorkerMemorySample(1.5, 1.5)
             @test occursin("manual", read(path, String))
         end
     end
@@ -152,22 +152,22 @@ using Test
             include_local=true,
             hosts=String[],
         )
-        samples = Dict("parenthost" => DistSSHKit.WorkerMemorySample(pw, pw))
+        samples = Dict("parent" => DistSSHKit.WorkerMemorySample(pw, pw))
         plan = DistSSHKit.compute_worker_plan(
-            ["parenthost"], String[], Dict("parenthost" => pw);
+            ["parent"], String[], Dict("parent" => pw);
             mem_headroom=DistSSHKit.DEFAULT_MEM_HEADROOM,
             master_gb=DistSSHKit.DEFAULT_MASTER_GB,
         )
         @test plan.local_workers == 0
         mktemp() do path, io
             redirect_stdout(io) do
-                DistSSHKit.print_size_report(["parenthost"], String[], samples, opts)
+                DistSSHKit.print_size_report(["parent"], String[], samples, opts)
             end
             flush(io)
             out = read(path, String)
             @test occursin("Total: 0 workers", out)
             @test occursin("drive <script.jl>", out)
-            @test !occursin("parenthost:", out)
+            @test !occursin("parent:", out)
             @test !occursin("local:", out)
         end
     end

@@ -59,7 +59,7 @@ function print_size_report(
 
     local_n = plan.local_workers
     remote_parts = ["$(h):$(plan.remote_workers[h])" for h in hosts if get(plan.remote_workers, h, 0) > 0]
-    local_arg = local_n > 0 ? "parenthost:$local_n " : ""
+    local_arg = local_n > 0 ? "parent:$local_n " : ""
     remote_arg = isempty(remote_parts) ? "" : join(remote_parts, " ") * " "
     println("Command template:")
     worker_args = "$(local_arg)$(remote_arg)"

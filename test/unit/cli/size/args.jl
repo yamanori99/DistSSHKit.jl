@@ -4,7 +4,7 @@ using Test
     parse_size_args = DistSSHKit.parse_size_args
 
     @testset "parse_size_args" begin
-        let r = parse_size_args(["parenthost", "host1", "host2"])
+        let r = parse_size_args(["parent", "child:host1", "child:host2"])
             @test !r.show_help
             @test r.include_local
             @test r.hosts == ["host1", "host2"]
@@ -13,18 +13,18 @@ using Test
             @test r.mem_headroom == DistSSHKit.DEFAULT_MEM_HEADROOM
             @test r.master_gb == DistSSHKit.DEFAULT_MASTER_GB
         end
-        let r = parse_size_args(["local", "host1"])
+        let r = parse_size_args(["child:local", "child:host1"])
             @test !r.include_local
             @test r.hosts == ["local", "host1"]
         end
-        @test_throws ArgumentError parse_size_args(["--parenthost", "host1"])
-        @test_throws ArgumentError parse_size_args(["--masterhost", "host1"])
-        @test_throws ArgumentError parse_size_args(["--local", "host1", "host2"])
-        let r = parse_size_args(["--hosts", "h1:4,h2", "host-cli"])
+        @test_throws ArgumentError parse_size_args(["--parent", "child:host1"])
+        @test_throws ArgumentError parse_size_args(["--masterhost", "child:host1"])
+        @test_throws ArgumentError parse_size_args(["--local", "child:host1", "child:host2"])
+        let r = parse_size_args(["--hosts", "child:h1:4,child:h2", "child:host-cli"])
             @test r.hosts == ["host-cli", "h1", "h2"]
         end
-        @test_throws ArgumentError parse_size_args(["-l", "host1"])
-        let r = parse_size_args(["--hosts-file", _sample_hosts_file(), "host-cli"])
+        @test_throws ArgumentError parse_size_args(["-l", "child:host1"])
+        let r = parse_size_args(["--hosts-file", _sample_hosts_file(), "child:host-cli"])
             @test r.hosts == ["host-cli", "host-a", "host-b"]
         end
         @test_throws ArgumentError parse_size_args(["--version", "--local"])
@@ -37,12 +37,12 @@ using Test
         end
         @test_throws ArgumentError parse_size_args(["--gb-per-worker"])
         @test_throws ArgumentError parse_size_args(["--probe"])
-        withenv("DISTSSHKIT_HOSTS" => "env-h:2") do
-            let r = parse_size_args(["host-cli"])
+        withenv("DISTSSHKIT_HOSTS" => "child:env-h:2") do
+            let r = parse_size_args(["child:host-cli"])
                 @test r.hosts == ["host-cli", "env-h"]
             end
         end
-        let r = parse_size_args(["--gb-per-worker", "1.5", "host1"])
+        let r = parse_size_args(["--gb-per-worker", "1.5", "child:host1"])
             @test r.gb_per_worker == 1.5
             @test r.hosts == ["host1"]
         end
@@ -53,12 +53,12 @@ using Test
             @test isempty(r.hosts)
         end
         withenv("DISTSSHKIT_SIZE_PROBE" => "env_warmup.jl") do
-            r = parse_size_args(["parenthost"])
+            r = parse_size_args(["parent"])
             @test r.probe == "env_warmup.jl"
             @test r.include_local
         end
         withenv("DISTSSHKIT_SIZE_PROBE" => "env_warmup.jl") do
-            r = parse_size_args(["--probe", "cli_warmup.jl", "parenthost"])
+            r = parse_size_args(["--probe", "cli_warmup.jl", "parent"])
             @test r.probe == "cli_warmup.jl"  # CLI wins over ENV
         end
         let path = tempname()
@@ -71,7 +71,7 @@ using Test
             help = read(path, String)
             rm(path; force=true)
             @test occursin("DistSSHKit size", help)
-            @test occursin("parenthost", help)
+            @test occursin("parent", help)
             @test !occursin("--local", help)
             @test occursin("--gb-per-worker", help)
             @test occursin("--probe", help)
@@ -84,7 +84,7 @@ using Test
     @testset "print_size_report matches compute_worker_plan" begin
         pw = 2.0
         plan = DistSSHKit.compute_worker_plan(
-            ["parenthost"], String[], Dict("parenthost" => pw);
+            ["parent"], String[], Dict("parent" => pw);
             mem_headroom=DistSSHKit.DEFAULT_MEM_HEADROOM,
             master_gb=DistSSHKit.DEFAULT_MASTER_GB,
         )
@@ -100,19 +100,19 @@ using Test
             hosts=String[],
         )
         samples = Dict(
-            "parenthost" => DistSSHKit.WorkerMemorySample(pw, pw),
+            "parent" => DistSSHKit.WorkerMemorySample(pw, pw),
         )
         path = tempname()
         open(path, "w") do io
             redirect_stdout(io) do
-                DistSSHKit.print_size_report(["parenthost"], String[], samples, opts)
+                DistSSHKit.print_size_report(["parent"], String[], samples, opts)
             end
         end
         out = read(path, String)
         rm(path; force=true)
         @test occursin("Workers", out)
-        @test occursin("parenthost", out)
-        @test occursin("parenthost:$(plan.local_workers)", out)
+        @test occursin("parent", out)
+        @test occursin("parent:$(plan.local_workers)", out)
         @test occursin("Total: $(plan.local_workers) workers", out)
         @test !occursin("Suggested", out)
     end
@@ -130,12 +130,12 @@ using Test
             hosts=String[],
         )
         samples = Dict(
-            "parenthost" => DistSSHKit.WorkerMemorySample(0.5, 1.5),
+            "parent" => DistSSHKit.WorkerMemorySample(0.5, 1.5),
         )
         path = tempname()
         open(path, "w") do io
             redirect_stdout(io) do
-                DistSSHKit.print_size_report(["parenthost"], String[], samples, opts; show_peak=true)
+                DistSSHKit.print_size_report(["parent"], String[], samples, opts; show_peak=true)
             end
         end
         out = read(path, String)
@@ -146,20 +146,20 @@ using Test
         @test occursin("1.5 GB", out)
         # Counts use effective = max(0.5, 1.5) = 1.5
         plan = DistSSHKit.compute_worker_plan(
-            ["parenthost"], String[], Dict("parenthost" => 1.5);
+            ["parent"], String[], Dict("parent" => 1.5);
             mem_headroom=DistSSHKit.DEFAULT_MEM_HEADROOM,
             master_gb=DistSSHKit.DEFAULT_MASTER_GB,
         )
-        @test occursin("parenthost:$(plan.local_workers)", out)
+        @test occursin("parent:$(plan.local_workers)", out)
     end
 
-    @testset "run_size --gb-per-worker parenthost" begin
+    @testset "run_size --gb-per-worker parent" begin
         # In-process size CLI. No SSH. Parser tests above do not run size_main.
         mktemp() do path, io
             code = withenv("DISTSSHKIT_CLI_SUBCOMMAND_DONE" => "") do
                 redirect_stderr(devnull) do
                     redirect_stdout(io) do
-                        DistSSHKit.run_size(["--gb-per-worker", "2", "parenthost"])
+                        DistSSHKit.run_size(["--gb-per-worker", "2", "parent"])
                     end
                 end
             end
@@ -170,7 +170,7 @@ using Test
                 local_total, local_nproc, 2.0; is_parenthost=true,
             )
             @test code == 0
-            @test occursin("parenthost:$(expected)", out)
+            @test occursin("parent:$(expected)", out)
             @test occursin("Total: $(expected) workers", out)
         end
     end

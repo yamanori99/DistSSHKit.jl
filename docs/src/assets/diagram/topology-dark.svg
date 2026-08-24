@@ -28,14 +28,14 @@
 
   <g transform="translate(18,12)">
     <rect class="cluster" width="156" height="82" rx="12"/>
-    <text class="t" x="12" y="20" font-size="14" font-weight="600">Remote 1</text>
+    <text class="t" x="12" y="20" font-size="14" font-weight="600">child 1</text>
     <use href="#dark-juliadot" x="136" y="14"/>
     <use href="#dark-worker" x="8" y="34"/>
     <text class="t-sub" x="78" y="60" text-anchor="middle" font-size="13">Worker x 1..n</text>
   </g>
   <g transform="translate(184,12)">
     <rect class="cluster" width="156" height="82" rx="12"/>
-    <text class="t" x="12" y="20" font-size="14" font-weight="600">Remote 2</text>
+    <text class="t" x="12" y="20" font-size="14" font-weight="600">child 2</text>
     <use href="#dark-juliadot" x="136" y="14"/>
     <use href="#dark-worker" x="8" y="34"/>
     <text class="t-sub" x="78" y="60" text-anchor="middle" font-size="13">Worker x 1..n</text>
@@ -43,7 +43,7 @@
   <text class="t-sub" x="358" y="58" text-anchor="middle" font-size="20">...</text>
   <g transform="translate(386,12)">
     <rect class="cluster" width="156" height="82" rx="12"/>
-    <text class="t" x="12" y="20" font-size="14" font-weight="600">Remote n</text>
+    <text class="t" x="12" y="20" font-size="14" font-weight="600">child n</text>
     <use href="#dark-juliadot" x="136" y="14"/>
     <use href="#dark-worker" x="8" y="34"/>
     <text class="t-sub" x="78" y="60" text-anchor="middle" font-size="13">Worker x 1..n</text>
@@ -60,7 +60,7 @@
     <path class="link" d="M192,172 L464,94"/>
     <path class="link" d="M252,188 L268,188"/>
     <rect class="halo" x="122" y="128" width="76" height="22"/>
-    <text class="t" x="132" y="144" font-size="14" font-weight="600">Parent</text>
+    <text class="t" x="132" y="144" font-size="14" font-weight="600">parent</text>
     <use href="#dark-juliadot" x="424" y="140"/>
     <rect class="master" x="132" y="168" width="120" height="40" rx="8"/>
     <text class="t-on" x="192" y="194" text-anchor="middle" font-size="15" font-weight="700">Master</text>

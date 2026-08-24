@@ -55,34 +55,33 @@ For everything else, see the **[Documentation](https://yamanori99.github.io/Dist
 
 ### Basic terms
 
-- **Host** — the machine that runs the work. This job's DistSSHKit parent is
-  `parenthost`. An SSH target is `user@hostname`, an IP address, or an SSH
-  config `Host` alias. `parenthost` is this job's DistSSHKit parent (the Julia
-  process that parsed the token when you start the kit yourself)
+- **Host** — a machine. Kit side is `parent` / `parent:N`. SSH children are
+  `child:NAME` / `child:NAME:N` (`user@hostname`, an IP, or an SSH config
+  `Host` alias). `setup` takes the SSH name with no prefix.
 - **Process** — one running `julia`. Each process has its own memory and runs
   independently at the OS level
   (this kit launches multiple `julia` processes, even on a single machine, to run
   work in parallel — built on Distributed.jl)
-- **Master** — the process on `parenthost` that plans slots (`go`) or hands
+- **Master** — the process on `parent` that plans slots (`go`) or hands
   work to workers (`drive`) and collects results. When a queue starts that
-  process, `parenthost` is the queue's runner, not your client machine
+  process, `parent` is the queue's runner, not your client machine
 - **Worker** — a process that receives work from the master and runs it
 
 Example: when you run `go` / `drive` on your own machine, that machine is
-`parenthost`. Each machine can run several workers (`parenthost` may run
+`parent`. Each machine can run several workers (`parent` may run
 none), and you can add as many remote machines as you like.
 
 <!-- markdownlint-disable MD033 -->
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/src/assets/diagram/topology-dark.svg">
-    <img alt="Drive topology: Master process on parenthost, workers on parenthost and remotes" src="docs/src/assets/diagram/topology.svg">
+    <img alt="Drive topology: Master process on parent, workers on parent and remotes" src="docs/src/assets/diagram/topology.svg">
   </picture>
 </p>
 <!-- markdownlint-enable MD033 -->
 
-The diagram is **drive**: one Master process on `parenthost`, workers on
-`parenthost` and remotes. **go** uses the same `parenthost` token, but each
+The diagram is **drive**: one Master process on `parent`, workers on
+`parent` and remotes. **go** uses the same `parent` token, but each
 host runs independent slots (not Distributed workers).
 
 There's no limit on the number of remote hosts — more hosts just means more time
@@ -91,8 +90,8 @@ scale up from there.
 
 Before you use a remote host, it needs:
 
-- Passwordless SSH login from `parenthost`
-- Julia installed, with the **same major.minor version** as `parenthost`
+- Passwordless SSH login from `parent`
+- Julia installed, with the **same major.minor version** as `parent`
   (checked by `setup --check`)
 
 Details: [Requirements](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/).
@@ -114,7 +113,7 @@ with `go`, then move to `drive` / Distributed.jl when you need it.
 ### How you call it
 
 - **CLI** — invoke the kit from the terminal.
-  Example: `julia --project=. -m DistSSHKit go user@host1:1 script.jl`.
+  Example: `julia --project=. -m DistSSHKit go child:user@host1:1 script.jl`.
   Good for a quick try or a shell script
 - **Julia** — call functions from your own Julia code (a script, the REPL, or
   another package): `setup!`, `go!` / `drive!`, and other `!` functions
@@ -186,17 +185,17 @@ julia --project=. -m DistSSHKit setup --delete user@host1 user@host2
 
 After setup, run like this.
 
-**CLI, go.** One full run of `script.jl` on each host (`parenthost:N` also works).
+**CLI, go.** One full run of `script.jl` on each host (`parent:N` also works).
 
 ```bash
-julia --project=. -m DistSSHKit go user@host1:1 user@host2:1 path/to/script.jl
+julia --project=. -m DistSSHKit go child:user@host1:1 child:user@host2:1 path/to/script.jl
 ```
 
 **CLI, drive.** For a git deploy, later updates are `setup --sync`. `rsync` works
 too.
 
 ```bash
-julia --project=. -m DistSSHKit drive parenthost:2 user@host1:4 path/to/driver.jl
+julia --project=. -m DistSSHKit drive parent:2 child:user@host1:4 path/to/driver.jl
 ```
 
 **Julia, go.** Keep `remote=` consistent with `setup!` (omit both for the default
@@ -206,9 +205,9 @@ path).
 using DistSSHKit
 
 remote = "/path/to/project"
-session = KitSession(workers=["user@host1"], remote=remote, yes=true)
+session = KitSession(workers=["child:user@host1"], remote=remote, yes=true)
 setup!(session, :rsync, :instantiate)
-go!("path/to/script.jl", "user@host1:1"; remote=remote)
+go!("path/to/script.jl", "child:user@host1:1"; remote=remote)
 ```
 
 **Julia, drive.**
@@ -217,10 +216,10 @@ go!("path/to/script.jl", "user@host1:1"; remote=remote)
 using DistSSHKit
 
 remote = "/path/to/project"
-session = KitSession(workers=["user@host1"], remote=remote, yes=true)
+session = KitSession(workers=["child:user@host1"], remote=remote, yes=true)
 setup!(session, :clone; repo="https://github.com/org/proj.git")
 setup!(session, :instantiate)
-drive!("path/to/driver.jl", "parenthost:2", "user@host1:4"; remote=remote)
+drive!("path/to/driver.jl", "parent:2", "child:user@host1:4"; remote=remote)
 setup!(session, :sync)  # later updates
 ```
 
@@ -237,7 +236,7 @@ julia --project=. -m DistSSHKit demo install with_kit
 ```
 
 ```bash
-julia --project=. -m DistSSHKit drive parenthost:2 demos/with_kit/square_file.jl
+julia --project=. -m DistSSHKit drive parent:2 demos/with_kit/square_file.jl
 ```
 
 Walkthrough: [Demo](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/demo/).
