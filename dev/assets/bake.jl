@@ -9,8 +9,11 @@ Hand-edit sources (under logo/ and diagram/):
 Derived:
   logo/logo-dark-*.svg, logo/logo-static.png, logo/logo-dynamic.gif
   social/social-preview-*.svg|.png|.gif
-  diagram/topology-ja.svg, diagram/topology-dark.svg, diagram/topology-ja-dark.svg
-  diagram/topology.png, diagram/topology-ja.png
+  diagram/topology-dark.svg
+  diagram/topology.png
+
+README.md, README.ja.md, and docs intro all use the English topology
+(`parent` / `child 1…n`). Do not bake a Japanese-labelled copy.
 
 Julia dots in these files are Copyright (c) 2012-2022 Stefan Karpinski,
 CC BY-NC-SA 4.0 (https://github.com/JuliaLang/julia-logo-graphics), not MIT.
@@ -32,16 +35,6 @@ const SOCIAL_DIR = "social"
 const DIAGRAM_DIR = "diagram"
 const DIAGRAM_W, DIAGRAM_H = 560, 236
 const DIAGRAM_PNG_W, DIAGRAM_PNG_H = DIAGRAM_W * 2, DIAGRAM_H * 2
-
-const DIAGRAM_JA = (
-    "Remote 1" => "リモート 1",
-    "Remote 2" => "リモート 2",
-    "Remote n" => "リモート n",
-    ">Parent</text>" => ">親</text>",
-    ">Master</text>" => ">マスター</text>",
-    "Worker x 0..n" => "ワーカー x 0..n",
-    "Worker x 1..n" => "ワーカー x 1..n",
-)
 
 # Light (source) → dark surface. Master stays a strong blue so it still reads as hub.
 # Cluster/box fills sit above typical GitHub / Documenter dark chrome (#0d1117 / #1f2424).
@@ -104,14 +97,6 @@ die(msg) = (println(stderr, "error: ", msg); exit(1))
 logo_path(name::AbstractString) = joinpath(LOGO_DIR, name)
 social_path(name::AbstractString) = joinpath(SOCIAL_DIR, name)
 diagram_path(name::AbstractString) = joinpath(DIAGRAM_DIR, name)
-
-function topology_ja(svg::AbstractString)
-    out = svg
-    for (en, ja) in DIAGRAM_JA
-        out = replace(out, en => ja)
-    end
-    return out
-end
 
 function topology_dark(svg::AbstractString)
     out = svg
@@ -294,12 +279,8 @@ function bake_svgs!()
     writefile(social_path("social-preview-dynamic.svg"), social_dynamic)
 
     topology = readfile(diagram_path("topology.svg"))
-    topology_ja_svg = topology_ja(topology)
     topology_dark_svg = topology_dark(topology)
-    topology_ja_dark_svg = topology_dark(topology_ja_svg)
-    writefile(diagram_path("topology-ja.svg"), topology_ja_svg)
     writefile(diagram_path("topology-dark.svg"), topology_dark_svg)
-    writefile(diagram_path("topology-ja-dark.svg"), topology_ja_dark_svg)
 
     return (;
         logo,
@@ -307,9 +288,7 @@ function bake_svgs!()
         social_static,
         social_dynamic,
         topology,
-        topology_ja_svg,
         topology_dark_svg,
-        topology_ja_dark_svg,
     )
 end
 
@@ -546,7 +525,6 @@ function bake_pngs!(arts)
 
     for (svg_rel, png_rel, svg_text) in (
         (diagram_path("topology.svg"), diagram_path("topology.png"), arts.topology),
-        (diagram_path("topology-ja.svg"), diagram_path("topology-ja.png"), arts.topology_ja_svg),
     )
         html_body = replace(
             strip_xml_decl(svg_text),
