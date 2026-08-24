@@ -144,10 +144,10 @@ using Test
         @test !DistSSHKit.execute_detached_accepts(:log_dir; kind=:go)
         @test DistSSHKit.execute_detached_accepts(:skip_hash_check; kind=:drive)
         @test DistSSHKit.execute_detached_accepts(:mem_headroom; kind=:drive)
-        @test DistSSHKit.execute_detached_accepts(:master_gb; kind=:drive)
+        @test DistSSHKit.execute_detached_accepts(:parent_gb; kind=:drive)
         @test DistSSHKit.execute_detached_accepts(:workers; kind=:drive)
         @test !DistSSHKit.execute_detached_accepts(:mem_headroom; kind=:go)
-        @test !DistSSHKit.execute_detached_accepts(:master_gb; kind=:go)
+        @test !DistSSHKit.execute_detached_accepts(:parent_gb; kind=:go)
         @test !DistSSHKit.execute_detached_accepts(:workers; kind=:go)
         @test !DistSSHKit.execute_detached_accepts(:plan; kind=:go)
         @test !DistSSHKit.execute_detached_accepts(:plan; kind=:drive)
@@ -176,11 +176,11 @@ using Test
             require_all_hosts=false,
             skip_hash_check=true,
             mem_headroom=0.5,
-            master_gb=0.2,
+            parent_gb=0.2,
         )
         @test "--mem-headroom" in argv
         @test "0.5" in argv
-        @test "--master-gb" in argv
+        @test "--parent-gb" in argv
         @test "0.2" in argv
         argv0 = DistSSHKit._execute_detached_argv(
             :drive, "job.jl", ["parent:1"], String[];
@@ -197,7 +197,7 @@ using Test
             skip_hash_check=true,
         )
         @test !("--mem-headroom" in argv0)
-        @test !("--master-gb" in argv0)
+        @test !("--parent-gb" in argv0)
         argvw = DistSSHKit._execute_detached_argv(
             :drive, "job.jl", ["child:host1"], String[];
             output_dir="/tmp/out",
@@ -238,14 +238,14 @@ using Test
         hosts_file = _sample_hosts_file()
         drive = DistSSHKit.parse_drive_args([
             "--no-log", "--package", "Foo", "--mem-headroom", "0.5",
-            "--master-gb", "0.2", "--workers", "4",
+            "--parent-gb", "0.2", "--workers", "4",
             "--hosts-file", hosts_file, "s.jl",
         ])
         dkw = DistSSHKit.execute_kwargs_from_parsed(drive; kind=:drive)
         @test dkw[:enable_log] === false
         @test dkw[:package] == "Foo"
         @test dkw[:mem_headroom] == 0.5
-        @test dkw[:master_gb] == 0.2
+        @test dkw[:parent_gb] == 0.2
         @test dkw[:workers] == 4
         @test !haskey(dkw, :hosts_file)
         @test DistSSHKit.host_tokens(drive; kind=:drive) == ["child:host-a", "child:host-b:4"]

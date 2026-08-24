@@ -36,15 +36,16 @@ using Test
                 @test r.hint_surface === :cli
             end
             let r = parse_drive_args(["parent:4", "myscript.jl", "a", "b"])
-                @test r.local_workers == 4
+                @test r.parent_workers == 4
                 @test r.script_path == "myscript.jl"
                 @test r.script_args == ["a", "b"]
             end
             @test_throws ArgumentError parse_drive_args(["--parent", "4", "s.jl"])
             @test_throws ArgumentError parse_drive_args(["--parent:5", "s.jl"])
             @test_throws ArgumentError parse_drive_args(["--masterhost", "4", "s.jl"])
+            @test_throws ArgumentError parse_drive_args(["--master-gb", "0.2", "s.jl"])
             let r = parse_drive_args(["parent:3", "child:host1:2", "s.jl"])
-                @test r.local_workers == 3
+                @test r.parent_workers == 3
                 @test r.hosts == [("host1", 2)]
                 @test DistSSHKit.host_tokens(r; kind=:drive) == ["parent:3", "child:host1:2"]
             end
@@ -64,12 +65,12 @@ using Test
                 @test r.default_workers == 4
             end
             let r = parse_drive_args(["child:local:3", "child:host1:2", "s.jl"])
-                @test r.local_workers == 0
+                @test r.parent_workers == 0
                 @test r.hosts == [("local", 3), ("host1", 2)]
                 @test DistSSHKit.host_tokens(r; kind=:drive) == ["child:local:3", "child:host1:2"]
             end
             let r = parse_drive_args(["child:localhost:4", "s.jl"])
-                @test r.local_workers == 0
+                @test r.parent_workers == 0
                 @test r.hosts == [("localhost", 4)]
             end
             @test_throws ArgumentError parse_drive_args(["--local", "2", "s.jl"])
@@ -120,7 +121,7 @@ using Test
             end
             withenv("DISTSSHKIT_HOSTS" => "child:env-host:3, child:env-b") do
                 let r = parse_drive_args(["parent:2", "s.jl"])
-                    @test r.local_workers == 2
+                    @test r.parent_workers == 2
                     @test ("env-host", 3) in r.hosts
                     @test ("env-b", nothing) in r.hosts
                 end
@@ -143,16 +144,16 @@ using Test
             @test r.sync_mode === nothing
             @test r.skip_hash_check == true
             @test r.mem_headroom == DistSSHKit.DEFAULT_MEM_HEADROOM
-            @test r.master_gb == DistSSHKit.DEFAULT_MASTER_GB
+            @test r.parent_gb == DistSSHKit.DEFAULT_PARENT_GB
         end
-        let r = parse_drive_args(["--mem-headroom", "0.5", "--master-gb", "0.2", "s.jl"])
+        let r = parse_drive_args(["--mem-headroom", "0.5", "--parent-gb", "0.2", "s.jl"])
             @test r.mem_headroom == 0.5
-            @test r.master_gb == 0.2
+            @test r.parent_gb == 0.2
         end
-        let r = parse_drive_args(["--mem-headroom", "0.5", "--master-gb", "0.2", "--help"])
+        let r = parse_drive_args(["--mem-headroom", "0.5", "--parent-gb", "0.2", "--help"])
             @test r.help
             @test r.mem_headroom == 0.5
-            @test r.master_gb == 0.2
+            @test r.parent_gb == 0.2
         end
         let r = parse_drive_args(["--sync", "child:host1", "s.jl"])
             @test r.sync_mode === :sync
@@ -212,10 +213,10 @@ using Test
         @test occursin("off by default", lowercase(txt))
         @test occursin("parent[:N]", txt)
         @test occursin("progress DIR", txt)
-        @test !occursin("--parent", txt)
+        @test !occursin(r"--parent(?!-gb)", txt)
         @test !occursin("--local", txt)
         @test occursin("--mem-headroom", txt)
-        @test occursin("--master-gb", txt)
+        @test occursin("--parent-gb", txt)
         @test occursin("DISTSSHKIT_JOBS", txt)
         @test occursin("DISTSSHKIT_REQUIRE_ALL_HOSTS", txt)
         @test !occursin("required after `setup --rsync`", txt)

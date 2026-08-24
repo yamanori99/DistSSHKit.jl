@@ -3,18 +3,18 @@ using Test
 @testset "drive API" begin
     @testset "parse_worker_tokens" begin
         p = DistSSHKit.parse_worker_tokens(["parent:2", "child:host-a:4", "child:host-b"])
-        @test p.local_workers == 2
-        @test !p.local_autosize
-        @test p.remote_workers == Dict("host-a" => 4)
-        @test p.remote_auto == ["host-b"]
-        @test p.remote_hosts == ["host-a", "host-b"]
+        @test p.parent_workers == 2
+        @test !p.parent_autosize
+        @test p.child_workers == Dict("host-a" => 4)
+        @test p.child_auto == ["host-b"]
+        @test p.child_hosts == ["host-a", "host-b"]
         @test DistSSHKit.worker_tokens_fully_specified(p) == false
 
         fixed = DistSSHKit.parse_worker_tokens(["parent:2", "child:h1:1"])
         @test DistSSHKit.worker_tokens_fully_specified(fixed)
         let plan = DistSSHKit.worker_plan_from_tokens(["parent:2", "child:h1:1"])
-            @test plan.local_workers == 2
-            @test plan.remote_workers == Dict("h1" => 1)
+            @test plan.parent_workers == 2
+            @test plan.child_workers == Dict("h1" => 1)
         end
         err = try
             DistSSHKit.worker_plan_from_tokens(["child:h1"])
@@ -28,28 +28,28 @@ using Test
         @test_throws ArgumentError DistSSHKit.parse_worker_tokens(["parent:1", "parent:2"])
 
         auto = DistSSHKit.parse_worker_tokens(["parent", "child:h1:3"])
-        @test auto.local_autosize
-        @test auto.local_workers == 0
-        @test auto.remote_workers == Dict("h1" => 3)
-        @test DistSSHKit.remote_hosts_from_tokens(["parent:2", "child:h1", "child:h2:4"]) == ["h1", "h2"]
+        @test auto.parent_autosize
+        @test auto.parent_workers == 0
+        @test auto.child_workers == Dict("h1" => 3)
+        @test DistSSHKit.child_hosts_from_tokens(["parent:2", "child:h1", "child:h2:4"]) == ["h1", "h2"]
 
         let kw = DistSSHKit.ParsedWorkerTokens(;
-                local_workers=2,
-                remote_workers=Dict("h1" => 0x03),
-                remote_hosts=["h1"],
+                parent_workers=2,
+                child_workers=Dict("h1" => 0x03),
+                child_hosts=["h1"],
                 tokens=["parent:2", "child:h1:3"],
             )
-            @test kw.remote_workers isa Dict{String,Int}
-            @test kw.remote_workers == Dict("h1" => 3)
-            @test kw.remote_auto == String[]
-            @test !kw.local_autosize
+            @test kw.child_workers isa Dict{String,Int}
+            @test kw.child_workers == Dict("h1" => 3)
+            @test kw.child_auto == String[]
+            @test !kw.parent_autosize
         end
 
         _with_tempdir() do tmp
             session = DistSSHKit.KitSession(
                 project=tmp,
                 workers=["parent"],
-                include_local_for_size=true,
+                include_parent_for_size=true,
             )
             plan = DistSSHKit.worker_plan_from_tokens(
                 ["parent"];
@@ -57,10 +57,10 @@ using Test
                 gb_per_worker=2.0,
             )
             local_total, local_nproc = DistSSHKit.get_local_resources()
-            @test plan.local_workers == DistSSHKit.size_worker_count(
-                local_total, local_nproc, 2.0; is_parenthost=true,
+            @test plan.parent_workers == DistSSHKit.size_worker_count(
+                local_total, local_nproc, 2.0; is_parent=true,
             )
-            @test isempty(plan.remote_workers)
+            @test isempty(plan.child_workers)
         end
     end
 
@@ -121,7 +121,7 @@ using Test
                 project=tmp,
                 workers=["child:h1:1"],
                 remote="/remote/App.jl",
-                include_local_for_size=true,
+                include_parent_for_size=true,
             )
             @test DistSSHKit.session_remote_root(session) == "/remote/App.jl"
             all_h, remotes = DistSSHKit.session_size_hosts(session)
@@ -243,13 +243,13 @@ using Test
             @test parsed.hint_surface === :api
             @test parsed.julia === nothing
             @test parsed.mem_headroom == DistSSHKit.DEFAULT_MEM_HEADROOM
-            @test parsed.master_gb == DistSSHKit.DEFAULT_MASTER_GB
+            @test parsed.parent_gb == DistSSHKit.DEFAULT_PARENT_GB
             @test DistSSHKit.drive_parsed_from_session(
-                session, script; mem_headroom=0.5, master_gb=0.2,
+                session, script; mem_headroom=0.5, parent_gb=0.2,
             ).mem_headroom == 0.5
             @test DistSSHKit.drive_parsed_from_session(
-                session, script; mem_headroom=0.5, master_gb=0.2,
-            ).master_gb == 0.2
+                session, script; mem_headroom=0.5, parent_gb=0.2,
+            ).parent_gb == 0.2
 
             parsed_jl = DistSSHKit.drive_parsed_from_session(
                 session,

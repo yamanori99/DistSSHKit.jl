@@ -17,7 +17,7 @@ Flag vocabulary: [User Guide](@ref Manual).
 | `--gb-per-worker N` | Assume N GB per worker instead of measuring RSS |
 | `--probe PATH` | After package load, `include` this script on each probe worker and record peak RSS |
 | `--mem-headroom N` | Fraction of RAM usable for workers (default `0.75`) |
-| `--master-gb N` | GB to reserve for the master process (default `0.4`) |
+| `--parent-gb N` | GB to reserve for the parent process (default `0.4`) |
 | `-q` / `--quiet` | Hide terminal detail during measurement |
 | `--progress` | Live status (TTY default) |
 | `--verbose` | Full detail (non-TTY default) |
@@ -27,7 +27,7 @@ Flag vocabulary: [User Guide](@ref Manual).
 | `-v` / `--version` | Print DistSSHKit version and exit |
 | `-h` / `--help` | Full help |
 
-Drive preflight uses the same RAM fraction, `master_gb`, and CPU reserve as
+Drive preflight uses the same RAM fraction, `parent_gb`, and CPU reserve as
 `size_worker_count` (`pipeline!` / `drive!` / CLI `drive --mem-headroom`).
 RSS safety / floor / fallback stay unexported constants (not flags).
 

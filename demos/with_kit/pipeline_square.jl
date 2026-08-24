@@ -63,7 +63,7 @@ result = pipeline!(driver, "parent:2"; args=ARGS, collect=false, enable_log=fals
 #       # gb_per_worker=nothing,        # size! when a host has no :N
 #       # size_probe=nothing,           # warm-up script for size! peak RSS
 #       # mem_headroom=0.75,
-#       # master_gb=0.4,
+#       # parent_gb=0.4,
 #   )
 
 report_pipeline_errors(result) || exit(1)

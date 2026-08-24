@@ -53,7 +53,7 @@ end
 
 function add_drive_workers!(
     hosts::Vector{Tuple{String,Union{Int,Nothing}}},
-    local_workers::Int,
+    parent_workers::Int,
     default_workers,
     julia_exe,
     proj_dir::String,
@@ -67,12 +67,12 @@ function add_drive_workers!(
 
     successful_hosts = String[]
 
-    if local_workers > 0
-        write_both("  $(DistSSHKit.PARENT_HOST_NAME) ($local_workers workers): ")
+    if parent_workers > 0
+        write_both("  $(DistSSHKit.PARENT_HOST_NAME) ($parent_workers workers): ")
         DistSSHKit._drive_host_span!(DistSSHKit.PARENT_HOST_NAME, "workers", :running)
         try
             before = Set(workers())
-            addprocs(local_workers;
+            addprocs(parent_workers;
                 exeflags=DistSSHKit._drive_worker_exeflags(proj_dir),
                 env=DistSSHKit._drive_worker_env(),
                 topology=:master_worker)

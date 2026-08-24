@@ -216,7 +216,7 @@ function pipeline!(config::PipelineConfig)::PipelineResult
             gb_per_worker=config.gb_per_worker,
             probe=config.size_probe,
             mem_headroom=config.mem_headroom,
-            master_gb=config.master_gb,
+            parent_gb=config.parent_gb,
         )
     end
 
@@ -238,7 +238,7 @@ function pipeline!(config::PipelineConfig)::PipelineResult
             package=config.package,
             julia=config.julia,
             mem_headroom=config.mem_headroom,
-            master_gb=config.master_gb,
+            parent_gb=config.parent_gb,
         )
     finally
         if do_collect

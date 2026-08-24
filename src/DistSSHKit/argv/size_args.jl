@@ -1,9 +1,9 @@
-"""Pull `parent` out of the size host list into `include_local`."""
-function _size_absorb_parent_hosts!(hosts::Vector{String}, include_local::Bool)::Bool
+"""Pull `parent` out of the size host list into `include_parent`."""
+function _size_absorb_parent_hosts!(hosts::Vector{String}, include_parent::Bool)::Bool
     kept = String[]
-    inc = include_local
+    inc = include_parent
     for h in hosts
-        if is_local_host_name(h)
+        if is_parent_host_name(h)
             inc = true
         else
             push!(kept, h)
@@ -33,7 +33,7 @@ function show_size_usage(; io::IO=stdout)
         "  --gb-per-worker N   skip measure; assume N GB each",
         "  --probe PATH        warm-up script; peak RSS",
         "  --mem-headroom N    RAM fraction (default $(DEFAULT_MEM_HEADROOM))",
-        "  --master-gb N       master reserve (default $(DEFAULT_MASTER_GB))",
+        "  --parent-gb N       parent process reserve (default $(DEFAULT_PARENT_GB))",
         "  --hosts CSV         parent / child:NAME[:N] (`:N` stripped)",
         "  --hosts-file PATH   same, one token per line",
         "  $(KIT_QUIET_FLAG_HELP)",
@@ -59,8 +59,8 @@ function parse_size_args(args::Vector{String})
     gb_per_worker = nothing
     probe         = nothing
     mem_headroom  = DEFAULT_MEM_HEADROOM
-    master_gb     = DEFAULT_MASTER_GB
-    include_local = false
+    parent_gb     = DEFAULT_PARENT_GB
+    include_parent = false
     hosts         = String[]
 
     c = CliCursor(args)
@@ -75,8 +75,8 @@ function parse_size_args(args::Vector{String})
                 gb_per_worker=gb_per_worker,
                 probe=probe,
                 mem_headroom=mem_headroom,
-                master_gb=master_gb,
-                include_local=include_local,
+                parent_gb=parent_gb,
+                include_parent=include_parent,
                 hosts=hosts,
             )
         elseif cli_match(c, ["--local", "-l"]) || startswith(arg, "--local:") || startswith(arg, "-l:")
@@ -92,7 +92,9 @@ function parse_size_args(args::Vector{String})
         elseif arg == "--mem-headroom"
             mem_headroom = parse(Float64, cli_take_value!(c, arg))
         elseif arg == "--master-gb"
-            master_gb = parse(Float64, cli_take_value!(c, arg))
+            throw(ArgumentError("size: use `--parent-gb N`, not `--master-gb`"))
+        elseif arg == "--parent-gb"
+            parent_gb = parse(Float64, cli_take_value!(c, arg))
         elseif !startswith(arg, "-")
             let p = parse_placement_token(arg)
                 push!(hosts, p.role === :parent ? PARENT_HOST_NAME : p.name)
@@ -105,7 +107,7 @@ function parse_size_args(args::Vector{String})
     end
 
     append_kit_host_sources!(hosts, cli_session; keep_counts=false, roles=true)
-    include_local = _size_absorb_parent_hosts!(hosts, include_local)
+    include_parent = _size_absorb_parent_hosts!(hosts, include_parent)
     apply_kit_cli_session!(cli_session)
 
     if probe === nothing
@@ -120,8 +122,8 @@ function parse_size_args(args::Vector{String})
         gb_per_worker=gb_per_worker,
         probe=probe,
         mem_headroom=mem_headroom,
-        master_gb=master_gb,
-        include_local=include_local,
+        parent_gb=parent_gb,
+        include_parent=include_parent,
         hosts=hosts,
     )
 end

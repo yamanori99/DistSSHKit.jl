@@ -29,7 +29,7 @@ using Test
     @test :terminate! in ns && :terminate_run! in ns
     @test :parse_go_args in ns && :parse_drive_args in ns
     @test :execute_kwargs_from_parsed in ns
-    @test :show_go_usage in ns && :show_drive_requirements in ns
+    @test :show_go_usage in ns && :show_drive_usage in ns
     @test :println_kit_version in ns && :ssh_opts in ns
     @test :resolve_remote_julia in ns && :resolve_controller_julia in ns
     @test :run_on_host in ns
@@ -42,9 +42,9 @@ using Test
     @test :_print_colored ∉ ns
     @test DistSSHKit._print_colored === DistSSHKit.print_colored
     @test :parse_worker_tokens in ns && :ParsedWorkerTokens in ns
-    @test :worker_tokens_fully_specified in ns && :remote_hosts_from_tokens in ns
+    @test :worker_tokens_fully_specified in ns && :child_hosts_from_tokens in ns
     @test :worker_plan_from_tokens in ns
-    @test :split_worker_token in ns && :is_local_host_name in ns && :host_tokens in ns
+    @test :split_worker_token in ns && :is_parent_host_name in ns && :host_tokens in ns
     @test :size_plan ∉ ns && :go ∉ ns && :drive ∉ ns
     @test isdefined(DistSSHKit, :go) && isdefined(DistSSHKit, :drive)
     @test !isdefined(DistSSHKit, :size_plan)

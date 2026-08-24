@@ -9,13 +9,13 @@ mutable struct KitSession
     quiet::Bool
     verbosity::Symbol
     yes::Bool
-    include_local_for_size::Bool
+    include_parent_for_size::Bool
     cli_session::KitCliSession
 end
 
 """
     KitSession(; project=pwd(), workers=[], remote=nothing, hosts_file=nothing,
-               quiet=false, verbosity=nothing, yes=true, include_local_for_size=false)
+               quiet=false, verbosity=nothing, yes=true, include_parent_for_size=false)
 
 Build a session for drive APIs. `workers` are CLI-style tokens
 (`parent:2`, `child:user@host:1`). Omitted `:N` is filled by `-w` or [`size!`](@ref).
@@ -38,7 +38,7 @@ function KitSession(;
     quiet::Bool=false,
     verbosity::Union{Nothing,Symbol}=nothing,
     yes::Bool=true,
-    include_local_for_size::Bool=false,
+    include_parent_for_size::Bool=false,
 )
     tokens = String[String(h) for h in workers]
     hf = if hosts_file !== nothing
@@ -63,19 +63,19 @@ function KitSession(;
         end
     end
     parsed = parse_worker_tokens(tokens)
-    include_local = include_local_for_size || parsed.local_autosize
+    include_parent = include_parent_for_size || parsed.parent_autosize
     proj = canonical_local_path(project)
     rr = remote === nothing ? nothing : String(strip(String(remote)))
     rr !== nothing && isempty(rr) && (rr = nothing)
     return KitSession(
         proj,
-        copy(parsed.remote_hosts),
+        copy(parsed.child_hosts),
         parsed.tokens,
         rr,
         cli.quiet,
         cli.verbosity,
         yes,
-        include_local,
+        include_parent,
         cli,
     )
 end
@@ -112,11 +112,11 @@ end
 """Explain surface for this session (`:cli` or `:api`)."""
 hint_surface(session::KitSession)::Symbol = session.cli_session.hint_surface
 
-"""SSH host names used for [`size!`](@ref) (`parent` first when `include_local_for_size`)."""
+"""SSH host names used for [`size!`](@ref) (`parent` first when `include_parent_for_size`)."""
 function session_size_hosts(session::KitSession)::Tuple{Vector{String},Vector{String}}
-    remote_hosts = copy(session.hosts)
-    if session.include_local_for_size
-        return [PARENT_HOST_NAME; remote_hosts], remote_hosts
+    child_hosts = copy(session.hosts)
+    if session.include_parent_for_size
+        return [PARENT_HOST_NAME; child_hosts], child_hosts
     end
-    return remote_hosts, remote_hosts
+    return child_hosts, child_hosts
 end

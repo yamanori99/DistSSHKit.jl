@@ -316,12 +316,12 @@ end
 
 """
     host_tokens(hosts::AbstractVector{<:AbstractString}) -> Vector{String}
-    host_tokens(hosts::AbstractVector{Tuple{String,Union{Int,Nothing}}}; local_workers=0)
+    host_tokens(hosts::AbstractVector{Tuple{String,Union{Int,Nothing}}}; parent_workers=0)
     host_tokens(parsed; kind::Symbol) -> Vector{String}
 
 Rebuild CLI host tokens for [`execute!`](@ref).
 
-Go tokens are the parser strings. Drive tuples plus `local_workers` emit
+Go tokens are the parser strings. Drive tuples plus `parent_workers` emit
 `parent:N` then `child:NAME[:N]`; omitted counts stay omitted (no invented `:1`).
 `kind` must be `:go` or `:drive`.
 """
@@ -331,10 +331,10 @@ end
 
 function host_tokens(
     hosts::AbstractVector{Tuple{String,Union{Int,Nothing}}};
-    local_workers::Integer=0,
+    parent_workers::Integer=0,
 )::Vector{String}
     specs = String[]
-    lw = Int(local_workers)
+    lw = Int(parent_workers)
     lw > 0 && push!(specs, format_placement_token(:parent, PARENT_HOST_NAME, lw))
     for pair in hosts
         host = pair[1]
@@ -350,7 +350,7 @@ function host_tokens(parsed; kind::Symbol)::Vector{String}
     elseif kind === :drive
         return host_tokens(
             parsed.hosts::AbstractVector{Tuple{String,Union{Int,Nothing}}};
-            local_workers=parsed.local_workers,
+            parent_workers=parsed.parent_workers,
         )
     end
     throw(ArgumentError("host_tokens: kind must be :go or :drive, got $(repr(kind))"))

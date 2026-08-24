@@ -5,19 +5,19 @@ using Test
 
 @testset "size" begin
     @testset "size_worker_count" begin
-        @test DistSSHKit.size_worker_count(16.0, 8, 2.0; mem_headroom=0.75, master_gb=0.4, is_parenthost=true) ==
+        @test DistSSHKit.size_worker_count(16.0, 8, 2.0; mem_headroom=0.75, parent_gb=0.4, is_parent=true) ==
             min(max(0, floor(Int, (16.0 * 0.75 - 0.4) / 2.0)), max(1, 8 - 2))
-        @test DistSSHKit.size_worker_count(16.0, 8, 2.0; mem_headroom=0.75, master_gb=0.4, is_parenthost=false) ==
+        @test DistSSHKit.size_worker_count(16.0, 8, 2.0; mem_headroom=0.75, parent_gb=0.4, is_parent=false) ==
             min(max(0, floor(Int, (16.0 * 0.75) / 2.0)), max(1, 8 - 1))
-        @test DistSSHKit.size_worker_count(1.0, 4, 2.0; is_parenthost=false) == 0
+        @test DistSSHKit.size_worker_count(1.0, 4, 2.0; is_parent=false) == 0
         # CPU reserve on localhost with 2 cores → max(1, 0) = 1 caps the result.
-        @test DistSSHKit.size_worker_count(32.0, 2, 1.0; is_parenthost=true) == 1
-        @test DistSSHKit.size_worker_count(16.0, 8, 2.0; mem_headroom=0.0, master_gb=0.4, is_parenthost=true) == 0
-        @test DistSSHKit.size_worker_count(16.0, 8, 2.0; mem_headroom=0.5, master_gb=0.4, is_parenthost=true) <
-            DistSSHKit.size_worker_count(16.0, 8, 2.0; mem_headroom=0.75, master_gb=0.4, is_parenthost=true)
-        ram_only = DistSSHKit.size_worker_count(32.0, nothing, 1.0; is_parenthost=true)
-        @test ram_only == max(0, floor(Int, (32.0 * DistSSHKit.DEFAULT_MEM_HEADROOM - DistSSHKit.DEFAULT_MASTER_GB) / 1.0))
-        @test ram_only > DistSSHKit.size_worker_count(32.0, 2, 1.0; is_parenthost=true)
+        @test DistSSHKit.size_worker_count(32.0, 2, 1.0; is_parent=true) == 1
+        @test DistSSHKit.size_worker_count(16.0, 8, 2.0; mem_headroom=0.0, parent_gb=0.4, is_parent=true) == 0
+        @test DistSSHKit.size_worker_count(16.0, 8, 2.0; mem_headroom=0.5, parent_gb=0.4, is_parent=true) <
+            DistSSHKit.size_worker_count(16.0, 8, 2.0; mem_headroom=0.75, parent_gb=0.4, is_parent=true)
+        ram_only = DistSSHKit.size_worker_count(32.0, nothing, 1.0; is_parent=true)
+        @test ram_only == max(0, floor(Int, (32.0 * DistSSHKit.DEFAULT_MEM_HEADROOM - DistSSHKit.DEFAULT_PARENT_GB) / 1.0))
+        @test ram_only > DistSSHKit.size_worker_count(32.0, 2, 1.0; is_parent=true)
     end
 
     @testset "rss_bytes_to_worker_gb" begin
@@ -35,7 +35,7 @@ using Test
                 DistSSHKit.canonical_local_path(p)
             @test DistSSHKit.resolve_host_path_abs("parent", joinpath(p, "sub"), p) ==
                 DistSSHKit.canonical_local_path(joinpath(p, "sub"))
-            @test !DistSSHKit.is_local_host_name("localhost")
+            @test !DistSSHKit.is_parent_host_name("localhost")
         end
     end
 
@@ -60,18 +60,18 @@ using Test
             local_nproc,
             pw;
             mem_headroom=0.75,
-            master_gb=0.4,
-            is_parenthost=true,
+            parent_gb=0.4,
+            is_parent=true,
         )
         plan = DistSSHKit.compute_worker_plan(
             ["parent"],
             String[],
             Dict("parent" => pw);
             mem_headroom=0.75,
-            master_gb=0.4,
+            parent_gb=0.4,
         )
-        @test plan.local_workers == expected
-        @test isempty(plan.remote_workers)
+        @test plan.parent_workers == expected
+        @test isempty(plan.child_workers)
     end
 
     @testset "size! with gb_per_worker" begin
@@ -79,15 +79,15 @@ using Test
             session = DistSSHKit.KitSession(
                 project=tmp,
                 workers=String[],
-                include_local_for_size=true,
+                include_parent_for_size=true,
                 quiet=true,
             )
             plan = with_kit_verbosity(:progress) do
                 DistSSHKit.size!(session; gb_per_worker=2.0)
             end
             local_total, local_nproc = DistSSHKit.get_local_resources()
-            @test plan.local_workers == DistSSHKit.size_worker_count(
-                local_total, local_nproc, 2.0; is_parenthost=true,
+            @test plan.parent_workers == DistSSHKit.size_worker_count(
+                local_total, local_nproc, 2.0; is_parent=true,
             )
         end
     end
@@ -99,12 +99,12 @@ using Test
         @test DistSSHKit.effective_worker_gb(s) == 2.0
         local_total, local_nproc = DistSSHKit.get_local_resources()
         expected = DistSSHKit.size_worker_count(
-            local_total, local_nproc, 2.0; is_parenthost=true,
+            local_total, local_nproc, 2.0; is_parent=true,
         )
         plan = DistSSHKit.compute_worker_plan(
             ["parent"], String[], DistSSHKit.per_worker_gb_dict(Dict("parent" => s)),
         )
-        @test plan.local_workers == expected
+        @test plan.parent_workers == expected
     end
 
     @testset "WorkerMemorySample effective" begin
@@ -121,8 +121,8 @@ using Test
             gb_per_worker=1.5,
             probe=nothing,
             mem_headroom=DistSSHKit.DEFAULT_MEM_HEADROOM,
-            master_gb=DistSSHKit.DEFAULT_MASTER_GB,
-            include_local=true,
+            parent_gb=DistSSHKit.DEFAULT_PARENT_GB,
+            include_parent=true,
             hosts=String[],
         )
         mktemp() do path, io
@@ -148,17 +148,17 @@ using Test
             gb_per_worker=pw,
             probe=nothing,
             mem_headroom=DistSSHKit.DEFAULT_MEM_HEADROOM,
-            master_gb=DistSSHKit.DEFAULT_MASTER_GB,
-            include_local=true,
+            parent_gb=DistSSHKit.DEFAULT_PARENT_GB,
+            include_parent=true,
             hosts=String[],
         )
         samples = Dict("parent" => DistSSHKit.WorkerMemorySample(pw, pw))
         plan = DistSSHKit.compute_worker_plan(
             ["parent"], String[], Dict("parent" => pw);
             mem_headroom=DistSSHKit.DEFAULT_MEM_HEADROOM,
-            master_gb=DistSSHKit.DEFAULT_MASTER_GB,
+            parent_gb=DistSSHKit.DEFAULT_PARENT_GB,
         )
-        @test plan.local_workers == 0
+        @test plan.parent_workers == 0
         mktemp() do path, io
             redirect_stdout(io) do
                 DistSSHKit.print_size_report(["parent"], String[], samples, opts)
@@ -186,7 +186,7 @@ using Test
     @testset "measure_rss missing probe throws" begin
         _with_tempdir() do tmp
             @test_throws ArgumentError DistSSHKit.measure_rss(
-                tmp, String[]; include_local=true, probe="missing_warmup.jl",
+                tmp, String[]; include_parent=true, probe="missing_warmup.jl",
             )
         end
     end

@@ -563,7 +563,7 @@ function resolve_host_path_abs(
 )::Union{Nothing,String}
     path_local = canonical_local_path(local_abs)
     h = String(strip(host))
-    is_local_host_name(h) && return path_local
+    is_parent_host_name(h) && return path_local
     mapped = remote_path_for_ssh_collect(path_local, local_repo_root)
     return resolve_remote_abs_path_on_host(h, mapped)
 end

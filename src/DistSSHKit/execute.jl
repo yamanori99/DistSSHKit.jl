@@ -15,7 +15,7 @@ const _EXECUTE_DETACHED_KW = Set{Symbol}((
     :require_all_hosts,
     :skip_hash_check,
     :mem_headroom,
-    :master_gb,
+    :parent_gb,
     :workers,
     :stdout,
     :stderr,
@@ -28,7 +28,7 @@ const _EXECUTE_DETACHED_DRIVE_ONLY = (
     :require_all_hosts,
     :skip_hash_check,
     :mem_headroom,
-    :master_gb,
+    :parent_gb,
     :workers,
 )
 const _EXECUTE_DETACHED_ENV_SKIP = Set((
@@ -98,7 +98,7 @@ function execute_kwargs_from_parsed(parsed; kind::Symbol)::Dict{Symbol,Any}
     kw[:require_all_hosts] = parsed.require_all_hosts
     kw[:skip_hash_check] = parsed.skip_hash_check
     kw[:mem_headroom] = parsed.mem_headroom
-    kw[:master_gb] = parsed.master_gb
+    kw[:parent_gb] = parsed.parent_gb
     dw = parsed.default_workers
     dw === nothing || (kw[:workers] = Int(dw))
     return kw
@@ -229,7 +229,7 @@ verbatim to the chosen function.
 [`KitProcess`](@ref). Keywords are then an allow-list (unknown names throw):
 `output_dir`, `args`, `project`, `sync`, `julia`, `quiet`, `verbosity`, `yes`,
 `remote`, `hosts_file`, `job_id`, and drive-only `log_dir`, `enable_log`,
-`package`, `require_all_hosts`, `skip_hash_check`, `mem_headroom`, `master_gb`,
+`package`, `require_all_hosts`, `skip_hash_check`, `mem_headroom`, `parent_gb`,
 `workers`. `yes` must be `true` (the
 default): an unattended child cannot answer a prompt. Child stdio defaults to
 `kit.out` / `kit.err` in `output_dir`. Pass `stdout` / `stderr` (`IO`) to
@@ -333,7 +333,7 @@ function _execute_detached!(
     require_all_hosts = get(kwargs, :require_all_hosts, false)
     skip_hash_check = get(kwargs, :skip_hash_check, true)
     mem_headroom = get(kwargs, :mem_headroom, nothing)
-    master_gb = get(kwargs, :master_gb, nothing)
+    parent_gb = get(kwargs, :parent_gb, nothing)
     workers = get(kwargs, :workers, nothing)
     if workers !== nothing
         (workers isa Integer && !(workers isa Bool)) || throw(ArgumentError(
@@ -373,7 +373,7 @@ function _execute_detached!(
         require_all_hosts=require_all_hosts,
         skip_hash_check=skip_hash_check,
         mem_headroom=mem_headroom,
-        master_gb=master_gb,
+        parent_gb=parent_gb,
         workers=workers,
     )
     extra = Dict{String,String}("DISTRIBUTED_PROJECT_ROOT" => proj)
@@ -1017,7 +1017,7 @@ function _execute_detached_argv(
     require_all_hosts,
     skip_hash_check,
     mem_headroom=nothing,
-    master_gb=nothing,
+    parent_gb=nothing,
     workers=nothing,
 )::Vector{String}
     argv = String[String(kind)]
@@ -1062,8 +1062,8 @@ function _execute_detached_argv(
         if mem_headroom !== nothing
             push!(argv, "--mem-headroom", string(Float64(mem_headroom)))
         end
-        if master_gb !== nothing
-            push!(argv, "--master-gb", string(Float64(master_gb)))
+        if parent_gb !== nothing
+            push!(argv, "--parent-gb", string(Float64(parent_gb)))
         end
         if workers !== nothing
             push!(argv, "--workers", string(Int(workers)))

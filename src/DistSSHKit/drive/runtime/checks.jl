@@ -1,5 +1,5 @@
 using .DistSSHKit:
-    DEFAULT_MASTER_GB,
+    DEFAULT_PARENT_GB,
     DEFAULT_MEM_HEADROOM,
     PARENT_HOST_NAME,
     WORKER_MEMORY_GB_FALLBACK,
@@ -36,14 +36,14 @@ function estimate_available_gb()
 end
 
 function check_memory_capacity(
-    local_workers::Int,
+    parent_workers::Int,
     hosts::Vector{Tuple{String,Union{Int,Nothing}}},
     default_workers::Union{Int,Nothing};
     mem_headroom::Real=DEFAULT_MEM_HEADROOM,
-    master_gb::Real=DEFAULT_MASTER_GB,
+    parent_gb::Real=DEFAULT_PARENT_GB,
 )::Bool
     frac = Float64(mem_headroom)
-    mgb = Float64(master_gb)
+    mgb = Float64(parent_gb)
     per_worker = estimate_worker_memory_gb()
     r(x) = round(x, digits=1)
     writeln_both("Checking memory capacity...")
@@ -55,7 +55,7 @@ function check_memory_capacity(
         n_workers::Int,
         total_gb,
         nproc;
-        is_parenthost::Bool=false,
+        is_parent::Bool=false,
     )
         if total_gb === nothing
             writeln_both("  $label: (memory check failed)")
@@ -66,8 +66,8 @@ function check_memory_capacity(
             nproc,
             per_worker;
             mem_headroom=frac,
-            master_gb=mgb,
-            is_parenthost=is_parenthost,
+            parent_gb=mgb,
+            is_parent=is_parent,
         )
         pct = round(Int, frac * 100)
         if n_workers > cap
@@ -82,9 +82,9 @@ function check_memory_capacity(
         end
     end
 
-    if local_workers > 0
+    if parent_workers > 0
         res = get_local_resources()
-        check_host(PARENT_HOST_NAME, local_workers, res.total_gb, res.nproc; is_parenthost=true)
+        check_host(PARENT_HOST_NAME, parent_workers, res.total_gb, res.nproc; is_parent=true)
     end
 
     host_totals = Dict{String,Int}()
@@ -99,7 +99,7 @@ function check_memory_capacity(
             host_workers,
             get_remote_total_gb(host_name),
             get_remote_nproc(host_name);
-            is_parenthost=false,
+            is_parent=false,
         )
     end
     writeln_both("")

@@ -1,17 +1,17 @@
 using Test
 
 @testset "hosts helpers" begin
-    @testset "is_local_host_name" begin
-        @test DistSSHKit.is_local_host_name("parent")
-        @test !DistSSHKit.is_local_host_name("local")
-        @test !DistSSHKit.is_local_host_name("localhost")
-        @test !DistSSHKit.is_local_host_name("l")
-        @test !DistSSHKit.is_local_host_name("root@192.0.2.10")
-        @test !DistSSHKit.is_local_host_name("worker-node-a")
-        @test DistSSHKit.parse_worker_tokens(["parent:1"]).local_workers == 1
+    @testset "is_parent_host_name" begin
+        @test DistSSHKit.is_parent_host_name("parent")
+        @test !DistSSHKit.is_parent_host_name("local")
+        @test !DistSSHKit.is_parent_host_name("localhost")
+        @test !DistSSHKit.is_parent_host_name("l")
+        @test !DistSSHKit.is_parent_host_name("root@192.0.2.10")
+        @test !DistSSHKit.is_parent_host_name("worker-node-a")
+        @test DistSSHKit.parse_worker_tokens(["parent:1"]).parent_workers == 1
         let p = DistSSHKit.parse_worker_tokens(["child:localhost:1"])
-            @test p.local_workers == 0
-            @test p.remote_workers == Dict("localhost" => 1)
+            @test p.parent_workers == 0
+            @test p.child_workers == Dict("localhost" => 1)
         end
         @test DistSSHKit.parse_placement_token("parent:2") ==
             (role=:parent, name="parent", n=2)

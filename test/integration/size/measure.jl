@@ -13,7 +13,7 @@ using Distributed
         probe = joinpath(tmp, "warmup.jl")
         # ~8 MiB allocation — may or may not move rounded GB; peak >= baseline still holds.
         write(probe, "const _SIZE_WARMUP = zeros(Float64, 1_000_000)\n")
-        samples = DistSSHKit.measure_rss(tmp, String[]; include_local=true, probe=probe)
+        samples = DistSSHKit.measure_rss(tmp, String[]; include_parent=true, probe=probe)
         @test haskey(samples, "parent")
         s = samples["parent"]
         @test s.baseline_gb >= DistSSHKit.WORKER_MEMORY_GB_FLOOR
@@ -30,7 +30,7 @@ end
         addprocs(1; topology=:master_worker)
         pre = workers()[end]
         try
-            DistSSHKit.measure_rss(tmp, String[]; include_local=true)
+            DistSSHKit.measure_rss(tmp, String[]; include_parent=true)
             @test pre in workers()
         finally
             pre in workers() && rmprocs(pre; waitfor=2.0)
@@ -38,13 +38,13 @@ end
     end
 end
 
-@testset "measure_rss removes its probe worker even when hosts is empty and include_local=false" begin
+@testset "measure_rss removes its probe worker even when hosts is empty and include_parent=false" begin
     _with_tempdir() do tmp
         write(joinpath(tmp, "Project.toml"), "name = \"ProbeNone\"\nuuid = \"33333333-3333-3333-3333-333333333333\"\nversion = \"0.0.1\"\n")
         mkdir(joinpath(tmp, "src"))
         write(joinpath(tmp, "src", "ProbeNone.jl"), "module ProbeNone\nend\n")
         before = Set(workers())
-        samples = DistSSHKit.measure_rss(tmp, String[]; include_local=false)
+        samples = DistSSHKit.measure_rss(tmp, String[]; include_parent=false)
         @test isempty(samples)
         # No probe worker requested: nothing added, nothing to remove.
         @test Set(workers()) == before
@@ -57,7 +57,7 @@ end
         mkdir(joinpath(tmp, "src"))
         write(joinpath(tmp, "src", "ProbeLone.jl"), "module ProbeLone\nend\n")
         @test nprocs() == 1
-        DistSSHKit.measure_rss(tmp, String[]; include_local=false)
+        DistSSHKit.measure_rss(tmp, String[]; include_parent=false)
         # No addprocs happened here, so the master must never be touched by
         # `_rmprocs_measure_probes!` (regression: it used to be possible to
         # target the whole cluster instead of just the probes it added).
@@ -71,7 +71,7 @@ end
         # No Project.toml / package: probe still gets added and must still be
         # removed by the `finally` in `measure_rss`, even though sampling fails.
         before = Set(workers())
-        samples = DistSSHKit.measure_rss(tmp, String[]; include_local=true)
+        samples = DistSSHKit.measure_rss(tmp, String[]; include_parent=true)
         @test haskey(samples, "parent")
         @test Set(workers()) == before
     end
