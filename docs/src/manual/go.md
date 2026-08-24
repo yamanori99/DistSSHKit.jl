@@ -95,6 +95,16 @@ detected as stale (dead pid) and reclaimed automatically. Since the default
 batch root already includes a UTC timestamp, this mainly matters when you
 pass an explicit `--output-dir` / `output_dir=`.
 
+## `job_id`
+
+`execute!(:go, …; job_id=)` and `ENV["DISTSSHKIT_JOB_ID"]` tag each slot so
+[`terminate!`](@ref) / [`terminate_run!`](@ref) can `pkill -f distsshkit-job:<id>`
+without matching other Julias. The tag is a no-op `-L` file named
+`distsshkit-job:<id>` in the slot directory; the user script remains
+`PROGRAM_FILE` with the usual `ARGS`. Drive workers use a comment-only
+`--eval=#distsshkit-job:<id>` instead (Distributed starts the worker; the
+driver `include`s later). Unset `job_id`: no tag. Details: [API](@ref API).
+
 ## Hosts
 
 CLI tokens, `--hosts`, `--hosts-file`, and/or `DISTSSHKIT_HOSTS`. `parent:0` skips parent
