@@ -164,6 +164,50 @@ using Dates
             "julia",
         )
         @test occursin("julia --project=. job.jl 8 " * Base.shell_escape("a b"), with_args)
+
+        withenv("DISTSSHKIT_JOB_ID" => "repro-1") do
+            tagged = DistSSHKit._go_remote_slot_shell_inner(
+                "~/proj",
+                "slot",
+                "job.jl",
+                String[],
+                "julia",
+            )
+            @test occursin(" -L ", tagged)
+            @test occursin("distsshkit-job:repro-1", tagged)
+            @test occursin("printf '%s\\n' '#distsshkit-job:repro-1'", tagged)
+            @test !occursin("--eval=", tagged)
+            @test !occursin("include(popfirst!(ARGS))", tagged)
+        end
+    end
+
+    @testset "job_id slot programfile + ARGS" begin
+        _with_tempdir() do d
+            write(joinpath(d, "Project.toml"), "[deps]\n")
+            mark = joinpath(d, "RAN")
+            argsf = joinpath(d, "ARGS")
+            envf = joinpath(d, "ENVJOB")
+            progf = joinpath(d, "PROGRAM")
+            script = joinpath(d, "mark.jl")
+            write(script, """
+                write($(repr(mark)), "yes")
+                write($(repr(argsf)), join(ARGS, '\\n'))
+                write($(repr(envf)), get(ENV, "DISTSSHKIT_JOB_ID", ""))
+                write($(repr(progf)), PROGRAM_FILE)
+                """)
+            slot = joinpath(d, "slot")
+            withenv("DISTSSHKIT_JOB_ID" => "repro-1") do
+                r = DistSSHKit._go_run_local_slot!(
+                    d, script, ["a", "b c"], slot; quiet=true,
+                )
+                @test r.ok
+            end
+            @test isfile(mark)
+            @test split(read(argsf, String), '\n'; keepempty=false) == ["a", "b c"]
+            @test strip(read(envf, String)) == "repro-1"
+            @test abspath(strip(read(progf, String))) == abspath(script)
+            @test isfile(joinpath(slot, DistSSHKit.kit_job_pkill_pattern("repro-1")))
+        end
     end
 
     @testset "report_go_errors" begin

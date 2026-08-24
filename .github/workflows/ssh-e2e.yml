@@ -58,7 +58,7 @@ jobs:
         if: steps.gate.outputs.e2e == 'true'
         id: julia
         with:
-          slot: min
+          slot: max
       - name: Julia ${{ steps.julia.outputs.version }}
         if: steps.gate.outputs.e2e == 'true'
         run: julia --version

@@ -27,9 +27,10 @@ From this directory (kit root also works if you keep the path):
 ./scripts/down.sh
 ```
 
-First `up.sh` runs `container system start` and, if needed, builds
-`local/linux-ssh-worker:latest` from [`../docker-ssh/Dockerfile`](../docker-ssh/Dockerfile).
-Every run removes and recreates `worker-1` / `worker-2` (fresh state each time).
+Each `up.sh` runs `container system start` and rebuilds
+`local/linux-ssh-worker:latest` from [`../docker-ssh/Dockerfile`](../docker-ssh/Dockerfile)
+(layer cache if the file is unchanged). Then it removes and recreates
+`worker-1` / `worker-2`.
 Keys come from `docker-ssh/scripts/gen-keys.sh` (mounted from
 `docker-ssh/mounted-keys`).
 

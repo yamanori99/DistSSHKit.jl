@@ -25,7 +25,7 @@ macOS, Linux, or WSL2 Ubuntu. Not native Windows (the kit shells out to `ssh` / 
 | What | Need |
 | --- | --- |
 | Library, `Pkg.test()`, `julia -m DistSSHKit`, docs | Julia **1.12+** |
-| SSH | Git, OpenSSH, rsync. Match remote **major.minor** (E2E workers = slot **min**) |
+| SSH | Git, OpenSSH, rsync. Match remote **major.minor** (E2E workers = slot **max**) |
 
 Prefer [juliaup](https://github.com/JuliaLang/juliaup). Details: [Requirements](https://yamanori99.github.io/DistSSHKit.jl/dev/requirements/).
 
@@ -82,17 +82,17 @@ Exactly three pins, in [`.github/julia-slots.env`](.github/julia-slots.env). Do 
 
 | Slot | Role | Required |
 | --- | --- | --- |
-| **min** | `Project.toml` julia floor. Pkg.test (no coverage), Aqua, JETLS, Documenter, bake, PR E2E, GHCR worker | yes |
-| **max** | Newest tagged or prerelease (`versions.json`). Pkg.test, Aqua. Codecov `pkgtest` on **main push** only | yes |
+| **min** | `Project.toml` julia floor. Pkg.test (no coverage), Aqua, JETLS, Documenter, bake | yes |
+| **max** | Newest tagged or prerelease (`versions.json`). Pkg.test, Aqua, PR / daily E2E, GHCR worker. Codecov `pkgtest` on **main push** only | yes |
 | **tip** | Next-minor nightly. Pkg.test, Aqua. `continue-on-error` | no |
 
 JETLS is min plus `JULIA_SLOT_JETLS_MAX` (job name still `JETLS - max`). That pin lags when `max` / `tip` move past what JETLS lists (today 1.12.2–1.13). Raise it only after JETLS supports that runtime. No JETLS **tip**.
 
-When a new RC lands, change `JULIA_SLOT_MAX` only. When bumping compat, raise `JULIA_SLOT_MIN` (and the worker Dockerfile / WSL `--default-channel`) in the same PR.
+When a new RC lands, change `JULIA_SLOT_MAX` only. If that RC is a new **major.minor**, bump the worker Dockerfile / WSL `--default-channel` in the same PR (E2E pair). When bumping compat, raise `JULIA_SLOT_MIN` only.
 
 ### PR CI
 
-Ubuntu: `Pkg.test` min / max / tip, JETLS min / max, Aqua min / max / tip, Documenter min, Gitleaks. Linux E2E (min) runs if `src/`, `test/`, `demos/`, `testenv/`, `Project.toml`, or the E2E workflow changed.
+Ubuntu: `Pkg.test` min / max / tip, JETLS min / max, Aqua min / max / tip, Documenter min, Gitleaks. Linux E2E (max) runs if `src/`, `test/`, `demos/`, `testenv/`, `Project.toml`, or the E2E workflow changed.
 
 These files **alone** skip the heavy steps (job still starts; Pkg.test / JETLS / Aqua / Documenter do not run):
 

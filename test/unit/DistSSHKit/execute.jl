@@ -413,9 +413,11 @@ using Test
         _with_tempdir() do proj
             write(joinpath(proj, "Project.toml"), "name = \"ExecuteGoJobId\"\n")
             script = joinpath(proj, "job.jl")
+            ran = joinpath(proj, "RAN")
             write(script, """
                 out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", ".")
                 mkpath(out)
+                write($(repr(ran)), "yes")
                 """)
             mktemp() do _, out_io
                 mktemp() do _, err_io
@@ -440,6 +442,7 @@ using Test
                     @test !isempty(log_files)
                     log_body = read(joinpath(result.output_dir, first(log_files)), String)
                     @test occursin("job=q-1", log_body)
+                    @test isfile(ran)
                 end
             end
         end
@@ -472,7 +475,15 @@ using Test
         withenv("DISTSSHKIT_JOB_ID" => nothing) do
             @test DistSSHKit.resolved_kit_job_id() === nothing
         end
-        @test occursin("distsshkit-job:q-1", DistSSHKit.kit_job_eval_arg("q-1"))
+        @test DistSSHKit.kit_job_eval_arg("q-1") == "--eval=#distsshkit-job:q-1"
+        @test DistSSHKit.kit_job_mark_comment("q-1") == "#distsshkit-job:q-1"
+        @test !occursin("include(", DistSSHKit.kit_job_eval_arg("q-1"))
+        @test !occursin("ENV[", DistSSHKit.kit_job_eval_arg("q-1"))
+        mktempdir() do d
+            p = DistSSHKit.kit_write_job_mark_file(d, "q-1")
+            @test basename(p) == "distsshkit-job:q-1"
+            @test read(p, String) == "#distsshkit-job:q-1\n"
+        end
         err = try
             DistSSHKit._parse_kit_job_id("has space")
             nothing

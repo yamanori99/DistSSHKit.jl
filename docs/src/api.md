@@ -265,9 +265,10 @@ Without `job_id`, only the child pid is signaled.
   `:log_dir` / `:mem_headroom` / `:parent_gb` / `:workers` are drive-only;
   `:plan` is never accepted.
 - `job_id` (`execute!` keyword, or `ENV["DISTSSHKIT_JOB_ID"]` for in-process
-  `go!` / `drive!`): `job=<id>` on every `progress:` line, and a cmdline
-  mark on workers / go slots so [`terminate!`](@ref) can reap only this run.
-  Unset: tagging is off; teardown cannot be host-scoped.
+  `go!` / `drive!`): `job=<id>` on every `progress:` line. Drive workers get a
+  comment-only `--eval=#distsshkit-job:<id>`; go slots `-L` a no-op file of
+  that name so the user script stays `PROGRAM_FILE`. [`terminate!`](@ref)
+  `pkill`s that argv tag. Unset: tagging is off; teardown cannot be host-scoped.
 - `.kit.lock` in the resolved `output_dir`: a second run against the same
   directory raises `ArgumentError`. A lock left by a dead pid is reclaimed.
 

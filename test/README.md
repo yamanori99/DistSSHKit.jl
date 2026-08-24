@@ -109,7 +109,7 @@ DISTSSHKIT_CODE_COVERAGE=1 testenv/docker-ssh/scripts/up.sh --e2e
 | in-process `drive!` twice (reentrant) | each call `nw=2`; no worker leak (#144) |
 | detached drive SIGKILL | wait until heartbeat monitors start, then remote `--worker` gone (#148) |
 | `go pi_echo` | π on both hosts |
-| `go pi_file` | slot `pi_results.txt` after go collect |
+| `go pi_file` | slot `pi_results.txt` after go collect; `DISTSSHKIT_JOB_ID` set so remote `-L` mark is collected |
 | `go --output-dir` | `pi_results.txt` under the given batch root |
 | API | `setup!` / `go!(output_dir=)` / `pipeline!(collect=true)` on worker files |
 

@@ -30,7 +30,7 @@ Suite inventory (what each `@testset` proves): [`test/README.md`](../../test/REA
   is checked by reading `e2e_sync_marker.txt` on the workers.
   The rsync path still excludes `.git/` and does not claim parity.
 
-Worker image pins Julia to CI slot **min** (juliaup `--default-channel`, today **1.12**)
+Worker image pins Julia to CI slot **max** (juliaup `--default-channel`, today **1.13**)
 so `--check` can run **without** `--ignore-julia-version`. Pins live in
 [`.github/julia-slots.env`](../../.github/julia-slots.env). Install policy:
 [Requirements](https://yamanori99.github.io/DistSSHKit.jl/dev/requirements/).

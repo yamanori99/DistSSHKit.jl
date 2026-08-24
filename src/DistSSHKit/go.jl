@@ -355,7 +355,7 @@ function _go_run_local_slot!(
     argv = String[julia_bin, "--project=$(project)"]
     job_id = resolved_kit_job_id()
     if job_id !== nothing
-        push!(argv, kit_job_eval_arg(job_id))
+        push!(argv, "-L", kit_write_job_mark_file(slot_dir, job_id))
     end
     push!(argv, String(script))
     append!(argv, collect(String, script_args))
@@ -397,16 +397,24 @@ function _go_remote_slot_shell_inner(
     log_q = _remote_shell_path_word(joinpath(slot_rel, "julia.stdout.log"))
     job_id = resolved_kit_job_id()
     job_export = ""
-    job_eval = ""
+    job_load = ""
+    job_mark = ""
     if job_id !== nothing
+        mark_rel = joinpath(slot_rel, kit_job_pkill_pattern(job_id))
+        mark_q = _remote_shell_path_word(mark_rel)
+        # `#…` must be single-quoted: `_remote_shell_path_word` leaves it raw, and
+        # an unquoted word starting with `#` is a shell comment.
+        comment_q = "'" * kit_job_mark_comment(job_id) * "'"
         job_export = "export DISTSSHKIT_JOB_ID=$(_remote_shell_path_word(job_id)) && "
-        job_eval = " " * _remote_shell_path_word(kit_job_eval_arg(job_id))
+        job_mark = "printf '%s\\n' $comment_q > $mark_q && "
+        job_load = " -L $mark_q"
     end
     return string(
         "cd $rr && mkdir -p $slot_q && ",
         "export DISTRIBUTED_OUTPUT_DIR=$slot_q && ",
         job_export,
-        "$jb$job_eval --project=. $rel_q$args_s >$log_q 2>&1; ",
+        job_mark,
+        "$jb$job_load --project=. $rel_q$args_s >$log_q 2>&1; ",
         "ec=\$?; echo \$ec > $slot_q/go.exitcode; cat $log_q; exit \$ec",
     )
 end
