@@ -34,7 +34,7 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
   go slot logs) then the Time table. `julia -m DistSSHKit progress DIR`
   reprints the last run (`go` lists slots, not consecutive item deltas).
   Defaults for `DISTRIBUTED_INIT_DELAY_SEC` and
-  `DISTSSHKIT_JOBS` are unchanged; snapshot: [User Guide · drive](@ref Manual-drive).
+  `DISTSSHKIT_JOBS` are unchanged.
 - Demo / E2E / `execute!` watchers use [`kit_progress_latest`](@ref) on the
   run `output_dir` (`kit.progress` even with `--no-log`). Remote Julia reads
   in SSH E2E go through `run_on_host` (setup `test -e`, git, rsync stay raw ssh).

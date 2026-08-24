@@ -53,12 +53,9 @@ Pick **one mode** per invocation (except shared options).
 
 `--clone` / `--rsync` never overwrite a nonempty remote path; use `--delete`
 first to replace. `DISTSSHKIT_JOBS` (default 1) may rsync several hosts at once.
-Time a `--rsync` then `--instantiate` twice (cold vs warm) and `JOBS=1` vs
-`>1` on two hosts. Non-quiet setup and [`setup!`](@ref) print a Time table
-with a row per host (`rsync/host`, …). Replay with
-`julia -m DistSSHKit progress .distsshkit/setup`. Do not raise
-`DISTSSHKIT_JOBS` until that split is written next to the [drive](@ref Manual-drive)
-parenthost table.
+Non-quiet setup and [`setup!`](@ref) print a Time table with a row per host
+(`rsync/host`, …). Replay with
+`julia -m DistSSHKit progress .distsshkit/setup`.
 
 ## Remote path
 
