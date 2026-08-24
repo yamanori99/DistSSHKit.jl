@@ -38,45 +38,45 @@ function _parse_drive_flag_count(flag::String, args::Vector, i::Int)::Int
     end
 end
 
-function _drive_set_local_workers!(
-    local_workers::Int,
+function _drive_set_parent_workers!(
+    parent_workers::Int,
     count::Int,
     source::String,
 )::Int
-    local_workers > 0 &&
+    parent_workers > 0 &&
         throw(ArgumentError(
             "duplicate parent worker spec ($source); use one of $(PARENT_HOST_NAME):N",
         ))
     count < 1 &&
-        throw(ArgumentError("local worker count must be >= 1, got $count"))
+        throw(ArgumentError("parent worker count must be >= 1, got $count"))
     return count
 end
 
 function _drive_push_host_token!(
     hosts::Vector{Tuple{String,Union{Int,Nothing}}},
-    local_workers::Int,
+    parent_workers::Int,
     token::AbstractString,
     default_workers,
 )::Int
     p = parse_placement_token(String(token))
     if p.role === :parent
         n = p.n
-        n === 0 && return local_workers
+        n === 0 && return parent_workers
         count = something(n, default_workers, 1)
-        return _drive_set_local_workers!(
-            local_workers,
+        return _drive_set_parent_workers!(
+            parent_workers,
             count,
             String(token),
         )
     end
     push!(hosts, (p.name, p.n))
-    return local_workers
+    return parent_workers
 end
 
 """Parse `drive` CLI arguments (same shape as other kit CLI parsers)."""
 function parse_drive_args(args::Vector{String})
     cli_session, args = peel_kit_cli_flags(args)
-    local_workers = 0
+    parent_workers = 0
     default_workers = nothing
     julia_exe = nothing
     skip_hash_check = true  # default: no git parity; --require-git turns checks on
@@ -91,7 +91,7 @@ function parse_drive_args(args::Vector{String})
     require_all_hosts = _env_flag("DISTSSHKIT_REQUIRE_ALL_HOSTS")
     require_all_hosts_cli = false
     mem_headroom = DEFAULT_MEM_HEADROOM
-    master_gb = DEFAULT_MASTER_GB
+    parent_gb = DEFAULT_PARENT_GB
     hosts = Tuple{String,Union{Int,Nothing}}[]
     script_path = nothing
     script_args = String[]
@@ -156,8 +156,10 @@ function parse_drive_args(args::Vector{String})
         elseif arg == "--mem-headroom" && i < length(args)
             mem_headroom = parse(Float64, args[i+1])
             i += 2
-        elseif arg == "--master-gb" && i < length(args)
-            master_gb = parse(Float64, args[i+1])
+        elseif arg == "--master-gb" || startswith(arg, "--master-gb:")
+            throw(ArgumentError("drive: use `--parent-gb N`, not `--master-gb`"))
+        elseif arg == "--parent-gb" && i < length(args)
+            parent_gb = parse(Float64, args[i+1])
             i += 2
         elseif arg == "--no-log"
             enable_log = false
@@ -205,7 +207,7 @@ function parse_drive_args(args::Vector{String})
                 julia_exe = nothing
             end
             return (
-                local_workers=local_workers,
+                parent_workers=parent_workers,
                 default_workers=default_workers,
                 julia=julia_exe,
                 skip_hash_check=skip_hash_check,
@@ -226,11 +228,11 @@ function parse_drive_args(args::Vector{String})
                 cli_session=cli_session,
                 hint_surface=:cli,
                 mem_headroom=mem_headroom,
-                master_gb=master_gb,
+                parent_gb=parent_gb,
             )
         elseif arg == "--help" || arg == "-h"
             return (
-                local_workers=0,
+                parent_workers=0,
                 default_workers=nothing,
                 julia=nothing,
                 skip_hash_check=true,
@@ -251,7 +253,7 @@ function parse_drive_args(args::Vector{String})
                 cli_session=cli_session,
                 hint_surface=:cli,
                 mem_headroom=mem_headroom,
-                master_gb=master_gb,
+                parent_gb=parent_gb,
             )
         elseif endswith(arg, ".jl")
             script_path = arg
@@ -262,9 +264,9 @@ function parse_drive_args(args::Vector{String})
                 "unknown or incomplete drive option: $arg (use parent:N / child:NAME:N, e.g. parent:2 child:host1:4)",
             ))
         else
-            local_workers = _drive_push_host_token!(
+            parent_workers = _drive_push_host_token!(
                 hosts,
-                local_workers,
+                parent_workers,
                 arg,
                 default_workers,
             )
@@ -288,9 +290,9 @@ function parse_drive_args(args::Vector{String})
     end
 
     for tok in kit_host_source_tokens(cli_session; keep_counts=true)
-        local_workers = _drive_push_host_token!(
+        parent_workers = _drive_push_host_token!(
             hosts,
-            local_workers,
+            parent_workers,
             tok,
             default_workers,
         )
@@ -299,7 +301,7 @@ function parse_drive_args(args::Vector{String})
     apply_kit_cli_session!(cli_session)
 
     return (
-        local_workers=local_workers,
+        parent_workers=parent_workers,
         default_workers=default_workers,
         julia=julia_exe,
         skip_hash_check=skip_hash_check,
@@ -320,12 +322,12 @@ function parse_drive_args(args::Vector{String})
         cli_session=cli_session,
         hint_surface=:cli,
         mem_headroom=mem_headroom,
-        master_gb=master_gb,
+        parent_gb=parent_gb,
     )
 end
 
 """Print `drive --help` (same chrome as `julia -m DistSSHKit drive -h`)."""
-function show_drive_requirements(; io::IO=stdout)
+function show_drive_usage(; io::IO=stdout)
     print_help_chrome("DistSSHKit drive"; io=io)
     print_help_lines(io,
         "Driver + Distributed workers (pmap), then collect new files.",
@@ -357,7 +359,7 @@ function show_drive_requirements(; io::IO=stdout)
         "  $(KIT_TIME_HELP)",
         "  --julia PATH        remote Julia",
         "  --mem-headroom N    RAM fraction (default $(DEFAULT_MEM_HEADROOM); same as size)",
-        "  --master-gb N       master reserve (default $(DEFAULT_MASTER_GB); same as size)",
+        "  --parent-gb N       parent process reserve (default $(DEFAULT_PARENT_GB); same as size)",
         "  --no-log            skip drive_*.log",
         "  $(KIT_QUIET_FLAG_HELP)",
         "  $(KIT_PROGRESS_FLAG_HELP)",
@@ -390,5 +392,4 @@ function show_drive_requirements(; io::IO=stdout)
     )
 end
 
-show_drive_usage(; io::IO=stdout) = show_drive_requirements(; io)
-drive_help_text()::String = sprint(io -> show_drive_requirements(; io))
+drive_help_text()::String = sprint(io -> show_drive_usage(; io))

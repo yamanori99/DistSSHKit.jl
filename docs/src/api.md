@@ -83,6 +83,7 @@ quiet / progress / yes flags — same vocabulary as the CLI.
 `DriveResult.hosts` is one [`HostRunResult`](@ref) per host that joined as a
 worker (empty when no host-collection step ran). The same vector is in
 `kit.result` for a detached caller that only has `output_dir`.
+[`HostResult`](@ref) is the per-host row for setup / sync, not drive collect.
 
 ```@docs
 KitSession
@@ -117,22 +118,22 @@ private internals.
 
 `parse_worker_tokens` validates and classifies the grammar.
 `worker_tokens_fully_specified` says whether every token has an explicit `:N`.
-`remote_hosts_from_tokens` extracts only SSH host names.
+`child_hosts_from_tokens` extracts only SSH host names.
 `worker_plan_from_tokens` resolves to a concrete [`WorkerPlan`](@ref).
-`split_worker_token` and `is_local_host_name` are the low-level primitives
-(`is_local_host_name` is `parent` only).
+`split_worker_token` and `is_parent_host_name` are the low-level primitives
+(`is_parent_host_name` is `parent` only).
 `host_tokens(parsed; kind=:go|:drive)` rebuilds `execute!` token strings from
 `parse_go_args` / `parse_drive_args`. Go keeps parser
-strings; drive emits `parent:N` from `local_workers` and `child:NAME[:N]` for SSH.
+strings; drive emits `parent:N` from `parent_workers` and `child:NAME[:N]` for SSH.
 
 ```@docs
 parse_worker_tokens
 ParsedWorkerTokens
 worker_tokens_fully_specified
-remote_hosts_from_tokens
+child_hosts_from_tokens
 worker_plan_from_tokens
 split_worker_token
-is_local_host_name
+is_parent_host_name
 host_tokens
 ```
 
@@ -261,7 +262,7 @@ Without `job_id`, only the child pid is signaled.
 - [`execute_kwargs_from_parsed`](@ref): map `parse_go_args` /
   `parse_drive_args` onto detached `execute!` keywords. Hosts stay in
   [`host_tokens`](@ref); `:workers` is drive `--workers` when set.
-  `:log_dir` / `:mem_headroom` / `:master_gb` / `:workers` are drive-only;
+  `:log_dir` / `:mem_headroom` / `:parent_gb` / `:workers` are drive-only;
   `:plan` is never accepted.
 - `job_id` (`execute!` keyword, or `ENV["DISTSSHKIT_JOB_ID"]` for in-process
   `go!` / `drive!`): `job=<id>` on every `progress:` line, and a cmdline
@@ -280,7 +281,7 @@ exported so a rename is a Semver break, not a silent `DistSSHKit._…` change.
 parse_go_args
 parse_drive_args
 show_go_usage
-show_drive_requirements
+show_drive_usage
 println_kit_version
 ssh_opts
 resolve_remote_julia

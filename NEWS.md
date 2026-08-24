@@ -5,6 +5,18 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- **Breaking:** `is_parent_host_name` replaces `is_local_host_name`. Size / drive
+  RAM reserve is `parent_gb` / `--parent-gb` / `DEFAULT_PARENT_GB` (was
+  `master_gb` / `--master-gb`). `size_worker_count` takes `is_parent`.
+  `--master-gb` raises `ArgumentError`. [`WorkerPlan`](@ref) /
+  [`ParsedWorkerTokens`](@ref) use `parent_workers` / `child_workers` (was
+  `local_workers` / `remote_workers`). `include_parent` /
+  `include_parent_for_size` replace `include_local*`. `child_hosts_from_tokens`
+  replaces `remote_hosts_from_tokens`. `show_drive_usage` replaces
+  `show_drive_requirements`. Go slots are `:parent` / `:child`.
+  Filesystem [`canonical_local_path`](@ref), `execute!(…; remote=)` (project
+  path on the SSH host), [`HostResult`](@ref) vs [`HostRunResult`](@ref), and
+  `cleanup_remote_workers` are unchanged: they are not placement-role names.
 - **Breaking:** go/drive/size placement tokens are `parent[:N]` (Kit) and
   `child:NAME[:N]` (SSH). `parenthost` is removed. setup and collect-only
   still take bare SSH names. `-w` fills omitted `:N` on both. `kit.result`

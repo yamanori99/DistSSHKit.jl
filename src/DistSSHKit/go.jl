@@ -1,8 +1,8 @@
 # `go` — as-is complete job entry (setup assumed done; sync → exec → collect).
 
-"""One execution slot for [`go!`](@ref) (local or remote)."""
+"""One execution slot for [`go!`](@ref) (parent or child)."""
 struct GoSlot
-    kind::Symbol # :local | :remote
+    kind::Symbol # :parent | :child
     host::Union{Nothing,String}
     label::String
 end
@@ -46,7 +46,7 @@ end
 
 const _GO_IO_LOCK = ReentrantLock()
 
-_go_is_local_host(host_name::AbstractString)::Bool = is_local_host_name(host_name)
+_go_is_parent_host(host_name::AbstractString)::Bool = is_parent_host_name(host_name)
 
 """Sanitize a host name for use as a directory component."""
 function _go_sanitize_label(raw::AbstractString)::String
@@ -76,9 +76,9 @@ Build execution slots from host tokens.
 - `child:NAME:N` → N SSH slots (`NAME`, or `NAME-1` … when N>1)
 """
 function _go_plan_slots(host_tokens::AbstractVector{<:AbstractString})::Vector{GoSlot}
-    isempty(host_tokens) && return [GoSlot(:local, nothing, PARENT_HOST_NAME)]
+    isempty(host_tokens) && return [GoSlot(:parent, nothing, PARENT_HOST_NAME)]
 
-    local_count = 0
+    parent_count = 0
     parent_label_base = PARENT_HOST_NAME
     remote_runs = Vector{String}() # host repeated per run
     for raw in host_tokens
@@ -87,7 +87,7 @@ function _go_plan_slots(host_tokens::AbstractVector{<:AbstractString})::Vector{G
         if p.role === :parent
             n < 0 &&
                 throw(ArgumentError("parent slot count must be >= 0, got $n in $(repr(raw))"))
-            local_count += n
+            parent_count += n
         elseif n < 1
             throw(ArgumentError("slot count must be >= 1, got $n in $(repr(raw))"))
         else
@@ -97,18 +97,18 @@ function _go_plan_slots(host_tokens::AbstractVector{<:AbstractString})::Vector{G
         end
     end
 
-    local_count == 0 && isempty(remote_runs) &&
+    parent_count == 0 && isempty(remote_runs) &&
         throw(ArgumentError(
             "no execution slots: list children after parent:0, or omit parent to run on the Kit side",
         ))
 
     slots = GoSlot[]
-    if local_count == 1 && isempty(remote_runs)
-        push!(slots, GoSlot(:local, nothing, parent_label_base))
+    if parent_count == 1 && isempty(remote_runs)
+        push!(slots, GoSlot(:parent, nothing, parent_label_base))
     else
-        for i in 1:local_count
-            label = local_count == 1 ? parent_label_base : "$(parent_label_base)-$i"
-            push!(slots, GoSlot(:local, nothing, label))
+        for i in 1:parent_count
+            label = parent_count == 1 ? parent_label_base : "$(parent_label_base)-$i"
+            push!(slots, GoSlot(:parent, nothing, label))
         end
     end
 
@@ -124,17 +124,17 @@ function _go_plan_slots(host_tokens::AbstractVector{<:AbstractString})::Vector{G
         total = totals[h]
         base = _go_sanitize_label(h)
         label = total == 1 ? base : "$base-$i"
-        push!(slots, GoSlot(:remote, h, label))
+        push!(slots, GoSlot(:child, h, label))
     end
     return slots
 end
 
 function placement_tokens_from_go_slots(slots::Vector{GoSlot})::Vector{String}
-    parent_n = count(s -> s.kind === :local, slots)
+    parent_n = count(s -> s.kind === :parent, slots)
     order = String[]
     counts = Dict{String,Int}()
     for s in slots
-        s.kind === :remote || continue
+        s.kind === :child || continue
         h = s.host
         h isa String || continue
         if !haskey(counts, h)
@@ -507,7 +507,7 @@ function _go_exec_slot!(
     collect_fail = false
     run_lab = string(slot.label, "/run")
     _kit_progress_span!(run_lab, :running)
-    if slot.kind === :local
+    if slot.kind === :parent
         run_res = _go_run_local_slot!(
             proj, script_path, args, slot_dir; quiet=quiet, julia=julia,
         )
@@ -687,8 +687,8 @@ function go!(
             ),
         )
 
-        remote_hosts = unique(String[s.host for s in slots if s.kind === :remote])
-        _write_kit_hosts_file(remote_hosts, batch_dir, nothing)
+        child_hosts = unique(String[s.host for s in slots if s.kind === :child])
+        _write_kit_hosts_file(child_hosts, batch_dir, nothing)
 
         skip_collect = collect_spec === false
         any_run_fail = Ref(false)
@@ -701,7 +701,7 @@ function go!(
         writeln_field("Script", display_path(script_path, anchor))
         writeln_field("Slots", string(length(slots)))
         for s in slots
-            where = s.kind === :local ? PARENT_HOST_NAME : String(something(s.host, s.label))
+            where = s.kind === :parent ? PARENT_HOST_NAME : String(something(s.host, s.label))
             writeln_both("  · $(s.label)  ($where)"; color=:light_black)
         end
         writeln_both("")
@@ -714,19 +714,19 @@ function go!(
                 items=String[s.label for s in slots],
                 kind=:go,
             )
-            if !isempty(remote_hosts)
+            if !isempty(child_hosts)
                 _kit_progress_mark!("ready")
             end
         end
-        _go_assert_remotes_ready!(remote_hosts, sess_rr)
+        _go_assert_remotes_ready!(child_hosts, sess_rr)
 
         sync_result = nothing
         sync_mode = something(sync, false)
-        if !isempty(remote_hosts) && sync_mode !== false
+        if !isempty(child_hosts) && sync_mode !== false
             n_slots > 0 && _kit_progress_mark!("sync")
             sync_session = KitSession(
                 project=proj,
-                workers=remote_hosts,
+                workers=[format_placement_token(:child, h) for h in child_hosts],
                 remote=remote,
                 quiet=quiet,
                 verbosity=verbosity,
@@ -753,7 +753,7 @@ function go!(
                 )
             end
             # Sync may refresh Manifest without installing; re-check deps before run.
-            _go_assert_remotes_ready!(remote_hosts, sess_rr)
+            _go_assert_remotes_ready!(child_hosts, sess_rr)
         end
 
         @sync for slot in slots

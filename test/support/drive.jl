@@ -9,8 +9,8 @@ end
 function _run_kit_drive(;
     script::AbstractString,
     host_root,
-    local_workers::Int=1,
-    remote_hosts::Vector{String}=String[],
+    parent_workers::Int=1,
+    child_hosts::Vector{String}=String[],
     log_dir::Union{Nothing,String}=nothing,
     script_args::Vector{String}=String[],
     kit_root::AbstractString=_kit_root(),
@@ -24,9 +24,9 @@ function _run_kit_drive(;
     julia = String(julia)
     log_flags = log_dir === nothing ? ["--no-log"] : ["--log-dir", log_dir]
     worker_tokens = String[]
-    local_workers > 0 && push!(worker_tokens, "parent:$(local_workers)")
-    append!(worker_tokens, remote_hosts)
-    isempty(worker_tokens) && error("_run_kit_drive: need local_workers > 0 or remote_hosts")
+    parent_workers > 0 && push!(worker_tokens, "parent:$(parent_workers)")
+    append!(worker_tokens, child_hosts)
+    isempty(worker_tokens) && error("_run_kit_drive: need parent_workers > 0 or child_hosts")
     cmd = _kit_cli_cmd(
         vcat(["drive"], drive_flags, worker_tokens, log_flags, [script], script_args);
         julia=julia,
@@ -66,7 +66,7 @@ end
 function _run_host_drive(;
     script::AbstractString,
     host_project,
-    local_workers::Int=2,
+    parent_workers::Int=2,
     log_dir::Union{Nothing,String}=nothing,
     kit_root::AbstractString=_kit_root(),
     julia::AbstractString=_julia_exe(),
@@ -78,7 +78,7 @@ function _run_host_drive(;
     drive = joinpath(kit_root, "src", "cli", "drive.jl")
     log_flags = log_dir === nothing ? ["--no-log"] : ["--log-dir", log_dir]
     cmd = Cmd([julia, "--startup-file=no", "--project=$host_project", drive,
-               "parent:$(local_workers)", log_flags..., script])
+               "parent:$(parent_workers)", log_flags..., script])
     env = _child_julia_env(Dict(
         "DISTRIBUTED_INIT_DELAY_SEC" => "0",
         "DISTRIBUTED_PROJECT_ROOT" => host_project,

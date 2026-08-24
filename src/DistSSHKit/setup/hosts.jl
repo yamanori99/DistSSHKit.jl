@@ -21,7 +21,7 @@ function validate_setup_hosts(hosts::AbstractVector{<:AbstractString})
             ))
         end
         throw_legacy_placement_token(host)
-        if is_local_host_name(host)
+        if is_parent_host_name(host)
             throw(ArgumentError(
                 "setup hosts are SSH targets only; $(repr(host)) means this job's DistSSHKit parent in drive/go. " *
                 "Pass user@host (or an SSH config Host alias). " *

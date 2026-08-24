@@ -18,12 +18,12 @@ using Test
     end
 
     proc, out = _run_subprocess(setenv(_kit_cli_cmd([
-        "drive", "--mem-headroom", "0.5", "--master-gb", "0.2", "--help",
+        "drive", "--mem-headroom", "0.5", "--parent-gb", "0.2", "--help",
     ]), env))
     @test proc.exitcode == 0
     @test occursin("Usage", out)
     @test occursin("--mem-headroom", out)
-    @test occursin("--master-gb", out)
+    @test occursin("--parent-gb", out)
 
     proc, out = _run_subprocess(setenv(_kit_cli_cmd([
         "go", "--julia", "/opt/julia/bin/julia", "--output-dir", "my_runs", "--help",

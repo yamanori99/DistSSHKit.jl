@@ -42,14 +42,14 @@ function run_drive_parsed!(
     end
 
     if parsed.script_path === nothing
-        show_drive_requirements()
+        show_drive_usage()
         return 0
     end
 
     hosts = parsed.hosts
     script_path = DistSSHKit.canonical_local_path(parsed.script_path::String)
     script_args = parsed.script_args
-    local_workers = parsed.local_workers
+    parent_workers = parsed.parent_workers
     default_workers = parsed.default_workers
     julia_exe = parsed.julia
     skip_hash_check = parsed.skip_hash_check
@@ -89,7 +89,7 @@ function run_drive_parsed!(
     try
         code = _run_drive_parsed_locked!(
             parsed, output_dir, script_path, script_dir, proj_dir, script_args,
-            enable_log, log_dir, original_args, host_names, hosts, local_workers,
+            enable_log, log_dir, original_args, host_names, hosts, parent_workers,
             default_workers, julia_exe, skip_hash_check, explicit_package,
             require_all_hosts, resolved_output_dir, resolved_log_dir, hosts_acc,
         )
@@ -105,7 +105,7 @@ function run_drive_parsed!(
             code == 0 ? nothing : "drive",
             Int(code),
             hosts_acc[],
-            DistSSHKit.resolved_placement_tokens(local_workers, hosts, default_workers),
+            DistSSHKit.resolved_placement_tokens(parent_workers, hosts, default_workers),
         ))
         DistSSHKit._remove_kit_pid_file(
             getpid(),
@@ -118,7 +118,7 @@ end
 
 function _run_drive_parsed_locked!(
     parsed, output_dir, script_path, script_dir, proj_dir, script_args,
-    enable_log, log_dir, original_args, host_names, hosts, local_workers,
+    enable_log, log_dir, original_args, host_names, hosts, parent_workers,
     default_workers, julia_exe, skip_hash_check, explicit_package,
     require_all_hosts, resolved_output_dir, resolved_log_dir, resolved_hosts,
 )::Cint
@@ -233,17 +233,17 @@ function _run_drive_parsed_locked!(
         cleanup_stale_workers!(hosts)
 
         kit_progress_step!("workers")
-        if (local_workers > 0 || !isempty(hosts)) &&
+        if (parent_workers > 0 || !isempty(hosts)) &&
                 !check_memory_capacity(
-                    local_workers, hosts, default_workers;
+                    parent_workers, hosts, default_workers;
                     mem_headroom=parsed.mem_headroom,
-                    master_gb=parsed.master_gb,
+                    parent_gb=parsed.parent_gb,
                 )
             return 1
         end
 
         successful_hosts = add_drive_workers!(
-            hosts, local_workers, default_workers, julia_exe, proj_dir, script_path,
+            hosts, parent_workers, default_workers, julia_exe, proj_dir, script_path,
         )
         # Register before the `require_all_hosts` check below: that branch can
         # `return 1` with workers already joined, and `finally` must still

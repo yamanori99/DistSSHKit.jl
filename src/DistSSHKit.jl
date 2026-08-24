@@ -30,11 +30,11 @@ export WorkerPlan
 export parse_worker_tokens
 export ParsedWorkerTokens
 export worker_tokens_fully_specified
-export remote_hosts_from_tokens
+export child_hosts_from_tokens
 export worker_plan_from_tokens
 export split_worker_token
 export host_tokens
-export is_local_host_name
+export is_parent_host_name
 export DriveResult
 export HostRunResult
 export DriveHostStatus
@@ -73,7 +73,7 @@ export kit_progress_phases
 export parse_go_args
 export parse_drive_args
 export show_go_usage
-export show_drive_requirements
+export show_drive_usage
 export println_kit_version
 export ssh_opts
 export resolve_remote_julia

@@ -47,13 +47,13 @@ function drive_parsed_from_session(
     julia::Union{Nothing,AbstractString}=nothing,
     require_all_hosts::Bool=false,
     mem_headroom::Real=DEFAULT_MEM_HEADROOM,
-    master_gb::Real=DEFAULT_MASTER_GB,
+    parent_gb::Real=DEFAULT_PARENT_GB,
 )
-    local_workers = 0
+    parent_workers = 0
     hosts = Tuple{String,Union{Int,Nothing}}[]
     if workers !== nothing
-        local_workers = workers.local_workers
-        for (host, n) in workers.remote_workers
+        parent_workers = workers.parent_workers
+        for (host, n) in workers.child_workers
             n > 0 && push!(hosts, (host, n))
         end
     else
@@ -80,7 +80,7 @@ function drive_parsed_from_session(
         String(julia)
     end
     return (
-        local_workers=local_workers,
+        parent_workers=parent_workers,
         default_workers=nothing,
         julia=julia_exe,
         skip_hash_check=effective_skip,
@@ -101,6 +101,6 @@ function drive_parsed_from_session(
         cli_session=cli_session,
         hint_surface=hint_surface(session),
         mem_headroom=Float64(mem_headroom),
-        master_gb=Float64(master_gb),
+        parent_gb=Float64(parent_gb),
     )
 end

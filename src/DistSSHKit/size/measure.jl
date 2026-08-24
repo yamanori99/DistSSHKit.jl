@@ -48,7 +48,7 @@ function _size_probe_rss_expr(
 end
 
 """
-    measure_rss(project, hosts; include_local=false, probe=nothing, hint_surface=:api)
+    measure_rss(project, hosts; include_parent=false, probe=nothing, hint_surface=:api)
 
 Add one probe worker per host, load the project package, measure RSS.
 
@@ -63,7 +63,7 @@ Uses the same remote path resolution as drive `addprocs`. Suggestions should use
 function measure_rss(
     project::AbstractString,
     hosts::Vector{String};
-    include_local::Bool=false,
+    include_parent::Bool=false,
     probe::Union{Nothing,AbstractString}=nothing,
     hint_surface::Symbol=:api,
 )::Dict{String,WorkerMemorySample}
@@ -79,7 +79,7 @@ function measure_rss(
 
     try
         return _measure_rss!(
-            proj, hosts, include_local, probe_local,
+            proj, hosts, include_parent, probe_local,
             worker_to_host, worker_project, worker_probe,
         )
     finally
@@ -101,13 +101,13 @@ end
 function _measure_rss!(
     proj::String,
     hosts::Vector{String},
-    include_local::Bool,
+    include_parent::Bool,
     probe_local::Union{Nothing,String},
     worker_to_host::Dict{Int,String},
     worker_project::Dict{Int,String},
     worker_probe::Dict{Int,Union{Nothing,String}},
 )::Dict{String,WorkerMemorySample}
-    if include_local
+    if include_parent
         try
             local_proj = something(resolve_host_project_abs(PARENT_HOST_NAME, proj), proj)
             before = Set(workers())

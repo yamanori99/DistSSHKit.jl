@@ -27,7 +27,7 @@ driver contract, prefer [`go`](@ref Manual-go).
 | `-w` / `--workers N` | Default worker count for hosts without `:N` (also `-w:N`) |
 | `--julia PATH` | Julia on SSH workers |
 | `--mem-headroom N` | RAM fraction for memory preflight (default `0.75`; same as [`size`](@ref Manual-size)) |
-| `--master-gb N` | GB reserved for the master on parent (default `0.4`; same as size) |
+| `--parent-gb N` | GB reserved for the parent process (default `0.4`; same as size) |
 | `--output-dir PATH` | **Result root** → `DISTRIBUTED_OUTPUT_DIR` (not go batch root) |
 | `--log-dir PATH` | Log directory override |
 | `--no-log` | Do not write `drive_<timestamp>.log` |

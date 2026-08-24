@@ -3,12 +3,12 @@
 """Default RAM fraction usable for workers in [`size!`](@ref) / `size` / drive preflight.
 
 Leave a quarter of RAM for the OS and other jobs. Drive preflight uses the
-same `mem_headroom` / `master_gb` / CPU reserve as `size_worker_count`
+same `mem_headroom` / `parent_gb` / CPU reserve as `size_worker_count`
 (`pipeline!` / `drive!` / CLI `drive --mem-headroom`).
 """
 const DEFAULT_MEM_HEADROOM = 0.75
-"""GB reserved for the master on parent sizing (`size` / drive preflight)."""
-const DEFAULT_MASTER_GB = 0.4
+"""GB reserved for the parent process on parent sizing (`size` / drive preflight)."""
+const DEFAULT_PARENT_GB = 0.4
 """RSS→GB: 10% padding on the measured set (unexported; no CLI flag)."""
 const WORKER_RSS_SAFETY_FACTOR = 1.1
 """RSS→GB floor after the safety factor (unexported; no CLI flag)."""
@@ -26,7 +26,7 @@ function rss_bytes_to_worker_gb(rss_bytes::Integer)::Float64
 end
 
 """
-    size_worker_count(total_gb, nproc, per_worker_gb; mem_headroom, master_gb, is_parenthost)
+    size_worker_count(total_gb, nproc, per_worker_gb; mem_headroom, parent_gb, is_parent)
 
 Pure RAM/CPU cap for one host (shared by CLI and `compute_worker_plan`).
 `nproc === nothing` skips the CPU term (RAM budget only).
@@ -36,15 +36,15 @@ function size_worker_count(
     nproc::Union{Nothing,Integer},
     per_worker_gb::Real;
     mem_headroom::Real=DEFAULT_MEM_HEADROOM,
-    master_gb::Real=DEFAULT_MASTER_GB,
-    is_parenthost::Bool=false,
+    parent_gb::Real=DEFAULT_PARENT_GB,
+    is_parent::Bool=false,
 )::Int
     pw = Float64(per_worker_gb)
     pw <= 0 && return 0
-    avail = Float64(total_gb) * Float64(mem_headroom) - (is_parenthost ? Float64(master_gb) : 0.0)
+    avail = Float64(total_gb) * Float64(mem_headroom) - (is_parent ? Float64(parent_gb) : 0.0)
     ram = max(0, floor(Int, avail / pw))
     nproc === nothing && return ram
-    cpu_reserve = is_parenthost ? 2 : 1
+    cpu_reserve = is_parent ? 2 : 1
     return min(ram, max(1, Int(nproc) - cpu_reserve))
 end
 
@@ -62,10 +62,10 @@ struct SyncResult
     cancelled::Bool
 end
 
-"""Sized worker counts per host (`local_workers` + `remote_workers`)."""
+"""Sized worker counts per host (`parent_workers` + `child_workers`)."""
 struct WorkerPlan
-    local_workers::Int
-    remote_workers::Dict{String,Int}
+    parent_workers::Int
+    child_workers::Dict{String,Int}
 end
 
 WorkerPlan() = WorkerPlan(0, Dict{String,Int}())
@@ -73,16 +73,16 @@ WorkerPlan() = WorkerPlan(0, Dict{String,Int}())
 """Resolved `parent:N` / `child:NAME:N` lines from a [`WorkerPlan`](@ref)."""
 function resolved_placement_tokens(plan::WorkerPlan)::Vector{String}
     out = String[]
-    plan.local_workers > 0 &&
-        push!(out, format_placement_token(:parent, PARENT_HOST_NAME, plan.local_workers))
-    for (host, n) in plan.remote_workers
+    plan.parent_workers > 0 &&
+        push!(out, format_placement_token(:parent, PARENT_HOST_NAME, plan.parent_workers))
+    for (host, n) in plan.child_workers
         n > 0 && push!(out, format_placement_token(:child, host, n))
     end
     return out
 end
 
 function resolved_placement_tokens(
-    local_workers::Integer,
+    parent_workers::Integer,
     hosts::AbstractVector{Tuple{String, Union{Int, Nothing}}},
     default_workers,
 )::Vector{String}
@@ -90,7 +90,7 @@ function resolved_placement_tokens(
     for pair in hosts
         remotes[pair[1]] = something(pair[2], default_workers, 1)
     end
-    return resolved_placement_tokens(WorkerPlan(Int(local_workers), remotes))
+    return resolved_placement_tokens(WorkerPlan(Int(parent_workers), remotes))
 end
 
 """
@@ -101,31 +101,31 @@ coerces types (same convenience shape as [`DriveResult`](@ref) /
 [`PipelineResult`](@ref)), it does not re-validate cross-field consistency.
 
 Field name matches [`WorkerPlan`](@ref): a host with an explicit `:N` is
-`remote_workers[host] = N`, same key as `WorkerPlan.remote_workers`.
+`child_workers[host] = N`, same key as `WorkerPlan.child_workers`.
 """
 struct ParsedWorkerTokens
-    local_workers::Int
-    local_autosize::Bool
-    remote_workers::Dict{String,Int}
-    remote_auto::Vector{String}
-    remote_hosts::Vector{String}
+    parent_workers::Int
+    parent_autosize::Bool
+    child_workers::Dict{String,Int}
+    child_auto::Vector{String}
+    child_hosts::Vector{String}
     tokens::Vector{String}
 end
 
 function ParsedWorkerTokens(;
-    local_workers::Integer=0,
-    local_autosize::Bool=false,
-    remote_workers::AbstractDict{<:AbstractString,<:Integer}=Dict{String,Int}(),
-    remote_auto::AbstractVector{<:AbstractString}=String[],
-    remote_hosts::AbstractVector{<:AbstractString}=String[],
+    parent_workers::Integer=0,
+    parent_autosize::Bool=false,
+    child_workers::AbstractDict{<:AbstractString,<:Integer}=Dict{String,Int}(),
+    child_auto::AbstractVector{<:AbstractString}=String[],
+    child_hosts::AbstractVector{<:AbstractString}=String[],
     tokens::AbstractVector{<:AbstractString}=String[],
 )
     return ParsedWorkerTokens(
-        Int(local_workers),
-        local_autosize,
-        Dict{String,Int}(String(h) => Int(n) for (h, n) in remote_workers),
-        String[String(h) for h in remote_auto],
-        String[String(h) for h in remote_hosts],
+        Int(parent_workers),
+        parent_autosize,
+        Dict{String,Int}(String(h) => Int(n) for (h, n) in child_workers),
+        String[String(h) for h in child_auto],
+        String[String(h) for h in child_hosts],
         String[String(t) for t in tokens],
     )
 end
@@ -140,12 +140,12 @@ or filled by `-w`. `parent` / `parent:N` is the Kit side; SSH children are
 function parse_worker_tokens(
     tokens::AbstractVector{<:AbstractString},
 )::ParsedWorkerTokens
-    local_workers = 0
+    parent_workers = 0
     local_seen = false
-    local_autosize = false
-    remote_workers = Dict{String,Int}()
-    remote_auto = String[]
-    remote_hosts = String[]
+    parent_autosize = false
+    child_workers = Dict{String,Int}()
+    child_auto = String[]
+    child_hosts = String[]
     seen_remote = Set{String}()
     out_tokens = String[String(t) for t in tokens]
 
@@ -157,42 +157,42 @@ function parse_worker_tokens(
             ))
             local_seen = true
             if p.n === nothing
-                local_autosize = true
+                parent_autosize = true
             else
-                local_workers = Int(p.n)
+                parent_workers = Int(p.n)
             end
         else
             host = p.name
             n = p.n
             if !(host in seen_remote)
-                push!(remote_hosts, host)
+                push!(child_hosts, host)
                 push!(seen_remote, host)
             end
             if n === nothing
-                push!(remote_auto, host)
+                push!(child_auto, host)
             else
-                remote_workers[host] = Int(n)
+                child_workers[host] = Int(n)
             end
         end
     end
     return ParsedWorkerTokens(
-        local_workers,
-        local_autosize,
-        remote_workers,
-        remote_auto,
-        remote_hosts,
+        parent_workers,
+        parent_autosize,
+        child_workers,
+        child_auto,
+        child_hosts,
         out_tokens,
     )
 end
 
 """True when every token has an explicit worker/slot count (`:N`)."""
 function worker_tokens_fully_specified(parsed::ParsedWorkerTokens)::Bool
-    return !parsed.local_autosize && isempty(parsed.remote_auto)
+    return !parsed.parent_autosize && isempty(parsed.child_auto)
 end
 
-"""SSH host names from tokens (local tokens omitted)."""
-function remote_hosts_from_tokens(tokens::AbstractVector{<:AbstractString})::Vector{String}
-    return parse_worker_tokens(tokens).remote_hosts
+"""SSH host names from tokens (parent tokens omitted)."""
+function child_hosts_from_tokens(tokens::AbstractVector{<:AbstractString})::Vector{String}
+    return parse_worker_tokens(tokens).child_hosts
 end
 
 """
@@ -372,7 +372,7 @@ mutable struct PipelineConfig
     gb_per_worker::Union{Nothing,Float64}
     size_probe::Union{Nothing,String}
     mem_headroom::Float64
-    master_gb::Float64
+    parent_gb::Float64
     skip_hash_check::Union{Nothing,Bool}
     collect_spec::Union{Symbol,Bool,AbstractString,Nothing}
     collect_merge::Bool
@@ -397,7 +397,7 @@ function PipelineConfig(;
     gb_per_worker::Union{Nothing,Real}=nothing,
     size_probe::Union{Nothing,AbstractString}=nothing,
     mem_headroom::Real=DEFAULT_MEM_HEADROOM,
-    master_gb::Real=DEFAULT_MASTER_GB,
+    parent_gb::Real=DEFAULT_PARENT_GB,
     skip_hash_check::Union{Nothing,Bool}=nothing,
     collect::Union{Symbol,Bool,AbstractString,Nothing}=nothing,
     collect_merge::Bool=false,
@@ -437,7 +437,7 @@ function PipelineConfig(;
         gbp,
         probe,
         Float64(mem_headroom),
-        Float64(master_gb),
+        Float64(parent_gb),
         skip_hash_check,
         collect,
         collect_merge,
@@ -576,10 +576,10 @@ end
 """Build `drive` host specs from a [`WorkerPlan`](@ref)."""
 function drive_host_specs(plan::WorkerPlan)::Vector{String}
     specs = String[]
-    if plan.local_workers > 0
-        push!(specs, format_placement_token(:parent, PARENT_HOST_NAME, plan.local_workers))
+    if plan.parent_workers > 0
+        push!(specs, format_placement_token(:parent, PARENT_HOST_NAME, plan.parent_workers))
     end
-    for (host, n) in plan.remote_workers
+    for (host, n) in plan.child_workers
         n > 0 && push!(specs, format_placement_token(:child, host, n))
     end
     return specs

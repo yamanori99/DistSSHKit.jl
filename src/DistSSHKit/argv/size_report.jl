@@ -22,7 +22,7 @@ function print_size_report(
         hosts,
         per_worker_gb;
         mem_headroom=opts.mem_headroom,
-        master_gb=opts.master_gb,
+        parent_gb=opts.parent_gb,
     )
 
     # Table stays on stdout under -q / --progress (not kit_println).
@@ -37,8 +37,8 @@ function print_size_report(
     for host in all_hosts
         res = host_resources[host]
         s = samples[host]
-        n = is_local_host_name(host) ? plan.local_workers : get(plan.remote_workers, host, 0)
-        shown = is_local_host_name(host) ? PARENT_HOST_NAME : host
+        n = is_parent_host_name(host) ? plan.parent_workers : get(plan.child_workers, host, 0)
+        shown = is_parent_host_name(host) ? PARENT_HOST_NAME : host
         if show_peak
             println(
                 "  $(lpad(shown, host_col))  $(round(res.total_gb, digits=1)) GB   $(res.nproc)      ",
@@ -53,12 +53,12 @@ function print_size_report(
     end
     println()
 
-    total = plan.local_workers + sum(values(plan.remote_workers); init=0)
+    total = plan.parent_workers + sum(values(plan.child_workers); init=0)
     println("Total: $total workers")
     println()
 
-    local_n = plan.local_workers
-    remote_parts = ["$(h):$(plan.remote_workers[h])" for h in hosts if get(plan.remote_workers, h, 0) > 0]
+    local_n = plan.parent_workers
+    remote_parts = ["$(h):$(plan.child_workers[h])" for h in hosts if get(plan.child_workers, h, 0) > 0]
     local_arg = local_n > 0 ? "parent:$local_n " : ""
     remote_arg = isempty(remote_parts) ? "" : join(remote_parts, " ") * " "
     println("Command template:")
@@ -99,7 +99,7 @@ function resolve_worker_memory_samples(
     measured = measure_rss(
         project,
         hosts;
-        include_local=opts.include_local,
+        include_parent=opts.include_parent,
         probe=opts.probe,
         hint_surface=:cli,
     )

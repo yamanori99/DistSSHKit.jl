@@ -20,9 +20,9 @@ stays off even if `skip_hash_check=false` (no remote `.git/`).
 `require_all_hosts=true` (CLI `--require-all-hosts`) fails if a listed SSH host
 did not join, or if collect reported an error (default: best-effort, exit 0).
 
-`mem_headroom` / `master_gb` are the RAM budget for drive preflight (same as
-[`size!`](@ref) / CLI `--mem-headroom` / `--master-gb`). [`pipeline!`](@ref)
-passes `config.mem_headroom` and `config.master_gb`.
+`mem_headroom` / `parent_gb` are the RAM budget for drive preflight (same as
+[`size!`](@ref) / CLI `--mem-headroom` / `--parent-gb`). [`pipeline!`](@ref)
+passes `config.mem_headroom` and `config.parent_gb`.
 
 `julia` sets the remote Julia binary (`nothing` / `"auto"` → detect; same as
 CLI `--julia`). `plan` is an optional explicit [`WorkerPlan`](@ref).
@@ -42,7 +42,7 @@ function drive!(
     julia::Union{Nothing,AbstractString}=nothing,
     require_all_hosts::Bool=false,
     mem_headroom::Real=DEFAULT_MEM_HEADROOM,
-    master_gb::Real=DEFAULT_MASTER_GB,
+    parent_gb::Real=DEFAULT_PARENT_GB,
 )::DriveResult
     apply_session_env!(session)
     _ensure_drive_fragments!(session.project)
@@ -64,7 +64,7 @@ function drive!(
         julia=julia,
         require_all_hosts=require_all_hosts,
         mem_headroom=mem_headroom,
-        master_gb=master_gb,
+        parent_gb=parent_gb,
     )
     apply_kit_cli_session!(parsed.cli_session)
     original_args = copy(ARGS)

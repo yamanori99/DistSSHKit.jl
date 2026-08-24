@@ -15,20 +15,20 @@ A token `local` / `localhost` / `l` is an ordinary SSH child (`child:local`).
 ```jldoctest
 julia> using DistSSHKit
 
-julia> DistSSHKit.is_local_host_name("parent")
+julia> DistSSHKit.is_parent_host_name("parent")
 true
 
-julia> DistSSHKit.is_local_host_name("parenthost")
+julia> DistSSHKit.is_parent_host_name("parenthost")
 false
 
-julia> DistSSHKit.is_local_host_name("local")
+julia> DistSSHKit.is_parent_host_name("local")
 false
 
-julia> DistSSHKit.is_local_host_name("worker1")
+julia> DistSSHKit.is_parent_host_name("worker1")
 false
 ```
 """
-function is_local_host_name(host_name::AbstractString)::Bool
+function is_parent_host_name(host_name::AbstractString)::Bool
     return String(host_name) == PARENT_HOST_NAME
 end
 
@@ -121,7 +121,7 @@ function parse_placement_token(
         isempty(rest) && throw(ArgumentError("$(repr(s)): missing SSH name after `child:`"))
         name, n = _placement_count_suffix(rest)
         isempty(name) && throw(ArgumentError("$(repr(s)): missing SSH name after `child:`"))
-        is_local_host_name(name) && throw(ArgumentError(
+        is_parent_host_name(name) && throw(ArgumentError(
             "$(repr(s)): Kit side is `parent`, not `child:parent`",
         ))
         return (role=:child, name=name, n)

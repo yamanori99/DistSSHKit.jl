@@ -8,23 +8,23 @@ using Dates
     @testset "_go_plan_slots" begin
         let s = DistSSHKit._go_plan_slots(String[])
             @test length(s) == 1
-            @test s[1].kind === :local
+            @test s[1].kind === :parent
             @test s[1].label == "parent"
         end
         let s = DistSSHKit._go_plan_slots(["child:local:2"])
             @test length(s) == 2
-            @test s[1].kind === :remote && s[1].label == "local-1"
-            @test s[2].kind === :remote && s[2].label == "local-2"
+            @test s[1].kind === :child && s[1].label == "local-1"
+            @test s[2].kind === :child && s[2].label == "local-2"
         end
         let s = DistSSHKit._go_plan_slots(["child:user@lab", "child:user@lab2:2"])
             @test length(s) == 3
-            @test s[1].kind === :remote && s[1].label == "user@lab"
+            @test s[1].kind === :child && s[1].label == "user@lab"
             @test s[2].label == "user@lab2-1"
             @test s[3].label == "user@lab2-2"
         end
         let s = DistSSHKit._go_plan_slots(["parent:0", "child:h1", "child:h2"])
             @test length(s) == 2
-            @test all(x -> x.kind === :remote, s)
+            @test all(x -> x.kind === :child, s)
         end
         @test_throws ArgumentError DistSSHKit._go_plan_slots(["parent:0"])
         @test_throws ArgumentError DistSSHKit._go_plan_slots(["child:local:0"])

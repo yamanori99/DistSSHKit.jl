@@ -2,25 +2,25 @@
 
 """
     compute_worker_plan(
-        all_hosts, remote_hosts, per_worker_gb;
-        mem_headroom=DEFAULT_MEM_HEADROOM, master_gb=DEFAULT_MASTER_GB,
+        all_hosts, child_hosts, per_worker_gb;
+        mem_headroom=DEFAULT_MEM_HEADROOM, parent_gb=DEFAULT_PARENT_GB,
     )
 
 Pure worker-count math (same rules as `size` CLI). Returns [`WorkerPlan`](@ref).
 """
 function compute_worker_plan(
     all_hosts::Vector{String},
-    remote_hosts::Vector{String},
+    child_hosts::Vector{String},
     per_worker_gb::Dict{String,Float64};
     mem_headroom::Real=DEFAULT_MEM_HEADROOM,
-    master_gb::Real=DEFAULT_MASTER_GB,
+    parent_gb::Real=DEFAULT_PARENT_GB,
 )::WorkerPlan
-    local_workers = 0
-    remote_workers = Dict{String,Int}()
+    parent_workers = 0
+    child_workers = Dict{String,Int}()
     local_total, local_nproc = get_local_resources()
 
     for host in all_hosts
-        if is_local_host_name(host)
+        if is_parent_host_name(host)
             res = (total_gb=local_total, nproc=local_nproc)
         else
             res = (
@@ -34,23 +34,23 @@ function compute_worker_plan(
             res.nproc,
             pw;
             mem_headroom=mem_headroom,
-            master_gb=master_gb,
-            is_parenthost=is_local_host_name(host),
+            parent_gb=parent_gb,
+            is_parent=is_parent_host_name(host),
         )
-        if is_local_host_name(host)
-            local_workers = n
-        elseif host in remote_hosts
-            remote_workers[host] = n
+        if is_parent_host_name(host)
+            parent_workers = n
+        elseif host in child_hosts
+            child_workers[host] = n
         end
     end
-    return WorkerPlan(local_workers, remote_workers)
+    return WorkerPlan(parent_workers, child_workers)
 end
 
 """
     size!(
         session::KitSession;
         gb_per_worker=nothing, probe=nothing,
-        mem_headroom=DEFAULT_MEM_HEADROOM, master_gb=DEFAULT_MASTER_GB,
+        mem_headroom=DEFAULT_MEM_HEADROOM, parent_gb=DEFAULT_PARENT_GB,
     )
 
 Estimate worker counts for hosts in `session`. When `gb_per_worker` is omitted,
@@ -64,10 +64,10 @@ function size!(
     gb_per_worker::Union{Nothing,Real}=nothing,
     probe::Union{Nothing,AbstractString}=nothing,
     mem_headroom::Real=DEFAULT_MEM_HEADROOM,
-    master_gb::Real=DEFAULT_MASTER_GB,
+    parent_gb::Real=DEFAULT_PARENT_GB,
 )::WorkerPlan
     apply_session_env!(session)
-    all_hosts, remote_hosts = session_size_hosts(session)
+    all_hosts, child_hosts = session_size_hosts(session)
     isempty(all_hosts) && throw(ArgumentError(
         explain_no_hosts(; surface=hint_surface(session), kind=:size),
     ))
@@ -81,8 +81,8 @@ function size!(
     else
         measured = measure_rss(
             session.project,
-            remote_hosts;
-            include_local=session.include_local_for_size,
+            child_hosts;
+            include_parent=session.include_parent_for_size,
             probe=probe,
             hint_surface=hint_surface(session),
         )
@@ -100,9 +100,9 @@ function size!(
 
     return compute_worker_plan(
         all_hosts,
-        remote_hosts,
+        child_hosts,
         per_worker_gb;
         mem_headroom=mem_headroom,
-        master_gb=master_gb,
+        parent_gb=parent_gb,
     )
 end

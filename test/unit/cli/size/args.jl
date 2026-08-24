@@ -6,19 +6,20 @@ using Test
     @testset "parse_size_args" begin
         let r = parse_size_args(["parent", "child:host1", "child:host2"])
             @test !r.show_help
-            @test r.include_local
+            @test r.include_parent
             @test r.hosts == ["host1", "host2"]
             @test r.gb_per_worker === nothing
             @test r.probe === nothing
             @test r.mem_headroom == DistSSHKit.DEFAULT_MEM_HEADROOM
-            @test r.master_gb == DistSSHKit.DEFAULT_MASTER_GB
+            @test r.parent_gb == DistSSHKit.DEFAULT_PARENT_GB
         end
         let r = parse_size_args(["child:local", "child:host1"])
-            @test !r.include_local
+            @test !r.include_parent
             @test r.hosts == ["local", "host1"]
         end
         @test_throws ArgumentError parse_size_args(["--parent", "child:host1"])
         @test_throws ArgumentError parse_size_args(["--masterhost", "child:host1"])
+        @test_throws ArgumentError parse_size_args(["--master-gb", "0.2"])
         @test_throws ArgumentError parse_size_args(["--local", "child:host1", "child:host2"])
         let r = parse_size_args(["--hosts", "child:h1:4,child:h2", "child:host-cli"])
             @test r.hosts == ["host-cli", "h1", "h2"]
@@ -47,15 +48,15 @@ using Test
             @test r.hosts == ["host1"]
         end
         @test_throws ArgumentError parse_size_args(["--probe", "warmup.jl", "--local"])
-        let r = parse_size_args(["--mem-headroom", "0.5", "--master-gb", "0.2"])
+        let r = parse_size_args(["--mem-headroom", "0.5", "--parent-gb", "0.2"])
             @test r.mem_headroom == 0.5
-            @test r.master_gb == 0.2
+            @test r.parent_gb == 0.2
             @test isempty(r.hosts)
         end
         withenv("DISTSSHKIT_SIZE_PROBE" => "env_warmup.jl") do
             r = parse_size_args(["parent"])
             @test r.probe == "env_warmup.jl"
-            @test r.include_local
+            @test r.include_parent
         end
         withenv("DISTSSHKIT_SIZE_PROBE" => "env_warmup.jl") do
             r = parse_size_args(["--probe", "cli_warmup.jl", "parent"])
@@ -86,7 +87,7 @@ using Test
         plan = DistSSHKit.compute_worker_plan(
             ["parent"], String[], Dict("parent" => pw);
             mem_headroom=DistSSHKit.DEFAULT_MEM_HEADROOM,
-            master_gb=DistSSHKit.DEFAULT_MASTER_GB,
+            parent_gb=DistSSHKit.DEFAULT_PARENT_GB,
         )
         opts = (
             show_help=false,
@@ -95,8 +96,8 @@ using Test
             gb_per_worker=pw,
             probe=nothing,
             mem_headroom=DistSSHKit.DEFAULT_MEM_HEADROOM,
-            master_gb=DistSSHKit.DEFAULT_MASTER_GB,
-            include_local=true,
+            parent_gb=DistSSHKit.DEFAULT_PARENT_GB,
+            include_parent=true,
             hosts=String[],
         )
         samples = Dict(
@@ -112,8 +113,8 @@ using Test
         rm(path; force=true)
         @test occursin("Workers", out)
         @test occursin("parent", out)
-        @test occursin("parent:$(plan.local_workers)", out)
-        @test occursin("Total: $(plan.local_workers) workers", out)
+        @test occursin("parent:$(plan.parent_workers)", out)
+        @test occursin("Total: $(plan.parent_workers) workers", out)
         @test !occursin("Suggested", out)
     end
 
@@ -125,8 +126,8 @@ using Test
             gb_per_worker=nothing,
             probe="warmup.jl",
             mem_headroom=DistSSHKit.DEFAULT_MEM_HEADROOM,
-            master_gb=DistSSHKit.DEFAULT_MASTER_GB,
-            include_local=true,
+            parent_gb=DistSSHKit.DEFAULT_PARENT_GB,
+            include_parent=true,
             hosts=String[],
         )
         samples = Dict(
@@ -148,9 +149,9 @@ using Test
         plan = DistSSHKit.compute_worker_plan(
             ["parent"], String[], Dict("parent" => 1.5);
             mem_headroom=DistSSHKit.DEFAULT_MEM_HEADROOM,
-            master_gb=DistSSHKit.DEFAULT_MASTER_GB,
+            parent_gb=DistSSHKit.DEFAULT_PARENT_GB,
         )
-        @test occursin("parent:$(plan.local_workers)", out)
+        @test occursin("parent:$(plan.parent_workers)", out)
     end
 
     @testset "run_size --gb-per-worker parent" begin
@@ -167,7 +168,7 @@ using Test
             out = read(path, String)
             local_total, local_nproc = DistSSHKit.get_local_resources()
             expected = DistSSHKit.size_worker_count(
-                local_total, local_nproc, 2.0; is_parenthost=true,
+                local_total, local_nproc, 2.0; is_parent=true,
             )
             @test code == 0
             @test occursin("parent:$(expected)", out)
