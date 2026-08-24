@@ -5,6 +5,8 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- [`setup!`](@ref) rejects a bad mode or `:clone` without `repo=` before
+  applying session verbosity or opening `.distsshkit/setup/`.
 - **Breaking:** omitted go/drive kit dirs sit next to the script:
   `{script}/.distsshkit/go/<stem>_<UTC>/` (slots + `kit.progress`) and
   `{script}/.distsshkit/drive` (shared result root unless

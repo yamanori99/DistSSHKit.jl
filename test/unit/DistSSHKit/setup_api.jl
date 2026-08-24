@@ -115,8 +115,12 @@ using Test
                 remote="~/App.jl",
                 yes=true,
             )
-            @test_throws ArgumentError DistSSHKit.setup!(session, :clone)
-            @test_throws ArgumentError DistSSHKit.setup!(session, :clone; repo="")
+            out, _ = _capture_stdio() do _, _
+                @test_throws ArgumentError DistSSHKit.setup!(session, :clone)
+                @test_throws ArgumentError DistSSHKit.setup!(session, :clone; repo="")
+            end
+            @test !occursin("Log file:", out)
+            @test !isdir(joinpath(proj, ".distsshkit", "setup"))
         end
 
         _with_fake_remotes() do _

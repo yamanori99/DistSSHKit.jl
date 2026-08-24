@@ -50,6 +50,7 @@ function setup!(
     ignore_julia_version::Bool=false,
     check_code_sync::Bool=true,
 )::SyncResult
+    _setup_bang_preflight!(session, mode; repo=repo)
     apply_session_env!(session)
     log_dir = joinpath(session.project, ".distsshkit", "setup")
     step = setup_progress_step_name(mode)
@@ -85,6 +86,33 @@ function setup!(session::KitSession, mode::Symbol, more::Symbol...; kwargs...)
     return result
 end
 
+"""Non-empty clone URL, or throw."""
+function _setup_clone_url(
+    repo::Union{Nothing,AbstractString};
+    surface::Symbol=:api,
+)::String
+    repo === nothing && throw(ArgumentError(
+        explain_clone_repo_required(; surface=surface),
+    ))
+    url = strip(String(repo))
+    isempty(url) && throw(ArgumentError("setup! :clone repo= must be a non-empty git URL"))
+    return url
+end
+
+function _setup_bang_preflight!(
+    session::KitSession,
+    mode::Symbol;
+    repo::Union{Nothing,AbstractString}=nothing,
+)
+    mode in _SETUP_BANG_MODES || throw(ArgumentError(
+        "setup! mode must be one of $(_SETUP_BANG_MODES), got $(repr(mode))",
+    ))
+    if mode === :clone
+        _setup_clone_url(repo; surface=hint_surface(session))
+    end
+    return nothing
+end
+
 function _setup_one!(
     session::KitSession,
     mode::Symbol;
@@ -93,9 +121,7 @@ function _setup_one!(
     ignore_julia_version::Bool=false,
     check_code_sync::Bool=true,
 )::SyncResult
-    mode in _SETUP_BANG_MODES || throw(ArgumentError(
-        "setup! mode must be one of $(_SETUP_BANG_MODES), got $(repr(mode))",
-    ))
+    _setup_bang_preflight!(session, mode; repo=repo)
     hosts = _setup_bang_hosts!(session)
     remote_path = session_remote_root(session)
     julia_path = isempty(strip(String(julia))) ? "auto" : String(julia)
@@ -107,12 +133,7 @@ function _setup_one!(
     elseif mode === :rsync
         return sync!(session; mode=:rsync)
     elseif mode === :clone
-        repo === nothing && throw(ArgumentError(
-            explain_clone_repo_required(; surface=hint_surface(session)),
-        ))
-        url = strip(String(repo))
-        isempty(url) && throw(ArgumentError("setup! :clone repo= must be a non-empty git URL"))
-        url = normalize_git_clone_url(url)
+        url = normalize_git_clone_url(_setup_clone_url(repo; surface=hint_surface(session)))
         preflight_setup_ssh(hosts) || return SyncResult(true, HostResult[]; ok=false)
         raw = clone_to_remotes(hosts, remote_path, url; confirm=!session.yes)
         return _sync_result_from_host_op(raw)

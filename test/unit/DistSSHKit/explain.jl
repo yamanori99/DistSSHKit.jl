@@ -86,12 +86,14 @@ using Test
 
     @testset "session wiring" begin
         _with_tempdir() do tmp
-            session = DistSSHKit.KitSession(project=tmp, workers=String[])
+            session = DistSSHKit.KitSession(project=tmp, workers=String[], quiet=true)
             @test DistSSHKit.hint_surface(session) === :api
             @test session.cli_session.hint_surface === :api
 
             err = try
-                DistSSHKit.sync!(session)
+                with_kit_verbosity(:progress) do
+                    DistSSHKit.sync!(session)
+                end
                 nothing
             catch e
                 e
