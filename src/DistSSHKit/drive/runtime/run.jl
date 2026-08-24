@@ -74,6 +74,12 @@ function run_drive_parsed!(
     if output_dir !== nothing
         ENV["DISTRIBUTED_OUTPUT_DIR"] = DistSSHKit.canonical_local_path(String(output_dir))
     end
+    # Drivers set `DISTRIBUTED_OUTPUT_DIR` in `init_output_dir!` (demos: `output/`).
+    # Lock after that so `.kit.lock` is not `script_dir/../results`.
+    include(script_path)
+    if isdefined(Main, :init_output_dir!)
+        @invokelatest Main.init_output_dir!(script_args)
+    end
     release_output_dir_lock = DistSSHKit.kit_output_dir_lock!(DistSSHKit.resolve_drive_output_dir(script_dir))
     code = Cint(1)
     hosts_acc = resolved_hosts === nothing ?
@@ -114,11 +120,6 @@ function _run_drive_parsed_locked!(
     default_workers, julia_exe, skip_hash_check, explicit_package,
     require_all_hosts, resolved_output_dir, resolved_log_dir, resolved_hosts,
 )::Cint
-    include(script_path)
-    if isdefined(Main, :init_output_dir!)
-        @invokelatest Main.init_output_dir!(script_args)
-    end
-
     if enable_log
         init_log_file(DistSSHKit.resolve_drive_log_dir(log_dir, script_dir); prefix="drive", path_anchor=_PATH_ANCHOR)
         atexit(close_log_file)
