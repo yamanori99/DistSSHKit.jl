@@ -44,7 +44,8 @@ How you call it is a separate choice:
 
 All of these need **Julia 1.12+** ([Requirements](@ref)).
 
-Same host tokens for all of these (`parenthost:2`, `user@host:1`). Details:
+Same host tokens for go / drive / size (`parent:2`, `child:user@host:1`).
+`setup` uses the SSH name with no prefix. Details:
 [API](@ref API), [User Guide](@ref Manual).
 
 ## Installation
@@ -70,37 +71,37 @@ Also needs **`ssh`**, **`rsync`**, and **`git`** (git deploy only);
 ## Basic terms
 
 - **Host** — the machine that runs the work. This job's DistSSHKit parent is
-  `parenthost`. An SSH target is `user@hostname`, an IP address, or an SSH
-  config `Host` alias. `parenthost` is this job's DistSSHKit parent.
+  `parent`. SSH children are `child:NAME` (`user@hostname`, an IP, or an SSH
+  config `Host` alias). `setup` takes that SSH name with no prefix.
 - **Process** — one running `julia`. Each process has its own memory and runs
   independently at the OS level (this kit launches multiple `julia` processes,
   even on a single machine, to run work in parallel — built on Distributed.jl)
-- **Master** — the process on `parenthost` that plans slots (`go`) or hands
+- **Master** — the process on `parent` that plans slots (`go`) or hands
   work to workers (`drive`) and collects results. When a queue starts that
-  process, `parenthost` is the queue's runner, not your client machine
+  process, `parent` is the queue's runner, not your client machine
 - **Worker** — a process that receives work from the master and runs it
 
 Example: when you run `go` / `drive` on your own machine, that machine is
-`parenthost`. Each machine can run several workers (`parenthost` may run
+`parent`. Each machine can run several workers (`parent` may run
 none), and you can add as many remote machines as you like.
 
 ```@raw html
 <p style="text-align:center">
-<img class="docs-light-only" alt="Drive topology: Master process on parenthost, workers on parenthost and remotes" src="assets/diagram/topology.svg">
-<img class="docs-dark-only" alt="Drive topology: Master process on parenthost, workers on parenthost and remotes" src="assets/diagram/topology-dark.svg">
+<img class="docs-light-only" alt="Drive topology: Master process on parent, workers on parent and remotes" src="assets/diagram/topology.svg">
+<img class="docs-dark-only" alt="Drive topology: Master process on parent, workers on parent and remotes" src="assets/diagram/topology-dark.svg">
 </p>
 ```
 
-The diagram is **drive**: one Master process on `parenthost`, workers on
-`parenthost` and remotes. **go** uses the same `parenthost` token, but each
+The diagram is **drive**: one Master process on `parent`, workers on
+`parent` and remotes. **go** uses the same `parent` token, but each
 host runs independent slots (not Distributed workers).
 
 There's no limit on the number of remote hosts — more hosts just means more
 time spent on SSH connections and deployment, so it's best to start with a few
 and scale up. Each remote host needs:
 
-- Passwordless SSH from `parenthost`
-- Julia with the same major.minor version as `parenthost`
+- Passwordless SSH from `parent`
+- Julia with the same major.minor version as `parent`
   (`setup --check` verifies this)
 
 Details: [Requirements](@ref).

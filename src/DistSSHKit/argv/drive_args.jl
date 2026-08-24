@@ -38,9 +38,6 @@ function _parse_drive_flag_count(flag::String, args::Vector, i::Int)::Int
     end
 end
 
-"""Whether `host` / `host:N` denotes local worker processes (not SSH)."""
-_drive_local_host_name(host_name::String)::Bool = is_local_host_name(host_name)
-
 function _drive_set_local_workers!(
     local_workers::Int,
     count::Int,
@@ -55,39 +52,24 @@ function _drive_set_local_workers!(
     return count
 end
 
-function _drive_absorb_local_worker_spec(
-    local_workers::Int,
-    host_name::String,
-    workers::Union{Int,Nothing},
-    default_workers,
-)::Tuple{Int,Bool}
-    if !_drive_local_host_name(host_name)
-        return local_workers, false
-    end
-    count = _drive_set_local_workers!(
-        local_workers,
-        something(workers, default_workers, 1),
-        host_name * (workers === nothing ? "" : ":$workers"),
-    )
-    return count, true
-end
-
 function _drive_push_host_token!(
     hosts::Vector{Tuple{String,Union{Int,Nothing}}},
     local_workers::Int,
     token::AbstractString,
     default_workers,
 )::Int
-    host_name, host_workers = _parse_worker_token(String(token))
-    local_workers, absorbed = _drive_absorb_local_worker_spec(
-        local_workers,
-        host_name,
-        host_workers,
-        default_workers,
-    )
-    if !absorbed
-        push!(hosts, (host_name, host_workers))
+    p = parse_placement_token(String(token))
+    if p.role === :parent
+        n = p.n
+        n === 0 && return local_workers
+        count = something(n, default_workers, 1)
+        return _drive_set_local_workers!(
+            local_workers,
+            count,
+            String(token),
+        )
     end
+    push!(hosts, (p.name, p.n))
     return local_workers
 end
 
@@ -119,9 +101,10 @@ function parse_drive_args(args::Vector{String})
         arg = String(args[i])
 
         if arg == "--parenthost" || startswith(arg, "--parenthost:") ||
-                arg == "--masterhost" || startswith(arg, "--masterhost:")
+                arg == "--masterhost" || startswith(arg, "--masterhost:") ||
+                arg == "--parent" || startswith(arg, "--parent:")
             throw(ArgumentError(
-                "drive: use the host token `parenthost:N` (e.g. drive parenthost:4 script.jl), not `--parenthost N`",
+                "drive: use `parent:N` (e.g. drive parent:4 script.jl), not a `--parent` flag",
             ))
         elseif arg == "--local" || arg == "-l" ||
                 startswith(arg, "--local:") || startswith(arg, "-l:")
@@ -276,7 +259,7 @@ function parse_drive_args(args::Vector{String})
             break
         elseif startswith(arg, "-")
             throw(ArgumentError(
-                "unknown or incomplete drive option: $arg (use host:N form, e.g. parenthost:2 host1:4)",
+                "unknown or incomplete drive option: $arg (use parent:N / child:NAME:N, e.g. parent:2 child:host1:4)",
             ))
         else
             local_workers = _drive_push_host_token!(
@@ -352,16 +335,16 @@ function show_drive_requirements(; io::IO=stdout)
     print_help_section("Usage"; io=io)
     print_help_lines(io,
         "  julia --project=. -m DistSSHKit drive [workers...] DRIVER.jl",
-        "  drive parenthost:4 host1:8 jobs.jl",
+        "  drive parent:4 child:host1:8 jobs.jl",
         "  drive --collect-missing ROOT HOST...",
     )
     print_help_blank(io)
     print_help_section("Workers"; io=io)
     print_help_lines(io,
-        "  host:N / parenthost:N  N Distributed workers (not go slots)",
-        "  host                1 worker, or --workers default",
+        "  parent[:N]          Kit-side workers (omit N → --workers or 1)",
+        "  child:NAME[:N]      SSH workers (same :N / --workers rule)",
         "  $(KIT_HOSTS_FLAG_HELP)",
-        "  --hosts-file PATH   one token per line (host:N kept)",
+        "  --hosts-file PATH   one token per line",
     )
     print_help_blank(io)
     print_help_section("Options"; io=io)
@@ -394,12 +377,12 @@ function show_drive_requirements(; io::IO=stdout)
     print_help_section("Environment"; io=io)
     print_help_lines(io,
         "  $(KIT_HOSTS_ENV_HELP)",
-        "  JULIA_DISTRIBUTED_EXE       default remote Julia",
+        "  JULIA_DISTRIBUTED_EXE        default remote Julia",
         "  DISTSSHKIT_QUIET / PROGRESS / VERBOSE / YES",
         "  $(KIT_SKIP_PKILL_ENV_HELP)",
         "  $(KIT_JOBS_ENV_HELP)",
         "  $(KIT_REQUIRE_ALL_HOSTS_ENV_HELP)",
-        "  DISTRIBUTED_SKIP_COLLECT=1  skip post-run collect",
+        "  DISTRIBUTED_SKIP_COLLECT=1 skip post-run collect",
     )
     print_help_blank(io)
     print_help_lines(io,

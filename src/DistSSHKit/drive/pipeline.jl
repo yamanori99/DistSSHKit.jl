@@ -32,7 +32,7 @@ Build [`PipelineConfig`](@ref) from environment variables.
 
 | Variable | Role |
 |----------|------|
-| `DISTSSHKIT_HOSTS` | Comma-separated worker tokens (`host` / `host:N`) |
+| `DISTSSHKIT_HOSTS` | Comma-separated placement tokens (`parent[:N]` / `child:NAME[:N]`) |
 | `DISTSSHKIT_HOSTS_FILE` | Hosts file (appended after `DISTSSHKIT_HOSTS`, same order as CLI) |
 | `DISTRIBUTED_REMOTE_PROJECT_ROOT` | Remote repo root |
 | `DISTRIBUTED_PROJECT_ROOT` | Local project root |
@@ -160,13 +160,13 @@ end
 Run the usual remote workflow: optional sync, [`size!`](@ref), driver, optional collect.
 Does not call [`setup!`](@ref); prepare remotes first.
 
-Worker tokens match the CLI (`parenthost:2`, `user@host:1`). Bare hosts are sized with
+Worker tokens match the CLI (`parent:2`, `child:user@host:1`). Omitted `:N` is sized with
 [`size!`](@ref). Keyword `args` are passed to the driver; `remote` is the remote
 project path. Default `yes=true` skips confirm prompts.
 
 ```julia
-pipeline!(driver, "parenthost:2"; args=["8"])
-pipeline!(driver, "user@h1:1", "user@h2:1"; remote="/path/to/project", args=["8"], collect=true)
+pipeline!(driver, "parent:2"; args=["8"])
+pipeline!(driver, "child:user@h1:1", "child:user@h2:1"; remote="/path/to/project", args=["8"], collect=true)
 ```
 
 Remote hosts default to **no** pre-run sync; set `sync=:sync` / `:rsync` explicitly.

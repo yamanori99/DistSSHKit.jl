@@ -17,13 +17,13 @@ Each command page starts with a **Flags** table for that command.
 
 ## go vs drive (pick one)
 
-Both share host tokens (`parenthost:N`, `host:N`) and optional `--sync` / `--rsync`.
+Both share host tokens (`parent:N`, `child:NAME:N`) and optional `--sync` / `--rsync`.
 The difference is **what the script is**:
 
 | | [go](@ref Manual-go) | [drive](@ref Manual-drive) |
 | --- | --- | --- |
 | Script | Ordinary `.jl` (no Kit APIs) | Driver with `init_output_dir!` / `main` |
-| `host:N` means | N **concurrent full script runs** | N **Distributed workers** |
+| `child:NAME:N` means | N **concurrent full script runs** | N **Distributed workers** |
 | Collect | Slot-overwrite after remotes | Post-run-new after `main()`; optional collect-only flags |
 | Git parity | No `--require-git` | Opt-in `--require-git` |
 | `--output-dir` | Batch root (`PATH/{slot}/`) | Result root (`DISTRIBUTED_OUTPUT_DIR`) |
@@ -42,15 +42,16 @@ Same **names** are shared on purpose; a few meanings differ by command:
 | Git parity (drive) | **Off** by default. Opt-in: `--require-git`. Compat: `--skip-git-guard` (no-op; may combine with `--sync` / `--rsync`). |
 | Skip pre-run (go) | Compat: `--skip-sync` / `--skip-git-guard` (already the default; exclusive with `--sync` / `--rsync` on go). |
 | `--output-dir` | **`go`**: batch root (`PATH/{slot}/`). **`drive`**: result root (`DISTRIBUTED_OUTPUT_DIR`). Different on purpose. |
-| `--hosts` | CSV tokens. `setup` / `size` strip `:N`. `go` / `drive` keep `host:N`. |
-| `--hosts-file` | `setup` / `size` strip `:N`. `go` / `drive` keep `host:N` for slots / workers. |
+| `--hosts` | CSV tokens. `setup` strips `:N` from bare SSH names. `size` strips `:N` from `parent` / `child:NAME[:N]`. `go` / `drive` keep `child:NAME:N`. |
+| `--hosts-file` | Same as `--hosts` for that command. |
 | Shared peel | `-q`/`--quiet`, `--progress`, `--verbose`, `-y`/`--yes`, `--hosts`, `--hosts-file`, `-v`/`--version` — same on setup / go / drive / size. |
 
 ## Shared concepts
 
 **Hosts.** Sources, in the order they append after positional tokens:
 
-- CLI tokens (`parenthost:N`, `host:N`) on setup / go / drive / size
+- CLI tokens on go / drive / size: `parent[:N]`, `child:NAME[:N]`
+- CLI tokens on setup and drive collect-only: SSH name with no prefix
 - `--hosts` (CSV)
 - `DISTSSHKIT_HOSTS` (comma-separated)
 - `--hosts-file` (default path from `DISTSSHKIT_HOSTS_FILE`)

@@ -105,6 +105,7 @@ function run_drive_parsed!(
             code == 0 ? nothing : "drive",
             Int(code),
             hosts_acc[],
+            DistSSHKit.resolved_placement_tokens(local_workers, hosts, default_workers),
         ))
         DistSSHKit._remove_kit_pid_file(
             getpid(),

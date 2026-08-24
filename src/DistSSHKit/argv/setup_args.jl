@@ -25,7 +25,6 @@ function show_requirements(; io::IO=stdout)
         "  --check              SSH, Julia, project, deps",
         "  --runtest            Pkg.test of the job project on remotes",
         "  --cleanup / --delete stale workers / remote tree",
-        "                       cleanup: $(KIT_SKIP_PKILL_ENV_HELP)",
     )
     print_help_blank(io)
     print_help_section("Options"; io=io)
@@ -38,7 +37,7 @@ function show_requirements(; io::IO=stdout)
         "  $(KIT_VERBOSE_FLAG_HELP)",
         "  $(KIT_TIME_HELP)",
         "  -y, --yes            skip confirmations",
-        "  --hosts CSV         comma-separated hosts (`:N` stripped)",
+        "  --hosts CSV          SSH names (`:N` stripped)",
         "  --hosts-file PATH    one host per line (`:N` stripped)",
         "  --version, -v        print version and exit",
         "  -h, --help           this help",
@@ -46,6 +45,7 @@ function show_requirements(; io::IO=stdout)
     print_help_blank(io)
     print_help_section("Environment"; io=io)
     print_help_lines(io,
+        "  $(KIT_SKIP_PKILL_ENV_HELP)",
         "  $(KIT_JOBS_ENV_HELP)",
     )
     print_help_blank(io)

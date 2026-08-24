@@ -14,18 +14,18 @@ REPL help also works
 The shape mirrors the CLI: **`go!`** for as-is scripts, **`drive!`** (and friends)
 for Distributed drivers. **`pipeline!`** is optional sugar that runs the usual
 remote order in one call. Worker placement uses the same tokens as the CLI
-(`parenthost:2`, `user@host:1`):
+(`parent:2`, `child:user@host:1`):
 
 ```julia
-pipeline!(driver, "parenthost:2"; args=["8"])
-pipeline!(driver, "user@h1:1", "user@h2:1"; remote="/path/to/project", args=["8"])
-go!("job.jl", "parenthost:2"; args=["8"])
-drive!("job.jl", "parenthost:2"; args=["8"])
+pipeline!(driver, "parent:2"; args=["8"])
+pipeline!(driver, "child:user@h1:1", "child:user@h2:1"; remote="/path/to/project", args=["8"])
+go!("job.jl", "parent:2"; args=["8"])
+drive!("job.jl", "parent:2"; args=["8"])
 ```
 
 ## Run a script as-is — `go!`
 
-No Kit imports in the job file. Each `parenthost:N` / `host:N` slot is one full run, concurrent.
+No Kit imports in the job file. Each `parent:N` / `child:NAME:N` slot is one full run, concurrent.
 
 ```@docs
 go!
@@ -48,7 +48,7 @@ When the script is a **driver** (`init_output_dir!` / `main`, `pmap`, …), buil
 First-time remotes usually look like:
 
 ```julia
-session = KitSession(workers=["user@h1"], remote="/path/to/project", yes=true)
+session = KitSession(workers=["child:user@h1"], remote="/path/to/project", yes=true)
 setup!(session, :delete, :rsync, :instantiate)
 setup!(session, :check; ignore_julia_version=true)  # optional
 setup!(session, :runtest)  # optional: job Pkg.test() on remotes
@@ -108,7 +108,7 @@ PipelineResult
 report_pipeline_errors
 ```
 
-## Worker tokens — `parenthost:N` / `host:N`
+## Worker tokens — `parent:N` / `child:NAME:N`
 
 Use this surface when callers need to classify tokens or decide whether
 `size!` is needed before building workers (e.g. the queue layer's own
@@ -120,10 +120,10 @@ private internals.
 `remote_hosts_from_tokens` extracts only SSH host names.
 `worker_plan_from_tokens` resolves to a concrete [`WorkerPlan`](@ref).
 `split_worker_token` and `is_local_host_name` are the low-level primitives
-(`is_local_host_name` is `parenthost` only).
+(`is_local_host_name` is `parent` only).
 `host_tokens(parsed; kind=:go|:drive)` rebuilds `execute!` token strings from
-`parse_go_args` / `parse_drive_args` (bare hosts stay bare). Go keeps parser
-strings; drive emits `parenthost:N` from `local_workers`.
+`parse_go_args` / `parse_drive_args`. Go keeps parser
+strings; drive emits `parent:N` from `local_workers` and `child:NAME[:N]` for SSH.
 
 ```@docs
 parse_worker_tokens
@@ -142,9 +142,9 @@ For callers that pick the kind at runtime (the queue layer): one function,
 one result type, instead of branching on `kind` yourself.
 
 ```julia
-execute!(:go, "job.jl", ["parenthost:2"]; args=["8"])
-execute!(:drive, "job.jl", ["parenthost:2"]; args=["8"])
-wait(execute!(:go, "job.jl", ["parenthost:1"]; detached=true, args=["8"]))
+execute!(:go, "job.jl", ["parent:2"]; args=["8"])
+execute!(:drive, "job.jl", ["parent:2"]; args=["8"])
+wait(execute!(:go, "job.jl", ["parent:1"]; detached=true, args=["8"]))
 ```
 
 `detached=true`:

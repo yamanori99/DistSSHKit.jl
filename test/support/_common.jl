@@ -36,8 +36,22 @@ function _kit_cli_cmd(
     return Cmd(vcat(prefix, ["-m", "DistSSHKit"], argv))
 end
 
-"""Temp hosts file: comment line, `host-a`, and `host-b:4`."""
+"""Temp go/drive/size hosts file: comment, `child:host-a`, `child:host-b:4`."""
 function _sample_hosts_file()::String
+    path, io = mktemp()
+    try
+        write(io, "# lab hosts (comments and host:N lines)\nchild:host-a\nchild:host-b:4\n")
+        close(io)
+    catch
+        close(io)
+        rm(path; force=true)
+        rethrow()
+    end
+    return path
+end
+
+"""Temp setup hosts file: bare SSH names (`host:N` stripped by setup)."""
+function _sample_setup_hosts_file()::String
     path, io = mktemp()
     try
         write(io, "# lab hosts (comments and host:N lines)\nhost-a\nhost-b:4\n")

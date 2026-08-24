@@ -7,13 +7,20 @@ host_op_result(; cancelled::Bool=false, succeeded::Int=0, failed::Int=0) =
 """
 Validate setup CLI hosts.
 
-Setup hosts are **SSH targets only**. Unlike `drive` / `go`, `parenthost` is not
-an SSH target — pass `user@host` (or an SSH config `Host` alias).
+Setup hosts are **SSH targets only**. Unlike `drive` / `go`, `parent` is not
+an SSH target — pass `user@host` (or an SSH config `Host` alias), with no
+`child:` prefix (every setup host is a child).
 """
 function validate_setup_hosts(hosts::AbstractVector{<:AbstractString})
     isempty(hosts) && throw(ArgumentError("No hosts specified"))
     for raw in hosts
         host = String(raw)
+        if startswith(host, CHILD_TOKEN_PREFIX)
+            throw(ArgumentError(
+                "setup hosts are SSH names only; drop the `child:` prefix (got $(repr(host))).",
+            ))
+        end
+        throw_legacy_placement_token(host)
         if is_local_host_name(host)
             throw(ArgumentError(
                 "setup hosts are SSH targets only; $(repr(host)) means this job's DistSSHKit parent in drive/go. " *

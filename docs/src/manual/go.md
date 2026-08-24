@@ -1,18 +1,18 @@
 # [go](@id Manual-go)
 
 Run a **standalone** script as-is (no Kit APIs in the job file). Each
-`parenthost:N` / `host:N` slot is one full script run, started **concurrently** —
+`parent:N` / `child:NAME:N` slot is one full script run, started **concurrently** —
 not Distributed workers.
 
 ```bash
-julia --project=. -m DistSSHKit go [options] [parenthost:N] [host:N...] SCRIPT.jl [script_args...]
+julia --project=. -m DistSSHKit go [options] [parent:N] [child:NAME[:N]...] SCRIPT.jl [script_args...]
 ```
 
 Also: [First Steps · Demo](@ref Tutorial-Demo), [drive](@ref Manual-drive),
 `go --help`. Flag vocabulary and a short **go vs drive** table:
 [User Guide](@ref Manual).
 
-**vs drive:** each `host:N` is N full script runs (not Distributed workers).
+**vs drive:** each `child:NAME:N` is N full script runs (not Distributed workers).
 There is no `--require-git`; for commit parity use [`drive --require-git`](@ref Manual-drive).
 Prepare remotes with [`setup --rsync`](@ref Manual-setup) **or** `--clone`, then
 `--instantiate` (git updates later: `setup --sync` or `go --sync`).
@@ -32,7 +32,7 @@ Prepare remotes with [`setup --rsync`](@ref Manual-setup) **or** `--clone`, then
 | `--progress` | Live status (TTY default) |
 | `--verbose` | Full detail (non-TTY default) |
 | `-y` / `--yes` | Non-interactive confirmations |
-| `--hosts-file PATH` | Append slot specs (`host:N` preserved) |
+| `--hosts-file PATH` | Append slot specs (`child:NAME:N` preserved) |
 | `-v` / `--version` | Print DistSSHKit version and exit |
 | `-h` / `--help` | Full help |
 
@@ -73,7 +73,7 @@ The Time table prints at the end, after slot stdout, with a `progress DIR` line
 to replay:
 
 ```bash
-julia --project=. -m DistSSHKit go -y parenthost:2 demos/without_kit/pi_echo.jl --n 5000
+julia --project=. -m DistSSHKit go -y parent:2 demos/without_kit/pi_echo.jl --n 5000
 julia --project=. -m DistSSHKit progress DIR
 ```
 
@@ -97,5 +97,5 @@ pass an explicit `--output-dir` / `output_dir=`.
 
 ## Hosts
 
-CLI tokens, `--hosts`, `--hosts-file`, and/or `DISTSSHKIT_HOSTS`. `parenthost:0` skips parent
-slots when remotes are listed. Omitting hosts is one parent slot (`parenthost/`).
+CLI tokens, `--hosts`, `--hosts-file`, and/or `DISTSSHKIT_HOSTS`. `parent:0` skips parent
+slots when remotes are listed. Omitting hosts is one parent slot (`parent/`).

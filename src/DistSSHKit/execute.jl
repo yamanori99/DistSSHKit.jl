@@ -214,9 +214,9 @@ at runtime (`kind ∈ (:go, :drive)`), returning the shared [`KitRunResult`](@re
 instead of `GoResult` / `DriveResult`.
 
 ```julia
-execute!(:go, "job.jl", ["parenthost:2"]; args=["8"])
-execute!(:drive, "job.jl", ["parenthost:2"]; args=["8"])
-wait(execute!(:go, "job.jl", ["parenthost:1"]; detached=true, args=["8"]))
+execute!(:go, "job.jl", ["parent:2"]; args=["8"])
+execute!(:drive, "job.jl", ["parent:2"]; args=["8"])
+wait(execute!(:go, "job.jl", ["parent:1"]; detached=true, args=["8"]))
 ```
 
 `output_dir`, `args`, `project`, `sync`, `julia` are the keywords [`go!`](@ref)
@@ -808,6 +808,9 @@ function _write_kit_result_file(result::KitRunResult)
         end
         data["hosts"] = rows
     end
+    if !isempty(result.tokens)
+        data["tokens"] = result.tokens
+    end
     for d in dirs
         try
             mkpath(d)
@@ -851,7 +854,14 @@ function kit_result_from_dir(output_dir::AbstractString)::Union{Nothing,KitRunRe
         fs = get(raw, "failed_step", nothing)
         fs_s = fs isa AbstractString ? String(fs) : nothing
         hosts = _kit_result_hosts_from_toml(get(raw, "hosts", nothing))
-        return KitRunResult(ok, kind, od_s, ld_s, fs_s, Int(code), hosts)
+        tok_raw = get(raw, "tokens", nothing)
+        tokens = String[]
+        if tok_raw isa AbstractVector
+            for t in tok_raw
+                t isa AbstractString && push!(tokens, String(t))
+            end
+        end
+        return KitRunResult(ok, kind, od_s, ld_s, fs_s, Int(code), hosts, tokens)
     catch
         return nothing
     end

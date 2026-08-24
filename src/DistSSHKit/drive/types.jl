@@ -7,7 +7,7 @@ same `mem_headroom` / `master_gb` / CPU reserve as `size_worker_count`
 (`pipeline!` / `drive!` / CLI `drive --mem-headroom`).
 """
 const DEFAULT_MEM_HEADROOM = 0.75
-"""GB reserved for the master on parenthost sizing (`size` / drive preflight)."""
+"""GB reserved for the master on parent sizing (`size` / drive preflight)."""
 const DEFAULT_MASTER_GB = 0.4
 """RSS→GB: 10% padding on the measured set (unexported; no CLI flag)."""
 const WORKER_RSS_SAFETY_FACTOR = 1.1
@@ -70,6 +70,29 @@ end
 
 WorkerPlan() = WorkerPlan(0, Dict{String,Int}())
 
+"""Resolved `parent:N` / `child:NAME:N` lines from a [`WorkerPlan`](@ref)."""
+function resolved_placement_tokens(plan::WorkerPlan)::Vector{String}
+    out = String[]
+    plan.local_workers > 0 &&
+        push!(out, format_placement_token(:parent, PARENT_HOST_NAME, plan.local_workers))
+    for (host, n) in plan.remote_workers
+        n > 0 && push!(out, format_placement_token(:child, host, n))
+    end
+    return out
+end
+
+function resolved_placement_tokens(
+    local_workers::Integer,
+    hosts::AbstractVector{Tuple{String, Union{Int, Nothing}}},
+    default_workers,
+)::Vector{String}
+    remotes = Dict{String,Int}()
+    for pair in hosts
+        remotes[pair[1]] = something(pair[2], default_workers, 1)
+    end
+    return resolved_placement_tokens(WorkerPlan(Int(local_workers), remotes))
+end
+
 """
 Parsed drive/go worker tokens (counts may still need [`size!`](@ref)).
 
@@ -110,8 +133,9 @@ end
 """
     parse_worker_tokens(tokens) -> ParsedWorkerTokens
 
-Classify CLI-style tokens. Explicit `:N` is fixed; bare hosts are sized later.
-`parenthost` is this job's DistSSHKit parent; everything else is remote SSH.
+Classify CLI-style tokens. Explicit `:N` is fixed; omitted `:N` is sized later
+or filled by `-w`. `parent` / `parent:N` is the Kit side; SSH children are
+`child:NAME` / `child:NAME:N`.
 """
 function parse_worker_tokens(
     tokens::AbstractVector{<:AbstractString},
@@ -126,18 +150,20 @@ function parse_worker_tokens(
     out_tokens = String[String(t) for t in tokens]
 
     for raw in out_tokens
-        host, n = split_worker_token(raw)
-        if is_local_host_name(host)
+        p = parse_placement_token(raw)
+        if p.role === :parent
             local_seen && throw(ArgumentError(
-                "duplicate parent worker token; use one of $(PARENT_HOST_NAME):N",
+                "duplicate parent token; use one of $(PARENT_HOST_NAME):N",
             ))
             local_seen = true
-            if n === nothing
+            if p.n === nothing
                 local_autosize = true
             else
-                local_workers = Int(n)
+                local_workers = Int(p.n)
             end
         else
+            host = p.name
+            n = p.n
             if !(host in seen_remote)
                 push!(remote_hosts, host)
                 push!(seen_remote, host)
@@ -235,6 +261,7 @@ struct KitRunResult
     failed_step::Union{Nothing,String}
     exit_code::Int
     hosts::Vector{HostRunResult}
+    tokens::Vector{String}
     function KitRunResult(
         ok::Bool,
         kind::Symbol,
@@ -243,6 +270,7 @@ struct KitRunResult
         failed_step::Union{Nothing,String},
         exit_code::Integer,
         hosts::AbstractVector{HostRunResult}=HostRunResult[],
+        tokens::AbstractVector{<:AbstractString}=String[],
     )
         return new(
             ok,
@@ -252,6 +280,7 @@ struct KitRunResult
             failed_step,
             Int(exit_code),
             collect(HostRunResult, hosts),
+            String[String(t) for t in tokens],
         )
     end
 end
@@ -320,7 +349,7 @@ end
 
 Settings for [`pipeline!`](@ref): sync, worker tokens, driver run, and optional collect.
 
-Worker placement uses CLI-style tokens (`parenthost:2`, `user@host:1`). Bare hosts are
+Worker placement uses CLI-style tokens (`parent:2`, `child:user@host:1`). Omitted `:N` is sized with
 sized via [`size!`](@ref). Set `sync=false` to skip sync. Set `collect=false`
 to skip rsync-back. Git parity is off by default; pass `skip_hash_check=false`
 (or CLI `--require-git`) to require matching remote commits.
@@ -548,10 +577,10 @@ end
 function drive_host_specs(plan::WorkerPlan)::Vector{String}
     specs = String[]
     if plan.local_workers > 0
-        push!(specs, string(PARENT_HOST_NAME, ":", plan.local_workers))
+        push!(specs, format_placement_token(:parent, PARENT_HOST_NAME, plan.local_workers))
     end
     for (host, n) in plan.remote_workers
-        n > 0 && push!(specs, "$(host):$n")
+        n > 0 && push!(specs, format_placement_token(:child, host, n))
     end
     return specs
 end

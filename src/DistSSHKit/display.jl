@@ -1936,7 +1936,7 @@ function print_kit_root_usage(io::IO=stderr)
     print_help_section("Examples"; io=io)
     print_help_lines(io,
         "  julia --project=. -m DistSSHKit go SCRIPT.jl",
-        "  julia --project=. -m DistSSHKit drive parenthost:2 SCRIPT.jl",
+        "  julia --project=. -m DistSSHKit drive parent:2 SCRIPT.jl",
         "  julia --project=. -m DistSSHKit setup --check host1",
     )
     print_help_blank(io)

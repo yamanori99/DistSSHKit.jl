@@ -35,7 +35,7 @@ end
 
 const hosts = collect(String, _ssh_e2e_hosts())
 const remote_root = _ssh_e2e_remote_root()
-const remote_tokens = String["$(hosts[1]):1", "$(hosts[2]):1"]
+const remote_tokens = String["child:$(hosts[1]):1", "child:$(hosts[2]):1"]
 _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
 
 @testset "SSH E2E (docker-ssh)" verbose=true begin
@@ -178,7 +178,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
 
         @testset "size two remotes" begin
             proc, out = _run_kit_size(;
-                size_args=["-q", hosts...],
+                size_args=["-q", remote_tokens...],
                 project_root=proj,
                 extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
             )
@@ -445,7 +445,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             withenv(_e2e_base_env()...) do
                 session = KitSession(
                     project=proj,
-                    workers=hosts,
+                    workers=remote_tokens,
                     remote=remote_root,
                     yes=true,
                     quiet=true,
@@ -566,7 +566,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
                 DistSSHKit.execute!(
                     :drive,
                     sleep_script,
-                    ["$(host):1"];
+                    ["child:$(host):1"];
                     project=proj,
                     remote=remote_root,
                     detached=true,

@@ -63,7 +63,7 @@ using Test
     @test_throws ArgumentError parse_setup_args(["--repo"])
     @test_throws ArgumentError parse_setup_args(["--julia"])
 
-    let r = parse_setup_args(["--check", "--hosts-file", _sample_hosts_file(), "host-cli"])
+    let r = parse_setup_args(["--check", "--hosts-file", _sample_setup_hosts_file(), "host-cli"])
         @test r.hosts == ["host-cli", "host-a", "host-b"]
     end
 

@@ -24,7 +24,7 @@ function _run_kit_drive(;
     julia = String(julia)
     log_flags = log_dir === nothing ? ["--no-log"] : ["--log-dir", log_dir]
     worker_tokens = String[]
-    local_workers > 0 && push!(worker_tokens, "parenthost:$(local_workers)")
+    local_workers > 0 && push!(worker_tokens, "parent:$(local_workers)")
     append!(worker_tokens, remote_hosts)
     isempty(worker_tokens) && error("_run_kit_drive: need local_workers > 0 or remote_hosts")
     cmd = _kit_cli_cmd(
@@ -78,7 +78,7 @@ function _run_host_drive(;
     drive = joinpath(kit_root, "src", "cli", "drive.jl")
     log_flags = log_dir === nothing ? ["--no-log"] : ["--log-dir", log_dir]
     cmd = Cmd([julia, "--startup-file=no", "--project=$host_project", drive,
-               "parenthost:$(local_workers)", log_flags..., script])
+               "parent:$(local_workers)", log_flags..., script])
     env = _child_julia_env(Dict(
         "DISTRIBUTED_INIT_DELAY_SEC" => "0",
         "DISTRIBUTED_PROJECT_ROOT" => host_project,

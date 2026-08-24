@@ -2,8 +2,8 @@
 """
 `julia -m DistSSHKit size` — estimate worker counts from RAM/CPU.
 
-  julia --project=. -m DistSSHKit size parenthost host1 host2
-  julia --project=. -m DistSSHKit size --gb-per-worker 1.5 host1
+  julia --project=. -m DistSSHKit size parent child:host1 child:host2
+  julia --project=. -m DistSSHKit size --gb-per-worker 1.5 child:host1
 
 See `--help`.
 """

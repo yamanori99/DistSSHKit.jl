@@ -52,7 +52,7 @@ using Test
         file_batch = _ssh_e2e_latest_go_batch(tmp)
         @test file_batch !== nothing
         file_batch === nothing && error("expected go batch for pi_file")
-        @test read(joinpath(file_batch, "parenthost", "pi_results.txt"), String) == solo_body
+        @test read(joinpath(file_batch, "parent", "pi_results.txt"), String) == solo_body
         _assert_kit_progress_done(file_batch; kind=:go)
 
         pipe_proc, pipe_out = _run_subprocess(setenv(
@@ -64,8 +64,8 @@ using Test
         pipe_batch = _ssh_e2e_latest_go_batch(tmp)
         @test pipe_batch !== nothing
         pipe_batch === nothing && error("expected go batch for pipeline_pi")
-        a = read(joinpath(pipe_batch, "parenthost-1", "pi_results.txt"), String)
-        b = read(joinpath(pipe_batch, "parenthost-2", "pi_results.txt"), String)
+        a = read(joinpath(pipe_batch, "parent-1", "pi_results.txt"), String)
+        b = read(joinpath(pipe_batch, "parent-2", "pi_results.txt"), String)
         @test occursin("pi=", a)
         @test a == b
         _assert_kit_progress_done(pipe_batch; kind=:go)

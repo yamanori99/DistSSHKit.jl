@@ -5,6 +5,10 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- **Breaking:** go/drive/size placement tokens are `parent[:N]` (Kit) and
+  `child:NAME[:N]` (SSH). `parenthost` is removed. setup and collect-only
+  still take bare SSH names. `-w` fills omitted `:N` on both. `kit.result`
+  stores resolved `tokens`.
 - [`setup!`](@ref) rejects a bad mode or `:clone` without `repo=` before
   applying session verbosity or opening `.distsshkit/setup/`.
 - **Breaking:** omitted go/drive kit dirs sit next to the script:

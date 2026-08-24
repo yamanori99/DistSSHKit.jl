@@ -28,7 +28,10 @@ GoResult(
     failed_step::Union{Nothing,String}=nothing,
 ) = GoResult(ok, sync, run, collect, script, output_dir, failed_step)
 
-function kit_run_result(result::GoResult)::KitRunResult
+function kit_run_result(
+    result::GoResult,
+    tokens::AbstractVector{<:AbstractString}=String[],
+)::KitRunResult
     return KitRunResult(
         result.ok,
         :go,
@@ -36,6 +39,8 @@ function kit_run_result(result::GoResult)::KitRunResult
         nothing,
         result.failed_step,
         _result_exit_code(result.ok, result.run, result.collect, result.failed_step),
+        HostRunResult[],
+        tokens,
     )
 end
 
@@ -49,26 +54,26 @@ function _go_sanitize_label(raw::AbstractString)::String
     return isempty(s) ? "host" : s
 end
 
-"""True when a go token looks like a misspelling of `parenthost`."""
+"""True when a go token looks like a misspelling of `parent`."""
 function _go_local_host_typo_hint(host_name::AbstractString)::Union{Nothing,String}
     h = lowercase(String(host_name))
     h in (
         "lacal", "loacl", "locahost", "locl",
-        "parenthos", "parnthost",
+        "parenthos", "parnthost", "parent",
         "masterhost", "masterhos", "materhost",
     ) &&
-        return "did you mean parenthost?"
+        return "did you mean parent?"
     return nothing
 end
 
 """
 Build execution slots from host tokens.
 
-- No tokens → one parent slot (directory label `parenthost`)
-- `parenthost:N` → N slots on this job's DistSSHKit parent
-- `parenthost:0` skips parent when remotes are listed
-- `user@host` → one remote slot
-- `user@host:N` → N remote slots on that host (`host`, or `host-1` … when N>1)
+- No tokens → one parent slot (directory label `parent`)
+- `parent:N` → N slots on this job's DistSSHKit parent
+- `parent:0` skips parent when children are listed
+- `child:NAME` → one SSH slot
+- `child:NAME:N` → N SSH slots (`NAME`, or `NAME-1` … when N>1)
 """
 function _go_plan_slots(host_tokens::AbstractVector{<:AbstractString})::Vector{GoSlot}
     isempty(host_tokens) && return [GoSlot(:local, nothing, PARENT_HOST_NAME)]
@@ -77,27 +82,24 @@ function _go_plan_slots(host_tokens::AbstractVector{<:AbstractString})::Vector{G
     parent_label_base = PARENT_HOST_NAME
     remote_runs = Vector{String}() # host repeated per run
     for raw in host_tokens
-        host_name, host_workers = split_worker_token(String(raw))
-        n = something(host_workers, 1)
-        if _go_is_local_host(host_name)
+        p = parse_placement_token(String(raw))
+        n = something(p.n, 1)
+        if p.role === :parent
             n < 0 &&
                 throw(ArgumentError("parent slot count must be >= 0, got $n in $(repr(raw))"))
             local_count += n
         elseif n < 1
-            hint = _go_local_host_typo_hint(host_name)
-            msg = "slot count must be >= 1, got $n in $(repr(raw))"
-            hint !== nothing && (msg *= " ($hint)")
-            throw(ArgumentError(msg))
+            throw(ArgumentError("slot count must be >= 1, got $n in $(repr(raw))"))
         else
             for _ in 1:n
-                push!(remote_runs, host_name)
+                push!(remote_runs, p.name)
             end
         end
     end
 
     local_count == 0 && isempty(remote_runs) &&
         throw(ArgumentError(
-            "no execution slots: list remotes after parenthost:0, or omit the parent token to run on the parent",
+            "no execution slots: list children after parent:0, or omit parent to run on the Kit side",
         ))
 
     slots = GoSlot[]
@@ -125,6 +127,29 @@ function _go_plan_slots(host_tokens::AbstractVector{<:AbstractString})::Vector{G
         push!(slots, GoSlot(:remote, h, label))
     end
     return slots
+end
+
+function placement_tokens_from_go_slots(slots::Vector{GoSlot})::Vector{String}
+    parent_n = count(s -> s.kind === :local, slots)
+    order = String[]
+    counts = Dict{String,Int}()
+    for s in slots
+        s.kind === :remote || continue
+        h = s.host
+        h isa String || continue
+        if !haskey(counts, h)
+            push!(order, h)
+            counts[h] = 0
+        end
+        counts[h] += 1
+    end
+    out = String[]
+    parent_n > 0 &&
+        push!(out, format_placement_token(:parent, PARENT_HOST_NAME, parent_n))
+    for h in order
+        push!(out, format_placement_token(:child, h, counts[h]))
+    end
+    return out
 end
 
 function _go_script_relpath(project::AbstractString, script::AbstractString)::String
@@ -278,7 +303,7 @@ function _go_write_batch_manifest!(
         println(io, "script=", script)
         println(io, "slots=", length(slots))
         for (i, s) in enumerate(slots)
-            host = s.host === nothing ? "parenthost" : s.host
+            host = s.host === nothing ? PARENT_HOST_NAME : s.host
             println(io, "slot[$i]=", s.label, " kind=", s.kind, " host=", host)
         end
     end
@@ -524,6 +549,7 @@ function _go_complete!(
     release_lock,
     progress_ok::Bool,
     anchor,
+    tokens::Vector{String},
 )::GoResult
     footer = progress_ok ? display_path(batch_dir, anchor) : nothing
     kit_progress_done!(; ok=progress_ok, footer=footer)
@@ -531,7 +557,7 @@ function _go_complete!(
     _maybe_print_kit_progress_phases(batch_dir)
     close_log_file()
     _set_kit_progress_sidecar!(nothing)
-    _write_kit_result_file(kit_run_result(result))
+    _write_kit_result_file(kit_run_result(result, tokens))
     release_lock()
     _remove_kit_pid_file(getpid(), batch_dir, nothing)
     return result
@@ -545,8 +571,8 @@ Run an as-is complete job on one or more slots (local and/or remote).
 
 ```julia
 go!("job.jl")                          # one parent slot
-go!("job.jl", "parenthost:2"; args=["8"])
-go!("job.jl", "user@h1:1", "user@h2:1"; remote="/path/to/project")
+go!("job.jl", "parent:2"; args=["8"])
+go!("job.jl", "child:user@h1:1", "child:user@h2:1"; remote="/path/to/project")
 ```
 
 Each slot gets `DISTRIBUTED_OUTPUT_DIR` pointing at
@@ -571,7 +597,7 @@ When `workers` is empty and `hosts_file` is omitted, `DISTSSHKIT_HOSTS_FILE`
 is still read (API `go!("job.jl")`). Non-empty `workers` (CLI
 [`host_tokens`](@ref)) does not re-read that ENV.
 
-`parenthost:N` and `host:N` mean N independent full-job runs (not Distributed workers),
+`parent:N` and `child:NAME:N` mean N independent full-job runs (not Distributed workers),
 started together. `path_anchor` shortens displayed paths (CLI passes kit project root).
 """
 function go!(
@@ -618,6 +644,7 @@ function go!(
         end
     end
     slots = _go_plan_slots(tokens)
+    place = placement_tokens_from_go_slots(slots)
     if output_dir !== nothing && collect_spec isa AbstractString
         throw(ArgumentError(
             "go!: set the batch root via output_dir OR collect_spec::String, not both",
@@ -674,7 +701,7 @@ function go!(
         writeln_field("Script", display_path(script_path, anchor))
         writeln_field("Slots", string(length(slots)))
         for s in slots
-            where = s.kind === :local ? "parenthost" : String(something(s.host, s.label))
+            where = s.kind === :local ? PARENT_HOST_NAME : String(something(s.host, s.label))
             writeln_both("  · $(s.label)  ($where)"; color=:light_black)
         end
         writeln_both("")
@@ -722,6 +749,7 @@ function go!(
                     release_lock,
                     false,
                     anchor,
+                    place,
                 )
             end
             # Sync may refresh Manifest without installing; re-check deps before run.
@@ -796,6 +824,7 @@ function go!(
                 release_lock,
                 false,
                 anchor,
+                place,
             )
         end
         if any_collect_fail[]
@@ -814,6 +843,7 @@ function go!(
                 release_lock,
                 false,
                 anchor,
+                place,
             )
         end
 
@@ -827,6 +857,7 @@ function go!(
             release_lock,
             true,
             anchor,
+            place,
         )
     finally
         if !completed

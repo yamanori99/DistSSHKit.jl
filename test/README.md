@@ -105,7 +105,7 @@ DISTSSHKIT_CODE_COVERAGE=1 testenv/docker-ssh/scripts/up.sh --e2e
 | `worker_*.txt` | on the worker; `run_on_host` read; `--collect-missing` restores; skip keeps junk; `--collect-overwrite` replaces; `kit.result` `hosts` names both remotes |
 | `kit.progress` | `kit_progress_latest` last event is `done` after demo drive / go |
 | worker `error(...)` | non-zero |
-| mixed `parenthost:1` + two remotes | smoke `nw=3` |
+| mixed `parent:1` + two remotes | smoke `nw=3` |
 | in-process `drive!` twice (reentrant) | each call `nw=2`; no worker leak (#144) |
 | detached drive SIGKILL | wait until heartbeat monitors start, then remote `--worker` gone (#148) |
 | `go pi_echo` | π on both hosts |
@@ -136,6 +136,16 @@ Not this file: macOS workers, dead hosts, fake `ssh`/`rsync`, local `with_kit` r
 | size | plan math (+ optional RSS) | unit + local probe in `integration/size/` | e2e if needed |
 
 Do not fake Julia SSH worker launch. Local workers stand in for drive/go; they cannot stand in for setup. `_run_kit_setup` / `_run_kit_go` use an ephemeral project unless `project_root` is set (E2E uses `test/artifacts/ssh-e2e/`).
+
+## Host tokens vs SSH names
+
+Tests follow the same two surfaces as the kit. No extra test harness:
+
+- go / drive / size CLI and `KitSession(workers=…)` use placement tokens (`parent:2`, `child:host-a:4`)
+- setup, collect-only HOST, fake SSH trees, `session.hosts`, and `HostRunResult.host` use the SSH name (`host-a`)
+- `_sample_hosts_file` is tokens; `_sample_setup_hosts_file` is bare names
+
+Do not search-replace a host name into a token (that produced `child:child:…` and collect dirs named `child:host1`).
 
 ## Writing tests
 

@@ -19,11 +19,11 @@ demos/
   with_kit/          # driver scripts — use drive or pipeline!
     square_file.jl   # file: square_results.csv
     square_echo.jl   # stdout only
-    pipeline_square.jl  # pipeline!(driver, "parenthost:2")
+    pipeline_square.jl  # pipeline!(driver, "parent:2")
   without_kit/       # after `demo install without_kit`
     pi_file.jl       # file: pi_results.txt
     pi_echo.jl       # stdout only
-    pipeline_pi.jl       # go!(script, "parenthost:2") → pi_file.jl
+    pipeline_pi.jl       # go!(script, "parent:2") → pi_file.jl
 ```
 
 Each topic has a `*_file.jl` and `*_echo.jl` pair: same job, but `*_file.jl`
@@ -46,7 +46,7 @@ julia demos/without_kit/pi_file.jl --n 5000
 Two local slots:
 
 ```bash
-julia --project=. -m DistSSHKit go parenthost:2 demos/without_kit/pi_file.jl --n 5000
+julia --project=. -m DistSSHKit go parent:2 demos/without_kit/pi_file.jl --n 5000
 ```
 
 Same job through the API (`go!`):
@@ -59,7 +59,7 @@ With remotes (after [First-time remotes](@ref first-time-remotes)):
 
 ```bash
 julia --project=. -m DistSSHKit go \
-    parenthost:2 YourHost1:2 YourHost2:2 \
+    parent:2 child:YourHost1:2 child:YourHost2:2 \
     demos/without_kit/pi_file.jl --n 5000
 ```
 
@@ -70,7 +70,7 @@ When you need
 over workers instead of N independent script runs, use `drive` (not `go`):
 
 ```bash
-julia --project=. -m DistSSHKit drive parenthost:2 demos/with_kit/square_file.jl --n 4
+julia --project=. -m DistSSHKit drive parent:2 demos/with_kit/square_file.jl --n 4
 ```
 
 Same driver through the API (`pipeline!` — local workers, no sync/collect):
@@ -83,7 +83,7 @@ With remotes (after [First-time remotes](@ref first-time-remotes)):
 
 ```bash
 julia --project=. -m DistSSHKit drive \
-    parenthost:2 YourHost1:2 YourHost2:2 \
+    parent:2 child:YourHost1:2 child:YourHost2:2 \
     demos/with_kit/square_file.jl --n 4
 ```
 

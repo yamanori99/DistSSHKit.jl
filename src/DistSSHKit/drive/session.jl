@@ -18,10 +18,10 @@ end
                quiet=false, verbosity=nothing, yes=true, include_local_for_size=false)
 
 Build a session for drive APIs. `workers` are CLI-style tokens
-(`parenthost:2`, `user@host:1`, or bare `user@host` for later [`size!`](@ref)).
+(`parent:2`, `child:user@host:1`). Omitted `:N` is filled by `-w` or [`size!`](@ref).
 
 `session.hosts` keeps remote SSH names only (for sync / collect).
-`session.tokens` keeps the original tokens (including `parenthost:N`).
+`session.tokens` keeps the original tokens (including `parent:N`).
 `remote` is the remote project path (`DISTRIBUTED_REMOTE_PROJECT_ROOT`).
 
 `hosts_file` is appended when given. `ENV["DISTSSHKIT_HOSTS_FILE"]` is used
@@ -101,7 +101,7 @@ end
 """Explain surface for this session (`:cli` or `:api`)."""
 hint_surface(session::KitSession)::Symbol = session.cli_session.hint_surface
 
-"""SSH host names used for [`size!`](@ref) (`parenthost` first when `include_local_for_size`)."""
+"""SSH host names used for [`size!`](@ref) (`parent` first when `include_local_for_size`)."""
 function session_size_hosts(session::KitSession)::Tuple{Vector{String},Vector{String}}
     remote_hosts = copy(session.hosts)
     if session.include_local_for_size

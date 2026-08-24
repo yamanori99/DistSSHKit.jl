@@ -9,14 +9,14 @@ using Test
         let r = parse_go_args([
                 "--julia", "/opt/julia/bin/julia",
                 "--output-dir", "my_runs",
-                "--sync", "h1",
+                "--sync", "child:h1",
                 "--help",
             ])
             @test r.help
             @test r.julia == "/opt/julia/bin/julia"
             @test r.output_dir == "my_runs"
             @test r.sync === :sync
-            @test r.hosts == ["h1"]
+            @test r.hosts == ["child:h1"]
         end
     end
 
@@ -26,21 +26,22 @@ using Test
             @test r.script_args == ["8"]
             @test isempty(r.hosts)
         end
-        let r = parse_go_args(["user@lab", "job.jl"])
+        let r = parse_go_args(["child:user@lab", "job.jl"])
             @test r.script_path == "job.jl"
-            @test r.hosts == ["user@lab"]
+            @test r.hosts == ["child:user@lab"]
         end
-        let r = parse_go_args(["--hosts", "host-a,host-b:2", "job.jl"])
-            @test r.hosts == ["host-a", "host-b:2"]
+        let r = parse_go_args(["--hosts", "child:host-a,child:host-b:2", "job.jl"])
+            @test r.hosts == ["child:host-a", "child:host-b:2"]
             @test r.script_path == "job.jl"
         end
-        let r = parse_go_args(["parenthost:4", "host1", "host2:2", "job.jl"])
-            @test DistSSHKit.host_tokens(r; kind=:go) == ["parenthost:4", "host1", "host2:2"]
+        @test_throws ArgumentError parse_go_args(["user@lab", "job.jl"])
+        let r = parse_go_args(["parent:4", "child:host1", "child:host2:2", "job.jl"])
+            @test DistSSHKit.host_tokens(r; kind=:go) == ["parent:4", "child:host1", "child:host2:2"]
         end
-        let r = parse_go_args(["local:2", "h1", "job.jl", "4"])
-            @test r.hosts == ["local:2", "h1"]
-            @test DistSSHKit.host_tokens(r; kind=:go) == ["local:2", "h1"]
-            @test DistSSHKit.host_tokens(r.hosts) == ["local:2", "h1"]
+        let r = parse_go_args(["child:local:2", "child:h1", "job.jl", "4"])
+            @test r.hosts == ["child:local:2", "child:h1"]
+            @test DistSSHKit.host_tokens(r; kind=:go) == ["child:local:2", "child:h1"]
+            @test DistSSHKit.host_tokens(r.hosts) == ["child:local:2", "child:h1"]
             @test_throws ArgumentError DistSSHKit.host_tokens(r; kind=:pipeline)
             @test r.script_path == "job.jl"
             @test r.script_args == ["4"]
@@ -68,20 +69,20 @@ using Test
 
     @testset "sync flags" begin
         # Parser leaves sync=nothing; go! maps nothing → false (no pre-run sync).
-        let r = parse_go_args(["local:2", "h1", "job.jl"])
+        let r = parse_go_args(["child:local:2", "child:h1", "job.jl"])
             @test r.sync === nothing
         end
-        let r = parse_go_args(["--sync", "h1", "job.jl"])
+        let r = parse_go_args(["--sync", "child:h1", "job.jl"])
             @test r.sync === :sync
         end
-        let r = parse_go_args(["--rsync", "h1", "job.jl"])
+        let r = parse_go_args(["--rsync", "child:h1", "job.jl"])
             @test r.sync === :rsync
         end
-        let r = parse_go_args(["--skip-sync", "local:1", "h1:2", "job.jl"])
+        let r = parse_go_args(["--skip-sync", "child:local:1", "child:h1:2", "job.jl"])
             @test r.sync === false
-            @test r.hosts == ["local:1", "h1:2"]
+            @test r.hosts == ["child:local:1", "child:h1:2"]
         end
-        let r = parse_go_args(["--skip-git-guard", "h1", "job.jl"])
+        let r = parse_go_args(["--skip-git-guard", "child:h1", "job.jl"])
             @test r.sync === false  # go alias of --skip-sync
         end
         @test_throws ArgumentError parse_go_args(["--skip-sync", "--rsync", "job.jl"])
@@ -98,9 +99,9 @@ using Test
             @test r.cli_session.yes
             DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession())
         end
-        withenv("DISTSSHKIT_HOSTS" => "env-a:2,env-b") do
+        withenv("DISTSSHKIT_HOSTS" => "child:env-a:2,child:env-b") do
             let r = parse_go_args(["job.jl"])
-                @test r.hosts == ["env-a:2", "env-b"]
+                @test r.hosts == ["child:env-a:2", "child:env-b"]
             end
         end
         @test_throws ArgumentError parse_go_args(["--output-dir"])
@@ -113,15 +114,15 @@ using Test
         @test occursin("--output-dir", txt)
         @test occursin("--sync", txt)
         @test occursin("--hosts", txt)
-        @test occursin("parenthost", txt)
+        @test occursin("parent", txt)
         @test occursin("progress DIR", txt)
     end
 
     @testset "unknown option and missing script" begin
         @test_throws ArgumentError parse_go_args(["--nope"])
-        let r = parse_go_args(["h1"])
+        let r = parse_go_args(["child:h1"])
             @test r.script_path === nothing
-            @test r.hosts == ["h1"]
+            @test r.hosts == ["child:h1"]
             @test !r.help
         end
         mktemp() do path, io
@@ -142,7 +143,7 @@ using Test
         hosts_file = _sample_hosts_file()
         withenv("DISTSSHKIT_HOSTS" => nothing, "DISTSSHKIT_HOSTS_FILE" => nothing) do
             let r = parse_go_args(["--hosts-file", hosts_file, "job.jl"])
-                @test r.hosts == ["host-a", "host-b:4"]
+                @test r.hosts == ["child:host-a", "child:host-b:4"]
                 @test r.script_path == "job.jl"
             end
         end

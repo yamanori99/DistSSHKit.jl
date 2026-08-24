@@ -3,10 +3,10 @@ using DistSSHKit: CliCursor, cli_at_end, cli_consume!, cli_current, cli_take_val
 
 @testset "CliCursor" begin
     @testset "positional args" begin
-        c = CliCursor(["host1", "host2"])
-        @test cli_current(c) == "host1"
+        c = CliCursor(["child:host1", "child:host2"])
+        @test cli_current(c) == "child:host1"
         cli_consume!(c)
-        @test cli_current(c) == "host2"
+        @test cli_current(c) == "child:host2"
         cli_consume!(c)
         @test cli_at_end(c)
     end

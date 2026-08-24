@@ -14,8 +14,8 @@ pkg> app add DistSSHKit
 Add `~/.julia/bin` to `PATH` if Pkg asks. Same argv, different kit:
 
 ```bash
-distsshkit go user@host:1 path/to/script.jl
-julia --project=. -m DistSSHKit go user@host:1 path/to/script.jl
+distsshkit go child:user@host:1 path/to/script.jl
+julia --project=. -m DistSSHKit go child:user@host:1 path/to/script.jl
 ```
 
 The first always runs the Apps copy of DistSSHKit, not the kit in
@@ -31,8 +31,8 @@ distsshkit demo install with_kit
 distsshkit setup --rsync user@host1                              # first deploy
 distsshkit setup --instantiate user@host1                        # remote Pkg
 # size / drive: job project, not the Apps copy
-julia --project=. -m DistSSHKit size parenthost user@host1
-distsshkit go user@host1:1 path/to/script.jl                     # one full run per slot
+julia --project=. -m DistSSHKit size parent child:user@host1
+distsshkit go child:user@host1:1 path/to/script.jl                     # one full run per slot
 ```
 
 After changing juliaup: `pkg> app update DistSSHKit`. Flag lists:

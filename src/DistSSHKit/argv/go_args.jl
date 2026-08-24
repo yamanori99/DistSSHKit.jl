@@ -11,16 +11,16 @@ function show_go_usage(; io::IO=stdout)
     print_help_section("Usage"; io=io)
     print_help_lines(io,
         "  julia --project=. -m DistSSHKit go [slots...] SCRIPT.jl",
-        "  go parenthost:2 SCRIPT.jl",
-        "  go parenthost:1 host1:2 host2:2 SCRIPT.jl",
+        "  go parent:2 SCRIPT.jl",
+        "  go parent:1 child:host1:2 child:host2:2 SCRIPT.jl",
     )
     print_help_blank(io)
     print_help_section("Slots"; io=io)
     print_help_lines(io,
-        "  parenthost:N / host:N  N full-script runs (not drive workers)",
-        "  parenthost:0        skip parent when remotes are listed",
+        "  parent[:N] / child:NAME[:N]  N full-script runs (not drive workers)",
+        "  parent:0                     skip parent when children are listed",
         "  $(KIT_HOSTS_FLAG_HELP)",
-        "  --hosts-file PATH   one token per line (host:N kept)",
+        "  --hosts-file PATH   one token per line",
     )
     print_help_blank(io)
     print_help_section("Options"; io=io)
@@ -47,7 +47,7 @@ function show_go_usage(; io::IO=stdout)
     print_help_section("Environment"; io=io)
     print_help_lines(io,
         "  $(KIT_HOSTS_ENV_HELP)",
-        "  JULIA_DISTRIBUTED_EXE       default remote Julia",
+        "  JULIA_DISTRIBUTED_EXE        default remote Julia",
         "  DISTSSHKIT_QUIET / PROGRESS / VERBOSE / YES",
     )
     print_help_blank(io)
@@ -128,6 +128,9 @@ function parse_go_args(args::AbstractVector{<:AbstractString})
     end
     append!(hosts, host_tokens)
     append_kit_host_sources!(hosts, cli_session; keep_counts=true)
+    for h in hosts
+        parse_placement_token(h)
+    end
     if julia_exe === nothing
         env_val = get(ENV, "JULIA_DISTRIBUTED_EXE", "auto")
         julia_exe = env_val == "auto" ? nothing : env_val

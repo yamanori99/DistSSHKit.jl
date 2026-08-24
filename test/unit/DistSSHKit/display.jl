@@ -515,15 +515,15 @@ using Test
                     p,
                     "progress: begin kind=drive label=drive total=7 t=1.0\n" *
                     "progress: step kind=drive label=workers done=3 total=7 cur=4 t=8.0\n" *
-                    "progress: item kind=drive label=parenthost/workers status=running done=3 total=7 t=8.0\n" *
-                    "progress: item kind=drive label=parenthost/workers status=ok done=3 total=7 t=10.5\n" *
-                    "progress: item kind=drive label=parenthost/init status=running done=5 total=7 t=15.5\n" *
-                    "progress: item kind=drive label=parenthost/init status=ok done=5 total=7 t=16.0\n" *
+                    "progress: item kind=drive label=parent/workers status=running done=3 total=7 t=8.0\n" *
+                    "progress: item kind=drive label=parent/workers status=ok done=3 total=7 t=10.5\n" *
+                    "progress: item kind=drive label=parent/init status=running done=5 total=7 t=15.5\n" *
+                    "progress: item kind=drive label=parent/init status=ok done=5 total=7 t=16.0\n" *
                     "progress: done kind=drive ok=true done=7 total=7 t=16.0\n",
                 )
                 drows = DistSSHKit.kit_progress_phases(tmp)
                 dtext = DistSSHKit._format_kit_progress_phases(drows)
-                @test occursin("parenthost", dtext)
+                @test occursin("parent", dtext)
                 @test occursin("  workers", dtext)
                 @test occursin("  init", dtext)
                 @test occursin("activate project", dtext)

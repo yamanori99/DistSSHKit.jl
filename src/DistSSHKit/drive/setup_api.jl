@@ -34,7 +34,7 @@ Confirmations follow `session.yes` (CLI `-y`). Multiple modes run in order and
 stop on the first failure:
 
 ```julia
-session = KitSession(workers=["user@h1"], remote="~/proj", yes=true)
+session = KitSession(workers=["child:user@h1"], remote="~/proj", yes=true)
 setup!(session, :delete, :rsync, :instantiate)
 setup!(session, :check; ignore_julia_version=true)
 ```

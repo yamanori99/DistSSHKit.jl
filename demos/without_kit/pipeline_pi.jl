@@ -9,22 +9,22 @@
 #
 # Same job via CLI:
 #
-#   julia --project=. -m DistSSHKit go parenthost:2 demos/without_kit/pi_file.jl --n 5000
+#   julia --project=. -m DistSSHKit go parent:2 demos/without_kit/pi_file.jl --n 5000
 
 using DistSSHKit
 
 isempty(ARGS) || (length(ARGS) == 2 && ARGS[1] == "--n") ||
-    error("pass --n N (a bare number looks like parenthost:N)")
+    error("pass --n N (a bare number looks like parent:N)")
 
 script = joinpath(@__DIR__, "pi_file.jl")
 
 # Local-only: two concurrent full-job slots on this machine (not Distributed workers).
-result = go!(script, "parenthost:2"; args=ARGS)
+result = go!(script, "parent:2"; args=ARGS)
 
 # First-time remotes: setup!, then go!.
 #
 #   session = KitSession(
-#       workers=["user@host1", "user@host2"],
+#       workers=["child:user@host1", "child:user@host2"],
 #       remote="/path/to/project",
 #       yes=true,
 #   )
@@ -32,8 +32,8 @@ result = go!(script, "parenthost:2"; args=ARGS)
 #   # or: setup!(session, :clone; repo="https://…"); setup!(session, :instantiate)
 #   result = go!(
 #       script,
-#       "user@host1:1",
-#       "user@host2:1";
+#       "child:user@host1:1",
+#       "child:user@host2:1";
 #       remote="/path/to/project",
 #       args=ARGS,
 #       # julia=nothing,                  # or path / "auto" (same as CLI --julia)
@@ -43,12 +43,12 @@ result = go!(script, "parenthost:2"; args=ARGS)
 #
 #   result = go!(
 #       script,
-#       "user@host1:1",
-#       "user@host2:1";   # or go!(script, ["user@host1:1", "user@host2:1"]; …)
+#       "child:user@host1:1",
+#       "child:user@host2:1";   # or go!(script, ["child:user@host1:1", "child:user@host2:1"]; …)
 #       remote="/path/to/project",
 #       args=ARGS,
 #       # project=pwd(),
-#       # hosts_file="hosts.txt",       # extra host / host:N lines
+#       # hosts_file="hosts.txt",       # extra parent / child:NAME[:N] lines
 #       # yes=true,                     # skip confirm prompts (API default)
 #       # quiet=false,
 #       # verbosity=nothing,            # :quiet | :progress | :verbose

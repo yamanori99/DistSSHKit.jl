@@ -36,7 +36,7 @@ using Test
                 write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\n")
                 session = DistSSHKit.KitSession(
                     project=proj,
-                    workers=[host],
+                    workers=["child:$host"],
                     remote="~/App.jl",
                     yes=true,
                     quiet=true,
@@ -74,7 +74,7 @@ using Test
                 touch(joinpath(tree, "keepme.txt"))
                 session = DistSSHKit.KitSession(
                     project=proj,
-                    workers=[host],
+                    workers=["child:$host"],
                     remote="~/App.jl",
                     yes=true,
                     quiet=true,
@@ -94,7 +94,7 @@ using Test
             _with_tempdir() do proj
                 session = DistSSHKit.KitSession(
                     project=proj,
-                    workers=["host1"],
+                    workers=["child:host1"],
                     remote="~/App.jl",
                     yes=true,
                     quiet=true,
@@ -111,7 +111,7 @@ using Test
         _with_tempdir() do proj
             session = DistSSHKit.KitSession(
                 project=proj,
-                workers=["host1"],
+                workers=["child:host1"],
                 remote="~/App.jl",
                 yes=true,
             )
@@ -127,7 +127,7 @@ using Test
             _with_tempdir() do proj
                 session = DistSSHKit.KitSession(
                     project=proj,
-                    workers=["host1"],
+                    workers=["child:host1"],
                     remote="~/App.jl",
                     yes=true,
                     quiet=true,
@@ -145,7 +145,7 @@ using Test
                 write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\nuuid = \"00000000-0000-0000-0000-000000000001\"\n")
                 session = DistSSHKit.KitSession(
                     project=proj,
-                    workers=["host1"],
+                    workers=["child:host1"],
                     remote="~/App.jl",
                     yes=true,
                     quiet=true,
@@ -166,7 +166,7 @@ using Test
         _with_tempdir() do proj
             session = DistSSHKit.KitSession(
                 project=proj,
-                workers=["root@192.0.2.1"],
+                workers=["child:root@192.0.2.1"],
                 remote="~/App.jl",
                 yes=true,
                 quiet=true,

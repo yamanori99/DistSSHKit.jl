@@ -36,7 +36,7 @@ Skipping instantiate is a common cause of remote failures such as
 Same steps from Julia:
 
 ```julia
-session = KitSession(workers=["YourHost1", "YourHost2"], yes=true)
+session = KitSession(workers=["child:YourHost1", "child:YourHost2"], yes=true)
 setup!(session, :rsync, :instantiate)
 # optional: setup!(session, :check); setup!(session, :runtest)
 # git remotes: setup!(session, :clone; repo="https://…") then :instantiate
