@@ -82,6 +82,7 @@ using Test
         @test occursin("--rsync", txt)
         @test occursin("--runtest", txt)
         @test occursin("--hosts", txt)
+        @test occursin("progress DIR", txt)
         @test occursin("Recommended:", txt)
         @test occursin("--require-git", txt)
         @test occursin("DISTSSHKIT_JOBS", txt)

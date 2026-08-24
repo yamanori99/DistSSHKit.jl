@@ -66,7 +66,16 @@ using Dates
             touch(script)
             t = DateTime(2026, 8, 3, 13, 44, 28)
             batch = DistSSHKit._go_batch_output_dir(proj, script; now=t)
-            @test batch == joinpath(proj, ".distsshkit", "go", "demo_20260803T134428Z")
+            @test batch == joinpath(proj, "demos", ".distsshkit", "go", "demo_20260803T134428Z")
+            nested = joinpath(proj, "demos", "without_kit", "job.jl")
+            mkpath(dirname(nested))
+            touch(nested)
+            nested_batch = DistSSHKit._go_batch_output_dir(proj, nested; now=t)
+            @test nested_batch == joinpath(proj, "demos", "without_kit", ".distsshkit", "go", "job_20260803T134428Z")
+            outside = joinpath(tempdir(), "outside-job.jl")
+            write(outside, "nothing\n")
+            other = DistSSHKit._go_batch_output_dir(proj, outside; now=t)
+            @test other == joinpath(proj, ".distsshkit", "go", "outside-job_20260803T134428Z")
         end
     end
 

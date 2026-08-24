@@ -1,3 +1,6 @@
-# Local demo / go / runner outputs
-output/
+# Copied with `demo install`. Kit dumps sit next to the scripts:
+#   with_kit/.distsshkit/drive   omitted drive (demos usually use output/)
+#   without_kit/.distsshkit/go   omitted go batches
+# Also ignore demo `output/` from init_output_dir!.
 .distsshkit/
+output/

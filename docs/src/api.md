@@ -254,9 +254,10 @@ Without `job_id`, only the child pid is signaled.
 #### Before spawn
 
 - [`allocate_output_dir`](@ref): create a unique directory under
-  `.distsshkit/<kind>/` for a later `output_dir=`. Drive's omitted
-  `execute!` default is still the shared `../results` folder; queue
-  should allocate instead of sharing it.
+  `{script}/.distsshkit/<kind>/` for a later `output_dir=`. Omitted `go`
+  default is `{script}/.distsshkit/go/<stem>_<UTC>/`; drive's omitted
+  default is the shared `{script}/.distsshkit/drive`. Queue should allocate
+  instead of sharing the drive folder.
 - [`execute_kwargs_from_parsed`](@ref): map `parse_go_args` /
   `parse_drive_args` onto detached `execute!` keywords. Hosts stay in
   [`host_tokens`](@ref); `:workers` is drive `--workers` when set.

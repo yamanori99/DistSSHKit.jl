@@ -142,8 +142,10 @@ function git_sync_project_to_hosts!(
 
     if do_pull
         for host in hosts
-            ok_host = kit_spin!("  $host git pull: ") do
-                git_pull_remote_host!(host, remote)
+            ok_host = _setup_host_call!(host) do
+                kit_spin!("  $host git pull: ") do
+                    git_pull_remote_host!(host, remote)
+                end
             end
             if ok_host
                 print_ok("✓")

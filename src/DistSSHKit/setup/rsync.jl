@@ -147,7 +147,7 @@ function _print_rsync_safety_banner!(
     println_fatal()
     print_warn("  Safety: refuses if the remote path already has any files.\n")
     println_fatal("  To replace an existing tree, run `setup --delete` first, then `--rsync`.")
-    println_fatal("  Mirrors onto a missing/empty path (`--delete`); excludes `.git/`; honors `.gitignore`.")
+    println_fatal("  Mirrors onto a missing/empty path (`--delete`); excludes `.git/` and `.distsshkit/`; honors `.gitignore`.")
     println_fatal()
     println_fatal("  Local project: $(display_path(local_root, path_anchor))")
     println_fatal("  Remote path: $remote_path")
@@ -196,6 +196,8 @@ function _rsync_one_host!(
                 ssh_cmd_str,
                 "--exclude",
                 ".git/",
+                "--exclude",
+                ".distsshkit/",
                 "--filter",
                 ":- .gitignore",
                 local_root * "/",
@@ -285,7 +287,9 @@ function rsync_project_to_hosts!(
     end
 
     map_host_jobs(hosts) do i, host
-        host_results[i] = _rsync_host_result(host)
+        host_results[i] = _setup_host_call!(host) do
+            _rsync_host_result(host)
+        end
     end
 
     succeeded = 0

@@ -527,6 +527,22 @@ using Test
                 @test occursin("  workers", dtext)
                 @test occursin("  init", dtext)
                 @test occursin("activate project", dtext)
+                write(
+                    p,
+                    "progress: begin kind=setup label=setup total=1 t=1.0\n" *
+                    "progress: step kind=setup label=rsync done=0 total=1 cur=1 t=1.0\n" *
+                    "progress: item kind=setup label=rsync/h1 status=running done=0 total=1 t=1.1\n" *
+                    "progress: item kind=setup label=rsync/h2 status=running done=0 total=1 t=1.1\n" *
+                    "progress: item kind=setup label=rsync/h1 status=ok done=0 total=1 t=3.1\n" *
+                    "progress: item kind=setup label=rsync/h2 status=ok done=0 total=1 t=4.1\n" *
+                    "progress: done kind=setup ok=true done=1 total=1 t=4.2\n",
+                )
+                srows = DistSSHKit.kit_progress_phases(tmp)
+                stext = DistSSHKit._format_kit_progress_phases(srows)
+                @test occursin("rsync", stext)
+                @test occursin("  h1", stext)
+                @test occursin("  h2", stext)
+                @test occursin("host", stext)
             end
             done = DistSSHKit.parse_progress_line(
                 "progress: done kind=go ok=true done=2 total=2",

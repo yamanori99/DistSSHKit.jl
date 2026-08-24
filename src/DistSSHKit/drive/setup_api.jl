@@ -50,14 +50,23 @@ function setup!(
     ignore_julia_version::Bool=false,
     check_code_sync::Bool=true,
 )::SyncResult
-    return _setup_one!(
-        session,
-        mode;
-        repo=repo,
-        julia=julia,
-        ignore_julia_version=ignore_julia_version,
-        check_code_sync=check_code_sync,
-    )
+    apply_session_env!(session)
+    log_dir = joinpath(session.project, ".distsshkit", "setup")
+    step = setup_progress_step_name(mode)
+    return with_kit_setup_progress(
+        log_dir,
+        step;
+        path_anchor=session.project,
+    ) do
+        _setup_one!(
+            session,
+            mode;
+            repo=repo,
+            julia=julia,
+            ignore_julia_version=ignore_julia_version,
+            check_code_sync=check_code_sync,
+        )
+    end
 end
 
 function setup!(session::KitSession, mode::Symbol, more::Symbol...; kwargs...)

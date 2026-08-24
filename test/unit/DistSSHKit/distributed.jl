@@ -57,7 +57,7 @@ using Test
             mkpath(script_dir)
             withenv("DISTRIBUTED_OUTPUT_DIR" => nothing) do
                 got = DistSSHKit.resolve_drive_output_dir(script_dir)
-                @test got == DistSSHKit.canonical_local_path(normpath(joinpath(script_dir, "..", "results")))
+                @test got == DistSSHKit.kit_dir_beside_script(script_dir, :drive)
             end
             explicit = joinpath(tmp, "explicit-out")
             withenv("DISTRIBUTED_OUTPUT_DIR" => explicit) do
@@ -72,7 +72,8 @@ using Test
             script_dir = joinpath(tmp, "app")
             mkpath(script_dir)
             withenv("DISTRIBUTED_OUTPUT_DIR" => nothing) do
-                @test DistSSHKit.resolve_drive_log_dir(nothing, script_dir) == joinpath(script_dir, "results")
+                @test DistSSHKit.resolve_drive_log_dir(nothing, script_dir) ==
+                    DistSSHKit.kit_dir_beside_script(script_dir, :drive)
             end
             env_dir = joinpath(tmp, "env-out")
             withenv("DISTRIBUTED_OUTPUT_DIR" => env_dir) do

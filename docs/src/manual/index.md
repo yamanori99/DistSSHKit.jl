@@ -80,10 +80,12 @@ Worker `addprocs` stays sequential.
 - `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` skips those `pkill`s; `rmprocs`
   still runs for the current drive
 
-**Kit files.** Logs and go batches live under `{project}/.distsshkit/`. Add
-that directory to the **job** project's `.gitignore` — DistSSHKit's own repo
-already ignores it, but `Pkg.add` does not. Otherwise `go` output can show up
-as untracked files, including under `drive --require-git`.
+**Kit files.** Setup logs: `{project}/.distsshkit/setup/`. Go:
+`{script}/.distsshkit/go/{stem}_{UTC}/`. Drive (no `--output-dir`):
+`{script}/.distsshkit/drive`. Add `.distsshkit/` to the **job** project's
+`.gitignore` — DistSSHKit's own repo already ignores it, but `Pkg.add`
+does not. Otherwise go/drive output can show up as untracked files,
+including under `drive --require-git`.
 
 **Collect modes:**
 

@@ -54,8 +54,10 @@ Pick **one mode** per invocation (except shared options).
 `--clone` / `--rsync` never overwrite a nonempty remote path; use `--delete`
 first to replace. `DISTSSHKIT_JOBS` (default 1) may rsync several hosts at once.
 Time a `--rsync` then `--instantiate` twice (cold vs warm) and `JOBS=1` vs
-`>1` on two hosts with the wall clock or kit setup log; do not raise the
-default until that split is written next to the [drive](@ref Manual-drive)
+`>1` on two hosts. Non-quiet setup and [`setup!`](@ref) print a Time table
+with a row per host (`rsync/host`, …). Replay with
+`julia -m DistSSHKit progress .distsshkit/setup`. Do not raise
+`DISTSSHKIT_JOBS` until that split is written next to the [drive](@ref Manual-drive)
 parenthost table.
 
 ## Remote path
@@ -72,4 +74,4 @@ host** to an absolute path. Prefer an absolute remote root when you can.
 
 No remote `.git/` — that is fine. `go` / `drive` do not pre-run sync or
 require git parity by default. Kit logs: `{project}/.distsshkit/setup/`.
-Ignore `.distsshkit/` in the job project ([User Guide](@ref Manual)).
+`setup --rsync` skips `.distsshkit/` even if the job `.gitignore` is missing.

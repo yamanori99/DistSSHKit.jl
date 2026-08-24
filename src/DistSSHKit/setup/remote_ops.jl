@@ -10,7 +10,7 @@ ensure_remote_dir(host::String, remote_path::String)::Bool =
     rsync_push_to_remotes(hosts, remote_path, project; path_anchor=project)
 
 rsync the local project tree to each host, bypassing git entirely (no commit,
-no push/pull, no hash verification). Excludes `.git/`, honors `.gitignore`
+no push/pull, no hash verification). Excludes `.git/` and `.distsshkit/`, honors `.gitignore`
 (via rsync's per-directory filter merge — gitignored files are also protected
 from `--delete`), and mirrors deletions (`--delete`).
 
@@ -73,6 +73,7 @@ function delete_remotes(
     failed = 0
     host_results = HostResult[]
     for host in hosts
+        _setup_host_span!(host, :running)
         err_buf = IOBuffer()
         try
             kit_spin!("  $host: ") do
@@ -91,12 +92,14 @@ function delete_remotes(
             kit_println()
             succeeded += 1
             push!(host_results, HostResult(host, true, "deleted"))
+            _setup_host_span!(host, :ok)
         catch e
             detail = strip(String(take!(err_buf)))
             report_remote_failure(e; stderr=detail)
             failed += 1
             msg = isempty(detail) ? sprint(showerror, e) : detail
             push!(host_results, HostResult(host, false, msg))
+            _setup_host_span!(host, :fail)
         end
     end
     return (; host_op_result(succeeded=succeeded, failed=failed)..., hosts=host_results)
@@ -138,6 +141,7 @@ function clone_to_remotes(
     failed = 0
     host_results = HostResult[]
     for host in hosts
+        _setup_host_span!(host, :running)
         err_buf = IOBuffer()
         try
             outcome = kit_spin!("  $host: ") do
@@ -159,18 +163,21 @@ function clone_to_remotes(
                 println()
                 failed += 1
                 push!(host_results, HostResult(host, false, outcome[2]))
+                _setup_host_span!(host, :fail)
                 continue
             end
             print_ok("✓")
             kit_println()
             succeeded += 1
             push!(host_results, HostResult(host, true, "cloned"))
+            _setup_host_span!(host, :ok)
         catch e
             detail = strip(String(take!(err_buf)))
             report_remote_failure(e; stderr=detail)
             failed += 1
             msg = isempty(detail) ? sprint(showerror, e) : detail
             push!(host_results, HostResult(host, false, msg))
+            _setup_host_span!(host, :fail)
         end
     end
     return (; host_op_result(succeeded=succeeded, failed=failed)..., hosts=host_results)
@@ -193,7 +200,12 @@ function cleanup_remote_workers(hosts::Vector{String})::NamedTuple
     results = Dict{String,Bool}()
     kit_spin!("  Cleaning remotes ($(length(hosts))) ") do
         @sync for host in hosts
-            @async results[host] = _pkill_remote_julia_workers!(host)
+            @async begin
+                _setup_host_span!(host, :running)
+                okh = _pkill_remote_julia_workers!(host)
+                results[host] = okh
+                _setup_host_span!(host, okh ? :ok : :fail)
+            end
         end
         return nothing
     end
@@ -246,6 +258,7 @@ function _pkg_e_on_remotes(
     kit_spin!("  $spin_label ($(length(hosts)) hosts) ") do
         @sync for host in hosts
             @async begin
+                _setup_host_span!(host, :running)
                 host_julia = julia_path == "auto" ? detect_julia_path(host) : julia_path
                 if host_julia === nothing
                     results[host] = false
@@ -279,6 +292,7 @@ function _pkg_e_on_remotes(
                         fail_msgs[host] = sprint(showerror, e)
                     end
                 end
+                _setup_host_span!(host, get(results, host, false) ? :ok : :fail)
             end
         end
         return nothing

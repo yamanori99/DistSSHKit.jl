@@ -2,7 +2,7 @@
 """
 `julia -m DistSSHKit go` — run an as-is complete job (no Kit APIs in the script).
 
-Outputs: `<project>/.distsshkit/go/<stem>_<UTC>/<slot>/` (or `--output-dir`).
+Outputs: `{script}/.distsshkit/go/<stem>_<UTC>/<slot>/` (or `--output-dir`).
 
   julia --project=. -m DistSSHKit go SCRIPT.jl
   julia --project=. -m DistSSHKit go parenthost:2 user@h1 SCRIPT.jl
