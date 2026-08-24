@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <!-- social-preview-dynamic: 1280×640; safe 100×60; mark | title lockup; from logo/logo-dynamic.svg -->
+  <rect width="1280" height="640" fill="#ffffff"/>
+  <svg x="100" y="150" width="340" height="340" viewBox="0 26 240 240">
+
+  <!--
+    Story (~8s): setup → send → run → collect. Master has full Julia from t=0.
+    Send: one ぐるん per color (0.7s turns @ 2.4 / 3.1 / 3.8); remotes stay still
+    and solidify on arrival. Then master + remotes spin together (~3 ぐるん).
+    Collect: one quiet data-dot returns per link; master sparkles.
+    Julia dots: Copyright (c) 2012-2022 Stefan Karpinski, CC BY-NC-SA 4.0
+    (https://github.com/JuliaLang/julia-logo-graphics). DistSSHKit adapts them.
+  -->
+  <defs>
+    <filter id="dot-glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.6" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <style>
+      .stroke {
+        fill: none;
+        stroke: #1a1d21;
+        stroke-width: 3.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .link {
+        stroke: #1a1d21;
+        stroke-width: 1.4;
+        stroke-linecap: round;
+        fill: none;
+      }
+      .pkt { filter: url(#dot-glow); }
+      .pkt-data {
+        fill: #1a1d21;
+        /* no glow — quieter than outbound Julia packets */
+      }
+      .attach { fill: none; stroke: none; }
+      @media (prefers-reduced-motion: reduce) {
+        .pkt, .pkt-data { display: none; }
+      }
+    </style>
+
+    <!--
+      No ring. Size-aware fan (equal rim gaps ~52px, outer pad ~20):
+        master  @ (120, 184)  dots → optical screen center; rim top y=159
+        laptop  @ (120, 90)   dots → y=-3 (slightly below optical center)
+        minibox @ (44, 108)   dots → y=2 (slightly below optical center)
+        desktop @ (198, 108)  dots → y=-7 (slightly below optical center; spin-safe)
+      Remote juliacircles use R=5.4 (spin-safe in the tightest screen: desktop
+      46×28 after stroke). Master keeps official R=6.2. Packet paths aim at
+      Julia centers but animateMotion keyPoints trim to rim↔rim (wire ports).
+      Wires live inside each remote float (hub end inverse-tracks float).
+    -->
+
+    <g id="laptop-body">
+      <rect class="stroke" x="-25" y="-22" width="50" height="34" rx="2.5"/>
+      <path class="stroke" d="M-31,13 L31,13 L27,17 L-27,17 Z"/>
+      <circle class="attach" id="attach-laptop" cx="0" cy="-3" r="0"/>
+    </g>
+    <g id="minibox-body">
+      <rect class="stroke" x="-24" y="-16" width="48" height="32" rx="7"/>
+      <line class="stroke" x1="-16" y1="19.5" x2="16" y2="19.5"/>
+      <circle class="attach" id="attach-minibox" cx="0" cy="2" r="0"/>
+    </g>
+    <g id="desktop-body">
+      <rect class="stroke" x="-23" y="-22" width="46" height="28" rx="2.5"/>
+      <line class="stroke" x1="0" y1="7" x2="0" y2="13"/>
+      <line class="stroke" x1="-15" y1="15" x2="15" y2="15"/>
+      <circle class="attach" id="attach-desktop" cx="0" cy="-7" r="0"/>
+    </g>
+    <g id="master-body">
+      <rect class="stroke" x="-32" y="-25" width="64" height="36" rx="4"/>
+      <!-- stem meets bottom bezel (y=11); start at 12 so round cap stays in stroke, not screen -->
+      <line class="stroke" x1="0" y1="12" x2="0" y2="22"/>
+      <line class="stroke" x1="-21" y1="24" x2="21" y2="24"/>
+      <circle class="attach" id="attach-master-l" cx="0" cy="-6" r="0"/>
+      <circle class="attach" id="attach-master-c" cx="0" cy="-6" r="0"/>
+      <circle class="attach" id="attach-master-r" cx="0" cy="-6" r="0"/>
+    </g>
+
+    <g id="juliadot">
+      <!-- Remote / static remotes: spin-safe R=5.4, r=0.75R (fits desktop screen) -->
+      <circle cx="0" cy="-5.4" r="4.05" fill="#cb3c33"/>
+      <circle cx="-4.677" cy="2.7" r="4.05" fill="#389826"/>
+      <circle cx="4.677" cy="2.7" r="4.05" fill="#9558b2"/>
+    </g>
+    <g id="juliadot-lg">
+      <!-- Master: Luxor juliacircles R=6.2, r=0.75R -->
+      <circle cx="0" cy="-6.2" r="4.65" fill="#cb3c33"/>
+      <circle cx="-5.369" cy="3.1" r="4.65" fill="#389826"/>
+      <circle cx="5.369" cy="3.1" r="4.65" fill="#9558b2"/>
+    </g>
+
+    <!-- Remotes: faint until that color arrives (one color per master ぐるん). -->
+    <g id="remote-dots">
+      <circle cx="0" cy="-5.4" r="4.05" fill="#cb3c33" fill-opacity="0.28">
+        <animate attributeName="fill-opacity" begin="2.9s" dur="0.4s" values="0.28;1" fill="freeze"
+          calcMode="spline" keySplines="0.4 0 0.2 1"/>
+      </circle>
+      <circle cx="-4.677" cy="2.7" r="4.05" fill="#389826" fill-opacity="0.28">
+        <animate attributeName="fill-opacity" begin="3.6s" dur="0.4s" values="0.28;1" fill="freeze"
+          calcMode="spline" keySplines="0.4 0 0.2 1"/>
+      </circle>
+      <circle cx="4.677" cy="2.7" r="4.05" fill="#9558b2" fill-opacity="0.28">
+        <animate attributeName="fill-opacity" begin="4.3s" dur="0.4s" values="0.28;1" fill="freeze"
+          calcMode="spline" keySplines="0.4 0 0.2 1"/>
+      </circle>
+    </g>
+
+    <g id="master-dots">
+      <circle cx="0" cy="-6.2" r="4.65" fill="#cb3c33" opacity="1">
+        <animate attributeName="opacity" begin="7.2s" dur="0.55s"
+          values="1;0.15;1;0.3;1" keyTimes="0;0.22;0.45;0.7;1"
+          calcMode="spline"
+          keySplines="0.3 0 0.2 1; 0.3 0 0.2 1; 0.3 0 0.2 1; 0.3 0 0.2 1" fill="freeze"/>
+        <animate attributeName="r" begin="7.2s" dur="0.55s"
+          values="4.65;5.65;4.65;5.25;4.65" keyTimes="0;0.22;0.45;0.7;1"
+          calcMode="spline"
+          keySplines="0.3 0 0.2 1; 0.3 0 0.2 1; 0.3 0 0.2 1; 0.3 0 0.2 1" fill="freeze"/>
+      </circle>
+      <circle cx="-5.369" cy="3.1" r="4.65" fill="#389826" opacity="1">
+        <animate attributeName="opacity" begin="7.2s" dur="0.55s"
+          values="1;0.15;1;0.3;1" keyTimes="0;0.22;0.45;0.7;1"
+          calcMode="spline"
+          keySplines="0.3 0 0.2 1; 0.3 0 0.2 1; 0.3 0 0.2 1; 0.3 0 0.2 1" fill="freeze"/>
+        <animate attributeName="r" begin="7.2s" dur="0.55s"
+          values="4.65;5.65;4.65;5.25;4.65" keyTimes="0;0.22;0.45;0.7;1"
+          calcMode="spline"
+          keySplines="0.3 0 0.2 1; 0.3 0 0.2 1; 0.3 0 0.2 1; 0.3 0 0.2 1" fill="freeze"/>
+      </circle>
+      <circle cx="5.369" cy="3.1" r="4.65" fill="#9558b2" opacity="1">
+        <animate attributeName="opacity" begin="7.2s" dur="0.55s"
+          values="1;0.15;1;0.3;1" keyTimes="0;0.22;0.45;0.7;1"
+          calcMode="spline"
+          keySplines="0.3 0 0.2 1; 0.3 0 0.2 1; 0.3 0 0.2 1; 0.3 0 0.2 1" fill="freeze"/>
+        <animate attributeName="r" begin="7.2s" dur="0.55s"
+          values="4.65;5.65;4.65;5.25;4.65" keyTimes="0;0.22;0.45;0.7;1"
+          calcMode="spline"
+          keySplines="0.3 0 0.2 1; 0.3 0 0.2 1; 0.3 0 0.2 1; 0.3 0 0.2 1" fill="freeze"/>
+      </circle>
+    </g>
+  </defs>
+
+
+  
+  <!--
+    Coordinated links: each remote owns its float + visible wire.
+    Setup float is larger (peak ~7px) then settles into run/collect.
+    Wire hub-end y2 / packet paths inverse-track the same float profile.
+  -->
+  <g id="hub" transform="translate(120, 178)">
+    <!--
+      Invisible packet paths: hub (master optical center) → remote attach.
+      Motions use keyPoints so packets travel rim→rim along the visible wire,
+      not into either screen center (that looked like diving into the chassis).
+      ~0.20 ≈ leave master bezel; ~0.78 ≈ arrive at remote wire/port.
+    -->
+  <path id="link-l" fill="none" stroke="none" d="M0,0 L-76,-69">
+    <animate attributeName="d" fill="freeze" calcMode="spline"
+      begin="0s" dur="12s"
+      keyTimes="0;0.08;0.16;0.24;0.32;0.4;0.48;0.56;0.64;0.72;0.8;0.88;1"
+      keySplines="0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1"
+      values="M0,0 L-76,-69;M0,0 L-76,-76;M0,0 L-76,-69;M0,0 L-76,-75;M0,0 L-76,-69;M0,0 L-76,-74;M0,0 L-76,-69;M0,0 L-76,-72.5;M0,0 L-76,-69;M0,0 L-76,-71;M0,0 L-76,-69;M0,0 L-76,-69.8;M0,0 L-76,-69"/>
+  </path>
+  <path id="link-t" fill="none" stroke="none" d="M0,0 L0,-92">
+    <animate attributeName="d" fill="freeze" calcMode="spline"
+      begin="0.25s" dur="12s"
+      keyTimes="0;0.08;0.16;0.24;0.32;0.4;0.48;0.56;0.64;0.72;0.8;0.88;1"
+      keySplines="0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1"
+      values="M0,0 L0,-92;M0,0 L0,-99;M0,0 L0,-92;M0,0 L0,-98;M0,0 L0,-92;M0,0 L0,-97;M0,0 L0,-92;M0,0 L0,-95.5;M0,0 L0,-92;M0,0 L0,-94;M0,0 L0,-92;M0,0 L0,-92.8;M0,0 L0,-92"/>
+  </path>
+  <path id="link-r" fill="none" stroke="none" d="M0,0 L78,-76">
+    <animate attributeName="d" fill="freeze" calcMode="spline"
+      begin="0.5s" dur="12s"
+      keyTimes="0;0.08;0.16;0.24;0.32;0.4;0.48;0.56;0.64;0.72;0.8;0.88;1"
+      keySplines="0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1"
+      values="M0,0 L78,-76;M0,0 L78,-83;M0,0 L78,-76;M0,0 L78,-82;M0,0 L78,-76;M0,0 L78,-81;M0,0 L78,-76;M0,0 L78,-79.5;M0,0 L78,-76;M0,0 L78,-78;M0,0 L78,-76;M0,0 L78,-76.8;M0,0 L78,-76"/>
+  </path>
+
+    <!-- ===== Send: one color per master ぐるん (turns @ 2.4 / 3.1 / 3.8) ===== -->
+  <circle class="pkt" r="3.5" fill="#cb3c33" opacity="0">
+    <animate attributeName="opacity" begin="2.4s" dur="0.5s" values="0;1;1;0" keyTimes="0;0.12;0.88;1" fill="freeze"/>
+    <animateMotion begin="2.4s" dur="0.5s" fill="freeze" keyPoints="0.20;0.78" keyTimes="0;1" calcMode="linear"><mpath href="#link-l"/></animateMotion>
+  </circle>
+  <circle class="pkt" r="3.5" fill="#389826" opacity="0">
+    <animate attributeName="opacity" begin="3.1s" dur="0.5s" values="0;1;1;0" keyTimes="0;0.12;0.88;1" fill="freeze"/>
+    <animateMotion begin="3.1s" dur="0.5s" fill="freeze" keyPoints="0.20;0.78" keyTimes="0;1" calcMode="linear"><mpath href="#link-l"/></animateMotion>
+  </circle>
+  <circle class="pkt" r="3.5" fill="#9558b2" opacity="0">
+    <animate attributeName="opacity" begin="3.8s" dur="0.5s" values="0;1;1;0" keyTimes="0;0.12;0.88;1" fill="freeze"/>
+    <animateMotion begin="3.8s" dur="0.5s" fill="freeze" keyPoints="0.20;0.78" keyTimes="0;1" calcMode="linear"><mpath href="#link-l"/></animateMotion>
+  </circle>
+  <circle class="pkt" r="3.5" fill="#cb3c33" opacity="0">
+    <animate attributeName="opacity" begin="2.4s" dur="0.5s" values="0;1;1;0" keyTimes="0;0.12;0.88;1" fill="freeze"/>
+    <animateMotion begin="2.4s" dur="0.5s" fill="freeze" keyPoints="0.20;0.78" keyTimes="0;1" calcMode="linear"><mpath href="#link-t"/></animateMotion>
+  </circle>
+  <circle class="pkt" r="3.5" fill="#389826" opacity="0">
+    <animate attributeName="opacity" begin="3.1s" dur="0.5s" values="0;1;1;0" keyTimes="0;0.12;0.88;1" fill="freeze"/>
+    <animateMotion begin="3.1s" dur="0.5s" fill="freeze" keyPoints="0.20;0.78" keyTimes="0;1" calcMode="linear"><mpath href="#link-t"/></animateMotion>
+  </circle>
+  <circle class="pkt" r="3.5" fill="#9558b2" opacity="0">
+    <animate attributeName="opacity" begin="3.8s" dur="0.5s" values="0;1;1;0" keyTimes="0;0.12;0.88;1" fill="freeze"/>
+    <animateMotion begin="3.8s" dur="0.5s" fill="freeze" keyPoints="0.20;0.78" keyTimes="0;1" calcMode="linear"><mpath href="#link-t"/></animateMotion>
+  </circle>
+  <circle class="pkt" r="3.5" fill="#cb3c33" opacity="0">
+    <animate attributeName="opacity" begin="2.4s" dur="0.5s" values="0;1;1;0" keyTimes="0;0.12;0.88;1" fill="freeze"/>
+    <animateMotion begin="2.4s" dur="0.5s" fill="freeze" keyPoints="0.20;0.78" keyTimes="0;1" calcMode="linear"><mpath href="#link-r"/></animateMotion>
+  </circle>
+  <circle class="pkt" r="3.5" fill="#389826" opacity="0">
+    <animate attributeName="opacity" begin="3.1s" dur="0.5s" values="0;1;1;0" keyTimes="0;0.12;0.88;1" fill="freeze"/>
+    <animateMotion begin="3.1s" dur="0.5s" fill="freeze" keyPoints="0.20;0.78" keyTimes="0;1" calcMode="linear"><mpath href="#link-r"/></animateMotion>
+  </circle>
+  <circle class="pkt" r="3.5" fill="#9558b2" opacity="0">
+    <animate attributeName="opacity" begin="3.8s" dur="0.5s" values="0;1;1;0" keyTimes="0;0.12;0.88;1" fill="freeze"/>
+    <animateMotion begin="3.8s" dur="0.5s" fill="freeze" keyPoints="0.20;0.78" keyTimes="0;1" calcMode="linear"><mpath href="#link-r"/></animateMotion>
+  </circle>
+
+    <!-- ===== Collect: inbound data (one quiet dot per link) ===== -->
+  <circle class="pkt-data" r="2.2" opacity="0">
+    <animate attributeName="opacity" begin="6.6s" dur="0.5s" values="0;0.45;0.45;0" keyTimes="0;0.12;0.88;1" fill="freeze"/>
+    <animateMotion begin="6.6s" dur="0.5s" fill="freeze" keyPoints="0.78;0.20" keyTimes="0;1" calcMode="linear"><mpath href="#link-l"/></animateMotion>
+  </circle>
+  <circle class="pkt-data" r="2.2" opacity="0">
+    <animate attributeName="opacity" begin="6.6s" dur="0.5s" values="0;0.45;0.45;0" keyTimes="0;0.12;0.88;1" fill="freeze"/>
+    <animateMotion begin="6.6s" dur="0.5s" fill="freeze" keyPoints="0.78;0.20" keyTimes="0;1" calcMode="linear"><mpath href="#link-t"/></animateMotion>
+  </circle>
+  <circle class="pkt-data" r="2.2" opacity="0">
+    <animate attributeName="opacity" begin="6.6s" dur="0.5s" values="0;0.45;0.45;0" keyTimes="0;0.12;0.88;1" fill="freeze"/>
+    <animateMotion begin="6.6s" dur="0.5s" fill="freeze" keyPoints="0.78;0.20" keyTimes="0;1" calcMode="linear"><mpath href="#link-r"/></animateMotion>
+  </circle>
+  </g>
+
+  <!-- ===== Remotes (wire + body share one float) ===== -->
+  <g transform="translate(44, 108)">
+    <g>
+      <!-- Setup float: larger bob, then settle (same profile as link-l / wire y2) -->
+      <animateTransform attributeName="transform" type="translate"
+        values="0 0;0 -7;0 0;0 -6;0 0;0 -5;0 0;0 -3.5;0 0;0 -2;0 0;0 -0.8;0 0"
+        keyTimes="0;0.08;0.16;0.24;0.32;0.4;0.48;0.56;0.64;0.72;0.8;0.88;1"
+        calcMode="spline"
+        keySplines="0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1"
+        dur="12s" begin="0s" fill="freeze"/>
+      <use href="#minibox-body"/>
+      <line class="link" x1="16.5" y1="16" x2="55.1" y2="51">
+        <animate attributeName="y2" fill="freeze" calcMode="spline"
+          begin="0s" dur="12s"
+          keyTimes="0;0.08;0.16;0.24;0.32;0.4;0.48;0.56;0.64;0.72;0.8;0.88;1"
+          keySplines="0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1"
+          values="51;58;51;57;51;56;51;54.5;51;53;51;51.8;51"/>
+      </line>
+      <g transform="translate(0, 2)">
+            <g>
+              <!-- After R+G+P solid (~4.7s): run with master (~3 ぐるん) -->
+              <animateTransform attributeName="transform" type="rotate"
+                values="0 0 0;360 0 0;720 0 0;1080 0 0"
+                keyTimes="0;0.33;0.66;1"
+                calcMode="spline"
+                keySplines="0.2 0.05 0.25 1; 0.2 0.05 0.25 1; 0.2 0.05 0.25 1"
+                begin="4.7s" dur="1.8s" fill="freeze"/>
+              <use href="#remote-dots"/>
+            </g>
+      </g>
+    </g>
+  </g>
+  <g transform="translate(120, 90)">
+    <g>
+      <animateTransform attributeName="transform" type="translate"
+        values="0 0;0 -7;0 0;0 -6;0 0;0 -5;0 0;0 -3.5;0 0;0 -2;0 0;0 -0.8;0 0"
+        keyTimes="0;0.08;0.16;0.24;0.32;0.4;0.48;0.56;0.64;0.72;0.8;0.88;1"
+        calcMode="spline"
+        keySplines="0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1"
+        dur="12s" begin="0.25s" fill="freeze"/>
+      <use href="#laptop-body"/>
+      <line class="link" x1="0" y1="17" x2="0" y2="69">
+        <animate attributeName="y2" fill="freeze" calcMode="spline"
+          begin="0.25s" dur="12s"
+          keyTimes="0;0.08;0.16;0.24;0.32;0.4;0.48;0.56;0.64;0.72;0.8;0.88;1"
+          keySplines="0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1"
+          values="69;76;69;75;69;74;69;72.5;69;71;69;69.8;69"/>
+      </line>
+      <g transform="translate(0, -3)">
+            <g>
+              <!-- After R+G+P solid (~4.7s): run with master (~3 ぐるん) -->
+              <animateTransform attributeName="transform" type="rotate"
+                values="0 0 0;360 0 0;720 0 0;1080 0 0"
+                keyTimes="0;0.33;0.66;1"
+                calcMode="spline"
+                keySplines="0.2 0.05 0.25 1; 0.2 0.05 0.25 1; 0.2 0.05 0.25 1"
+                begin="4.7s" dur="1.8s" fill="freeze"/>
+              <use href="#remote-dots"/>
+            </g>
+      </g>
+    </g>
+  </g>
+  <g transform="translate(198, 108)">
+    <g>
+      <animateTransform attributeName="transform" type="translate"
+        values="0 0;0 -7;0 0;0 -6;0 0;0 -5;0 0;0 -3.5;0 0;0 -2;0 0;0 -0.8;0 0"
+        keyTimes="0;0.08;0.16;0.24;0.32;0.4;0.48;0.56;0.64;0.72;0.8;0.88;1"
+        calcMode="spline"
+        keySplines="0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1"
+        dur="12s" begin="0.5s" fill="freeze"/>
+      <use href="#desktop-body"/>
+      <line class="link" x1="-12.3" y1="6" x2="-58.5" y2="51">
+        <animate attributeName="y2" fill="freeze" calcMode="spline"
+          begin="0.5s" dur="12s"
+          keyTimes="0;0.08;0.16;0.24;0.32;0.4;0.48;0.56;0.64;0.72;0.8;0.88;1"
+          keySplines="0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1"
+          values="51;58;51;57;51;56;51;54.5;51;53;51;51.8;51"/>
+      </line>
+      <g transform="translate(0, -7)">
+            <g>
+              <!-- After R+G+P solid (~4.7s): run with master (~3 ぐるん) -->
+              <animateTransform attributeName="transform" type="rotate"
+                values="0 0 0;360 0 0;720 0 0;1080 0 0"
+                keyTimes="0;0.33;0.66;1"
+                calcMode="spline"
+                keySplines="0.2 0.05 0.25 1; 0.2 0.05 0.25 1; 0.2 0.05 0.25 1"
+                begin="4.7s" dur="1.8s" fill="freeze"/>
+              <use href="#remote-dots"/>
+            </g>
+      </g>
+    </g>
+  </g>
+
+  <!-- ===== Master ===== -->
+  <g transform="translate(120, 184)">
+    <use href="#master-body"/>
+    <g transform="translate(0, -6)">
+      <!-- Send spin (~3 ぐるん), then nested run spin with remotes (~3 more) -->
+      <g>
+        <animateTransform attributeName="transform" type="rotate"
+          values="0 0 0;360 0 0;720 0 0;1080 0 0"
+          keyTimes="0;0.33;0.66;1"
+          calcMode="spline"
+          keySplines="0.2 0.05 0.25 1; 0.2 0.05 0.25 1; 0.2 0.05 0.25 1"
+          begin="2.4s" dur="2.1s" fill="freeze"/>
+        <g>
+          <animateTransform attributeName="transform" type="rotate"
+            values="0 0 0;360 0 0;720 0 0;1080 0 0"
+            keyTimes="0;0.33;0.66;1"
+            calcMode="spline"
+            keySplines="0.2 0.05 0.25 1; 0.2 0.05 0.25 1; 0.2 0.05 0.25 1"
+            begin="4.7s" dur="1.8s" fill="freeze"/>
+          <use href="#master-dots"/>
+        </g>
+      </g>
+    </g>
+  </g>
+
+  </svg>
+  <text x="480" y="276" dominant-baseline="middle" fill="#0f172a" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="76" font-weight="800">DistSSHKit.jl</text>
+  <text x="480" y="340" dominant-baseline="middle" fill="#475569" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="28" font-weight="500">A Julia kit for setup, execution, and result collection</text>
+  <text x="480" y="378" dominant-baseline="middle" fill="#475569" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="28" font-weight="500">across local and SSH hosts.</text>
+</svg>
