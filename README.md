@@ -49,20 +49,19 @@ For everything else, see the **[Documentation](https://yamanori99.github.io/Dist
 
 ### Basic terms
 
-- **Host** — a machine. Kit side is `parent` / `parent:N`. SSH children are
-  `child:NAME` / `child:NAME:N` (`user@hostname`, an IP, or an SSH config
-  `Host` alias). `setup` takes the SSH name with no prefix.
-- **Process** — one running `julia`. Each process has its own memory and runs
-  independently at the OS level
+- **Host** — a machine. Here you specify it as a host token like `parent`
+  or `child:user@hostname`.
+- **Process** — one running `julia`. Each process has its own memory and
+  runs independently at the OS level.
   (this kit launches multiple `julia` processes, even on a single machine, to run
   work in parallel — built on Distributed.jl)
-- **Master** — the process on `parent` that plans slots (`go`) or hands
-  work to workers (`drive`) and collects results. `parent` is the machine
+- **Master** — the process on the kit parent that plans slots (`go`) or hands
+  work to workers (`drive`) and collects results. The kit parent is the machine
   that started that process.
-- **Worker** — a process that receives work from the master and runs it
+- **Worker** — a process that receives work from the master and runs it.
 
 Example: when you run `go` / `drive` on your own machine, that machine is
-`parent`. Each machine can run several workers (`parent` may run
+the kit parent. Each machine can run several workers (the kit parent may run
 none), and you can add as many remote machines as you like.
 
 <!-- markdownlint-disable MD033 -->
@@ -74,18 +73,25 @@ none), and you can add as many remote machines as you like.
 </p>
 <!-- markdownlint-enable MD033 -->
 
-The diagram is **drive**: one Master process on `parent`, workers on
-`parent` and remotes. **go** uses the same `parent` token, but each
-host runs independent slots (not Distributed workers).
+The diagram is **drive**. One master on the kit parent, workers on each host.
+**go** uses the same host tokens, but there is no
+master/worker: each host runs the script on its own.
 
-There's no limit on the number of remote hosts — more hosts just means more time
+```text
+parent                 # kit parent
+parent:2               # two on the kit parent
+child:user@hostname    # SSH child (user@host, IP, or Host alias)
+child:user@hostname:4  # four on that child
+```
+
+There's no limit on the number of SSH hosts — more hosts just means more time
 spent on SSH connections and deployment, so it's best to start with a few and
 scale up from there.
 
-Before you use a remote host, it needs:
+Before you use an SSH host, it needs:
 
-- Passwordless SSH login from `parent`
-- Julia installed, with the **same major.minor version** as `parent`
+- Passwordless SSH login from the kit parent
+- Julia installed, with the **same major.minor version** as the kit parent
   (checked by `setup --check`)
 
 Details: [Requirements](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/).
@@ -223,14 +229,17 @@ Details: [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/).
 
 ### Try a demo
 
-Bundled examples so you can try the kit without writing a script first:
+Bundled examples so you can try the kit without writing a script first.
+`with_kit` is drive; `without_kit` is standalone / go:
 
 ```bash
 julia --project=. -m DistSSHKit demo install with_kit
+julia --project=. -m DistSSHKit demo install without_kit
 ```
 
 ```bash
 julia --project=. -m DistSSHKit drive parent:2 demos/with_kit/square_file.jl
+julia --project=. -m DistSSHKit go parent:2 demos/without_kit/pi_file.jl
 ```
 
 Walkthrough: [Demo](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/demo/).

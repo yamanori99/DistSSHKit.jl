@@ -10,9 +10,10 @@ Also see [User Guide · demo](@ref Manual-demo), [go](@ref Manual-go),
 
 ```bash
 julia --project=. -m DistSSHKit demo install with_kit
+julia --project=. -m DistSSHKit demo install without_kit
 ```
 
-That copies `demos/with_kit/`. For standalone scripts, `demo install without_kit`.
+That copies `demos/with_kit/` and `demos/without_kit/`.
 
 ```text
 demos/

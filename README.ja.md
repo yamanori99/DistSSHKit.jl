@@ -48,14 +48,14 @@ julia> import Pkg; Pkg.add("DistSSHKit")
 
 ### 基本用語
 
-- **ホスト** — 計算するマシン。Kit 側は `parent`。SSH 先 (child) は `child:user@hostname` のように書く。setup だけは接頭辞なしの SSH 名。
-- **プロセス** — 起動した `julia` 1つ分のこと。それぞれ独立したメモリを持ち、OS 上で別々に動く
+- **ホスト** — 計算するマシン。ここでは、`parent` や `child:user@hostname` のようにトークンで指定する。
+- **プロセス** — 起動した `julia` 1つ分のこと。それぞれ独立したメモリを持ち、OS 上で別々に動く。
   (このキットは1台のマシンでも複数の `julia` プロセスを起動して並列に走らせる。Distributed.jl ベース)
-- **マスター** — `parent` 上のプロセス。`go` ではスロットを計画し、`drive` では仕事をワーカーに渡して結果を集める。`parent` は、そのプロセスを起動したマシンである。
-- **ワーカー** — マスターから仕事を受け取って実行するプロセス
+- **マスター** — キット起動側のプロセス。`go` ではスロットを計画し、`drive` では仕事をワーカーに渡して結果を集める。キット起動側は、そのプロセスを起動したマシンである。
+- **ワーカー** — マスターから仕事を受け取って実行するプロセス。
 
-例: 手元で `go` / `drive` を実行する場合、そのマシンが `parent` になる。
-ワーカーは1マシンに複数立てられ (`parent` 上はゼロでもよい)、リモートマシンは何台でも増やせる。
+例: 手元で `go` / `drive` を実行する場合、そのマシンがキット起動側になる。
+ワーカーは1マシンに複数立てられ (起動側はゼロでもよい)、リモートマシンは何台でも増やせる。
 
 <!-- markdownlint-disable MD033 -->
 <p align="center">
@@ -66,15 +66,22 @@ julia> import Pkg; Pkg.add("DistSSHKit")
 </p>
 <!-- markdownlint-enable MD033 -->
 
-図は **drive** の構成である。`parent` にマスター1つ、各ホストにワーカー。
-**go** も同じ `parent` トークンを使うが、各ホストは独立したスロットを走らせる (Distributed のワーカーではない)。
+図は **drive** である。キット起動側にマスターが1つ、各ホストにワーカーがいる。
+**go** でもホストのトークン指定は同じだが、マスター/ワーカーではなく、各ホストが独立してスクリプトを実行する。
 
-リモートホストの台数に上限はない。台数を増やすほど SSH 接続や配置にかかる時間は伸びるので、まずは数台で試すのが無難である。
+```text
+parent                 # キット起動側
+parent:2               # キット起動側で2つのワーカー
+child:user@hostname    # SSH 先 (user@host / IP / Host エイリアス)
+child:user@hostname:4  # SSH 先で4つのワーカー
+```
 
-使う前に、各リモートホストで次を満たす必要がある。
+SSH 先の台数に上限はない。台数を増やすほど SSH 接続や配置にかかる時間は伸びるので、まずは数台で試すのが無難である。
 
-- `parent` からパスワードなしで SSH ログインできること
-- Julia がインストールされていて、`parent` と **メジャー.マイナーバージョンが一致**していること
+使う前に、各 SSH 先で次を満たす必要がある。
+
+- キット起動側からパスワードなしで SSH ログインできること
+- Julia がインストールされていて、キット起動側と **メジャー.マイナーバージョンが一致**していること
   (`setup --check` で確認できる)
 
 詳細: [Requirements](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)。
@@ -205,13 +212,16 @@ setup!(session, :sync)  # 2回目以降の更新
 ### デモを試す
 
 スクリプトを自分で書く前にキットを試すことができる。
+`with_kit` は drive、`without_kit` は単独実行 / go:
 
 ```bash
 julia --project=. -m DistSSHKit demo install with_kit
+julia --project=. -m DistSSHKit demo install without_kit
 ```
 
 ```bash
 julia --project=. -m DistSSHKit drive parent:2 demos/with_kit/square_file.jl
+julia --project=. -m DistSSHKit go parent:2 demos/without_kit/pi_file.jl
 ```
 
 詳細: [Demo](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/demo/)。

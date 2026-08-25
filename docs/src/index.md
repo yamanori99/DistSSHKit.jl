@@ -64,19 +64,19 @@ Also needs **`ssh`**, **`rsync`**, and **`git`** (git deploy only);
 
 ## Basic terms
 
-- **Host** — the machine that runs the work. This job's DistSSHKit parent is
-  `parent`. SSH children are `child:NAME` (`user@hostname`, an IP, or an SSH
-  config `Host` alias). `setup` takes that SSH name with no prefix.
-- **Process** — one running `julia`. Each process has its own memory and runs
-  independently at the OS level (this kit launches multiple `julia` processes,
-  even on a single machine, to run work in parallel — built on Distributed.jl)
-- **Master** — the process on `parent` that plans slots (`go`) or hands
-  work to workers (`drive`) and collects results. `parent` is the machine
+- **Host** — a machine. Here you specify it as a host token like `parent`
+  or `child:user@hostname`.
+- **Process** — one running `julia`. Each process has its own memory and
+  runs independently at the OS level.
+  (this kit launches multiple `julia` processes, even on a single machine, to run
+  work in parallel — built on Distributed.jl)
+- **Master** — the process on the kit parent that plans slots (`go`) or hands
+  work to workers (`drive`) and collects results. The kit parent is the machine
   that started that process.
-- **Worker** — a process that receives work from the master and runs it
+- **Worker** — a process that receives work from the master and runs it.
 
 Example: when you run `go` / `drive` on your own machine, that machine is
-`parent`. Each machine can run several workers (`parent` may run
+the kit parent. Each machine can run several workers (the kit parent may run
 none), and you can add as many remote machines as you like.
 
 ```@raw html
@@ -86,16 +86,23 @@ none), and you can add as many remote machines as you like.
 </p>
 ```
 
-The diagram is **drive**: one Master process on `parent`, workers on
-`parent` and remotes. **go** uses the same `parent` token, but each
-host runs independent slots (not Distributed workers).
+The diagram is **drive**. One master on the kit parent, workers on each host.
+**go** uses the same host tokens, but there is no
+master/worker: each host runs the script on its own.
 
-There's no limit on the number of remote hosts — more hosts just means more
+```text
+parent                 # kit parent
+parent:2               # two on the kit parent
+child:user@hostname    # SSH child (user@host, IP, or Host alias)
+child:user@hostname:4  # four on that child
+```
+
+There's no limit on the number of SSH hosts — more hosts just means more
 time spent on SSH connections and deployment, so it's best to start with a few
-and scale up. Each remote host needs:
+and scale up. Each SSH host needs:
 
-- Passwordless SSH from `parent`
-- Julia with the same major.minor version as `parent`
+- Passwordless SSH from the kit parent
+- Julia with the same major.minor version as the kit parent
   (`setup --check` verifies this)
 
 Details: [Requirements](@ref).
