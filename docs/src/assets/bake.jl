@@ -88,9 +88,10 @@ const DELAY_MS = 40
 const GIF_WORKERS = 4
 # Static PNG supersample factor (render N× then downscale). Use 1 when exporting already-Retina sizes.
 const PNG_SCALE = 2
-# Deliverable PNG pixel sizes (Retina / 2× GitHub OG 1280×640).
+# Deliverable PNG pixel sizes. Social is GitHub OG 1280×640 (Settings upload
+# often rejects 2×). Sharpness comes from PNG_SCALE, not a larger deliverable.
 const LOGO_PNG = 960
-const SOCIAL_PNG_W, SOCIAL_PNG_H = SOCIAL_W * 2, SOCIAL_H * 2
+const SOCIAL_PNG_W, SOCIAL_PNG_H = SOCIAL_W, SOCIAL_H
 
 die(msg) = (println(stderr, "error: ", msg); exit(1))
 
@@ -503,20 +504,14 @@ function bake_pngs!(arts)
 
     social_svg = social_path("social-preview-static.svg")
     social_png = social_path("social-preview-static.png")
-    # Export at 2× OG pixels; no further supersample (already Retina).
-    social_html = replace(
-        strip_xml_decl(arts.social_static),
-        "width=\"$(SOCIAL_W)\" height=\"$(SOCIAL_H)\"" =>
-            "width=\"$(SOCIAL_PNG_W)\" height=\"$(SOCIAL_PNG_H)\"",
-        count=1,
-    )
+    social_html = strip_xml_decl(arts.social_static)
     if bake_static_png!(
         social_svg,
         social_png,
         social_html;
         w=SOCIAL_PNG_W,
         h=SOCIAL_PNG_H,
-        scale=1,
+        scale=PNG_SCALE,
     )
         ok_any = true
     else

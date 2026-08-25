@@ -63,7 +63,7 @@ julia docs/src/assets/bake.jl --png --gif  # + GIF (Chromium + ffmpeg)
 | Mode | Needs |
 | --- | --- |
 | default | Julia |
-| `--png` | `rsvg-convert` preferred, else Chrome; social PNG is 2560×1280 (2× OG), logo PNG is 960×960, topology PNG is 1120×472 |
+| `--png` | `rsvg-convert` preferred, else Chrome; social PNG is 1280×640 (GitHub OG), logo PNG is 960×960, topology PNG is 1120×472 |
 | `--gif` | Chrome / Chromium (4 parallel workers) + `ffmpeg` |
 
 CI (`.github/workflows/assets-bake.yml`) re-runs the default bake when `docs/src/assets/` changes and fails if SVG/symlink outputs drift. It **warns** (does not fail) if PNG/GIF look older than their sources in git history. Bake `--png` / `--gif` locally before committing rasters.
@@ -78,6 +78,6 @@ Then master + remotes spin together (~3 turns). Collect: quiet data-dots return;
 ## Layout notes
 
 - No ring; thin wires; size-aware fan; each remote owns its wire
-- Social SVG **1280×640**, PNG **2560×1280** (2×); fill most of a ~**960×480** zone (soft ≈100×60 inset); kit lockup (mark | title + tagline)
+- Social SVG and PNG **1280×640** (GitHub Social preview); fill most of a ~**960×480** zone (soft ≈100×60 inset); kit lockup (mark | title + tagline)
 - Nested logo `viewBox="0 26 240 240"`; static/dynamic social share chrome
 - Upload `social/social-preview-static.png` under GitHub → Settings → Social preview
