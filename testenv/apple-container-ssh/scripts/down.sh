@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Stop and remove Apple-container workers (leave buildkit alone).
+# Stop and remove Apple-container SSH children (leave buildkit alone).
 set -euo pipefail
 
 if ! command -v container >/dev/null 2>&1; then
@@ -7,8 +7,8 @@ if ! command -v container >/dev/null 2>&1; then
   exit 1
 fi
 
-for name in worker-1 worker-2; do
+for name in child-1 child-2 worker-1 worker-2; do
   container stop "${name}" >/dev/null 2>&1 || true
   container rm "${name}" >/dev/null 2>&1 || true
 done
-echo "Removed worker-1 and worker-2 (if they existed)"
+echo "Removed child-1 and child-2 (and leftover worker-1 / worker-2, if they existed)"
