@@ -66,7 +66,7 @@ if [[ -n "${DISTSSHKIT_WORKER_IMAGE:-}" ]]; then
   pull_worker_image "$DISTSSHKIT_WORKER_IMAGE"
 else
   # Build a single service so logs are not interleaved (both share the same image).
-  "${COMPOSE[@]}" -f compose.yml build worker-1
+  "${COMPOSE[@]}" -f compose.yml build child-1
   if [[ -n "${DISTSSHKIT_PUSH_IMAGE:-}" ]]; then
     DISTSSHKIT_LOCAL_IMAGE="$LOCAL_IMAGE" ./scripts/push-image.sh "$DISTSSHKIT_PUSH_IMAGE"
   fi

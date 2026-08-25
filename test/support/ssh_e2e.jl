@@ -71,8 +71,8 @@ _ssh_e2e_git_remote_root() = "/home/dev/distsshkit-e2e-git"
 # Tilde layout for collect path-boundary coverage (`dev` → `/home/dev/…`).
 _ssh_e2e_tilde_remote_root() = "~/distsshkit-e2e-tilde"
 _ssh_e2e_bare_origin() = "/home/dev/distsshkit-e2e-origin.git"
-# Compose DNS name of worker-1 (reachable from both workers via inter-worker keys).
-_ssh_e2e_bare_ssh_from_workers() = "dev@worker-1:/home/dev/distsshkit-e2e-origin.git"
+# Compose DNS name of child-1 (reachable from both children via inter-worker keys).
+_ssh_e2e_bare_ssh_from_workers() = "dev@child-1:/home/dev/distsshkit-e2e-origin.git"
 
 """Root for kept SSH E2E artifacts: `test/artifacts/ssh-e2e/` (gitignored)."""
 function _ssh_e2e_artifact_root()::String
@@ -411,7 +411,7 @@ function _ssh_e2e_bare_origin_from_controller()::String
 end
 
 """
-Seed a bare origin on worker-1, point local `origin` at it, push HEAD.
+Seed a bare origin on child-1, point local `origin` at it, push HEAD.
 
 Workers clone via `_ssh_e2e_bare_ssh_from_workers()` (compose DNS + inter-worker key).
 """
@@ -429,17 +429,17 @@ function _ssh_e2e_seed_git_origin!(proj::AbstractString)
     )))
     _assert_proc_ok(proc, out; label="ssh-e2e git init --bare")
 
-    # Workers accept worker-1 host key once (git clone uses plain ssh).
+    # Children accept child-1 host key once (git clone uses plain ssh).
     for host in _ssh_e2e_hosts()
         proc, out = _run_subprocess(Cmd(vcat(
             ssh_base,
             String[
                 String(host),
                 "ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 " *
-                "dev@worker-1 'echo ok'",
+                "dev@child-1 'echo ok'",
             ],
         )))
-        _assert_proc_ok(proc, out; label="ssh-e2e warm worker-1 hostkey from $host")
+        _assert_proc_ok(proc, out; label="ssh-e2e warm child-1 hostkey from $host")
     end
 
     proj = abspath(proj)

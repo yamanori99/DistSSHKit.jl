@@ -1,23 +1,23 @@
-# Linux SSH workers for DistSSHKit CI / local Docker E2E.
+# Linux SSH children for DistSSHKit CI / local Docker E2E (`child:NAME[:N]`).
 services:
-  worker-1:
+  child-1:
     build:
       context: .
       dockerfile: Dockerfile
     image: local/linux-ssh-worker:latest
-    container_name: distsshkit-worker-1
+    container_name: distsshkit-child-1
     ports:
       - "2222:22"
     volumes:
       - ./mounted-keys:/mounted-keys:ro
     restart: "no"
 
-  worker-2:
+  child-2:
     build:
       context: .
       dockerfile: Dockerfile
     image: local/linux-ssh-worker:latest
-    container_name: distsshkit-worker-2
+    container_name: distsshkit-child-2
     ports:
       - "2223:22"
     volumes:

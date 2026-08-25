@@ -10,7 +10,7 @@ APPLE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DOCKER_ROOT="$(cd "${APPLE_ROOT}/../docker-ssh" && pwd)"
 KIT_ROOT="$(cd "${APPLE_ROOT}/../.." && pwd)"
 LOCAL_IMAGE="local/linux-ssh-worker:latest"
-NAMES=(worker-1 worker-2)
+NAMES=(child-1 child-2)
 RUN_E2E=0
 
 for arg in "$@"; do
@@ -94,14 +94,14 @@ Host distsshkit-w2
 EOF
 }
 
-inject_worker_hosts() {
+inject_child_hosts() {
   local ip1="$1" ip2="$2"
   local cfg="${DOCKER_ROOT}/.generated/ssh_config"
-  # Apple default network does not resolve peer names; e2e git uses dev@worker-1.
+  # Apple default network does not resolve peer names; e2e git uses dev@child-1.
   ssh -F "${cfg}" distsshkit-w1 \
-    "grep -q ' worker-2\$' /etc/hosts || echo '${ip2} worker-2' | sudo tee -a /etc/hosts >/dev/null"
+    "grep -q ' child-2\$' /etc/hosts || echo '${ip2} child-2' | sudo tee -a /etc/hosts >/dev/null"
   ssh -F "${cfg}" distsshkit-w2 \
-    "grep -q ' worker-1\$' /etc/hosts || echo '${ip1} worker-1' | sudo tee -a /etc/hosts >/dev/null"
+    "grep -q ' child-1\$' /etc/hosts || echo '${ip1} child-1' | sudo tee -a /etc/hosts >/dev/null"
 }
 
 echo "Starting container system (no-op if already up)..."
@@ -129,8 +129,8 @@ done
 echo "Waiting for worker IPs..."
 IP1="" IP2=""
 for ((i = 1; i <= 30; i++)); do
-  IP1="$(container_ipv4 worker-1 2>/dev/null || true)"
-  IP2="$(container_ipv4 worker-2 2>/dev/null || true)"
+  IP1="$(container_ipv4 child-1 2>/dev/null || true)"
+  IP2="$(container_ipv4 child-2 2>/dev/null || true)"
   if [[ -n "${IP1}" && -n "${IP2}" ]]; then
     break
   fi
@@ -147,13 +147,13 @@ echo "Workers: distsshkit-w1 -> ${IP1}:22  distsshkit-w2 -> ${IP2}:22"
 echo "SSH config: ${DOCKER_ROOT}/.generated/ssh_config"
 
 "${DOCKER_ROOT}/scripts/wait-ready.sh"
-inject_worker_hosts "${IP1}" "${IP2}"
-echo "Inter-worker DNS: worker-1 / worker-2 in each /etc/hosts"
+inject_child_hosts "${IP1}" "${IP2}"
+echo "Inter-child DNS: child-1 / child-2 in each /etc/hosts"
 # First peer SSH needs accept-new (BatchMode cannot prompt). Same as e2e git warmup.
 ssh -F "${DOCKER_ROOT}/.generated/ssh_config" distsshkit-w1 \
-  "ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o LogLevel=ERROR -o ConnectTimeout=5 dev@worker-2 true"
+  "ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o LogLevel=ERROR -o ConnectTimeout=5 dev@child-2 true"
 ssh -F "${DOCKER_ROOT}/.generated/ssh_config" distsshkit-w2 \
-  "ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o LogLevel=ERROR -o ConnectTimeout=5 dev@worker-1 true"
+  "ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o LogLevel=ERROR -o ConnectTimeout=5 dev@child-1 true"
 
 if [[ "$RUN_E2E" -eq 1 ]]; then
   export DISTSSHKIT_SSH_E2E=1

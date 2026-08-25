@@ -669,14 +669,14 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             @test occursin("refusing", lowercase(out))
         end
 
-        @testset "inter-worker SSH (w1 → w2 via compose DNS)" begin
+        @testset "inter-child SSH (w1 → w2 via compose DNS)" begin
             cmd = Cmd([
                 "ssh", "-F", g.ssh_config, hosts[1],
                 "ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 " *
-                "dev@worker-2 'echo inter-ok'",
+                "dev@child-2 'echo inter-ok'",
             ])
             proc, out = _run_subprocess(cmd)
-            _assert_ssh_e2e_ok(suite, "inter_worker_ssh", proc, out)
+            _assert_ssh_e2e_ok(suite, "inter_child_ssh", proc, out)
             @test occursin("inter-ok", out)
         end
 

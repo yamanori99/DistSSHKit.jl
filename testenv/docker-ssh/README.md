@@ -25,7 +25,7 @@ Suite inventory (what each `@testset` proves): [`test/README.md`](../../test/REA
   (local: [`apple-container-ssh`](../apple-container-ssh/README.md)
   `./scripts/up.sh --e2e`).
 - **Git parity (`--require-git`):** covered in the suite via a separate git remote root
-  (`clone` from a bare on worker-1 → `--sync` → `drive --require-git`).
+  (`clone` from a bare on child-1 → `--sync` → `drive --require-git`).
   Mismatch before `--sync` must fail. `--pull` after a controller `git push`
   is checked by reading `e2e_sync_marker.txt` on the workers.
   The rsync path still excludes `.git/` and does not claim parity.
@@ -43,7 +43,7 @@ Network Privacy does not block SSH from the controller.
 | Path | Role |
 | --- | --- |
 | [`Dockerfile`](Dockerfile) / [`start.sh`](start.sh) | Worker image (sshd, rsync, git, Julia min via juliaup) |
-| [`compose.yml`](compose.yml) | Two workers (`worker-1` / `worker-2`) |
+| [`compose.yml`](compose.yml) | Two children (`child-1` / `child-2`) |
 | [`scripts/gen-keys.sh`](scripts/gen-keys.sh) | Controller + inter-worker keys, SSH config |
 | [`scripts/up.sh`](scripts/up.sh) | Keys → compose up → wait (`--e2e` also runs the suite) |
 | [`scripts/wait-ready.sh`](scripts/wait-ready.sh) | BatchMode SSH + Julia probe |

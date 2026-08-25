@@ -5,6 +5,10 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- Testenv Docker / Apple SSH boxes are Compose/container `child-1` / `child-2`
+  (peer DNS `dev@child-1`), matching Kit `child:NAME`. Image tags stay
+  `linux-ssh-worker`. Controller aliases stay `distsshkit-w1` / `distsshkit-w2`.
+
 ## 0.4.1
 
 Patch after `0.4.0`. Date this heading `YYYY-MM-DD` (UTC) on the tag day.

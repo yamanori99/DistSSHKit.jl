@@ -122,7 +122,7 @@ DISTSSHKIT_CODE_COVERAGE=1 testenv/docker-ssh/scripts/up.sh --e2e
 | `--sync` then `--require-git` | pass |
 | `--pull` after controller `git push` | `e2e_sync_marker.txt` on the workers matches |
 
-Worker-1 can SSH to worker-2 (compose DNS).
+Child-1 can SSH to child-2 (compose DNS).
 
 Not this file: macOS workers, dead hosts, fake `ssh`/`rsync`, local `with_kit` recipes (`test/integration/demos/`).
 
