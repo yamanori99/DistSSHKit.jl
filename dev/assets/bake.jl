@@ -88,15 +88,34 @@ const DELAY_MS = 40
 const GIF_WORKERS = 4
 # Static PNG supersample factor (render N× then downscale). Use 1 when exporting already-Retina sizes.
 const PNG_SCALE = 2
-# Deliverable PNG pixel sizes (Retina / 2× GitHub OG 1280×640).
+# Deliverable PNG pixel sizes. Social is GitHub OG 1280×640 (Settings upload
+# often rejects 2×). Sharpness comes from PNG_SCALE, not a larger deliverable.
 const LOGO_PNG = 960
-const SOCIAL_PNG_W, SOCIAL_PNG_H = SOCIAL_W * 2, SOCIAL_H * 2
+const SOCIAL_PNG_W, SOCIAL_PNG_H = SOCIAL_W, SOCIAL_H
 
 die(msg) = (println(stderr, "error: ", msg); exit(1))
 
 logo_path(name::AbstractString) = joinpath(LOGO_DIR, name)
 social_path(name::AbstractString) = joinpath(SOCIAL_DIR, name)
 diagram_path(name::AbstractString) = joinpath(DIAGRAM_DIR, name)
+
+"""PNG IHDR width/height, or `nothing` if the file is not a PNG."""
+function png_ihdr_size(path::AbstractString)
+    isfile(path) || return nothing
+    open(path, "r") do io
+        sig = read(io, 8)
+        sig == UInt8[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] || return nothing
+        ntoh(read(io, UInt32)) == 13 || return nothing
+        String(read(io, 4)) == "IHDR" || return nothing
+        w = Int(ntoh(read(io, UInt32)))
+        h = Int(ntoh(read(io, UInt32)))
+        return (w, h)
+    end
+end
+
+function png_matches_size(path::AbstractString, w::Int, h::Int)
+    png_ihdr_size(path) == (w, h)
+end
 
 function topology_dark(svg::AbstractString)
     out = svg
@@ -298,6 +317,7 @@ function rsvg_png(
     width::Int,
     height::Int,
     scale::Int=1,
+    exact_size::Bool=false,
 )
     candidates = String[]
     w = which_bin(("rsvg-convert",))
@@ -315,6 +335,11 @@ function rsvg_png(
             return false
         end
         isfile(out_path) || return false
+        if exact_size && !png_matches_size(out_path, width, height)
+            rm(out_path; force=true)
+            println(stderr, "error: rsvg-convert wrote wrong size for $(relpath(out_path, ROOT)) (want $(width)×$(height))")
+            return false
+        end
         println("wrote $(relpath(out_path, ROOT)) ($(filesize(out_path)) bytes) [rsvg-convert]")
         return true
     end
@@ -326,8 +351,17 @@ function rsvg_png(
     end
     (isfile(hi) && filesize(hi) > 0) || return false
     if downscale_png!(hi, out_path; w=width, h=height)
+        if exact_size && !png_matches_size(out_path, width, height)
+            rm(out_path; force=true)
+            println(stderr, "error: downscale wrote wrong size for $(relpath(out_path, ROOT)) (want $(width)×$(height))")
+            return false
+        end
         println("wrote $(relpath(out_path, ROOT)) ($(filesize(out_path)) bytes) [rsvg-convert $(scale)×→1×]")
         return true
+    end
+    if exact_size
+        println(stderr, "error: need sips or ffmpeg to downscale $(relpath(out_path, ROOT)) to $(width)×$(height)")
+        return false
     end
     cp(hi, out_path; force=true)
     println(stderr, "warn: kept $(scale)× PNG for $(relpath(out_path, ROOT)) (no sips/ffmpeg downscale)")
@@ -453,10 +487,11 @@ function bake_static_png!(
     w::Int,
     h::Int,
     scale::Int=PNG_SCALE,
+    exact_size::Bool=false,
 )
     out_path = joinpath(ROOT, out_rel)
     svg_path = joinpath(ROOT, svg_rel)
-    if rsvg_png(svg_path, out_path; width=w, height=h, scale=scale)
+    if rsvg_png(svg_path, out_path; width=w, height=h, scale=scale, exact_size=exact_size)
         return true
     end
 
@@ -465,6 +500,11 @@ function bake_static_png!(
     write(html_path, html)
     if scale <= 1
         if chrome_screenshot(html_path, out_path; w=w, h=h, scale=1)
+            if exact_size && !png_matches_size(out_path, w, h)
+                rm(out_path; force=true)
+                println(stderr, "error: chromium wrote wrong size for $out_rel (want $(w)×$(h))")
+                return false
+            end
             println("wrote $out_rel ($(filesize(out_path)) bytes) [chromium]")
             return true
         end
@@ -476,8 +516,17 @@ function bake_static_png!(
         return false
     end
     if downscale_png!(hi, out_path; w=w, h=h)
+        if exact_size && !png_matches_size(out_path, w, h)
+            rm(out_path; force=true)
+            println(stderr, "error: downscale wrote wrong size for $out_rel (want $(w)×$(h))")
+            return false
+        end
         println("wrote $out_rel ($(filesize(out_path)) bytes) [chromium $(scale)×→1×]")
         return true
+    end
+    if exact_size
+        println(stderr, "error: need sips or ffmpeg to downscale $out_rel to $(w)×$(h)")
+        return false
     end
     # Fallback: keep the hi-res shot if downscale tools are missing.
     cp(hi, out_path; force=true)
@@ -503,24 +552,19 @@ function bake_pngs!(arts)
 
     social_svg = social_path("social-preview-static.svg")
     social_png = social_path("social-preview-static.png")
-    # Export at 2× OG pixels; no further supersample (already Retina).
-    social_html = replace(
-        strip_xml_decl(arts.social_static),
-        "width=\"$(SOCIAL_W)\" height=\"$(SOCIAL_H)\"" =>
-            "width=\"$(SOCIAL_PNG_W)\" height=\"$(SOCIAL_PNG_H)\"",
-        count=1,
-    )
+    social_html = strip_xml_decl(arts.social_static)
     if bake_static_png!(
         social_svg,
         social_png,
         social_html;
         w=SOCIAL_PNG_W,
         h=SOCIAL_PNG_H,
-        scale=1,
+        scale=PNG_SCALE,
+        exact_size=true,
     )
         ok_any = true
     else
-        println(stderr, "warn: skip social-preview-static.png (need rsvg-convert or Chromium)")
+        println(stderr, "warn: skip social-preview-static.png (need rsvg-convert or Chromium, plus sips/ffmpeg to keep 1280×640)")
     end
 
     for (svg_rel, png_rel, svg_text) in (
