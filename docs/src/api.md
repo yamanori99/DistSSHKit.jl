@@ -113,8 +113,7 @@ report_pipeline_errors
 
 Use this surface when callers need to classify tokens or decide whether
 `size!` is needed before building workers (occupancy math), instead of
-occupancy math), instead of re-parsing the grammar or reaching into
-private internals.
+re-parsing the grammar or reaching into private internals.
 
 `parse_worker_tokens` validates and classifies the grammar.
 `worker_tokens_fully_specified` says whether every token has an explicit `:N`.
