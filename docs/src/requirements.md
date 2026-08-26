@@ -68,7 +68,8 @@ DistSSHKit assumes a Julia **project** — `Project.toml` at the project root
   not the kit's (`DISTRIBUTED_PROJECT_ROOT` overrides).
 - Declare dependencies in that `Project.toml` / `Manifest.toml`. Install them on
   **every** machine that runs jobs: local `Pkg.instantiate()`, and
-  `setup --instantiate` on remotes (after `--clone` or `--rsync`).
+  `setup --instantiate` on remotes (after `--clone` or `--rsync`), or
+  `go --rsync` / `drive --rsync` onto an empty/missing path.
 
 Demo scripts live under `./demos/` after `demo install with_kit` (or
 `without_kit`); see

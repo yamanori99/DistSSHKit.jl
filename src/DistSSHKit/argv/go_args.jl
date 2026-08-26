@@ -6,6 +6,7 @@ function show_go_usage(; io::IO=stdout)
     print_help_lines(io,
         "Standalone script. One full run per slot; slots start together.",
         "Remotes: setup --rsync or --clone, then --instantiate.",
+        "Or go --rsync onto an empty path (instantiates missing deps).",
     )
     print_help_blank(io)
     print_help_section("Usage"; io=io)
@@ -25,7 +26,7 @@ function show_go_usage(; io::IO=stdout)
     print_help_blank(io)
     print_help_section("Options"; io=io)
     print_help_lines(io,
-        "  --sync / --rsync    optional pre-run (default: none)",
+        "  --sync / --rsync    optional pre-run; --rsync instantiates if needed",
         "  --julia PATH        remote Julia (ENV or auto)",
         "  --output-dir PATH   batch root; slots are PATH/<slot>/",
         "  $(KIT_TIME_HELP)",

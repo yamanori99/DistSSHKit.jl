@@ -13,7 +13,9 @@ Flag vocabulary and a short **go vs drive** table: [User Guide](@ref Manual).
 
 **vs go:** one master plus Distributed workers; `child:NAME:N` is worker count.
 Opt-in git parity is here only (`--require-git`). For a plain script with no
-driver contract, prefer [`go`](@ref Manual-go).
+driver contract, prefer [`go`](@ref Manual-go). Prepare remotes with
+[`setup --rsync`](@ref Manual-setup) **or** `--clone`, then `--instantiate`.
+One-shot onto an empty/missing path: `drive --rsync` (instantiates if needed).
 
 ## Flags
 
@@ -59,7 +61,8 @@ post-run collect, and `size` Julia-path detection.
 ## Prerequisites
 
 Run [`setup --check`](@ref Manual-setup) on new clusters. Remotes need the
-project tree and an instantiate. Prefer matching Julia **major.minor**.
+project tree and an instantiate (`setup --instantiate`, or `drive --rsync`
+onto an empty path). Prefer matching Julia **major.minor**.
 
 ## Workers
 

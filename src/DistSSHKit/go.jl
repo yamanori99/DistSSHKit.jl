@@ -226,8 +226,9 @@ function _go_assert_remote_ready!(host::AbstractString, remote_root::AbstractStr
             "  git:    julia --project=. -m DistSSHKit setup --clone $host\n" *
             "          (later updates: setup --sync $host)\n" *
             "  then:   julia --project=. -m DistSSHKit setup --instantiate $host\n" *
+            "Or one-shot onto an empty path: go --rsync (instantiates missing deps).\n" *
             "Or from Julia: setup!(session, :rsync, :instantiate)\n" *
-            "  (or :clone; repo=\"…\" then :instantiate; later :sync)\n" *
+            "  (or go!(…; sync=:rsync); or :clone; repo=\"…\" then :instantiate; later :sync)\n" *
             "Set DISTRIBUTED_REMOTE_PROJECT_ROOT if the remote path is not the default."
         !isempty(ssh_hint) && (msg *= "\n  $ssh_hint")
         throw(ArgumentError(msg))
@@ -584,14 +585,14 @@ go!("job.jl", "child:user@h1:1", "child:user@h2:1"; remote="/path/to/project")
 ```
 
 Each slot gets `DISTRIBUTED_OUTPUT_DIR` pointing at
-`{script}/.distsshkit/go/<stem>_<UTC>/<slot>/`. Setup on remotes is assumed done.
+`{script}/.distsshkit/go/<stem>_<UTC>/<slot>/`.
 Override the batch root with `output_dir` (CLI: `--output-dir`). For backward
 compatibility `collect_spec::AbstractString` also sets the batch root, but passing
 both `output_dir` and `collect_spec::String` is an error. `collect_spec === false`
 means "skip collect" and is orthogonal to `output_dir`.
 
-Default `sync` is `false` (no pre-run sync; remotes are checked first).
-Pass `sync=:sync` or `sync=:rsync` to copy, then check. After `:rsync`,
+Default `sync` is `false` (no pre-run sync; remotes are checked first — setup
+is assumed done). Pass `sync=:sync` or `sync=:rsync` to copy, then check. After `:rsync`,
 hosts that still lack Manifest deps get [`instantiate!`](@ref) before the
 check. Use `sync=:rsync` only onto a missing/empty remote path (or
 `setup --delete` / `setup!(session, :delete)` first). `go!` has no git-parity

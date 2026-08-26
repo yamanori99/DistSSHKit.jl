@@ -15,7 +15,8 @@ Also: [First Steps · Demo](@ref Tutorial-Demo), [drive](@ref Manual-drive),
 **vs drive:** each `child:NAME:N` is N full script runs (not Distributed workers).
 There is no `--require-git`; for commit parity use [`drive --require-git`](@ref Manual-drive).
 Prepare remotes with [`setup --rsync`](@ref Manual-setup) **or** `--clone`, then
-`--instantiate` (git updates later: `setup --sync` or `go --sync`).
+`--instantiate`. One-shot onto an empty/missing path: `go --rsync` (instantiates
+if needed). Git updates later: `setup --sync` or `go --sync`.
 
 ## Flags
 

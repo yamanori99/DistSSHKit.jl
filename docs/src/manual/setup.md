@@ -70,5 +70,6 @@ host** to an absolute path. Prefer an absolute remote root when you can.
 ## After `--rsync`
 
 No remote `.git/` — that is fine. `go` / `drive` do not pre-run sync or
-require git parity by default. Kit logs: `{project}/.distsshkit/setup/`.
+require git parity by default. `go --rsync` / `drive --rsync` on an empty
+path instantiate if deps are still missing. Kit logs: `{project}/.distsshkit/setup/`.
 `setup --rsync` skips `.distsshkit/` even if the job `.gitignore` is missing.

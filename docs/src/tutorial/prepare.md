@@ -25,13 +25,15 @@ julia --project=. -m DistSSHKit setup --instantiate YourHost1 YourHost2
 ```
 
 `--rsync` is the usual first deploy; `--clone` is the git path (later updates:
-`setup --sync`). Both need the same `--instantiate` afterward.
+`setup --sync`). After `setup --rsync` or `--clone`, run `--instantiate`.
 Not sure which to pick? See
 [setup · rsync or git?](@ref Manual-setup-rsync-or-git).
 Skipping instantiate is a common cause of remote failures such as
 `failed to find source of parent package: "…"`.
-`go` / `drive` and `setup --check` probe remotes first and fail fast with an
-`--instantiate` hint when deps are missing.
+Default `go` / `drive` and `setup --check` probe remotes first and fail fast
+with an `--instantiate` hint when deps are missing. `go --rsync` /
+`drive --rsync` copy first, instantiate if Manifest deps are still missing,
+then check — only onto a missing/empty remote path (or `setup --delete` first).
 
 Same steps from Julia:
 
@@ -48,8 +50,9 @@ it (`setup --remote-path` / `KitSession(; remote=…)`), pass the same path to
 `go` / `drive` / `go!` / `drive!` / `pipeline!`.
 
 After setup, just run `go` / `drive` — neither pre-runs sync nor requires git
-parity by default. Optional one-shot: `go --sync` / `go --rsync` /
-`drive --sync` / `drive --rsync`. Commit parity is drive-only:
+parity by default. Optional one-shot onto an empty/missing remote:
+`go --rsync` / `drive --rsync` (instantiates if needed). Git updates:
+`go --sync` / `drive --sync`. Commit parity is drive-only:
 `drive --require-git` on git-managed remotes. Kit logs for setup land under
 `{project}/.distsshkit/setup/`. Put `.distsshkit/` in the job `.gitignore`
 ([User Guide](@ref Manual)).

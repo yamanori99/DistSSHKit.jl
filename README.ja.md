@@ -121,9 +121,10 @@ CLI のオプションと Julia API は1対1である。
 
 ### 下準備
 
-スクリプトを実行する前に `setup` が必要である。
-ローカルの Julia プロジェクトをリモートへ配置し、依存パッケージを揃える。
+ふつうはスクリプトの前に `setup` で配置と依存を揃える。
 1回の呼び出しにつき、配置・初期化などの動作は基本1つだけ指定する。
+空のリモートなら `go --rsync` / `drive --rsync` でコピーと instantiate を一度にできる
+(既定の `go` / `drive` は、リモートが既に用意されていることを前提とする)。
 
 - 初回配置: `--rsync` (ローカルのツリーをそのまま送る) か `--clone` (git リポジトリを clone) のどちらか一方
 - 依存の用意: `--instantiate` (リモートで `Pkg.instantiate`)
@@ -206,7 +207,8 @@ setup!(session, :sync)  # 2回目以降の更新
 ```
 
 `pipeline!` は任意のまとめ呼びである。sync → `size!` → `drive!` → collect を一度にできる。
-`setup!` は含まない。リモートは先に用意する。
+`setup!` は含まない。`sync=:rsync` はコピーのみ (instantiate しない)。
+リモートは先に用意するか、`drive!(…; sync=:rsync)` を使う。
 詳細: [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/)。
 
 ### デモを試す

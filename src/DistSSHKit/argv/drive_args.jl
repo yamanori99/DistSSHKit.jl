@@ -332,6 +332,7 @@ function show_drive_usage(; io::IO=stdout)
     print_help_lines(io,
         "Driver + Distributed workers (pmap), then collect new files.",
         "Remotes: setup --rsync or --clone, then --instantiate.",
+        "Or drive --rsync onto an empty path (instantiates missing deps).",
     )
     print_help_blank(io)
     print_help_section("Usage"; io=io)
@@ -352,7 +353,7 @@ function show_drive_usage(; io::IO=stdout)
     print_help_section("Options"; io=io)
     print_help_lines(io,
         "  -w, --workers N     default when host has no :N",
-        "  --sync / --rsync    optional pre-run (default: none)",
+        "  --sync / --rsync    optional pre-run; --rsync instantiates if needed",
         "  --require-git       $(REQUIRE_GIT_MEANING)",
         "  --require-all-hosts fail if a listed SSH host did not join or collect failed",
         "  --output-dir PATH   result root (default: {script}/.distsshkit/drive)",

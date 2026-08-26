@@ -63,9 +63,11 @@ remain as short aliases for the common deploy steps.
 
 A few points that carry over from the CLI:
 
-- [`go!`](@ref) / [`drive!`](@ref) / [`pipeline!`](@ref) do **not** pre-run
-  sync or require git parity by default. Pass `sync=:sync` / `:rsync` for a
-  one-shot deploy
+- [`go!`](@ref) / [`drive!`](@ref) do **not** pre-run sync or require git
+  parity by default. Pass `sync=:sync` / `:rsync` to copy first; after
+  `:rsync`, missing Manifest deps get [`instantiate!`](@ref).
+  [`pipeline!`](@ref) may `sync!` first but does not pass `sync=` into
+  `drive!`, so it does not instantiate after rsync
 - Git parity (`skip_hash_check=false`, CLI: `drive --require-git`) is
   **drive** / **pipeline** only — `go!` stays simpler
 - Prefer positional worker tokens over building a [`WorkerPlan`](@ref) by

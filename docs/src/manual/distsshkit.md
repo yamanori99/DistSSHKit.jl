@@ -30,6 +30,8 @@ The first always runs the Apps copy of DistSSHKit, not the kit in
 distsshkit demo install with_kit
 distsshkit setup --rsync user@host1                              # first deploy
 distsshkit setup --instantiate user@host1                        # remote Pkg
+# or one-shot onto an empty path (instantiates if needed):
+# distsshkit go --rsync child:user@host1:1 path/to/script.jl
 # size / drive: job project, not the Apps copy
 julia --project=. -m DistSSHKit size parent child:user@host1
 distsshkit go child:user@host1:1 path/to/script.jl                     # one full run per slot
