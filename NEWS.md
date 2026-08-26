@@ -5,6 +5,10 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+## 0.4.2
+
+Patch after `0.4.1`. Date this heading `YYYY-MM-DD` (UTC) on the tag day.
+
 - `go` with `sync=:rsync` / `:sync` checks remotes **after** the copy. Default
   `sync=false` still checks first. After `:rsync`, hosts missing Manifest deps
   get `instantiate!` (same for `drive --rsync`). Detached `execute!(; remote=)`
@@ -15,9 +19,7 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
   (peer DNS `dev@child-1`), matching Kit `child:NAME`. Image tags stay
   `linux-ssh-worker`. Controller aliases stay `distsshkit-w1` / `distsshkit-w2`.
 
-## 0.4.1
-
-Patch after `0.4.0`. Date this heading `YYYY-MM-DD` (UTC) on the tag day.
+## 0.4.1 (2026-08-24)
 
 - `go` with `job_id` / `DISTSSHKIT_JOB_ID` runs the slot script. The pkill
   mark is a no-op `-L` file so the script stays `PROGRAM_FILE`. Drive workers
