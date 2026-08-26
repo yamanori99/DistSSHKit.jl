@@ -11,8 +11,8 @@ Real OpenSSH + rsync Linux workers. CI remote SSH coverage uses this stack
 | Controller | Worker | Where |
 | --- | --- | --- |
 | Linux (`ubuntu-latest`) | `ubuntu:24.04` ×2 | **CI** — PR / main (`E2E`) and weekly (`E2E weekly / ubuntu-latest → ubuntu-24.04`) |
-| macOS Intel (`macos-15-intel` + Colima) | same image | **CI weekly** — `E2E weekly / macos-15-intel → ubuntu-24.04` |
-| WSL2 (`windows-latest`) | same image | **CI weekly** — `E2E weekly / windows-latest (WSL2) → ubuntu-24.04` |
+| macOS Intel (`macos-15-intel` + Colima) | same image | **E2E weekly** — `E2E weekly / macos-15-intel → ubuntu-24.04` |
+| WSL2 (`windows-latest`) | same image | **E2E weekly** — `E2E weekly / windows-latest (WSL2) → ubuntu-24.04` |
 | Either | `parent:N` | Mixed smoke inside the same suite |
 
 Suite inventory (what each `@testset` proves): [`test/README.md`](../../test/README.md#ssh-e2e).
