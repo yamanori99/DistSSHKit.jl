@@ -68,7 +68,7 @@ testenv/docker-ssh/scripts/up.sh --e2e
 
 CI uploads Codecov on **main push** only (`Pkg.test` max slot, flag `pkgtest`). PR
 `Pkg.test` runs without coverage instrumentation. E2E coverage (flag `e2e`) runs
-on **E2E daily** and **`cut` PR** E2E — not on ordinary PR E2E. Local coverage:
+on **E2E weekly** and **`cut` PR** E2E — not on ordinary PR E2E. Local coverage:
 
 ```bash
 DISTSSHKIT_CODE_COVERAGE=1 testenv/docker-ssh/scripts/up.sh --e2e
@@ -83,7 +83,7 @@ Exactly three pins, in [`.github/julia-slots.env`](.github/julia-slots.env). Do 
 | Slot | Role | Required |
 | --- | --- | --- |
 | **min** | `Project.toml` julia floor. Pkg.test (no coverage), Aqua, JETLS, Documenter, bake | yes |
-| **max** | Newest tagged or prerelease (`versions.json`). Pkg.test, Aqua, PR / daily E2E, GHCR worker. Codecov `pkgtest` on **main push** only | yes |
+| **max** | Newest tagged or prerelease (`versions.json`). Pkg.test, Aqua, PR / weekly E2E, GHCR worker. Codecov `pkgtest` on **main push** only | yes |
 | **tip** | Next-minor nightly. Pkg.test, Aqua. `continue-on-error` | no |
 
 JETLS is min plus `JULIA_SLOT_JETLS_MAX` (job name still `JETLS - max`). That pin lags when `max` / `tip` move past what JETLS lists (today 1.12.2–1.13). Raise it only after JETLS supports that runtime. No JETLS **tip**.
@@ -99,7 +99,7 @@ These files **alone** skip the heavy steps (job still starts; Pkg.test / JETLS /
 - `README.md`, `README.ja.md`, `CONTRIBUTING.md`, `NEWS.md`, `SECURITY.md`, `LICENSE`
 - `.gitignore`, `.github/pull_request_template.md`, `.coderabbit.yaml`
 
-A new root markdown file stays heavy until listed in [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml). Changes under `docs/src` still run those jobs. A `cut` label skips none of this: Pkg.test, JETLS, Aqua, Documenter, and Linux E2E all run. macOS / WSL stay on `E2E daily`, not the PR. Register only after that matrix is green on the merge commit.
+A new root markdown file stays heavy until listed in [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml). Changes under `docs/src` still run those jobs. A `cut` label skips none of this: Pkg.test, JETLS, Aqua, Documenter, and Linux E2E all run. macOS / WSL stay on `E2E weekly`, not the PR. Register only after that matrix is green on the merge commit.
 
 Required to merge (branch protection uses these names). Tip jobs are allow-failure. A skipped heavy step still leaves the job green.
 
@@ -135,7 +135,7 @@ JETLS is the type gate. Do not commit `.vscode/settings.json` to silence the Lan
 
 | When | Workflow | What |
 | --- | --- | --- |
-| 04:00 JST, or Run workflow | `E2E daily` | `ubuntu-latest`, `macos-15-intel`, WSL2 → `ubuntu-24.04`. Linux job uploads E2E Codecov. Not a PR check. Failure opens (or comments on) Issue `E2E daily failed`; a later green run closes it. After a `cut` merge, dispatch this on that commit and wait for green before register. |
+| Sunday 04:00 JST, or Run workflow | `E2E weekly` | `ubuntu-latest`, `macos-15-intel`, WSL2 → `ubuntu-24.04`. Linux job uploads E2E Codecov. Not a PR check. Failure opens (or comments on) Issue `E2E weekly failed`; a later green run closes it. After a `cut` merge, dispatch this on that commit and wait for green before register. |
 | Sunday 10:00 JST, or Run workflow | `CI weekly` | Same `Pkg.test` / JETLS / Aqua slots as a PR (no coverage). Not a PR check. Catches max / Aqua / JETLS `@release` drift when nothing merged that week. Failure of min/max jobs opens Issue `CI weekly failed` (`ci`); tip is omitted from that notify. |
 
 ## Pull requests
@@ -178,7 +178,7 @@ rule above unless a General user needs them sooner.
 
 ### After a cut merges
 
-1. Run **E2E daily** on the **merge commit** (`gh workflow run "E2E daily" --ref <sha>`). Do not register until Linux, macOS Intel, and WSL are green. The PR already ran Linux E2E; this is the other controllers plus a fresh image. A same-day green run on that SHA is enough; do not wait for the 04:00 JST cron if you dispatched.
+1. Run **E2E weekly** on the **merge commit** (`gh workflow run "E2E weekly" --ref <sha>`). Do not register until Linux, macOS Intel, and WSL are green. The PR already ran Linux E2E; this is the other controllers plus a fresh image. A same-day green run on that SHA is enough; do not wait for the Sunday cron if you dispatched.
 2. `@JuliaRegistrator register` on the **merge commit** (not the PR body).
 3. Paste the NEWS section under `Release notes:`.
 4. TagBot tags once General has the release. Date NEWS `YYYY-MM-DD` UTC on the tag day.
@@ -200,7 +200,7 @@ Helpers: `src/DistSSHKit/explain.jl`. Surface is `hint_surface(session)`. Keep d
 
 **Issues** (Bug / Enhancement forms only): `bug` or `enhancement`. The area dropdown is triage; add `area:*` if useful. Usage questions are Discussions. Confirmed bugs are Issues. `breaking` and `cut` are PR labels. Direction: [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26). Security: [SECURITY.md](SECURITY.md).
 
-Maintainer memo: [#50](https://github.com/yamanori99/DistSSHKit.jl/issues/50) is closed (`not_planned` in-kit). The hall is [DistSSHKitQueue.jl](https://github.com/yamanori99/DistSSHKitQueue.jl) (private for now). Do not add `schedule` here.
+Maintainer memo: [#50](https://github.com/yamanori99/DistSSHKit.jl/issues/50) is closed (`not_planned` in-kit). The hall is [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl) (private for now). Do not add `schedule` here.
 
 **Discussions**: Q&A, Ideas (promote to an Enhancement Issue when tracking), General, Show and tell, Polls, Announcements. Registry cuts do not need an Announcements post; the GitHub Release is enough.
 

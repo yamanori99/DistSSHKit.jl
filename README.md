@@ -2,11 +2,14 @@
 
 [English](README.md) | [日本語](README.ja.md)
 
-[![CI](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/CI.yml)
+[![Test](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/CI.yml)
 [![codecov](https://codecov.io/gh/yamanori99/DistSSHKit.jl/graph/badge.svg?token=6OT4L5JDUW)](https://codecov.io/gh/yamanori99/DistSSHKit.jl)
-[![JETLS](https://img.shields.io/github/actions/workflow/status/yamanori99/DistSSHKit.jl/jetls.yml?branch=main&label=JETLS)](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/jetls.yml)
-[![E2E daily](https://img.shields.io/github/actions/workflow/status/yamanori99/DistSSHKit.jl/ssh-e2e-daily.yml?branch=main&label=E2E%20daily)](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/ssh-e2e-daily.yml)
 [![Aqua](https://img.shields.io/github/actions/workflow/status/yamanori99/DistSSHKit.jl/aqua.yml?branch=main&label=Aqua)](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/aqua.yml)
+[![JETLS](https://img.shields.io/github/actions/workflow/status/yamanori99/DistSSHKit.jl/jetls.yml?branch=main&label=JETLS)](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/jetls.yml)
+[![E2E](https://img.shields.io/github/actions/workflow/status/yamanori99/DistSSHKit.jl/ssh-e2e.yml?branch=main&label=E2E)](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/ssh-e2e.yml)
+
+[![E2E weekly](https://img.shields.io/github/actions/workflow/status/yamanori99/DistSSHKit.jl/ssh-e2e-weekly.yml?branch=main&label=E2E%20weekly)](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/ssh-e2e-weekly.yml)
+[![CI weekly](https://img.shields.io/github/actions/workflow/status/yamanori99/DistSSHKit.jl/ci-weekly.yml?branch=main&label=CI%20weekly)](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/ci-weekly.yml)
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://yamanori99.github.io/DistSSHKit.jl/stable/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://yamanori99.github.io/DistSSHKit.jl/dev/)
@@ -23,7 +26,7 @@ native Windows).
 
 Even small labs and individuals often have a few high-performance machines or
 workstations. DistSSHKit helps you use that hardware as a small set of compute
-nodes. A lightweight scheduler, `DistSSHKitQueue.jl`, is also in progress.
+nodes. A lightweight scheduler, `DistSSHQueue.jl`, is also in progress.
 
 ## Install
 
