@@ -590,10 +590,10 @@ compatibility `collect_spec::AbstractString` also sets the batch root, but passi
 both `output_dir` and `collect_spec::String` is an error. `collect_spec === false`
 means "skip collect" and is orthogonal to `output_dir`.
 
-Default `sync` is `false` (no pre-run sync; prepare remotes with [`setup!`](@ref)
-or CLI `setup` first — `:rsync` / `--rsync` or `:clone` / `--clone`, then
-`:instantiate` / `--instantiate`). Pass `sync=:sync` or `sync=:rsync` to sync
-before running. Use `sync=:rsync` only onto a missing/empty remote path (or
+Default `sync` is `false` (no pre-run sync; remotes are checked first).
+Pass `sync=:sync` or `sync=:rsync` to copy, then check. After `:rsync`,
+hosts that still lack Manifest deps get [`instantiate!`](@ref) before the
+check. Use `sync=:rsync` only onto a missing/empty remote path (or
 `setup --delete` / `setup!(session, :delete)` first). `go!` has no git-parity
 gate; use [`drive!`](@ref) with `skip_hash_check=false` (CLI: `drive --require-git`)
 when you need that.
@@ -726,11 +726,13 @@ function go!(
                 _kit_progress_mark!("ready")
             end
         end
-        _go_assert_remotes_ready!(child_hosts, sess_rr)
-
         sync_result = nothing
         sync_mode = something(sync, false)
-        if !isempty(child_hosts) && sync_mode !== false
+        # `sync=false`: remotes must already have Project.toml + deps.
+        # With `:rsync` / `:sync`, copy first (empty `~/jobs/<id>` is expected).
+        if sync_mode === false
+            _go_assert_remotes_ready!(child_hosts, sess_rr)
+        elseif !isempty(child_hosts)
             n_slots > 0 && _kit_progress_mark!("sync")
             sync_session = KitSession(
                 project=proj,
@@ -760,7 +762,30 @@ function go!(
                     place,
                 )
             end
-            # Sync may refresh Manifest without installing; re-check deps before run.
+            if sync_mode === :rsync
+                inst_julia = julia === nothing || strip(String(julia)) == "auto" ?
+                    "auto" : String(julia)
+                inst = instantiate_after_rsync!(sync_session; julia=inst_julia)
+                if inst !== nothing && !inst.ok
+                    completed = true
+                    return _go_complete!(
+                        GoResult(
+                            false,
+                            inst,
+                            nothing,
+                            nothing,
+                            script_path,
+                            batch_dir;
+                            failed_step="instantiate",
+                        ),
+                        batch_dir,
+                        release_lock,
+                        false,
+                        anchor,
+                        place,
+                    )
+                end
+            end
             _go_assert_remotes_ready!(child_hosts, sess_rr)
         end
 

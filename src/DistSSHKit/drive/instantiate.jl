@@ -47,3 +47,19 @@ function instantiate!(
         ok=!raw.cancelled && raw.failed == 0,
     )
 end
+
+"""After `sync!(; mode=:rsync)`, `Pkg.instantiate` on hosts that still lack deps.
+
+Returns `nothing` when every host already resolves, else [`instantiate!`](@ref).
+"""
+function instantiate_after_rsync!(
+    session::KitSession;
+    julia::AbstractString="auto",
+)::Union{Nothing,SyncResult}
+    apply_session_env!(session)
+    isempty(session.hosts) && return nothing
+    rr = session_remote_root(session)
+    any(h -> probe_remote_project_deps(h, rr) !== nothing, session.hosts) ||
+        return nothing
+    return instantiate!(session; julia=julia)
+end

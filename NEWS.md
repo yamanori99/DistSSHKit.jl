@@ -5,6 +5,12 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- `go` with `sync=:rsync` / `:sync` checks remotes **after** the copy. Default
+  `sync=false` still checks first. After `:rsync`, hosts missing Manifest deps
+  get `instantiate!` (same for `drive --rsync`). Detached `execute!(; remote=)`
+  that starts with `~` is left as a remote-shell layout (not `expanduser` on
+  the controller).
+
 - Testenv Docker / Apple SSH boxes are Compose/container `child-1` / `child-2`
   (peer DNS `dev@child-1`), matching Kit `child:NAME`. Image tags stay
   `linux-ssh-worker`. Controller aliases stay `distsshkit-w1` / `distsshkit-w2`.

@@ -231,7 +231,9 @@ verbatim to the chosen function.
 `remote`, `hosts_file`, `job_id`, and drive-only `log_dir`, `enable_log`,
 `package`, `require_all_hosts`, `skip_hash_check`, `mem_headroom`, `parent_gb`,
 `workers`. `yes` must be `true` (the
-default): an unattended child cannot answer a prompt. Child stdio defaults to
+default): an unattended child cannot answer a prompt. `remote` that starts
+with `~` is stored in `DISTRIBUTED_REMOTE_PROJECT_ROOT` as a layout path
+(not `expanduser` on the controller). Child stdio defaults to
 `kit.out` / `kit.err` in `output_dir`. Pass `stdout` / `stderr` (`IO`) to
 override; `stdout=stdout` inherits the parent. Parent `redirect_stdout` does
 not apply to the subprocess.
@@ -378,7 +380,7 @@ function _execute_detached!(
     )
     extra = Dict{String,String}("DISTRIBUTED_PROJECT_ROOT" => proj)
     if remote !== nothing && !isempty(strip(String(remote)))
-        extra["DISTRIBUTED_REMOTE_PROJECT_ROOT"] = canonical_local_path(String(remote))
+        extra["DISTRIBUTED_REMOTE_PROJECT_ROOT"] = remote_env_project_root(String(remote))
     end
     job_id = get(kwargs, :job_id, nothing)
     if job_id !== nothing && !isempty(strip(String(job_id)))

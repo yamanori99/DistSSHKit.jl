@@ -83,8 +83,9 @@ end
 """Apply session fields to `ENV` and kit CLI session flags."""
 function apply_session_env!(session::KitSession)
     ENV["DISTRIBUTED_PROJECT_ROOT"] = session.project
-    if session.remote !== nothing
-        ENV["DISTRIBUTED_REMOTE_PROJECT_ROOT"] = session.remote
+    rr = session.remote
+    if rr !== nothing
+        ENV["DISTRIBUTED_REMOTE_PROJECT_ROOT"] = remote_env_project_root(rr)
     end
     session.cli_session.quiet = session.quiet
     session.cli_session.yes = session.yes
