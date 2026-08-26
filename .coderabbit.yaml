@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# Used from the PR head branch. https://docs.coderabbit.ai/getting-started/yaml-configuration
+language: en-US
+tone_instructions: >
+  Brief. Inline comments only for bugs or regressions in this diff.
+  Do not treat existing remote-shell tilde quoting as a merge blocker.
+  Stay inside the PR's stated scope.
+reviews:
+  profile: quiet
+  request_changes_workflow: false
+  high_level_summary: true
+  high_level_summary_in_walkthrough: true
+  poem: false
+  in_progress_fortune: false
+  collapse_walkthrough: true
+  sequence_diagrams: true
+  changed_files_summary: false
+  related_issues: false
+  related_prs: false
+  suggested_labels: false
+  suggested_reviewers: false
+  enable_prompt_for_ai_agents: false
+  path_instructions:
+    - path: "**/*.jl"
+      instructions: >
+        Paths starting with ~ are left unquoted so the remote shell expands
+        home (_remote_shell_path_word). Flag quoting only if this PR changes
+        that helper. Do not expand the PR into unrelated hardening.
+        Tests (test/**) assert that contract; do not treat those cases as new
+        injection bugs. Stay inside the PR's stated scope.
+  auto_review:
+    enabled: true
+    drafts: false
+    auto_incremental_review: true
+    auto_pause_after_reviewed_commits: 1
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+    autofix:
+      enabled: false
+    fix_ci:
+      enabled: false
+    resolve_merge_conflict:
+      enabled: false

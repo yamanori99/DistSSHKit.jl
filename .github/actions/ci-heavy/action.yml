@@ -29,6 +29,7 @@ runs:
             - "!LICENSE"
             - "!.gitignore"
             - "!.github/pull_request_template.md"
+            - "!.coderabbit.yaml"
     - id: out
       shell: bash
       env:
