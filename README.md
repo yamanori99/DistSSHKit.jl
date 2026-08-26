@@ -133,9 +133,10 @@ easiest place to start.
 
 ### Preparing remotes
 
-You need `setup` before running a script. It deploys your local Julia project to
-each remote and installs dependencies. Pick one deploy/init action per
-invocation.
+Usually you run `setup` before a script: it deploys the project and installs
+dependencies. Pick one deploy/init action per invocation. On an empty/missing
+remote, `go --rsync` / `drive --rsync` can copy and instantiate in one shot
+(default `go` / `drive` still expect remotes already prepared).
 
 - First deploy: either `--rsync` (send the local tree as-is) or `--clone`
   (`git clone` a repository) — pick one
@@ -224,7 +225,8 @@ setup!(session, :sync)  # later updates
 ```
 
 `pipeline!` is an optional one-shot: sync → `size!` → `drive!` → collect.
-It does not run `setup!`; prepare remotes first.
+It does not run `setup!`. `sync=:rsync` there copies only (no instantiate);
+prepare remotes first, or use `drive!(…; sync=:rsync)`.
 Details: [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/).
 
 ### Try a demo

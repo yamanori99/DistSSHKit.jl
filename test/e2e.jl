@@ -410,6 +410,54 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             end
         end
 
+        # Own remote root: do not reuse `remote_root` (later nonempty `--rsync` must still refuse).
+        @testset "go --rsync empty remote" begin
+            oneshot = _ssh_e2e_go_rsync_remote_root()
+            oneshot_env = _ssh_e2e_env(; remote_project=oneshot)
+            try
+                proc, out = _run_kit_setup(;
+                    setup_args=["--delete", "--remote-path", oneshot, hosts...],
+                    project_root=proj,
+                    extra_env=oneshot_env,
+                )
+                _assert_ssh_e2e_ok(suite, "go_rsync_empty_delete", proc, out; project=proj, kit=:setup)
+                for host in hosts
+                    p, ssh_out = _ssh_e2e_ssh(host, "test ! -e $(oneshot)/Project.toml")
+                    _assert_proc_ok(p, ssh_out; label="go --rsync empty $(host) gone")
+                end
+
+                proc, out = _run_kit_go(;
+                    script=pi_echo,
+                    hosts=remote_tokens,
+                    script_args=["--n", "32"],
+                    project_root=proj,
+                    go_flags=["-y", "--rsync"],
+                    extra_env=merge(oneshot_env, Dict("DISTSSHKIT_QUIET" => "0")),
+                )
+                _assert_ssh_e2e_ok(suite, "go_rsync_empty", proc, out; project=proj, kit=:go)
+                @test occursin(hosts[1], out)
+                @test occursin(hosts[2], out)
+                @test count(r"π ≈", out) >= 2
+                for host in hosts
+                    p, ssh_out = _run_subprocess(Cmd([
+                        "ssh", "-F", g.ssh_config, host,
+                        "test -f $(oneshot)/Project.toml",
+                    ]))
+                    _assert_proc_ok(p, ssh_out; label="go --rsync $(host) Project.toml")
+                end
+            finally
+                proc, out = _run_kit_setup(;
+                    setup_args=["--delete", "--remote-path", oneshot, hosts...],
+                    project_root=proj,
+                    extra_env=oneshot_env,
+                )
+                _assert_ssh_e2e_ok(
+                    suite, "go_rsync_empty_cleanup", proc, out;
+                    project=proj, kit=:setup,
+                )
+            end
+        end
+
         # `~/…` remote root: setup + drive still run. square_file CSV is local.
         @testset "drive square_file collect with tilde remote root" begin
             tilde_root = _ssh_e2e_tilde_remote_root()

@@ -66,6 +66,9 @@ end
 
 _ssh_e2e_hosts() = ("distsshkit-w1", "distsshkit-w2")
 _ssh_e2e_remote_root() = "/home/dev/distsshkit-e2e"
+# Empty-tree `go --rsync` (copy + instantiate). Not the main rsync root:
+# later `setup --rsync` nonempty checks would fail if we reused that path.
+_ssh_e2e_go_rsync_remote_root() = "/home/dev/distsshkit-e2e-go-rsync"
 # Separate tree for git clone/sync/--require-git (rsync excludes `.git/`).
 _ssh_e2e_git_remote_root() = "/home/dev/distsshkit-e2e-git"
 # Tilde layout for collect path-boundary coverage (`dev` → `/home/dev/…`).

@@ -27,7 +27,8 @@ Use it from the terminal or from Julia code / notebooks.
 How you call it is a separate choice:
 
 - **Julia API** — `setup!` for remotes, `go!` / `drive!` to run, or
-  `pipeline!` for optional sync → `size!` → `drive!` → collect (not `setup!`)
+  `pipeline!` for optional sync → `size!` → `drive!` → collect (not `setup!`;
+  rsync there does not instantiate)
 - **CLI** — `julia --project=. -m DistSSHKit go …` / `drive …`
   (and `setup`, `demo`, …)
 - **`distsshkit` (experimental)** — after `pkg> app add DistSSHKit`, a

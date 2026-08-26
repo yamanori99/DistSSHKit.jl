@@ -113,6 +113,8 @@ using Test
         @test occursin("Usage", txt)
         @test occursin("--output-dir", txt)
         @test occursin("--sync", txt)
+        @test occursin("empty path", txt)
+        @test occursin("instantiates missing deps", txt)
         @test occursin("--hosts", txt)
         @test occursin("parent", txt)
         @test occursin("progress DIR", txt)

@@ -172,7 +172,9 @@ pipeline!(driver, "child:user@h1:1", "child:user@h2:1"; remote="/path/to/project
 Remote hosts default to **no** pre-run sync; set `sync=:sync` / `:rsync` explicitly.
 Collect defaults on when remotes are present (`collect=false` to skip). Use
 `sync=:rsync` only onto a missing/empty remote path (or `setup --delete` /
-`setup!(session, :delete)` first).
+`setup!(session, :delete)` first). `pipeline!` `sync=:rsync` copies only; it
+does not instantiate missing Manifest deps. Use [`drive!`](@ref) with
+`sync=:rsync`, or [`setup!`](@ref) `:instantiate`, for that.
 
 Returns [`PipelineResult`](@ref); check `result.ok` or use [`report_pipeline_errors`](@ref).
 """

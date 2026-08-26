@@ -209,6 +209,8 @@ using Test
         @test occursin("--require-git", txt)
         @test occursin("--sync", txt)
         @test occursin("--rsync", txt)
+        @test occursin("empty path", txt)
+        @test occursin("instantiates missing deps", txt)
         @test occursin("post-run-new", txt)
         @test occursin("off by default", lowercase(txt))
         @test occursin("parent[:N]", txt)
