@@ -11,7 +11,7 @@ coverage:
 comment: false
 
 # Pkg.test (flag pkgtest) uploads on main push (max slot only).
-# E2E (flag e2e) uploads on E2E daily and cut PRs — not ordinary PR E2E.
+# E2E (flag e2e) uploads on E2E weekly and cut PRs — not ordinary PR E2E.
 # Carryforward: docs-only PRs skip heavy CI and would otherwise drop line hits.
 flag_management:
   default_rules:

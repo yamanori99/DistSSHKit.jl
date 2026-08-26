@@ -58,7 +58,7 @@ Green on one layer does not imply the others. `Pkg.test()` does not run `e2e.jl`
 | unit | parse, paths, fake setup, throws | child julia, `addprocs`, SSH | ~45 s |
 | integration | child CLI and/or **local** `addprocs` | real SSH / rsync | ~3 min |
 | e2e | real SSH + rsync, two Linux workers; every PR (Compose) | local-only CLI wiring | ~15–25 min |
-| e2e daily | same `e2e.jl` from Linux, macOS Intel, or WSL2 (not a PR check; required after a `cut` merge before register) | macOS workers | 10–50 min |
+| e2e weekly | same `e2e.jl` from Linux, macOS Intel, or WSL2 (not a PR check; required after a `cut` merge before register) | macOS workers | 10–50 min |
 | doctests | `src/` docstring examples (Documenter, Julia 1.12) | workers / SSH | ~5 s |
 
 ## SSH E2E
@@ -72,7 +72,7 @@ open "$(cat test/artifacts/ssh-e2e/LATEST)/SUMMARY.txt"
 rm -rf test/artifacts/ssh-e2e
 ```
 
-Coverage uploads on **main push** (`Pkg.test` max) and **E2E daily** / **`cut` PR**
+Coverage uploads on **main push** (`Pkg.test` max) and **E2E weekly** / **`cut` PR**
 E2E (`DISTSSHKIT_CODE_COVERAGE=1` on `up.sh --e2e`). Ordinary PR E2E has no
 coverage. Local:
 

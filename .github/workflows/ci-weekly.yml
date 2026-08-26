@@ -5,7 +5,7 @@ name: CI weekly
 # tip jobs are continue-on-error and omitted from notify.
 on:
   workflow_dispatch:
-  # Sunday 10:00 JST (UTC 01:00). Misses E2E daily (UTC 19:00).
+  # Sunday 10:00 JST (UTC 01:00). Misses E2E weekly (Saturday 19:00 UTC).
   schedule:
     - cron: "0 1 * * 0"
 

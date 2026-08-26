@@ -10,16 +10,16 @@ Real OpenSSH + rsync Linux workers. CI remote SSH coverage uses this stack
 
 | Controller | Worker | Where |
 | --- | --- | --- |
-| Linux (`ubuntu-latest`) | `ubuntu:24.04` ×2 | **CI** — PR / main (`E2E`) and daily (`E2E daily / ubuntu-latest → ubuntu-24.04`) |
-| macOS Intel (`macos-15-intel` + Colima) | same image | **CI daily** — `E2E daily / macos-15-intel → ubuntu-24.04` |
-| WSL2 (`windows-latest`) | same image | **CI daily** — `E2E daily / windows-latest (WSL2) → ubuntu-24.04` |
+| Linux (`ubuntu-latest`) | `ubuntu:24.04` ×2 | **CI** — PR / main (`E2E`) and weekly (`E2E weekly / ubuntu-latest → ubuntu-24.04`) |
+| macOS Intel (`macos-15-intel` + Colima) | same image | **E2E weekly** — `E2E weekly / macos-15-intel → ubuntu-24.04` |
+| WSL2 (`windows-latest`) | same image | **E2E weekly** — `E2E weekly / windows-latest (WSL2) → ubuntu-24.04` |
 | Either | `parent:N` | Mixed smoke inside the same suite |
 
 Suite inventory (what each `@testset` proves): [`test/README.md`](../../test/README.md#ssh-e2e).
 
 ### Honest limits
 
-- CI macOS controller is **daily / dispatch** (`macos-15-intel` + Colima). Apple Silicon GitHub runners cannot nest VMs.
+- CI macOS controller is **weekly / dispatch** (`macos-15-intel` + Colima). Apple Silicon GitHub runners cannot nest VMs.
 - Remote Julia detection is exercised on **Linux workers**.
 - **Not covered (no free CI):** Linux controller → macOS worker; Mac workers
   (local: [`apple-container-ssh`](../apple-container-ssh/README.md)
@@ -68,7 +68,7 @@ visible from the distro). Keep a WSL tree under `~/…`, not `/mnt/c/…`.
 ```
 
 Skip the Julia-in-Docker build (macOS / WSL) by pulling the public image from
-`main`'s last successful `E2E daily`. If you changed `Dockerfile` / `compose.yml`,
+`main`'s last successful `E2E weekly`. If you changed `Dockerfile` / `compose.yml`,
 build locally instead (omit `DISTSSHKIT_WORKER_IMAGE`).
 
 ```bash
@@ -93,17 +93,17 @@ ssh -F .generated/ssh_config distsshkit-w1 'echo ok; julia --version'
 [`.github/workflows/ssh-e2e.yml`](../../.github/workflows/ssh-e2e.yml) runs
 `./scripts/up.sh --e2e` on `ubuntu-latest` for every PR and `main`
 (`E2E / ubuntu-latest → ubuntu-24.04`).
-[`.github/workflows/ssh-e2e-daily.yml`](../../.github/workflows/ssh-e2e-daily.yml)
-(`E2E daily`) runs at 04:00 JST or via Run workflow: bake
+[`.github/workflows/ssh-e2e-weekly.yml`](../../.github/workflows/ssh-e2e-weekly.yml)
+(`E2E weekly`) runs Sunday 04:00 JST or via Run workflow: bake
 `ubuntu-latest (image)` to GHCR, then `ubuntu-latest`, `macos-15-intel`, and
-`windows-latest (WSL2)` pull that tag and run the suite. Daily Linux is the
+`windows-latest (WSL2)` pull that tag and run the suite. Weekly Linux is the
 same suite as PR E2E, on the timer, not a PR check. After a `cut` merge,
 dispatch it on that commit before `@JuliaRegistrator register`.
 
 Those controller jobs wait for `ubuntu-latest (image)` then pull
 `ghcr.io/<owner>/distsshkit-linux-ssh-worker:<sha>` instead of building
 Julia-in-Docker on Colima / WSL `dockerd`. Push to GHCR is retried until the
-tag is inspectable (GHCR `unknown blob`). After the daily Linux suite, `:latest`
+tag is inspectable (GHCR `unknown blob`). After the weekly Linux suite, `:latest`
 is pushed for
 local pull. The package is meant to be **public** (one-time: package Settings →
 Change visibility). Local `./scripts/up.sh` still builds unless you set

@@ -1,16 +1,16 @@
-name: E2E daily
+name: E2E weekly
 
 # Not on pull_request: skipped macOS/WSL jobs would show on every PR, and
 # job-name expressions do not expand when skipped.
 on:
   workflow_dispatch:
-  # 04:00 JST (UTC 19:00). GitHub often delays cron; start early so it still
-  # finishes before morning.
+  # Sunday 04:00 JST (Saturday 19:00 UTC). Misses CI weekly (Sunday 10:00 JST).
+  # GitHub often delays cron; start early so it still finishes before morning.
   schedule:
-    - cron: "0 19 * * *"
+    - cron: "0 19 * * 6"
 
 concurrency:
-  group: ssh-e2e-daily-${{ github.workflow }}-${{ github.ref }}
+  group: ssh-e2e-weekly-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 permissions:
@@ -206,17 +206,22 @@ jobs:
           FAILED: ${{ contains(join(needs.*.result, ','), 'failure') }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          title='E2E daily failed'
+          title='E2E weekly failed'
           existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label ci --search "in:title $title" --json number --jq '.[0].number // empty')"
           if [ "$FAILED" = "true" ]; then
             body="Latest run: $RUN_URL
 
-          Not a PR check (Linux / macOS / WSL are schedule-only). Re-run **E2E daily** after a fix."
+          Not a PR check (Linux / macOS / WSL are schedule-only). Re-run **E2E weekly** after a fix."
             if [ -n "$existing" ]; then
               gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
             else
               gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label ci --body "$body"
             fi
-          elif [ -n "$existing" ]; then
-            gh issue close "$existing" --repo "$GITHUB_REPOSITORY" --reason completed --comment "Latest run succeeded: $RUN_URL"
+          else
+            for t in 'E2E weekly failed' 'E2E daily failed'; do
+              n="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label ci --search "in:title $t" --json number --jq '.[0].number // empty')"
+              if [ -n "$n" ]; then
+                gh issue close "$n" --repo "$GITHUB_REPOSITORY" --reason completed --comment "Latest run succeeded: $RUN_URL"
+              fi
+            done
           fi
