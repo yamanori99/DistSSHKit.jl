@@ -84,7 +84,8 @@ end
 function apply_session_env!(session::KitSession)
     ENV["DISTRIBUTED_PROJECT_ROOT"] = session.project
     if session.remote !== nothing
-        ENV["DISTRIBUTED_REMOTE_PROJECT_ROOT"] = session.remote
+        rr = strip(String(session.remote))
+        isempty(rr) || (ENV["DISTRIBUTED_REMOTE_PROJECT_ROOT"] = remote_env_project_root(rr))
     end
     session.cli_session.quiet = session.quiet
     session.cli_session.yes = session.yes

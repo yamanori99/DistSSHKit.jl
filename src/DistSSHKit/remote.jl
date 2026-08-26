@@ -813,6 +813,18 @@ function resolve_remote_project_root(
     return default_remote_project_path(local_project_root)
 end
 
+"""Layout path for `DISTRIBUTED_REMOTE_PROJECT_ROOT` (controller ENV / `execute!`).
+
+`~…` stays a remote-shell layout (do not `expanduser` on the controller).
+Absolute paths are [`canonical_local_path`](@ref).
+"""
+function remote_env_project_root(raw::AbstractString)::String
+    s = strip(String(raw))
+    isempty(s) && throw(ArgumentError("remote project root is empty"))
+    startswith(s, "~") && return s
+    return canonical_local_path(s)
+end
+
 """Convert `https://github.com/...` clone URLs to SSH; leave other URLs unchanged.
 
 # Examples

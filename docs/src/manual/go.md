@@ -22,7 +22,7 @@ Prepare remotes with [`setup --rsync`](@ref Manual-setup) **or** `--clone`, then
 | Flag | Meaning |
 | --- | --- |
 | `--sync` | Git push/pull before remote slots (**opt-in**; default is none; confirm unless `-y`) |
-| `--rsync` | Rsync working tree first (empty/missing remote, or after `setup --delete`) |
+| `--rsync` | Rsync working tree first (empty/missing remote, or after `setup --delete`); then instantiate if deps are missing |
 | `--skip-sync` | Compat: no pre-run sync (already the default) |
 | `--skip-git-guard` | Alias of `--skip-sync` (shared name with drive) |
 | `--julia PATH` | Julia on remotes (default: auto / `JULIA_DISTRIBUTED_EXE`) |
@@ -39,6 +39,8 @@ Prepare remotes with [`setup --rsync`](@ref Manual-setup) **or** `--clone`, then
 `--sync` / `--rsync` / `--skip-sync` (and `--skip-git-guard`) are mutually exclusive.
 Default pre-run sync is **none** (same as [`drive`](@ref Manual-drive));
 prepare remotes with [`setup`](@ref Manual-setup), or pass `--sync` / `--rsync`.
+`--rsync` instantiates when the copied tree still lacks deps. `go` checks
+`Project.toml` **after** that copy (empty remotes are allowed until then).
 
 ## Output
 

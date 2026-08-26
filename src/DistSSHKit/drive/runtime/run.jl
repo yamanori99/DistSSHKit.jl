@@ -179,6 +179,22 @@ function _run_drive_parsed_locked!(
                 println_fatal()
                 return 1
             end
+            if sync_mode === :rsync
+                inst_julia = julia_exe === nothing ? "auto" : String(julia_exe)
+                inst = DistSSHKit.instantiate_after_rsync!(
+                    sync_session;
+                    julia=inst_julia,
+                )
+                if inst !== nothing && !inst.ok
+                    print_err("ERROR: "; bold=true)
+                    println_fatal("pre-run instantiate failed")
+                    for hr in inst.hosts
+                        !hr.ok && println_fatal("  $(hr.host): $(hr.message)")
+                    end
+                    println_fatal()
+                    return 1
+                end
+            end
             writeln_both("")
         end
 

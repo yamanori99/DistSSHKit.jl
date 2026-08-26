@@ -24,6 +24,11 @@ using Test
             "/Users/z/GitHub/MyApp.jl";
             cli_override="~/work/MyApp.jl",
         ) == "~/work/MyApp.jl"
+    @test DistSSHKit.remote_env_project_root("~/jobs/abc") == "~/jobs/abc"
+    @test DistSSHKit.remote_env_project_root("~/.distsshkitqueue/jobs/x") ==
+        "~/.distsshkitqueue/jobs/x"
+    @test DistSSHKit.remote_env_project_root("/remote/App.jl") ==
+        DistSSHKit.canonical_local_path("/remote/App.jl")
     withenv("DISTRIBUTED_REMOTE_PROJECT_ROOT" => "/Volumes/shared/MyApp.jl") do
         @test DistSSHKit.resolve_remote_project_root(
                 "/Users/z/GitHub/MyApp.jl";

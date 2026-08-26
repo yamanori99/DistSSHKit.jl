@@ -98,6 +98,17 @@ using Test
             @test DistSSHKit.kit_noninteractive()
         end
         _with_tempdir() do tmp
+            tilde = DistSSHKit.KitSession(
+                project=tmp,
+                workers=["child:host-a"],
+                remote="~/jobs/abc",
+                quiet=true,
+                yes=true,
+            )
+            DistSSHKit.apply_session_env!(tilde)
+            @test ENV["DISTRIBUTED_REMOTE_PROJECT_ROOT"] == "~/jobs/abc"
+        end
+        _with_tempdir() do tmp
             ambient = DistSSHKit.KitSession(
                 project=tmp,
                 workers=["child:host-a"],
@@ -341,6 +352,7 @@ using Test
             )
             with_kit_verbosity(:progress) do
                 @test_throws ArgumentError DistSSHKit.instantiate!(session)
+                @test DistSSHKit.instantiate_after_rsync!(session) === nothing
             end
         end
     end
