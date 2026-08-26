@@ -18,7 +18,7 @@
 #   - Documenter → area:docs (docs/**)
 #   - GitHub / repo prose → area:project-docs (README, NEWS, CONTRIBUTING,
 #     SECURITY). demos markdown is area:demos only.
-#   - .github/** and codecov.yml → area:ci
+#   - .github/**, codecov.yml, .coderabbit.yaml → area:ci
 #
 # Product tests live only under the trees in `product_test_trees` and pick up
 # area:* via the ${area} globs. Any other path under test/ is the harness
@@ -97,6 +97,7 @@ trap 'rm -f "$tmp"' EXIT
       - any-glob-to-any-file:
           - ".github/**"
           - "codecov.yml"
+          - ".coderabbit.yaml"
 
 "area:test":
   - changed-files:

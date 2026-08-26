@@ -97,7 +97,7 @@ Ubuntu: `Pkg.test` min / max / tip, JETLS min / max, Aqua min / max / tip, Docum
 These files **alone** skip the heavy steps (job still starts; Pkg.test / JETLS / Aqua / Documenter do not run):
 
 - `README.md`, `README.ja.md`, `CONTRIBUTING.md`, `NEWS.md`, `SECURITY.md`, `LICENSE`
-- `.gitignore`, `.github/pull_request_template.md`
+- `.gitignore`, `.github/pull_request_template.md`, `.coderabbit.yaml`
 
 A new root markdown file stays heavy until listed in [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml). Changes under `docs/src` still run those jobs. A `cut` label skips none of this: Pkg.test, JETLS, Aqua, Documenter, and Linux E2E all run. macOS / WSL stay on `E2E daily`, not the PR. Register only after that matrix is green on the merge commit.
 
@@ -143,6 +143,15 @@ JETLS is the type gate. Do not commit `.vscode/settings.json` to silence the Lan
 - Branch from `main`. Squash-merge only. Merged heads are deleted.
 - One reviewable change per PR. Split unless `main` would be broken in between.
 - Large plans: Discussion or Enhancement Issue first, then small PRs.
+
+### CodeRabbit (experimental)
+
+Open PRs may get an optional [CodeRabbit](https://docs.coderabbit.ai) pass.
+Config is [`.coderabbit.yaml`](.coderabbit.yaml) on the **PR head** (not a
+merge gate). JETLS / tests / e2e stay the gate. Treat inline comments as
+hints; do not apply Autofix or generated tests unless you want that change.
+`@coderabbitai pause` / `review` as needed. Settings will move as we learn
+what is useful.
 
 `setup --clone` / `--rsync` refuse a non-empty destination. Redeploy with `setup --delete`. First deploy `--rsync`; later git `--sync` / `--pull`. Do not weaken that refusal without tests.
 
@@ -213,7 +222,7 @@ Every tracked path must match some `area:*` glob (`gen-labeler.sh --check`). Glo
 | Product tests under `unit/` and `integration/` | that `area:<area>` (plus `area:kit` when leftover shared kit) |
 | `docs/**` | `area:docs` |
 | `README.md`, `README.ja.md`, `NEWS.md`, `CONTRIBUTING.md`, `SECURITY.md` | `area:project-docs` |
-| `.github/**`, `codecov.yml` | `area:ci` |
+| `.github/**`, `codecov.yml`, `.coderabbit.yaml` | `area:ci` |
 
 New CLI area or a new product-test tree: edit the script, regenerate, create the GitHub label.
 
