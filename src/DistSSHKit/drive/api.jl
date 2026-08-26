@@ -12,12 +12,12 @@ drive!("job.jl", "parent:2"; args=["8"])
 drive!(session, "job.jl")  # uses `session.tokens`
 ```
 
-Prepare remotes with [`setup!`](@ref) or CLI `setup` first. Default `sync` is
-off (remotes are checked first). Optional `sync=:sync` / `sync=:rsync` copies,
-then checks. After `:rsync`, hosts that still lack Manifest deps get
-[`instantiate!`](@ref) (same as CLI `drive --rsync`). Use `sync=:rsync` only
-onto a missing/empty remote path (or `setup --delete` /
-`setup!(session, :delete)` first).
+With `sync` omitted or `false`, prepare remotes with [`setup!`](@ref) or CLI
+`setup` first; remotes are checked before execution. Optional
+`sync=:sync` / `sync=:rsync` copies, then checks. After `:rsync`, hosts that
+still lack Manifest deps get [`instantiate!`](@ref) (same as CLI
+`drive --rsync`). Use `sync=:rsync` only onto a missing/empty remote path
+(or `setup --delete` / `setup!(session, :delete)` first).
 Git parity is off by default (`skip_hash_check=true`). With `sync=:rsync`, parity
 stays off even if `skip_hash_check=false` (no remote `.git/`).
 `require_all_hosts=true` (CLI `--require-all-hosts`) fails if a listed SSH host

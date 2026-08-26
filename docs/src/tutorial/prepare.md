@@ -51,8 +51,9 @@ it (`setup --remote-path` / `KitSession(; remote=…)`), pass the same path to
 
 After setup, just run `go` / `drive` — neither pre-runs sync nor requires git
 parity by default. Optional one-shot onto an empty/missing remote:
-`go --rsync` / `drive --rsync` (instantiates if needed). Git updates:
-`go --sync` / `drive --sync`. Commit parity is drive-only:
+`go --rsync` / `drive --rsync` (instantiates if needed). Later git updates
+(`go --sync` / `drive --sync`) need a `--clone` / git-managed remote, not an
+rsync tree. Commit parity is drive-only:
 `drive --require-git` on git-managed remotes. Kit logs for setup land under
 `{project}/.distsshkit/setup/`. Put `.distsshkit/` in the job `.gitignore`
 ([User Guide](@ref Manual)).

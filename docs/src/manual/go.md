@@ -16,7 +16,8 @@ Also: [First Steps · Demo](@ref Tutorial-Demo), [drive](@ref Manual-drive),
 There is no `--require-git`; for commit parity use [`drive --require-git`](@ref Manual-drive).
 Prepare remotes with [`setup --rsync`](@ref Manual-setup) **or** `--clone`, then
 `--instantiate`. One-shot onto an empty/missing path: `go --rsync` (instantiates
-if needed). Git updates later: `setup --sync` or `go --sync`.
+if needed). Later git updates (`setup --sync` / `go --sync`) need a
+`--clone` / git-managed remote, not an rsync tree.
 
 ## Flags
 
