@@ -79,6 +79,6 @@
 
   </svg>
   <text x="480" y="276" dominant-baseline="middle" fill="#0f172a" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="76" font-weight="800">DistSSHKit.jl</text>
-  <text x="480" y="340" dominant-baseline="middle" fill="#475569" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="28" font-weight="500">A Julia kit for setup, execution, and result collection</text>
-  <text x="480" y="378" dominant-baseline="middle" fill="#475569" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="28" font-weight="500">across local and SSH hosts.</text>
+  <text x="480" y="340" dominant-baseline="middle" fill="#475569" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="28" font-weight="500">A Julia kit to run a project and collect results</text>
+  <text x="480" y="378" dominant-baseline="middle" fill="#475569" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="28" font-weight="500">on shared machines over SSH.</text>
 </svg>
