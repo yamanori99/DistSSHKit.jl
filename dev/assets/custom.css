@@ -16,11 +16,31 @@
   applies on every theme. Dark theme sheets hide `.docs-light-only` but never
   restore `.docs-dark-only`, so the dark logo and topology vanish.
 */
-html.theme--documenter-dark .docs-dark-only,
-html.theme--catppuccin-frappe .docs-dark-only,
-html.theme--catppuccin-macchiato .docs-dark-only,
-html.theme--catppuccin-mocha .docs-dark-only {
-  display: inline-block !important;
+/*
+  documenter-light.css is unscoped: `.docs-dark-only { display: none !important }`
+  applies on every theme. Dark theme sheets hide `.docs-light-only` but never
+  restore `.docs-dark-only`, so the dark logo and topology vanish.
+  Sidebar: `block` + auto margins (same as the light logo). `inline-block`
+  left-aligns the mark in the sidebar.
+  Content: `block` so topology keeps the auto margins above.
+*/
+html.theme--documenter-dark .docs-sidebar .docs-dark-only,
+html.theme--catppuccin-frappe .docs-sidebar .docs-dark-only,
+html.theme--catppuccin-macchiato .docs-sidebar .docs-dark-only,
+html.theme--catppuccin-mocha .docs-sidebar .docs-dark-only,
+html.theme--documenter-dark .content .docs-dark-only,
+html.theme--catppuccin-frappe .content .docs-dark-only,
+html.theme--catppuccin-macchiato .content .docs-dark-only,
+html.theme--catppuccin-mocha .content .docs-dark-only {
+  display: block !important;
+}
+
+html.theme--documenter-dark .docs-sidebar .docs-dark-only,
+html.theme--catppuccin-frappe .docs-sidebar .docs-dark-only,
+html.theme--catppuccin-macchiato .docs-sidebar .docs-dark-only,
+html.theme--catppuccin-mocha .docs-sidebar .docs-dark-only {
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Version selector: Documenter puts it at the bottom of the sidebar. */
