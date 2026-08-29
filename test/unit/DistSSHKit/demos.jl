@@ -76,6 +76,10 @@ using Test
         @test (filemode(dest) & 0o200) != 0
         write(dest, "# edited\n")
         @test read(dest, String) == "# edited\n"
+        chmod(dest, 0o444)
+        DistSSHKit._copy_user_writable(src, dest)
+        @test (filemode(dest) & 0o200) != 0
+        @test read(dest, String) == "ok = true\n"
     end
 
     @test occursin(

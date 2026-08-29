@@ -173,6 +173,7 @@ end
 
 """Copy file contents; destination is created with default write mode."""
 function _copy_user_writable(from::AbstractString, to::AbstractString)
+    isfile(to) && rm(to)
     write(String(to), read(from))
     return nothing
 end

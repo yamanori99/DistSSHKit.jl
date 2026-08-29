@@ -123,6 +123,7 @@ using Test
     end
 
     @testset "remote pull: unreachable host" begin
+        Sys.which("ssh") === nothing && return
         _apply_quiet_setup_session!()
         withenv("DISTRIBUTED_SSH_OPTS" => "-o BatchMode=yes -o ConnectTimeout=1") do
             @test !DistSSHKit.git_pull_remote_host!("192.0.2.1", "~/App.jl")
