@@ -30,6 +30,8 @@ jobs:
           slot: min
       - uses: julia-actions/cache@v3
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
+        with:
+          cache-scratchspaces: false
       - name: Aqua.test_all (latest Aqua)
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         run: ./.github/aqua-check.sh
@@ -48,6 +50,8 @@ jobs:
           slot: max
       - uses: julia-actions/cache@v3
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
+        with:
+          cache-scratchspaces: false
       - name: Aqua.test_all (latest Aqua)
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         run: ./.github/aqua-check.sh
@@ -67,6 +71,8 @@ jobs:
           slot: tip
       - uses: julia-actions/cache@v3
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
+        with:
+          cache-scratchspaces: false
       - name: Aqua.test_all (latest Aqua)
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         run: ./.github/aqua-check.sh

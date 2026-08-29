@@ -65,6 +65,8 @@ jobs:
 
       - uses: julia-actions/cache@v3
         if: steps.gate.outputs.e2e == 'true'
+        with:
+          cache-scratchspaces: false
 
       - uses: julia-actions/julia-buildpkg@v1
         if: steps.gate.outputs.e2e == 'true'

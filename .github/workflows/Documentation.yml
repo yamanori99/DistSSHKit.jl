@@ -35,6 +35,8 @@ jobs:
           slot: min
       - uses: julia-actions/cache@v3
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
+        with:
+          cache-scratchspaces: false
       - name: Install docs dependencies
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         run: |
