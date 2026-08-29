@@ -171,6 +171,13 @@ function _require_demo_family(family::Union{Nothing,AbstractString}; surface::Sy
     ))
 end
 
+"""Copy file contents; destination is created with default write mode."""
+function _copy_user_writable(from::AbstractString, to::AbstractString)
+    isfile(to) && rm(to)
+    write(String(to), read(from))
+    return nothing
+end
+
 """
     install_demos(dest=pwd(); family, force=false) -> (installed=Vector{String}, skipped=Vector{String})
 
@@ -194,8 +201,8 @@ function install_demos(
     isdir(src_root) || return (installed=String[], skipped=String[])
     dest_root = canonical_local_path(dest)
     dest_demos = joinpath(dest_root, "demos")
-    kit_demos = abspath(src_root)
-    if abspath(dest_demos) == kit_demos
+    kit_demos = realpath(src_root)
+    if isdir(dest_demos) && realpath(dest_demos) == kit_demos
         list = _demo_list_phrase(surface)
         install = if _normalize_hint_surface(surface) === :api
             "`DistSSHKit.install_demos(dest=...; family=$(repr(group)))`"
@@ -222,7 +229,7 @@ function install_demos(
                 push!(skipped, out)
                 continue
             end
-            cp(from, out; force=true)
+            _copy_user_writable(from, out)
             push!(installed, out)
         end
     end
@@ -232,7 +239,7 @@ function install_demos(
         if !force && isfile(gitignore_out)
             push!(skipped, gitignore_out)
         else
-            cp(gitignore, gitignore_out; force=true)
+            _copy_user_writable(gitignore, gitignore_out)
         end
     end
     return (installed=installed, skipped=skipped)

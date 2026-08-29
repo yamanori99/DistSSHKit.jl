@@ -53,6 +53,8 @@ julia --project=. -e 'using Pkg; Pkg.test()'
 
 Run this on slot **min** and **max** (and **tip** if you have nightly). Layout: [test/README.md](test/README.md).
 
+Checkout `Pkg.test()` is not a Registry tarball. After changing those gates (smokes, demo copy, `ssh` / `git` spawn, probe), and before a General cut, run the disposable copy in [test/README.md](test/README.md#registry-tree). Not a CI job.
+
 Smoke (1.12+; [demos/README.md](demos/README.md)):
 
 ```bash

@@ -121,6 +121,7 @@ using Test
         @test DistSSHKit.clone_url_from_local_origin(d) === nothing
         @test DistSSHKit.local_git_clean(d)
 
+        Sys.which("git") === nothing && return
         run(Cmd(["git", "-C", d, "init", "-q"]))
         run(Cmd(["git", "-C", d, "config", "user.email", "test@example.com"]))
         run(Cmd(["git", "-C", d, "config", "user.name", "Test"]))
@@ -229,25 +230,29 @@ using Test
         @test occursin("/opt/julia", expl)
         @test occursin("exec", expl)
         @test !occursin("uname", expl)
-        err = try
-            DistSSHKit._run_on_host_remote_sh(String[]; detect=false, julia=nothing)
-            nothing
-        catch e
-            e
+        @test_throws ArgumentError DistSSHKit._run_on_host_remote_sh(
+            String[]; detect=false, julia=nothing,
+        )
+        @test_throws ArgumentError DistSSHKit.run_on_host("", ["--version"])
+        withenv("PATH" => "/nonexistent-distsshkit-path") do
+            @test occursin(
+                "ssh not found in PATH",
+                try
+                    DistSSHKit.run_on_host("no-such-host.invalid", ["--version"])
+                    ""
+                catch e
+                    @test e isa ArgumentError
+                    sprint(showerror, e)
+                end,
+            )
         end
-        @test err isa ArgumentError
-        err2 = try
-            DistSSHKit.run_on_host("", ["--version"])
-            nothing
-        catch e
-            e
-        end
-        @test err2 isa ArgumentError
-        let p = redirect_stderr(devnull) do
-                DistSSHKit.run_on_host("no-such-host.invalid", ["--version"])
+        if Sys.which("ssh") !== nothing
+            let p = redirect_stderr(devnull) do
+                    DistSSHKit.run_on_host("no-such-host.invalid", ["--version"])
+                end
+                @test p isa Base.Process
+                @test p.exitcode != 0
             end
-            @test p isa Base.Process
-            @test p.exitcode != 0
         end
     end
 
