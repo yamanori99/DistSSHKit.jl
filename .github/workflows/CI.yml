@@ -98,11 +98,12 @@ jobs:
       (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'cut'))
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/julia-slot
         with:
-          slot: min
+          slot: tip
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false

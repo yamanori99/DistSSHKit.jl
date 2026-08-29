@@ -53,7 +53,7 @@ julia --project=. -e 'using Pkg; Pkg.test()'
 
 Run this on slot **min** and **max** (and **tip** if you have nightly). Layout: [test/README.md](test/README.md).
 
-Checkout `Pkg.test()` is not a Registry tarball. After changing those gates (smokes, demo copy, `ssh` / `git` spawn, probe), and before a General cut, run the disposable copy in [test/README.md](test/README.md#registry-tree). CI runs that shape on **main** and **cut** PRs (slot min; not a required check).
+Checkout `Pkg.test()` is not a Registry tarball. After changing those gates (smokes, demo copy, `ssh` / `git` spawn, probe), and before a General cut, run the disposable copy in [test/README.md](test/README.md#registry-tree). CI runs that shape on **main** and **cut** PRs (slot tip; not a required check).
 
 Smoke (1.12+; [demos/README.md](demos/README.md)):
 
@@ -101,7 +101,7 @@ These files **alone** skip the heavy steps (job still starts; Pkg.test / JETLS /
 - `README.md`, `README.ja.md`, `CONTRIBUTING.md`, `NEWS.md`, `SECURITY.md`, `LICENSE`
 - `.gitignore`, `.github/pull_request_template.md`, `.coderabbit.yaml`
 
-A new root markdown file stays heavy until listed in [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml). Changes under `docs/src` still run those jobs. A `cut` label skips none of this: Pkg.test, JETLS, Aqua, Documenter, and Linux E2E all run. `Pkg.test - registry tree` also runs on cut PRs and on **main** push (min slot; not required to merge). macOS / WSL stay on `E2E weekly`, not the PR. Register only after that matrix is green on the merge commit.
+A new root markdown file stays heavy until listed in [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml). Changes under `docs/src` still run those jobs. A `cut` label skips none of this: Pkg.test, JETLS, Aqua, Documenter, and Linux E2E all run. `Pkg.test - registry tree` also runs on cut PRs and on **main** push (slot tip; not required to merge). macOS / WSL stay on `E2E weekly`, not the PR. Register only after that matrix is green on the merge commit.
 
 Required to merge (branch protection uses these names). Tip jobs are allow-failure. A skipped heavy step still leaves the job green.
 
