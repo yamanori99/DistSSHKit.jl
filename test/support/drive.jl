@@ -5,6 +5,12 @@ function _drive_host_root(path)::String
     return abspath(string(path))
 end
 
+"""Prepend `-y` unless the flags already include `-y` / `--yes`."""
+function _drive_yes_flags(drive_flags::Vector{String})::Vector{String}
+    any(f -> f == "-y" || f == "--yes", drive_flags) && return drive_flags
+    return vcat(["-y"], drive_flags)
+end
+
 """Run the kit `drive` CLI with a host `DISTRIBUTED_PROJECT_ROOT`."""
 function _run_kit_drive(;
     script::AbstractString,
@@ -28,7 +34,7 @@ function _run_kit_drive(;
     append!(worker_tokens, child_hosts)
     isempty(worker_tokens) && error("_run_kit_drive: need parent_workers > 0 or child_hosts")
     cmd = _kit_cli_cmd(
-        vcat(["drive"], drive_flags, worker_tokens, log_flags, [script], script_args);
+        vcat(["drive"], _drive_yes_flags(drive_flags), worker_tokens, log_flags, [script], script_args);
         julia=julia,
         project=kit_root,
     )
@@ -77,8 +83,8 @@ function _run_host_drive(;
     julia = String(julia)
     drive = joinpath(kit_root, "src", "cli", "drive.jl")
     log_flags = log_dir === nothing ? ["--no-log"] : ["--log-dir", log_dir]
-    cmd = Cmd([julia, "--startup-file=no", "--project=$host_project", drive,
-               "parent:$(parent_workers)", log_flags..., script])
+    cmd = Cmd(String[julia, "--startup-file=no", "--project=$host_project", drive,
+                     "-y", "parent:$(parent_workers)", log_flags..., script])
     env = _child_julia_env(Dict(
         "DISTRIBUTED_INIT_DELAY_SEC" => "0",
         "DISTRIBUTED_PROJECT_ROOT" => host_project,

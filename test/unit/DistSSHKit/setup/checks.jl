@@ -1,4 +1,5 @@
 using Test
+using Pkg
 
 @testset "setup checks" begin
     @test DistSSHKit.julia_version_mismatch_kind(v"1.12.6", v"1.12.6") == :none
@@ -19,7 +20,11 @@ using Test
         @test occursin("Manifest.toml not found", DistSSHKit.probe_project_deps(dir))
     end
 
-    # Repo root: test/unit/DistSSHKit/setup → four parents up.
-    repo = dirname(dirname(dirname(dirname(@__DIR__))))
-    @test DistSSHKit.probe_project_deps(repo) === nothing
+    _with_tempdir() do dir
+        write(joinpath(dir, "Project.toml"), "[deps]\n")
+        Pkg.activate(dir) do
+            Pkg.instantiate()
+        end
+        @test DistSSHKit.probe_project_deps(dir) === nothing
+    end
 end

@@ -67,34 +67,56 @@ using Test
         @test !isempty(result_wo.installed)
     end
 
-    let err = try
+    _with_tempdir() do tmp
+        src = joinpath(tmp, "src.jl")
+        write(src, "ok = true\n")
+        chmod(src, 0o444)
+        dest = joinpath(tmp, "dest.jl")
+        DistSSHKit._copy_user_writable(src, dest)
+        @test (filemode(dest) & 0o200) != 0
+        write(dest, "# edited\n")
+        @test read(dest, String) == "# edited\n"
+    end
+
+    @test occursin(
+        "family=",
+        try
             DistSSHKit.install_demos(_kit_root(); surface=:api)
-            nothing
+            ""
         catch e
-            e
-        end
-        @test err isa ArgumentError
-        @test occursin("family=", sprint(showerror, err))
-    end
-    let err = try
+            @test e isa ArgumentError
+            sprint(showerror, e)
+        end,
+    )
+    let msg = try
             DistSSHKit.install_demos(_kit_root(); family="with_kit", surface=:api)
-            nothing
+            ""
         catch e
-            e
+            @test e isa ArgumentError
+            sprint(showerror, e)
         end
-        @test err isa ArgumentError
-        @test occursin("install_demos(dest=", sprint(showerror, err))
-        @test occursin("list_demos()", sprint(showerror, err))
+        @test occursin("install_demos(dest=", msg)
+        @test occursin("list_demos()", msg)
     end
-    let err = try
+    let msg = try
             DistSSHKit.install_demos(_kit_root(); family="with_kit", surface=:cli)
-            nothing
+            ""
         catch e
-            e
+            @test e isa ArgumentError
+            sprint(showerror, e)
         end
-        @test err isa ArgumentError
-        @test occursin("demo install with_kit --dest", sprint(showerror, err))
-        @test occursin("demo list", sprint(showerror, err))
+        @test occursin("demo install with_kit --dest", msg)
+        @test occursin("demo list", msg)
+    end
+
+    _with_tempdir() do tmp
+        kit_demos = DistSSHKit.demos_root()
+        kit_root = dirname(kit_demos)
+        link = joinpath(tmp, "kit_root")
+        symlink(realpath(kit_root), link)
+        @test_throws ArgumentError DistSSHKit.install_demos(
+            link; family="with_kit", surface=:api,
+        )
     end
 
     mktemp() do path, io

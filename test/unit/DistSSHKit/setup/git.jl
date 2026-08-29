@@ -20,6 +20,19 @@ using Test
         return nothing
     end
 
+    @testset "resolve_clone_url" begin
+        @test DistSSHKit.resolve_clone_url(
+            "https://github.com/org/App.jl.git",
+            "/unused",
+        ) == "git@github.com:org/App.jl.git"
+        _with_tempdir() do tmp
+            @test_throws ErrorException DistSSHKit.resolve_clone_url(nothing, tmp; surface=:cli)
+            @test_throws ErrorException DistSSHKit.resolve_clone_url("", tmp; surface=:api)
+        end
+    end
+
+    Sys.which("git") === nothing && return
+
     @testset "push / local pull" begin
         _with_tempdir() do tmp
             work = joinpath(tmp, "work")
@@ -126,17 +139,6 @@ using Test
                 @test raw.host_results[1].host == "192.0.2.1"
                 @test !raw.host_results[1].ok
             end
-        end
-    end
-
-    @testset "resolve_clone_url" begin
-        @test DistSSHKit.resolve_clone_url(
-            "https://github.com/org/App.jl.git",
-            "/unused",
-        ) == "git@github.com:org/App.jl.git"
-        _with_tempdir() do tmp
-            @test_throws ErrorException DistSSHKit.resolve_clone_url(nothing, tmp; surface=:cli)
-            @test_throws ErrorException DistSSHKit.resolve_clone_url("", tmp; surface=:api)
         end
     end
 end

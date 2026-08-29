@@ -17,7 +17,7 @@ using Test
         _develop_kit!(proj; julia=julia)
 
         cmd = _kit_cli_cmd(
-            ["drive", "parent:2", "--log-dir", log_dir, script];
+            ["drive", "-y", "parent:2", "--log-dir", log_dir, script];
             julia=julia,
             project=proj,
         )

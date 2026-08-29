@@ -40,6 +40,17 @@ function ssh_opts(; request_tty::Bool=false)::Vector{String}
     return String[String(x) for x in build_ssh_opts(; request_tty=request_tty)]
 end
 
+"""`ssh` on `PATH`, or throw `ArgumentError`."""
+function _ssh_exe()::String
+    exe = Sys.which("ssh")
+    exe === nothing && throw(ArgumentError("ssh not found in PATH; install OpenSSH (see Requirements)"))
+    return exe
+end
+
+function _ssh_cmd(args::AbstractVector)::Cmd
+    return Cmd(append!([_ssh_exe()], String[String(a) for a in args]))
+end
+
 """
 Effective SSH `User` for `host` from `ssh -G` (config / defaults).
 
@@ -52,7 +63,7 @@ function ssh_config_user(host::AbstractString)::Union{Nothing,String}
     isempty(h) && return nothing
     try
         # -n: no stdin; -G dumps effective config (User, HostName, …).
-        out = read(Cmd(["ssh", "-n", ssh_opts()..., "-G", h]), String)
+        out = read(_ssh_cmd(["-n", ssh_opts()..., "-G", h]), String)
         for line in eachsplit(out, '\n'; keepempty=false)
             if startswith(line, "user ")
                 u = strip(SubString(line, 6))
@@ -112,7 +123,7 @@ end
 """Return whether a trivial `ssh YourHost true` succeeds."""
 function _remote_ssh_ok(host::String)::Bool
     try
-        run(pipeline(Cmd(["ssh", ssh_opts()..., host, "true"]); stdout=devnull, stderr=devnull))
+        run(pipeline(_ssh_cmd([ssh_opts()..., host, "true"]); stdout=devnull, stderr=devnull))
         return true
     catch
         return false
@@ -137,7 +148,7 @@ function _pkill_remote_julia_workers!(host::String)::Bool
     for pattern in JULIA_WORKER_PKILL_PATTERNS
         inner = "pkill -9 -f $(Base.shell_escape(pattern))"
         try
-            run(pipeline(Cmd(["ssh", ssh_opts()..., host, inner]); stdout=devnull, stderr=devnull))
+            run(pipeline(_ssh_cmd([ssh_opts()..., host, inner]); stdout=devnull, stderr=devnull))
         catch
         end
     end
@@ -229,7 +240,7 @@ function _pkill_remote_tagged_workers!(host::String, job_id::AbstractString)::Bo
     end
     inner = "pkill -9 -f $(Base.shell_escape(kit_job_pkill_pattern(job_id)))"
     try
-        run(pipeline(Cmd(["ssh", ssh_opts()..., host, inner]); stdout=devnull, stderr=devnull))
+        run(pipeline(_ssh_cmd([ssh_opts()..., host, inner]); stdout=devnull, stderr=devnull))
     catch
     end
     return true
@@ -265,7 +276,7 @@ end
 Returns `nothing` on any failure (SSH, missing binary, unparseable output)."""
 function get_remote_julia_version(host::String, julia_path::AbstractString)::Union{Nothing,VersionNumber}
     try
-        result = read(pipeline(Cmd(["ssh", ssh_opts()..., host, String(julia_path), "--version"]); stderr=devnull), String)
+        result = read(pipeline(_ssh_cmd([ssh_opts()..., host, String(julia_path), "--version"]); stderr=devnull), String)
         return parse_julia_version(result)
     catch
         return nothing
@@ -441,7 +452,8 @@ with `argv` (Julia flags / script / args). Does not replace
 Process-local detect cache is not used (a new CLI process never hits it).
 
 SSH is `ignorestatus`: a non-zero remote or ssh exit returns the `Process`
-(`.exitcode`) instead of throwing `ProcessFailedException`.
+(`.exitcode`) instead of throwing `ProcessFailedException`. Missing `ssh` on
+`PATH` throws `ArgumentError`.
 """
 function run_on_host(
     host::AbstractString,
@@ -454,12 +466,10 @@ function run_on_host(
     h = String(strip(host))
     isempty(h) && throw(ArgumentError("run_on_host: host must be non-empty"))
     inner = _run_on_host_remote_sh(argv; julia=julia, detect=detect)
-    ssh = String["ssh"]
-    append!(ssh, ssh_opts(; request_tty=tty))
-    # `-t` is ssh-only (not in `ssh_opts`, which scp also uses).
-    tty && push!(ssh, "-t")
-    push!(ssh, h, inner)
-    return run(ignorestatus(Cmd(ssh)); wait=wait)
+    args = String[ssh_opts(; request_tty=tty)...]
+    tty && push!(args, "-t")
+    push!(args, h, inner)
+    return run(ignorestatus(_ssh_cmd(args)); wait=wait)
 end
 
 # Process-local auto-detect results (`nothing` included). Same host in
@@ -480,7 +490,7 @@ end
 
 function _detect_julia_path_uncached(host::String)::Union{Nothing,String}
     uname_s = try
-        strip(read(pipeline(Cmd(["ssh", ssh_opts()..., host, "uname", "-s"]); stderr=devnull), String))
+        strip(read(pipeline(_ssh_cmd([ssh_opts()..., host, "uname", "-s"]); stderr=devnull), String))
     catch
         "Linux"
     end
@@ -489,7 +499,7 @@ function _detect_julia_path_uncached(host::String)::Union{Nothing,String}
     for path in remote_julia_candidates(uname_s)
         try
             result = read(pipeline(
-                Cmd(["ssh", ssh_opts()..., host, "test -x $path && echo $path"]);
+                _ssh_cmd([ssh_opts()..., host, "test -x $path && echo $path"]);
                 stderr=devnull,
             ), String)
             found = strip(result)
@@ -502,7 +512,7 @@ function _detect_julia_path_uncached(host::String)::Union{Nothing,String}
     end
     try
         result = read(pipeline(
-            Cmd(["ssh", ssh_opts()..., host, "command -v julia || which julia"]);
+            _ssh_cmd([ssh_opts()..., host, "command -v julia || which julia"]);
             stderr=devnull,
         ), String)
         p = strip(result)
@@ -614,7 +624,7 @@ function resolve_remote_abs_path_on_host(host::String, remote_path::AbstractStri
     startswith(path, "/") && return path
     try
         inner = _remote_abs_path_resolve_shell(path)
-        s = strip(read(pipeline(Cmd(["ssh", ssh_opts()..., host, inner]); stderr=devnull), String))
+        s = strip(read(pipeline(_ssh_cmd([ssh_opts()..., host, inner]); stderr=devnull), String))
         isempty(s) && return nothing
         return String(s)
     catch
@@ -646,7 +656,7 @@ otherwise uses `git -C DIR rev-parse …` (absolute path on the remote, same lay
 function get_remote_git_hash(host::String, remote_repo_dir::AbstractString; short::Union{Nothing,Int}=nothing)::Union{Nothing,String}
     try
         inner = _remote_git_hash_inner(remote_repo_dir; short=short)
-        s = strip(read(pipeline(Cmd(["ssh", ssh_opts()..., host, inner]); stderr=devnull), String))
+        s = strip(read(pipeline(_ssh_cmd([ssh_opts()..., host, inner]); stderr=devnull), String))
         return isempty(s) ? nothing : s
     catch
         return nothing
@@ -658,8 +668,8 @@ end
 """Get total memory (GB) for a remote host via SSH."""
 function get_remote_total_gb(host::String)
     try
-        s = strip(read(pipeline(Cmd(["ssh", ssh_opts()..., host,
-            "sysctl -n hw.memsize 2>/dev/null || awk '/MemTotal/{print \$2*1024}' /proc/meminfo 2>/dev/null"]),
+        s = strip(read(pipeline(_ssh_cmd([ssh_opts()..., host,
+            "sysctl -n hw.memsize 2>/dev/null || awk '/MemTotal/{print \$2*1024}' /proc/meminfo 2>/dev/null"]);
             stderr=devnull), String))
         isempty(s) && return nothing
         return parse(Float64, s) / 1024^3
@@ -670,8 +680,8 @@ end
 """Get CPU core count for a remote host via SSH."""
 function get_remote_nproc(host::String)
     try
-        s = strip(read(pipeline(Cmd(["ssh", ssh_opts()..., host,
-            "sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null"]), stderr=devnull), String))
+        s = strip(read(pipeline(_ssh_cmd([ssh_opts()..., host,
+            "sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null"]); stderr=devnull), String))
         isempty(s) && return nothing
         return parse(Int, s)
     catch end

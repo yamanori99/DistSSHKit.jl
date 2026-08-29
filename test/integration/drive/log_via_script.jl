@@ -15,7 +15,7 @@ using Test
         mkpath(log_dir)
 
         drive = joinpath(_kit_root(), "src", "cli", "drive.jl")
-        cmd = `$julia --project=$proj $drive parent:2 --log-dir $log_dir $script`
+        cmd = `$julia --project=$proj $drive -y parent:2 --log-dir $log_dir $script`
         _assert_drive_log_output(;
             cmd=setenv(
                 cmd,

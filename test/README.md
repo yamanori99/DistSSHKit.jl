@@ -10,7 +10,42 @@ From the kit checkout root:
 julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
-That is `test/runtests.jl` (unit + integration), sequential `@testset`s, `test/Project.toml`. Aqua is a separate CI job, not `Pkg.test()`.
+That is `test/runtests.jl` (unit + integration), sequential `@testset`s, `test/Project.toml`. Aqua is a separate CI job, not `Pkg.test()`. `Pkg.test()` must pass on a Registry install (no kit `Manifest.toml`, often mode 444): job smokes pass `-y`; real `ssh` / `git` spawn runs only when that binary is on `PATH`; real SSH clusters stay in `e2e.jl`.
+
+### Registry tree
+
+[PkgEval](https://github.com/JuliaCI/PkgEval.jl) (via [Nanosoldier](https://github.com/JuliaCI/Nanosoldier.jl)) and `Pkg.add` use a Registry tarball, not this checkout. This package: [DistSSHKit PkgEval](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/D/DistSSHKit.html). Latest ecosystem report: [NanosoldierReports](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html). Reproduce that tree: copy without `Manifest.toml`, then `Pkg.develop` + `Pkg.test` in a throwaway env. Do this after changing the gates above, and before a General cut. Not a CI job.
+
+Copy without `Manifest.toml` (and without `.git`). On Linux, `mktemp -d` is enough. On macOS, put the copy under `$HOME` if you will bind-mount it into Docker Desktop (`$TMPDIR` / `/tmp` mount empty).
+
+```bash
+WORKDIR=$(mktemp -d "$HOME/dsk.XXXXXX")
+rsync -a \
+  --exclude .git \
+  --exclude Manifest.toml \
+  --exclude docs/Manifest.toml \
+  --exclude docs/build \
+  --exclude test/artifacts \
+  ./ "$WORKDIR/"
+```
+
+This machine (min / max / `+nightly`). Distro `ssh` / `git` stay on `PATH`. On Linux this is enough for the tree; it does not reproduce a missing `ssh`.
+
+```bash
+julia -e "using Pkg; Pkg.activate(temp=true); Pkg.develop(path=\"$WORKDIR\"); Pkg.test(\"DistSSHKit\")"
+```
+
+Linux without `ssh`: same [juliaup](https://github.com/JuliaLang/juliaup) Ubuntu container from macOS or from Linux ([Docker Hub `julia`](https://hub.docker.com/_/julia) has no `nightly` tag). `--no-install-recommends` keeps `openssh-client` out.
+
+```bash
+docker run --rm \
+  -v "$WORKDIR:/pkg:ro" \
+  ubuntu:24.04 \
+  bash -lc 'apt-get update -qq && apt-get install -y -qq --no-install-recommends curl ca-certificates git \
+    && curl -fsSL https://install.julialang.org | sh -s -- --yes --default-channel nightly \
+    && export PATH="$HOME/.juliaup/bin:$PATH" \
+    && julia +nightly -e "using Pkg; Pkg.activate(temp=true); Pkg.develop(path=\"/pkg\"); Pkg.test(\"DistSSHKit\")"'
+```
 
 Real SSH:
 
