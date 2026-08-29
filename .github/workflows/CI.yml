@@ -88,3 +88,40 @@ jobs:
           cache-scratchspaces: false
       - uses: ./.github/actions/pkg-test
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
+
+  # Not a Julia slot. Not required to merge. Catches checkout-only Pkg.test assumptions.
+  test-registry-tree:
+    name: Pkg.test - registry tree - ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'cut'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/julia-slot
+        with:
+          slot: min
+      - uses: julia-actions/cache@v3
+        with:
+          cache-scratchspaces: false
+      - name: Pkg.test on a Registry-style tree
+        run: |
+          set -euo pipefail
+          sudo DEBIAN_FRONTEND=noninteractive apt-get remove -y openssh-client
+          if command -v ssh >/dev/null; then
+            echo "ssh still on PATH" >&2
+            exit 1
+          fi
+          command -v git >/dev/null
+          WORKDIR="$(mktemp -d "${HOME}/dsk.XXXXXX")"
+          rsync -a \
+            --exclude .git \
+            --exclude Manifest.toml \
+            --exclude docs/Manifest.toml \
+            --exclude docs/build \
+            --exclude test/artifacts \
+            ./ "${WORKDIR}/"
+          chmod -R a-w "${WORKDIR}"
+          julia -e 'using Pkg; Pkg.activate(temp=true); Pkg.develop(path=ARGS[1]); Pkg.test("DistSSHKit")' "${WORKDIR}"

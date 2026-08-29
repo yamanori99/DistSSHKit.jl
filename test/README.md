@@ -63,7 +63,7 @@ Green on one layer does not imply the others. `Pkg.test()` does not run `e2e.jl`
 
 ## Registry tree
 
-[PkgEval](https://github.com/JuliaCI/PkgEval.jl) (via [Nanosoldier](https://github.com/JuliaCI/Nanosoldier.jl)) and `Pkg.add` use a Registry tarball, not this checkout. This package: [DistSSHKit PkgEval](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/D/DistSSHKit.html). Latest ecosystem report: [NanosoldierReports](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html). Reproduce that tree: copy without `Manifest.toml`, then `Pkg.develop` + `Pkg.test` in a throwaway env. Do this after changing the gates above, and before a General cut. Not a CI job.
+[PkgEval](https://github.com/JuliaCI/PkgEval.jl) (via [Nanosoldier](https://github.com/JuliaCI/Nanosoldier.jl)) and `Pkg.add` use a Registry tarball, not this checkout. This package: [DistSSHKit PkgEval](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/D/DistSSHKit.html). Latest ecosystem report: [NanosoldierReports](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html). Reproduce that tree: copy without `Manifest.toml`, then `Pkg.develop` + `Pkg.test` in a throwaway env. Do this after changing the gates above, and before a General cut. CI: `Pkg.test - registry tree` on **main** and **cut** PRs (slot min, no `ssh`, mode `a-w`; not a required check).
 
 Copy without `Manifest.toml` (and without `.git`). On Linux, `mktemp -d` is enough. On macOS, put the copy under `$HOME` if you will bind-mount it into Docker Desktop (`$TMPDIR` / `/tmp` mount empty).
 
