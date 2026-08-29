@@ -125,4 +125,4 @@ jobs:
             --exclude test/artifacts \
             ./ "${WORKDIR}/"
           chmod -R a-w "${WORKDIR}"
-          julia -e 'using Pkg; Pkg.activate(temp=true); Pkg.develop(path=ARGS[1]); Pkg.test("DistSSHKit")' "${WORKDIR}"
+          julia -e 'using Pkg; Pkg.activate(temp=true); Pkg.add(; path=ARGS[1]); Pkg.test("DistSSHKit")' "${WORKDIR}"

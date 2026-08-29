@@ -63,7 +63,7 @@ Green on one layer does not imply the others. `Pkg.test()` does not run `e2e.jl`
 
 ## Registry tree
 
-[PkgEval](https://github.com/JuliaCI/PkgEval.jl) (via [Nanosoldier](https://github.com/JuliaCI/Nanosoldier.jl)) and `Pkg.add` use a Registry tarball, not this checkout. This package: [DistSSHKit PkgEval](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/D/DistSSHKit.html). Latest ecosystem report: [NanosoldierReports](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html). Reproduce that tree: copy without `Manifest.toml`, then `Pkg.develop` + `Pkg.test` in a throwaway env. Do this after changing the gates above, and before a General cut. CI: `Pkg.test - registry tree` on **main** and **cut** PRs (slot tip, no `ssh`, mode `a-w`; not a required check).
+[PkgEval](https://github.com/JuliaCI/PkgEval.jl) (via [Nanosoldier](https://github.com/JuliaCI/Nanosoldier.jl)) and `Pkg.add` use a Registry tarball, not this checkout. This package: [DistSSHKit PkgEval](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/D/DistSSHKit.html). Latest ecosystem report: [NanosoldierReports](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html). Reproduce that tree: copy without `Manifest.toml`, then `Pkg.add(; path=)` + `Pkg.test` in a throwaway env. Do this after changing the gates above, and before a General cut. CI: `Pkg.test - registry tree` on **main** and **cut** PRs (slot tip, no `ssh`, mode `a-w`; not a required check).
 
 Copy without `Manifest.toml` (and without `.git`). On Linux, `mktemp -d` is enough. On macOS, put the copy under `$HOME` if you will bind-mount it into Docker Desktop (`$TMPDIR` / `/tmp` mount empty).
 
@@ -81,7 +81,7 @@ rsync -a \
 This machine (min / max / `+nightly`). Distro `ssh` / `git` stay on `PATH`. On Linux this is enough for the tree; it does not reproduce a missing `ssh`.
 
 ```bash
-julia -e "using Pkg; Pkg.activate(temp=true); Pkg.develop(path=\"$WORKDIR\"); Pkg.test(\"DistSSHKit\")"
+julia -e "using Pkg; Pkg.activate(temp=true); Pkg.add(; path=\"$WORKDIR\"); Pkg.test(\"DistSSHKit\")"
 ```
 
 Linux without `ssh`: same [juliaup](https://github.com/JuliaLang/juliaup) Ubuntu container from macOS or from Linux ([Docker Hub `julia`](https://hub.docker.com/_/julia) has no `nightly` tag). `--no-install-recommends` keeps `openssh-client` out.
@@ -93,7 +93,7 @@ docker run --rm \
   bash -lc 'apt-get update -qq && apt-get install -y -qq --no-install-recommends curl ca-certificates git \
     && curl -fsSL https://install.julialang.org | sh -s -- --yes --default-channel nightly \
     && export PATH="$HOME/.juliaup/bin:$PATH" \
-    && julia +nightly -e "using Pkg; Pkg.activate(temp=true); Pkg.develop(path=\"/pkg\"); Pkg.test(\"DistSSHKit\")"'
+    && julia +nightly -e "using Pkg; Pkg.activate(temp=true); Pkg.add(; path=\"/pkg\"); Pkg.test(\"DistSSHKit\")"'
 ```
 
 ## SSH E2E
