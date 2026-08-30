@@ -129,6 +129,7 @@ jobs:
           fi
           command -v git >/dev/null
           WORKDIR="$(mktemp -d "${HOME}/dsk.XXXXXX")"
+          BARE="$(mktemp -d "${HOME}/dsk.git.XXXXXX")"
           rsync -a \
             --exclude .git \
             --exclude Manifest.toml \
@@ -136,10 +137,15 @@ jobs:
             --exclude docs/build \
             --exclude test/artifacts \
             ./ "${WORKDIR}/"
-          git -C "${WORKDIR}" init -q
-          git -C "${WORKDIR}" config user.email "ci@distsshkit"
-          git -C "${WORKDIR}" config user.name "ci"
-          git -C "${WORKDIR}" add -A
-          git -C "${WORKDIR}" commit -q -m tree
-          chmod -R a-w "${WORKDIR}"
-          julia -e 'using Pkg; Pkg.activate(temp=true); Pkg.add(; path=ARGS[1]); Pkg.test("DistSSHKit")' "${WORKDIR}"
+          git init --bare -q "${BARE}"
+          git --git-dir="${BARE}" --work-tree="${WORKDIR}" add -A
+          git --git-dir="${BARE}" --work-tree="${WORKDIR}" \
+            -c user.email=ci@distsshkit -c user.name=ci commit -q -m tree
+          julia -e '
+            using Pkg
+            Pkg.activate(temp=true)
+            Pkg.add(; url=ARGS[1])
+            using DistSSHKit
+            run(Cmd(["chmod", "-R", "a-w", pkgdir(DistSSHKit)]))
+            Pkg.test("DistSSHKit")
+          ' "file://${BARE}"
