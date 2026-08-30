@@ -17,7 +17,7 @@ makedocs(;
         assets=[
             "assets/custom.css",
             # Data URI: Firefox was dropping file icons (wrong type= / ICO) and
-            # using sidebar logo.svg, which at 16px is just the Julia dots.
+            # using sidebar logo.svg.
             RawHTMLHeadContent(
                 """<link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,$(FAVICON_PNG_B64)"/>""",
             ),
