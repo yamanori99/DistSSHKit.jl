@@ -100,19 +100,26 @@ jobs:
     if: >
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'cut'))
+      (github.event_name == 'pull_request' && github.event.action != 'labeled') ||
+      (github.event_name == 'pull_request' && github.event.action == 'labeled'
+        && contains(github.event.pull_request.labels.*.name, 'cut'))
     runs-on: ubuntu-latest
     timeout-minutes: 20
     continue-on-error: true
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/ci-heavy
+        id: detect
       - uses: ./.github/actions/julia-slot
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         with:
           slot: tip
       - uses: julia-actions/cache@v3
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         with:
           cache-scratchspaces: false
       - name: Pkg.test on a Registry-style tree
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         run: |
           set -euo pipefail
           sudo DEBIAN_FRONTEND=noninteractive apt-get remove -y openssh-client
@@ -129,5 +136,10 @@ jobs:
             --exclude docs/build \
             --exclude test/artifacts \
             ./ "${WORKDIR}/"
+          git -C "${WORKDIR}" init -q
+          git -C "${WORKDIR}" config user.email "ci@distsshkit"
+          git -C "${WORKDIR}" config user.name "ci"
+          git -C "${WORKDIR}" add -A
+          git -C "${WORKDIR}" commit -q -m tree
           chmod -R a-w "${WORKDIR}"
           julia -e 'using Pkg; Pkg.activate(temp=true); Pkg.add(; path=ARGS[1]); Pkg.test("DistSSHKit")' "${WORKDIR}"
