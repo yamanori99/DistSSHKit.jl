@@ -94,10 +94,10 @@ const PNG_SCALE = 2
 # often rejects 2×). Sharpness comes from PNG_SCALE, not a larger deliverable.
 const LOGO_PNG = 960
 const SOCIAL_PNG_W, SOCIAL_PNG_H = SOCIAL_W, SOCIAL_H
-# Browser tab icon (Documenter `assets/*.ico` → rel=icon). BMP-in-ICO (Firefox).
-# Opaque white tile so dark browser chrome does not swallow the ink.
+# Browser tab icon. Transparent SVG/PNG; light + dark (Firefox uses media=).
 const FAVICON = "favicon.ico"
 const FAVICON_SVG = "favicon.svg"
+const FAVICON_DARK_SVG = "favicon-dark.svg"
 const FAVICON_PX = (16, 32, 48)
 # Parent-only tab mark. Dots are `#juliadot-lg` scaled up a little about (0,-6).
 const FAVICON_DOT_SCALE = 1.15
@@ -347,7 +347,7 @@ function svg_inner(svg::AbstractString)
     return m.captures[1]
 end
 
-function build_favicon(_logo_svg::AbstractString="")
+function build_favicon(_logo_svg::AbstractString=""; dark::Bool=false)
     # Parent `#master-body` as in logo-static. Dots: `#juliadot-lg` about (0,-6), × FAVICON_DOT_SCALE.
     # Firefox tab icons often skip `<use href>`; keep this file free of defs/use.
     s = FAVICON_DOT_SCALE
@@ -355,16 +355,15 @@ function build_favicon(_logo_svg::AbstractString="")
     red_y = round(-6 + s * (-6.2); digits=4)
     side_x = round(5.369 * s; digits=4)
     side_y = round(-6 + s * 3.1; digits=4)
-    # Same `#master-body` geometry and stroke as logo-static.
     sw = 3.5
     ox, oy = 34.0, 34.5
+    ink = dark ? "#f8fafc" : "#1a1d21"
     fmt(x) = string(round(x; digits=4))
     return """<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 68 68" width="68" height="68">
-  <rect width="68" height="68" fill="#ffffff"/>
-  <rect x="$(fmt(-32 + ox))" y="$(fmt(-25 + oy))" width="64" height="36" rx="4" fill="none" stroke="#1a1d21" stroke-width="$(sw)" stroke-linecap="round" stroke-linejoin="round"/>
-  <line x1="$(fmt(ox))" y1="$(fmt(12 + oy))" x2="$(fmt(ox))" y2="$(fmt(22 + oy))" fill="none" stroke="#1a1d21" stroke-width="$(sw)" stroke-linecap="round"/>
-  <line x1="$(fmt(-21 + ox))" y1="$(fmt(24 + oy))" x2="$(fmt(21 + ox))" y2="$(fmt(24 + oy))" fill="none" stroke="#1a1d21" stroke-width="$(sw)" stroke-linecap="round"/>
+  <rect x="$(fmt(-32 + ox))" y="$(fmt(-25 + oy))" width="64" height="36" rx="4" fill="none" stroke="$ink" stroke-width="$(sw)" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="$(fmt(ox))" y1="$(fmt(12 + oy))" x2="$(fmt(ox))" y2="$(fmt(22 + oy))" fill="none" stroke="$ink" stroke-width="$(sw)" stroke-linecap="round"/>
+  <line x1="$(fmt(-21 + ox))" y1="$(fmt(24 + oy))" x2="$(fmt(21 + ox))" y2="$(fmt(24 + oy))" fill="none" stroke="$ink" stroke-width="$(sw)" stroke-linecap="round"/>
   <circle cx="$(fmt(ox))" cy="$(fmt(red_y + oy))" r="$r" fill="#cb3c33"/>
   <circle cx="$(fmt(-side_x + ox))" cy="$(fmt(side_y + oy))" r="$r" fill="#389826"/>
   <circle cx="$(fmt(side_x + ox))" cy="$(fmt(side_y + oy))" r="$r" fill="#9558b2"/>
@@ -508,7 +507,9 @@ function bake_svgs!()
     topology_dark_svg = topology_dark(topology)
     writefile(diagram_path("topology-dark.svg"), topology_dark_svg)
     writefile(FAVICON_SVG, build_favicon(logo_static))
+    writefile(FAVICON_DARK_SVG, build_favicon(logo_static; dark=true))
     ensure_docroot_link!(FAVICON_SVG)
+    ensure_docroot_link!(FAVICON_DARK_SVG)
 
     return (;
         logo,
@@ -809,37 +810,48 @@ end
 
 function bake_favicon!(arts)
     ico_path = joinpath(ROOT, FAVICON)
-    svg_rel = FAVICON_SVG
-    writefile(svg_rel, build_favicon(arts.logo_static))
+    writefile(FAVICON_SVG, build_favicon(arts.logo_static))
+    writefile(FAVICON_DARK_SVG, build_favicon(arts.logo_static; dark=true))
     ensure_docroot_link!(FAVICON_SVG)
-    html_body = strip_xml_decl(readfile(svg_rel))
+    ensure_docroot_link!(FAVICON_DARK_SVG)
     d = mktempdir(ROOT; prefix=".favicon-")
     try
-        pngs = Pair{Int, String}[]
-        for px in FAVICON_PX
-            src = joinpath(d, "$(px).png")
-            body = replace(html_body, r"width=\"[^\"]+\" height=\"[^\"]+\"" => "width=\"$(px)\" height=\"$(px)\"", count=1)
-            if !bake_static_png!(
-                svg_rel,
-                relpath(src, ROOT),
-                body;
-                w=px,
-                h=px,
-                scale=PNG_SCALE,
-                exact_size=true,
-            )
-                return false
+        function raster_variant(svg_rel::AbstractString)
+            html_body = strip_xml_decl(readfile(svg_rel))
+            pngs = Pair{Int, String}[]
+            for px in FAVICON_PX
+                src = joinpath(d, "$(first(splitext(svg_rel)))-$(px).png")
+                body = replace(html_body, r"width=\"[^\"]+\" height=\"[^\"]+\"" => "width=\"$(px)\" height=\"$(px)\"", count=1)
+                if !bake_static_png!(
+                    svg_rel,
+                    relpath(src, ROOT),
+                    body;
+                    w=px,
+                    h=px,
+                    scale=PNG_SCALE,
+                    exact_size=true,
+                )
+                    return nothing
+                end
+                push!(pngs, px => src)
             end
-            push!(pngs, px => src)
+            return pngs
         end
-        write_bmp_ico!(ico_path, pngs)
+        light = raster_variant(FAVICON_SVG)
+        light === nothing && return false
+        dark = raster_variant(FAVICON_DARK_SVG)
+        dark === nothing && return false
+        write_bmp_ico!(ico_path, light)
         png32 = joinpath(ROOT, "favicon.png")
-        src32 = first(p for p in pngs if p[1] == 32)
-        cp(src32[2], png32; force=true)
+        png32d = joinpath(ROOT, "favicon-dark.png")
+        cp(first(p for p in light if p[1] == 32)[2], png32; force=true)
+        cp(first(p for p in dark if p[1] == 32)[2], png32d; force=true)
         println("wrote $FAVICON ($(filesize(ico_path)) bytes)")
         println("wrote favicon.png ($(filesize(png32)) bytes)")
+        println("wrote favicon-dark.png ($(filesize(png32d)) bytes)")
         ensure_docroot_link!(FAVICON)
         ensure_docroot_link!("favicon.png")
+        ensure_docroot_link!("favicon-dark.png")
         return true
     finally
         rm(d; recursive=true, force=true)
