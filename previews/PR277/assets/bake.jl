@@ -97,7 +97,7 @@ const SOCIAL_PNG_W, SOCIAL_PNG_H = SOCIAL_W, SOCIAL_H
 # Tight crop of the kit cluster (sidebar logo has more canvas padding).
 const FAVICON = "favicon.ico"
 const FAVICON_SVG = "favicon.svg"
-const FAVICON_VIEWBOX = "20 37 202 202"
+const FAVICON_VIEWBOX = "48 78 144 144"
 const FAVICON_PX = (32, 48)
 
 die(msg) = (println(stderr, "error: ", msg); exit(1))
