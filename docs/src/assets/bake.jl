@@ -94,10 +94,10 @@ const PNG_SCALE = 2
 const LOGO_PNG = 960
 const SOCIAL_PNG_W, SOCIAL_PNG_H = SOCIAL_W, SOCIAL_H
 # Browser tab icon (Documenter `assets/*.ico` → rel=icon). PNG-in-ICO.
-# Tight crop of the kit cluster (sidebar logo has more canvas padding).
+# Opaque white tile so dark browser chrome does not swallow the ink.
 const FAVICON = "favicon.ico"
 const FAVICON_SVG = "favicon.svg"
-const FAVICON_PX = (32, 48)
+const FAVICON_PX = (16, 32, 48)
 # Parent-only tab mark. Dots are `#juliadot-lg` scaled up a little about (0,-6).
 const FAVICON_DOT_SCALE = 1.15
 
@@ -231,6 +231,7 @@ function build_favicon(_logo_svg::AbstractString="")
     side_y = round(-6 + s * 3.1; digits=4)
     return """<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-34 -34.5 68 68" width="68" height="68">
+  <rect x="-34" y="-34.5" width="68" height="68" fill="#ffffff"/>
   <rect x="-32" y="-25" width="64" height="36" rx="4" fill="none" stroke="#1a1d21" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
   <line x1="0" y1="12" x2="0" y2="22" fill="none" stroke="#1a1d21" stroke-width="3.5" stroke-linecap="round"/>
   <line x1="-21" y1="24" x2="21" y2="24" fill="none" stroke="#1a1d21" stroke-width="3.5" stroke-linecap="round"/>
