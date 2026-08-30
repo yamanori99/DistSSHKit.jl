@@ -118,6 +118,34 @@ function explain_no_hosts(;
     return join_explained_message(head, hint)
 end
 
+# --- local host tools (ssh / rsync / git) ------------------------------------
+
+const _HOST_TOOL_NAMES = ("ssh", "rsync", "git")
+
+function _normalize_host_tool(name::AbstractString)::String
+    n = String(name)
+    n == "ssh" || n == "scp" || n == "rsync" || n == "git" ||
+        throw(ArgumentError("host tool must be ssh, scp, rsync, or git, got $(repr(n))"))
+    return n
+end
+
+"""Hint line when `ssh` / `rsync` / `git` is absent from `PATH`."""
+function explain_host_tool_hint(tool::AbstractString; surface::Symbol=:api)::String
+    _normalize_hint_surface(surface)
+    t = _normalize_host_tool(tool)
+    t == "ssh" && return "Hint: DistSSHKit does not install OpenSSH; see Requirements"
+    t == "scp" && return "Hint: DistSSHKit does not install OpenSSH (scp); see Requirements"
+    t == "rsync" &&
+        return "Hint: DistSSHKit does not install rsync; needed for collect and setup --rsync (see Requirements)"
+    return "Hint: DistSSHKit does not install git; needed for clone / push / pull (see Requirements)"
+end
+
+"""Full message when a required host tool is not on `PATH`."""
+function explain_host_tool_missing(tool::AbstractString; surface::Symbol=:api)::String
+    t = _normalize_host_tool(tool)
+    return join_explained_message("$t not found in PATH", explain_host_tool_hint(t; surface=surface))
+end
+
 # --- setup / clone -----------------------------------------------------------
 
 function explain_clone_repo_required(; surface::Symbol=:api)::String

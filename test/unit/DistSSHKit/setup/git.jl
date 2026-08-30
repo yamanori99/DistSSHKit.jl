@@ -1,10 +1,15 @@
 using Test
 
 # Oracle: local `git` CLI for push/pull, and `git_sync` stopping before remotes
-# when local push/pull fails. Remote `git pull` uses raw `ssh` (not the setup
-# fake); unreachable hosts only. Real remote git is SSH E2E.
+# when local push/pull fails. Remote `git pull` uses `_ssh_cmd`. Unreachable
+# hosts only. Real remote git is SSH E2E.
 
 @testset "setup git" begin
+    withenv("PATH" => "/nonexistent-distsshkit-path") do
+        @test_throws ArgumentError DistSSHKit.git_push_project!(".")
+        @test_throws ArgumentError DistSSHKit.git_pull_local_project!(".")
+        @test_throws ArgumentError DistSSHKit.git_pull_remote_host!("x", ".")
+    end
     function _git_ident!(dir)
         run(pipeline(`git -C $dir config user.email "test@example.com"`; stdout=devnull, stderr=devnull))
         run(pipeline(`git -C $dir config user.name "Test"`; stdout=devnull, stderr=devnull))

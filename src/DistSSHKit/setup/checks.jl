@@ -1,5 +1,24 @@
 check_ssh(host::String)::Bool = probe_setup_ssh(host) === nothing
 
+"""Print local `ssh` / `rsync` / `git` PATH status. `ssh` missing is a failure; others warn."""
+function _report_local_host_tools!()
+    ssh = rsync = git = true
+    for name in _HOST_TOOL_NAMES
+        exe = Sys.which(name)
+        found = exe !== nothing
+        name == "ssh" && (ssh = found)
+        name == "rsync" && (rsync = found)
+        name == "git" && (git = found)
+        if !found
+            name == "ssh" ? fail("$name not found in PATH") : warn("$name not found in PATH")
+            kit_println("    $(explain_host_tool_hint(name))")
+        else
+            ok("$name ($exe)")
+        end
+    end
+    return (; ssh, rsync, git)
+end
+
 """Compare two Julia versions and classify the difference:
 `:none` (equal, or nothing to compare), `:minor` (major.minor differs — the
 concerning case), or `:patch` (patch-only difference — usually fine)."""
@@ -39,7 +58,8 @@ function check_project(host::String, remote_path::String)
             String,
         )
         return strip(result) == "ok"
-    catch
+    catch e
+        _rethrow_missing_host_tool(e)
         return false
     end
 end
@@ -159,18 +179,8 @@ function check_prerequisites(
 
     # Local checks
     kit_println("Local:")
-    if check_git_clean(proj)
-        ok("Git working tree clean")
-    else
-        if require_clean_git
-            fail("Git has uncommitted changes")
-            kit_println("    Fix: git add -A && git commit -m 'your message'")
-            all_ok = false
-        else
-            warn("Git has uncommitted changes")
-            kit_println("    Fix: git add -A && git commit -m 'your message'")
-        end
-    end
+    local_tools = _report_local_host_tools!()
+    !local_tools.ssh && (all_ok = false)
 
     if isfile(joinpath(proj, "Project.toml"))
         ok("Project.toml at $(cli_project_disp(proj, anchor))")
@@ -179,16 +189,30 @@ function check_prerequisites(
         all_ok = false
     end
 
-    local_hash = get_local_git_hash(proj; short=12)
-    if local_hash === nothing
-        fail("Could not get local git commit")
-        all_ok = false
-    else
-        ok("Git commit: $local_hash")
+    local_hash = nothing
+    if local_tools.git
+        if check_git_clean(proj)
+            ok("Git working tree clean")
+        elseif require_clean_git
+            fail("Git has uncommitted changes")
+            kit_println("    Fix: git add -A && git commit -m 'your message'")
+            all_ok = false
+        else
+            warn("Git has uncommitted changes")
+            kit_println("    Fix: git add -A && git commit -m 'your message'")
+        end
+        local_hash = get_local_git_hash(proj; short=12)
+        if local_hash === nothing
+            fail("Could not get local git commit")
+            all_ok = false
+        else
+            ok("Git commit: $local_hash")
+        end
     end
     kit_println()
 
     # Remote checks
+    local_tools.ssh || return (ok=false, needs_sync=needs_sync)
     for host in hosts
         host_ok = Ref(true)
         _setup_host_span!(host, :running)

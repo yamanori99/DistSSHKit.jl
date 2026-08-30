@@ -11,9 +11,9 @@ function place_drive_sentinels!(successful_hosts::Vector{String}, script_dir::St
                 remote_early_abs = ensure_remote_abs_path(host, remote_early)
                 remote_early_abs === nothing && continue
                 remote_early_abs = remote_early_abs::String
-                run(pipeline(Cmd(["ssh", ssh_opts()..., host, "mkdir", "-p", remote_early_abs]),
+                run(pipeline(_ssh_cmd([ssh_opts()..., host, "mkdir", "-p", remote_early_abs]),
                     stdout=devnull, stderr=devnull))
-                run(pipeline(Cmd(["ssh", ssh_opts()..., host, "touch", joinpath(remote_early_abs, sentinel_name)]),
+                run(pipeline(_ssh_cmd([ssh_opts()..., host, "touch", joinpath(remote_early_abs, sentinel_name)]),
                     stdout=devnull, stderr=devnull))
             catch; end
         end
@@ -219,7 +219,7 @@ function collect_drive_results!(
                     host_err === nothing && (host_err = e)
                 finally
                     try
-                        run(pipeline(Cmd(["ssh", ssh_opts()..., host, "rm", "-f", remote_sentinel]),
+                        run(pipeline(_ssh_cmd([ssh_opts()..., host, "rm", "-f", remote_sentinel]),
                                      stdout=devnull, stderr=devnull))
                     catch; end
                 end

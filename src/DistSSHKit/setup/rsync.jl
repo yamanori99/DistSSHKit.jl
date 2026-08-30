@@ -11,7 +11,7 @@ function _host_sync_rsync_transport()::String
     if !isempty(custom)
         return join(_test_double_julia_argv(custom), " ")
     end
-    return "ssh " * join(ssh_opts(), " ")
+    return _ssh_exe() * " " * join(ssh_opts(), " ")
 end
 
 function _host_sync_rsync_argv()::Vector{String}
@@ -23,7 +23,7 @@ function _host_sync_rsync_argv()::Vector{String}
         endswith(path, ".jl") && return _test_double_julia_argv(path)
         return ["sh", path]
     end
-    return ["rsync"]
+    return [_host_tool_exe("rsync")]
 end
 
 """Run rsync with `--files-from` via a temp list, not `stdin`.
@@ -56,7 +56,7 @@ function _host_sync_remote_shell_cmd(host::String, remote_script::String)::Cmd
     if !isempty(custom)
         return Cmd(vcat(_test_double_julia_argv(custom), [host, remote_script]))
     end
-    return Cmd(vcat(["ssh"], collect(ssh_opts()), [host, remote_script]))
+    return _ssh_cmd([ssh_opts()..., host, remote_script])
 end
 
 """Remote shell snippet classifying `remote_path` as MISSING / EMPTY / NONEMPTY."""
@@ -127,7 +127,8 @@ function _ensure_remote_dir(host::String, remote_path::String)::Bool
             ),
         )
         return true
-    catch
+    catch e
+        _rethrow_missing_host_tool(e)
         return false
     end
 end

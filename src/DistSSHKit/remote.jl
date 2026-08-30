@@ -40,16 +40,28 @@ function ssh_opts(; request_tty::Bool=false)::Vector{String}
     return String[String(x) for x in build_ssh_opts(; request_tty=request_tty)]
 end
 
-"""`ssh` on `PATH`, or throw `ArgumentError`."""
-function _ssh_exe()::String
-    exe = Sys.which("ssh")
-    exe === nothing && throw(ArgumentError("ssh not found in PATH; install OpenSSH (see Requirements)"))
+"""`ssh` / `rsync` / `git` on `PATH`, or throw `ArgumentError`."""
+function _host_tool_exe(name::AbstractString)::String
+    n = _normalize_host_tool(name)
+    exe = Sys.which(n)
+    exe === nothing && throw(ArgumentError(explain_host_tool_missing(n)))
     return exe
 end
 
-function _ssh_cmd(args::AbstractVector)::Cmd
-    return Cmd(append!([_ssh_exe()], String[String(a) for a in args]))
+_host_tool_present(name::AbstractString)::Bool = Sys.which(_normalize_host_tool(name)) !== nothing
+
+_rethrow_missing_host_tool(e) = e isa ArgumentError && rethrow(e)
+
+"""`ssh` on `PATH`, or throw `ArgumentError`."""
+_ssh_exe()::String = _host_tool_exe("ssh")
+
+function _host_tool_cmd(name::AbstractString, args::AbstractVector)::Cmd
+    return Cmd(append!([_host_tool_exe(name)], String[String(a) for a in args]))
 end
+
+_git_cmd(args::AbstractVector)::Cmd = _host_tool_cmd("git", args)
+_ssh_cmd(args::AbstractVector)::Cmd = _host_tool_cmd("ssh", args)
+_scp_cmd(args::AbstractVector)::Cmd = _host_tool_cmd("scp", args)
 
 """
 Effective SSH `User` for `host` from `ssh -G` (config / defaults).
@@ -123,9 +135,10 @@ end
 """Return whether a trivial `ssh YourHost true` succeeds."""
 function _remote_ssh_ok(host::String)::Bool
     try
-        run(pipeline(_ssh_cmd([ssh_opts()..., host, "true"]); stdout=devnull, stderr=devnull))
+        run(pipeline(_host_sync_remote_shell_cmd(host, "true"); stdout=devnull, stderr=devnull))
         return true
-    catch
+    catch e
+        _rethrow_missing_host_tool(e)
         return false
     end
 end
@@ -148,8 +161,9 @@ function _pkill_remote_julia_workers!(host::String)::Bool
     for pattern in JULIA_WORKER_PKILL_PATTERNS
         inner = "pkill -9 -f $(Base.shell_escape(pattern))"
         try
-            run(pipeline(_ssh_cmd([ssh_opts()..., host, inner]); stdout=devnull, stderr=devnull))
-        catch
+            run(pipeline(_host_sync_remote_shell_cmd(host, inner); stdout=devnull, stderr=devnull))
+        catch e
+            _rethrow_missing_host_tool(e)
         end
     end
     return true
@@ -240,8 +254,9 @@ function _pkill_remote_tagged_workers!(host::String, job_id::AbstractString)::Bo
     end
     inner = "pkill -9 -f $(Base.shell_escape(kit_job_pkill_pattern(job_id)))"
     try
-        run(pipeline(_ssh_cmd([ssh_opts()..., host, inner]); stdout=devnull, stderr=devnull))
-    catch
+        run(pipeline(_host_sync_remote_shell_cmd(host, inner); stdout=devnull, stderr=devnull))
+    catch e
+        _rethrow_missing_host_tool(e)
     end
     return true
 end
@@ -528,12 +543,13 @@ end
 
 """Get local git commit hash (`short=nothing` → full hash, else `git rev-parse --short`)."""
 function get_local_git_hash(proj_dir::AbstractString; short::Union{Nothing,Int}=nothing)::Union{Nothing,String}
+    _host_tool_present("git") || return nothing
     resolved = canonical_local_path(proj_dir)
     try
         cmd = if short === nothing
-            Cmd(["git", "-C", resolved, "rev-parse", "HEAD"])
+            _git_cmd(["-C", resolved, "rev-parse", "HEAD"])
         else
-            Cmd(["git", "-C", resolved, "rev-parse", "--short=$(short)", "HEAD"])
+            _git_cmd(["-C", resolved, "rev-parse", "--short=$(short)", "HEAD"])
         end
         s = strip(read(pipeline(cmd; stderr=devnull), String))
         return isempty(s) ? nothing : s
@@ -547,9 +563,10 @@ Returns `true` if clean, if `proj_dir` is not a git repo, or if `git` itself fai
 this check exists to warn, not to block, so failures to determine status don't count
 as "dirty"."""
 function local_git_clean(proj_dir::AbstractString)::Bool
+    _host_tool_present("git") || return true
     resolved = canonical_local_path(proj_dir)
     try
-        result = read(pipeline(Cmd(["git", "-C", resolved, "status", "--porcelain"]); stderr=devnull), String)
+        result = read(pipeline(_git_cmd(["-C", resolved, "status", "--porcelain"]); stderr=devnull), String)
         return isempty(strip(result))
     catch
         return true
@@ -857,9 +874,10 @@ end
 
 """Read `origin` from `proj_dir` and return a clone URL (HTTPS GitHub → SSH). `nothing` on failure."""
 function clone_url_from_local_origin(proj_dir::AbstractString)::Union{Nothing,String}
+    _host_tool_present("git") || return nothing
     resolved = canonical_local_path(proj_dir)
     try
-        origin_url = strip(read(pipeline(Cmd(["git", "-C", resolved, "remote", "get-url", "origin"]);
+        origin_url = strip(read(pipeline(_git_cmd(["-C", resolved, "remote", "get-url", "origin"]);
                                           stderr=devnull), String))
         isempty(origin_url) && return nothing
         return normalize_git_clone_url(origin_url)

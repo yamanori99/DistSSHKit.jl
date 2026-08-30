@@ -57,6 +57,7 @@ function probe_setup_ssh(host::String)::Union{Nothing,String}
         note = isempty(detail) ? "unexpected SSH output: $(repr(strip(out)))" : detail
         return _truncate_ssh_message(note)
     catch e
+        e isa ArgumentError && return sprint(showerror, e)
         return summarize_ssh_error(e; stderr=String(take!(err_buf)))
     end
 end

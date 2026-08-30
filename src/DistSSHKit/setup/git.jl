@@ -1,19 +1,23 @@
 # Git push/pull sync to SSH hosts (shared by `setup --sync` / `--pull` and `sync!`).
 
 function git_push_project!(project::AbstractString)::Bool
+    cmd = _git_cmd(["-C", String(project), "push"])
     try
-        run(pipeline(`git -C $(String(project)) push`, stdout=devnull, stderr=devnull))
+        run(pipeline(cmd, stdout=devnull, stderr=devnull))
         return true
-    catch
+    catch e
+        _rethrow_missing_host_tool(e)
         return false
     end
 end
 
 function git_pull_local_project!(project::AbstractString)::Bool
+    cmd = _git_cmd(["-C", String(project), "pull"])
     try
-        run(pipeline(`git -C $(String(project)) pull`, stdout=devnull, stderr=devnull))
+        run(pipeline(cmd, stdout=devnull, stderr=devnull))
         return true
-    catch
+    catch e
+        _rethrow_missing_host_tool(e)
         return false
     end
 end
@@ -26,17 +30,19 @@ end
 function git_pull_remote_host!(host::AbstractString, remote_path::AbstractString)::Bool
     cmd = _git_pull_remote_inner(remote_path)
     try
-        run(pipeline(Cmd(["ssh", ssh_opts()..., String(host), cmd]), stdout=devnull, stderr=devnull))
+        run(pipeline(_ssh_cmd([ssh_opts()..., String(host), cmd]), stdout=devnull, stderr=devnull))
         return true
-    catch
+    catch e
+        _rethrow_missing_host_tool(e)
         return false
     end
 end
 
 function _git_remote_url(project::AbstractString)::String
     try
-        return strip(read(pipeline(`git -C $(String(project)) remote get-url origin`; stderr=devnull), String))
-    catch
+        return strip(read(pipeline(_git_cmd(["-C", String(project), "remote", "get-url", "origin"]); stderr=devnull), String))
+    catch e
+        _rethrow_missing_host_tool(e)
         return "<repo_url>"
     end
 end
