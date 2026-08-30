@@ -355,9 +355,8 @@ function build_favicon(_logo_svg::AbstractString="")
     red_y = round(-6 + s * (-6.2); digits=4)
     side_x = round(5.369 * s; digits=4)
     side_y = round(-6 + s * 3.1; digits=4)
-    # Same `#master-body` geometry. Stroke is heavier than logo-static 3.5 so a
-    # 16px tab still reads as a machine, not three Julia dots.
-    sw = 8
+    # Same `#master-body` geometry and stroke as logo-static.
+    sw = 3.5
     ox, oy = 34.0, 34.5
     fmt(x) = string(round(x; digits=4))
     return """<?xml version="1.0" encoding="UTF-8"?>
