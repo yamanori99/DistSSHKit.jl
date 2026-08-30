@@ -13,14 +13,8 @@ makedocs(;
         edit_link="main",
         assets=[
             "assets/custom.css",
-            # Firefox uses the last rel=icon. Keep ICO off this list (file still
-            # at ./favicon.ico). PNG last so Firefox does not need SVG/ICO.
-            Documenter.asset(
-                "assets/favicon.svg";
-                class=:ico,
-                islocal=true,
-                attributes=Dict(:type => "image/svg+xml"),
-            ),
+            # Firefox prefers SVG; a failing SVG falls back to sidebar logo.svg.
+            # Tab mark is PNG-only in <head>. SVG/ICO files stay on disk.
             Documenter.asset(
                 "assets/favicon.png";
                 class=:ico,
