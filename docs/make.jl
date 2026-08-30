@@ -13,6 +13,8 @@ makedocs(;
         edit_link="main",
         assets=[
             "assets/custom.css",
+            # Firefox uses the last rel=icon. Keep ICO off this list (file still
+            # at ./favicon.ico). PNG last so Firefox does not need SVG/ICO.
             Documenter.asset(
                 "assets/favicon.svg";
                 class=:ico,
@@ -25,7 +27,6 @@ makedocs(;
                 islocal=true,
                 attributes=Dict(:type => "image/png", :sizes => "32x32"),
             ),
-            "assets/favicon.ico",
             # Search Console (URL-prefix: https://yamanori99.github.io/DistSSHKit.jl/).
             RawHTMLHeadContent(
                 """<meta name="google-site-verification" content="frfWUqaHuYYDmZzSSnBhfguS0Y5YC6zssij5qAot6ww" />""",
@@ -68,7 +69,7 @@ function rewrite_favicon_types!(build)
             html = read(path, String)
             html2 = replace(
                 html,
-                rx_svg => s"""<link href="\1" rel="icon" type="image/svg+xml" sizes="any"/>""",
+                rx_svg => s"""<link href="\1" rel="icon" type="image/svg+xml"/>""",
             )
             html2 = replace(
                 html2,
