@@ -65,6 +65,7 @@ backward-compatible alias, but passing both `output_dir` and `collect_spec::Stri
 is an error. `collect_spec=false` skips collect and is orthogonal to `output_dir`.
 
 Collect after remote slots: **slot-overwrite** (rsync whole slot dir).
+A failed slot pull is a failed slot, not an empty directory.
 
 External watchers: `begin` / `item` always go to `kit.progress` (even `-q`).
 The kit log still gets those lines only with `--progress` or

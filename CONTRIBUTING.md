@@ -10,7 +10,7 @@ Internals of this repo.
 Happy-path bugs (ordinary `~/` roots, default `drive` / `go` / `setup`);
 CI / Julia slots / Aqua / JETLS drift. Enhancement Issue first, then a PR.
 
-**Does not land here:** new job shapes, a scheduler, or `schedule` inside Kit.
+**Does not land here:** new job shapes, a job queue, or `schedule` inside Kit.
 Windows and GPU-package help stay on the horizon
 ([Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26)).
 
@@ -183,7 +183,7 @@ rule above unless a General user needs them sooner.
 1. Run **E2E weekly** on the **merge commit** (`gh workflow run "E2E weekly" --ref <sha>`). Do not register until Linux, macOS Intel, and WSL are green. The PR already ran Linux E2E; this is the other controllers plus a fresh image. A same-day green run on that SHA is enough; do not wait for the Sunday cron if you dispatched.
 2. `@JuliaRegistrator register` on the **merge commit** (not the PR body).
 3. Paste the NEWS section under `Release notes:`.
-4. TagBot tags once General has the release. Date NEWS `YYYY-MM-DD` UTC on the tag day.
+4. TagBot tags once General has the release.
 
 TagBot uses SSH deploy key secret `DOCUMENTER_KEY` (write deploy key on this repo) so the `vX.Y.Z` tag starts Docs and `stable` updates. Docs still deploy with `GITHUB_TOKEN`. Do not add a `+doc1` tag unless that path failed. Manual rebuild: `gh workflow run Docs --ref vX.Y.Z`.
 
@@ -202,7 +202,7 @@ Helpers: `src/DistSSHKit/explain.jl`. Surface is `hint_surface(session)`. Keep d
 
 **Issues** (Bug / Enhancement forms only): `bug` or `enhancement`. The area dropdown is triage; add `area:*` if useful. Usage questions are Discussions. Confirmed bugs are Issues. `breaking` and `cut` are PR labels. Direction: [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26). Security: [SECURITY.md](SECURITY.md).
 
-Maintainer memo: [#50](https://github.com/yamanori99/DistSSHKit.jl/issues/50) is closed (`not_planned` in-kit). The hall is [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl) (private for now). Do not add `schedule` here.
+Maintainer memo: [#50](https://github.com/yamanori99/DistSSHKit.jl/issues/50) is closed (`not_planned` in-kit). The hall is [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl) (General). Do not add `schedule` here.
 
 **Discussions**: Q&A, Ideas (promote to an Enhancement Issue when tracking), General, Show and tell, Polls, Announcements. Registry cuts do not need an Announcements post; the GitHub Release is enough.
 
