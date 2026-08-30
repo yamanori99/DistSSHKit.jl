@@ -98,6 +98,8 @@ const SOCIAL_PNG_W, SOCIAL_PNG_H = SOCIAL_W, SOCIAL_H
 const FAVICON = "favicon.ico"
 const FAVICON_SVG = "favicon.svg"
 const FAVICON_PX = (32, 48)
+# Parent only (`translate(120,184)` + `#juliadot-lg`). Same R=6.2 / r=0.75R as the mark.
+const FAVICON_VIEWBOX = "84 148 72 72"
 
 die(msg) = (println(stderr, "error: ", msg); exit(1))
 
@@ -222,8 +224,8 @@ end
 function build_favicon(logo_svg::AbstractString)
     inner = svg_inner(logo_svg)
     return """<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
-  <!-- Tab icon: same geometry as logo/logo-static.svg. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="$(FAVICON_VIEWBOX)" width="72" height="72">
+  <!-- Parent machine from logo-static (`#master-body` + `#juliadot-lg`). -->
 $(inner)
 </svg>
 """
