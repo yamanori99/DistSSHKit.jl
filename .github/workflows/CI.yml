@@ -9,10 +9,11 @@ on:
     types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
 
-# Cancel redundant runs on the same branch/PR.
+# Cancel redundant runs on the same branch/PR. A labeled run skips most jobs
+# (except cut -> test-registry-tree); do not cancel an in-flight synchronize.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') && github.event.action != 'labeled' }}
 
 permissions:
   contents: read
