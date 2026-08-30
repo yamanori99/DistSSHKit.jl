@@ -468,13 +468,13 @@ function _go_run_remote_slot!(
     return DriveResult(code == 0, code; output_dir=slot_dir)
 end
 
-"""Prefer `go.exitcode` when present. If scp failed and the file is missing, do not trust SSH 0."""
+"""Prefer `go.exitcode` when present. If scp failed, ignore a local file (may be stale)."""
 function _go_slot_exitcode(
     ssh_code::Int,
     ec_path::AbstractString;
     scp_failed::Bool,
 )::Int
-    if isfile(ec_path)
+    if !scp_failed && isfile(ec_path)
         parsed = tryparse(Int, strip(read(ec_path, String)))
         parsed !== nothing && return parsed
     end

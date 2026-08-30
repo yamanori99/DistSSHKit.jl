@@ -88,8 +88,10 @@ using Dates
             @test DistSSHKit._go_slot_exitcode(7, missing; scp_failed=false) == 7
             ec = joinpath(d, "go.exitcode")
             write(ec, "3\n")
-            @test DistSSHKit._go_slot_exitcode(ssh0, ec; scp_failed=true) == 3
+            @test DistSSHKit._go_slot_exitcode(ssh0, ec; scp_failed=true) == 1
             @test DistSSHKit._go_slot_exitcode(ssh0, ec; scp_failed=false) == 3
+            write(ec, "0\n")
+            @test DistSSHKit._go_slot_exitcode(ssh0, ec; scp_failed=true) == 1
         end
     end
 
