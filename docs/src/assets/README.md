@@ -19,7 +19,7 @@ assets/
   logo.svg          → logo/logo-dynamic.svg          (Documenter)
   logo-dark.svg     → logo/logo-dark-dynamic.svg     (Documenter)
   logo/             sources + logo rasters
-  favicon.svg / favicon.ico   tab icon (parent from logo-static; `#juliadot-lg`)
+  favicon.svg / favicon.ico   tab icon (parent; `#juliadot-lg` ×1.15)
   social/           social-preview SVGs + rasters
   diagram/          topology.svg (hand-edit) + dark SVG + PNG (bake)
 ```

@@ -98,8 +98,8 @@ const SOCIAL_PNG_W, SOCIAL_PNG_H = SOCIAL_W, SOCIAL_H
 const FAVICON = "favicon.ico"
 const FAVICON_SVG = "favicon.svg"
 const FAVICON_PX = (32, 48)
-# Parent only (`translate(120,184)` + `#juliadot-lg`). Same R=6.2 / r=0.75R as the mark.
-const FAVICON_VIEWBOX = "84 148 72 72"
+# Parent-only tab mark. Dots are `#juliadot-lg` scaled up a little about (0,-6).
+const FAVICON_DOT_SCALE = 1.15
 
 die(msg) = (println(stderr, "error: ", msg); exit(1))
 
@@ -221,12 +221,29 @@ function svg_inner(svg::AbstractString)
     return m.captures[1]
 end
 
+function svg_group(svg::AbstractString, id::AbstractString)
+    m = match(Regex("<g id=\"$(id)\">[\\s\\S]*?</g>"), svg)
+    m === nothing && die("missing #$id")
+    return String(m.match)
+end
+
 function build_favicon(logo_svg::AbstractString)
-    inner = svg_inner(logo_svg)
+    st = match(r"<style>[\s\S]*?</style>", logo_svg)
+    st === nothing && die("missing <style> in logo-static")
+    master = svg_group(logo_svg, "master-body")
+    dots = svg_group(logo_svg, "juliadot-lg")
     return """<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="$(FAVICON_VIEWBOX)" width="72" height="72">
-  <!-- Parent machine from logo-static (`#master-body` + `#juliadot-lg`). -->
-$(inner)
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-36 -24 72 72" width="72" height="72">
+  <!-- Parent from logo-static. `#juliadot-lg` at y=-6, scaled $(FAVICON_DOT_SCALE). -->
+  <defs>
+$(st.match)
+    $master
+    $dots
+  </defs>
+  <use href="#master-body"/>
+  <g transform="translate(0,-6) scale($(FAVICON_DOT_SCALE))">
+    <use href="#juliadot-lg"/>
+  </g>
 </svg>
 """
 end
