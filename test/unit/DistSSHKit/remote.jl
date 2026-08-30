@@ -245,6 +245,32 @@ using Test
                     sprint(showerror, e)
                 end,
             )
+            @test occursin("OpenSSH", sprint(showerror, try
+                DistSSHKit._host_tool_exe("ssh")
+                error("expected")
+            catch e
+                e
+            end))
+            @test occursin("rsync not found", sprint(showerror, try
+                DistSSHKit._host_tool_exe("rsync")
+                error("expected")
+            catch e
+                e
+            end))
+            @test occursin("git not found", sprint(showerror, try
+                DistSSHKit._host_tool_exe("git")
+                error("expected")
+            catch e
+                e
+            end))
+            @test_throws ArgumentError DistSSHKit._remote_ssh_ok("no-such-host.invalid")
+            @test_throws ArgumentError DistSSHKit.git_pull_remote_host!("x", ".")
+            @test occursin("scp not found", sprint(showerror, try
+                DistSSHKit._host_tool_exe("scp")
+                error("expected")
+            catch e
+                e
+            end))
         end
         if Sys.which("ssh") !== nothing
             let p = redirect_stderr(devnull) do
@@ -253,8 +279,7 @@ using Test
                 @test p isa Base.Process
                 @test p.exitcode != 0
             end
+            @test !DistSSHKit._remote_ssh_ok("no-such-host.invalid")
         end
     end
-
-    @test !DistSSHKit._remote_ssh_ok("no-such-host.invalid")
 end

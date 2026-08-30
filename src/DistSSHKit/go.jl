@@ -200,7 +200,7 @@ end
 function _go_assert_remote_ready!(host::AbstractString, remote_root::AbstractString)
     rr = _remote_shell_path_word(remote_root)
     inner = "test -d $rr && test -f $rr/Project.toml"
-    cmd = Cmd(vcat(["ssh"], collect(ssh_opts()), [String(host), inner]))
+    cmd = _ssh_cmd([ssh_opts()..., String(host), inner])
     out = IOBuffer()
     err = IOBuffer()
     proc = run(pipeline(ignorestatus(cmd), stdout=out, stderr=err), wait=true)
@@ -435,7 +435,7 @@ function _go_run_remote_slot!(
     rel = _go_script_relpath(project, script)
     julia_bin = _go_resolve_julia(julia; host=String(host))
     inner = _go_remote_slot_shell_inner(remote_root, slot_rel, rel, script_args, julia_bin)
-    cmd = ignorestatus(Cmd(vcat(["ssh"], collect(ssh_opts()), [String(host), inner])))
+    cmd = ignorestatus(_ssh_cmd([ssh_opts()..., String(host), inner]))
     # Capture streams ourselves: piping to the parent's stdout can drop ssh exit codes.
     buf = IOBuffer()
     proc = run(pipeline(cmd; stdout=buf, stderr=buf); wait=true)
@@ -453,7 +453,7 @@ function _go_run_remote_slot!(
         remote_ec = string(rstrip(remote_root, '/'), "/", slot_rel, "/go.exitcode")
         run(
             pipeline(
-                Cmd(["scp", ssh_opts()..., string(host, ":", remote_ec), ec_path]);
+                _scp_cmd([ssh_opts()..., string(host, ":", remote_ec), ec_path]);
                 stdout=devnull,
                 stderr=devnull,
             );
@@ -463,7 +463,8 @@ function _go_run_remote_slot!(
             parsed = tryparse(Int, strip(read(ec_path, String)))
             parsed !== nothing && (code = parsed)
         end
-    catch
+    catch e
+        _rethrow_missing_host_tool(e)
     end
     return DriveResult(code == 0, code; output_dir=slot_dir)
 end
@@ -493,7 +494,8 @@ function _go_pull_slot!(
     try
         proc = run(pipeline(cmd; stdout=devnull, stderr=devnull); wait=true)
         return proc.exitcode == 0
-    catch
+    catch e
+        _rethrow_missing_host_tool(e)
         return false
     end
 end

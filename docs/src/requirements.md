@@ -90,8 +90,11 @@ kit (`ConnectTimeout` here is `5`; the kit uses `10` plus keepalives).
 
 - `julia --version`
 - `uname -s` — Darwin or Linux
+- `which ssh` — remotes
 - `which rsync` — remotes / collect
 - `which git` — git deploy path only
+
+`setup --check` prints the same three on the controller (`ssh` missing fails the check; `rsync` / `git` warn). Spawn uses those messages instead of a raw `ENOENT`.
 
 ### Each SSH host
 

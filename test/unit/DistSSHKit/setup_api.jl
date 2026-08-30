@@ -214,19 +214,23 @@ using Test
             end
         end
 
-        _with_tempdir() do proj
-            session = DistSSHKit.KitSession(
-                project=proj,
-                workers=["child:root@192.0.2.1"],
-                remote="~/App.jl",
-                yes=true,
-                quiet=true,
-            )
-            clean = DistSSHKit.setup!(session, :cleanup)
-            @test clean isa DistSSHKit.SyncResult
-            @test !clean.cancelled
-            @test length(clean.hosts) == 1
-            @test !clean.hosts[1].ok
+        _with_fake_remotes() do _
+            _with_tempdir() do proj
+                session = DistSSHKit.KitSession(
+                    project=proj,
+                    workers=["child:host1"],
+                    remote="~/App.jl",
+                    yes=true,
+                    quiet=true,
+                )
+                withenv("DISTSSHKIT_TEST_SSH_FAIL" => "1") do
+                    clean = DistSSHKit.setup!(session, :cleanup)
+                    @test clean isa DistSSHKit.SyncResult
+                    @test !clean.cancelled
+                    @test length(clean.hosts) == 1
+                    @test !clean.hosts[1].ok
+                end
+            end
         end
     end
 end

@@ -22,6 +22,12 @@ using Test
         touch(joinpath(tree, "keepme.txt"))
     end
 
+    @testset "rsync -e quotes ssh" begin
+        Sys.which("ssh") === nothing && return
+        t = DistSSHKit._host_sync_rsync_transport()
+        @test startswith(t, Base.shell_escape(DistSSHKit._ssh_exe()))
+    end
+
     @testset "remote_dir / ensure" begin
         _with_fake_remotes() do _
             host = "user@host.test"

@@ -84,6 +84,21 @@ using Test
         @test occursin("driver=", DistSSHKit.explain_pipeline_driver_missing(; surface=:api))
     end
 
+    @testset "host tools" begin
+        @test_throws ArgumentError DistSSHKit._normalize_host_tool("foo")
+        @test DistSSHKit._normalize_host_tool("scp") == "scp"
+        ssh = DistSSHKit.explain_host_tool_missing("ssh")
+        @test occursin("ssh not found in PATH", ssh)
+        @test occursin("OpenSSH", ssh)
+        @test occursin("Requirements", ssh)
+        @test DistSSHKit.explain_host_tool_missing("ssh"; surface=:cli) ==
+              DistSSHKit.explain_host_tool_missing("ssh"; surface=:api)
+        @test occursin("scp not found", DistSSHKit.explain_host_tool_missing("scp"))
+        @test occursin("OpenSSH", DistSSHKit.explain_host_tool_missing("scp"))
+        @test occursin("rsync", DistSSHKit.explain_host_tool_missing("rsync"))
+        @test occursin("clone", DistSSHKit.explain_host_tool_missing("git"))
+    end
+
     @testset "session wiring" begin
         _with_tempdir() do tmp
             session = DistSSHKit.KitSession(project=tmp, workers=String[], quiet=true)

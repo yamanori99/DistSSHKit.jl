@@ -16,7 +16,9 @@ using .DistSSHKit:
     rss_bytes_to_worker_gb,
     size_worker_count,
     write_both,
-    writeln_both
+    writeln_both,
+    _host_tool_present,
+    explain_host_tool_missing
 
 # Runner-only preflight checks (git parity, memory capacity).
 
@@ -130,8 +132,18 @@ function check_git_hashes(hosts::Vector{String}, proj_dir::String)
     local_hash = get_local_git_hash(proj_dir)
     if local_hash === nothing
         write_both("  ")
-        print_progress_warn("⚠ Could not get local git hash (not a git repo?)")
-        writeln_both("")
+        if !_host_tool_present("git")
+            missing = explain_host_tool_missing("git")
+            head, rest... = split(missing, '\n'; keepempty=false)
+            print_progress_warn("⚠ $head")
+            writeln_both("")
+            for line in rest
+                writeln_both("  $line")
+            end
+        else
+            print_progress_warn("⚠ Could not get local git hash (not a git repo?)")
+            writeln_both("")
+        end
         if !isempty(hosts)
             writeln_both("  Remote git parity cannot be verified without a local git commit.")
             writeln_both("")
