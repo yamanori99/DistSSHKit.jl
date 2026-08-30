@@ -355,16 +355,20 @@ function build_favicon(_logo_svg::AbstractString="")
     red_y = round(-6 + s * (-6.2); digits=4)
     side_x = round(5.369 * s; digits=4)
     side_y = round(-6 + s * 3.1; digits=4)
+    # Same `#master-body` geometry. Stroke is heavier than logo-static 3.5 so a
+    # 16px tab still reads as a machine, not three Julia dots.
+    sw = 8
     ox, oy = 34.0, 34.5
+    fmt(x) = string(round(x; digits=4))
     return """<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 68 68" width="68" height="68">
   <rect width="68" height="68" fill="#ffffff"/>
-  <rect x="$(-32 + ox)" y="$(-25 + oy)" width="64" height="36" rx="4" fill="none" stroke="#1a1d21" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <line x1="$(ox)" y1="$(12 + oy)" x2="$(ox)" y2="$(22 + oy)" fill="none" stroke="#1a1d21" stroke-width="3.5" stroke-linecap="round"/>
-  <line x1="$(-21 + ox)" y1="$(24 + oy)" x2="$(21 + ox)" y2="$(24 + oy)" fill="none" stroke="#1a1d21" stroke-width="3.5" stroke-linecap="round"/>
-  <circle cx="$(ox)" cy="$(red_y + oy)" r="$r" fill="#cb3c33"/>
-  <circle cx="$(-side_x + ox)" cy="$(side_y + oy)" r="$r" fill="#389826"/>
-  <circle cx="$(side_x + ox)" cy="$(side_y + oy)" r="$r" fill="#9558b2"/>
+  <rect x="$(fmt(-32 + ox))" y="$(fmt(-25 + oy))" width="64" height="36" rx="4" fill="none" stroke="#1a1d21" stroke-width="$(sw)" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="$(fmt(ox))" y1="$(fmt(12 + oy))" x2="$(fmt(ox))" y2="$(fmt(22 + oy))" fill="none" stroke="#1a1d21" stroke-width="$(sw)" stroke-linecap="round"/>
+  <line x1="$(fmt(-21 + ox))" y1="$(fmt(24 + oy))" x2="$(fmt(21 + ox))" y2="$(fmt(24 + oy))" fill="none" stroke="#1a1d21" stroke-width="$(sw)" stroke-linecap="round"/>
+  <circle cx="$(fmt(ox))" cy="$(fmt(red_y + oy))" r="$r" fill="#cb3c33"/>
+  <circle cx="$(fmt(-side_x + ox))" cy="$(fmt(side_y + oy))" r="$r" fill="#389826"/>
+  <circle cx="$(fmt(side_x + ox))" cy="$(fmt(side_y + oy))" r="$r" fill="#9558b2"/>
 </svg>
 """
 end
@@ -807,7 +811,8 @@ end
 function bake_favicon!(arts)
     ico_path = joinpath(ROOT, FAVICON)
     svg_rel = FAVICON_SVG
-    isfile(joinpath(ROOT, svg_rel)) || writefile(svg_rel, build_favicon(arts.logo_static))
+    writefile(svg_rel, build_favicon(arts.logo_static))
+    ensure_docroot_link!(FAVICON_SVG)
     html_body = strip_xml_decl(readfile(svg_rel))
     d = mktempdir(ROOT; prefix=".favicon-")
     try

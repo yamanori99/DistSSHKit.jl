@@ -1,7 +1,10 @@
 using Documenter
 using DistSSHKit
+using Base64
 
 DocMeta.setdocmeta!(DistSSHKit, :DocTestSetup, :(using DistSSHKit); recursive=true)
+
+const FAVICON_PNG_B64 = base64encode(read(joinpath(@__DIR__, "src", "assets", "favicon.png")))
 
 makedocs(;
     modules=[DistSSHKit],
@@ -13,19 +16,10 @@ makedocs(;
         edit_link="main",
         assets=[
             "assets/custom.css",
-            # Same as Queue: Firefox uses the last rel=icon. ICO in <head> became
-            # the Firefox fox. PNG last; ICO stays on disk at ./favicon.ico.
-            Documenter.asset(
-                "assets/favicon.svg";
-                class=:ico,
-                islocal=true,
-                attributes=Dict(:type => "image/svg+xml"),
-            ),
-            Documenter.asset(
-                "assets/favicon.png";
-                class=:ico,
-                islocal=true,
-                attributes=Dict(:type => "image/png", :sizes => "32x32"),
+            # Data URI: Firefox was dropping file icons (wrong type= / ICO) and
+            # using sidebar logo.svg, which at 16px is just the Julia dots.
+            RawHTMLHeadContent(
+                """<link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,$(FAVICON_PNG_B64)"/>""",
             ),
             # Search Console (URL-prefix: https://yamanori99.github.io/DistSSHKit.jl/).
             RawHTMLHeadContent(
