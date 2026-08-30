@@ -674,7 +674,11 @@ function bake_favicon!(arts)
             push!(pngs, px => src)
         end
         write_png_ico!(ico_path, pngs)
+        png32 = joinpath(ROOT, "favicon.png")
+        src32 = first(p for p in pngs if p[1] == 32)
+        cp(src32[2], png32; force=true)
         println("wrote $FAVICON ($(filesize(ico_path)) bytes)")
+        println("wrote favicon.png ($(filesize(png32)) bytes)")
         return true
     finally
         rm(d; recursive=true, force=true)
