@@ -288,22 +288,24 @@ function check_prerequisites(
             end
         end
 
-        remote_hash = get_remote_git_hash(host, remote_path; short=12)
-        if remote_hash === nothing
-            warn("Could not get remote git commit")
-            needs_sync = true
-        elseif local_hash !== nothing && remote_hash == local_hash
-            ok("Git commit matches ($remote_hash)")
-        else
-            needs_sync = true
-            if check_code_sync
-                fail("Git commit differs (local: $local_hash, remote: $remote_hash)")
-                kit_println("    Fix: --pull or --sync to update remote")
-                all_ok = false
-                host_ok[] = false
+        if local_tools.git
+            remote_hash = get_remote_git_hash(host, remote_path; short=12)
+            if remote_hash === nothing
+                warn("Could not get remote git commit")
+                needs_sync = true
+            elseif local_hash !== nothing && remote_hash == local_hash
+                ok("Git commit matches ($remote_hash)")
             else
-                warn("Git commit differs (local: $local_hash, remote: $remote_hash)")
-                kit_println("    Will be synced by this operation")
+                needs_sync = true
+                if check_code_sync
+                    fail("Git commit differs (local: $local_hash, remote: $remote_hash)")
+                    kit_println("    Fix: --pull or --sync to update remote")
+                    all_ok = false
+                    host_ok[] = false
+                else
+                    warn("Git commit differs (local: $local_hash, remote: $remote_hash)")
+                    kit_println("    Will be synced by this operation")
+                end
             end
         end
 
