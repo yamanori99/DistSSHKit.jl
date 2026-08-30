@@ -137,6 +137,21 @@ using Test
         write(joinpath(d, "f.txt"), "hi2")
         @test !DistSSHKit.local_git_clean(d)
 
+        run(Cmd(["git", "-C", d, "add", "f.txt"]))
+        run(Cmd(["git", "-C", d, "commit", "-q", "-m", "dirty"]))
+        @test DistSSHKit.local_git_clean(d)
+        idx = joinpath(d, ".git", "index")
+        if isfile(idx)
+            backup = read(idx)
+            write(idx, "not-a-git-index")
+            try
+                @test DistSSHKit.get_local_git_hash(d) isa String
+                @test !DistSSHKit.local_git_clean(d)
+            finally
+                write(idx, backup)
+            end
+        end
+
         full = DistSSHKit.get_local_git_hash(d)
         @test full isa String
         full isa String || error("expected full git hash")
@@ -210,6 +225,32 @@ using Test
             @test DistSSHKit.detect_julia_path("cache-hit.host") == "/opt/julia"
         finally
             empty!(DistSSHKit._DETECT_JULIA_PATH_CACHE)
+        end
+    end
+
+    @testset "detect_julia_path skips Linux candidates when uname fails" begin
+        _with_tempdir() do state_dir
+            logp = joinpath(state_dir, "ssh.log")
+            env = merge(
+                _fake_setup_remote_env(state_dir),
+                Dict(
+                    "DISTSSHKIT_TEST_UNAME_FAIL" => "1",
+                    "DISTSSHKIT_TEST_JULIA_WHICH" => "/opt/custom/julia",
+                    "DISTSSHKIT_TEST_SSH_LOG" => logp,
+                ),
+            )
+            empty!(DistSSHKit._DETECT_JULIA_PATH_CACHE)
+            try
+                withenv(env...) do
+                    @test DistSSHKit.detect_julia_path("host1") == "/opt/custom/julia"
+                end
+                body = isfile(logp) ? read(logp, String) : ""
+                @test occursin("uname -s", body)
+                @test occursin("command -v julia", body)
+                @test !occursin("/usr/bin/julia", body)
+            finally
+                empty!(DistSSHKit._DETECT_JULIA_PATH_CACHE)
+            end
         end
     end
 

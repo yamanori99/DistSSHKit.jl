@@ -79,6 +79,22 @@ using Dates
         end
     end
 
+    @testset "_go_slot_exitcode" begin
+        _with_tempdir() do d
+            ssh0 = 0
+            missing = joinpath(d, "no-such")
+            @test DistSSHKit._go_slot_exitcode(ssh0, missing; scp_failed=false) == 0
+            @test DistSSHKit._go_slot_exitcode(ssh0, missing; scp_failed=true) == 1
+            @test DistSSHKit._go_slot_exitcode(7, missing; scp_failed=false) == 7
+            ec = joinpath(d, "go.exitcode")
+            write(ec, "3\n")
+            @test DistSSHKit._go_slot_exitcode(ssh0, ec; scp_failed=true) == 1
+            @test DistSSHKit._go_slot_exitcode(ssh0, ec; scp_failed=false) == 3
+            write(ec, "0\n")
+            @test DistSSHKit._go_slot_exitcode(ssh0, ec; scp_failed=true) == 1
+        end
+    end
+
     @testset "output_dir + collect_spec::String errors" begin
         _with_tempdir() do proj
             script = joinpath(proj, "job.jl")

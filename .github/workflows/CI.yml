@@ -5,15 +5,13 @@ on:
     branches:
       - main
   pull_request:
-    # labeled: cut added after open must start test-registry-tree (default types omit it).
-    types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
 
-# Cancel redundant runs on the same branch/PR. A labeled run skips most jobs
-# (except cut -> test-registry-tree); do not cancel an in-flight synchronize.
+# Cancel redundant runs on the same branch/PR.
+# `cut` after open is `.github/workflows/ci-cut.yml` (labeled is not on this workflow).
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') && github.event.action != 'labeled' }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
 permissions:
   contents: read
@@ -29,7 +27,6 @@ jobs:
   # poison Pkg.Registry.update on 1.13 if restored corrupt.
   test-min:
     name: Pkg.test - min - ubuntu-latest
-    if: github.event.action != 'labeled'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -49,7 +46,6 @@ jobs:
 
   test-max:
     name: Pkg.test - max - ubuntu-latest
-    if: github.event.action != 'labeled'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -76,7 +72,6 @@ jobs:
 
   test-tip:
     name: Pkg.test - tip - ubuntu-latest
-    if: github.event.action != 'labeled'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     continue-on-error: true
@@ -98,12 +93,6 @@ jobs:
   # Not a Julia slot. Not required to merge. Catches checkout-only Pkg.test assumptions.
   test-registry-tree:
     name: Pkg.test - registry tree - ubuntu-latest
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'pull_request' && github.event.action != 'labeled') ||
-      (github.event_name == 'pull_request' && github.event.action == 'labeled'
-        && contains(github.event.pull_request.labels.*.name, 'cut'))
     runs-on: ubuntu-latest
     timeout-minutes: 20
     continue-on-error: true

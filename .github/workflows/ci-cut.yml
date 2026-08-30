@@ -1,0 +1,69 @@
+# `cut` added after open. Default pull_request types omit `labeled`; keep it
+# off Test so area/type labels cannot skip or cancel Pkg.test.
+name: Test (cut)
+
+on:
+  pull_request:
+    types: [labeled]
+
+concurrency:
+  group: ci-cut-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: write # julia-actions/cache delete-old-caches
+
+jobs:
+  test-registry-tree:
+    # Unique name when skipped so a `bug` label does not overwrite Test's check.
+    if: github.event.label.name == 'cut'
+    name: ${{ github.event.label.name == 'cut' && 'Pkg.test - registry tree - ubuntu-latest' || 'cut label skip' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/ci-heavy
+        id: detect
+      - uses: ./.github/actions/julia-slot
+        if: steps.detect.outputs.heavy == 'true'
+        with:
+          slot: tip
+      - uses: julia-actions/cache@v3
+        if: steps.detect.outputs.heavy == 'true'
+        with:
+          cache-scratchspaces: false
+      - name: Pkg.test on a Registry-style tree
+        if: steps.detect.outputs.heavy == 'true'
+        run: |
+          set -euo pipefail
+          sudo DEBIAN_FRONTEND=noninteractive apt-get remove -y openssh-client
+          if command -v ssh >/dev/null; then
+            echo "ssh still on PATH" >&2
+            exit 1
+          fi
+          command -v git >/dev/null
+          WORKDIR="$(mktemp -d "${HOME}/dsk.XXXXXX")"
+          BARE="$(mktemp -d "${HOME}/dsk.git.XXXXXX")"
+          rsync -a \
+            --exclude .git \
+            --exclude Manifest.toml \
+            --exclude docs/Manifest.toml \
+            --exclude docs/build \
+            --exclude test/artifacts \
+            ./ "${WORKDIR}/"
+          git init --bare -q "${BARE}"
+          git --git-dir="${BARE}" --work-tree="${WORKDIR}" add -A
+          git --git-dir="${BARE}" --work-tree="${WORKDIR}" \
+            -c user.email=ci@distsshkit -c user.name=ci commit -q -m tree
+          julia -e '
+            using Pkg
+            Pkg.activate(temp=true)
+            Pkg.add(; url=ARGS[1])
+            using DistSSHKit
+            run(Cmd(["chmod", "-R", "a-w", pkgdir(DistSSHKit)]))
+            Pkg.test("DistSSHKit")
+          ' "file://${BARE}"

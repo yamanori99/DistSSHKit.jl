@@ -446,9 +446,10 @@ function _go_run_remote_slot!(
             write(stdout, out)
         end
     end
-    code = proc.exitcode isa Integer ? Int(proc.exitcode) : 1
+    ssh_code = proc.exitcode isa Integer ? Int(proc.exitcode) : 1
     # Prefer the remote-written exit file when ssh status is unreliable.
     ec_path = joinpath(slot_dir, "go.exitcode")
+    scp_failed = false
     try
         remote_ec = string(rstrip(remote_root, '/'), "/", slot_rel, "/go.exitcode")
         run(
@@ -459,14 +460,25 @@ function _go_run_remote_slot!(
             );
             wait=true,
         )
-        if isfile(ec_path)
-            parsed = tryparse(Int, strip(read(ec_path, String)))
-            parsed !== nothing && (code = parsed)
-        end
     catch e
         _rethrow_missing_host_tool(e)
+        scp_failed = true
     end
+    code = _go_slot_exitcode(ssh_code, ec_path; scp_failed)
     return DriveResult(code == 0, code; output_dir=slot_dir)
+end
+
+"""Prefer `go.exitcode` when present. If scp failed, ignore a local file (may be stale)."""
+function _go_slot_exitcode(
+    ssh_code::Int,
+    ec_path::AbstractString;
+    scp_failed::Bool,
+)::Int
+    if !scp_failed && isfile(ec_path)
+        parsed = tryparse(Int, strip(read(ec_path, String)))
+        parsed !== nothing && return parsed
+    end
+    return scp_failed ? 1 : ssh_code
 end
 
 """Rsync one remote slot directory into the local slot directory (slot-overwrite collect)."""
