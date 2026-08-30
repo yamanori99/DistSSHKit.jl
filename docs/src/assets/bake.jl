@@ -11,7 +11,7 @@ Derived:
   social/social-preview-*.svg|.png|.gif
   diagram/topology-dark.svg
   diagram/topology.png
-  favicon.ico (Documenter tab icon; from logo-static)
+  favicon.svg / favicon.ico (Documenter tab icon; tight crop of logo-static)
 
 README.md, README.ja.md, and docs intro all use the English topology
 (`parent` / `child 1…n`). Do not bake a Japanese-labelled copy.
@@ -93,8 +93,12 @@ const PNG_SCALE = 2
 # often rejects 2×). Sharpness comes from PNG_SCALE, not a larger deliverable.
 const LOGO_PNG = 960
 const SOCIAL_PNG_W, SOCIAL_PNG_H = SOCIAL_W, SOCIAL_H
-# Browser tab icon (Documenter `assets/*.ico` → rel=icon). PNG-in-ICO, 16 and 32.
+# Browser tab icon (Documenter `assets/*.ico` → rel=icon). PNG-in-ICO.
+# Tight crop of the kit cluster (sidebar logo has more canvas padding).
 const FAVICON = "favicon.ico"
+const FAVICON_SVG = "favicon.svg"
+const FAVICON_VIEWBOX = "20 37 202 202"
+const FAVICON_PX = (32, 48)
 
 die(msg) = (println(stderr, "error: ", msg); exit(1))
 
@@ -214,6 +218,16 @@ function svg_inner(svg::AbstractString)
     m = match(r"^<svg[^>]*>([\s\S]*)</svg>\s*$", s)
     m === nothing && die("could not strip outer <svg>")
     return m.captures[1]
+end
+
+function build_favicon(logo_svg::AbstractString)
+    inner = svg_inner(logo_svg)
+    return """<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="$(FAVICON_VIEWBOX)" width="240" height="240">
+  <!-- Tab icon: tight crop of logo-static so the cluster fills the 16px chrome. -->
+$(inner)
+</svg>
+"""
 end
 
 function build_social(logo_svg::AbstractString, kind::AbstractString)
@@ -336,6 +350,7 @@ function bake_svgs!()
     topology = readfile(diagram_path("topology.svg"))
     topology_dark_svg = topology_dark(topology)
     writefile(diagram_path("topology-dark.svg"), topology_dark_svg)
+    writefile(FAVICON_SVG, build_favicon(logo_static))
 
     return (;
         logo,
@@ -636,30 +651,27 @@ end
 
 function bake_favicon!(arts)
     ico_path = joinpath(ROOT, FAVICON)
-    logo_svg = logo_path("logo-static.svg")
-    logo_html_body = replace(
-        strip_xml_decl(arts.logo_static),
-        "width=\"240\" height=\"240\"" => "width=\"32\" height=\"32\"",
-        count=1,
-    )
+    svg_rel = FAVICON_SVG
+    isfile(joinpath(ROOT, svg_rel)) || writefile(svg_rel, build_favicon(arts.logo_static))
+    html_body = strip_xml_decl(readfile(svg_rel))
     d = mktempdir(ROOT; prefix=".favicon-")
     try
-        src32 = joinpath(d, "32.png")
-        if !bake_static_png!(
-            logo_svg,
-            relpath(src32, ROOT),
-            logo_html_body;
-            w=32,
-            h=32,
-            scale=PNG_SCALE,
-            exact_size=true,
-        )
-            return false
-        end
-        pngs = Pair{Int, String}[32 => src32]
-        src16 = joinpath(d, "16.png")
-        if downscale_png!(src32, src16; w=16, h=16) && png_matches_size(src16, 16, 16)
-            pushfirst!(pngs, 16 => src16)
+        pngs = Pair{Int, String}[]
+        for px in FAVICON_PX
+            src = joinpath(d, "$(px).png")
+            body = replace(html_body, r"width=\"[^\"]+\" height=\"[^\"]+\"" => "width=\"$(px)\" height=\"$(px)\"", count=1)
+            if !bake_static_png!(
+                svg_rel,
+                relpath(src, ROOT),
+                body;
+                w=px,
+                h=px,
+                scale=PNG_SCALE,
+                exact_size=true,
+            )
+                return false
+            end
+            push!(pngs, px => src)
         end
         write_png_ico!(ico_path, pngs)
         println("wrote $FAVICON ($(filesize(ico_path)) bytes)")

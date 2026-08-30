@@ -19,7 +19,7 @@ assets/
   logo.svg          → logo/logo-dynamic.svg          (Documenter)
   logo-dark.svg     → logo/logo-dark-dynamic.svg     (Documenter)
   logo/             sources + logo rasters
-  favicon.ico       Documenter tab icon (bake --png from logo-static)
+  favicon.svg / favicon.ico   tab icon (tight crop of the kit cluster)
   social/           social-preview SVGs + rasters
   diagram/          topology.svg (hand-edit) + dark SVG + PNG (bake)
 ```
@@ -64,7 +64,7 @@ julia docs/src/assets/bake.jl --png --gif  # + GIF (Chromium + ffmpeg)
 | Mode | Needs |
 | --- | --- |
 | default | Julia |
-| `--png` | `rsvg-convert` preferred, else Chrome; social PNG is 1280×640 (GitHub OG), logo PNG is 960×960, topology PNG is 1120×472, `favicon.ico` is 16+32 PNG-in-ICO |
+| `--png` | `rsvg-convert` preferred, else Chrome; social PNG is 1280×640 (GitHub OG), logo PNG is 960×960, topology PNG is 1120×472, `favicon.ico` is 32+48 PNG-in-ICO from `favicon.svg` |
 | `--gif` | Chrome / Chromium (4 parallel workers) + `ffmpeg` |
 
 CI (`.github/workflows/assets-bake.yml`) re-runs the default bake when `docs/src/assets/` changes and fails if SVG/symlink outputs drift. It **warns** (does not fail) if PNG/GIF look older than their sources in git history. Bake `--png` / `--gif` locally before committing rasters.
