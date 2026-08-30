@@ -327,6 +327,21 @@ function ensure_symlink!(link_name::AbstractString, target_name::AbstractString)
     println("linked $link_name → $target_name")
 end
 
+"""`docs/src/favicon.*` so Firefox can fetch `./favicon.ico` next to `index.html`."""
+function ensure_docroot_link!(name::AbstractString)
+    srcroot = dirname(ROOT)
+    target = joinpath("assets", name)
+    isfile(joinpath(ROOT, name)) || return
+    link = joinpath(srcroot, name)
+    if islink(link) || isfile(link)
+        rm(link)
+    end
+    cd(srcroot) do
+        symlink(target, name)
+    end
+    println("linked ../$name → $target")
+end
+
 function bake_svgs!()
     mkpath(joinpath(ROOT, LOGO_DIR))
     mkpath(joinpath(ROOT, SOCIAL_DIR))
@@ -351,6 +366,7 @@ function bake_svgs!()
     topology_dark_svg = topology_dark(topology)
     writefile(diagram_path("topology-dark.svg"), topology_dark_svg)
     writefile(FAVICON_SVG, build_favicon(logo_static))
+    ensure_docroot_link!(FAVICON_SVG)
 
     return (;
         logo,
@@ -679,6 +695,8 @@ function bake_favicon!(arts)
         cp(src32[2], png32; force=true)
         println("wrote $FAVICON ($(filesize(ico_path)) bytes)")
         println("wrote favicon.png ($(filesize(png32)) bytes)")
+        ensure_docroot_link!(FAVICON)
+        ensure_docroot_link!("favicon.png")
         return true
     finally
         rm(d; recursive=true, force=true)
