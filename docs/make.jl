@@ -5,6 +5,7 @@ using Base64
 DocMeta.setdocmeta!(DistSSHKit, :DocTestSetup, :(using DistSSHKit); recursive=true)
 
 const FAVICON_PNG_B64 = base64encode(read(joinpath(@__DIR__, "src", "assets", "favicon.png")))
+const FAVICON_DARK_PNG_B64 = base64encode(read(joinpath(@__DIR__, "src", "assets", "favicon-dark.png")))
 
 makedocs(;
     modules=[DistSSHKit],
@@ -16,10 +17,10 @@ makedocs(;
         edit_link="main",
         assets=[
             "assets/custom.css",
-            # Data URI: Firefox was dropping file icons (wrong type= / ICO) and
-            # using sidebar logo.svg.
+            # PNG data URIs (nested pages + no Documenter type=). media= for
+            # Firefox; light SVG also has prefers-color-scheme for Chrome.
             RawHTMLHeadContent(
-                """<link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,$(FAVICON_PNG_B64)"/>""",
+                """<link rel="icon" type="image/png" sizes="32x32" media="(prefers-color-scheme: light)" href="data:image/png;base64,$(FAVICON_PNG_B64)"/><link rel="icon" type="image/png" sizes="32x32" media="(prefers-color-scheme: dark)" href="data:image/png;base64,$(FAVICON_DARK_PNG_B64)"/>""",
             ),
             # Search Console (URL-prefix: https://yamanori99.github.io/DistSSHKit.jl/).
             RawHTMLHeadContent(

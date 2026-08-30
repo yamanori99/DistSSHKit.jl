@@ -67,6 +67,7 @@ jobs:
           warn_if_stale logo/logo-static.png logo/logo-static.svg bake.jl
           warn_if_stale favicon.ico favicon.svg bake.jl
           warn_if_stale favicon.png favicon.svg bake.jl
+          warn_if_stale favicon-dark.png favicon-dark.svg bake.jl
           warn_if_stale social/social-preview-static.png logo/logo-static.svg bake.jl
           warn_if_stale diagram/topology.png diagram/topology.svg bake.jl
           warn_if_stale logo/logo-dynamic.gif logo/logo-dynamic.svg bake.jl
