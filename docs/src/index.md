@@ -8,9 +8,9 @@ native Windows).
 
 Even small labs and individuals often have a few high-performance machines or
 workstations. DistSSHKit helps you use that hardware as a small set of compute
-nodes. A lightweight scheduler is
-[DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl) on General
-(`pkg> add DistSSHQueue`).
+nodes. [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
+(General; `pkg> add DistSSHQueue`) runs jobs one after another on shared
+machines. DistSSHKit does the run.
 
 ## What is DistSSHKit?
 

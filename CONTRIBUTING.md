@@ -10,7 +10,7 @@ Internals of this repo.
 Happy-path bugs (ordinary `~/` roots, default `drive` / `go` / `setup`);
 CI / Julia slots / Aqua / JETLS drift. Enhancement Issue first, then a PR.
 
-**Does not land here:** new job shapes, a scheduler, or `schedule` inside Kit.
+**Does not land here:** new job shapes, a job queue, or `schedule` inside Kit.
 Windows and GPU-package help stay on the horizon
 ([Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26)).
 
