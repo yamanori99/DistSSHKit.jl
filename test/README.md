@@ -96,7 +96,11 @@ docker run --rm \
   bash -lc 'apt-get update -qq && apt-get install -y -qq --no-install-recommends curl ca-certificates git \
     && curl -fsSL https://install.julialang.org | sh -s -- --yes --default-channel nightly \
     && export PATH="$HOME/.juliaup/bin:$PATH" \
-    && julia +nightly -e "using Pkg; Pkg.activate(temp=true); Pkg.add(; path=\"/pkg\"); Pkg.test(\"DistSSHKit\")"'
+    && cp -a /pkg /tmp/dsk \
+    && git -C /tmp/dsk init -q \
+    && git -C /tmp/dsk add -A \
+    && git -C /tmp/dsk -c user.email=ci@distsshkit -c user.name=ci commit -q -m tree \
+    && julia +nightly -e "using Pkg; Pkg.activate(temp=true); Pkg.add(; path=\"/tmp/dsk\"); Pkg.test(\"DistSSHKit\")"'
 ```
 
 ## SSH E2E
