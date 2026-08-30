@@ -13,6 +13,18 @@ makedocs(;
         edit_link="main",
         assets=[
             "assets/custom.css",
+            Documenter.asset(
+                "assets/favicon.svg";
+                class=:ico,
+                islocal=true,
+                attributes=Dict(:type => "image/svg+xml"),
+            ),
+            Documenter.asset(
+                "assets/favicon.png";
+                class=:ico,
+                islocal=true,
+                attributes=Dict(:type => "image/png", :sizes => "32x32"),
+            ),
             "assets/favicon.ico",
             # Search Console (URL-prefix: https://yamanori99.github.io/DistSSHKit.jl/).
             RawHTMLHeadContent(
