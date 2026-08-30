@@ -54,6 +54,37 @@ makedocs(;
     warnonly=[:missing_docs, :docs_block, :cross_references],
 )
 
+# Documenter :ico always writes type=image/x-icon first. HTML5 keeps the first type,
+# so Firefox treats the SVG/PNG as ICO, drops them, then looks for ./favicon.ico (404)
+# and falls back to the sidebar logo.svg.
+function rewrite_favicon_types!(build)
+    rx_svg = r"""<link href="([^"]*favicon\.svg)" rel="icon" type="image/x-icon" type="image/svg\+xml"/>"""
+    rx_png = r"""<link href="([^"]*favicon\.png)" rel="icon" type="image/x-icon" type="image/png" sizes="32x32"/>"""
+    n = 0
+    for (root, _, files) in walkdir(build)
+        for f in files
+            endswith(f, ".html") || continue
+            path = joinpath(root, f)
+            html = read(path, String)
+            html2 = replace(
+                html,
+                rx_svg => s"""<link href="\1" rel="icon" type="image/svg+xml" sizes="any"/>""",
+            )
+            html2 = replace(
+                html2,
+                rx_png => s"""<link href="\1" rel="icon" type="image/png" sizes="32x32"/>""",
+            )
+            if html2 != html
+                write(path, html2)
+                n += 1
+            end
+        end
+    end
+    println("rewrote favicon type on $n HTML pages")
+end
+
+rewrite_favicon_types!(joinpath(@__DIR__, "build"))
+
 deploydocs(;
     repo="github.com/yamanori99/DistSSHKit.jl.git",
     devbranch="main",
