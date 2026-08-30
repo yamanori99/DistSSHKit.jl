@@ -11,11 +11,13 @@ function place_drive_sentinels!(successful_hosts::Vector{String}, script_dir::St
                 remote_early_abs = ensure_remote_abs_path(host, remote_early)
                 remote_early_abs === nothing && continue
                 remote_early_abs = remote_early_abs::String
-                run(pipeline(_ssh_cmd([ssh_opts()..., host, "mkdir", "-p", remote_early_abs]),
+                run(pipeline(DistSSHKit._ssh_cmd([ssh_opts()..., host, "mkdir", "-p", remote_early_abs]),
                     stdout=devnull, stderr=devnull))
-                run(pipeline(_ssh_cmd([ssh_opts()..., host, "touch", joinpath(remote_early_abs, sentinel_name)]),
+                run(pipeline(DistSSHKit._ssh_cmd([ssh_opts()..., host, "touch", joinpath(remote_early_abs, sentinel_name)]),
                     stdout=devnull, stderr=devnull))
-            catch; end
+            catch e
+                DistSSHKit._rethrow_missing_host_tool(e)
+            end
         end
     end
     return sentinel_name
@@ -166,8 +168,7 @@ function collect_drive_results!(
                         strip(
                             read(
                                 pipeline(
-                                    Cmd([
-                                        "ssh",
+                                    DistSSHKit._ssh_cmd([
                                         ssh_opts()...,
                                         host,
                                         "find",
@@ -219,9 +220,11 @@ function collect_drive_results!(
                     host_err === nothing && (host_err = e)
                 finally
                     try
-                        run(pipeline(_ssh_cmd([ssh_opts()..., host, "rm", "-f", remote_sentinel]),
+                        run(pipeline(DistSSHKit._ssh_cmd([ssh_opts()..., host, "rm", "-f", remote_sentinel]),
                                      stdout=devnull, stderr=devnull))
-                    catch; end
+                    catch e
+                        DistSSHKit._rethrow_missing_host_tool(e)
+                    end
                 end
             end
         catch e
