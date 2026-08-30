@@ -65,6 +65,7 @@ jobs:
             fi
           }
           warn_if_stale logo/logo-static.png logo/logo-static.svg bake.jl
+          warn_if_stale favicon.ico logo/logo-static.svg bake.jl
           warn_if_stale social/social-preview-static.png logo/logo-static.svg bake.jl
           warn_if_stale diagram/topology.png diagram/topology.svg bake.jl
           warn_if_stale logo/logo-dynamic.gif logo/logo-dynamic.svg bake.jl

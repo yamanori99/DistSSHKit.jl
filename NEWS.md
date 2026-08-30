@@ -5,6 +5,8 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- Docs pages use the kit mark as the browser tab icon (`favicon.ico`).
+
 ## 0.4.3
 
 Patch after `0.4.2`.

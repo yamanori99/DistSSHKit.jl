@@ -11,6 +11,7 @@ Derived:
   social/social-preview-*.svg|.png|.gif
   diagram/topology-dark.svg
   diagram/topology.png
+  favicon.ico (Documenter tab icon; from logo-static)
 
 README.md, README.ja.md, and docs intro all use the English topology
 (`parent` / `child 1…n`). Do not bake a Japanese-labelled copy.
@@ -92,6 +93,8 @@ const PNG_SCALE = 2
 # often rejects 2×). Sharpness comes from PNG_SCALE, not a larger deliverable.
 const LOGO_PNG = 960
 const SOCIAL_PNG_W, SOCIAL_PNG_H = SOCIAL_W, SOCIAL_H
+# Browser tab icon (Documenter `assets/*.ico` → rel=icon). PNG-in-ICO, 16 and 32.
+const FAVICON = "favicon.ico"
 
 die(msg) = (println(stderr, "error: ", msg); exit(1))
 
@@ -115,6 +118,39 @@ end
 
 function png_matches_size(path::AbstractString, w::Int, h::Int)
     png_ihdr_size(path) == (w, h)
+end
+
+"""Write a PNG-in-ICO (Vista+ / browsers) from square PNG files `(size => path)`."""
+function write_png_ico!(dest::AbstractString, pngs::Vector{Pair{Int, String}})
+    payloads = Vector{Tuple{Int, Vector{UInt8}}}(undef, length(pngs))
+    for (i, (sz, path)) in enumerate(pngs)
+        png_matches_size(path, sz, sz) || die("favicon PNG is not $(sz)×$(sz): $path")
+        payloads[i] = (sz, read(path))
+    end
+    n = length(payloads)
+    header = 6 + 16 * n
+    open(dest, "w") do io
+        write(io, htol(UInt16(0)))
+        write(io, htol(UInt16(1)))
+        write(io, htol(UInt16(n)))
+        off = header
+        for (sz, data) in payloads
+            wbyte = sz >= 256 ? 0x00 : UInt8(sz)
+            write(io, wbyte)
+            write(io, wbyte)
+            write(io, UInt8(0))
+            write(io, UInt8(0))
+            write(io, htol(UInt16(1)))
+            write(io, htol(UInt16(32)))
+            write(io, htol(UInt32(length(data))))
+            write(io, htol(UInt32(off)))
+            off += length(data)
+        end
+        for (_, data) in payloads
+            write(io, data)
+        end
+    end
+    return dest
 end
 
 function topology_dark(svg::AbstractString)
@@ -567,6 +603,12 @@ function bake_pngs!(arts)
         println(stderr, "warn: skip social-preview-static.png (need rsvg-convert or Chromium, plus sips/ffmpeg to keep 1280×640)")
     end
 
+    if bake_favicon!(arts)
+        ok_any = true
+    else
+        println(stderr, "warn: skip $FAVICON (need rsvg-convert or Chromium)")
+    end
+
     for (svg_rel, png_rel, svg_text) in (
         (diagram_path("topology.svg"), diagram_path("topology.png"), arts.topology),
     )
@@ -590,6 +632,41 @@ function bake_pngs!(arts)
         end
     end
     return ok_any
+end
+
+function bake_favicon!(arts)
+    ico_path = joinpath(ROOT, FAVICON)
+    logo_svg = logo_path("logo-static.svg")
+    logo_html_body = replace(
+        strip_xml_decl(arts.logo_static),
+        "width=\"240\" height=\"240\"" => "width=\"32\" height=\"32\"",
+        count=1,
+    )
+    d = mktempdir(ROOT; prefix=".favicon-")
+    try
+        src32 = joinpath(d, "32.png")
+        if !bake_static_png!(
+            logo_svg,
+            relpath(src32, ROOT),
+            logo_html_body;
+            w=32,
+            h=32,
+            scale=PNG_SCALE,
+            exact_size=true,
+        )
+            return false
+        end
+        pngs = Pair{Int, String}[32 => src32]
+        src16 = joinpath(d, "16.png")
+        if downscale_png!(src32, src16; w=16, h=16) && png_matches_size(src16, 16, 16)
+            pushfirst!(pngs, 16 => src16)
+        end
+        write_png_ico!(ico_path, pngs)
+        println("wrote $FAVICON ($(filesize(ico_path)) bytes)")
+        return true
+    finally
+        rm(d; recursive=true, force=true)
+    end
 end
 
 function ffmpeg_gif!(seq_dir::AbstractString, out_gif::AbstractString)
