@@ -221,29 +221,22 @@ function svg_inner(svg::AbstractString)
     return m.captures[1]
 end
 
-function svg_group(svg::AbstractString, id::AbstractString)
-    m = match(Regex("<g id=\"$(id)\">[\\s\\S]*?</g>"), svg)
-    m === nothing && die("missing #$id")
-    return String(m.match)
-end
-
-function build_favicon(logo_svg::AbstractString)
-    st = match(r"<style>[\s\S]*?</style>", logo_svg)
-    st === nothing && die("missing <style> in logo-static")
-    master = svg_group(logo_svg, "master-body")
-    dots = svg_group(logo_svg, "juliadot-lg")
+function build_favicon(_logo_svg::AbstractString="")
+    # Parent `#master-body` as in logo-static. Dots: `#juliadot-lg` about (0,-6), × FAVICON_DOT_SCALE.
+    # Firefox tab icons often skip `<use href>`; keep this file free of defs/use.
+    s = FAVICON_DOT_SCALE
+    r = round(4.65 * s; digits=4)
+    red_y = round(-6 + s * (-6.2); digits=4)
+    side_x = round(5.369 * s; digits=4)
+    side_y = round(-6 + s * 3.1; digits=4)
     return """<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-36 -24 72 72" width="72" height="72">
-  <!-- Parent from logo-static. `#juliadot-lg` at y=-6, scaled $(FAVICON_DOT_SCALE). -->
-  <defs>
-$(st.match)
-    $master
-    $dots
-  </defs>
-  <use href="#master-body"/>
-  <g transform="translate(0,-6) scale($(FAVICON_DOT_SCALE))">
-    <use href="#juliadot-lg"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-34 -28 68 68" width="68" height="68">
+  <rect x="-32" y="-25" width="64" height="36" rx="4" fill="none" stroke="#1a1d21" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="0" y1="12" x2="0" y2="22" fill="none" stroke="#1a1d21" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="-21" y1="24" x2="21" y2="24" fill="none" stroke="#1a1d21" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="0" cy="$(red_y)" r="$r" fill="#cb3c33"/>
+  <circle cx="$(-side_x)" cy="$(side_y)" r="$r" fill="#389826"/>
+  <circle cx="$side_x" cy="$(side_y)" r="$r" fill="#9558b2"/>
 </svg>
 """
 end
