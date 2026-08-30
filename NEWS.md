@@ -1,13 +1,27 @@
 # News
 
-User-facing changes. Date a section `YYYY-MM-DD` (UTC) when that version is tagged.
+User-facing changes.
 GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator register`).
 
 ## Unreleased
 
-## 0.4.2
+## 0.4.3
 
-Patch after `0.4.1`. Date this heading `YYYY-MM-DD` (UTC) on the tag day.
+Patch after `0.4.2`.
+
+- Missing `ssh` / `rsync` / `git` / `scp` on `PATH` prints a Requirements hint
+  instead of a raw `ENOENT`. `setup --check` lists the three on the controller
+  (`ssh` fails the check; `rsync` / `git` warn).
+
+- Drive post-run collect and collect-missing treat SSH / `find` errors as a host
+  failure (`HostRunResult.ok` is false), not an empty success. Default drive
+  exit stays 0 unless `--require-all-hosts`. `go` ignores a local `go.exitcode`
+  when `scp` of that file failed (a stale `0` must not look like success).
+
+- Remote `uname` no longer assumes Linux when the probe fails. `git status`
+  failure on a work tree is dirty. Project `Pkg.activate` errors surface.
+
+## 0.4.2
 
 - `go` with `sync=:rsync` / `:sync` checks remotes **after** the copy. Default
   `sync=false` still checks first. After `:rsync`, hosts missing Manifest deps
@@ -19,13 +33,13 @@ Patch after `0.4.1`. Date this heading `YYYY-MM-DD` (UTC) on the tag day.
   (peer DNS `dev@child-1`), matching Kit `child:NAME`. Image tags stay
   `linux-ssh-worker`. Controller aliases stay `distsshkit-w1` / `distsshkit-w2`.
 
-## 0.4.1 (2026-08-24)
+## 0.4.1
 
 - `go` with `job_id` / `DISTSSHKIT_JOB_ID` runs the slot script. The pkill
   mark is a no-op `-L` file so the script stays `PROGRAM_FILE`. Drive workers
   still use a comment-only `--eval=#distsshkit-job:<id>`.
 
-## 0.4.0 (2026-08-24)
+## 0.4.0
 
 Breaking cut after `0.3.3`.
 
@@ -127,7 +141,7 @@ Breaking cut after `0.3.3`.
   then usual OS locations; `setup --check` / `--julia` /
   `JULIA_DISTRIBUTED_EXE`).
 
-## 0.3.2 (2026-08-20)
+## 0.3.2
 
 - `drive` no longer `pkill`s local `julia --worker` processes before
   `addprocs`. Local teardown is `rmprocs`, run at the end of every `drive!` /
@@ -154,7 +168,7 @@ Breaking cut after `0.3.3`.
   now `rmprocs`es only its own probe pids (not the whole cluster), always in
   `finally`.
 
-## 0.3.1 (2026-08-18)
+## 0.3.1
 
 - `go!(…; output_dir=PATH)` sets the batch root (same keyword as `drive!`).
   `collect_spec::String` remains a compat alias; both set is an error.
@@ -181,7 +195,7 @@ Breaking cut after `0.3.3`.
   collect hosts, and parallel `detect_julia_path` before sequential `size!`
   `addprocs`. `addprocs` itself stays sequential.
 
-## 0.3.0 (2026-08-16)
+## 0.3.0
 
 Breaking cut after `0.2.1`. No `0.2.2` on General.
 
@@ -207,7 +221,7 @@ Breaking cut after `0.2.1`. No `0.2.2` on General.
   uses that project's `Project.toml`, not the kit's.
   `DISTRIBUTED_PROJECT_ROOT` overrides.
 
-## 0.2.1 (2026-08-14)
+## 0.2.1
 
 Patch after the first General registration (`0.2.0`).
 
@@ -218,6 +232,6 @@ Patch after the first General registration (`0.2.0`).
 - `drive` collect works with remote `~` roots.
 - Controllers: macOS, Linux, and WSL2 Ubuntu (not native Windows).
 
-## 0.2.0 (2026-08-11)
+## 0.2.0
 
 First release on General.

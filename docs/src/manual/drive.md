@@ -78,6 +78,9 @@ onto an empty path). Prefer matching Julia **major.minor**.
 
 After `main()`: **post-run-new** collect. Standalone pull via the collect
 flags above. See [User Guide](@ref Manual) for mode names.
+SSH / `find` errors on a host are a collect failure (`HostRunResult.ok` is
+false), not an empty success. Default CLI exit stays 0 unless
+`--require-all-hosts`.
 
 External watchers: `progress: begin` / `step` / `item` always go to
 `kit.progress` (even `-q` / `--no-log`). The kit log still gets those lines

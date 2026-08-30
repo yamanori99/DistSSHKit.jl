@@ -225,10 +225,10 @@ end
 """
 Per-host outcome of the `drive` result-collection step.
 
-`ok` is `false` when collecting from `host` raised an error (nothing to
-collect is not an error). `error` is the message string, or `nothing` on
-success. An `AbstractString` is stored as-is so `kit.result` round-trips;
-other values use `sprint(showerror, error)`.
+`ok` is `false` when SSH / `find` / rsync raises while collecting from `host`.
+An empty file list after a successful probe is not an error. `error` is the
+message string, or `nothing` on success. An `AbstractString` is stored as-is
+so `kit.result` round-trips; other values use `sprint(showerror, error)`.
 """
 struct HostRunResult
     host::String

@@ -25,7 +25,7 @@ SSH 分散実行の手順を簡単にし、揃えることで、再現しやす�
 
 小さな研究室や個人でも、高性能なマシンやワークステーションを何台か持っていることがある。
 DistSSHKit は、それらをまとめて小さな計算ノードとして使うためのものである。
-関連して、簡易スケジューラ `DistSSHQueue.jl` を開発中である。
+関連して、簡易スケジューラ [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl) は General にある (`pkg> add DistSSHQueue`)。
 
 ## インストール
 
