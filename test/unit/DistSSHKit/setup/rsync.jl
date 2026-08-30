@@ -27,6 +27,8 @@ using Test
         t = DistSSHKit._host_sync_rsync_transport()
         @test startswith(t, Base.shell_escape(DistSSHKit._ssh_exe()))
     end
+
+    @testset "remote_dir / ensure" begin
         _with_fake_remotes() do _
             host = "user@host.test"
             @test DistSSHKit.remote_dir_exists(host, remote_path) == false
