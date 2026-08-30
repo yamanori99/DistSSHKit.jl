@@ -13,14 +13,7 @@ makedocs(;
         edit_link="main",
         assets=[
             "assets/custom.css",
-            # Firefox prefers SVG; a failing SVG falls back to sidebar logo.svg.
-            # Tab mark is PNG-only in <head>. SVG/ICO files stay on disk.
-            Documenter.asset(
-                "assets/favicon.png";
-                class=:ico,
-                islocal=true,
-                attributes=Dict(:type => "image/png", :sizes => "32x32"),
-            ),
+            "assets/favicon.ico",
             # Search Console (URL-prefix: https://yamanori99.github.io/DistSSHKit.jl/).
             RawHTMLHeadContent(
                 """<meta name="google-site-verification" content="frfWUqaHuYYDmZzSSnBhfguS0Y5YC6zssij5qAot6ww" />""",

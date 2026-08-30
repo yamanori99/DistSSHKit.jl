@@ -64,7 +64,7 @@ julia docs/src/assets/bake.jl --png --gif  # + GIF (Chromium + ffmpeg)
 | Mode | Needs |
 | --- | --- |
 | default | Julia |
-| `--png` | `rsvg-convert` preferred, else Chrome; social PNG is 1280×640 (GitHub OG), logo PNG is 960×960, topology PNG is 1120×472, `favicon.ico` is 16+32+48 PNG-in-ICO from `favicon.svg` |
+| `--png` | `rsvg-convert` preferred, else Chrome; social PNG is 1280×640 (GitHub OG), logo PNG is 960×960, topology PNG is 1120×472, `favicon.ico` is 16+32+48 BMP-in-ICO from `favicon.svg` |
 | `--gif` | Chrome / Chromium (4 parallel workers) + `ffmpeg` |
 
 CI (`.github/workflows/assets-bake.yml`) re-runs the default bake when `docs/src/assets/` changes and fails if SVG/symlink outputs drift. It **warns** (does not fail) if PNG/GIF look older than their sources in git history. Bake `--png` / `--gif` locally before committing rasters.

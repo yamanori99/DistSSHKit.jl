@@ -29,6 +29,7 @@ Documenter looks for assets/logo.svg and assets/logo-dark.svg; bake makes
 =#
 
 using Printf
+using Zlib_jll
 
 const ROOT = @__DIR__
 const LOGO_DIR = "logo"
@@ -93,7 +94,7 @@ const PNG_SCALE = 2
 # often rejects 2×). Sharpness comes from PNG_SCALE, not a larger deliverable.
 const LOGO_PNG = 960
 const SOCIAL_PNG_W, SOCIAL_PNG_H = SOCIAL_W, SOCIAL_H
-# Browser tab icon (Documenter `assets/*.ico` → rel=icon). PNG-in-ICO.
+# Browser tab icon (Documenter `assets/*.ico` → rel=icon). BMP-in-ICO (Firefox).
 # Opaque white tile so dark browser chrome does not swallow the ink.
 const FAVICON = "favicon.ico"
 const FAVICON_SVG = "favicon.svg"
@@ -125,12 +126,137 @@ function png_matches_size(path::AbstractString, w::Int, h::Int)
     png_ihdr_size(path) == (w, h)
 end
 
-"""Write a PNG-in-ICO (Vista+ / browsers) from square PNG files `(size => path)`."""
-function write_png_ico!(dest::AbstractString, pngs::Vector{Pair{Int, String}})
+function be32(data::Vector{UInt8}, i::Int)
+    (UInt32(data[i]) << 24) | (UInt32(data[i + 1]) << 16) | (UInt32(data[i + 2]) << 8) | UInt32(data[i + 3])
+end
+
+function zlib_uncompress(src::Vector{UInt8})
+    dest_cap = max(length(src) * 8, 4096)
+    while dest_cap <= 8 * 1024 * 1024
+        dest = Vector{UInt8}(undef, dest_cap)
+        dest_len = Ref{Culong}(dest_cap)
+        ret = @ccall Zlib_jll.libz.uncompress(
+            dest::Ptr{UInt8},
+            dest_len::Ptr{Culong},
+            src::Ptr{UInt8},
+            length(src)::Culong,
+        )::Cint
+        ret == 0 && return dest[1:Int(dest_len[])]
+        ret == -5 || die("zlib uncompress failed: $ret")
+        dest_cap *= 2
+    end
+    die("zlib uncompress too large")
+end
+
+function png_paeth(a::UInt8, b::UInt8, c::UInt8)
+    p = Int(a) + Int(b) - Int(c)
+    pa, pb, pc = abs(p - Int(a)), abs(p - Int(b)), abs(p - Int(c))
+    pa <= pb && pa <= pc && return a
+    pb <= pc && return b
+    return c
+end
+
+"""8-bit RGB/RGBA PNG → top-down RGBA bytes."""
+function png_rgba8(path::AbstractString)
+    data = read(path)
+    data[1:8] == UInt8[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] || die("not a PNG: $path")
+    i, w, h, bit_depth, color_type = 9, 0, 0, 0, 0
+    idat = UInt8[]
+    while i + 8 <= length(data)
+        n = Int(be32(data, i))
+        typ = String(data[i + 4:i + 7])
+        chunk = data[i + 8:i + 7 + n]
+        if typ == "IHDR"
+            w = Int(be32(chunk, 1))
+            h = Int(be32(chunk, 5))
+            bit_depth = Int(chunk[9])
+            color_type = Int(chunk[10])
+            chunk[13] == 0x00 || die("interlaced PNG: $path")
+        elseif typ == "IDAT"
+            append!(idat, chunk)
+        elseif typ == "IEND"
+            break
+        end
+        i += 12 + n
+    end
+    bit_depth == 8 || die("favicon PNG is not 8-bit: $path")
+    ch = color_type == 2 ? 3 : color_type == 6 ? 4 : die("favicon PNG color type $color_type: $path")
+    raw = zlib_uncompress(idat)
+    stride = w * ch
+    length(raw) == h * (1 + stride) || die("PNG inflate size mismatch: $path")
+    prev = zeros(UInt8, stride)
+    out = Vector{UInt8}(undef, w * h * 4)
+    o = 1
+    for row in 1:h
+        ft = raw[(row - 1) * (1 + stride) + 1]
+        cur = raw[(row - 1) * (1 + stride) + 2:(row - 1) * (1 + stride) + 1 + stride]
+        recon = Vector{UInt8}(undef, stride)
+        for x in 1:stride
+            a = x > ch ? recon[x - ch] : 0x00
+            b = prev[x]
+            c = x > ch ? prev[x - ch] : 0x00
+            v = cur[x]
+            recon[x] = if ft == 0
+                v
+            elseif ft == 1
+                v + a
+            elseif ft == 2
+                v + b
+            elseif ft == 3
+                v + UInt8((Int(a) + Int(b)) >> 1)
+            elseif ft == 4
+                v + png_paeth(a, b, c)
+            else
+                die("bad PNG filter $ft")
+            end
+        end
+        for x in 1:w
+            p = (x - 1) * ch
+            out[o] = recon[p + 1]
+            out[o + 1] = recon[p + 2]
+            out[o + 2] = recon[p + 3]
+            out[o + 3] = ch == 4 ? recon[p + 4] : 0xff
+            o += 4
+        end
+        prev = recon
+    end
+    return w, h, out
+end
+
+function bmp_ico_image(sz::Int, rgba::Vector{UInt8})
+    xor_nbytes = sz * sz * 4
+    and_row = ((sz + 31) ÷ 32) * 4
+    and_nbytes = and_row * sz
+    buf = IOBuffer()
+    write(buf, htol(UInt32(40)))
+    write(buf, htol(Int32(sz)))
+    write(buf, htol(Int32(2 * sz)))
+    write(buf, htol(UInt16(1)))
+    write(buf, htol(UInt16(32)))
+    write(buf, htol(UInt32(0)))
+    write(buf, htol(UInt32(xor_nbytes + and_nbytes)))
+    write(buf, htol(UInt32(0)))
+    write(buf, htol(UInt32(0)))
+    write(buf, htol(UInt32(0)))
+    write(buf, htol(UInt32(0)))
+    for y in (sz - 1):-1:0
+        for x in 0:(sz - 1)
+            p = (y * sz + x) * 4 + 1
+            write(buf, rgba[p + 2], rgba[p + 1], rgba[p], rgba[p + 3])
+        end
+    end
+    write(buf, zeros(UInt8, and_nbytes))
+    return take!(buf)
+end
+
+"""BMP-in-ICO so Firefox tabs actually draw the mark (PNG-in-ICO is often dropped)."""
+function write_bmp_ico!(dest::AbstractString, pngs::Vector{Pair{Int, String}})
     payloads = Vector{Tuple{Int, Vector{UInt8}}}(undef, length(pngs))
     for (i, (sz, path)) in enumerate(pngs)
         png_matches_size(path, sz, sz) || die("favicon PNG is not $(sz)×$(sz): $path")
-        payloads[i] = (sz, read(path))
+        w, h, rgba = png_rgba8(path)
+        (w, h) == (sz, sz) || die("PNG decode size mismatch: $path")
+        payloads[i] = (sz, bmp_ico_image(sz, rgba))
     end
     n = length(payloads)
     header = 6 + 16 * n
@@ -702,7 +828,7 @@ function bake_favicon!(arts)
             end
             push!(pngs, px => src)
         end
-        write_png_ico!(ico_path, pngs)
+        write_bmp_ico!(ico_path, pngs)
         png32 = joinpath(ROOT, "favicon.png")
         src32 = first(p for p in pngs if p[1] == 32)
         cp(src32[2], png32; force=true)
