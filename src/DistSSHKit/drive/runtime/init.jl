@@ -19,10 +19,8 @@ script is first `include`d. Workers are activated separately during init.
 function activate_drive_project!(proj_dir::String)
     isdir(proj_dir) || return
     isfile(joinpath(proj_dir, "Project.toml")) || return
-    try
-        Pkg.activate(proj_dir; io=devnull)
-    catch
-    end
+    Pkg.activate(proj_dir; io=devnull)
+    return
 end
 
 """

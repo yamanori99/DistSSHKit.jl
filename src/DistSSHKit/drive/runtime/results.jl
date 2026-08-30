@@ -1,5 +1,5 @@
 function place_drive_sentinels!(successful_hosts::Vector{String}, script_dir::String, skip_collect::Bool)::String
-    skip_collect || isempty(successful_hosts) && return ""
+    (skip_collect || isempty(successful_hosts)) && return ""
     sentinel_name = ".drive_sentinel_$(getpid())_$(Dates.format(now(), "yyyymmddTHHMMSS"))"
     repo_ra = DistSSHKit.canonical_local_path(PROJECT_ROOT)
     collect_roots_sentinel = distributed_collect_root_dirs(script_dir, repo_ra)
@@ -9,14 +9,20 @@ function place_drive_sentinels!(successful_hosts::Vector{String}, script_dir::St
             try
                 remote_early = remote_path_for_ssh_collect(_early_local, repo_ra)
                 remote_early_abs = ensure_remote_abs_path(host, remote_early)
-                remote_early_abs === nothing && continue
+                if remote_early_abs === nothing
+                    print_warn("sentinel: cannot resolve collect root on $host")
+                    continue
+                end
                 remote_early_abs = remote_early_abs::String
-                run(pipeline(DistSSHKit._ssh_cmd([ssh_opts()..., host, "mkdir", "-p", remote_early_abs]),
+                pq = DistSSHKit._remote_shell_path_word(remote_early_abs)
+                sn = DistSSHKit._remote_shell_path_word(joinpath(remote_early_abs, sentinel_name))
+                run(pipeline(DistSSHKit._host_sync_remote_shell_cmd(host, "mkdir -p $pq"),
                     stdout=devnull, stderr=devnull))
-                run(pipeline(DistSSHKit._ssh_cmd([ssh_opts()..., host, "touch", joinpath(remote_early_abs, sentinel_name)]),
+                run(pipeline(DistSSHKit._host_sync_remote_shell_cmd(host, "touch $sn"),
                     stdout=devnull, stderr=devnull))
             catch e
                 DistSSHKit._rethrow_missing_host_tool(e)
+                print_warn("sentinel on $host: $(sprint(showerror, e))")
             end
         end
     end
@@ -160,35 +166,36 @@ function collect_drive_results!(
                 local_abs = DistSSHKit.canonical_local_path(local_rd)
                 remote_rd_collect = remote_path_for_ssh_collect(local_abs, repo_ra)
                 remote_rd_abs = ensure_remote_abs_path(host, remote_rd_collect)
-                remote_rd_abs === nothing && continue
+                if remote_rd_abs === nothing
+                    host_err === nothing && (host_err = ErrorException(
+                        "cannot resolve remote collect root on $host",
+                    ))
+                    continue
+                end
                 remote_rd_abs = remote_rd_abs::String
                 remote_sentinel = joinpath(remote_rd_abs, sentinel_name)
                 try
                     remote_find_raw = try
+                        pq = DistSSHKit._remote_shell_path_word(remote_rd_abs)
+                        sq = DistSSHKit._remote_shell_path_word(remote_sentinel)
+                        nq = DistSSHKit._remote_shell_path_word(sentinel_name)
                         strip(
                             read(
                                 pipeline(
-                                    DistSSHKit._ssh_cmd([
-                                        ssh_opts()...,
+                                    DistSSHKit._host_sync_remote_shell_cmd(
                                         host,
-                                        "find",
-                                        remote_rd_abs,
-                                        "-type",
-                                        "f",
-                                        "-newer",
-                                        remote_sentinel,
-                                        "!",
-                                        "-name",
-                                        sentinel_name,
-                                        "-print",
-                                    ]);
+                                        "find $pq -type f -newer $sq ! -name $nq -print",
+                                    );
                                     stderr=devnull,
                                 ),
                                 String,
                             ),
                         )
-                    catch
-                        ""
+                    catch e
+                        DistSSHKit._rethrow_missing_host_tool(e)
+                        throw(ErrorException(
+                            "collect find -newer on $host: $(sprint(showerror, e))",
+                        ))
                     end
                     rroot = String(rstrip(String(remote_rd_abs), '/'))
                     rel_lines = String[]
@@ -220,8 +227,11 @@ function collect_drive_results!(
                     host_err === nothing && (host_err = e)
                 finally
                     try
-                        run(pipeline(DistSSHKit._ssh_cmd([ssh_opts()..., host, "rm", "-f", remote_sentinel]),
-                                     stdout=devnull, stderr=devnull))
+                        rq = DistSSHKit._remote_shell_path_word(remote_sentinel)
+                        run(pipeline(
+                            DistSSHKit._host_sync_remote_shell_cmd(host, "rm -f $rq"),
+                            stdout=devnull, stderr=devnull,
+                        ))
                     catch e
                         DistSSHKit._rethrow_missing_host_tool(e)
                     end

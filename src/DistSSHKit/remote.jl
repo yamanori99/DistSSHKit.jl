@@ -503,36 +503,54 @@ function detect_julia_path(host::String)::Union{Nothing,String}
     return found
 end
 
+"""`--version` over the setup SSH transport (honors `DISTSSHKIT_TEST_SSH`)."""
+function _remote_julia_reports_version(host::String, path::AbstractString)::Bool
+    pq = _remote_shell_path_word(String(path))
+    try
+        out = read(
+            pipeline(_host_sync_remote_shell_cmd(host, "$pq --version"); stderr=devnull),
+            String,
+        )
+        return parse_julia_version(out) !== nothing
+    catch
+        return false
+    end
+end
+
 function _detect_julia_path_uncached(host::String)::Union{Nothing,String}
     uname_s = try
-        strip(read(pipeline(_ssh_cmd([ssh_opts()..., host, "uname", "-s"]); stderr=devnull), String))
+        strip(read(
+            pipeline(_host_sync_remote_shell_cmd(host, "uname -s"); stderr=devnull),
+            String,
+        ))
     catch
-        "Linux"
+        ""
     end
-    isempty(uname_s) && (uname_s = "Linux")
 
-    for path in remote_julia_candidates(uname_s)
-        try
-            result = read(pipeline(
-                _ssh_cmd([ssh_opts()..., host, "test -x $path && echo $path"]);
-                stderr=devnull,
-            ), String)
-            found = strip(result)
-            isempty(found) && continue
-            get_remote_julia_version(host, found) === nothing && continue
-            return String(found)
-        catch
-            continue
+    if !isempty(uname_s)
+        for path in remote_julia_candidates(uname_s)
+            try
+                result = read(pipeline(
+                    _host_sync_remote_shell_cmd(host, "test -x $path && echo $path");
+                    stderr=devnull,
+                ), String)
+                found = strip(result)
+                isempty(found) && continue
+                _remote_julia_reports_version(host, found) || continue
+                return String(found)
+            catch
+                continue
+            end
         end
     end
     try
         result = read(pipeline(
-            _ssh_cmd([ssh_opts()..., host, "command -v julia || which julia"]);
+            _host_sync_remote_shell_cmd(host, "command -v julia || which julia");
             stderr=devnull,
         ), String)
         p = strip(result)
         isempty(p) && return nothing
-        get_remote_julia_version(host, p) === nothing && return nothing
+        _remote_julia_reports_version(host, p) || return nothing
         return String(p)
     catch
         return nothing
@@ -559,17 +577,27 @@ function get_local_git_hash(proj_dir::AbstractString; short::Union{Nothing,Int}=
 end
 
 """Whether the local git working tree at `proj_dir` is clean (no uncommitted changes).
-Returns `true` if clean, if `proj_dir` is not a git repo, or if `git` itself fails —
-this check exists to warn, not to block, so failures to determine status don't count
-as "dirty"."""
+
+Returns `true` if clean, if `git` is missing, or if `proj_dir` is not a git work tree.
+If this is a work tree but `git status` fails, returns `false` so `--require-git` /
+`setup --check` still warn. This check does not block a run."""
 function local_git_clean(proj_dir::AbstractString)::Bool
     _host_tool_present("git") || return true
     resolved = canonical_local_path(proj_dir)
+    inside = try
+        strip(read(pipeline(
+            _git_cmd(["-C", resolved, "rev-parse", "--is-inside-work-tree"]);
+            stderr=devnull,
+        ), String))
+    catch
+        return true
+    end
+    inside == "true" || return true
     try
         result = read(pipeline(_git_cmd(["-C", resolved, "status", "--porcelain"]); stderr=devnull), String)
         return isempty(strip(result))
     catch
-        return true
+        return false
     end
 end
 
@@ -733,17 +761,13 @@ function collect_tree_remote_files_ssh(host::AbstractString, remote_root::Abstra
     rr === nothing && return Tuple{String,String}[]
     rr = rr::String
     pq = _remote_shell_path_word(rr)
-    out = try
-        read(
-            pipeline(
-                _host_sync_remote_shell_cmd(hp, "find $pq -type f -print");
-                stderr=devnull,
-            ),
-            String,
-        )
-    catch
-        return Tuple{String,String}[]
-    end
+    out = read(
+        pipeline(
+            _host_sync_remote_shell_cmd(hp, "find $pq -type f -print");
+            stderr=devnull,
+        ),
+        String,
+    )
     sep = endswith(rr, "/") ? rr : (rr * "/")
     pairs = Tuple{String,String}[]
     for line in split(out, '\n')

@@ -143,4 +143,52 @@ using Test
             end
         end
     end
+
+    @testset "collect-missing find failure is not empty success" begin
+        _with_collect(; extra_env=Dict("DISTSSHKIT_TEST_FIND_FAIL" => "1")) do state_dir, proj
+            mkpath(joinpath(state_dir, "host1", "tree"))
+            write(joinpath(state_dir, "host1", "tree", "a.txt"), "x\n")
+            out_dir = joinpath(proj, "out")
+            mkpath(out_dir)
+            with_kit_verbosity(:verbose) do
+                captured, result = _capture_stdio() do _, _
+                    _collect!(proj, out_dir, ["child:host1"])
+                end
+                @test !result.ok
+                @test !occursin("no files found", captured)
+                @test occursin("some hosts failed", captured)
+            end
+        end
+    end
+
+    @testset "post-run find failure sets HostRunResult" begin
+        _with_collect(; extra_env=Dict("DISTSSHKIT_TEST_FIND_FAIL" => "1")) do state_dir, proj
+            mkpath(joinpath(state_dir, "host1", "tree"))
+            script = joinpath(proj, "job.jl")
+            write(script, "true\n")
+            out = joinpath(proj, "out")
+            mkpath(out)
+            withenv("DISTRIBUTED_OUTPUT_DIR" => out) do
+                ok, hrs = Main.collect_drive_results!(
+                    ["host1"], dirname(script), ".drive_sentinel_x", false, proj,
+                )
+                @test !ok
+                @test length(hrs) == 1
+                @test !hrs[1].ok
+            end
+        end
+    end
+
+    @testset "skip_collect does not place sentinels" begin
+        _with_collect() do state_dir, proj
+            logp = joinpath(state_dir, "ssh.log")
+            script = joinpath(proj, "job.jl")
+            write(script, "true\n")
+            withenv("DISTSSHKIT_TEST_SSH_LOG" => logp) do
+                name = Main.place_drive_sentinels!(["host1"], dirname(script), true)
+                @test name == ""
+            end
+            @test !isfile(logp) || !occursin("mkdir", read(logp, String))
+        end
+    end
 end

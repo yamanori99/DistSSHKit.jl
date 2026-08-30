@@ -28,6 +28,33 @@ function main()
         exit(255)
     end
 
+    logp = get(ENV, "DISTSSHKIT_TEST_SSH_LOG", "")
+    if !isempty(logp)
+        open(logp, "a") do io
+            println(io, script)
+        end
+    end
+
+    if occursin("uname -s", script)
+        if get(ENV, "DISTSSHKIT_TEST_UNAME_FAIL", "") == "1"
+            exit(1)
+        end
+        u = get(ENV, "DISTSSHKIT_TEST_UNAME", "")
+        isempty(u) || println(u)
+        exit(0)
+    end
+
+    if occursin("command -v julia", script) || occursin("which julia", script)
+        w = get(ENV, "DISTSSHKIT_TEST_JULIA_WHICH", "")
+        isempty(w) || println(w)
+        exit(0)
+    end
+
+    if occursin("--version", script)
+        println("julia version 1.12.6")
+        exit(0)
+    end
+
     if occursin("DISTSSHKIT_DEST_STATUS", script)
         println("DISTSSHKIT_DEST_STATUS")
         println(_dest_status(tree))
@@ -92,6 +119,10 @@ function main()
     end
 
     if occursin("find ", script) && occursin("-type f", script)
+        if get(ENV, "DISTSSHKIT_TEST_FIND_FAIL", "") == "1"
+            println(stderr, "find: failed")
+            exit(1)
+        end
         m = match(r"find\s+(\S+)\s+-type", script)
         cap = m === nothing ? nothing : m.captures[1]
         find_root = cap === nothing ? tree : String(cap)
