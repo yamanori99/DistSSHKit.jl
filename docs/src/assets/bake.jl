@@ -11,7 +11,7 @@ Derived:
   social/social-preview-*.svg|.png|.gif
   diagram/topology-dark.svg
   diagram/topology.png
-  favicon.svg / favicon.ico (Documenter tab icon; tight crop of logo-static)
+  favicon.svg / favicon.ico (Documenter tab icon; parent + Julia dots)
 
 README.md, README.ja.md, and docs intro all use the English topology
 (`parent` / `child 1…n`). Do not bake a Japanese-labelled copy.
@@ -97,7 +97,6 @@ const SOCIAL_PNG_W, SOCIAL_PNG_H = SOCIAL_W, SOCIAL_H
 # Tight crop of the kit cluster (sidebar logo has more canvas padding).
 const FAVICON = "favicon.ico"
 const FAVICON_SVG = "favicon.svg"
-const FAVICON_VIEWBOX = "48 78 144 144"
 const FAVICON_PX = (32, 48)
 
 die(msg) = (println(stderr, "error: ", msg); exit(1))
@@ -220,12 +219,17 @@ function svg_inner(svg::AbstractString)
     return m.captures[1]
 end
 
-function build_favicon(logo_svg::AbstractString)
-    inner = svg_inner(logo_svg)
+function build_favicon(_logo_svg::AbstractString="")
+    # Parent monitor only. The four-machine cluster is unreadable at 16px.
+    # Julia dots: Copyright (c) 2012-2022 Stefan Karpinski, CC BY-NC-SA 4.0.
     return """<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="$(FAVICON_VIEWBOX)" width="240" height="240">
-  <!-- Tab icon: tight crop of logo-static so the cluster fills the 16px chrome. -->
-$(inner)
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <rect x="1.5" y="1.25" width="29" height="20.5" rx="4" fill="#ffffff" stroke="#1a1d21" stroke-width="2" stroke-linejoin="round"/>
+  <line x1="16" y1="21.75" x2="16" y2="26" stroke="#1a1d21" stroke-width="2" stroke-linecap="round"/>
+  <line x1="8" y1="27.25" x2="24" y2="27.25" stroke="#1a1d21" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="16" cy="7.15" r="5.35" fill="#cb3c33"/>
+  <circle cx="10.15" cy="16.55" r="5.35" fill="#389826"/>
+  <circle cx="21.85" cy="16.55" r="5.35" fill="#9558b2"/>
 </svg>
 """
 end
@@ -365,7 +369,7 @@ function bake_svgs!()
     topology = readfile(diagram_path("topology.svg"))
     topology_dark_svg = topology_dark(topology)
     writefile(diagram_path("topology-dark.svg"), topology_dark_svg)
-    writefile(FAVICON_SVG, build_favicon(logo_static))
+    writefile(FAVICON_SVG, build_favicon())
     ensure_docroot_link!(FAVICON_SVG)
 
     return (;
@@ -668,7 +672,7 @@ end
 function bake_favicon!(arts)
     ico_path = joinpath(ROOT, FAVICON)
     svg_rel = FAVICON_SVG
-    isfile(joinpath(ROOT, svg_rel)) || writefile(svg_rel, build_favicon(arts.logo_static))
+    isfile(joinpath(ROOT, svg_rel)) || writefile(svg_rel, build_favicon())
     html_body = strip_xml_decl(readfile(svg_rel))
     d = mktempdir(ROOT; prefix=".favicon-")
     try
