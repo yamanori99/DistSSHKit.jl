@@ -360,7 +360,7 @@ function build_favicon(_logo_svg::AbstractString=""; dark::Bool=false)
     screen = dark ? "#1a1d21" : "#ffffff"
     fmt(x) = string(round(x; digits=4))
     return """<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 68 68" width="68" height="68">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="2 2.9 64 64" width="64" height="64">
   <rect x="$(fmt(-32 + ox))" y="$(fmt(-25 + oy))" width="64" height="36" rx="4" fill="$ink"/>
   <rect x="$(fmt(-27 + ox))" y="$(fmt(-20 + oy))" width="54" height="26" rx="2.5" fill="$screen"/>
   <rect x="$(fmt(-2 + ox))" y="$(fmt(11 + oy))" width="4" height="12" rx="2" fill="$ink"/>
