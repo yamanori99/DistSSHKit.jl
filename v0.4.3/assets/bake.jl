@@ -11,6 +11,7 @@ Derived:
   social/social-preview-*.svg|.png|.gif
   diagram/topology-dark.svg
   diagram/topology.png
+  favicon.svg / favicon.ico (Documenter tab icon; from logo-static)
 
 README.md, README.ja.md, and docs intro all use the English topology
 (`parent` / `child 1…n`). Do not bake a Japanese-labelled copy.
@@ -28,6 +29,7 @@ Documenter looks for assets/logo.svg and assets/logo-dark.svg; bake makes
 =#
 
 using Printf
+using Zlib_jll
 
 const ROOT = @__DIR__
 const LOGO_DIR = "logo"
@@ -92,6 +94,13 @@ const PNG_SCALE = 2
 # often rejects 2×). Sharpness comes from PNG_SCALE, not a larger deliverable.
 const LOGO_PNG = 960
 const SOCIAL_PNG_W, SOCIAL_PNG_H = SOCIAL_W, SOCIAL_H
+# Browser tab icon. Transparent SVG/PNG; light + dark (Firefox uses media=).
+const FAVICON = "favicon.ico"
+const FAVICON_SVG = "favicon.svg"
+const FAVICON_DARK_SVG = "favicon-dark.svg"
+const FAVICON_PX = (16, 32, 48)
+# Parent-only tab mark. Dots are `#juliadot-lg` scaled up a little about (0,-6).
+const FAVICON_DOT_SCALE = 1.15
 
 die(msg) = (println(stderr, "error: ", msg); exit(1))
 
@@ -115,6 +124,164 @@ end
 
 function png_matches_size(path::AbstractString, w::Int, h::Int)
     png_ihdr_size(path) == (w, h)
+end
+
+function be32(data::Vector{UInt8}, i::Int)
+    (UInt32(data[i]) << 24) | (UInt32(data[i + 1]) << 16) | (UInt32(data[i + 2]) << 8) | UInt32(data[i + 3])
+end
+
+function zlib_uncompress(src::Vector{UInt8})
+    dest_cap = max(length(src) * 8, 4096)
+    while dest_cap <= 8 * 1024 * 1024
+        dest = Vector{UInt8}(undef, dest_cap)
+        dest_len = Ref{Culong}(dest_cap)
+        ret = @ccall Zlib_jll.libz.uncompress(
+            dest::Ptr{UInt8},
+            dest_len::Ptr{Culong},
+            src::Ptr{UInt8},
+            length(src)::Culong,
+        )::Cint
+        ret == 0 && return dest[1:Int(dest_len[])]
+        ret == -5 || die("zlib uncompress failed: $ret")
+        dest_cap *= 2
+    end
+    die("zlib uncompress too large")
+end
+
+function png_paeth(a::UInt8, b::UInt8, c::UInt8)
+    p = Int(a) + Int(b) - Int(c)
+    pa, pb, pc = abs(p - Int(a)), abs(p - Int(b)), abs(p - Int(c))
+    pa <= pb && pa <= pc && return a
+    pb <= pc && return b
+    return c
+end
+
+"""8-bit RGB/RGBA PNG → top-down RGBA bytes."""
+function png_rgba8(path::AbstractString)
+    data = read(path)
+    data[1:8] == UInt8[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] || die("not a PNG: $path")
+    i, w, h, bit_depth, color_type = 9, 0, 0, 0, 0
+    idat = UInt8[]
+    while i + 8 <= length(data)
+        n = Int(be32(data, i))
+        typ = String(data[i + 4:i + 7])
+        chunk = data[i + 8:i + 7 + n]
+        if typ == "IHDR"
+            w = Int(be32(chunk, 1))
+            h = Int(be32(chunk, 5))
+            bit_depth = Int(chunk[9])
+            color_type = Int(chunk[10])
+            chunk[13] == 0x00 || die("interlaced PNG: $path")
+        elseif typ == "IDAT"
+            append!(idat, chunk)
+        elseif typ == "IEND"
+            break
+        end
+        i += 12 + n
+    end
+    bit_depth == 8 || die("favicon PNG is not 8-bit: $path")
+    ch = color_type == 2 ? 3 : color_type == 6 ? 4 : die("favicon PNG color type $color_type: $path")
+    raw = zlib_uncompress(idat)
+    stride = w * ch
+    length(raw) == h * (1 + stride) || die("PNG inflate size mismatch: $path")
+    prev = zeros(UInt8, stride)
+    out = Vector{UInt8}(undef, w * h * 4)
+    o = 1
+    for row in 1:h
+        ft = raw[(row - 1) * (1 + stride) + 1]
+        cur = raw[(row - 1) * (1 + stride) + 2:(row - 1) * (1 + stride) + 1 + stride]
+        recon = Vector{UInt8}(undef, stride)
+        for x in 1:stride
+            a = x > ch ? recon[x - ch] : 0x00
+            b = prev[x]
+            c = x > ch ? prev[x - ch] : 0x00
+            v = cur[x]
+            recon[x] = if ft == 0
+                v
+            elseif ft == 1
+                v + a
+            elseif ft == 2
+                v + b
+            elseif ft == 3
+                v + UInt8((Int(a) + Int(b)) >> 1)
+            elseif ft == 4
+                v + png_paeth(a, b, c)
+            else
+                die("bad PNG filter $ft")
+            end
+        end
+        for x in 1:w
+            p = (x - 1) * ch
+            out[o] = recon[p + 1]
+            out[o + 1] = recon[p + 2]
+            out[o + 2] = recon[p + 3]
+            out[o + 3] = ch == 4 ? recon[p + 4] : 0xff
+            o += 4
+        end
+        prev = recon
+    end
+    return w, h, out
+end
+
+function bmp_ico_image(sz::Int, rgba::Vector{UInt8})
+    xor_nbytes = sz * sz * 4
+    and_row = ((sz + 31) ÷ 32) * 4
+    and_nbytes = and_row * sz
+    buf = IOBuffer()
+    write(buf, htol(UInt32(40)))
+    write(buf, htol(Int32(sz)))
+    write(buf, htol(Int32(2 * sz)))
+    write(buf, htol(UInt16(1)))
+    write(buf, htol(UInt16(32)))
+    write(buf, htol(UInt32(0)))
+    write(buf, htol(UInt32(xor_nbytes + and_nbytes)))
+    write(buf, htol(UInt32(0)))
+    write(buf, htol(UInt32(0)))
+    write(buf, htol(UInt32(0)))
+    write(buf, htol(UInt32(0)))
+    for y in (sz - 1):-1:0
+        for x in 0:(sz - 1)
+            p = (y * sz + x) * 4 + 1
+            write(buf, rgba[p + 2], rgba[p + 1], rgba[p], rgba[p + 3])
+        end
+    end
+    write(buf, zeros(UInt8, and_nbytes))
+    return take!(buf)
+end
+
+"""BMP-in-ICO so Firefox tabs actually draw the mark (PNG-in-ICO is often dropped)."""
+function write_bmp_ico!(dest::AbstractString, pngs::Vector{Pair{Int, String}})
+    payloads = Vector{Tuple{Int, Vector{UInt8}}}(undef, length(pngs))
+    for (i, (sz, path)) in enumerate(pngs)
+        png_matches_size(path, sz, sz) || die("favicon PNG is not $(sz)×$(sz): $path")
+        w, h, rgba = png_rgba8(path)
+        (w, h) == (sz, sz) || die("PNG decode size mismatch: $path")
+        payloads[i] = (sz, bmp_ico_image(sz, rgba))
+    end
+    n = length(payloads)
+    header = 6 + 16 * n
+    open(dest, "w") do io
+        write(io, htol(UInt16(0)))
+        write(io, htol(UInt16(1)))
+        write(io, htol(UInt16(n)))
+        off = header
+        for (sz, data) in payloads
+            wbyte = sz >= 256 ? 0x00 : UInt8(sz)
+            write(io, wbyte)
+            write(io, wbyte)
+            write(io, UInt8(0))
+            write(io, UInt8(0))
+            write(io, htol(UInt16(1)))
+            write(io, htol(UInt16(32)))
+            write(io, htol(UInt32(length(data))))
+            write(io, htol(UInt32(off)))
+            off += length(data)
+        end
+        for (_, data) in payloads
+            write(io, data)
+        end
+    end
+    return dest
 end
 
 function topology_dark(svg::AbstractString)
@@ -178,6 +345,31 @@ function svg_inner(svg::AbstractString)
     m = match(r"^<svg[^>]*>([\s\S]*)</svg>\s*$", s)
     m === nothing && die("could not strip outer <svg>")
     return m.captures[1]
+end
+
+function build_favicon(_logo_svg::AbstractString=""; dark::Bool=false)
+    # Parent `#master-body` + `#juliadot-lg` about (0,-6), × FAVICON_DOT_SCALE.
+    # No tile fill (Firefox already paints a selected-tab plate). Stroke is
+    # thinner than logo-static 3.5 so the bezel does not read as a slab at 16px.
+    s = FAVICON_DOT_SCALE
+    r = round(4.65 * s; digits=4)
+    red_y = round(-6 + s * (-6.2); digits=4)
+    side_x = round(5.369 * s; digits=4)
+    side_y = round(-6 + s * 3.1; digits=4)
+    ink = dark ? "#ffffff" : "#1a1d21"
+    sw = 2
+    ox, oy = 34.0, 34.5
+    fmt(x) = string(round(x; digits=4))
+    return """<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 68 68" width="68" height="68">
+  <rect x="$(fmt(-32 + ox))" y="$(fmt(-25 + oy))" width="64" height="36" rx="4" fill="none" stroke="$(ink)" stroke-width="$(sw)" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="$(fmt(ox))" y1="$(fmt(12 + oy))" x2="$(fmt(ox))" y2="$(fmt(22 + oy))" fill="none" stroke="$(ink)" stroke-width="$(sw)" stroke-linecap="round"/>
+  <line x1="$(fmt(-21 + ox))" y1="$(fmt(24 + oy))" x2="$(fmt(21 + ox))" y2="$(fmt(24 + oy))" fill="none" stroke="$(ink)" stroke-width="$(sw)" stroke-linecap="round"/>
+  <circle cx="$(fmt(ox))" cy="$(fmt(red_y + oy))" r="$r" fill="#cb3c33"/>
+  <circle cx="$(fmt(-side_x + ox))" cy="$(fmt(side_y + oy))" r="$r" fill="#389826"/>
+  <circle cx="$(fmt(side_x + ox))" cy="$(fmt(side_y + oy))" r="$r" fill="#9558b2"/>
+</svg>
+"""
 end
 
 function build_social(logo_svg::AbstractString, kind::AbstractString)
@@ -277,6 +469,21 @@ function ensure_symlink!(link_name::AbstractString, target_name::AbstractString)
     println("linked $link_name → $target_name")
 end
 
+"""`docs/src/favicon.*` so Firefox can fetch `./favicon.ico` next to `index.html`."""
+function ensure_docroot_link!(name::AbstractString)
+    srcroot = dirname(ROOT)
+    target = joinpath("assets", name)
+    isfile(joinpath(ROOT, name)) || return
+    link = joinpath(srcroot, name)
+    if islink(link) || isfile(link)
+        rm(link)
+    end
+    cd(srcroot) do
+        symlink(target, name)
+    end
+    println("linked ../$name → $target")
+end
+
 function bake_svgs!()
     mkpath(joinpath(ROOT, LOGO_DIR))
     mkpath(joinpath(ROOT, SOCIAL_DIR))
@@ -300,6 +507,10 @@ function bake_svgs!()
     topology = readfile(diagram_path("topology.svg"))
     topology_dark_svg = topology_dark(topology)
     writefile(diagram_path("topology-dark.svg"), topology_dark_svg)
+    writefile(FAVICON_SVG, build_favicon(logo_static))
+    writefile(FAVICON_DARK_SVG, build_favicon(logo_static; dark=true))
+    ensure_docroot_link!(FAVICON_SVG)
+    ensure_docroot_link!(FAVICON_DARK_SVG)
 
     return (;
         logo,
@@ -567,6 +778,12 @@ function bake_pngs!(arts)
         println(stderr, "warn: skip social-preview-static.png (need rsvg-convert or Chromium, plus sips/ffmpeg to keep 1280×640)")
     end
 
+    if bake_favicon!(arts)
+        ok_any = true
+    else
+        println(stderr, "warn: skip $FAVICON (need rsvg-convert or Chromium)")
+    end
+
     for (svg_rel, png_rel, svg_text) in (
         (diagram_path("topology.svg"), diagram_path("topology.png"), arts.topology),
     )
@@ -590,6 +807,56 @@ function bake_pngs!(arts)
         end
     end
     return ok_any
+end
+
+function bake_favicon!(arts)
+    ico_path = joinpath(ROOT, FAVICON)
+    writefile(FAVICON_SVG, build_favicon(arts.logo_static))
+    writefile(FAVICON_DARK_SVG, build_favicon(arts.logo_static; dark=true))
+    ensure_docroot_link!(FAVICON_SVG)
+    ensure_docroot_link!(FAVICON_DARK_SVG)
+    d = mktempdir(ROOT; prefix=".favicon-")
+    try
+        function raster_variant(svg_rel::AbstractString)
+            html_body = strip_xml_decl(readfile(svg_rel))
+            pngs = Pair{Int, String}[]
+            for px in FAVICON_PX
+                src = joinpath(d, "$(first(splitext(svg_rel)))-$(px).png")
+                body = replace(html_body, r"width=\"[^\"]+\" height=\"[^\"]+\"" => "width=\"$(px)\" height=\"$(px)\"", count=1)
+                if !bake_static_png!(
+                    svg_rel,
+                    relpath(src, ROOT),
+                    body;
+                    w=px,
+                    h=px,
+                    scale=PNG_SCALE,
+                    exact_size=true,
+                )
+                    return nothing
+                end
+                push!(pngs, px => src)
+            end
+            return pngs
+        end
+        light = raster_variant(FAVICON_SVG)
+        light === nothing && return false
+        dark = raster_variant(FAVICON_DARK_SVG)
+        dark === nothing && return false
+        write_bmp_ico!(ico_path, light)
+        png32 = joinpath(ROOT, "favicon.png")
+        png32d = joinpath(ROOT, "favicon-dark.png")
+        cp(first(p for p in light if p[1] == 32)[2], png32; force=true)
+        cp(first(p for p in dark if p[1] == 32)[2], png32d; force=true)
+        println("wrote $FAVICON ($(filesize(ico_path)) bytes)")
+        println("wrote favicon.png ($(filesize(png32)) bytes)")
+        println("wrote favicon-dark.png ($(filesize(png32d)) bytes)")
+        ensure_docroot_link!(FAVICON)
+        ensure_docroot_link!("favicon.png")
+        ensure_docroot_link!("favicon-dark.png")
+        return true
+    finally
+        rm(d; recursive=true, force=true)
+    end
 end
 
 function ffmpeg_gif!(seq_dir::AbstractString, out_gif::AbstractString)
