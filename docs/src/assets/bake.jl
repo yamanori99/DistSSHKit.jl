@@ -348,21 +348,26 @@ function svg_inner(svg::AbstractString)
 end
 
 function build_favicon(_logo_svg::AbstractString=""; dark::Bool=false)
-    # Transparent tile, `#juliadot-lg` only. A filled square doubles Firefox's
-    # selected-tab plate and reads as a nested app icon.
-    _ = dark
-    s = 2.0
+    # Parent `#master-body` + `#juliadot-lg` about (0,-6), × FAVICON_DOT_SCALE.
+    # No tile fill (Firefox already paints a selected-tab plate). Stroke is
+    # thinner than logo-static 3.5 so the bezel does not read as a slab at 16px.
+    s = FAVICON_DOT_SCALE
     r = round(4.65 * s; digits=4)
-    cx, cy = 32.0, 32.0
-    red_y = round(cy + s * (-6.2); digits=4)
-    side_x = round(s * 5.369; digits=4)
-    side_y = round(cy + s * 3.1; digits=4)
+    red_y = round(-6 + s * (-6.2); digits=4)
+    side_x = round(5.369 * s; digits=4)
+    side_y = round(-6 + s * 3.1; digits=4)
+    ink = dark ? "#ffffff" : "#1a1d21"
+    sw = 2
+    ox, oy = 34.0, 34.5
     fmt(x) = string(round(x; digits=4))
     return """<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <circle cx="$(fmt(cx))" cy="$(fmt(red_y))" r="$r" fill="#cb3c33"/>
-  <circle cx="$(fmt(cx - side_x))" cy="$(fmt(side_y))" r="$r" fill="#389826"/>
-  <circle cx="$(fmt(cx + side_x))" cy="$(fmt(side_y))" r="$r" fill="#9558b2"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 68 68" width="68" height="68">
+  <rect x="$(fmt(-32 + ox))" y="$(fmt(-25 + oy))" width="64" height="36" rx="4" fill="none" stroke="$(ink)" stroke-width="$(sw)" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="$(fmt(ox))" y1="$(fmt(12 + oy))" x2="$(fmt(ox))" y2="$(fmt(22 + oy))" fill="none" stroke="$(ink)" stroke-width="$(sw)" stroke-linecap="round"/>
+  <line x1="$(fmt(-21 + ox))" y1="$(fmt(24 + oy))" x2="$(fmt(21 + ox))" y2="$(fmt(24 + oy))" fill="none" stroke="$(ink)" stroke-width="$(sw)" stroke-linecap="round"/>
+  <circle cx="$(fmt(ox))" cy="$(fmt(red_y + oy))" r="$r" fill="#cb3c33"/>
+  <circle cx="$(fmt(-side_x + ox))" cy="$(fmt(side_y + oy))" r="$r" fill="#389826"/>
+  <circle cx="$(fmt(side_x + ox))" cy="$(fmt(side_y + oy))" r="$r" fill="#9558b2"/>
 </svg>
 """
 end
