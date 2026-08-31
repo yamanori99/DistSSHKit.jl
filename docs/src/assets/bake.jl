@@ -348,22 +348,23 @@ function svg_inner(svg::AbstractString)
 end
 
 function build_favicon(_logo_svg::AbstractString=""; dark::Bool=false)
-    # Parent `#master-body` as in logo-static. Dots: `#juliadot-lg` about (0,-6), × FAVICON_DOT_SCALE.
-    # Firefox tab icons often skip `<use href>`; keep this file free of defs/use.
+    # Same `#master-body` box as logo-static, filled so a 16px tab reads as a
+    # machine (line art vanishes on Firefox's white selected-tab tile).
     s = FAVICON_DOT_SCALE
     r = round(4.65 * s; digits=4)
     red_y = round(-6 + s * (-6.2); digits=4)
     side_x = round(5.369 * s; digits=4)
     side_y = round(-6 + s * 3.1; digits=4)
-    sw = 3.5
     ox, oy = 34.0, 34.5
     ink = dark ? "#f8fafc" : "#1a1d21"
+    screen = dark ? "#1a1d21" : "#ffffff"
     fmt(x) = string(round(x; digits=4))
     return """<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 68 68" width="68" height="68">
-  <rect x="$(fmt(-32 + ox))" y="$(fmt(-25 + oy))" width="64" height="36" rx="4" fill="none" stroke="$ink" stroke-width="$(sw)" stroke-linecap="round" stroke-linejoin="round"/>
-  <line x1="$(fmt(ox))" y1="$(fmt(12 + oy))" x2="$(fmt(ox))" y2="$(fmt(22 + oy))" fill="none" stroke="$ink" stroke-width="$(sw)" stroke-linecap="round"/>
-  <line x1="$(fmt(-21 + ox))" y1="$(fmt(24 + oy))" x2="$(fmt(21 + ox))" y2="$(fmt(24 + oy))" fill="none" stroke="$ink" stroke-width="$(sw)" stroke-linecap="round"/>
+  <rect x="$(fmt(-32 + ox))" y="$(fmt(-25 + oy))" width="64" height="36" rx="4" fill="$ink"/>
+  <rect x="$(fmt(-27 + ox))" y="$(fmt(-20 + oy))" width="54" height="26" rx="2.5" fill="$screen"/>
+  <rect x="$(fmt(-2 + ox))" y="$(fmt(11 + oy))" width="4" height="12" rx="2" fill="$ink"/>
+  <rect x="$(fmt(-21 + ox))" y="$(fmt(22.25 + oy))" width="42" height="3.5" rx="1.75" fill="$ink"/>
   <circle cx="$(fmt(ox))" cy="$(fmt(red_y + oy))" r="$r" fill="#cb3c33"/>
   <circle cx="$(fmt(-side_x + ox))" cy="$(fmt(side_y + oy))" r="$r" fill="#389826"/>
   <circle cx="$(fmt(side_x + ox))" cy="$(fmt(side_y + oy))" r="$r" fill="#9558b2"/>

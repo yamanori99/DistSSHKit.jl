@@ -17,8 +17,7 @@ makedocs(;
         edit_link="main",
         assets=[
             "assets/custom.css",
-            # PNG data URIs (nested pages + no Documenter type=). media= for
-            # Firefox; light SVG also has prefers-color-scheme for Chrome.
+            # PNG data URIs (nested pages + no Documenter type=). media= for Firefox.
             RawHTMLHeadContent(
                 """<link rel="icon" type="image/png" sizes="32x32" media="(prefers-color-scheme: light)" href="data:image/png;base64,$(FAVICON_PNG_B64)"/><link rel="icon" type="image/png" sizes="32x32" media="(prefers-color-scheme: dark)" href="data:image/png;base64,$(FAVICON_DARK_PNG_B64)"/>""",
             ),

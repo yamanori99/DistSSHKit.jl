@@ -19,7 +19,7 @@ assets/
   logo.svg          → logo/logo-dynamic.svg          (Documenter)
   logo-dark.svg     → logo/logo-dark-dynamic.svg     (Documenter)
   logo/             sources + logo rasters
-  favicon.svg / favicon-dark.svg / favicon.ico   tab icon (parent; light + dark)
+  favicon.svg / favicon-dark.svg / favicon.ico   tab icon (filled parent; light + dark)
   social/           social-preview SVGs + rasters
   diagram/          topology.svg (hand-edit) + dark SVG + PNG (bake)
 ```
