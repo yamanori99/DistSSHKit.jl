@@ -348,22 +348,18 @@ function svg_inner(svg::AbstractString)
 end
 
 function build_favicon(_logo_svg::AbstractString=""; dark::Bool=false)
-    # Square filled face (Queue-weight). Same Julia-dot geometry as `#juliadot-lg`,
-    # scaled to the tile. A landscape monitor + stand leaves empty chrome around it.
-    s = 1.8
+    # Transparent tile, `#juliadot-lg` only. A filled square doubles Firefox's
+    # selected-tab plate and reads as a nested app icon.
+    _ = dark
+    s = 2.0
     r = round(4.65 * s; digits=4)
     cx, cy = 32.0, 32.0
     red_y = round(cy + s * (-6.2); digits=4)
     side_x = round(s * 5.369; digits=4)
     side_y = round(cy + s * 3.1; digits=4)
-    ink = "#1a1d21"
-    screen = dark ? "#2a2e34" : "#ffffff"
-    edge = dark ? """ stroke="#f8fafc" stroke-width="3" """ : ""
     fmt(x) = string(round(x; digits=4))
     return """<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <rect x="2" y="2" width="60" height="60" rx="12" fill="$ink"$edge/>
-  <rect x="10" y="10" width="44" height="44" rx="8" fill="$screen"/>
   <circle cx="$(fmt(cx))" cy="$(fmt(red_y))" r="$r" fill="#cb3c33"/>
   <circle cx="$(fmt(cx - side_x))" cy="$(fmt(side_y))" r="$r" fill="#389826"/>
   <circle cx="$(fmt(cx + side_x))" cy="$(fmt(side_y))" r="$r" fill="#9558b2"/>
