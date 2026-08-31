@@ -99,8 +99,8 @@ const FAVICON = "favicon.ico"
 const FAVICON_SVG = "favicon.svg"
 const FAVICON_DARK_SVG = "favicon-dark.svg"
 const FAVICON_PX = (16, 32, 48)
-# Parent-only tab mark. Dots are `#juliadot-lg` scaled up a little about (0,-6).
-const FAVICON_DOT_SCALE = 1.15
+# Parent-only tab mark. Same `#juliadot-lg` as logo-static (`use` at (0,-6)).
+const FAVICON_DOT_SCALE = 1.0
 
 die(msg) = (println(stderr, "error: ", msg); exit(1))
 
@@ -348,16 +348,15 @@ function svg_inner(svg::AbstractString)
 end
 
 function build_favicon(_logo_svg::AbstractString=""; dark::Bool=false)
-    # Parent `#master-body` + `#juliadot-lg` about (0,-6), × FAVICON_DOT_SCALE.
-    # No tile fill (Firefox already paints a selected-tab plate). Stroke is
-    # thinner than logo-static 3.5 so the bezel does not read as a slab at 16px.
+    # Parent `#master-body` + `#juliadot-lg` about (0,-6). Stroke 3.5 on a
+    # 64-wide bezel — same ratio as logo-static. No tile fill.
     s = FAVICON_DOT_SCALE
     r = round(4.65 * s; digits=4)
     red_y = round(-6 + s * (-6.2); digits=4)
     side_x = round(5.369 * s; digits=4)
     side_y = round(-6 + s * 3.1; digits=4)
     ink = dark ? "#ffffff" : "#1a1d21"
-    sw = 2
+    sw = 3.5
     ox, oy = 34.0, 34.5
     fmt(x) = string(round(x; digits=4))
     return """<?xml version="1.0" encoding="UTF-8"?>
