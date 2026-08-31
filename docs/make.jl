@@ -17,9 +17,10 @@ makedocs(;
         edit_link="main",
         assets=[
             "assets/custom.css",
-            # PNG data URIs (nested pages + no Documenter type=). media= for Firefox.
+            # Firefox ignores media= and uses the last rel=icon. Keep the light
+            # PNG last so light chrome does not stick on the dark mark.
             RawHTMLHeadContent(
-                """<link rel="icon" type="image/png" sizes="32x32" media="(prefers-color-scheme: light)" href="data:image/png;base64,$(FAVICON_PNG_B64)"/><link rel="icon" type="image/png" sizes="32x32" media="(prefers-color-scheme: dark)" href="data:image/png;base64,$(FAVICON_DARK_PNG_B64)"/>""",
+                """<link rel="icon" type="image/png" sizes="32x32" media="(prefers-color-scheme: dark)" href="data:image/png;base64,$(FAVICON_DARK_PNG_B64)"/><link rel="icon" type="image/png" sizes="32x32" media="(prefers-color-scheme: light)" href="data:image/png;base64,$(FAVICON_PNG_B64)"/>""",
             ),
             # Search Console (URL-prefix: https://yamanori99.github.io/DistSSHKit.jl/).
             RawHTMLHeadContent(
