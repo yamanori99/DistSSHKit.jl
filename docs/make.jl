@@ -5,7 +5,6 @@ using Base64
 DocMeta.setdocmeta!(DistSSHKit, :DocTestSetup, :(using DistSSHKit); recursive=true)
 
 const FAVICON_PNG_B64 = base64encode(read(joinpath(@__DIR__, "src", "assets", "favicon.png")))
-const FAVICON_DARK_PNG_B64 = base64encode(read(joinpath(@__DIR__, "src", "assets", "favicon-dark.png")))
 
 makedocs(;
     modules=[DistSSHKit],
@@ -17,10 +16,10 @@ makedocs(;
         edit_link="main",
         assets=[
             "assets/custom.css",
-            # Firefox ignores media= and uses the last rel=icon. Keep the light
-            # PNG last so light chrome does not stick on the dark mark.
+            # One light PNG. OS dark + Firefox light chrome was picking the dark
+            # mark (white bezel vanished, only the black screen remained).
             RawHTMLHeadContent(
-                """<link rel="icon" type="image/png" sizes="32x32" media="(prefers-color-scheme: dark)" href="data:image/png;base64,$(FAVICON_DARK_PNG_B64)"/><link rel="icon" type="image/png" sizes="32x32" media="(prefers-color-scheme: light)" href="data:image/png;base64,$(FAVICON_PNG_B64)"/>""",
+                """<link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,$(FAVICON_PNG_B64)"/>""",
             ),
             # Search Console (URL-prefix: https://yamanori99.github.io/DistSSHKit.jl/).
             RawHTMLHeadContent(
