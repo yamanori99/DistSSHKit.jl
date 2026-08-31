@@ -348,26 +348,25 @@ function svg_inner(svg::AbstractString)
 end
 
 function build_favicon(_logo_svg::AbstractString=""; dark::Bool=false)
-    # Same `#master-body` box as logo-static, filled so a 16px tab reads as a
-    # machine (line art vanishes on Firefox's white selected-tab tile).
-    s = FAVICON_DOT_SCALE
+    # Square filled face (Queue-weight). Same Julia-dot geometry as `#juliadot-lg`,
+    # scaled to the tile. A landscape monitor + stand leaves empty chrome around it.
+    s = 1.8
     r = round(4.65 * s; digits=4)
-    red_y = round(-6 + s * (-6.2); digits=4)
-    side_x = round(5.369 * s; digits=4)
-    side_y = round(-6 + s * 3.1; digits=4)
-    ox, oy = 34.0, 34.5
-    ink = dark ? "#f8fafc" : "#1a1d21"
-    screen = dark ? "#1a1d21" : "#ffffff"
+    cx, cy = 32.0, 32.0
+    red_y = round(cy + s * (-6.2); digits=4)
+    side_x = round(s * 5.369; digits=4)
+    side_y = round(cy + s * 3.1; digits=4)
+    ink = "#1a1d21"
+    screen = dark ? "#2a2e34" : "#ffffff"
+    edge = dark ? """ stroke="#f8fafc" stroke-width="3" """ : ""
     fmt(x) = string(round(x; digits=4))
     return """<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="2 2.9 64 64" width="64" height="64">
-  <rect x="$(fmt(-32 + ox))" y="$(fmt(-25 + oy))" width="64" height="36" rx="4" fill="$ink"/>
-  <rect x="$(fmt(-27 + ox))" y="$(fmt(-20 + oy))" width="54" height="26" rx="2.5" fill="$screen"/>
-  <rect x="$(fmt(-2 + ox))" y="$(fmt(11 + oy))" width="4" height="12" rx="2" fill="$ink"/>
-  <rect x="$(fmt(-21 + ox))" y="$(fmt(22.25 + oy))" width="42" height="3.5" rx="1.75" fill="$ink"/>
-  <circle cx="$(fmt(ox))" cy="$(fmt(red_y + oy))" r="$r" fill="#cb3c33"/>
-  <circle cx="$(fmt(-side_x + ox))" cy="$(fmt(side_y + oy))" r="$r" fill="#389826"/>
-  <circle cx="$(fmt(side_x + ox))" cy="$(fmt(side_y + oy))" r="$r" fill="#9558b2"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect x="2" y="2" width="60" height="60" rx="12" fill="$ink"$edge/>
+  <rect x="10" y="10" width="44" height="44" rx="8" fill="$screen"/>
+  <circle cx="$(fmt(cx))" cy="$(fmt(red_y))" r="$r" fill="#cb3c33"/>
+  <circle cx="$(fmt(cx - side_x))" cy="$(fmt(side_y))" r="$r" fill="#389826"/>
+  <circle cx="$(fmt(cx + side_x))" cy="$(fmt(side_y))" r="$r" fill="#9558b2"/>
 </svg>
 """
 end
