@@ -5,6 +5,7 @@ using Base64
 DocMeta.setdocmeta!(DistSSHKit, :DocTestSetup, :(using DistSSHKit); recursive=true)
 
 const FAVICON_PNG_B64 = base64encode(read(joinpath(@__DIR__, "src", "assets", "favicon.png")))
+const FAVICON_DARK_PNG_B64 = base64encode(read(joinpath(@__DIR__, "src", "assets", "favicon-dark.png")))
 
 makedocs(;
     modules=[DistSSHKit],
@@ -16,11 +17,11 @@ makedocs(;
         edit_link="main",
         assets=[
             "assets/custom.css",
-            # One light PNG. OS dark + Firefox light chrome was picking the dark
-            # mark (white bezel vanished, only the black screen remained).
+            # Tab icon follows Documenter theme (`html.theme--*`), not OS scheme.
             RawHTMLHeadContent(
-                """<link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,$(FAVICON_PNG_B64)"/>""",
+                """<link id="docs-favicon" rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,$(FAVICON_PNG_B64)" data-light="data:image/png;base64,$(FAVICON_PNG_B64)" data-dark="data:image/png;base64,$(FAVICON_DARK_PNG_B64)"/>""",
             ),
+            "assets/favicon-theme.js",
             # Search Console (URL-prefix: https://yamanori99.github.io/DistSSHKit.jl/).
             RawHTMLHeadContent(
                 """<meta name="google-site-verification" content="frfWUqaHuYYDmZzSSnBhfguS0Y5YC6zssij5qAot6ww" />""",
