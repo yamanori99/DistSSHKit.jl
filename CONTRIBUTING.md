@@ -5,12 +5,15 @@ Internals of this repo.
 - Users: [stable docs](https://yamanori99.github.io/DistSSHKit.jl/stable/) (`docs/`), [README.md](README.md), [README.ja.md](README.ja.md), [NEWS.md](NEWS.md)
 - Dev docs: [dev](https://yamanori99.github.io/DistSSHKit.jl/dev/)
 
-## Feature freeze
+## Scope
+
+This repo is one run (`go` / `drive` / `setup` and the bang APIs). Jobs that
+wait in line are [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl).
 
 Happy-path bugs (ordinary `~/` roots, default `drive` / `go` / `setup`);
 CI / Julia slots / Aqua / JETLS drift. Enhancement Issue first, then a PR.
 
-**Does not land here:** new job shapes, a job queue, or `schedule` inside Kit.
+**Does not land here:** a job queue, or `schedule`, inside Kit.
 Windows and GPU-package help stay on the horizon
 ([Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26)).
 
