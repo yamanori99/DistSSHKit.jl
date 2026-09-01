@@ -566,6 +566,37 @@ function _go_exec_slot!(
     return (run=run_res, collect=collect_res, collect_fail=collect_fail)
 end
 
+"""Log header matching drive: subcommand args, Julia env, then the go banner."""
+function _go_print_run_header!(
+    original_args::Vector{String},
+    script_path::AbstractString,
+    script_args::AbstractVector{<:AbstractString},
+    slots::Vector{GoSlot},
+    proj::AbstractString,
+    anchor::AbstractString,
+)
+    writeln_field("Subcommand args", subcommand_args_record("go", original_args))
+    for (label, value) in julia_env_record()
+        writeln_field(label, value)
+    end
+    writeln_both("")
+    print_header("DistSSHKit go")
+    writeln_both("")
+    writeln_field("Script", display_path(script_path, anchor))
+    writeln_field("Args", isempty(script_args) ? "—" : join(script_args, " "))
+    writeln_field("Project", cli_project_disp(proj, anchor))
+    writeln_field("DistSSHKit", dist_ssh_kit_version())
+    app_git = get_local_git_hash(proj; short=8)
+    writeln_field("App git", app_git === nothing ? "unavailable" : app_git)
+    writeln_field("Slots", string(length(slots)))
+    for s in slots
+        where = s.kind === :parent ? PARENT_HOST_NAME : String(something(s.host, s.label))
+        writeln_both("  · $(s.label)  ($where)"; color=:light_black)
+    end
+    writeln_both("")
+    return nothing
+end
+
 function _go_complete!(
     result::GoResult,
     batch_dir::AbstractString,
@@ -639,6 +670,7 @@ function go!(
     path_anchor::Union{Nothing,AbstractString}=nothing,
     julia::Union{Nothing,AbstractString}=nothing,
     hint_surface::Symbol=:api,
+    original_args::Vector{String}=String[],
 )::GoResult
     script_path = canonical_local_path(script)
     proj = canonical_local_path(project)
@@ -719,15 +751,7 @@ function go!(
         last_run = Ref(DriveResult(true, 0))
         last_collect = Ref{Union{Nothing,CollectResult}}(nothing)
 
-        print_header("DistSSHKit go")
-        writeln_both("")
-        writeln_field("Script", display_path(script_path, anchor))
-        writeln_field("Slots", string(length(slots)))
-        for s in slots
-            where = s.kind === :parent ? PARENT_HOST_NAME : String(something(s.host, s.label))
-            writeln_both("  · $(s.label)  ($where)"; color=:light_black)
-        end
-        writeln_both("")
+        _go_print_run_header!(original_args, script_path, args, slots, proj, anchor)
 
         n_slots = length(slots)
         if n_slots > 0
@@ -737,18 +761,16 @@ function go!(
                 items=String[s.label for s in slots],
                 kind=:go,
             )
-            if !isempty(child_hosts)
-                _kit_progress_mark!("ready")
-            end
+            _kit_progress_mark!("ready")
         end
         sync_result = nothing
         sync_mode = something(sync, false)
+        n_slots > 0 && _kit_progress_mark!("sync")
         # `sync=false`: remotes must already have Project.toml + deps.
         # With `:rsync` / `:sync`, copy first (empty `~/jobs/<id>` is expected).
         if sync_mode === false
             _go_assert_remotes_ready!(child_hosts, sess_rr)
         elseif !isempty(child_hosts)
-            n_slots > 0 && _kit_progress_mark!("sync")
             sync_session = KitSession(
                 project=proj,
                 workers=[format_placement_token(:child, h) for h in child_hosts],
@@ -804,6 +826,7 @@ function go!(
             _go_assert_remotes_ready!(child_hosts, sess_rr)
         end
 
+        n_slots > 0 && _kit_progress_mark!("run")
         @sync for slot in slots
             @async begin
                 kit_progress_item!(slot.label; status=:running)
@@ -856,6 +879,7 @@ function go!(
             end
         end
 
+        n_slots > 0 && _kit_progress_mark!("collect")
         if any_run_fail[]
             completed = true
             return _go_complete!(

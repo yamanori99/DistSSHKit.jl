@@ -398,6 +398,7 @@ using Test
                 "progress: step kind=drive job=q-1 label=sync done=0 total=2 cur=1",
             )
             @test rec !== nothing
+            rec isa NamedTuple || return
             @test rec.event === :step
             @test rec.kind === :drive
             @test rec.job == "q-1"
@@ -411,6 +412,7 @@ using Test
             timed = DistSSHKit.parse_progress_line(
                 "progress: done kind=drive ok=true done=1 total=1 t=1710000000.5",
             )
+            timed isa NamedTuple || return
             @test timed.t == 1710000000.5
             _with_tempdir() do tmp
                 p = joinpath(tmp, "kit.progress")
@@ -513,6 +515,29 @@ using Test
                 @test occursin("slot", grouped)
                 write(
                     p,
+                    "progress: begin kind=go label=go total=1 t=1.0\n" *
+                    "progress: step kind=go label=ready done=0 total=1 cur=0 t=1.1\n" *
+                    "progress: step kind=go label=sync done=0 total=1 cur=0 t=1.2\n" *
+                    "progress: step kind=go label=run done=0 total=1 cur=0 t=1.3\n" *
+                    "progress: item kind=go label=parent/run status=running done=0 total=1 t=1.4\n" *
+                    "progress: item kind=go label=parent/run status=ok done=0 total=1 t=5.0\n" *
+                    "progress: item kind=go label=parent status=ok done=1 total=1 t=5.0\n" *
+                    "progress: step kind=go label=collect done=1 total=1 cur=1 t=5.1\n" *
+                    "progress: done kind=go ok=true done=1 total=1 t=5.2\n",
+                )
+                prows = DistSSHKit.kit_progress_phases(tmp)
+                plabs = [r.label for r in prows]
+                @test "ready" in plabs
+                @test "sync" in plabs
+                @test "run" in plabs
+                @test "collect" in plabs
+                @test prows[findfirst(==("run"), plabs)].seconds == 3.8
+                @test prows[findfirst(==("collect"), plabs)].seconds ≈ 0.1
+                ptext = DistSSHKit._format_kit_progress_phases(prows)
+                @test occursin("script", ptext)
+                @test !occursin("driver script", ptext)
+                write(
+                    p,
                     "progress: begin kind=drive label=drive total=7 t=1.0\n" *
                     "progress: step kind=drive label=workers done=3 total=7 cur=4 t=8.0\n" *
                     "progress: item kind=drive label=parent/workers status=running done=3 total=7 t=8.0\n" *
@@ -547,6 +572,7 @@ using Test
             done = DistSSHKit.parse_progress_line(
                 "progress: done kind=go ok=true done=2 total=2",
             )
+            done isa NamedTuple || return
             @test done.event === :done
             @test done.ok === true
             @test done.job === nothing
@@ -556,10 +582,15 @@ using Test
                 write(a, "noise\nprogress: begin kind=drive job=old label=drive total=1\n")
                 write(b, "progress: done kind=drive job=new ok=true done=1 total=1\n")
                 latest = DistSSHKit.kit_progress_latest(tmp)
+                latest isa NamedTuple || return
                 @test latest.event === :done
                 @test latest.job == "new"
-                @test DistSSHKit.kit_progress_latest(a).event === :begin
-                @test DistSSHKit.kit_progress_latest(tmp; job_id="old").job == "old"
+                oldrec = DistSSHKit.kit_progress_latest(a)
+                oldrec isa NamedTuple || return
+                @test oldrec.event === :begin
+                by_job = DistSSHKit.kit_progress_latest(tmp; job_id="old")
+                by_job isa NamedTuple || return
+                @test by_job.job == "old"
                 @test DistSSHKit.kit_progress_latest(tmp; job_id="missing") === nothing
             end
             _with_tempdir() do tmp
@@ -574,8 +605,12 @@ using Test
                     body = read(sidecar, String)
                     @test occursin("progress: begin kind=drive", body)
                     @test occursin("progress: done kind=drive ok=true", body)
-                    @test DistSSHKit.kit_progress_latest(tmp).event === :done
-                    @test DistSSHKit.kit_progress_latest(sidecar).event === :done
+                    got = DistSSHKit.kit_progress_latest(tmp)
+                    got isa NamedTuple || return
+                    @test got.event === :done
+                    side = DistSSHKit.kit_progress_latest(sidecar)
+                    side isa NamedTuple || return
+                    @test side.event === :done
                 finally
                     DistSSHKit._set_kit_progress_sidecar!(nothing)
                 end

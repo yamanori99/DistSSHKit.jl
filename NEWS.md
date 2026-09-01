@@ -7,6 +7,10 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 - Docs pages use the kit mark as the browser tab icon (`favicon.ico`).
 
+- `go` writes the same Julia / project log header as `drive`. Time lists
+  `ready` / `sync` / `run` / `collect` even on a parent-only run (`run` is the
+  script, not the drive driver).
+
 ## 0.4.3
 
 Patch after `0.4.2`.
