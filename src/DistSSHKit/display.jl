@@ -1239,7 +1239,7 @@ function _kit_progress_records(
         try
             for line in eachline(f)
                 rec = parse_progress_line(line)
-                rec === nothing && continue
+                rec isa NamedTuple || continue
                 want !== nothing && rec.job != want && continue
                 push!(recs, rec)
             end

@@ -17,7 +17,8 @@ end
 """Log `current-step/host` when the live run is `kind=:setup`."""
 function _setup_host_span!(host::AbstractString, status::Symbol)
     raw = KIT_PROGRESS[]
-    raw isa KitProgressState && raw.kind === :setup || return nothing
+    raw isa KitProgressState || return nothing
+    raw.kind === :setup || return nothing
     step = raw.label
     isempty(step) && (step = raw.title)
     _kit_progress_span!(string(step, "/", host), status)
