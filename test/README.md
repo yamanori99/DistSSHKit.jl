@@ -113,7 +113,6 @@ Open logs with [`test/artifacts/README.md`](artifacts/README.md):
 
 ```bash
 open "$(cat test/artifacts/ssh-e2e/LATEST)/SUMMARY.txt"
-rm -rf test/artifacts/ssh-e2e
 ```
 
 Coverage uploads on **main push** (`Pkg.test` max) and **E2E weekly** / **`cut` PR**
