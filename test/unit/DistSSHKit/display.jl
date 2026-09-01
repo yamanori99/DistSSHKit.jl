@@ -513,6 +513,29 @@ using Test
                 @test occursin("slot", grouped)
                 write(
                     p,
+                    "progress: begin kind=go label=go total=1 t=1.0\n" *
+                    "progress: step kind=go label=ready done=0 total=1 cur=0 t=1.1\n" *
+                    "progress: step kind=go label=sync done=0 total=1 cur=0 t=1.2\n" *
+                    "progress: step kind=go label=run done=0 total=1 cur=0 t=1.3\n" *
+                    "progress: item kind=go label=parent/run status=running done=0 total=1 t=1.4\n" *
+                    "progress: item kind=go label=parent/run status=ok done=0 total=1 t=5.0\n" *
+                    "progress: item kind=go label=parent status=ok done=1 total=1 t=5.0\n" *
+                    "progress: step kind=go label=collect done=1 total=1 cur=1 t=5.1\n" *
+                    "progress: done kind=go ok=true done=1 total=1 t=5.2\n",
+                )
+                prows = DistSSHKit.kit_progress_phases(tmp)
+                plabs = [r.label for r in prows]
+                @test "ready" in plabs
+                @test "sync" in plabs
+                @test "run" in plabs
+                @test "collect" in plabs
+                @test prows[findfirst(==("run"), plabs)].seconds == 3.8
+                @test prows[findfirst(==("collect"), plabs)].seconds ≈ 0.1
+                ptext = DistSSHKit._format_kit_progress_phases(prows)
+                @test occursin("script", ptext)
+                @test !occursin("driver script", ptext)
+                write(
+                    p,
                     "progress: begin kind=drive label=drive total=7 t=1.0\n" *
                     "progress: step kind=drive label=workers done=3 total=7 cur=4 t=8.0\n" *
                     "progress: item kind=drive label=parent/workers status=running done=3 total=7 t=8.0\n" *

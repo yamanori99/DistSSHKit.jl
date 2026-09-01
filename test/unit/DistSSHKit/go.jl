@@ -267,6 +267,27 @@ using Dates
                 end
                 @test !occursin("Log file:", out)
             end
+            r = redirect_stdout(devnull) do
+                DistSSHKit.go!(
+                    script, ["parent:1"];
+                    project=proj, quiet=true, yes=true,
+                    original_args=["parent:1", "job.jl"],
+                )
+            end
+            @test r.ok
+            logs = filter(n -> startswith(n, "go_") && endswith(n, ".log"), readdir(r.output_dir))
+            @test length(logs) == 1
+            body = read(joinpath(r.output_dir, only(logs)), String)
+            @test occursin("Subcommand args: go", body)
+            @test occursin("Julia binary:", body)
+            @test occursin("DistSSHKit:", body)
+            @test occursin("Project:", body)
+            @test occursin("Slots: 1", body)
+            prog = read(joinpath(r.output_dir, "kit.progress"), String)
+            @test occursin("label=ready", prog)
+            @test occursin("label=sync", prog)
+            @test occursin("label=run", prog)
+            @test occursin("label=collect", prog)
         end
     end
 

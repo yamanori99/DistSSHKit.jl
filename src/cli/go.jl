@@ -28,6 +28,7 @@ const PROJECT_ROOT = cli_project_root(@__DIR__)
 const _PATH_ANCHOR = DistSSHKit.canonical_local_path(PROJECT_ROOT)
 
 function go_main()::Cint
+    original_args = copy(ARGS)
     parsed = parse_go_args(ARGS)
     if parsed.show_version
         println_kit_version()
@@ -58,6 +59,7 @@ function go_main()::Cint
         hosts_file=nothing,
         julia=kw[:julia],
         hint_surface=:cli,
+        original_args=original_args,
     )
     report_go_errors(result)
     return result.ok ? 0 : 1

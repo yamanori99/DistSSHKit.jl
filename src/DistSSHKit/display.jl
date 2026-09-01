@@ -1355,7 +1355,7 @@ function _kit_progress_phase_rows(recs)
         b.t === nothing && continue
         a.event === :done && continue
         end_t = b.t
-        if b.event === :done && first_item_t !== nothing
+        if b.event === :done && first_item_t !== nothing && a.t <= first_item_t
             end_t = first_item_t
         end
         dt = end_t - a.t
@@ -1423,6 +1423,7 @@ function _kit_progress_phase_hint(
     label == "wait" && return "connection grace (default 5s)"
     label == "delay" && return "connection grace (default 5s)"
     label == "init" && return "using, driver sync, prepare"
+    label == "run" && kind === :go && return "script"
     label == "run" && return "driver script"
     label == "collect" && return "gather results"
     label == "rsync" && return "push tree"
