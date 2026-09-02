@@ -36,5 +36,7 @@ runs:
         if [[ -z "${JULIA_APPS_JULIA_CMD:-}" ]]; then
           export JULIA_APPS_JULIA_CMD="$(command -v julia)"
         fi
+        # Match aviatesk/JETLS.jl check@release: no `--threads=auto` (segfaults
+        # on Julia 1.13 in signature_analysis_worker; exit 139).
         # shellcheck disable=SC2086
-        jetls --threads=auto -- check --exit-severity=hint --progress=none $JETLS_FILES
+        jetls check --quiet --root=. --exit-severity=hint --progress=none $JETLS_FILES
