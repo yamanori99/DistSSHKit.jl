@@ -237,6 +237,34 @@ using Test
         )
         @test "--require-all-hosts" in argv_strict
         @test !("--best-effort" in argv_strict)
+        @test_throws ArgumentError DistSSHKit._execute_detached_argv(
+            :drive, "job.jl", ["child:host1"], String[];
+            output_dir="/tmp/out",
+            log_dir=nothing,
+            sync=nothing,
+            julia=nothing,
+            quiet=true,
+            verbosity=nothing,
+            hosts_file=nothing,
+            enable_log=false,
+            package=nothing,
+            require_all_hosts=0,
+            skip_hash_check=true,
+        )
+        @test_throws ArgumentError DistSSHKit._execute_detached_argv(
+            :drive, "job.jl", ["child:host1"], String[];
+            output_dir="/tmp/out",
+            log_dir=nothing,
+            sync=nothing,
+            julia=nothing,
+            quiet=true,
+            verbosity=nothing,
+            hosts_file=nothing,
+            enable_log=false,
+            package=nothing,
+            require_all_hosts=nothing,
+            skip_hash_check=true,
+        )
     end
 
     @testset "execute_kwargs_from_parsed" begin

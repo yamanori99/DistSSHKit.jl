@@ -53,7 +53,14 @@ using Test
     )
 
     @test DistSSHKit.resolve_remote_abs_path_on_host("host", "/data/MyRepo") == "/data/MyRepo"
-    # Public path helpers cover the ~ case; avoid asserting on private shell snippets.
+    let missing = DistSSHKit._remote_abs_path_resolve_shell("~/distsshkit-e2e-tilde/output")
+        @test occursin("printf", missing)
+        @test !occursin("else exit 1; fi", missing)
+    end
+    let abs = DistSSHKit._remote_abs_path_resolve_shell("/data/MyRepo/output")
+        @test occursin("else exit 1; fi", abs)
+        @test !occursin("printf", abs)
+    end
 
     @test DistSSHKit.remote_path_for_ssh_collect(
             "/Users/z/MyRepo/data/out",

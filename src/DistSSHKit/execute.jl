@@ -333,6 +333,11 @@ function _execute_detached!(
     enable_log = get(kwargs, :enable_log, true)
     package = get(kwargs, :package, nothing)
     require_all_hosts = get(kwargs, :require_all_hosts, true)
+    if kind === :drive
+        require_all_hosts isa Bool || throw(ArgumentError(
+            "require_all_hosts must be a Bool, got $(repr(require_all_hosts))",
+        ))
+    end
     skip_hash_check = get(kwargs, :skip_hash_check, true)
     mem_headroom = get(kwargs, :mem_headroom, nothing)
     parent_gb = get(kwargs, :parent_gb, nothing)
@@ -1075,7 +1080,10 @@ function _execute_detached_argv(
         if package !== nothing && !isempty(strip(String(package)))
             push!(argv, "--package", String(package))
         end
-        if require_all_hosts === true
+        require_all_hosts isa Bool || throw(ArgumentError(
+            "require_all_hosts must be a Bool, got $(repr(require_all_hosts))",
+        ))
+        if require_all_hosts
             push!(argv, "--require-all-hosts")
         else
             push!(argv, "--best-effort")
