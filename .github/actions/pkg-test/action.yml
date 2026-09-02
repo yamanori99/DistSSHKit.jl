@@ -26,7 +26,7 @@ runs:
     # Public repo + OIDC. A failed upload fails the job (no silent green).
     - name: Upload coverage to Codecov
       if: inputs.upload == 'true'
-      uses: codecov/codecov-action@v7
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7
       with:
         files: lcov.info
         slug: ${{ github.repository }}

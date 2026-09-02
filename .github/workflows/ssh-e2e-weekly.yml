@@ -129,7 +129,7 @@ jobs:
       packages: read
     steps:
       - uses: actions/checkout@v7
-      - uses: Vampire/setup-wsl@v7
+      - uses: Vampire/setup-wsl@d1da7f2c0322a5ee4f24975344f67fc0f5baf364 # v7
         with:
           distribution: Ubuntu-24.04
           wsl-version: 2
@@ -140,8 +140,13 @@ jobs:
         with:
           path: .ci-cache/wsl-julia
           key: wsl-julia-max-${{ hashFiles('Project.toml', 'test/Project.toml') }}
-          restore-keys: |
-            wsl-julia-max-
+      - name: GHCR token for WSL
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          mkdir -p .ci-cache
+          printf '%s' "$GHCR_TOKEN" > .ci-cache/ghcr.token
       # wsl-bash does not inherit Actions env (set -u → unbound GITHUB_TOKEN).
       - name: docker-ssh up + SSH E2E in WSL2
         shell: wsl-bash {0}
@@ -169,7 +174,8 @@ jobs:
               exit 1
             fi
           fi
-          echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
+          echo "$(cat "$src/.ci-cache/ghcr.token")" | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
+          rm -f "$src/.ci-cache/ghcr.token"
           if [[ -f "$cache/julia.tgz" ]]; then
             tar -xzf "$cache/julia.tgz" -C "$HOME"
           else
@@ -189,6 +195,8 @@ jobs:
         if: always()
         shell: wsl-bash {0}
         run: |
+          src="$(pwd)"
+          rm -f "$src/.ci-cache/ghcr.token"
           dest="$HOME/DistSSHKit.jl"
           if [[ -d "$dest" ]]; then
             (cd "$dest" && ./testenv/docker-ssh/scripts/down.sh) || true

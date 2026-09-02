@@ -6,7 +6,7 @@ The three-circle mark (`#juliadot`, `#juliadot-lg`) is the Julia logo
 DistSSHKit adapts it inside original machine / wire artwork.
 
 - Design: [julia-logo-graphics](https://github.com/JuliaLang/julia-logo-graphics)
-- Carve-out: [LICENSE](../../../LICENSE)
+- Carve-out: [LICENSE](https://github.com/yamanori99/DistSSHKit.jl/blob/main/LICENSE)
 
 Hand-edit sources and bake outputs that include those circles (logo, social,
 diagram, PNG/GIF) are CC BY-NC-SA 4.0, not MIT.

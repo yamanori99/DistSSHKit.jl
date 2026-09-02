@@ -350,7 +350,7 @@ end
 """
 Resolve Julia on SSH `host`.
 
-`nothing` / `"auto"` / empty → [`detect_julia_path`](@ref). Explicit path must
+`nothing` / `"auto"` / empty → `detect_julia_path`. Explicit path must
 pass remote `--version`. Returns `nothing` when auto-detect fails (no bare
 `"julia"` fallback).
 """

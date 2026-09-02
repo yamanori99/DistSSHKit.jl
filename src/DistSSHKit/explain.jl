@@ -25,7 +25,7 @@ join_explained_message(headline::AbstractString, hint::AbstractString)::String =
 Full script/driver-not-found message (headline + optional demo-related hint).
 
 Used by drive (CLI / `drive!`), go (CLI / `go!`), and [`pipeline!`](@ref).
-Demo tip formatting: [`missing_script_demo_hint`](@ref) in `demos.jl`.
+Demo tip formatting: `missing_script_demo_hint` in `demos.jl`.
 """
 function explain_script_not_found(
     script_path::AbstractString,

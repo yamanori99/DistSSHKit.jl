@@ -70,16 +70,14 @@ jobs:
       - id: files
         run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/julia-slot
-        id: julia
         with:
           slot: min
-          setup: "false"
-      - uses: aviatesk/JETLS.jl/.github/actions/check@release
+      - uses: julia-actions/cache@v3
+        with:
+          cache-scratchspaces: false
+      - uses: ./.github/actions/jetls-check
         with:
           files: ${{ steps.files.outputs.list }}
-          julia-version: ${{ steps.julia.outputs.version }}
-          exit-severity: hint
-          progress: none
 
   jetls-max:
     name: JETLS - max - ubuntu-latest
@@ -90,16 +88,14 @@ jobs:
       - id: files
         run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/julia-slot
-        id: julia
         with:
           slot: jetls-max
-          setup: "false"
-      - uses: aviatesk/JETLS.jl/.github/actions/check@release
+      - uses: julia-actions/cache@v3
+        with:
+          cache-scratchspaces: false
+      - uses: ./.github/actions/jetls-check
         with:
           files: ${{ steps.files.outputs.list }}
-          julia-version: ${{ steps.julia.outputs.version }}
-          exit-severity: hint
-          progress: none
 
   aqua-min:
     name: Aqua - min - ubuntu-latest
@@ -146,6 +142,28 @@ jobs:
           cache-scratchspaces: false
       - name: Aqua.test_all (latest Aqua)
         run: ./.github/aqua-check.sh
+
+  cache-gc:
+    needs:
+      - test-min
+      - test-max
+      - jetls-min
+      - jetls-max
+      - aqua-min
+      - aqua-max
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    name: cache-gc
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Keep latest cache per restore-key prefix
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash .github/cache-gc.sh
 
   notify:
     needs:

@@ -110,34 +110,5 @@ jobs:
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         with:
           cache-scratchspaces: false
-      - name: Pkg.test on a Registry-style tree
+      - uses: ./.github/actions/registry-tree-test
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        run: |
-          set -euo pipefail
-          sudo DEBIAN_FRONTEND=noninteractive apt-get remove -y openssh-client
-          if command -v ssh >/dev/null; then
-            echo "ssh still on PATH" >&2
-            exit 1
-          fi
-          command -v git >/dev/null
-          WORKDIR="$(mktemp -d "${HOME}/dsk.XXXXXX")"
-          BARE="$(mktemp -d "${HOME}/dsk.git.XXXXXX")"
-          rsync -a \
-            --exclude .git \
-            --exclude Manifest.toml \
-            --exclude docs/Manifest.toml \
-            --exclude docs/build \
-            --exclude test/artifacts \
-            ./ "${WORKDIR}/"
-          git init --bare -q "${BARE}"
-          git --git-dir="${BARE}" --work-tree="${WORKDIR}" add -A
-          git --git-dir="${BARE}" --work-tree="${WORKDIR}" \
-            -c user.email=ci@distsshkit -c user.name=ci commit -q -m tree
-          julia -e '
-            using Pkg
-            Pkg.activate(temp=true)
-            Pkg.add(; url=ARGS[1])
-            using DistSSHKit
-            run(Cmd(["chmod", "-R", "a-w", pkgdir(DistSSHKit)]))
-            Pkg.test("DistSSHKit")
-          ' "file://${BARE}"
