@@ -85,7 +85,7 @@ Or call [`pipeline!`](@ref) for optional sync → [`size!`](@ref) → [`drive!`]
 remotes too), `JULIA_DISTRIBUTED_EXE` (same as CLI `--julia`), and the usual
 quiet / progress / yes flags — same vocabulary as the CLI.
 
-`DriveResult` `.hosts` is one [`HostRunResult`](@ref) per host that joined as a
+`DriveResult.hosts` is one [`HostRunResult`](@ref) per host that joined as a
 worker (empty when no host-collection step ran). The same vector is in
 `kit.result` for a detached caller that only has `output_dir`.
 [`HostResult`](@ref) is the per-host row for setup / sync, not drive collect.

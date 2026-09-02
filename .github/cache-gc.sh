@@ -3,7 +3,8 @@
 # Needs gh + GH_TOKEN with actions: write. Safe to re-run.
 set -euo pipefail
 
-mapfile -t ids < <(gh cache list --limit 500 --json id,key,createdAt,lastAccessedAt | python3 -c '
+list_json="$(gh cache list --limit 500 --json id,key,createdAt,lastAccessedAt)"
+ids_txt="$(python3 -c '
 import json, sys
 
 rows = json.load(sys.stdin)
@@ -28,20 +29,17 @@ for items in groups.values():
     items.sort(key=stamp, reverse=True)
     for old in items[1:]:
         print(old["id"])
-')
+' <<<"$list_json")"
 
-n=0
-for id in "${ids[@]+"${ids[@]}"}"; do
-  [[ -n "${id:-}" ]] || continue
-  n=$((n + 1))
-done
-if (( n == 0 )); then
+if [[ -z "$ids_txt" ]]; then
   echo "cache-gc: nothing to delete"
   exit 0
 fi
-echo "cache-gc: deleting $n old cache(s)"
+mapfile -t ids <<< "$ids_txt"
+
+echo "cache-gc: deleting ${#ids[@]} old cache(s)"
 fail=0
-for id in "${ids[@]+"${ids[@]}"}"; do
+for id in "${ids[@]}"; do
   [[ -n "${id:-}" ]] || continue
   if ! gh cache delete "$id"; then
     echo "cache-gc: delete $id failed (already gone?)" >&2
@@ -50,4 +48,5 @@ for id in "${ids[@]+"${ids[@]}"}"; do
 done
 if (( fail != 0 )); then
   echo "cache-gc: some deletes failed" >&2
+  exit 1
 fi
