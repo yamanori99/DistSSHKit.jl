@@ -15,6 +15,8 @@ makedocs(;
         prettyurls=get(ENV, "CI", nothing) == "true",
         canonical="https://yamanori99.github.io/DistSSHKit.jl",
         edit_link="main",
+        # api.md is a large autogen page (Documenter default hard limit is 200 KiB).
+        size_threshold_ignore=["api.md"],
         assets=[
             "assets/custom.css",
             # Tab icon follows Documenter theme (`html.theme--*`), not OS scheme.

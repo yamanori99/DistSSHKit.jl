@@ -8,7 +8,7 @@ const CHILD_TOKEN_PREFIX = "child:"
 
 """Whether `host` denotes this job's DistSSHKit parent in drive/go/size.
 
-Only `parent` matches. `parenthost` is rejected by [`parse_placement_token`](@ref).
+Only `parent` matches. `parenthost` is rejected by `parse_placement_token`.
 A token `local` / `localhost` / `l` is an ordinary SSH child (`child:local`).
 
 # Examples

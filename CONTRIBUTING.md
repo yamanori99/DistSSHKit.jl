@@ -130,7 +130,7 @@ julia docs/src/assets/bake.jl          # optional --png / --gif
 gitleaks detect --source .
 ```
 
-JETLS CI uses `aviatesk/JETLS.jl/.github/actions/check@release` (moving tag). After a bump, re-read [cli-check](https://aviatesk.github.io/JETLS.jl/dev/cli-check/) and keep failing on hint+.
+JETLS CI uses [`.github/actions/jetls-check`](.github/actions/jetls-check/action.yml) (installs `JETLS.jl` `@release` after `julia-actions/cache`). After a bump, re-read [cli-check](https://aviatesk.github.io/JETLS.jl/dev/cli-check/) and keep failing on hint+.
 
 JETLS is the type gate. Do not commit `.vscode/settings.json` to silence the Language Server.
 

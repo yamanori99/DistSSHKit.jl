@@ -13,6 +13,7 @@ concurrency:
 
 permissions:
   contents: read
+  actions: write # julia-actions/cache delete-old-caches (not nested in JETLS)
 
 jobs:
   # Literal names: skipped matrix jobs leave ${{ matrix.* }} unexpanded.
@@ -30,18 +31,16 @@ jobs:
         run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/julia-slot
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        id: julia
         with:
           slot: min
-          setup: "false"
-      # Official check action: https://aviatesk.github.io/JETLS.jl/dev/cli-check/#cli-check/github-actions
-      - uses: aviatesk/JETLS.jl/.github/actions/check@release
+      - uses: julia-actions/cache@v3
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
+        with:
+          cache-scratchspaces: false
+      - uses: ./.github/actions/jetls-check
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         with:
           files: ${{ steps.files.outputs.list }}
-          julia-version: ${{ steps.julia.outputs.version }}
-          exit-severity: hint
-          progress: none
 
   jetls-max:
     name: JETLS - max - ubuntu-latest
@@ -56,14 +55,13 @@ jobs:
         run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/julia-slot
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        id: julia
         with:
           slot: jetls-max
-          setup: "false"
-      - uses: aviatesk/JETLS.jl/.github/actions/check@release
+      - uses: julia-actions/cache@v3
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
+        with:
+          cache-scratchspaces: false
+      - uses: ./.github/actions/jetls-check
         if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
         with:
           files: ${{ steps.files.outputs.list }}
-          julia-version: ${{ steps.julia.outputs.version }}
-          exit-severity: hint
-          progress: none

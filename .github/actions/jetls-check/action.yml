@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+name: jetls-check
+description: Install JETLS app and run jetls check (caller must setup-julia + julia-actions/cache)
+
+inputs:
+  files:
+    description: Space-separated Julia files for jetls check
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # Do not call julia-actions/cache here (julia-actions/cache#236).
+    # Official aviatesk/JETLS.jl check@release nests cache with no opt-out.
+    - name: Install jetls
+      shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p "$HOME/.julia/bin"
+        echo "$HOME/.julia/bin" >> "$GITHUB_PATH"
+        export PATH="$HOME/.julia/bin:$PATH"
+        if [[ -z "${JULIA_APPS_JULIA_CMD:-}" ]]; then
+          export JULIA_APPS_JULIA_CMD="$(command -v julia)"
+        fi
+        julia --startup-file=no -e '
+          using Pkg
+          Pkg.Apps.add(; url="https://github.com/aviatesk/JETLS.jl", rev="release")
+        '
+    - name: Run jetls check
+      shell: bash
+      env:
+        JETLS_FILES: ${{ inputs.files }}
+      run: |
+        set -euo pipefail
+        export PATH="$HOME/.julia/bin:$PATH"
+        if [[ -z "${JULIA_APPS_JULIA_CMD:-}" ]]; then
+          export JULIA_APPS_JULIA_CMD="$(command -v julia)"
+        fi
+        # Match aviatesk/JETLS.jl check@release: no `--threads=auto` (segfaults
+        # on Julia 1.13 in signature_analysis_worker; exit 139).
+        # shellcheck disable=SC2086
+        jetls check --quiet --root=. --exit-severity=hint --progress=none $JETLS_FILES
