@@ -604,15 +604,23 @@ end
 """
 Shell word for `path` on the remote login shell.
 
-Paths starting with `~` are left unquoted so the remote shell expands tilde.
-Other paths use `Base.shell_escape`.
+A `~` / `~user` prefix stays unquoted so the remote shell expands it. The rest
+of a `~/…` path is `Base.shell_escape`d (`~/'Repo With Spaces'`). Other paths
+are escaped in full.
 """
 function _remote_shell_path_word(path::AbstractString)::String
     p = strip(String(path))
-    if startswith(p, "~") && !occursin(' ', p)
+    startswith(p, "~") || return Base.shell_escape(p)
+    slash = findfirst('/', p)
+    if slash === nothing
+        occursin(r"[\s'\"\\]", p) && return Base.shell_escape(p)
         return p
     end
-    return Base.shell_escape(p)
+    prefix = p[1:slash-1]
+    rest = p[slash+1:end]
+    occursin(r"[\s'\"\\]", prefix) && return Base.shell_escape(p)
+    isempty(rest) && return prefix * "/"
+    return prefix * "/" * Base.shell_escape(rest)
 end
 
 """

@@ -61,6 +61,15 @@ using Test
         @test occursin("else exit 1; fi", abs)
         @test !occursin("printf", abs)
     end
+    let spaced = "~/Repo With Spaces/output"
+        word = DistSSHKit._remote_shell_path_word(spaced)
+        @test startswith(word, "~/")
+        @test word != Base.shell_escape(spaced)
+        @test occursin(Base.shell_escape("Repo With Spaces/output"), word)
+        sh = DistSSHKit._remote_abs_path_resolve_shell(spaced)
+        @test occursin("printf", sh)
+        @test occursin(word, sh)
+    end
 
     @test DistSSHKit.remote_path_for_ssh_collect(
             "/Users/z/MyRepo/data/out",
@@ -201,6 +210,8 @@ using Test
 
     @testset "_remote_shell_path_word" begin
         @test DistSSHKit._remote_shell_path_word("~/proj") == "~/proj"
+        @test DistSSHKit._remote_shell_path_word("~/Repo With Spaces/output") ==
+            "~/" * Base.shell_escape("Repo With Spaces/output")
         spaced = "/opt/Julia 1.12/bin/julia"
         @test DistSSHKit._remote_shell_path_word(spaced) == Base.shell_escape(spaced)
         meta = "/tmp/j;rm -rf /"
