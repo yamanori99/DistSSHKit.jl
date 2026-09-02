@@ -91,7 +91,8 @@ ssh -F .generated/ssh_config distsshkit-w1 'echo ok; julia --version'
 ## CI
 
 [`.github/workflows/CI.yml`](../../.github/workflows/CI.yml) runs
-`./scripts/up.sh --e2e` on `ubuntu-latest` for every PR and `main`
+`./scripts/up.sh --e2e` on `ubuntu-latest` when E2E-relevant paths change,
+and for `cut` pull requests or manual dispatches
 (`ubuntu-latest → ubuntu-24.04`).
 [`.github/workflows/ssh-e2e-weekly.yml`](../../.github/workflows/ssh-e2e-weekly.yml)
 (`E2E weekly`) runs Sunday 04:00 JST or via Run workflow: bake
