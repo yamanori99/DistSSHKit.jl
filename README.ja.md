@@ -25,8 +25,7 @@ SSH 分散実行の手順を簡単にし、揃えることで、再現しやす�
 
 小さな研究室や個人でも、高性能なマシンやワークステーションを何台か持っていることがある。
 DistSSHKit は、それらをまとめて小さな計算ノードとして使うためのものである。
-それらのノードでジョブを順番に走らせたいときは
-[DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl) が General にある (`pkg> add DistSSHQueue`)。実行は DistSSHKit が担う。
+順番に走らせたいときは [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)。
 
 ## インストール
 
@@ -91,7 +90,11 @@ SSH 先の台数に上限はない。台数を増やすほど SSH 接続や配�
 詳細: [Requirements](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)。
 
 > [!TIP]
-> SSH 切断が心配なら、常時起動のマシンを使い、マスター側は `tmux` などでセッションを残す。
+> DistSSHKit は、つながったまま 1 件を走らせる。
+> [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
+> (`pkg> add DistSSHQueue`) を使うと、常時起動のマシンにジョブを並べておけるので、
+> 接続が切れても実行は止まらない。実行そのものは DistSSHKit が用いられる。
+> `tmux` でも、走っているジョブは残せる。あとから来るジョブまでは見てくれない。
 
 ### go と drive
 
