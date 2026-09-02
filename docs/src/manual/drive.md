@@ -55,7 +55,8 @@ One-shot onto an empty/missing path: `drive --rsync` (instantiates if needed).
   or pass `--sync` / `--rsync`. `--rsync` instantiates when the copied tree
   still lacks deps. Use `--require-git` only on git-managed remotes.
 
-`DISTSSHKIT_REQUIRE_ALL_HOSTS=1` is the same as `--require-all-hosts`.
+`DISTSSHKIT_REQUIRE_ALL_HOSTS=1` is the same as `--require-all-hosts`
+(already the default when neither flag/env is set).
 `DISTSSHKIT_BEST_EFFORT=1` is the same as `--best-effort` (cannot combine with
 the require-all env).
 `DISTSSHKIT_JOBS` (default 1) caps concurrent SSH host work for rsync,
