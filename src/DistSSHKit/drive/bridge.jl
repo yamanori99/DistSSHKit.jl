@@ -45,7 +45,7 @@ function drive_parsed_from_session(
     package::Union{Nothing,AbstractString}=nothing,
     sync::Union{Nothing,Symbol,Bool}=nothing,
     julia::Union{Nothing,AbstractString}=nothing,
-    require_all_hosts::Bool=false,
+    require_all_hosts::Bool=true,
     mem_headroom::Real=DEFAULT_MEM_HEADROOM,
     parent_gb::Real=DEFAULT_PARENT_GB,
 )

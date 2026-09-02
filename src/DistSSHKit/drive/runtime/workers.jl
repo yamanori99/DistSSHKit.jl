@@ -161,11 +161,17 @@ function add_drive_workers!(
                      topology=:master_worker,
                      env=DistSSHKit._drive_worker_env(),
                      exeflags=DistSSHKit._drive_worker_exeflags(remote_proj))
+            added = sort!(Int[w for w in workers() if w ∉ before])
+            # `SSHManager.launch` can swallow a failed machine; `addprocs` then
+            # returns with fewer (or zero) workers and no throw.
+            if length(added) < host_workers
+                isempty(added) || rmprocs(added; waitfor=2.0)
+                print_progress_err("✗ (wanted $host_workers workers, got $(length(added)))")
+                writeln_both("")
+                continue
+            end
             _register_drive_workers!(before, remote_proj, remote_script)
-            DistSSHKit._register_drive_host_worker_ids!(
-                host_name,
-                sort!(Int[w for w in workers() if w ∉ before]),
-            )
+            DistSSHKit._register_drive_host_worker_ids!(host_name, added)
             print_ok("✓")
             writeln_both("")
             push!(successful_hosts, host_name)

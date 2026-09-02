@@ -88,8 +88,9 @@ function parse_drive_args(args::Vector{String})
     sync_mode = nothing
     require_git = false
     skip_git_guard = false
-    require_all_hosts = _env_flag("DISTSSHKIT_REQUIRE_ALL_HOSTS")
+    require_all_hosts = true
     require_all_hosts_cli = false
+    best_effort_cli = false
     mem_headroom = DEFAULT_MEM_HEADROOM
     parent_gb = DEFAULT_PARENT_GB
     hosts = Tuple{String,Union{Int,Nothing}}[]
@@ -150,8 +151,21 @@ function parse_drive_args(args::Vector{String})
             require_all_hosts_cli && throw(ArgumentError(
                 "drive: --require-all-hosts specified more than once",
             ))
+            best_effort_cli && throw(ArgumentError(
+                "drive: cannot combine --require-all-hosts and --best-effort",
+            ))
             require_all_hosts_cli = true
             require_all_hosts = true
+            i += 1
+        elseif arg == "--best-effort"
+            best_effort_cli && throw(ArgumentError(
+                "drive: --best-effort specified more than once",
+            ))
+            require_all_hosts_cli && throw(ArgumentError(
+                "drive: cannot combine --require-all-hosts and --best-effort",
+            ))
+            best_effort_cli = true
+            require_all_hosts = false
             i += 1
         elseif arg == "--mem-headroom" && i < length(args)
             mem_headroom = parse(Float64, args[i+1])
@@ -274,6 +288,15 @@ function parse_drive_args(args::Vector{String})
         end
     end
 
+    if !require_all_hosts_cli && !best_effort_cli
+        want_all = _env_flag("DISTSSHKIT_REQUIRE_ALL_HOSTS")
+        want_best = _env_flag("DISTSSHKIT_BEST_EFFORT")
+        want_all && want_best && throw(ArgumentError(
+            "drive: cannot combine DISTSSHKIT_REQUIRE_ALL_HOSTS and DISTSSHKIT_BEST_EFFORT",
+        ))
+        want_best && (require_all_hosts = false)
+    end
+
     if julia_exe === nothing
         env_val = get(ENV, "JULIA_DISTRIBUTED_EXE", "auto")
         julia_exe = env_val == "auto" ? nothing : env_val
@@ -355,7 +378,8 @@ function show_drive_usage(; io::IO=stdout)
         "  -w, --workers N     default when host has no :N",
         "  --sync / --rsync    optional pre-run; --rsync instantiates if needed",
         "  --require-git       $(REQUIRE_GIT_MEANING)",
-        "  --require-all-hosts fail if a listed SSH host did not join or collect failed",
+        "  --require-all-hosts listed parent/child tokens must join, stay, and collect (default)",
+        "  --best-effort       allow a partial run (missing join is not a failure)",
         "  --output-dir PATH   result root (default: {script}/.distsshkit/drive)",
         "  $(KIT_TIME_HELP)",
         "  --julia PATH        remote Julia",
@@ -385,6 +409,7 @@ function show_drive_usage(; io::IO=stdout)
         "  $(KIT_SKIP_PKILL_ENV_HELP)",
         "  $(KIT_JOBS_ENV_HELP)",
         "  $(KIT_REQUIRE_ALL_HOSTS_ENV_HELP)",
+        "  $(KIT_BEST_EFFORT_ENV_HELP)",
         "  DISTRIBUTED_SKIP_COLLECT=1 skip post-run collect",
     )
     print_help_blank(io)

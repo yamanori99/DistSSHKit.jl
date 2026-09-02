@@ -24,7 +24,8 @@ One-shot onto an empty/missing path: `drive --rsync` (instantiates if needed).
 | `--sync` | Git push/pull immediately before the run (**optional**; default is none; confirm unless `-y`) |
 | `--rsync` | Rsync deploy first (empty/missing remote, or after `setup --delete`); then instantiate if deps are missing |
 | `--require-git` | Opt-in git parity: dirty-tree warn + remote commit must match local |
-| `--require-all-hosts` | Fail if a listed SSH host did not join, or if collect reported an error (default: best-effort, exit 0) |
+| `--require-all-hosts` | Fail unless every explicit `parent[:N]` / `child:NAME[:N]` joined, stayed, and collect succeeded (**default**) |
+| `--best-effort` | Allow a partial run (missing join or collect error does not fail) |
 | `--skip-git-guard` | Compat no-op (parity already off) |
 | `-w` / `--workers N` | Default worker count for hosts without `:N` (also `-w:N`) |
 | `--julia PATH` | Julia on SSH workers |
@@ -55,6 +56,8 @@ One-shot onto an empty/missing path: `drive --rsync` (instantiates if needed).
   still lacks deps. Use `--require-git` only on git-managed remotes.
 
 `DISTSSHKIT_REQUIRE_ALL_HOSTS=1` is the same as `--require-all-hosts`.
+`DISTSSHKIT_BEST_EFFORT=1` is the same as `--best-effort` (cannot combine with
+the require-all env).
 `DISTSSHKIT_JOBS` (default 1) caps concurrent SSH host work for rsync,
 post-run collect, and `size` Julia-path detection.
 
@@ -79,8 +82,8 @@ onto an empty path). Prefer matching Julia **major.minor**.
 After `main()`: **post-run-new** collect. Standalone pull via the collect
 flags above. See [User Guide](@ref Manual) for mode names.
 SSH / `find` errors on a host are a collect failure (`HostRunResult.ok` is
-false), not an empty success. Default CLI exit stays 0 unless
-`--require-all-hosts`.
+false), not an empty success. Default CLI exit is non-zero unless
+`--best-effort`.
 
 External watchers: `progress: begin` / `step` / `item` always go to
 `kit.progress` (even `-q` / `--no-log`). The kit log still gets those lines

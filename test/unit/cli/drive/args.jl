@@ -221,22 +221,50 @@ using Test
         @test occursin("--parent-gb", txt)
         @test occursin("DISTSSHKIT_JOBS", txt)
         @test occursin("DISTSSHKIT_REQUIRE_ALL_HOSTS", txt)
+        @test occursin("DISTSSHKIT_BEST_EFFORT", txt)
+        @test occursin("--best-effort", txt)
         @test !occursin("required after `setup --rsync`", txt)
     end
 
     @testset "require-all-hosts" begin
-        withenv("DISTSSHKIT_REQUIRE_ALL_HOSTS" => nothing) do
-            @test !parse_drive_args(["s.jl"]).require_all_hosts
+        withenv(
+            "DISTSSHKIT_REQUIRE_ALL_HOSTS" => nothing,
+            "DISTSSHKIT_BEST_EFFORT" => nothing,
+        ) do
+            @test parse_drive_args(["s.jl"]).require_all_hosts
             @test parse_drive_args(["--require-all-hosts", "s.jl"]).require_all_hosts
+            @test !parse_drive_args(["--best-effort", "s.jl"]).require_all_hosts
             @test_throws ArgumentError parse_drive_args(
                 ["--require-all-hosts", "--require-all-hosts", "s.jl"],
+            )
+            @test_throws ArgumentError parse_drive_args(
+                ["--best-effort", "--best-effort", "s.jl"],
+            )
+            @test_throws ArgumentError parse_drive_args(
+                ["--require-all-hosts", "--best-effort", "s.jl"],
             )
             let r = parse_drive_args(["--require-all-hosts", "--collect-missing", "out", "h1"])
                 @test r.require_all_hosts
             end
         end
-        withenv("DISTSSHKIT_REQUIRE_ALL_HOSTS" => "1") do
+        withenv(
+            "DISTSSHKIT_REQUIRE_ALL_HOSTS" => "1",
+            "DISTSSHKIT_BEST_EFFORT" => nothing,
+        ) do
             @test parse_drive_args(["s.jl"]).require_all_hosts
+        end
+        withenv(
+            "DISTSSHKIT_REQUIRE_ALL_HOSTS" => nothing,
+            "DISTSSHKIT_BEST_EFFORT" => "1",
+        ) do
+            @test !parse_drive_args(["s.jl"]).require_all_hosts
+            @test parse_drive_args(["--require-all-hosts", "s.jl"]).require_all_hosts
+        end
+        withenv(
+            "DISTSSHKIT_REQUIRE_ALL_HOSTS" => "1",
+            "DISTSSHKIT_BEST_EFFORT" => "1",
+        ) do
+            @test_throws ArgumentError parse_drive_args(["s.jl"])
         end
     end
 end

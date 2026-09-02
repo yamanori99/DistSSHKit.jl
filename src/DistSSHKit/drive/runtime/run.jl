@@ -267,14 +267,24 @@ function _run_drive_parsed_locked!(
         drive_atexit_cleanup = register_worker_cleanup!(successful_hosts)
         DistSSHKit._write_kit_hosts_file(successful_hosts, kit_out, kit_log)
         DistSSHKit._write_joined_drive_host_status!(successful_hosts, kit_out, kit_log)
-        if require_all_hosts && !isempty(hosts)
-            missing = String[h[1] for h in hosts if !(h[1] in successful_hosts)]
-            missing = unique(missing)
+        if require_all_hosts
+            missing = unique(String[h[1] for h in hosts if !(h[1] in successful_hosts)])
             if !isempty(missing)
                 print_err("ERROR: "; bold=true)
                 println_fatal("required hosts did not join: $(join(missing, ", "))")
-                println_fatal("Omit --require-all-hosts for best-effort (the default).")
+                println_fatal("Pass --best-effort for a partial run.")
                 return 1
+            end
+            if parent_workers > 0
+                n = DistSSHKit._drive_parent_worker_count()
+                if n < parent_workers
+                    print_err("ERROR: "; bold=true)
+                    println_fatal(
+                        "required parent workers did not join: wanted $parent_workers, got $n",
+                    )
+                    println_fatal("Pass --best-effort for a partial run.")
+                    return 1
+                end
             end
         end
         kit_progress_step!("wait")
@@ -295,6 +305,17 @@ function _run_drive_parsed_locked!(
 
         kit_progress_step!("run")
         run_driver_script!(enable_log, drive_atexit_cleanup)
+        if require_all_hosts
+            DistSSHKit._refresh_drive_host_status_file!(kit_out, kit_log)
+            left = DistSSHKit._drive_hosts_that_left()
+            if !isempty(left)
+                print_err("ERROR: "; bold=true)
+                println_fatal("required hosts left during the run: $(join(left, ", "))")
+                println_fatal("Pass --best-effort for a partial run.")
+                progress_ok = false
+                return 1
+            end
+        end
 
         kit_progress_step!("collect")
         DistSSHKit._stop_drive_host_status_monitor!()

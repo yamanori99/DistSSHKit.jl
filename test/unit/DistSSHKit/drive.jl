@@ -255,6 +255,10 @@ using Test
             @test parsed.julia === nothing
             @test parsed.mem_headroom == DistSSHKit.DEFAULT_MEM_HEADROOM
             @test parsed.parent_gb == DistSSHKit.DEFAULT_PARENT_GB
+            @test parsed.require_all_hosts
+            @test DistSSHKit.drive_parsed_from_session(
+                session, script; require_all_hosts=false,
+            ).require_all_hosts == false
             @test DistSSHKit.drive_parsed_from_session(
                 session, script; mem_headroom=0.5, parent_gb=0.2,
             ).mem_headroom == 0.5

@@ -43,6 +43,8 @@ const KIT_JOBS_ENV_HELP =
     "DISTSSHKIT_JOBS                   max concurrent host jobs (default 1)"
 const KIT_REQUIRE_ALL_HOSTS_ENV_HELP =
     "DISTSSHKIT_REQUIRE_ALL_HOSTS      Same as --require-all-hosts"
+const KIT_BEST_EFFORT_ENV_HELP =
+    "DISTSSHKIT_BEST_EFFORT            Same as --best-effort"
 
 """CLI default when no verbosity flag/env is set: live bar on a TTY, else verbose."""
 kit_cli_auto_verbosity(; live::Union{Nothing,Bool}=nothing)::Symbol =

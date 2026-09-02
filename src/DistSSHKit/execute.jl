@@ -332,7 +332,12 @@ function _execute_detached!(
     log_dir = get(kwargs, :log_dir, nothing)
     enable_log = get(kwargs, :enable_log, true)
     package = get(kwargs, :package, nothing)
-    require_all_hosts = get(kwargs, :require_all_hosts, false)
+    require_all_hosts = get(kwargs, :require_all_hosts, true)
+    if kind === :drive
+        require_all_hosts isa Bool || throw(ArgumentError(
+            "require_all_hosts must be a Bool, got $(repr(require_all_hosts))",
+        ))
+    end
     skip_hash_check = get(kwargs, :skip_hash_check, true)
     mem_headroom = get(kwargs, :mem_headroom, nothing)
     parent_gb = get(kwargs, :parent_gb, nothing)
@@ -538,6 +543,22 @@ end
 function _register_drive_host_worker_ids!(host::AbstractString, ids::AbstractVector{<:Integer})
     DRIVE_HOST_WORKER_IDS[String(host)] = Int[Int(i) for i in ids]
     return nothing
+end
+
+function _drive_parent_worker_count()::Int
+    ids = get(DRIVE_HOST_WORKER_IDS, PARENT_HOST_NAME, Int[])
+    return length(ids)
+end
+
+"""Hosts whose registered workers are no longer alive (`:left`)."""
+function _drive_hosts_that_left()::Vector{String}
+    left = String[]
+    for host in sort!(collect(keys(DRIVE_HOST_WORKER_IDS)))
+        if _probe_drive_host(DRIVE_HOST_WORKER_IDS[host]) !== :alive
+            push!(left, host)
+        end
+    end
+    return left
 end
 
 function _drive_host_span!(host::AbstractString, leaf::AbstractString, status::Symbol)
@@ -1059,7 +1080,14 @@ function _execute_detached_argv(
         if package !== nothing && !isempty(strip(String(package)))
             push!(argv, "--package", String(package))
         end
-        require_all_hosts === true && push!(argv, "--require-all-hosts")
+        require_all_hosts isa Bool || throw(ArgumentError(
+            "require_all_hosts must be a Bool, got $(repr(require_all_hosts))",
+        ))
+        if require_all_hosts
+            push!(argv, "--require-all-hosts")
+        else
+            push!(argv, "--best-effort")
+        end
         skip_hash_check === false && push!(argv, "--require-git")
         if mem_headroom !== nothing
             push!(argv, "--mem-headroom", string(Float64(mem_headroom)))

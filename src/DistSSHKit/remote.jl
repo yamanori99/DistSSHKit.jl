@@ -604,26 +604,38 @@ end
 """
 Shell word for `path` on the remote login shell.
 
-Paths starting with `~` are left unquoted so the remote shell expands tilde.
-Other paths use `Base.shell_escape`.
+A `~` / `~user` prefix stays unquoted so the remote shell expands it. The rest
+of a `~/…` path is `Base.shell_escape`d (`~/'Repo With Spaces'`). Other paths
+are escaped in full.
 """
 function _remote_shell_path_word(path::AbstractString)::String
     p = strip(String(path))
-    if startswith(p, "~") && !occursin(' ', p)
+    startswith(p, "~") || return Base.shell_escape(p)
+    slash = findfirst('/', p)
+    if slash === nothing
+        occursin(r"[\s'\"\\]", p) && return Base.shell_escape(p)
         return p
     end
-    return Base.shell_escape(p)
+    prefix = p[1:slash-1]
+    rest = p[slash+1:end]
+    occursin(r"[\s'\"\\]", prefix) && return Base.shell_escape(p)
+    isempty(rest) && return prefix * "/"
+    return prefix * "/" * Base.shell_escape(rest)
 end
 
 """
 Build a remote shell snippet that resolves `remote_path` to an absolute path.
 
 Works for directories and regular files (`cd` alone fails on file paths).
+A `~/…` layout that does not exist yet still expands `~` (`printf`); collect
+then `mkdir -p`. Other missing paths still fail.
 """
 function _remote_abs_path_resolve_shell(remote_path::AbstractString)::String
     path = strip(String(remote_path))
     pq = _remote_shell_path_word(path)
-    return "if test -d $pq; then cd $pq && pwd; elif test -e $pq; then d=\$(dirname $pq) && b=\$(basename $pq) && cd \"\$d\" && echo \"\$(pwd)/\$b\"; else exit 1; fi"
+    exist = "if test -d $pq; then cd $pq && pwd; elif test -e $pq; then d=\$(dirname $pq) && b=\$(basename $pq) && cd \"\$d\" && echo \"\$(pwd)/\$b\"; else exit 1; fi"
+    startswith(path, "~") || return exist
+    return "if test -d $pq; then cd $pq && pwd; elif test -e $pq; then d=\$(dirname $pq) && b=\$(basename $pq) && cd \"\$d\" && echo \"\$(pwd)/\$b\"; else printf '%s\\n' $pq; fi"
 end
 
 """
@@ -661,7 +673,8 @@ end
 Resolve `remote_path` to an absolute path on `host` via SSH (`cd … && pwd`).
 
 Returns `remote_path` unchanged when it is already absolute (`/` prefix).
-Returns `nothing` when the path does not exist or SSH fails.
+A `~/…` layout is expanded on the host even if the tree is not created yet.
+Returns `nothing` when SSH fails, or when a non-tilde path does not exist.
 """
 function resolve_remote_abs_path_on_host(host::String, remote_path::AbstractString)::Union{Nothing,String}
     path = strip(String(remote_path))
