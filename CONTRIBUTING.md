@@ -97,7 +97,7 @@ When a new RC lands, change `JULIA_SLOT_MAX` only. If that RC is a new **major.m
 
 ### PR CI
 
-Ubuntu: `Pkg.test` min / max / tip, JETLS min / max, Aqua min / max / tip, Documenter min, Gitleaks. Linux E2E (max) runs if `src/`, `test/`, `demos/`, `testenv/`, `Project.toml`, or the E2E workflow changed.
+These run as jobs of the `Test` workflow ([`.github/workflows/CI.yml`](.github/workflows/CI.yml)). Ubuntu: `Pkg.test` min / max / tip, JETLS min / max, Aqua min / max / tip, Documenter min, Gitleaks. Linux E2E (max) runs if `src/`, `test/`, `demos/`, `testenv/`, `Project.toml`, or that workflow file changed.
 
 These files **alone** skip the heavy steps (job still starts; Pkg.test / JETLS / Aqua / Documenter do not run):
 

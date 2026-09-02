@@ -87,6 +87,15 @@ if [[ "$RUN_E2E" -eq 1 ]]; then
   export DISTSSHKIT_SSH_E2E=1
   export DISTSSHKIT_YES=1
   cd "${KIT_ROOT}"
+  # WSL weekly has no julia-buildpkg. Fresh juliaup has no registries
+  # (`Registry.update` then fails). linux/macOS already instantiated (no-op).
+  julia --project=. --color=yes -e '
+    using Pkg
+    isempty(Pkg.Registry.reachable_registries()) && Pkg.Registry.add("General")
+    Pkg.Registry.update()
+    Pkg.resolve()
+    Pkg.instantiate()
+  '
   julia_e2e=(julia --project=. --color=yes)
   if [[ "${DISTSSHKIT_CODE_COVERAGE:-}" == "1" ]]; then
     julia_e2e+=(--code-coverage=user)

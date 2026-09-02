@@ -1,7 +1,7 @@
 # Docker SSH workers (CI E2E)
 
 Real OpenSSH + rsync Linux workers. CI remote SSH coverage uses this stack
-([`SSH E2E`](../../.github/workflows/ssh-e2e.yml)). Optional Mac-only path (same image and `test/e2e.jl`):
+([`SSH E2E`](../../.github/workflows/CI.yml)). Optional Mac-only path (same image and `test/e2e.jl`):
 [`../apple-container-ssh`](../apple-container-ssh) — `./scripts/up.sh --e2e`
 (Apple `container`; **not CI**). Do not run both stacks at once (shared
 `ssh_config`).
@@ -90,9 +90,9 @@ ssh -F .generated/ssh_config distsshkit-w1 'echo ok; julia --version'
 
 ## CI
 
-[`.github/workflows/ssh-e2e.yml`](../../.github/workflows/ssh-e2e.yml) runs
+[`.github/workflows/CI.yml`](../../.github/workflows/CI.yml) runs
 `./scripts/up.sh --e2e` on `ubuntu-latest` for every PR and `main`
-(`E2E / ubuntu-latest → ubuntu-24.04`).
+(`ubuntu-latest → ubuntu-24.04`).
 [`.github/workflows/ssh-e2e-weekly.yml`](../../.github/workflows/ssh-e2e-weekly.yml)
 (`E2E weekly`) runs Sunday 04:00 JST or via Run workflow: bake
 `ubuntu-latest (image)` to GHCR, then `ubuntu-latest`, `macos-15-intel`, and
