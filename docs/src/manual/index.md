@@ -25,6 +25,7 @@ The difference is **what the script is**:
 | Script | Ordinary `.jl` (no Kit APIs) | Driver with `init_output_dir!` / `main` |
 | `child:NAME:N` means | N **concurrent full script runs** | N **Distributed workers** |
 | Collect | Slot-overwrite after remotes | Post-run-new after `main()`; optional collect-only flags |
+| Success | Any listed slot must run (`ok=false` if one does not) | Listed `parent` / `child` must join, stay, and collect (**default**). `--best-effort` allows a partial run |
 | Git parity | No `--require-git` | Opt-in `--require-git` |
 | `--output-dir` | Batch root (`PATH/{slot}/`) | Result root (`DISTRIBUTED_OUTPUT_DIR`) |
 
@@ -40,6 +41,7 @@ Same **names** are shared on purpose; a few meanings differ by command:
 | `--sync` / `--rsync` | Same git vs rsync idea on `setup` (mode) and `go` / `drive` (optional pre-run). On each command, pick at most one. `go` / `drive --rsync` instantiates if deps are missing. |
 | Default pre-run sync | **`go`** and **`drive`**: **none** (run `setup` yourself, or pass `--sync` / `--rsync`). |
 | Git parity (drive) | **Off** by default. Opt-in: `--require-git`. Compat: `--skip-git-guard` (no-op; may combine with `--sync` / `--rsync`). |
+| Host reliability (drive) | **On** by default (`--require-all-hosts`). Opt out: `--best-effort` / `DISTSSHKIT_BEST_EFFORT`. |
 | Skip pre-run (go) | Compat: `--skip-sync` / `--skip-git-guard` (already the default; exclusive with `--sync` / `--rsync` on go). |
 | `--output-dir` | **`go`**: batch root (`PATH/{slot}/`). **`drive`**: result root (`DISTRIBUTED_OUTPUT_DIR`). Different on purpose. |
 | `--hosts` | CSV tokens. `setup` strips `:N` from bare SSH names. `size` strips `:N` from `parent` / `child:NAME[:N]`. `go` / `drive` keep `child:NAME:N`. |

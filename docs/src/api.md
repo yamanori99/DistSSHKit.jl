@@ -70,6 +70,9 @@ A few points that carry over from the CLI:
   `drive!`, so it does not instantiate after rsync
 - Git parity (`skip_hash_check=false`, CLI: `drive --require-git`) is
   **drive** / **pipeline** only — `go!` stays simpler
+- Listed `drive` placements must join, stay, and collect
+  (`require_all_hosts=true`, the default). Pass `require_all_hosts=false`
+  for a 0.4.3-style partial run
 - Prefer positional worker tokens over building a [`WorkerPlan`](@ref) by
   hand (`WorkerPlan` is the return type of [`size!`](@ref))
 - Pass `julia=` on `go!` / `drive!` / `pipeline!` to pin the remote Julia

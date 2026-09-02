@@ -300,6 +300,11 @@ end
 """
 Outcome of [`drive!`](@ref) (and similar CLI steps that return an exit code).
 
+`ok` is `true` only when the run finished with exit 0. By default that
+includes the placement contract: listed `parent` / `child` hosts joined,
+stayed, and collect succeeded (`require_all_hosts=true`). `require_all_hosts=false`
+keeps a partial run as `ok=true`.
+
 `output_dir` / `log_dir` are the directories actually used for this run —
 resolved the same way `drive` reports `Results:` / writes its log, even when
 `drive!` was not called with `output_dir=` / `log_dir=`. `nothing` when no
