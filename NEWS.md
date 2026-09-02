@@ -5,6 +5,12 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
 
 ## Unreleased
 
+- Explicit `parent[:N]` / `child:NAME[:N]` are the `drive` success contract:
+  they must join, stay through the run, and collect before `ok=true` /
+  exit 0. `--require-all-hosts` is the default; `--best-effort` (and
+  `DISTSSHKIT_BEST_EFFORT`) restores the old partial-run exit 0.
+  `go` already fails the batch when a listed slot does not run.
+
 - Docs pages use the kit mark as the browser tab icon (`favicon.ico`).
 
 - `go` writes the same Julia / project log header as `drive`. Time lists

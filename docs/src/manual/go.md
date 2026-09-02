@@ -66,6 +66,8 @@ is an error. `collect_spec=false` skips collect and is orthogonal to `output_dir
 
 Collect after remote slots: **slot-overwrite** (rsync whole slot dir).
 A failed slot pull is a failed slot, not an empty directory.
+Any explicit slot that does not run (remote path missing, run ✗, collect ✗)
+fails the batch (`ok=false`). There is no partial success.
 
 External watchers: `begin` / `item` always go to `kit.progress` (even `-q`).
 The kit log still gets those lines only with `--progress` or

@@ -20,8 +20,10 @@ still lack Manifest deps get [`instantiate!`](@ref) (same as CLI
 (or `setup --delete` / `setup!(session, :delete)` first).
 Git parity is off by default (`skip_hash_check=true`). With `sync=:rsync`, parity
 stays off even if `skip_hash_check=false` (no remote `.git/`).
-`require_all_hosts=true` (CLI `--require-all-hosts`) fails if a listed SSH host
-did not join, or if collect reported an error (default: best-effort, exit 0).
+`require_all_hosts=true` (the default; CLI `--require-all-hosts`) fails unless
+every explicit `parent[:N]` / `child:NAME[:N]` joined, stayed through the run,
+and collect succeeded. Pass `require_all_hosts=false` or CLI `--best-effort`
+for a partial run.
 
 `mem_headroom` / `parent_gb` are the RAM budget for drive preflight (same as
 [`size!`](@ref) / CLI `--mem-headroom` / `--parent-gb`). [`pipeline!`](@ref)
@@ -44,7 +46,7 @@ function drive!(
     package::Union{Nothing,AbstractString}=nothing,
     sync::Union{Nothing,Symbol,Bool}=nothing,
     julia::Union{Nothing,AbstractString}=nothing,
-    require_all_hosts::Bool=false,
+    require_all_hosts::Bool=true,
     mem_headroom::Real=DEFAULT_MEM_HEADROOM,
     parent_gb::Real=DEFAULT_PARENT_GB,
 )::DriveResult

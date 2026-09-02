@@ -99,6 +99,8 @@ using Test
             by2 = Dict(r.host => r for r in pending)
             @test by2["h1"].state === :collect_pending
             @test by2["h2"].state === :left
+            @test DistSSHKit._drive_hosts_that_left() == ["h2"]
+            @test DistSSHKit._drive_parent_worker_count() == 0
         end
         DistSSHKit._clear_drive_host_worker_ids!()
     end
@@ -182,6 +184,8 @@ using Test
         @test "0.5" in argv
         @test "--parent-gb" in argv
         @test "0.2" in argv
+        @test "--best-effort" in argv
+        @test !("--require-all-hosts" in argv)
         argv0 = DistSSHKit._execute_detached_argv(
             :drive, "job.jl", ["parent:1"], String[];
             output_dir="/tmp/out",
@@ -198,6 +202,7 @@ using Test
         )
         @test !("--mem-headroom" in argv0)
         @test !("--parent-gb" in argv0)
+        @test "--best-effort" in argv0
         argvw = DistSSHKit._execute_detached_argv(
             :drive, "job.jl", ["child:host1"], String[];
             output_dir="/tmp/out",
@@ -215,6 +220,23 @@ using Test
         )
         @test "--workers" in argvw
         @test "4" in argvw
+        @test "--best-effort" in argvw
+        argv_strict = DistSSHKit._execute_detached_argv(
+            :drive, "job.jl", ["child:host1"], String[];
+            output_dir="/tmp/out",
+            log_dir=nothing,
+            sync=nothing,
+            julia=nothing,
+            quiet=true,
+            verbosity=nothing,
+            hosts_file=nothing,
+            enable_log=false,
+            package=nothing,
+            require_all_hosts=true,
+            skip_hash_check=true,
+        )
+        @test "--require-all-hosts" in argv_strict
+        @test !("--best-effort" in argv_strict)
     end
 
     @testset "execute_kwargs_from_parsed" begin
