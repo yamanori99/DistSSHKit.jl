@@ -26,9 +26,7 @@ native Windows).
 
 Even small labs and individuals often have a few high-performance machines or
 workstations. DistSSHKit helps you use that hardware as a small set of compute
-nodes. If jobs should wait in line on those nodes,
-[DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl) is on General
-(`pkg> add DistSSHQueue`); DistSSHKit still does each run.
+nodes. To run one after another, see [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl).
 
 ## Install
 
@@ -102,8 +100,12 @@ Before you use an SSH host, it needs:
 Details: [Requirements](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/).
 
 > [!TIP]
-> If SSH disconnects are a worry, use machines that stay up, and keep the master
-> session alive with something like `tmux`.
+> DistSSHKit runs one job while you stay connected.
+> [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
+> (`pkg> add DistSSHQueue`) lets you line jobs up on a machine that stays on,
+> so a dropped connection does not stop the run. DistSSHKit still does the
+> running. `tmux` can keep a job that is already running. It will not look
+> after jobs that come later.
 
 ### go and drive
 

@@ -11,6 +11,9 @@ GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator 
   `ready` / `sync` / `run` / `collect` even on a parent-only run (`run` is the
   script, not the drive driver).
 
+- README and Requirements: DistSSHQueue can line jobs up on a machine that stays
+  on. `tmux` can still keep a job that is already running.
+
 ## 0.4.3
 
 Patch after `0.4.2`.
