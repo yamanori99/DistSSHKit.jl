@@ -6,6 +6,10 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+- README / README.ja: `<picture>` keeps GitHub light/dark SVGs; the
+  fallback `img` is the paper PNG so JuliaHub dark mode still shows
+  the topology and the footer mark.
+
 ## 0.5.1
 
 Patch after `0.5.0`.
