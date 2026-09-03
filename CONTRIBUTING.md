@@ -67,7 +67,8 @@ Checkout `Pkg.test()` is not a Registry tarball. After changing those
 gates (smokes, demo copy, `ssh` / `git` spawn, probe), and before a
 General cut, run the disposable copy in
 [test/README.md](test/README.md#registry-tree). CI runs that shape on
-heavy PRs, **main**, and **cut** (slot tip; not a required check).
+**main** and **cut** (slot tip; not a required check). Not on ordinary
+PRs.
 
 Smoke (1.12+; [demos/README.md](demos/README.md)):
 
@@ -110,8 +111,8 @@ fourth version job. Slide the pin; keep job names `min` / `max` /
 - **min** (required): `Project.toml` julia floor. Pkg.test (no
   coverage), Aqua, JETLS, Documenter, bake
 - **max** (required): newest tagged or prerelease (`versions.json`).
-  Pkg.test, Aqua, PR / weekly E2E, GHCR worker. Codecov `pkgtest` on
-  **main push** only
+  Pkg.test, Aqua, **main** / weekly / `cut` E2E, GHCR worker. Codecov
+  `pkgtest` on **main push** only
 - **tip** (not required): next-minor nightly. Pkg.test, Aqua.
   `continue-on-error`
 
@@ -129,25 +130,27 @@ only.
 
 These run as jobs of the `Test` workflow
 ([`.github/workflows/CI.yml`](.github/workflows/CI.yml)). Ubuntu:
-`Pkg.test` min / max / tip, JETLS min / max, Aqua min / max / tip,
-Documenter min, Gitleaks. Linux E2E (max) runs if `src/`, `test/`,
-`demos/`, `testenv/`, `Project.toml`, or that workflow file changed.
+`Pkg.test` min / max, JETLS min / max, Aqua min / max, Documenter min,
+Gitleaks. Linux E2E (max) does **not** run on an ordinary PR. It runs
+on **main** push (path filter minus markdown under `test/` / `demos/` /
+`testenv/`), **`cut`**, **E2E weekly**, and `workflow_dispatch`. Tip
+`Pkg.test` / Aqua stay on **main**, **CI weekly**, and `cut`. Registry
+tree stays on **main** and `cut` (ci-cut), not ordinary PRs.
 
 These files **alone** skip the heavy steps (job still starts; Pkg.test /
-JETLS / Aqua / Documenter do not run):
+JETLS / Aqua do not run). Documenter still runs when `docs/**`, README,
+`src/**`, or `Project.toml` changed:
 
 - `README.md`, `README.ja.md`, `CONTRIBUTING.md`, `NEWS.md`,
   `SECURITY.md`, `LICENSE`
 - `.gitignore`, `.github/pull_request_template.md`, `.coderabbit.yaml`
+- `docs/**`, and markdown under `test/` / `demos/` / `testenv/`
 
 A new root markdown file stays heavy until listed in
 [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml).
-Changes under `docs/src` still run those jobs. A `cut` label skips none
-of this: Pkg.test, JETLS, Aqua, Documenter, and Linux E2E all run.
-`Pkg.test - registry tree` runs on heavy PRs, **main** push, and when
-`cut` is added (slot tip; not required to merge). macOS / WSL stay on
-`E2E weekly`, not the PR. Register only after that matrix is green on
-the merge commit.
+A `cut` label skips none of this: Pkg.test, JETLS, Aqua, Documenter,
+and Linux E2E all run. macOS / WSL stay on `E2E weekly`, not the PR.
+Register only after that matrix is green on the merge commit.
 
 Required to merge (branch protection uses these names). Tip jobs are
 allow-failure. A skipped heavy step still leaves the job green.
@@ -250,10 +253,9 @@ two-week rule above unless a General user needs them sooner.
 
 1. Run **E2E weekly** on the **merge commit**
    (`gh workflow run "E2E weekly" --ref <sha>`). Do not register until
-   Linux, macOS Intel, and WSL are green. The PR already ran Linux E2E;
-   this is the other controllers plus a fresh image. A same-day green
-   run on that SHA is enough; do not wait for the Sunday cron if you
-   dispatched.
+   Linux, macOS Intel, and WSL are green. Ordinary PRs skip Linux E2E;
+   `cut` and this dispatch cover it. A same-day green run on that SHA
+   is enough; do not wait for the Sunday cron if you dispatched.
 2. `@JuliaRegistrator register` on the **merge commit** (not the PR
    body).
 3. Paste the NEWS section under `Release notes:`.
