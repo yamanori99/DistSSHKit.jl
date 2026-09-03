@@ -198,7 +198,8 @@ not rewrite files you did not mean to touch.
 `macos-15-intel`, WSL2 → `ubuntu-24.04`. Linux job uploads E2E Codecov.
 Not a PR check. Failure opens (or comments on) Issue `E2E weekly
 failed`; a later green run closes it. After a `cut` merge, dispatch
-this on that commit and wait for green before register.
+this on that commit and wait for green before register. While weekly
+is red (or you pause), put `cut-hold` on that Issue — see Release.
 
 **CI weekly** (Sunday 10:00 JST, or Run workflow): same `Pkg.test` /
 JETLS / Aqua slots as a PR (no coverage). Not a PR check. Catches max /
@@ -232,6 +233,10 @@ with `setup --delete`. First deploy `--rsync`; later git `--sync` /
   bump. About behavior, not the bump.
 - `cut`: `Project.toml` `version` went up. CI adds this; other
   `Project.toml` edits do not. The PR suite does not path-skip.
+- `cut-hold`: after a `cut` merge, do **not** register yet (E2E weekly
+  red, or you are deciding). Manual Issue label — not a PR check.
+- `uncut`: `Project.toml` `version` went **down**. CI adds this on the
+  PR that aborts an unregistered cut (restore NEWS as needed).
 
 On a breaking line bump `x` in `0.x.y`; otherwise bump `y`.
 
@@ -257,10 +262,15 @@ two-week rule above unless a General user needs them sooner.
    Linux, macOS Intel, and WSL are green. Ordinary PRs skip Linux E2E;
    `cut` and this dispatch cover it. A same-day green run on that SHA
    is enough; do not wait for the Sunday cron if you dispatched.
-2. `@JuliaRegistrator register` on the **merge commit** (not the PR
-   body).
-3. Paste the NEWS section under `Release notes:`.
-4. TagBot tags once General has the release.
+2. If weekly is red (or you pause): put `cut-hold` on the tracking
+   Issue (`E2E weekly failed`, or a short cut-hold Issue). Do not
+   `@JuliaRegistrator register` while `cut-hold` is open.
+3. Green again: remove `cut-hold`, then register on that merge commit
+   (not the PR body). Paste the NEWS section under `Release notes:`.
+4. Abort instead: open a PR that lowers `version` (CI adds `uncut`),
+   move the cut's NEWS back under **Unreleased** if needed, merge,
+   remove `cut-hold`. That version never goes to General.
+5. TagBot tags once General has the release.
 
 TagBot uses SSH deploy key secret `DOCUMENTER_KEY` (write deploy key on
 this repo) so the `vX.Y.Z` tag starts Docs and `stable` updates. Docs
@@ -287,8 +297,9 @@ domains share a shape.
 
 **Issues** (Bug / Enhancement forms only): `bug` or `enhancement`. The
 area dropdown is triage; add `area:*` if useful. Usage questions are
-Discussions. Confirmed bugs are Issues. `breaking` and `cut` are PR
-labels. Direction:
+Discussions. Confirmed bugs are Issues. `breaking`, `cut`, and `uncut`
+are PR labels; `cut-hold` is an Issue label after a cut merge.
+Direction:
 [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26).
 Security: [SECURITY.md](SECURITY.md).
 
@@ -311,8 +322,8 @@ do not need an Announcements post; the GitHub Release is enough.
 Every tracked path must match some `area:*` glob (`gen-labeler.sh
 --check`). Globs are positive paths; do not add `!` excludes (labeler
 ORs them as "not this path" and tags unrelated files). Path labeler
-syncs only `area:*`. After `setLabels` it restores type / `cut` / other
-non-area labels so a concurrent Type job is not wiped.
+syncs only `area:*`. After `setLabels` it restores type / `cut` /
+`uncut` / other non-area labels so a concurrent Type job is not wiped.
 
 - `src/cli/<area>/` (`explain` / `demos` too): `area:<area>`
 - Shared kit (`src/DistSSHKit.jl`, leftover DistSSHKit / argv stems,
@@ -353,8 +364,9 @@ CI infers, in order:
    anything else → chore
 
 `fix/` plus `Fixes` an enhancement issue gets `enhancement`. `breaking`
-may sit next to the type label. After merge a human registers; TagBot
-tags.
+may sit next to the type label. CI also adds `cut` when `version` goes
+up and `uncut` when it goes down. After a `cut` merge a human registers
+(or holds / uncuts); TagBot tags.
 
 ## Language
 
