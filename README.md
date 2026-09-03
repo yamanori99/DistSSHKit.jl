@@ -154,9 +154,10 @@ remote, `go --rsync` / `drive --rsync` can copy and instantiate in one shot
 - Other modes:
   - `--check` (verify SSH / Julia / dependencies)
   - `--cleanup` (kill leftover worker processes)
+  - `--prune` (remove `.distsshkit` go/drive/setup leaves; keeps the deploy)
   - `--delete` (remove the remote project directory — destructive)
 
-`--rsync` / `--clone` / `--sync` / `--pull` / `--delete` all ask for
+`--rsync` / `--clone` / `--sync` / `--pull` / `--delete` / `--prune` all ask for
 confirmation before running. Pass `-y` / `--yes` to run non-interactively,
 e.g. from a script.
 
@@ -186,6 +187,8 @@ julia --project=. -m DistSSHKit setup --check user@host1 user@host2
 Other commands that come in handy:
 
 ```bash
+# Remove go/drive/setup leaves (keeps the project tree)
+julia --project=. -m DistSSHKit setup --prune user@host1 user@host2
 # Clean up leftover worker processes
 julia --project=. -m DistSSHKit setup --cleanup user@host1 user@host2
 # Start over from scratch (asks for confirmation)

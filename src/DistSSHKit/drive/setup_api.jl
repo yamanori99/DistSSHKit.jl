@@ -10,6 +10,7 @@ const _SETUP_BANG_MODES = (
     :check,
     :runtest,
     :cleanup,
+    :prune,
 )
 
 """
@@ -29,6 +30,7 @@ Prepare SSH hosts — same jobs as `julia -m DistSSHKit setup --…`.
 | `:check` | `--check` | `ignore_julia_version=`, `check_code_sync=` |
 | `:runtest` | `--runtest` | job `Pkg.test()` on remotes; `julia=` |
 | `:cleanup` | `--cleanup` | Kill stale workers (no confirm) |
+| `:prune` | `--prune` | `.distsshkit` go/drive/setup leaves; confirm unless `session.yes`. `older_days=`, `id=` |
 
 Confirmations follow `session.yes` (CLI `-y`). Multiple modes run in order and
 stop on the first failure:
@@ -49,6 +51,8 @@ function setup!(
     julia::AbstractString="auto",
     ignore_julia_version::Bool=false,
     check_code_sync::Bool=true,
+    older_days::Union{Nothing,Integer}=nothing,
+    id::Union{Nothing,AbstractString}=nothing,
 )::SyncResult
     _setup_bang_preflight!(session, mode; repo=repo)
     apply_session_env!(session)
@@ -66,6 +70,8 @@ function setup!(
             julia=julia,
             ignore_julia_version=ignore_julia_version,
             check_code_sync=check_code_sync,
+            older_days=older_days,
+            id=id,
         )
     end
 end
@@ -120,6 +126,8 @@ function _setup_one!(
     julia::AbstractString="auto",
     ignore_julia_version::Bool=false,
     check_code_sync::Bool=true,
+    older_days::Union{Nothing,Integer}=nothing,
+    id::Union{Nothing,AbstractString}=nothing,
 )::SyncResult
     _setup_bang_preflight!(session, mode; repo=repo)
     hosts = _setup_bang_hosts!(session)
@@ -184,6 +192,19 @@ function _setup_one!(
         return SyncResult(false, HostResult[]; ok=result.ok)
     elseif mode === :cleanup
         raw = cleanup_remote_workers(hosts)
+        return _sync_result_from_host_op(raw)
+    elseif mode === :prune
+        preflight_setup_ssh(hosts) || return SyncResult(true, HostResult[]; ok=false)
+        log_dir = joinpath(session.project, ".distsshkit", "setup")
+        raw = prune_kit_leaves(
+            hosts,
+            remote_path,
+            session.project;
+            confirm=!session.yes,
+            older_days=older_days,
+            id=id,
+            skip_setup=log_dir,
+        )
         return _sync_result_from_host_op(raw)
     end
     # Unreachable when `_SETUP_BANG_MODES` stays in sync with branches above.

@@ -80,6 +80,7 @@ if !isdefined(@__MODULE__, :setup_main)
                 :instantiate => "Instantiate",
                 :runtest => "Pkg.test (job)",
                 :cleanup => "Cleanup Workers",
+                :prune => "Prune kit leaves",
             )[mode]
             print_header("DistSSHKit setup · $mode_name")
             kit_println()
@@ -88,7 +89,7 @@ if !isdefined(@__MODULE__, :setup_main)
 
             # Mutating / multi-host SSH ops: fail fast before confirmations.
             if mode === :delete || mode === :clone || mode === :rsync_push ||
-               mode === :instantiate || mode === :runtest
+               mode === :instantiate || mode === :runtest || mode === :prune
                 if !preflight_setup_ssh(opts.hosts)
                     print_err("SSH preflight failed. Fix connectivity, then retry.")
                     kit_println()
@@ -143,6 +144,20 @@ if !isdefined(@__MODULE__, :setup_main)
 
             if mode === :cleanup
                 return Cint(finish_host_op!("Cleanup", cleanup_remote_workers(opts.hosts)) ? 0 : 1)
+            end
+
+            if mode === :prune
+                return Cint(finish_host_op!(
+                    "Prune",
+                    prune_kit_leaves(
+                        opts.hosts,
+                        remote_path,
+                        project;
+                        older_days=opts.older_days,
+                        id=opts.prune_id,
+                        skip_setup=joinpath(project, ".distsshkit", "setup"),
+                    ),
+                ) ? 0 : 1)
             end
 
             # --pull/--sync: allow commit mismatch (fixed by the op). --check: require sync.

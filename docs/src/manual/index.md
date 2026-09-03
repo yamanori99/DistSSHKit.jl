@@ -93,6 +93,9 @@ Worker `addprocs` stays sequential.
 - Local `drive` workers are torn down with `rmprocs`, not a pattern `pkill`
 - Before adding SSH workers, `drive` may `pkill -9 -f` `julia --worker` /
   `julia --bind-to` on those remotes
+- `setup --prune` removes `.distsshkit/{go,drive,setup}` leaves (not the
+  deploy). `--cleanup` kills stale workers. `--delete` removes the remote
+  project tree
 - `setup --cleanup` runs that same sweep on localhost and remotes (other
   Distributed jobs on the same login can match)
 - `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` skips those `pkill`s; `rmprocs`

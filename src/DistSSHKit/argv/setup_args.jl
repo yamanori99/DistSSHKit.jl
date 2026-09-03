@@ -25,6 +25,7 @@ function show_requirements(; io::IO=stdout)
         "  --check              SSH, Julia, project, deps",
         "  --runtest            Pkg.test of the job project on remotes",
         "  --cleanup / --delete stale workers / remote tree",
+        "  --prune              .distsshkit go/drive/setup leaves",
     )
     print_help_blank(io)
     print_help_section("Options"; io=io)
@@ -40,7 +41,8 @@ function show_requirements(; io::IO=stdout)
         "  --hosts CSV          SSH names (`:N` stripped)",
         "  --hosts-file PATH    one host per line (`:N` stripped)",
         "  --version, -v        print version and exit",
-        "  -h, --help           this help",
+        "  --older-than DAYS    with --prune: mtime at least DAYS old",
+        "  --id TOKEN           with --prune: go batch name contains TOKEN",
     )
     print_help_blank(io)
     print_help_section("Environment"; io=io)
@@ -63,6 +65,8 @@ function parse_setup_args(args::Vector{String})
     hosts = String[]
     show_help = false
     ignore_julia_version = false
+    older_days = nothing
+    prune_id = nothing
 
     c = CliCursor(args)
     while !cli_at_end(c)
@@ -91,6 +95,19 @@ function parse_setup_args(args::Vector{String})
         elseif arg == "--delete"
             mode = :delete
             cli_consume!(c)
+        elseif arg == "--prune"
+            mode = :prune
+            cli_consume!(c)
+        elseif arg == "--older-than"
+            raw = strip(cli_take_value!(c, arg))
+            n = tryparse(Int, raw)
+            (n !== nothing && n >= 0) || throw(ArgumentError(
+                "--older-than needs a non-negative integer day count, got $(repr(raw))",
+            ))
+            older_days = n
+        elseif arg == "--id"
+            prune_id = String(strip(cli_take_value!(c, arg)))
+            isempty(prune_id) && throw(ArgumentError("--id needs a non-empty token"))
         elseif arg == "--rsync"
             mode = :rsync_push
             cli_consume!(c)
@@ -118,6 +135,10 @@ function parse_setup_args(args::Vector{String})
     append_kit_host_sources!(hosts, cli_session; keep_counts=false)
     apply_kit_cli_session!(cli_session)
 
+    if (older_days !== nothing || prune_id !== nothing) && mode !== :prune
+        throw(ArgumentError("--older-than / --id only apply to setup --prune"))
+    end
+
     return (
         mode=mode,
         julia_path=julia_path,
@@ -126,6 +147,8 @@ function parse_setup_args(args::Vector{String})
         hosts=hosts,
         show_help=show_help,
         ignore_julia_version=ignore_julia_version,
+        older_days=older_days,
+        prune_id=prune_id,
         show_version=cli_session.show_version,
         cli_session=cli_session,
     )

@@ -102,6 +102,55 @@ function main()
         exit(0)
     end
 
+    if occursin("DISTSSHKIT_PRUNE_KIT_LEAVES", script)
+        older = nothing
+        m_old = match(r"older=([^\n]+)", script)
+        if m_old !== nothing
+            cap = m_old.captures[1]
+            if cap isa AbstractString
+                s = strip(cap, ['\'', '"'])
+                n = tryparse(Int, s)
+                n === nothing || (older = n)
+            end
+        end
+        id = nothing
+        m_id = match(r"\nid=([^\n]+)", script)
+        if m_id !== nothing
+            cap = m_id.captures[1]
+            if cap isa AbstractString
+                s = strip(cap, ['\'', '"'])
+                isempty(s) || (id = s)
+            end
+        end
+        if isdir(tree)
+            for (dir, _, _) in walkdir(tree)
+                basename(dir) == ".distsshkit" || continue
+                go = joinpath(dir, "go")
+                if isdir(go)
+                    for child in readdir(go; join=true)
+                        isdir(child) || continue
+                        (id === nothing || occursin(id, basename(child))) || continue
+                        if older !== nothing && (time() - mtime(child)) < older * 86400
+                            continue
+                        end
+                        rm(child; recursive=true, force=true)
+                    end
+                end
+                if id === nothing
+                    for kind in ("drive", "setup")
+                        p = joinpath(dir, kind)
+                        isdir(p) || continue
+                        if older !== nothing && (time() - mtime(p)) < older * 86400
+                            continue
+                        end
+                        rm(p; recursive=true, force=true)
+                    end
+                end
+            end
+        end
+        exit(0)
+    end
+
     if occursin("rm -rf", script)
         if isdir(dir)
             rm(dir; recursive=true, force=true)
