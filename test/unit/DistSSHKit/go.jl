@@ -45,6 +45,35 @@ using Dates
             @test s[1].label == "parent-1"
             @test s[2].label == "parent-2"
         end
+        let s = DistSSHKit._go_plan_slots(String[]; total=4)
+            @test length(s) == 4
+            @test all(x -> x.kind === :parent, s)
+            @test s[1].label == "parent-1"
+            @test s[4].label == "parent-4"
+        end
+        let s = DistSSHKit._go_plan_slots(["parent:10"]; total=3)
+            @test length(s) == 3
+        end
+        @test_throws ArgumentError DistSSHKit._go_plan_slots(["parent:2"]; total=3)
+        let s = DistSSHKit._go_plan_slots(["child:h1"]; total=2)
+            @test length(s) == 2
+            @test all(x -> x.kind === :child && x.host == "h1", s)
+        end
+        let s = DistSSHKit._go_plan_slots(["child:a", "child:b"]; total=4)
+            @test count(x -> x.host == "a", s) == 2
+            @test count(x -> x.host == "b", s) == 2
+        end
+        let s = DistSSHKit._go_plan_slots(["child:a", "child:b"]; total=3)
+            @test count(x -> x.host == "a", s) == 2
+            @test count(x -> x.host == "b", s) == 1
+        end
+        let s = DistSSHKit._go_plan_slots(["parent:1", "child:h1"]; total=4)
+            @test count(x -> x.kind === :parent, s) == 1
+            @test count(x -> x.host == "h1", s) == 3
+        end
+        @test_throws ArgumentError DistSSHKit._go_plan_slots(["child:h1:1"]; total=2)
+        @test_throws ArgumentError DistSSHKit._go_plan_slots(String[]; total=0)
+        @test_throws ArgumentError DistSSHKit._go_plan_slots(String[]; total=true)
         @test occursin("root@", DistSSHKit._go_host_ssh_hint("192.0.2.11"))
         @test isempty(DistSSHKit._go_host_ssh_hint("root@192.0.2.11"))
     end

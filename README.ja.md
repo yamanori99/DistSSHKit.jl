@@ -182,11 +182,16 @@ julia --project=. -m DistSSHKit setup --delete user@host1 user@host2
 
 下準備のあと、次のように実行する。
 
-**CLI で go する例。** 各ホストで `script.jl` を1本ずつ実行する (`parent:N` も指定可)。
+**CLI で go する例。** スロットごとに `script.jl` を最初から最後まで1回走らせる。
+`child:user@host:1` はそのホストで1回、`parent:N` はキット親で N 回。
+`--repeat N` は合計 N 回。ホストを書けばそのホストに振る。
 
 ```bash
 julia --project=. -m DistSSHKit go \
   child:user@host1:1 child:user@host2:1 path/to/script.jl
+julia --project=. -m DistSSHKit go --repeat 100 path/to/script.jl
+julia --project=. -m DistSSHKit go --repeat 100 \
+  child:user@host1 child:user@host2 path/to/script.jl
 ```
 
 **CLI で drive する例。** git デプロイなら、あとからの更新は `setup --sync`。`rsync` でもよい。

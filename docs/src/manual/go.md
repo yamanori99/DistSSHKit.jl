@@ -40,6 +40,9 @@ if needed). Later git updates (`setup --sync` / `go --sync`) need a
 - `--verbose`: full detail (non-TTY default)
 - `-y` / `--yes`: non-interactive confirmations
 - `--hosts-file PATH`: append slot specs (`child:NAME:N` preserved)
+- `--repeat N`: N independent runs in total. Spread round-robin across
+  listed hosts (none → all on parent). Omit `:N` on a host to leave it
+  uncapped; `parent:N` / `child:NAME:N` are per-host caps.
 - `-v` / `--version`: print DistSSHKit version and exit
 - `-h` / `--help`: full help
 

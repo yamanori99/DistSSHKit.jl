@@ -9,6 +9,7 @@ Each command page starts with **Flags** for that command.
 - [setup](@ref Manual-setup): check hosts, clone / rsync / sync,
   instantiate, cleanup
 - [go](@ref Manual-go): standalone script as-is; one full run per slot
+  (`--repeat N` = N runs, spread across listed hosts)
 - [drive](@ref Manual-drive): master + Distributed workers; driver farms
   work
 - [size](@ref Manual-size): estimate worker counts from RAM / CPU

@@ -58,6 +58,7 @@ function go_main()::Cint
         output_dir=kw[:output_dir],
         hosts_file=nothing,
         julia=kw[:julia],
+        repeat=get(kw, :repeat, nothing),
         hint_surface=:cli,
         original_args=original_args,
     )

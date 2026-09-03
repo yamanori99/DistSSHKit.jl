@@ -29,7 +29,8 @@ drive!("job.jl", "parent:2"; args=["8"])
 ## Run a script as-is — `go!`
 
 No Kit imports in the job file. Each `parent:N` / `child:NAME:N` slot is
-one full run, concurrent.
+one full run, concurrent. `repeat=N` is N runs in total (`--repeat N`),
+spread across listed hosts.
 
 ```@docs
 go!
