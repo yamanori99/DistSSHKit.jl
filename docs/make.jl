@@ -1,8 +1,28 @@
 using Documenter
 using DistSSHKit
 using Base64
+using Downloads
 
 DocMeta.setdocmeta!(DistSSHKit, :DocTestSetup, :(using DistSSHKit); recursive=true)
+
+"""Nanosoldier SVG with square corners (`rx=0`), for README / docs."""
+function _refresh_pkgeval_badge!()
+    dest = joinpath(@__DIR__, "src", "assets", "pkgeval.svg")
+    url = "https://juliaci.github.io/NanosoldierReports/pkgeval_badges/D/DistSSHKit.svg"
+    try
+        svg = String(take!(Downloads.download(url, IOBuffer())))
+        occursin("PkgEval", svg) || return
+        svg = replace(svg, r"rx=\"\d+\"" => "rx=\"0\"")
+        svg = replace(svg, r"<linearGradient[\s\S]*?</linearGradient>" => "")
+        svg = replace(svg, r"<rect[^>]*fill=\"url\(#s\)\"[^>]*/>" => "")
+        write(dest, svg)
+    catch e
+        @warn "PkgEval badge not refreshed" exception = e
+    end
+    return nothing
+end
+
+_refresh_pkgeval_badge!()
 
 const FAVICON_PNG_B64 = base64encode(read(joinpath(@__DIR__, "src", "assets", "favicon.png")))
 const FAVICON_DARK_PNG_B64 = base64encode(read(joinpath(@__DIR__, "src", "assets", "favicon-dark.png")))

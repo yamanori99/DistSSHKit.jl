@@ -62,3 +62,15 @@ jobs:
           # Deploy via HTTPS + contents:write (no DOCUMENTER_KEY SSH secret required).
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: julia --project=docs --color=yes docs/make.jl
+      - name: Commit PkgEval badge if Nanosoldier changed
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git add docs/src/assets/pkgeval.svg
+          if git diff --cached --quiet; then
+            echo "PkgEval badge unchanged"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "Refresh PkgEval badge from Nanosoldier."
+            git push
+          fi
