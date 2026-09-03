@@ -512,29 +512,25 @@ function _go_pull_slot!(
     end
 end
 
-"""Run one slot (local process or remote SSH) and optional collect. Isolated env per slot."""
+"""Run one slot (local process or remote SSH). Isolated env per slot. Pull is `_go_collect_slot!`."""
 function _go_exec_slot!(
     slot::GoSlot,
     proj::AbstractString,
     script_path::AbstractString,
     args::AbstractVector{<:AbstractString},
     batch_dir::AbstractString,
-    sess_rr::AbstractString,
-    skip_collect::Bool;
+    sess_rr::AbstractString;
     quiet::Bool=false,
     julia::Union{Nothing,AbstractString}=nothing,
 )
     slot_dir = joinpath(batch_dir, slot.label)
     mkpath(slot_dir)
-    collect_res = nothing
-    collect_fail = false
     run_lab = string(slot.label, "/run")
     _kit_progress_span!(run_lab, :running)
     if slot.kind === :parent
         run_res = _go_run_local_slot!(
             proj, script_path, args, slot_dir; quiet=quiet, julia=julia,
         )
-        _kit_progress_span!(run_lab, run_res.ok ? :ok : :fail)
     else
         host = slot.host::String
         slot_rel = relpath(slot_dir, proj)
@@ -549,21 +545,30 @@ function _go_exec_slot!(
             quiet=quiet,
             julia=julia,
         )
-        _kit_progress_span!(run_lab, run_res.ok ? :ok : :fail)
-        if run_res.ok && !skip_collect
-            col_lab = string(slot.label, "/collect")
-            _kit_progress_span!(col_lab, :running)
-            if _go_pull_slot!(host, sess_rr, slot_rel, slot_dir)
-                collect_res = CollectResult(true, 0)
-                _kit_progress_span!(col_lab, :ok)
-            else
-                collect_fail = true
-                collect_res = CollectResult(false, 1)
-                _kit_progress_span!(col_lab, :fail)
-            end
-        end
     end
-    return (run=run_res, collect=collect_res, collect_fail=collect_fail)
+    _kit_progress_span!(run_lab, run_res.ok ? :ok : :fail)
+    return (run=run_res, collect=nothing, collect_fail=false)
+end
+
+"""Rsync one successful remote slot after every script has finished."""
+function _go_collect_slot!(
+    slot::GoSlot,
+    proj::AbstractString,
+    batch_dir::AbstractString,
+    sess_rr::AbstractString,
+)
+    slot.kind === :child || return (collect=nothing, collect_fail=false)
+    host = slot.host::String
+    slot_dir = joinpath(batch_dir, slot.label)
+    slot_rel = relpath(slot_dir, proj)
+    col_lab = string(slot.label, "/collect")
+    _kit_progress_span!(col_lab, :running)
+    if _go_pull_slot!(host, sess_rr, slot_rel, slot_dir)
+        _kit_progress_span!(col_lab, :ok)
+        return (collect=CollectResult(true, 0), collect_fail=false)
+    end
+    _kit_progress_span!(col_lab, :fail)
+    return (collect=CollectResult(false, 1), collect_fail=true)
 end
 
 """Log header matching drive: subcommand args, Julia env, then the go banner."""
@@ -827,7 +832,8 @@ function go!(
         end
 
         n_slots > 0 && _kit_progress_mark!("run")
-        @sync for slot in slots
+        slot_run_ok = fill(false, n_slots)
+        @sync for (i, slot) in enumerate(slots)
             @async begin
                 kit_progress_item!(slot.label; status=:running)
                 err = nothing
@@ -838,8 +844,7 @@ function go!(
                         script_path,
                         args,
                         batch_dir,
-                        sess_rr,
-                        skip_collect;
+                        sess_rr;
                         quiet=quiet,
                         julia=julia,
                     )
@@ -851,14 +856,9 @@ function go!(
                         collect_fail=false,
                     )
                 end
+                slot_run_ok[i] = outcome.run.ok
                 lock(_GO_IO_LOCK) do
                     last_run[] = outcome.run
-                    if outcome.collect !== nothing
-                        last_collect[] = outcome.collect
-                    end
-                    if outcome.collect_fail
-                        any_collect_fail[] = true
-                    end
                     if err !== nothing
                         any_run_fail[] = true
                         kit_progress_item!(slot.label; status=:fail)
@@ -880,6 +880,37 @@ function go!(
         end
 
         n_slots > 0 && _kit_progress_mark!("collect")
+        if !skip_collect
+            @sync for (i, slot) in enumerate(slots)
+                slot_run_ok[i] || continue
+                slot.kind === :child || continue
+                @async begin
+                    err = nothing
+                    outcome = try
+                        _go_collect_slot!(slot, proj, batch_dir, sess_rr)
+                    catch e
+                        err = e
+                        (collect=CollectResult(false, 1), collect_fail=true)
+                    end
+                    lock(_GO_IO_LOCK) do
+                        if outcome.collect !== nothing
+                            last_collect[] = outcome.collect
+                        end
+                        if outcome.collect_fail || err !== nothing
+                            any_collect_fail[] = true
+                        end
+                        if err !== nothing
+                            write(stderr, "  ")
+                            print_err(
+                                "✗ $(slot.label): $(sprint(showerror, err))";
+                                io=stderr,
+                            )
+                            println(stderr)
+                        end
+                    end
+                end
+            end
+        end
         if any_run_fail[]
             completed = true
             return _go_complete!(

@@ -28,7 +28,8 @@ From this directory (kit root also works if you keep the path):
 ```
 
 Each `up.sh` runs `container system start` and rebuilds
-`local/linux-ssh-worker:latest` from [`../docker-ssh/Dockerfile`](../docker-ssh/Dockerfile)
+`local/linux-ssh-worker:latest` from
+[`../docker-ssh/Dockerfile`](../docker-ssh/Dockerfile)
 (layer cache if the file is unchanged). Then it removes and recreates
 `child-1` / `child-2`.
 Keys come from `docker-ssh/scripts/gen-keys.sh` (mounted from
@@ -44,7 +45,8 @@ SSH aliases after `up.sh`:
 - `distsshkit-w2` → the other worker
 
 ```bash
-ssh -F ../docker-ssh/.generated/ssh_config distsshkit-w1 'echo ok; julia --version'
+ssh -F ../docker-ssh/.generated/ssh_config distsshkit-w1 \
+  'echo ok; julia --version'
 ```
 
 Apple’s default network does not resolve `child-1` / `child-2` between
@@ -76,12 +78,14 @@ Switch back to Docker: `docker-ssh/scripts/up.sh` rewrites `ssh_config` to
 
 ## Troubleshooting
 
-| Symptom | What to do |
-| --- | --- |
-| `container CLI not found` | Install Apple `container`, then retry |
-| `apiserver is not running` | `container system start` (also done by `up.sh`) |
-| `dockerfile not found` | `up.sh` builds from `testenv/docker-ssh`; run it from this `scripts/` tree |
-| `401` pulling `linux-ssh-worker` | Let `up.sh` build, or `cd ../docker-ssh && container build -t local/linux-ssh-worker:latest .` |
-| SSH timeout | `container ls` — empty IP means `container start <name>` or `./scripts/up.sh` |
-| `Host key verification failed` / changed host key | `up.sh` uses `StrictHostKeyChecking accept-new` and docker-ssh `known_hosts` |
-| git E2E cannot clone `dev@child-1` | Re-run `up.sh` (injects `/etc/hosts`); do not skip that step |
+- `container CLI not found`: install Apple `container`, then retry
+- `apiserver is not running`: `container system start` (also done by
+  `up.sh`)
+- `dockerfile not found`: run `up.sh` from this `scripts/` tree
+- `401` pulling the worker image: let `up.sh` build, or build in
+  `../docker-ssh`
+- SSH timeout: `container ls`; empty IP → `container start` or `up.sh`
+- Host key failed / changed: `up.sh` uses `accept-new` and docker-ssh
+  `known_hosts`
+- git E2E cannot clone `dev@child-1`: re-run `up.sh` (injects
+  `/etc/hosts`)

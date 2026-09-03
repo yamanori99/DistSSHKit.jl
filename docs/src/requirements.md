@@ -99,14 +99,17 @@ kit (`ConnectTimeout` here is `5`; the kit uses `10` plus keepalives).
 - `which rsync` — remotes / collect
 - `which git` — git deploy path only
 
-`setup --check` prints the same three on the controller (`ssh` missing fails the check; `rsync` / `git` warn). Spawn uses those messages instead of a raw `ENOENT`.
+`setup --check` prints the same three on the controller (`ssh` missing
+fails the check; `rsync` / `git` warn). Spawn uses those messages instead
+of a raw `ENOENT`.
 
 ### Each SSH host
 
 Example — passwordless login (once per host):
 
 ```bash
-ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=accept-new USER@HOST echo ok
+ssh -o ConnectTimeout=5 -o BatchMode=yes \
+  -o StrictHostKeyChecking=accept-new USER@HOST echo ok
 ```
 
 Example — Julia **1.12+**, same major.minor as the kit machine. Non-interactive
@@ -118,7 +121,9 @@ below (or you pass `--julia` / `JULIA_DISTRIBUTED_EXE`):
 - Linux / WSL2: `/usr/bin/julia`, `/usr/local/bin/julia`
 
 ```bash
-ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=accept-new USER@HOST '$HOME/.juliaup/bin/julia --version'
+ssh -o ConnectTimeout=5 -o BatchMode=yes \
+  -o StrictHostKeyChecking=accept-new \
+  USER@HOST '$HOME/.juliaup/bin/julia --version'
 ```
 
 If Julia is at another path above, put that path in the command instead.
@@ -133,7 +138,8 @@ julia --project=. -m DistSSHKit setup --check USER@HOST
 Example — `git` only if that host will clone / pull:
 
 ```bash
-ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=accept-new USER@HOST 'which git'
+ssh -o ConnectTimeout=5 -o BatchMode=yes \
+  -o StrictHostKeyChecking=accept-new USER@HOST 'which git'
 ```
 
 Next: [Introduction](@ref DistSSHKit.jl) · [Prepare](@ref Tutorial-Prepare).
