@@ -446,6 +446,7 @@ function remove_legacy!()
         "social-preview-dynamic.svg",
         "social-preview-static.png",
         "social-preview-dynamic.gif",
+        ".raster-stamp",
     )
         p = joinpath(ROOT, name)
         if isfile(p) || islink(p)
@@ -746,8 +747,13 @@ function bake_static_png!(
     return true
 end
 
+function write_raster_stamp!(name::AbstractString)
+    path = joinpath(ROOT, name)
+    write(path, string(Dates.now(Dates.UTC), "Z\n"))
+    println("wrote $name")
+end
+
 function bake_pngs!(arts)
-    ok_any = false
     logo_svg = logo_path("logo-static.svg")
     logo_png = logo_path("logo-static.png")
     logo_html_body = replace(
@@ -755,16 +761,13 @@ function bake_pngs!(arts)
         "width=\"240\" height=\"240\"" => "width=\"$(LOGO_PNG)\" height=\"$(LOGO_PNG)\"",
         count=1,
     )
-    if bake_static_png!(logo_svg, logo_png, logo_html_body; w=LOGO_PNG, h=LOGO_PNG, scale=PNG_SCALE)
-        ok_any = true
-    else
-        println(stderr, "warn: skip logo-static.png (need rsvg-convert or Chromium)")
-    end
+    bake_static_png!(logo_svg, logo_png, logo_html_body; w=LOGO_PNG, h=LOGO_PNG, scale=PNG_SCALE) ||
+        die("logo-static.png (need rsvg-convert or Chromium)")
 
     social_svg = social_path("social-preview-static.svg")
     social_png = social_path("social-preview-static.png")
     social_html = strip_xml_decl(arts.social_static)
-    if bake_static_png!(
+    bake_static_png!(
         social_svg,
         social_png,
         social_html;
@@ -772,17 +775,9 @@ function bake_pngs!(arts)
         h=SOCIAL_PNG_H,
         scale=PNG_SCALE,
         exact_size=true,
-    )
-        ok_any = true
-    else
-        println(stderr, "warn: skip social-preview-static.png (need rsvg-convert or Chromium, plus sips/ffmpeg to keep 1280×640)")
-    end
+    ) || die("social-preview-static.png (need rsvg-convert or Chromium, plus sips/ffmpeg to keep 1280×640)")
 
-    if bake_favicon!(arts)
-        ok_any = true
-    else
-        println(stderr, "warn: skip $FAVICON (need rsvg-convert or Chromium)")
-    end
+    bake_favicon!(arts) || die("$FAVICON (need rsvg-convert or Chromium)")
 
     for (svg_rel, png_rel, svg_text) in (
         (diagram_path("topology.svg"), diagram_path("topology.png"), arts.topology),
@@ -793,20 +788,16 @@ function bake_pngs!(arts)
                 "width=\"$(DIAGRAM_PNG_W)\" height=\"$(DIAGRAM_PNG_H)\"",
             count=1,
         )
-        if bake_static_png!(
+        bake_static_png!(
             svg_rel,
             png_rel,
             html_body;
             w=DIAGRAM_PNG_W,
             h=DIAGRAM_PNG_H,
             scale=1,
-        )
-            ok_any = true
-        else
-            println(stderr, "warn: skip $png_rel (need rsvg-convert or Chromium)")
-        end
+        ) || die("$png_rel (need rsvg-convert or Chromium)")
     end
-    return ok_any
+    return nothing
 end
 
 function bake_favicon!(arts)
@@ -937,15 +928,12 @@ function main(args)
     if do_png
         println("baking PNGs…")
         bake_pngs!(arts)
+        write_raster_stamp!(".raster-stamp-png")
     end
     if do_gif
         println("baking GIFs (Chromium ×$(GIF_WORKERS) + ffmpeg)…")
         bake_gifs!(arts)
-    end
-    if do_png || do_gif
-        stamp = joinpath(ROOT, ".raster-stamp")
-        write(stamp, string(Dates.now(Dates.UTC), "Z\n"))
-        println("wrote .raster-stamp")
+        write_raster_stamp!(".raster-stamp-gif")
     end
 
     remove_legacy!()
