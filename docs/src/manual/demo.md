@@ -12,22 +12,26 @@ Walkthrough: [First Steps · Demo](@ref Tutorial-Demo).
 
 ## Flags / subcommands
 
-| Form | Meaning |
-| --- | --- |
-| `demo list` | Show demo ids and package paths |
-| `demo install with_kit` | Copy `demos/with_kit/` into `./demos/` |
-| `demo install without_kit` | Copy `demos/without_kit/` into `./demos/` |
-| `--dest DIR` | Install under `DIR/demos/` instead of `./demos/` |
-| `--force` | Overwrite existing demo files |
-| `-h` / `--help` | Help |
+- `demo list`: show demo ids and package paths
+- `demo install with_kit`: copy package `demos/with_kit/` into
+  `./distsshkit_demos/`
+- `demo install without_kit`: copy package `demos/without_kit/` into
+  `./distsshkit_demos/`
+- `--dest DIR`: install under `DIR/distsshkit_demos/` instead of
+  `./distsshkit_demos/`
+- `--force`: overwrite existing demo files
+- `-h` / `--help`: help
 
-Bare `demo install` (both families) is refused. Layout under `demos/` after
-install:
+Bare `demo install` (both families) is refused. Layout under
+`distsshkit_demos/` after install:
 
 - `with_kit/`: driver (`init` / `main`). [`drive`](@ref Manual-drive) or
   `pipeline!`
 - `without_kit/`: standalone Julia. `julia …`, [`go`](@ref Manual-go), or
   `go!`
 
-Refuses to install into the package's own `demos/` tree. Prefer
-`--dest DIR` when developing the kit itself.
+The package tree stays `demos/with_kit/` and `demos/without_kit/`. Install
+does not use `.distsshkit/` (rsync excludes it).
+
+Refuses `dest` equal to the DistSSHKit package root. Prefer `--dest DIR`
+when developing the kit itself.

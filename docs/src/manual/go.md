@@ -88,7 +88,7 @@ line to replay:
 
 ```bash
 julia --project=. -m DistSSHKit go -y parent:2 \
-  demos/without_kit/pi_echo.jl --n 5000
+  distsshkit_demos/without_kit/pi_echo.jl --n 5000
 julia --project=. -m DistSSHKit progress DIR
 ```
 

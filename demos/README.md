@@ -1,6 +1,9 @@
 # demos/
 
-Install one family:
+The package layout is `demos/` below. After `demo install` from a **job**
+project, the same files land in `./distsshkit_demos/` (not `./demos/`).
+From this checkout, pass `--dest DIR` (install into the kit tree is
+refused).
 
 - [`with_kit/`](with_kit/): driver scripts (`init` / `main`). `drive` or
   `pipeline!`
@@ -27,13 +30,13 @@ Naming: `{topic}_{file|echo}` — `*_file` writes a file, `*_echo` prints only.
 julia --project=. -m DistSSHKit demo install with_kit
 julia --project=. -m DistSSHKit demo install without_kit
 julia --project=. -m DistSSHKit drive parent:2 \
-  demos/with_kit/square_file.jl --n 4
+  distsshkit_demos/with_kit/square_file.jl --n 4
 julia --project=. -m DistSSHKit drive parent:2 \
-  demos/with_kit/square_echo.jl --n 4
-julia --project=. demos/with_kit/pipeline_square.jl --n 4
-julia demos/without_kit/pi_echo.jl --n 5000
-julia --project=. -m DistSSHKit go demos/without_kit/pi_file.jl --n 5000
-julia --project=. demos/without_kit/pipeline_pi.jl --n 5000
+  distsshkit_demos/with_kit/square_echo.jl --n 4
+julia --project=. distsshkit_demos/with_kit/pipeline_square.jl --n 4
+julia distsshkit_demos/without_kit/pi_echo.jl --n 5000
+julia --project=. -m DistSSHKit go distsshkit_demos/without_kit/pi_file.jl --n 5000
+julia --project=. distsshkit_demos/without_kit/pipeline_pi.jl --n 5000
 ```
 
 ## with_kit/
@@ -58,9 +61,9 @@ the bottom of that file (`setup!` first, or CLI `setup`).
 Run alone, via `go`, or via the `go!` API wrapper:
 
 ```bash
-julia demos/without_kit/pi_echo.jl
-julia --project=. -m DistSSHKit go demos/without_kit/pi_file.jl
-julia --project=. demos/without_kit/pipeline_pi.jl
+julia distsshkit_demos/without_kit/pi_echo.jl
+julia --project=. -m DistSSHKit go distsshkit_demos/without_kit/pi_file.jl
+julia --project=. distsshkit_demos/without_kit/pipeline_pi.jl
 ```
 
 `pipeline_pi.jl` mirrors `pipeline_square.jl` for as-is jobs:

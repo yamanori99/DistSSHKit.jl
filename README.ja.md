@@ -227,14 +227,17 @@ setup!(session, :sync)  # 2回目以降の更新
 スクリプトを自分で書く前にキットを試すことができる。
 `with_kit` は drive、`without_kit` は単独実行 / go:
 
+ジョブ側のプロジェクト (`pkg> add DistSSHKit`) で実行する。DistSSHKit の
+checkout では拒否される:
+
 ```bash
 julia --project=. -m DistSSHKit demo install with_kit
 julia --project=. -m DistSSHKit demo install without_kit
 ```
 
 ```bash
-julia --project=. -m DistSSHKit drive parent:2 demos/with_kit/square_file.jl
-julia --project=. -m DistSSHKit go parent:2 demos/without_kit/pi_file.jl
+julia --project=. -m DistSSHKit drive parent:2 distsshkit_demos/with_kit/square_file.jl
+julia --project=. -m DistSSHKit go parent:2 distsshkit_demos/without_kit/pi_file.jl
 ```
 
 詳細: [Demo](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/demo/)。

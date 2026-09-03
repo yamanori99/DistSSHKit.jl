@@ -19,6 +19,7 @@ using Test
         diag === nothing && error("diagnose_missing_script returned nothing")
         @test diag.kind === :install_bundled
         @test occursin("demo install", DistSSHKit.explain_missing_script_hint(diag; surface=:cli))
+        @test occursin("distsshkit_demos/", DistSSHKit.explain_missing_script_hint(diag; surface=:cli))
         @test occursin(
             "DistSSHKit.install_demos(; family=",
             DistSSHKit.explain_missing_script_hint(diag; surface=:api),
@@ -42,15 +43,16 @@ using Test
         result = DistSSHKit.install_demos(tmp; family="with_kit")
         @test length(result.installed) == count(s -> startswith(s, "with_kit/"), DistSSHKit.list_demos())
         @test isempty(result.skipped)
-        @test isfile(joinpath(tmp, "demos", "with_kit", "square_file.jl"))
-        @test isfile(joinpath(tmp, "demos", "with_kit", "pipeline_square.jl"))
-        @test !isdir(joinpath(tmp, "demos", "without_kit"))
-        @test isfile(joinpath(tmp, "demos", ".gitignore"))
-        @test occursin(".distsshkit/", read(joinpath(tmp, "demos", ".gitignore"), String))
-        @test occursin("output/", read(joinpath(tmp, "demos", ".gitignore"), String))
-        @test occursin("init_output_dir!", read(joinpath(tmp, "demos", "with_kit", "square_file.jl"), String))
+        @test isfile(joinpath(tmp, DistSSHKit.DEMO_INSTALL_DIR, "with_kit", "square_file.jl"))
+        @test isfile(joinpath(tmp, DistSSHKit.DEMO_INSTALL_DIR, "with_kit", "pipeline_square.jl"))
+        @test !isdir(joinpath(tmp, DistSSHKit.DEMO_INSTALL_DIR, "without_kit"))
+        @test !isdir(joinpath(tmp, "demos"))
+        @test isfile(joinpath(tmp, DistSSHKit.DEMO_INSTALL_DIR, ".gitignore"))
+        @test occursin(".distsshkit/", read(joinpath(tmp, DistSSHKit.DEMO_INSTALL_DIR, ".gitignore"), String))
+        @test occursin("output/", read(joinpath(tmp, DistSSHKit.DEMO_INSTALL_DIR, ".gitignore"), String))
+        @test occursin("init_output_dir!", read(joinpath(tmp, DistSSHKit.DEMO_INSTALL_DIR, "with_kit", "square_file.jl"), String))
 
-        edited_path = joinpath(tmp, "demos", "with_kit", "square_file.jl")
+        edited_path = joinpath(tmp, DistSSHKit.DEMO_INSTALL_DIR, "with_kit", "square_file.jl")
         write(edited_path, "# edited by user\n")
         result2 = DistSSHKit.install_demos(tmp; family="with_kit")
         @test isempty(result2.installed)
@@ -63,7 +65,7 @@ using Test
         @test occursin("init_output_dir!", read(edited_path, String))
 
         result_wo = DistSSHKit.install_demos(tmp; family="without_kit")
-        @test isfile(joinpath(tmp, "demos", "without_kit", "pipeline_pi.jl"))
+        @test isfile(joinpath(tmp, DistSSHKit.DEMO_INSTALL_DIR, "without_kit", "pipeline_pi.jl"))
         @test !isempty(result_wo.installed)
     end
 
@@ -119,6 +121,9 @@ using Test
         link = joinpath(tmp, "kit_root")
         symlink(realpath(kit_root), link)
         @test_throws ArgumentError DistSSHKit.install_demos(
+            kit_demos; family="with_kit", surface=:api,
+        )
+        @test_throws ArgumentError DistSSHKit.install_demos(
             link; family="with_kit", surface=:api,
         )
     end
@@ -140,8 +145,9 @@ using Test
             end
         end
         @test code == 0
-        @test isfile(joinpath(tmp, "demos", "without_kit", "pi_file.jl"))
-        @test !isdir(joinpath(tmp, "demos", "with_kit"))
+        @test isfile(joinpath(tmp, DistSSHKit.DEMO_INSTALL_DIR, "without_kit", "pi_file.jl"))
+        @test !isdir(joinpath(tmp, DistSSHKit.DEMO_INSTALL_DIR, "with_kit"))
+        @test !isdir(joinpath(tmp, "demos"))
     end
 
     # `_run_kit_cli_script` (module.jl) leaves DISTSSHKIT_CLI_SUBCOMMAND_DONE=1;

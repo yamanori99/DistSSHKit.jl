@@ -246,14 +246,17 @@ Details: [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/).
 Bundled examples so you can try the kit without writing a script first.
 `with_kit` is drive; `without_kit` is standalone / go:
 
+From a **job** project (`pkg> add DistSSHKit`), not the DistSSHKit
+checkout:
+
 ```bash
 julia --project=. -m DistSSHKit demo install with_kit
 julia --project=. -m DistSSHKit demo install without_kit
 ```
 
 ```bash
-julia --project=. -m DistSSHKit drive parent:2 demos/with_kit/square_file.jl
-julia --project=. -m DistSSHKit go parent:2 demos/without_kit/pi_file.jl
+julia --project=. -m DistSSHKit drive parent:2 distsshkit_demos/with_kit/square_file.jl
+julia --project=. -m DistSSHKit go parent:2 distsshkit_demos/without_kit/pi_file.jl
 ```
 
 Walkthrough:

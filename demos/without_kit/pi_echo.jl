@@ -3,9 +3,9 @@
 #
 # Monte Carlo π estimate; prints only (pair with pi_file.jl).
 #
-#   julia demos/without_kit/pi_echo.jl
-#   julia --project=. -m DistSSHKit go demos/without_kit/pi_echo.jl
-#   julia --project=. -m DistSSHKit go demos/without_kit/pi_echo.jl --n 5000
+#   julia distsshkit_demos/without_kit/pi_echo.jl
+#   julia --project=. -m DistSSHKit go distsshkit_demos/without_kit/pi_echo.jl
+#   julia --project=. -m DistSSHKit go distsshkit_demos/without_kit/pi_echo.jl --n 5000
 
 using Random
 

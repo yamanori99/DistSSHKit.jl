@@ -73,9 +73,10 @@ PRs.
 Smoke (1.12+; [demos/README.md](demos/README.md)):
 
 ```bash
-julia --project=. -m DistSSHKit demo install with_kit
+dest=$(mktemp -d)
+julia --project=. -m DistSSHKit demo install with_kit --dest "$dest"
 julia --project=. -m DistSSHKit drive parent:2 \
-  demos/with_kit/square_file.jl
+  "$dest/distsshkit_demos/with_kit/square_file.jl"
 ```
 
 `Pkg.test()` does not run real SSH. That is `test/e2e.jl`:

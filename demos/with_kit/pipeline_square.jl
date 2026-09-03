@@ -4,12 +4,12 @@
 #
 # Local (this script):
 #
-#   julia --project=. demos/with_kit/pipeline_square.jl
-#   julia --project=. demos/with_kit/pipeline_square.jl --n 4
+#   julia --project=. distsshkit_demos/with_kit/pipeline_square.jl
+#   julia --project=. distsshkit_demos/with_kit/pipeline_square.jl --n 4
 #
 # Same driver via CLI:
 #
-#   julia --project=. -m DistSSHKit drive parent:2 demos/with_kit/square_file.jl --n 4
+#   julia --project=. -m DistSSHKit drive parent:2 distsshkit_demos/with_kit/square_file.jl --n 4
 
 using DistSSHKit
 

@@ -6,6 +6,14 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+### Breaking (Unreleased)
+
+- `demo install` copies into `./distsshkit_demos/` (or
+  `DIR/distsshkit_demos/` with `--dest DIR`), not `./demos/`. Package
+  sources stay `demos/with_kit/` and `demos/without_kit/`.
+
+### Other
+
 - `go` Time `collect` is the remote-pull phase: every slot script finishes
   first, then pulls. Nested `NAME/collect` no longer sits under `run`.
 
