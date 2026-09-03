@@ -11,6 +11,6 @@
 
 - [ ] Not breaking — or `breaking` label (incompatible behavior)
 - [ ] Version raise — or `cut` label (`Project.toml` `version` went
-      up; after merge, E2E weekly green then register). Version lower
-      — or `uncut` (abort an unregistered cut; CI adds it)
+      up; after merge, E2E weekly green then register; hold with
+      `cut-hold`, do not lower `version`)
 - [ ] Remote / smoke tested if this PR needs it

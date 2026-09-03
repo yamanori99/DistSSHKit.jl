@@ -1,11 +1,9 @@
 # Require a type label on every PR: bug | enhancement | breaking | chore.
 # If missing: unique type on a closing issue (`Fixes #N`) first, else branch prefix
 # (`feat/` → enhancement, `fix/` → bug, …). Dependabot is exempt (`dependencies`).
-# Also add `cut` when Project.toml `version` increases (patch, minor, or major),
-# or `uncut` when it decreases (abort an unregistered cut).
-# `breaking` is incompatible API/CLI; `cut` / `uncut` are the version bump
-# direction. They may combine with a type label; `cut` and `uncut` do not
-# both apply on one PR.
+# Also add `cut` when Project.toml `version` increases (patch, minor, or major).
+# `breaking` is incompatible API/CLI; `cut` is the version bump. They may combine.
+# Do not lower `version` for General; postpone with `cut-hold` instead.
 name: Type
 
 on:
@@ -97,22 +95,6 @@ jobs:
               );
             }
 
-            async function removeIssueLabel(name) {
-              try {
-                await github.rest.issues.removeLabel({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: n,
-                  name,
-                });
-                core.info(`Removed label "${name}"`);
-              } catch (err) {
-                if (err.status !== 404) {
-                  throw err;
-                }
-              }
-            }
-
             const labels = await listLabelNames();
             let found = labels.filter((name) => requiredSet.has(name));
             if (found.length > 0) {
@@ -129,7 +111,7 @@ jobs:
               }
             }
 
-            await applyCutOrUncutIfVersionChange(labels);
+            await applyCutIfVersionCut(labels);
 
             async function typeFromClosingIssues(num) {
               const query = `query($owner: String!, $name: String!, $n: Int!) {
@@ -164,41 +146,24 @@ jobs:
               return null;
             }
 
-            async function applyCutOrUncutIfVersionChange(existing) {
+            async function applyCutIfVersionCut(existing) {
+              if (existing.includes("cut")) {
+                core.info("cut already present");
+                return;
+              }
               const base = context.payload.pull_request.base.sha;
               const head = context.payload.pull_request.head.sha;
               const oldV = await versionAt(base);
               const newV = await versionAt(head);
-              if (isVersionCut(oldV, newV)) {
-                if (existing.includes("uncut")) {
-                  await removeIssueLabel("uncut");
-                }
-                if (existing.includes("cut")) {
-                  core.info("cut already present");
-                  return;
-                }
-                await addIssueLabels(["cut"]);
+              if (!isVersionCut(oldV, newV)) {
                 core.info(
-                  `Applied cut (${fmtVer(oldV)} → ${fmtVer(newV)})`,
+                  `No version cut (${fmtVer(oldV)} → ${fmtVer(newV)})`,
                 );
                 return;
               }
-              if (isVersionUncut(oldV, newV)) {
-                if (existing.includes("cut")) {
-                  await removeIssueLabel("cut");
-                }
-                if (existing.includes("uncut")) {
-                  core.info("uncut already present");
-                  return;
-                }
-                await addIssueLabels(["uncut"]);
-                core.info(
-                  `Applied uncut (${fmtVer(oldV)} → ${fmtVer(newV)})`,
-                );
-                return;
-              }
+              await addIssueLabels(["cut"]);
               core.info(
-                `No version cut/uncut (${fmtVer(oldV)} → ${fmtVer(newV)})`,
+                `Applied cut (${fmtVer(oldV)} → ${fmtVer(newV)})`,
               );
             }
 
@@ -237,11 +202,6 @@ jobs:
               if (newV.major !== oldV.major) return newV.major > oldV.major;
               if (newV.minor !== oldV.minor) return newV.minor > oldV.minor;
               return newV.patch > oldV.patch;
-            }
-
-            function isVersionUncut(oldV, newV) {
-              if (!oldV || !newV) return false;
-              return isVersionCut(newV, oldV);
             }
 
             function inferType(ref) {

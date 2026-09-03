@@ -2,7 +2,7 @@
 # Backfill `area:*` on every PR from the current `.github/labeler.yml`.
 # Replaces legacy path labels `docs` / `ci` with `area:docs` / `area:ci`.
 # Does not touch type labels (`bug` / `enhancement` / `chore` / `breaking` /
-# `cut` / `uncut` / `cut-hold` / `dependencies`). Issues are not scanned.
+# `cut` / `cut-hold` / `dependencies`). Issues are not scanned.
 #
 # Usage:
 #   ./.github/retag-pr-areas.sh           # dry-run
