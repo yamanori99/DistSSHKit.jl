@@ -54,10 +54,11 @@ jobs:
           stale=0
           fail_if_stale() {
             local raster="$1"
-            shift
+            local stamp="$2"
+            shift 2
             local raster_ts sources_ts=0 t
             raster_ts="$(commit_ts "$raster")"
-            stamp_ts="$(commit_ts ".raster-stamp")"
+            stamp_ts="$(commit_ts "$stamp")"
             if (( stamp_ts > raster_ts )); then raster_ts=$stamp_ts; fi
             for src in "$@"; do
               t="$(commit_ts "$src")"
@@ -68,14 +69,14 @@ jobs:
               stale=1
             fi
           }
-          fail_if_stale logo/logo-static.png logo/logo-static.svg bake.jl
-          fail_if_stale favicon.ico favicon.svg bake.jl
-          fail_if_stale favicon.png favicon.svg bake.jl
-          fail_if_stale favicon-dark.png favicon-dark.svg bake.jl
-          fail_if_stale social/social-preview-static.png logo/logo-static.svg bake.jl
-          fail_if_stale diagram/topology.png diagram/topology.svg bake.jl
-          fail_if_stale logo/logo-dynamic.gif logo/logo-dynamic.svg bake.jl
-          fail_if_stale social/social-preview-dynamic.gif logo/logo-dynamic.svg bake.jl
+          fail_if_stale logo/logo-static.png .raster-stamp-png logo/logo-static.svg bake.jl
+          fail_if_stale favicon.ico .raster-stamp-png favicon.svg bake.jl
+          fail_if_stale favicon.png .raster-stamp-png favicon.svg bake.jl
+          fail_if_stale favicon-dark.png .raster-stamp-png favicon-dark.svg bake.jl
+          fail_if_stale social/social-preview-static.png .raster-stamp-png logo/logo-static.svg bake.jl
+          fail_if_stale diagram/topology.png .raster-stamp-png diagram/topology.svg bake.jl
+          fail_if_stale logo/logo-dynamic.gif .raster-stamp-gif logo/logo-dynamic.svg bake.jl
+          fail_if_stale social/social-preview-dynamic.gif .raster-stamp-gif logo/logo-dynamic.svg bake.jl
           if (( stale )); then
             echo "PNG/GIF older than sources. Bake locally and commit the rasters."
             exit 1

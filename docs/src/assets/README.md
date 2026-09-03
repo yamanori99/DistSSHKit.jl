@@ -74,8 +74,9 @@ julia docs/src/assets/bake.jl --png --gif  # + GIF (Chromium + ffmpeg)
 CI (`.github/workflows/assets-bake.yml`) re-runs the default bake when
 `docs/src/assets/` changes and fails if SVG/symlink outputs drift, or if
 PNG/GIF look older than their sources in git history (commit time of the
-raster, or `.raster-stamp` from `--png` / `--gif`). Bake `--png` /
-`--gif` locally before committing rasters (CI does not render them).
+raster, or `.raster-stamp-png` / `.raster-stamp-gif` after a complete
+`--png` / `--gif`). Bake `--png` / `--gif` locally before committing
+rasters (CI does not render them).
 
 ## Story (~8s, dynamic)
 
