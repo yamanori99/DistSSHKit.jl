@@ -11,21 +11,25 @@ Day-to-day work stays on the CLI (`julia --project=. -m DistSSHKit …`); see
 REPL help also works
 (`?DistSSHKit.go!`).
 
-The shape mirrors the CLI: **`go!`** for as-is scripts, **`drive!`** (and friends)
-for Distributed drivers. **`pipeline!`** is optional sugar that runs the usual
-remote order in one call. Worker placement uses the same tokens as the CLI
-(`parent:2`, `child:user@host:1`):
+The shape mirrors the CLI: **`go!`** for as-is scripts, **`drive!`**
+(and friends) for Distributed drivers. **`pipeline!`** is optional sugar
+that runs the usual remote order in one call. Worker placement uses the
+same tokens as the CLI (`parent:2`, `child:user@host:1`):
 
 ```julia
 pipeline!(driver, "parent:2"; args=["8"])
-pipeline!(driver, "child:user@h1:1", "child:user@h2:1"; remote="/path/to/project", args=["8"])
+pipeline!(
+    driver, "child:user@h1:1", "child:user@h2:1";
+    remote="/path/to/project", args=["8"],
+)
 go!("job.jl", "parent:2"; args=["8"])
 drive!("job.jl", "parent:2"; args=["8"])
 ```
 
 ## Run a script as-is — `go!`
 
-No Kit imports in the job file. Each `parent:N` / `child:NAME:N` slot is one full run, concurrent.
+No Kit imports in the job file. Each `parent:N` / `child:NAME:N` slot is
+one full run, concurrent.
 
 ```@docs
 go!
@@ -38,17 +42,20 @@ report_run_errors
 
 ## Drive work across workers
 
-When the script is a **driver** (`init_output_dir!` / `main`, `pmap`, …), build a
-[`KitSession`](@ref), then call the steps you need:
+When the script is a **driver** (`init_output_dir!` / `main`, `pmap`,
+…), build a [`KitSession`](@ref), then call the steps you need:
 
 ```text
-(optional setup! / sync! / instantiate!)  →  size!  →  drive!  →  (optional collect!)
+(optional setup! / sync! / instantiate!)
+  →  size!  →  drive!  →  (optional collect!)
 ```
 
 First-time remotes usually look like:
 
 ```julia
-session = KitSession(workers=["child:user@h1"], remote="/path/to/project", yes=true)
+session = KitSession(
+    workers=["child:user@h1"], remote="/path/to/project", yes=true,
+)
 setup!(session, :delete, :rsync, :instantiate)
 setup!(session, :check; ignore_julia_version=true)  # optional
 setup!(session, :runtest)  # optional: job Pkg.test() on remotes
@@ -58,7 +65,8 @@ setup!(session, :runtest)  # optional: job Pkg.test() on remotes
 [`setup!`](@ref) mirrors `julia -m DistSSHKit setup --…` (`:delete`, `:rsync`,
 `:clone`, `:sync`, `:pull`, `:instantiate`, `:check`, `:runtest`, `:cleanup`).
 Confirmations follow `session.yes`. **`:clone` requires `repo=`** — no silent
-`origin` lookup; clone runs on the remote. [`sync!`](@ref) / [`instantiate!`](@ref)
+`origin` lookup; clone runs on the remote.
+[`sync!`](@ref) / [`instantiate!`](@ref)
 remain as short aliases for the common deploy steps.
 
 A few points that carry over from the CLI:
@@ -78,7 +86,8 @@ A few points that carry over from the CLI:
 - Pass `julia=` on `go!` / `drive!` / `pipeline!` to pin the remote Julia
   binary (same as CLI `--julia`)
 
-Or call [`pipeline!`](@ref) for optional sync → [`size!`](@ref) → [`drive!`](@ref)
+Or call [`pipeline!`](@ref) for optional sync → [`size!`](@ref) →
+[`drive!`](@ref)
 → collect in one shot (`pipeline!` does not call [`setup!`](@ref)).
 [`pipeline_config_from_env`](@ref) reads `DISTSSHKIT_HOSTS` /
 `DISTSSHKIT_HOSTS_FILE`, `SYNC_MODE` (`rsync` / `sync` / `off`; unset → off for
@@ -127,8 +136,8 @@ re-parsing the grammar or reaching into private internals.
 `split_worker_token` and `is_parent_host_name` are the low-level primitives
 (`is_parent_host_name` is `parent` only).
 `host_tokens(parsed; kind=:go|:drive)` rebuilds `execute!` token strings from
-`parse_go_args` / `parse_drive_args`. Go keeps parser
-strings; drive emits `parent:N` from `parent_workers` and `child:NAME[:N]` for SSH.
+`parse_go_args` / `parse_drive_args`. Go keeps parser strings; drive emits
+`parent:N` from `parent_workers` and `child:NAME[:N]` for SSH.
 
 ```@docs
 parse_worker_tokens
@@ -191,14 +200,13 @@ verbosity**. `begin` / `step` / `item` lines appear only in `--progress`
 mode (`DISTSSHKIT_PROGRESS=1` for a child process).
 
 Each line is space-separated `key=value` fields after the event name.
-`t=` is Unix time (seconds) at the end of every line:
+`t=` is Unix time (seconds) at the end of every line. Events:
 
-```text
-progress: begin kind=<go|drive> [job=<id>] label=<label> total=<steps> t=<unix>
-progress: step kind=<go|drive> [job=<id>] label=<label> done=<done> total=<steps> cur=<cur> t=<unix>
-progress: item kind=<go|drive> [job=<id>] label=<item_label> status=<pending|running|ok|fail> done=<done> total=<steps> t=<unix>
-progress: done kind=<go|drive> [job=<id>] ok=<true|false> done=<done> total=<steps> t=<unix>
-```
+- `begin`: `kind`, optional `job`, `label`, `total`, `t`
+- `step`: `kind`, optional `job`, `label`, `done`, `total`, `cur`, `t`
+- `item`: `kind`, optional `job`, `label` (item), `status`
+  (`pending` / `running` / `ok` / `fail`), `done`, `total`, `t`
+- `done`: `kind`, optional `job`, `ok`, `done`, `total`, `t`
 
 `kind` is `go` or `drive`. `job=` is present only when `job_id` /
 `DISTSSHKIT_JOB_ID` is set. Fields are not quoted; labels are kit-chosen
@@ -236,19 +244,34 @@ On-disk contract for a detached (or in-process) run. `kit.pid`, `kit.job`,
 `log_dir` when that path is distinct. `.kit.lock` and `kit.out` / `kit.err`
 stay in `output_dir`. Kit logs (`go_*.log` / `drive_*.log`) are not this list.
 
-| File | Meaning |
-| --- | --- |
-| `.kit.lock` | Pid of the process holding the dir. A second run against the same path raises `ArgumentError`. A lock left by a dead pid is reclaimed. |
-| `kit.pid` | Child OS pid, optional start key on the second line. Running is [`kit_pid_file_running`](@ref) (pid plus start). [`kit_pid_alive`](@ref) is the pid-only probe. Removed on a normal finish. A leftover is SIGKILL / crash. |
-| `kit.job` | `job_id` when set. [`terminate_run!`](@ref) uses it for tagged `pkill` after a restart. |
-| `kit.hosts` | Remote hosts this run started (one name per line), written after workers join. `terminate_run!` reaps these. |
-| `kit.hosts.status` | Live per-host membership during `drive` (`:joined` / `:alive` / `:left` / `:collect_pending`). Read with [`drive_host_status`](@ref). Not the post-run collect vector. |
-| `kit.result` | TOML with the same fields as [`KitRunResult`](@ref), including `hosts` (post-run collect, [`HostRunResult`](@ref) rows). Omitted when empty (`go`, or a `drive` that never collected). Read with [`kit_result_from_dir`](@ref). Missing while running or after a hard death. |
-| `kit.progress` | `progress:` lines for watchers (`kit_progress_latest`). Written even when `--no-log` skips `drive_*.log`. |
-| `kit.out` / `kit.err` | Detached child stdio when `stdout` / `stderr` were omitted. |
+- `.kit.lock`: pid of the process holding the dir. A second run against
+  the same path raises `ArgumentError`. A lock left by a dead pid is
+  reclaimed.
+- `kit.pid`: child OS pid, optional start key on the second line.
+  Running is [`kit_pid_file_running`](@ref) (pid plus start).
+  [`kit_pid_alive`](@ref) is the pid-only probe. Removed on a normal
+  finish. A leftover is SIGKILL / crash.
+- `kit.job`: `job_id` when set. [`terminate_run!`](@ref) uses it for
+  tagged `pkill` after a restart.
+- `kit.hosts`: remote hosts this run started (one name per line), written
+  after workers join. `terminate_run!` reaps these.
+- `kit.hosts.status`: live per-host membership during `drive` (`:joined` /
+  `:alive` / `:left` / `:collect_pending`). Read with
+  [`drive_host_status`](@ref). Not the post-run collect vector.
+- `kit.result`: TOML with the same fields as [`KitRunResult`](@ref),
+  including `hosts` (post-run collect, [`HostRunResult`](@ref) rows).
+  Omitted when empty (`go`, or a `drive` that never collected). Read with
+  [`kit_result_from_dir`](@ref). Missing while running or after a hard
+  death.
+- `kit.progress`: `progress:` lines for watchers
+  (`kit_progress_latest`). Written even when `--no-log` skips
+  `drive_*.log`.
+- `kit.out` / `kit.err`: detached child stdio when `stdout` / `stderr`
+  were omitted.
 
-Together: running (`kit.pid` live and start matches, no result), finished (result present),
-or died hard (leftover pid that is dead or reused, no result).
+Together: running (`kit.pid` live and start matches, no result), finished
+(result present), or died hard (leftover pid that is dead or reused, no
+result).
 
 #### Handle gone
 

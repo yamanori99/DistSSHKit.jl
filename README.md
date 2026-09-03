@@ -2,13 +2,13 @@
 
 [English](README.md) | [日本語](README.ja.md)
 
-[![Test](https://img.shields.io/github/actions/workflow/status/yamanori99/DistSSHKit.jl/CI.yml?style=flat-square&logo=githubactions&logoColor=white&label=Test)](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/CI.yml)
-[![Codecov](https://img.shields.io/codecov/c/github/yamanori99/DistSSHKit.jl?style=flat-square&logo=codecov&logoColor=white)](https://codecov.io/gh/yamanori99/DistSSHKit.jl)
-[![docs-stable](https://img.shields.io/badge/docs-stable-blue?style=flat-square&logo=gitbook&logoColor=white)](https://yamanori99.github.io/DistSSHKit.jl/stable/)
-[![docs-dev](https://img.shields.io/badge/docs-dev-blue?style=flat-square&logo=gitbook&logoColor=white)](https://yamanori99.github.io/DistSSHKit.jl/dev/)
-[![Julia 1.12+](https://img.shields.io/badge/Julia-1.12+-9558B2?style=flat-square&logo=julia&logoColor=white)](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)
-[![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
-[![Discussions](https://img.shields.io/badge/GitHub-Discussions-blueviolet?style=flat-square&logo=github)](https://github.com/yamanori99/DistSSHKit.jl/discussions)
+[Test](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/CI.yml)
+[Codecov](https://codecov.io/gh/yamanori99/DistSSHKit.jl)
+[docs-stable](https://yamanori99.github.io/DistSSHKit.jl/stable/)
+[docs-dev](https://yamanori99.github.io/DistSSHKit.jl/dev/)
+[Julia 1.12+](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)
+[License](LICENSE)
+[Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions)
 
 DistSSHKit is a kit for running the same Julia project locally and over SSH,
 then collecting the results. It makes SSH-distributed runs easier and more
@@ -17,8 +17,9 @@ processes, not threads. Supported on **macOS, Linux, and WSL2 Ubuntu** (not
 native Windows).
 
 Even small labs and individuals often have a few high-performance machines or
-workstations. DistSSHKit helps you use that hardware as a small set of compute
-nodes. To run one after another, see [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl).
+workstations. DistSSHKit helps you use that hardware as a small set of
+compute nodes. To run one after another, see
+[DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl).
 
 ## Install
 
@@ -38,7 +39,8 @@ The machine running the kit also needs **`ssh`**, **`rsync`**, and (only for git
 deploys) **`git`** — `pkg> add` does not install them. Full requirements:
 [Requirements](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/).
 
-For everything else, see the **[Documentation](https://yamanori99.github.io/DistSSHKit.jl/stable/)**.
+For everything else, see the
+**[Documentation](https://yamanori99.github.io/DistSSHKit.jl/stable/)**.
 
 ## Usage
 
@@ -48,8 +50,8 @@ For everything else, see the **[Documentation](https://yamanori99.github.io/Dist
   or `child:user@hostname`.
 - **Process** — one running `julia`. Each process has its own memory and
   runs independently at the OS level.
-  (this kit launches multiple `julia` processes, even on a single machine, to run
-  work in parallel — built on Distributed.jl)
+  (This kit launches multiple `julia` processes, even on a single machine, to
+  run work in parallel — built on Distributed.jl)
 - **Master** — the process on the kit parent that plans slots (`go`) or hands
   work to workers (`drive`) and collects results. The kit parent is the machine
   that started that process.
@@ -62,8 +64,12 @@ none), and you can add as many remote machines as you like.
 <!-- markdownlint-disable MD033 -->
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/src/assets/diagram/topology-dark.svg">
-    <img alt="Drive topology: Master process on parent, workers on parent and remotes" src="docs/src/assets/diagram/topology.svg">
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="docs/src/assets/diagram/topology-dark.svg">
+    <img
+      alt="Drive topology: master and workers"
+      src="docs/src/assets/diagram/topology.svg">
   </picture>
 </p>
 <!-- markdownlint-enable MD033 -->
@@ -89,7 +95,8 @@ Before you use an SSH host, it needs:
 - Julia installed, with the **same major.minor version** as the kit parent
   (checked by `setup --check`)
 
-Details: [Requirements](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/).
+Details:
+[Requirements](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/).
 
 > [!TIP]
 > DistSSHKit runs one job while you stay connected.
@@ -119,8 +126,8 @@ with `go`, then move to `drive` / Distributed.jl when you need it.
 - **`distsshkit` (experimental)** — after `pkg> app add DistSSHKit`, a
   `distsshkit` command on the terminal. Same flags as `-m`, but always the Apps
   copy, not `--project=.`. Fine for `go` / `setup` / `demo`; keep `drive` and
-  `size` on `julia --project=. -m DistSSHKit`. When to use it:
-  [User Guide](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/distsshkit/)
+  `size` on `julia --project=. -m DistSSHKit`. When to use it, see
+  [the distsshkit page][ug-app].
 
 CLI flags map one-to-one onto the Julia API: `setup --rsync` is
 `setup!(session, :rsync)`.
@@ -147,10 +154,12 @@ remote, `go --rsync` / `drive --rsync` can copy and instantiate in one shot
   - `--cleanup` (kill leftover worker processes)
   - `--delete` (remove the remote project directory — destructive)
 
-`--rsync` / `--clone` / `--sync` / `--pull` / `--delete` all ask for confirmation
-before running. Pass `-y` / `--yes` to run non-interactively, e.g. from a script.
+`--rsync` / `--clone` / `--sync` / `--pull` / `--delete` all ask for
+confirmation before running. Pass `-y` / `--yes` to run non-interactively,
+e.g. from a script.
 
-Details: [setup](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/setup/).
+Details:
+[setup](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/setup/).
 
 > [!NOTE]
 > **Not sure whether to use rsync or git?**
@@ -188,18 +197,20 @@ After setup, run like this.
 **CLI, go.** One full run of `script.jl` on each host (`parent:N` also works).
 
 ```bash
-julia --project=. -m DistSSHKit go child:user@host1:1 child:user@host2:1 path/to/script.jl
+julia --project=. -m DistSSHKit go \
+  child:user@host1:1 child:user@host2:1 path/to/script.jl
 ```
 
-**CLI, drive.** For a git deploy, later updates are `setup --sync`. `rsync` works
-too.
+**CLI, drive.** For a git deploy, later updates are `setup --sync`.
+`rsync` works too.
 
 ```bash
-julia --project=. -m DistSSHKit drive parent:2 child:user@host1:4 path/to/driver.jl
+julia --project=. -m DistSSHKit drive \
+  parent:2 child:user@host1:4 path/to/driver.jl
 ```
 
-**Julia, go.** Keep `remote=` consistent with `setup!` (omit both for the default
-path).
+**Julia, go.** Keep `remote=` consistent with `setup!` (omit both for
+the default path).
 
 ```julia
 using DistSSHKit
@@ -243,22 +254,26 @@ julia --project=. -m DistSSHKit drive parent:2 demos/with_kit/square_file.jl
 julia --project=. -m DistSSHKit go parent:2 demos/without_kit/pi_file.jl
 ```
 
-Walkthrough: [Demo](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/demo/).
+Walkthrough:
+[Demo](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/demo/).
 
 ## Documentation
 
-| | |
-| --- | --- |
-| Introduction | [Introduction](https://yamanori99.github.io/DistSSHKit.jl/stable/) |
-| First Steps | [First Steps](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/) |
-| User Guide | [User Guide](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/) |
-| API | [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/) |
-| News | [NEWS.md](NEWS.md) |
+- Introduction:
+  [Introduction](https://yamanori99.github.io/DistSSHKit.jl/stable/)
+- First Steps:
+  [First Steps](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)
+- User Guide:
+  [User Guide](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/)
+- API: [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/)
+- News: [NEWS.md](NEWS.md)
 
 ## Contributing
 
-Bugs and feature requests: [Issues](https://github.com/yamanori99/DistSSHKit.jl/issues).
-Questions and ideas: [Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions).
+Bugs and feature requests:
+[Issues](https://github.com/yamanori99/DistSSHKit.jl/issues).
+Questions and ideas:
+[Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions).
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to contribute.
 
 ## License
@@ -269,9 +284,17 @@ are Copyright (c) 2012-2022 Stefan Karpinski,
 DistSSHKit adapts them. Details: [LICENSE](LICENSE) and
 [julia-logo-graphics](https://github.com/JuliaLang/julia-logo-graphics).
 
+[ug-app]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/distsshkit/
+
 <!-- markdownlint-disable MD033 -->
 <p align="center">
-  <img src="docs/src/assets/logo/logo-static.svg#gh-light-mode-only" width="180" alt="DistSSHKit.jl logo"/>
-  <img src="docs/src/assets/logo/logo-dark-static.svg#gh-dark-mode-only" width="180" alt="DistSSHKit.jl logo"/>
+  <img
+    src="docs/src/assets/logo/logo-static.svg#gh-light-mode-only"
+    width="180"
+    alt="DistSSHKit.jl logo"/>
+  <img
+    src="docs/src/assets/logo/logo-dark-static.svg#gh-dark-mode-only"
+    width="180"
+    alt="DistSSHKit.jl logo"/>
 </p>
 <!-- markdownlint-enable MD033 -->

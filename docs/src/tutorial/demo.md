@@ -47,7 +47,8 @@ julia demos/without_kit/pi_file.jl --n 5000
 Two local slots:
 
 ```bash
-julia --project=. -m DistSSHKit go parent:2 demos/without_kit/pi_file.jl --n 5000
+julia --project=. -m DistSSHKit go parent:2 \
+  demos/without_kit/pi_file.jl --n 5000
 ```
 
 Same job through the API (`go!`):
@@ -71,7 +72,8 @@ When you need
 over workers instead of N independent script runs, use `drive` (not `go`):
 
 ```bash
-julia --project=. -m DistSSHKit drive parent:2 demos/with_kit/square_file.jl --n 4
+julia --project=. -m DistSSHKit drive parent:2 \
+  demos/with_kit/square_file.jl --n 4
 ```
 
 Same driver through the API (`pipeline!` — local workers, no sync/collect):
@@ -89,5 +91,5 @@ julia --project=. -m DistSSHKit drive \
 ```
 
 Driver contract (`init_output_dir!` / `main`) and further topics: see
-[User Guide · drive](@ref Manual-drive) and [API](@ref API) (`drive!`, `pipeline!`,
-`worker_pmap`).
+[User Guide · drive](@ref Manual-drive) and [API](@ref API)
+(`drive!`, `pipeline!`, `worker_pmap`).

@@ -4,30 +4,36 @@ Command reference. For a hands-on path, use
 [First Steps](@ref Tutorial-Prepare) (Requirements → Prepare → Demo).
 
 Full flag lists: `julia --project=. -m DistSSHKit {cmd} --help`.
-Each command page starts with a **Flags** table for that command.
+Each command page starts with **Flags** for that command.
 
-| | |
-| --- | --- |
-| [setup](@ref Manual-setup) | Check hosts, clone / rsync / sync, instantiate, cleanup |
-| [go](@ref Manual-go) | Standalone script as-is; one full run per slot |
-| [drive](@ref Manual-drive) | Master + Distributed workers; driver farms work |
-| [size](@ref Manual-size) | Estimate worker counts from RAM / CPU |
-| [demo](@ref Manual-demo) | Install or list bundled example scripts |
-| [distsshkit](@ref Manual-distsshkit) | Optional terminal command (`pkg> app add`; experimental) |
+- [setup](@ref Manual-setup): check hosts, clone / rsync / sync,
+  instantiate, cleanup
+- [go](@ref Manual-go): standalone script as-is; one full run per slot
+- [drive](@ref Manual-drive): master + Distributed workers; driver farms
+  work
+- [size](@ref Manual-size): estimate worker counts from RAM / CPU
+- [demo](@ref Manual-demo): install or list bundled example scripts
+- [distsshkit](@ref Manual-distsshkit): optional terminal command
+  (`pkg> app add`; experimental)
 
 ## go vs drive (pick one)
 
-Both share host tokens (`parent:N`, `child:NAME:N`) and optional `--sync` / `--rsync`.
-The difference is **what the script is**:
+Both share host tokens (`parent:N`, `child:NAME:N`) and optional `--sync` /
+`--rsync`. The difference is **what the script is**:
 
-| | [go](@ref Manual-go) | [drive](@ref Manual-drive) |
-| --- | --- | --- |
-| Script | Ordinary `.jl` (no Kit APIs) | Driver with `init_output_dir!` / `main` |
-| `child:NAME:N` means | N **concurrent full script runs** | N **Distributed workers** |
-| Collect | Slot-overwrite after remotes | Post-run-new after `main()`; optional collect-only flags |
-| Success | Any listed slot must run (`ok=false` if one does not) | Listed `parent` / `child` must join, stay, and collect (**default**). `--best-effort` allows a partial run |
-| Git parity | No `--require-git` | Opt-in `--require-git` |
-| `--output-dir` | Batch root (`PATH/{slot}/`) | Result root (`DISTRIBUTED_OUTPUT_DIR`) |
+- **Script:** go is ordinary `.jl` (no Kit APIs). Drive is a driver with
+  `init_output_dir!` / `main`.
+- **`child:NAME:N`:** go is N **concurrent full script runs**. Drive is N
+  **Distributed workers**.
+- **Collect:** go is slot-overwrite after remotes. Drive is post-run-new
+  after `main()`; optional collect-only flags.
+- **Success:** go requires every listed slot to run (`ok=false` if one
+  does not). Drive requires listed `parent` / `child` to join, stay, and
+  collect (**default**). `--best-effort` allows a partial run.
+- **Git parity:** go has no `--require-git`. Drive has opt-in
+  `--require-git`.
+- **`--output-dir`:** go is batch root (`PATH/{slot}/`). Drive is result
+  root (`DISTRIBUTED_OUTPUT_DIR`).
 
 If you want “run this job on a few machines,” start with **go**.
 If you want one master farming work with `pmap` (and friends), use **drive**.
@@ -36,17 +42,26 @@ If you want one master farming work with `pmap` (and friends), use **drive**.
 
 Same **names** are shared on purpose; a few meanings differ by command:
 
-| Topic | Rule |
-| --- | --- |
-| `--sync` / `--rsync` | Same git vs rsync idea on `setup` (mode) and `go` / `drive` (optional pre-run). On each command, pick at most one. `go` / `drive --rsync` instantiates if deps are missing. |
-| Default pre-run sync | **`go`** and **`drive`**: **none** (run `setup` yourself, or pass `--sync` / `--rsync`). |
-| Git parity (drive) | **Off** by default. Opt-in: `--require-git`. Compat: `--skip-git-guard` (no-op; may combine with `--sync` / `--rsync`). |
-| Host reliability (drive) | **On** by default (`--require-all-hosts`). Opt out: `--best-effort` / `DISTSSHKIT_BEST_EFFORT`. |
-| Skip pre-run (go) | Compat: `--skip-sync` / `--skip-git-guard` (already the default; exclusive with `--sync` / `--rsync` on go). |
-| `--output-dir` | **`go`**: batch root (`PATH/{slot}/`). **`drive`**: result root (`DISTRIBUTED_OUTPUT_DIR`). Different on purpose. |
-| `--hosts` | CSV tokens. `setup` strips `:N` from bare SSH names. `size` strips `:N` from `parent` / `child:NAME[:N]`. `go` / `drive` keep `child:NAME:N`. |
-| `--hosts-file` | Same as `--hosts` for that command. |
-| Shared peel | `-q`/`--quiet`, `--progress`, `--verbose`, `-y`/`--yes`, `--hosts`, `--hosts-file`, `-v`/`--version` — same on setup / go / drive / size. |
+- `--sync` / `--rsync`: same git vs rsync idea on `setup` (mode) and
+  `go` / `drive` (optional pre-run). On each command, pick at most one.
+  `go` / `drive --rsync` instantiates if deps are missing.
+- Default pre-run sync: **`go`** and **`drive`**: **none** (run `setup`
+  yourself, or pass `--sync` / `--rsync`).
+- Git parity (drive): **off** by default. Opt-in: `--require-git`. Compat:
+  `--skip-git-guard` (no-op; may combine with `--sync` / `--rsync`).
+- Host reliability (drive): **on** by default (`--require-all-hosts`). Opt
+  out: `--best-effort` / `DISTSSHKIT_BEST_EFFORT`.
+- Skip pre-run (go): compat `--skip-sync` / `--skip-git-guard` (already the
+  default; exclusive with `--sync` / `--rsync` on go).
+- `--output-dir`: **`go`** is batch root (`PATH/{slot}/`). **`drive`** is
+  result root (`DISTRIBUTED_OUTPUT_DIR`). Different on purpose.
+- `--hosts`: CSV tokens. `setup` strips `:N` from bare SSH names. `size`
+  strips `:N` from `parent` / `child:NAME[:N]`. `go` / `drive` keep
+  `child:NAME:N`.
+- `--hosts-file`: same as `--hosts` for that command.
+- Shared flags: `-q`/`--quiet`, `--progress`, `--verbose`, `-y`/`--yes`,
+  `--hosts`, `--hosts-file`, `-v`/`--version` — same on setup / go /
+  drive / size.
 
 ## Shared concepts
 

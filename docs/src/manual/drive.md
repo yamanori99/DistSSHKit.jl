@@ -1,10 +1,12 @@
 # [drive](@id Manual-drive)
 
-One master plus [Distributed.jl](https://docs.julialang.org/en/v1/manual/distributed-computing/)
+One master plus
+[Distributed.jl](https://docs.julialang.org/en/v1/manual/distributed-computing/)
 workers. The script is a **driver** that farms work (e.g. `pmap`).
 
 ```bash
-julia --project=. -m DistSSHKit drive [options] [parent:N] [child:NAME[:N]...] SCRIPT.jl [script_args...]
+julia --project=. -m DistSSHKit drive [options] \
+  [parent:N] [child:NAME[:N]...] SCRIPT.jl [script_args...]
 ```
 
 Also: [First Steps · Demo](@ref Tutorial-Demo), [go](@ref Manual-go),
@@ -19,32 +21,43 @@ One-shot onto an empty/missing path: `drive --rsync` (instantiates if needed).
 
 ## Flags
 
-| Flag | Meaning |
-| --- | --- |
-| `--sync` | Git push/pull immediately before the run (**optional**; default is none; confirm unless `-y`) |
-| `--rsync` | Rsync deploy first (empty/missing remote, or after `setup --delete`); then instantiate if deps are missing |
-| `--require-git` | Opt-in git parity: dirty-tree warn + remote commit must match local |
-| `--require-all-hosts` | Fail unless every explicit `parent[:N]` / `child:NAME[:N]` joined, stayed, and collect succeeded (**default**) |
-| `--best-effort` | Allow a partial run (missing join or collect error does not fail) |
-| `--skip-git-guard` | Compat no-op (parity already off) |
-| `-w` / `--workers N` | Default worker count for hosts without `:N` (also `-w:N`) |
-| `--julia PATH` | Julia on SSH workers |
-| `--mem-headroom N` | RAM fraction for memory preflight (default `0.75`; same as [`size`](@ref Manual-size)) |
-| `--parent-gb N` | GB reserved for the parent process (default `0.4`; same as size) |
-| `--output-dir PATH` | **Result root** → `DISTRIBUTED_OUTPUT_DIR` (not go batch root) |
-| `--log-dir PATH` | Log directory override |
-| `--no-log` | Do not write `drive_<timestamp>.log` |
-| `--package NAME` | `using NAME` on workers (override Project.toml name) |
-| `--collect-missing ROOT HOST...` | Collect-only: remote files absent locally |
-| `--collect-overwrite ROOT HOST...` | Collect-only: merge remote tree (overwrite same names) |
-| `-q` / `--quiet` | Hide terminal detail; kit log still written when logging is on |
-| `--progress` | Live status (TTY default) |
-| `--verbose` | Full detail (non-TTY default) |
-| `-y` / `--yes` | Auto-accept memory-pressure and other prompts |
-| `--hosts CSV` | Comma-separated worker specs (same form as CLI tokens / `DISTSSHKIT_HOSTS`) |
-| `--hosts-file PATH` | Append worker specs (`child:NAME:N` preserved) |
-| `-v` / `--version` | Print DistSSHKit version and exit |
-| `-h` / `--help` | Full help |
+- `--sync`: git push/pull immediately before the run (**optional**; default
+  is none; confirm unless `-y`)
+- `--rsync`: rsync deploy first (empty/missing remote, or after
+  `setup --delete`); then instantiate if deps are missing
+- `--require-git`: opt-in git parity: dirty-tree warn + remote commit must
+  match local
+- `--require-all-hosts`: fail unless every explicit `parent[:N]` /
+  `child:NAME[:N]` joined, stayed, and collect succeeded (**default**)
+- `--best-effort`: allow a partial run (missing join or collect error does
+  not fail)
+- `--skip-git-guard`: compat no-op (parity already off)
+- `-w` / `--workers N`: default worker count for hosts without `:N` (also
+  `-w:N`)
+- `--julia PATH`: Julia on SSH workers
+- `--mem-headroom N`: RAM fraction for memory preflight (default `0.75`;
+  same as [`size`](@ref Manual-size))
+- `--parent-gb N`: GB reserved for the parent process (default `0.4`; same
+  as size)
+- `--output-dir PATH`: **result root** → `DISTRIBUTED_OUTPUT_DIR` (not go
+  batch root)
+- `--log-dir PATH`: log directory override
+- `--no-log`: do not write `drive_<timestamp>.log`
+- `--package NAME`: `using NAME` on workers (override Project.toml name)
+- `--collect-missing ROOT HOST...`: collect-only: remote files absent
+  locally
+- `--collect-overwrite ROOT HOST...`: collect-only: merge remote tree
+  (overwrite same names)
+- `-q` / `--quiet`: hide terminal detail; kit log still written when
+  logging is on
+- `--progress`: live status (TTY default)
+- `--verbose`: full detail (non-TTY default)
+- `-y` / `--yes`: auto-accept memory-pressure and other prompts
+- `--hosts CSV`: comma-separated worker specs (same form as CLI tokens /
+  `DISTSSHKIT_HOSTS`)
+- `--hosts-file PATH`: append worker specs (`child:NAME:N` preserved)
+- `-v` / `--version`: print DistSSHKit version and exit
+- `-h` / `--help`: full help
 
 - `--sync` / `--rsync` are mutually exclusive (pre-run sync)
 - `--require-git` cannot combine with `--rsync` or `--skip-git-guard`
@@ -70,7 +83,8 @@ onto an empty path). Prefer matching Julia **major.minor**.
 
 ## Workers
 
-`parent:N` / `child:NAME:N` (or `-w` defaults). Size with [`size`](@ref Manual-size).
+`parent:N` / `child:NAME:N` (or `-w` defaults). Size with
+[`size`](@ref Manual-size).
 
 - Local workers are torn down with `rmprocs` at the end of every `drive` run
 - Before adding SSH workers, `drive` may `pkill` leftover Distributed
@@ -88,8 +102,9 @@ false), not an empty success. Default CLI exit is non-zero unless
 
 External watchers: `progress: begin` / `step` / `item` always go to
 `kit.progress` (even `-q` / `--no-log`). The kit log still gets those lines
-only with `--progress` (TTY default) or `DISTSSHKIT_PROGRESS=1`. `progress: done`
-is always in both. Line format: [API](@ref API) (Progress lines).
+only with `--progress` (TTY default) or `DISTSSHKIT_PROGRESS=1`.
+`progress: done` is always in both. Line format: [API](@ref API)
+(Progress lines).
 
 Collect expands remote `~/…` roots on each host before `find` / rsync so the
 controller never `relpath`s against a tilde base (same ENV as
@@ -106,7 +121,8 @@ Run drive as usual (`-q` hides the table). The Time table prints at the end,
 after job stdout, with a `progress DIR` line to replay:
 
 ```bash
-julia --project=. -m DistSSHKit drive -y parent:4 demos/with_kit/square_echo.jl --n 4
+julia --project=. -m DistSSHKit drive -y parent:4 \
+  demos/with_kit/square_echo.jl --n 4
 julia --project=. -m DistSSHKit progress DIR
 ```
 
