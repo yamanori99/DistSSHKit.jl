@@ -2,13 +2,15 @@
 
 [English](README.md) · [日本語](README.ja.md)
 
-[Test](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/CI.yml)
-[Codecov](https://codecov.io/gh/yamanori99/DistSSHKit.jl)
-[docs-stable](https://yamanori99.github.io/DistSSHKit.jl/stable/)
-[docs-dev](https://yamanori99.github.io/DistSSHKit.jl/dev/)
-[Julia 1.12+](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)
-[License](LICENSE)
-[Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions)
+<!-- markdownlint-disable MD013 -->
+[![Test](https://img.shields.io/github/actions/workflow/status/yamanori99/DistSSHKit.jl/CI.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=Test)](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/CI.yml)
+[![Codecov](https://img.shields.io/codecov/c/github/yamanori99/DistSSHKit.jl?style=flat-square&logo=codecov&logoColor=white)](https://codecov.io/gh/yamanori99/DistSSHKit.jl)
+[![docs-stable](https://img.shields.io/badge/docs-stable-blue?style=flat-square&logo=gitbook&logoColor=white)](https://yamanori99.github.io/DistSSHKit.jl/stable/)
+[![docs-dev](https://img.shields.io/badge/docs-dev-blue?style=flat-square&logo=gitbook&logoColor=white)](https://yamanori99.github.io/DistSSHKit.jl/dev/)
+[![Julia 1.12+](https://img.shields.io/badge/Julia-1.12+-9558B2?style=flat-square&logo=julia&logoColor=white)](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)
+[![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
+[![Discussions](https://img.shields.io/badge/GitHub-Discussions-blueviolet?style=flat-square&logo=github)](https://github.com/yamanori99/DistSSHKit.jl/discussions)
+<!-- markdownlint-enable MD013 -->
 
 DistSSHKit は、ローカルと SSH 先で同じ Julia プロジェクトを走らせ、結果を集めるキットである。
 SSH 分散実行の手順を簡単にし、揃えることで、再現しやすい実行を助ける。
