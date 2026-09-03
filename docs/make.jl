@@ -10,7 +10,7 @@ function _refresh_pkgeval_badge!()
     dest = joinpath(@__DIR__, "src", "assets", "pkgeval.svg")
     url = "https://juliaci.github.io/NanosoldierReports/pkgeval_badges/D/DistSSHKit.svg"
     try
-        svg = String(take!(Downloads.download(url, IOBuffer())))
+        svg = String(take!(Downloads.download(url, IOBuffer(); timeout=15)))
         occursin("PkgEval", svg) || return
         svg = replace(svg, r"rx=\"\d+\"" => "rx=\"0\"")
         svg = replace(svg, r"<linearGradient[\s\S]*?</linearGradient>" => "")

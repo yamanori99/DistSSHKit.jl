@@ -61,10 +61,10 @@ julia> import Pkg; Pkg.add("DistSSHKit")
   <picture>
     <source
       media="(prefers-color-scheme: dark)"
-      srcset="docs/src/assets/diagram/topology-dark.svg">
+      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/diagram/topology-dark.svg">
     <img
       alt="Drive topology: master and workers"
-      src="docs/src/assets/diagram/topology.svg">
+      src="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/diagram/topology.svg">
   </picture>
 </p>
 <!-- markdownlint-enable MD033 -->
@@ -283,13 +283,14 @@ DistSSHKit はそれを改変して使っている。
 
 <!-- markdownlint-disable MD033 -->
 <p align="center">
-  <img
-    src="docs/src/assets/logo/logo-static.svg#gh-light-mode-only"
-    width="180"
-    alt="DistSSHKit.jl logo"/>
-  <img
-    src="docs/src/assets/logo/logo-dark-static.svg#gh-dark-mode-only"
-    width="180"
-    alt="DistSSHKit.jl logo"/>
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/logo/logo-dark-static.svg">
+    <img
+      src="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/logo/logo-static.svg"
+      width="180"
+      alt="DistSSHKit.jl logo"/>
+  </picture>
 </p>
 <!-- markdownlint-enable MD033 -->
