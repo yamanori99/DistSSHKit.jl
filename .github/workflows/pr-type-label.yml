@@ -97,6 +97,22 @@ jobs:
               );
             }
 
+            async function removeIssueLabel(name) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: n,
+                  name,
+                });
+                core.info(`Removed label "${name}"`);
+              } catch (err) {
+                if (err.status !== 404) {
+                  throw err;
+                }
+              }
+            }
+
             const labels = await listLabelNames();
             let found = labels.filter((name) => requiredSet.has(name));
             if (found.length > 0) {
@@ -154,6 +170,9 @@ jobs:
               const oldV = await versionAt(base);
               const newV = await versionAt(head);
               if (isVersionCut(oldV, newV)) {
+                if (existing.includes("uncut")) {
+                  await removeIssueLabel("uncut");
+                }
                 if (existing.includes("cut")) {
                   core.info("cut already present");
                   return;
@@ -165,6 +184,9 @@ jobs:
                 return;
               }
               if (isVersionUncut(oldV, newV)) {
+                if (existing.includes("cut")) {
+                  await removeIssueLabel("cut");
+                }
                 if (existing.includes("uncut")) {
                   core.info("uncut already present");
                   return;

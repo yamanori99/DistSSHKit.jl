@@ -120,8 +120,32 @@ jobs:
             const newS = await versionAt(head);
             if (isVersionCut(oldS, newS)) {
               want.add("cut");
+              want.delete("uncut");
             } else if (isVersionUncut(oldS, newS)) {
               want.add("uncut");
+              want.delete("cut");
+            }
+
+            async function removeLabel(name) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: n,
+                  name,
+                });
+                core.info(`Removed label "${name}"`);
+              } catch (err) {
+                if (err.status !== 404) {
+                  throw err;
+                }
+              }
+            }
+
+            for (const name of ["cut", "uncut"]) {
+              if (current.includes(name) && !want.has(name)) {
+                await removeLabel(name);
+              }
             }
 
             const missing = [...want].filter((name) => !current.includes(name));
