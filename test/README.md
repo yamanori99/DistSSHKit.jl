@@ -69,8 +69,9 @@ Green on one layer does not imply the others. `Pkg.test()` does not run
   `addprocs`, SSH.
 - **integration** (~3 min): child CLI and/or **local** `addprocs`. Not
   real SSH / rsync.
-- **e2e** (~15–25 min): real SSH + rsync, two Linux workers; every PR
-  (Compose). Not local-only CLI wiring.
+- **e2e** (~15–25 min): real SSH + rsync, two Linux workers; **main** /
+  `cut` / weekly / dispatch (Compose). Not ordinary PRs. Not local-only
+  CLI wiring.
 - **e2e weekly** (10–50 min): same `e2e.jl` from Linux, macOS Intel, or
   WSL2 (not a PR check; required after a `cut` merge before register).
   Not macOS workers.
@@ -89,8 +90,8 @@ Reproduce that tree: copy without kit `.git` / `Manifest.toml`, `Pkg.add`
 from a **bare** `file://` git (so the installed package dir has no `.git` —
 DistSSHKit talks to git for jobs, not for its own install), `chmod a-w` on
 `pkgdir`, then `Pkg.test`. Do this after changing the gates above, and
-before a General cut. CI: `Pkg.test - registry tree` on heavy PRs,
-**main**, and **cut** (slot tip, no `ssh`; not a required check).
+before a General cut. CI: `Pkg.test - registry tree` on **main** and
+**cut** (slot tip, no `ssh`; not a required check). Not ordinary PRs.
 
 Copy without `Manifest.toml` (and without `.git`). On Linux, `mktemp -d` is
 enough. On macOS, put the copy under `$HOME` if you will bind-mount it into

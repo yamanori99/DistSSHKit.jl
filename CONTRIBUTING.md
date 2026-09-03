@@ -67,7 +67,8 @@ Checkout `Pkg.test()` is not a Registry tarball. After changing those
 gates (smokes, demo copy, `ssh` / `git` spawn, probe), and before a
 General cut, run the disposable copy in
 [test/README.md](test/README.md#registry-tree). CI runs that shape on
-heavy PRs, **main**, and **cut** (slot tip; not a required check).
+**main** and **cut** (slot tip; not a required check). Not on ordinary
+PRs.
 
 Smoke (1.12+; [demos/README.md](demos/README.md)):
 
@@ -133,8 +134,8 @@ These run as jobs of the `Test` workflow
 Gitleaks. Linux E2E (max) does **not** run on an ordinary PR. It runs
 on **main** push (path filter minus markdown under `test/` / `demos/` /
 `testenv/`), **`cut`**, **E2E weekly**, and `workflow_dispatch`. Tip
-`Pkg.test` / Aqua and `Pkg.test - registry tree` stay on **main**,
-weekly, and `cut` (ci-cut), not ordinary PRs.
+`Pkg.test` / Aqua stay on **main**, **CI weekly**, and `cut`. Registry
+tree stays on **main** and `cut` (ci-cut), not ordinary PRs.
 
 These files **alone** skip the heavy steps (job still starts; Pkg.test /
 JETLS / Aqua do not run). Documenter still runs when `docs/**`, README,
