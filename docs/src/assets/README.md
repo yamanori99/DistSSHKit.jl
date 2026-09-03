@@ -39,9 +39,11 @@ Naming: **`static`** = end-state still; **`dynamic`** = SMIL / GIF motion.
 Derived dark SVGs prefix every `id` / `href="#…"` / `url(#…)` with `dark-`
 so light and dark copies can sit in one HTML document.
 
-GitHub README / README.ja footers use `#gh-light-mode-only` /
-`#gh-dark-mode-only` on `logo-static.svg` / `logo-dark-static.svg`.
-(`<picture>` is ignored there and would keep the light mark.)
+GitHub README / README.ja use `<picture>` plus `prefers-color-scheme`
+for the topology diagram and the footer logos
+(`logo-static.svg` / `logo-dark-static.svg`). `img` / `srcset` are
+`raw.githubusercontent.com/…/main/docs/src/assets/…` so JuliaHub can
+load them. The light `img` is the fallback when `<picture>` is ignored.
 
 Documenter discovers bare `logo.svg` / `logo-dark.svg` at this
 directory's top level only.
