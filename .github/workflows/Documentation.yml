@@ -22,11 +22,16 @@ jobs:
     name: detect
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       heavy: ${{ steps.heavy.outputs.heavy }}
       docs: ${{ steps.heavy.outputs.docs }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/ci-heavy
         id: heavy
 
