@@ -21,7 +21,8 @@ Flag vocabulary: [User Guide](@ref Manual).
 - `-q` / `--quiet`: hide terminal detail during measurement
 - `--progress`: live status (TTY default)
 - `--verbose`: full detail (non-TTY default)
-- `-y` / `--yes`: reserved (no prompts today; accepted for shared peel)
+- `-y` / `--yes`: reserved (no prompts today; kept so shared CLI flags
+  peel the same as go / drive / setup)
 - `--hosts CSV`: comma-separated SSH hosts (`child:NAME:N` → host name
   only)
 - `--hosts-file PATH`: append SSH hosts (`child:NAME:N` → host name only)

@@ -78,8 +78,8 @@ Skip the Julia-in-Docker build (macOS / WSL) by pulling the public image from
 build locally instead (omit `DISTSSHKIT_WORKER_IMAGE`).
 
 ```bash
-export DISTSSHKIT_WORKER_IMAGE=\
-  ghcr.io/yamanori99/distsshkit-linux-ssh-worker:latest
+export DISTSSHKIT_WORKER_IMAGE=ghcr.io/yamanori99/\
+distsshkit-linux-ssh-worker:latest
 ./scripts/up.sh --e2e
 ```
 

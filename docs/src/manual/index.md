@@ -27,9 +27,9 @@ Both share host tokens (`parent:N`, `child:NAME:N`) and optional `--sync` /
   **Distributed workers**.
 - **Collect:** go is slot-overwrite after remotes. Drive is post-run-new
   after `main()`; optional collect-only flags.
-- **Success:** go requires any listed slot to run (`ok=false` if one does
-  not). Drive requires listed `parent` / `child` to join, stay, and collect
-  (**default**). `--best-effort` allows a partial run.
+- **Success:** go requires every listed slot to run (`ok=false` if one
+  does not). Drive requires listed `parent` / `child` to join, stay, and
+  collect (**default**). `--best-effort` allows a partial run.
 - **Git parity:** go has no `--require-git`. Drive has opt-in
   `--require-git`.
 - **`--output-dir`:** go is batch root (`PATH/{slot}/`). Drive is result
@@ -59,7 +59,7 @@ Same **names** are shared on purpose; a few meanings differ by command:
   strips `:N` from `parent` / `child:NAME[:N]`. `go` / `drive` keep
   `child:NAME:N`.
 - `--hosts-file`: same as `--hosts` for that command.
-- Shared peel: `-q`/`--quiet`, `--progress`, `--verbose`, `-y`/`--yes`,
+- Shared flags: `-q`/`--quiet`, `--progress`, `--verbose`, `-y`/`--yes`,
   `--hosts`, `--hosts-file`, `-v`/`--version` — same on setup / go /
   drive / size.
 
