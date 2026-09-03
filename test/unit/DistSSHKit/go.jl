@@ -288,6 +288,13 @@ using Dates
             @test occursin("label=sync", prog)
             @test occursin("label=run", prog)
             @test occursin("label=collect", prog)
+            run_mark = findfirst("step kind=go label=run", prog)
+            collect_mark = findfirst("step kind=go label=collect", prog)
+            @test run_mark !== nothing && collect_mark !== nothing
+            @test first(run_mark) < first(collect_mark)
+            run_span = findlast("label=parent/run", prog)
+            @test run_span !== nothing
+            @test first(run_span) < first(collect_mark)
         end
     end
 

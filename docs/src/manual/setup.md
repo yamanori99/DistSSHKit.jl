@@ -7,12 +7,14 @@ julia --project=. -m DistSSHKit setup [options] HOST...
 ```
 
 From Julia, use [`setup!`](@ref) for the same modes as this CLI
-(`:delete`, `:rsync`, `:clone`, `:instantiate`, `:check`, `:runtest`, …), or the shorter
-[`sync!`](@ref) / [`instantiate!`](@ref) aliases
+(`:delete`, `:rsync`, `:clone`, `:instantiate`, `:check`, `:runtest`,
+…), or the shorter [`sync!`](@ref) / [`instantiate!`](@ref) aliases
 ([API](@ref API), [First Steps · Prepare](@ref Tutorial-Prepare)).
-`setup!(session, :clone)` requires an explicit `repo=` URL (clone runs on the remote).
+`setup!(session, :clone)` requires an explicit `repo=` URL (clone runs
+on the remote).
 
-Also: [Requirements](@ref), `setup --help`. Flag vocabulary: [User Guide](@ref Manual).
+Also: [Requirements](@ref), `setup --help`. Flag vocabulary:
+[User Guide](@ref Manual).
 
 ## [rsync or git?](@id Manual-setup-rsync-or-git)
 
@@ -27,29 +29,38 @@ Also: [Requirements](@ref), `setup --help`. Flag vocabulary: [User Guide](@ref M
 
 Pick **one mode** per invocation (except shared options).
 
-| Flag | Meaning |
-| --- | --- |
-| `--check` | Local `ssh` / `rsync` / `git` on PATH; remotes: SSH, Julia, project, deps; git commit parity when remotes have `.git/` |
-| `--clone` | `git clone` onto each remote at an empty/missing path (confirm unless `-y`) |
-| `--rsync` | Rsync local tree onto missing/empty path (recommended first deploy; no remote `.git/`; confirm unless `-y`) |
-| `--sync` | Local `git push`, then `git pull` on remotes (git workflows; confirm unless `-y`) |
-| `--pull` | `git pull` on laptop first, then remotes (no push; confirm unless `-y`) |
-| `--instantiate` | `Pkg.instantiate` on remotes after deploy |
-| `--runtest` | `Pkg.test()` of the **job** project on remotes (not DistSSHKit's tests) |
-| `--cleanup` | Kill stale Julia worker processes (local + remotes); `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` skips the `pkill` |
-| `--delete` | Remove remote project dirs (destructive; confirm unless `-y`) |
-| `--repo URL` | Clone URL (default: local `origin`) |
-| `--remote-path PATH` | Remote repo root (alias `--remote-dir`; or `DISTRIBUTED_REMOTE_PROJECT_ROOT`) |
-| `--julia PATH` | Julia on remotes (default: auto / `JULIA_DISTRIBUTED_EXE`) |
-| `--ignore-julia-version` | Warn instead of fail on major.minor mismatch |
-| `-q` / `--quiet` | Hide terminal detail; kit log under `.distsshkit/setup/` still written |
-| `--progress` | Live status (TTY default) |
-| `--verbose` | Full detail (non-TTY default) |
-| `-y` / `--yes` | Accept confirmation prompts non-interactively |
-| `--hosts CSV` | Comma-separated SSH hosts (`host:N` → host name only) |
-| `--hosts-file PATH` | Append SSH hosts (`host:N` → host name only) |
-| `-v` / `--version` | Print DistSSHKit version and exit |
-| `-h` / `--help` | Full help |
+- `--check`: local `ssh` / `rsync` / `git` on PATH; remotes: SSH, Julia,
+  project, deps; git commit parity when remotes have `.git/`
+- `--clone`: `git clone` onto each remote at an empty/missing path
+  (confirm unless `-y`)
+- `--rsync`: rsync local tree onto missing/empty path (recommended first
+  deploy; no remote `.git/`; confirm unless `-y`)
+- `--sync`: local `git push`, then `git pull` on remotes (git workflows;
+  confirm unless `-y`)
+- `--pull`: `git pull` on laptop first, then remotes (no push; confirm
+  unless `-y`)
+- `--instantiate`: `Pkg.instantiate` on remotes after deploy
+- `--runtest`: `Pkg.test()` of the **job** project on remotes (not
+  DistSSHKit's tests)
+- `--cleanup`: kill stale Julia worker processes (local + remotes);
+  `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` skips the `pkill`
+- `--delete`: remove remote project dirs (destructive; confirm unless
+  `-y`)
+- `--repo URL`: clone URL (default: local `origin`)
+- `--remote-path PATH`: remote repo root (alias `--remote-dir`; or
+  `DISTRIBUTED_REMOTE_PROJECT_ROOT`)
+- `--julia PATH`: Julia on remotes (default: auto /
+  `JULIA_DISTRIBUTED_EXE`)
+- `--ignore-julia-version`: warn instead of fail on major.minor mismatch
+- `-q` / `--quiet`: hide terminal detail; kit log under
+  `.distsshkit/setup/` still written
+- `--progress`: live status (TTY default)
+- `--verbose`: full detail (non-TTY default)
+- `-y` / `--yes`: accept confirmation prompts non-interactively
+- `--hosts CSV`: comma-separated SSH hosts (`host:N` → host name only)
+- `--hosts-file PATH`: append SSH hosts (`host:N` → host name only)
+- `-v` / `--version`: print DistSSHKit version and exit
+- `-h` / `--help`: full help
 
 `--clone` / `--rsync` never overwrite a nonempty remote path; use `--delete`
 first to replace. `DISTSSHKIT_JOBS` (default 1) may rsync several hosts at once.
@@ -71,5 +82,6 @@ host** to an absolute path. Prefer an absolute remote root when you can.
 
 No remote `.git/` — that is fine. `go` / `drive` do not pre-run sync or
 require git parity by default. `go --rsync` / `drive --rsync` on an empty
-path instantiate if deps are still missing. Kit logs: `{project}/.distsshkit/setup/`.
+path instantiate if deps are still missing. Kit logs:
+`{project}/.distsshkit/setup/`.
 `setup --rsync` skips `.distsshkit/` even if the job `.gitignore` is missing.

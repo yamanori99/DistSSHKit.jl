@@ -1,19 +1,21 @@
 # [go](@id Manual-go)
 
 Run a **standalone** script as-is (no Kit APIs in the job file). Each
-`parent:N` / `child:NAME:N` slot is one full script run, started **concurrently** —
-not Distributed workers.
+`parent:N` / `child:NAME:N` slot is one full script run, started
+**concurrently** — not Distributed workers.
 
 ```bash
-julia --project=. -m DistSSHKit go [options] [parent:N] [child:NAME[:N]...] SCRIPT.jl [script_args...]
+julia --project=. -m DistSSHKit go [options] \
+  [parent:N] [child:NAME[:N]...] SCRIPT.jl [script_args...]
 ```
 
 Also: [First Steps · Demo](@ref Tutorial-Demo), [drive](@ref Manual-drive),
 `go --help`. Flag vocabulary and a short **go vs drive** table:
 [User Guide](@ref Manual).
 
-**vs drive:** each `child:NAME:N` is N full script runs (not Distributed workers).
-There is no `--require-git`; for commit parity use [`drive --require-git`](@ref Manual-drive).
+**vs drive:** each `child:NAME:N` is N full script runs (not Distributed
+workers). There is no `--require-git`; for commit parity use
+[`drive --require-git`](@ref Manual-drive).
 Prepare remotes with [`setup --rsync`](@ref Manual-setup) **or** `--clone`, then
 `--instantiate`. One-shot onto an empty/missing path: `go --rsync` (instantiates
 if needed). Later git updates (`setup --sync` / `go --sync`) need a
@@ -21,24 +23,28 @@ if needed). Later git updates (`setup --sync` / `go --sync`) need a
 
 ## Flags
 
-| Flag | Meaning |
-| --- | --- |
-| `--sync` | Git push/pull before remote slots (**opt-in**; default is none; confirm unless `-y`) |
-| `--rsync` | Rsync working tree first (empty/missing remote, or after `setup --delete`); then instantiate if deps are missing |
-| `--skip-sync` | Compat: no pre-run sync (already the default) |
-| `--skip-git-guard` | Alias of `--skip-sync` (shared name with drive) |
-| `--julia PATH` | Julia on remotes (default: auto / `JULIA_DISTRIBUTED_EXE`) |
-| `--output-dir PATH` | **Batch root**; slots write under `PATH/{slot}/` (not `drive --output-dir`) |
-| `--hosts CSV` | Comma-separated slot specs (same form as CLI tokens / `DISTSSHKIT_HOSTS`) |
-| `-q` / `--quiet` | Hide terminal detail; `go_*.log` and per-slot logs still written |
-| `--progress` | Live status (TTY default) |
-| `--verbose` | Full detail (non-TTY default) |
-| `-y` / `--yes` | Non-interactive confirmations |
-| `--hosts-file PATH` | Append slot specs (`child:NAME:N` preserved) |
-| `-v` / `--version` | Print DistSSHKit version and exit |
-| `-h` / `--help` | Full help |
+- `--sync`: git push/pull before remote slots (**opt-in**; default is none;
+  confirm unless `-y`)
+- `--rsync`: rsync working tree first (empty/missing remote, or after
+  `setup --delete`); then instantiate if deps are missing
+- `--skip-sync`: compat: no pre-run sync (already the default)
+- `--skip-git-guard`: alias of `--skip-sync` (shared name with drive)
+- `--julia PATH`: Julia on remotes (default: auto / `JULIA_DISTRIBUTED_EXE`)
+- `--output-dir PATH`: **batch root**; slots write under `PATH/{slot}/`
+  (not `drive --output-dir`)
+- `--hosts CSV`: comma-separated slot specs (same form as CLI tokens /
+  `DISTSSHKIT_HOSTS`)
+- `-q` / `--quiet`: hide terminal detail; `go_*.log` and per-slot logs
+  still written
+- `--progress`: live status (TTY default)
+- `--verbose`: full detail (non-TTY default)
+- `-y` / `--yes`: non-interactive confirmations
+- `--hosts-file PATH`: append slot specs (`child:NAME:N` preserved)
+- `-v` / `--version`: print DistSSHKit version and exit
+- `-h` / `--help`: full help
 
-`--sync` / `--rsync` / `--skip-sync` (and `--skip-git-guard`) are mutually exclusive.
+`--sync` / `--rsync` / `--skip-sync` (and `--skip-git-guard`) are mutually
+exclusive.
 Default pre-run sync is **none** (same as [`drive`](@ref Manual-drive));
 prepare remotes with [`setup`](@ref Manual-setup), or pass `--sync` / `--rsync`.
 `--rsync` instantiates when the copied tree still lacks deps. `go` checks
@@ -61,8 +67,9 @@ name). See [User Guide](@ref Manual).
 
 From the API, `go!(...; output_dir=PATH)` sets the same batch root (matching
 [`drive!`](@ref Manual-drive)). `collect_spec::String` still works as a
-backward-compatible alias, but passing both `output_dir` and `collect_spec::String`
-is an error. `collect_spec=false` skips collect and is orthogonal to `output_dir`.
+backward-compatible alias, but passing both `output_dir` and
+`collect_spec::String` is an error. `collect_spec=false` skips collect and
+is orthogonal to `output_dir`.
 
 Collect after remote slots: **slot-overwrite** (rsync whole slot dir).
 A failed slot pull is a failed slot, not an empty directory.
@@ -76,11 +83,12 @@ The kit log still gets those lines only with `--progress` or
 ## Wall time
 
 Same as [drive](@ref Manual-drive): run go as usual (`-q` hides the table).
-The Time table prints at the end, after slot stdout, with a `progress DIR` line
-to replay:
+The Time table prints at the end, after slot stdout, with a `progress DIR`
+line to replay:
 
 ```bash
-julia --project=. -m DistSSHKit go -y parent:2 demos/without_kit/pi_echo.jl --n 5000
+julia --project=. -m DistSSHKit go -y parent:2 \
+  demos/without_kit/pi_echo.jl --n 5000
 julia --project=. -m DistSSHKit progress DIR
 ```
 
@@ -89,8 +97,10 @@ julia --project=. -m DistSSHKit progress DIR
 to time a run.
 
 Labels: `ready` (remote project / Julia, when remotes are listed), `sync`
-(optional), then each slot with nested `run` (script) and `collect` (remote
-pull). Slots overlap; percentages are of the whole run and may sum past 100%.
+(optional), `run` (all slot scripts), then `collect` (remote pulls). Nested
+rows are `NAME/run` and `NAME/collect`. Scripts overlap with each other;
+pulls wait until every script has finished (same order as drive: `collect`
+then the rsync). Percentages are of the whole run and may sum past 100%.
 
 ## Concurrent runs
 
@@ -105,7 +115,8 @@ pass an explicit `--output-dir` / `output_dir=`.
 ## `job_id`
 
 `execute!(:go, …; job_id=)` and `ENV["DISTSSHKIT_JOB_ID"]` tag each slot so
-[`terminate!`](@ref) / [`terminate_run!`](@ref) can `pkill -f distsshkit-job:<id>`
+[`terminate!`](@ref) / [`terminate_run!`](@ref) can
+`pkill -f distsshkit-job:<id>`
 without matching other Julias. The tag is a no-op `-L` file named
 `distsshkit-job:<id>` in the slot directory; the user script remains
 `PROGRAM_FILE` with the usual `ARGS`. Drive workers use a comment-only
@@ -114,5 +125,6 @@ driver `include`s later). Unset `job_id`: no tag. Details: [API](@ref API).
 
 ## Hosts
 
-CLI tokens, `--hosts`, `--hosts-file`, and/or `DISTSSHKIT_HOSTS`. `parent:0` skips parent
+CLI tokens, `--hosts`, `--hosts-file`, and/or `DISTSSHKIT_HOSTS`.
+`parent:0` skips parent
 slots when remotes are listed. Omitting hosts is one parent slot (`parent/`).

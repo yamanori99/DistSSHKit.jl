@@ -7,8 +7,9 @@ processes, not threads. Supported on **macOS, Linux, and WSL2 Ubuntu** (not
 native Windows).
 
 Even small labs and individuals often have a few high-performance machines or
-workstations. DistSSHKit helps you use that hardware as a small set of compute
-nodes. To run one after another, see [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl).
+workstations. DistSSHKit helps you use that hardware as a small set of
+compute nodes. To run one after another, see
+[DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl).
 
 ## What is DistSSHKit?
 
@@ -17,9 +18,9 @@ Two ways to run a script:
 - **Same script on each machine** (`go`) — each host runs your `.jl` from start
   to finish. No rewrite needed. Prefer this when every run is already a complete
   job.
-- **One machine coordinates** (`drive`) — your main Julia process stays in charge
-  and hands pieces of the work to the others
-  ([Distributed.jl](https://docs.julialang.org/en/v1/manual/distributed-computing/)).
+- **One machine coordinates** (`drive`) — your main Julia process stays
+  in charge and hands pieces of the work to the others
+  ([Distributed.jl][dist-jl]).
 
 Around that, the kit handles remote project setup, sync, and collecting outputs.
 Use it from the terminal or from Julia code / notebooks.
@@ -69,8 +70,8 @@ Also needs **`ssh`**, **`rsync`**, and **`git`** (git deploy only);
   or `child:user@hostname`.
 - **Process** — one running `julia`. Each process has its own memory and
   runs independently at the OS level.
-  (this kit launches multiple `julia` processes, even on a single machine, to run
-  work in parallel — built on Distributed.jl)
+  (This kit launches multiple `julia` processes, even on a single machine,
+  to run work in parallel — built on Distributed.jl)
 - **Master** — the process on the kit parent that plans slots (`go`) or hands
   work to workers (`drive`) and collects results. The kit parent is the machine
   that started that process.
@@ -82,8 +83,12 @@ none), and you can add as many remote machines as you like.
 
 ```@raw html
 <p style="text-align:center">
-<img class="docs-light-only" alt="Drive topology: Master process on parent, workers on parent and remotes" src="assets/diagram/topology.svg">
-<img class="docs-dark-only" alt="Drive topology: Master process on parent, workers on parent and remotes" src="assets/diagram/topology-dark.svg">
+<img class="docs-light-only"
+  alt="Drive topology: Master process on parent, workers on parent and remotes"
+  src="assets/diagram/topology.svg">
+<img class="docs-dark-only"
+  alt="Drive topology: Master process on parent, workers on parent and remotes"
+  src="assets/diagram/topology-dark.svg">
 </p>
 ```
 
@@ -119,14 +124,21 @@ Later: [`setup`](@ref Manual-setup), [`go`](@ref Manual-go),
 
 ## Contributing
 
-Bugs and feature requests: [Issues](https://github.com/yamanori99/DistSSHKit.jl/issues).
-Questions and ideas: [Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions).
-See [CONTRIBUTING.md](https://github.com/yamanori99/DistSSHKit.jl/blob/main/CONTRIBUTING.md) for how to contribute.
+Bugs and feature requests:
+[Issues](https://github.com/yamanori99/DistSSHKit.jl/issues).
+Questions and ideas:
+[Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions).
+See [CONTRIBUTING.md][contrib] for how to contribute.
 
 ## License
 
-Source code is [MIT](https://github.com/yamanori99/DistSSHKit.jl/blob/main/LICENSE).
-The Julia dots in the docs logo and topology diagram are Copyright (c) 2012-2022
-Stefan Karpinski, [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+Source code is [MIT][mit-lic].
+The Julia dots in the docs logo and topology diagram are Copyright (c)
+2012-2022 Stefan Karpinski,
+[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 DistSSHKit adapts them.
 [julia-logo-graphics](https://github.com/JuliaLang/julia-logo-graphics).
+
+[contrib]: https://github.com/yamanori99/DistSSHKit.jl/blob/main/CONTRIBUTING.md
+[mit-lic]: https://github.com/yamanori99/DistSSHKit.jl/blob/main/LICENSE
+[dist-jl]: https://docs.julialang.org/en/v1/manual/distributed-computing/

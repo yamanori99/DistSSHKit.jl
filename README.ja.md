@@ -2,13 +2,13 @@
 
 [English](README.md) · [日本語](README.ja.md)
 
-[![Test](https://img.shields.io/github/actions/workflow/status/yamanori99/DistSSHKit.jl/CI.yml?style=flat-square&logo=githubactions&logoColor=white&label=Test)](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/CI.yml)
-[![Codecov](https://img.shields.io/codecov/c/github/yamanori99/DistSSHKit.jl?style=flat-square&logo=codecov&logoColor=white)](https://codecov.io/gh/yamanori99/DistSSHKit.jl)
-[![docs-stable](https://img.shields.io/badge/docs-stable-blue?style=flat-square&logo=gitbook&logoColor=white)](https://yamanori99.github.io/DistSSHKit.jl/stable/)
-[![docs-dev](https://img.shields.io/badge/docs-dev-blue?style=flat-square&logo=gitbook&logoColor=white)](https://yamanori99.github.io/DistSSHKit.jl/dev/)
-[![Julia 1.12+](https://img.shields.io/badge/Julia-1.12+-9558B2?style=flat-square&logo=julia&logoColor=white)](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)
-[![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
-[![Discussions](https://img.shields.io/badge/GitHub-Discussions-blueviolet?style=flat-square&logo=github)](https://github.com/yamanori99/DistSSHKit.jl/discussions)
+[Test](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/CI.yml)
+[Codecov](https://codecov.io/gh/yamanori99/DistSSHKit.jl)
+[docs-stable](https://yamanori99.github.io/DistSSHKit.jl/stable/)
+[docs-dev](https://yamanori99.github.io/DistSSHKit.jl/dev/)
+[Julia 1.12+](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)
+[License](LICENSE)
+[Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions)
 
 DistSSHKit は、ローカルと SSH 先で同じ Julia プロジェクトを走らせ、結果を集めるキットである。
 SSH 分散実行の手順を簡単にし、揃えることで、再現しやすい実行を助ける。
@@ -46,7 +46,8 @@ julia> import Pkg; Pkg.add("DistSSHKit")
 - **ホスト** — 計算するマシン。ここでは、`parent` や `child:user@hostname` のようにトークンで指定する。
 - **プロセス** — 起動した `julia` 1つ分のこと。それぞれ独立したメモリを持ち、OS 上で別々に動く。
   (このキットは1台のマシンでも複数の `julia` プロセスを起動して並列に走らせる。Distributed.jl ベース)
-- **マスター** — キット起動側のプロセス。`go` ではスロットを計画し、`drive` では仕事をワーカーに渡して結果を集める。キット起動側は、そのプロセスを起動したマシンである。
+- **マスター** — キット起動側のプロセス。`go` ではスロットを計画し、`drive` では仕事を
+  ワーカーに渡して結果を集める。キット起動側は、そのプロセスを起動したマシンである。
 - **ワーカー** — マスターから仕事を受け取って実行するプロセス。
 
 例: 手元で `go` / `drive` を実行する場合、そのマシンがキット起動側になる。
@@ -55,8 +56,12 @@ julia> import Pkg; Pkg.add("DistSSHKit")
 <!-- markdownlint-disable MD033 -->
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/src/assets/diagram/topology-dark.svg">
-    <img alt="Drive topology: Master process on parent, workers on parent and remotes" src="docs/src/assets/diagram/topology.svg">
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="docs/src/assets/diagram/topology-dark.svg">
+    <img
+      alt="Drive topology: master and workers"
+      src="docs/src/assets/diagram/topology.svg">
   </picture>
 </p>
 <!-- markdownlint-enable MD033 -->
@@ -79,7 +84,8 @@ SSH 先の台数に上限はない。台数を増やすほど SSH 接続や配�
 - Julia がインストールされていて、キット起動側と **メジャー.マイナーバージョンが一致**していること
   (`setup --check` で確認できる)
 
-詳細: [Requirements](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)。
+詳細:
+[Requirements](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)。
 
 > [!TIP]
 > DistSSHKit は、つながったまま 1 件を走らせる。
@@ -105,11 +111,12 @@ drive / Distributed.jl 対応へ進む段階的な開発ができる。
   すぐ試したいときや、シェルスクリプトに組み込みたいときに向く
 - **Julia** — 自分の Julia コード (スクリプトや REPL、他パッケージ) の中から関数として呼ぶ方法。
   `setup!`、`go!` / `drive!` などの `!` 付き関数を使う
-- **`distsshkit` (実験的)** — `pkg> app add DistSSHKit` のあと、ターミナルの `distsshkit` コマンド。
+- **`distsshkit` (実験的)** — `pkg> app add DistSSHKit` のあと、ターミナルの
+  `distsshkit` コマンド。
   フラグは `-m` と同じだが、常に Apps 側のコピーを使う (`--project=.` ではない)。
   `go` / `setup` / `demo` は `distsshkit` でよいが、`drive` と `size` は
   `julia --project=. -m DistSSHKit` を使う。
-  使い分け: [User Guide](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/distsshkit/)
+  使い分けは [distsshkit の頁][ug-app]。
 
 CLI の `setup --rsync` は `setup!(session, :rsync)` に対応する、というように
 CLI のオプションと Julia API は1対1である。
@@ -127,7 +134,8 @@ CLI のオプションと Julia API は1対1である。
 
 - 初回配置: `--rsync` (ローカルのツリーをそのまま送る) か `--clone` (git リポジトリを clone) のどちらか一方
 - 依存の用意: `--instantiate` (リモートで `Pkg.instantiate`)
-- 更新 (再配置): `--sync` (git push → 各リモートで pull)、`--pull` (push せず pull だけ)、または再度 `--rsync`
+- 更新 (再配置): `--sync` (git push → 各リモートで pull)、`--pull`
+  (push せず pull だけ)、または再度 `--rsync`
 - その他
   - `--check` (SSH / Julia / 依存関係の疎通確認)
   - `--cleanup` (残っているワーカープロセスの掃除)
@@ -172,13 +180,15 @@ julia --project=. -m DistSSHKit setup --delete user@host1 user@host2
 **CLI で go する例。** 各ホストで `script.jl` を1本ずつ実行する (`parent:N` も指定可)。
 
 ```bash
-julia --project=. -m DistSSHKit go child:user@host1:1 child:user@host2:1 path/to/script.jl
+julia --project=. -m DistSSHKit go \
+  child:user@host1:1 child:user@host2:1 path/to/script.jl
 ```
 
 **CLI で drive する例。** git デプロイなら、あとからの更新は `setup --sync`。`rsync` でもよい。
 
 ```bash
-julia --project=. -m DistSSHKit drive parent:2 child:user@host1:4 path/to/driver.jl
+julia --project=. -m DistSSHKit drive \
+  parent:2 child:user@host1:4 path/to/driver.jl
 ```
 
 **Julia コードで go する例。** `remote=` は `setup!` と揃える (どちらも省略すれば既定パス)。
@@ -231,13 +241,14 @@ julia --project=. -m DistSSHKit go parent:2 demos/without_kit/pi_file.jl
 
 公式ドキュメント本体は英語である。
 
-|              |                                                                                |
-| ------------ | ------------------------------------------------------------------------------ |
-| Introduction | [Introduction](https://yamanori99.github.io/DistSSHKit.jl/stable/)             |
-| First Steps  | [First Steps](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/) |
-| User Guide   | [User Guide](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/)        |
-| API          | [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/)                  |
-| News         | [NEWS.md](NEWS.md)                                                             |
+- Introduction:
+  [Introduction](https://yamanori99.github.io/DistSSHKit.jl/stable/)
+- First Steps:
+  [First Steps](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)
+- User Guide:
+  [User Guide](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/)
+- API: [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/)
+- News: [NEWS.md](NEWS.md)
 
 ## 貢献
 
@@ -254,9 +265,17 @@ DistSSHKit はそれを改変して使っている。
 詳細は [LICENSE](LICENSE) と
 [julia-logo-graphics](https://github.com/JuliaLang/julia-logo-graphics)。
 
+[ug-app]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/distsshkit/
+
 <!-- markdownlint-disable MD033 -->
 <p align="center">
-  <img src="docs/src/assets/logo/logo-static.svg#gh-light-mode-only" width="180" alt="DistSSHKit.jl logo"/>
-  <img src="docs/src/assets/logo/logo-dark-static.svg#gh-dark-mode-only" width="180" alt="DistSSHKit.jl logo"/>
+  <img
+    src="docs/src/assets/logo/logo-static.svg#gh-light-mode-only"
+    width="180"
+    alt="DistSSHKit.jl logo"/>
+  <img
+    src="docs/src/assets/logo/logo-dark-static.svg#gh-dark-mode-only"
+    width="180"
+    alt="DistSSHKit.jl logo"/>
 </p>
 <!-- markdownlint-enable MD033 -->

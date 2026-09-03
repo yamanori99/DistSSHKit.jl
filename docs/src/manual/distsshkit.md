@@ -24,18 +24,20 @@ The first always runs the Apps copy of DistSSHKit, not the kit in
 | Command | Use |
 | --- | --- |
 | `go` / `setup` / `demo` | `distsshkit …` is fine |
-| `drive` / `size` | stay on `julia --project=. -m DistSSHKit …` (Apps pins `JULIA_LOAD_PATH`) |
+| `drive` / `size` | stay on `julia --project=. -m DistSSHKit …` |
 
 ```bash
 distsshkit demo install with_kit
-distsshkit setup --rsync user@host1                              # first deploy
-distsshkit setup --instantiate user@host1                        # remote Pkg
+distsshkit setup --rsync user@host1
+distsshkit setup --instantiate user@host1
 # or one-shot onto an empty path (instantiates if needed):
 # distsshkit go --rsync child:user@host1:1 path/to/script.jl
 # size / drive: job project, not the Apps copy
 julia --project=. -m DistSSHKit size parent child:user@host1
-distsshkit go child:user@host1:1 path/to/script.jl                     # one full run per slot
+distsshkit go child:user@host1:1 path/to/script.jl
 ```
+
+`drive` / `size` stay on `-m` because Apps pins `JULIA_LOAD_PATH`.
 
 After changing juliaup: `pkg> app update DistSSHKit`. Flag lists:
 `distsshkit {cmd} --help` or the [command pages](@ref Manual).

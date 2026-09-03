@@ -1,15 +1,19 @@
 # News
 
 User-facing changes.
-GitHub Releases may copy these sections (`Release notes:` on `@JuliaRegistrator register`).
+GitHub Releases may copy these sections (`Release notes:` on
+`@JuliaRegistrator register`).
 
 ## Unreleased
+
+- `go` Time `collect` is the remote-pull phase: every slot script finishes
+  first, then pulls. Nested `NAME/collect` no longer sits under `run`.
 
 ## 0.5.0
 
 Breaking cut after `0.4.3`.
 
-### Breaking
+### Breaking (0.5.0)
 
 - Explicit `parent[:N]` / `child:NAME[:N]` are the `drive` success contract:
   they must join, stay through the run, and collect before `ok=true` /
@@ -68,7 +72,7 @@ Patch after `0.4.2`.
 
 Breaking cut after `0.3.3`.
 
-### Breaking
+### Breaking (0.4.0)
 
 - go / drive / size placement tokens are `parent[:N]` (Kit) and
   `child:NAME[:N]` (SSH). `parenthost` is gone. `local` / `localhost` / `l`
@@ -204,7 +208,8 @@ Breaking cut after `0.3.3`.
   [julia-logo-graphics](https://github.com/JuliaLang/julia-logo-graphics).
 - Docs: Japanese README (`README.ja.md`). English README and Introduction
   restructured around terms, `go` / `drive`, setup, and rsync vs git.
-  Topology diagram is a hand-edited SVG (`docs/src/assets/diagram/topology.svg`);
+  Topology diagram is a hand-edited SVG
+  (`docs/src/assets/diagram/topology.svg`);
   bake writes Japanese and dark variants, plus PNG (`bake.jl --png`).
   DocumenterMermaid is gone. READMEs note that `drive` / `size` stay on
   `julia -m DistSSHKit` under the `distsshkit` app.
@@ -250,7 +255,8 @@ Breaking cut after `0.2.1`. No `0.2.2` on General.
 
 Patch after the first General registration (`0.2.0`).
 
-- Library / `go!` / `drive!`: Julia **1.10+**. Terminal `julia -m DistSSHKit`: **1.12+**.
+- Library / `go!` / `drive!`: Julia **1.10+**. Terminal
+  `julia -m DistSSHKit`: **1.12+**.
 - `setup!` (same modes as CLI `setup`). `size!` (alias of `size_plan`).
 - `go` / `drive` / `setup` / `size` share `--hosts` and `DISTSSHKIT_HOSTS`.
 - Failures that need a next command: diagnose, then explain for CLI vs API.

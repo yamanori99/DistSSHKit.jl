@@ -16,8 +16,8 @@ Deploy the tree, then **instantiate on each remote** before `go` / `drive`:
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 # Remotes: deploy the tree, then install deps from Manifest.toml
-# Pick one first deploy:
-julia --project=. -m DistSSHKit setup --rsync YourHost1 YourHost2   # no remote .git/
+# Pick one first deploy (rsync: no remote .git/):
+julia --project=. -m DistSSHKit setup --rsync YourHost1 YourHost2
 # or: julia --project=. -m DistSSHKit setup --clone YourHost1 YourHost2
 julia --project=. -m DistSSHKit setup --instantiate YourHost1 YourHost2
 # optional: job Pkg.test() on remotes (not DistSSHKit's tests)
