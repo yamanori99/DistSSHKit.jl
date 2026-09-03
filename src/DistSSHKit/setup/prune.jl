@@ -151,7 +151,8 @@ function _prune_remote_shell(
                 case "\$base" in *"\$id"*) ;; *) continue ;; esac
               fi
               if [ -n "\$older" ] && [ "\$older" != 0 ]; then
-                [ -n "\$(find "\$child" -maxdepth 0 -mtime +"\$older" 2>/dev/null)" ] || continue
+                # find -mtime +N is > N days; local prune is >= DAYS.
+                [ -n "\$(find "\$child" -maxdepth 0 -mtime +"\$((older - 1))" 2>/dev/null)" ] || continue
               fi
               rm -rf "\$child"
             done
@@ -161,7 +162,7 @@ function _prune_remote_shell(
               p="\$kit/\$kind"
               [ -d "\$p" ] || continue
               if [ -n "\$older" ] && [ "\$older" != 0 ]; then
-                [ -n "\$(find "\$p" -maxdepth 0 -mtime +"\$older" 2>/dev/null)" ] || continue
+                [ -n "\$(find "\$p" -maxdepth 0 -mtime +"\$((older - 1))" 2>/dev/null)" ] || continue
               fi
               rm -rf "\$p"
             done
