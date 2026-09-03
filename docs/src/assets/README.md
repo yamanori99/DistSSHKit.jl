@@ -40,10 +40,12 @@ Derived dark SVGs prefix every `id` / `href="#…"` / `url(#…)` with `dark-`
 so light and dark copies can sit in one HTML document.
 
 GitHub README / README.ja use `<picture>` plus `prefers-color-scheme`
-for the topology diagram and the footer logos
-(`logo-static.svg` / `logo-dark-static.svg`). `img` / `srcset` are
-`raw.githubusercontent.com/…/main/docs/src/assets/…` so JuliaHub can
-load them. The light `img` is the fallback when `<picture>` is ignored.
+for the topology diagram and the footer logos. Dark / light `source`
+are the transparent SVGs. The fallback `img` is `topology.png` /
+`logo-static.png` (paper background). JuliaHub strips or ignores
+`<picture>` / `prefers-color-scheme` (a transparent light SVG vanishes
+on a dark page). Absolute
+`raw.githubusercontent.com/…/main/docs/src/assets/…` so the files load.
 
 Documenter discovers bare `logo.svg` / `logo-dark.svg` at this
 directory's top level only.
