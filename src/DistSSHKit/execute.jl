@@ -17,6 +17,7 @@ const _EXECUTE_DETACHED_KW = Set{Symbol}((
     :mem_headroom,
     :parent_gb,
     :workers,
+    :repeat,
     :stdout,
     :stderr,
     :job_id,
@@ -60,7 +61,7 @@ function execute_detached_accepts(kw::Symbol; kind::Symbol)::Bool
     kw in _EXECUTE_DETACHED_NAMED && return true
     kw in _EXECUTE_DETACHED_KW || return false
     kind === :go && return !(kw in _EXECUTE_DETACHED_DRIVE_ONLY)
-    return true
+    return kw !== :repeat
 end
 
 """
@@ -89,6 +90,7 @@ function execute_kwargs_from_parsed(parsed; kind::Symbol)::Dict{Symbol,Any}
     )
     if kind === :go
         kw[:sync] = parsed.sync
+        parsed.repeat === nothing || (kw[:repeat] = parsed.repeat)
         return kw
     end
     kw[:sync] = parsed.sync_mode
@@ -230,7 +232,7 @@ verbatim to the chosen function.
 `output_dir`, `args`, `project`, `sync`, `julia`, `quiet`, `verbosity`, `yes`,
 `remote`, `hosts_file`, `job_id`, and drive-only `log_dir`, `enable_log`,
 `package`, `require_all_hosts`, `skip_hash_check`, `mem_headroom`, `parent_gb`,
-`workers`. `yes` must be `true` (the
+`workers`. Go-only `repeat`. `yes` must be `true` (the
 default): an unattended child cannot answer a prompt. `remote` that starts
 with `~` is stored in `DISTRIBUTED_REMOTE_PROJECT_ROOT` as a layout path
 (not `expanduser` on the controller). Child stdio defaults to
@@ -318,6 +320,10 @@ function _execute_detached!(
                 "execute!(:go, ...; detached=true) does not accept keyword $(repr(k))",
             ))
         end
+    elseif haskey(kwargs, :repeat)
+        throw(ArgumentError(
+            "execute!(:drive, ...; detached=true) does not accept keyword :repeat",
+        ))
     end
     yes = get(kwargs, :yes, true)
     yes === true || throw(ArgumentError("execute!(...; detached=true) requires yes=true"))
@@ -342,6 +348,7 @@ function _execute_detached!(
     mem_headroom = get(kwargs, :mem_headroom, nothing)
     parent_gb = get(kwargs, :parent_gb, nothing)
     workers = get(kwargs, :workers, nothing)
+    repeat = get(kwargs, :repeat, nothing)
     if workers !== nothing
         (workers isa Integer && !(workers isa Bool)) || throw(ArgumentError(
             "workers must be an integer, got $(repr(workers))",
@@ -349,6 +356,14 @@ function _execute_detached!(
         w = Int(workers)
         w < 1 && throw(ArgumentError("workers must be >= 1, got $w"))
         workers = w
+    end
+    if repeat !== nothing
+        (repeat isa Integer && !(repeat isa Bool)) || throw(ArgumentError(
+            "repeat must be an integer, got $(repr(repeat))",
+        ))
+        r = Int(repeat)
+        r < 1 && throw(ArgumentError("repeat must be >= 1, got $r"))
+        repeat = r
     end
 
     proj = canonical_local_path(project)
@@ -382,6 +397,7 @@ function _execute_detached!(
         mem_headroom=mem_headroom,
         parent_gb=parent_gb,
         workers=workers,
+        repeat=repeat,
     )
     extra = Dict{String,String}("DISTRIBUTED_PROJECT_ROOT" => proj)
     if remote !== nothing && !isempty(strip(String(remote)))
@@ -1042,6 +1058,7 @@ function _execute_detached_argv(
     mem_headroom=nothing,
     parent_gb=nothing,
     workers=nothing,
+    repeat=nothing,
 )::Vector{String}
     argv = String[String(kind)]
     push!(argv, "-y")
@@ -1098,6 +1115,8 @@ function _execute_detached_argv(
         if workers !== nothing
             push!(argv, "--workers", string(Int(workers)))
         end
+    elseif repeat !== nothing
+        push!(argv, "--repeat", string(Int(repeat)))
     end
     for tok in tokens
         push!(argv, String(tok))

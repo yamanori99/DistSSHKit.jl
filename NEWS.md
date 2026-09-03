@@ -18,6 +18,9 @@ GitHub Releases may copy these sections (`Release notes:` on
   job project and remotes (`--older-than DAYS`, `--id TOKEN` for go
   batches). Does not wipe the deploy (`--delete`) or kill workers
   (`--cleanup`).
+- `go --repeat N` / `go!(...; repeat=N)` is N independent runs in total,
+  spread round-robin across listed hosts (none → parent). `parent:N` /
+  `child:NAME:N` stay per-host caps.
 - `go` Time `collect` is the remote-pull phase: every slot script finishes
   first, then pulls. Nested `NAME/collect` no longer sits under `run`.
 

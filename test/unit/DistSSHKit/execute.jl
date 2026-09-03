@@ -147,6 +147,8 @@ using Test
         @test DistSSHKit.execute_detached_accepts(:skip_hash_check; kind=:drive)
         @test DistSSHKit.execute_detached_accepts(:mem_headroom; kind=:drive)
         @test DistSSHKit.execute_detached_accepts(:parent_gb; kind=:drive)
+        @test DistSSHKit.execute_detached_accepts(:repeat; kind=:go)
+        @test !DistSSHKit.execute_detached_accepts(:repeat; kind=:drive)
         @test DistSSHKit.execute_detached_accepts(:workers; kind=:drive)
         @test !DistSSHKit.execute_detached_accepts(:mem_headroom; kind=:go)
         @test !DistSSHKit.execute_detached_accepts(:parent_gb; kind=:go)
@@ -221,6 +223,23 @@ using Test
         @test "--workers" in argvw
         @test "4" in argvw
         @test "--best-effort" in argvw
+        argv_rep = DistSSHKit._execute_detached_argv(
+            :go, "job.jl", String[], String[];
+            output_dir="/tmp/out",
+            log_dir=nothing,
+            sync=nothing,
+            julia=nothing,
+            quiet=true,
+            verbosity=nothing,
+            hosts_file=nothing,
+            enable_log=false,
+            package=nothing,
+            require_all_hosts=nothing,
+            skip_hash_check=true,
+            repeat=100,
+        )
+        @test "--repeat" in argv_rep
+        @test "100" in argv_rep
         argv_strict = DistSSHKit._execute_detached_argv(
             :drive, "job.jl", ["child:host1"], String[];
             output_dir="/tmp/out",
@@ -284,6 +303,8 @@ using Test
         @test Set(keys(gkw)) == Set([
             :output_dir, :args, :julia, :quiet, :verbosity, :sync,
         ])
+        go_r = DistSSHKit.parse_go_args(["--repeat", "8", "job.jl"])
+        @test DistSSHKit.execute_kwargs_from_parsed(go_r; kind=:go)[:repeat] == 8
 
         hosts_file = _sample_hosts_file()
         drive = DistSSHKit.parse_drive_args([

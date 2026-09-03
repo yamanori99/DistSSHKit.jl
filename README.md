@@ -199,11 +199,16 @@ julia --project=. -m DistSSHKit setup --delete user@host1 user@host2
 
 After setup, run like this.
 
-**CLI, go.** One full run of `script.jl` on each host (`parent:N` also works).
+**CLI, go.** One full run of `script.jl` per slot.
+`child:user@host:1` is one run on that host; `parent:N` is N runs on the
+kit parent. `--repeat N` is N runs in total, spread across listed hosts.
 
 ```bash
 julia --project=. -m DistSSHKit go \
   child:user@host1:1 child:user@host2:1 path/to/script.jl
+julia --project=. -m DistSSHKit go --repeat 100 path/to/script.jl
+julia --project=. -m DistSSHKit go --repeat 100 \
+  child:user@host1 child:user@host2 path/to/script.jl
 ```
 
 **CLI, drive.** For a git deploy, later updates are `setup --sync`.

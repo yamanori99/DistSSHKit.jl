@@ -108,6 +108,17 @@ using Test
         @test_throws ArgumentError parse_go_args(["--julia"])
     end
 
+    @testset "--repeat" begin
+        let r = parse_go_args(["--repeat", "100", "job.jl"])
+            @test r.repeat == 100
+            @test r.script_path == "job.jl"
+            @test isempty(r.hosts)
+        end
+        @test_throws ArgumentError parse_go_args(["--repeat", "0", "job.jl"])
+        @test_throws ArgumentError parse_go_args(["--repeat", "x", "job.jl"])
+        @test_throws ArgumentError parse_go_args(["--repeat", "2", "--repeat", "3", "job.jl"])
+    end
+
     @testset "help smoke" begin
         txt = sprint(io -> DistSSHKit.show_go_usage(; io=io))
         @test occursin("Usage", txt)
@@ -116,6 +127,7 @@ using Test
         @test occursin("empty path", txt)
         @test occursin("instantiates missing deps", txt)
         @test occursin("--hosts", txt)
+        @test occursin("--repeat", txt)
         @test occursin("parent", txt)
         @test occursin("progress DIR", txt)
     end
