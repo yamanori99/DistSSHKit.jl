@@ -16,6 +16,7 @@ using .DistSSHKit:
     print_header,
     print_ok,
     println_fatal,
+    prune_kit_leaves,
     resolve_clone_url,
     resolve_remote_project_root,
     rsync_push_to_remotes,

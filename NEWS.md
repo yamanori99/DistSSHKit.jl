@@ -14,6 +14,10 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ### Other
 
+- `setup --prune` removes `.distsshkit/{go,drive,setup}` leaves on the
+  job project and remotes (`--older-than DAYS`, `--id TOKEN` for go
+  batches). Does not wipe the deploy (`--delete`) or kill workers
+  (`--cleanup`).
 - `go` Time `collect` is the remote-pull phase: every slot script finishes
   first, then pulls. Nested `NAME/collect` no longer sits under `run`.
 

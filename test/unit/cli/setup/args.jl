@@ -29,6 +29,7 @@ using Test
         "--pull" => :pull,
         "--instantiate" => :instantiate,
         "--cleanup" => :cleanup,
+        "--prune" => :prune,
         "--delete" => :delete,
         "--requirements" => :requirements,
     )
@@ -60,7 +61,13 @@ using Test
         @test r.show_version
         @test r.mode == :check
     end
-    @test_throws ArgumentError parse_setup_args(["--repo"])
+    let r = parse_setup_args(["--prune", "--older-than", "7", "--id", "pi_file", "host1"])
+        @test r.mode == :prune
+        @test r.older_days == 7
+        @test r.prune_id == "pi_file"
+    end
+    @test_throws ArgumentError parse_setup_args(["--check", "--older-than", "1", "host1"])
+    @test_throws ArgumentError parse_setup_args(["--prune", "--older-than", "-1", "host1"])
     @test_throws ArgumentError parse_setup_args(["--julia"])
 
     let r = parse_setup_args(["--check", "--hosts-file", _sample_setup_hosts_file(), "host-cli"])
@@ -79,7 +86,8 @@ using Test
 
     @testset "help smoke (rsync-first)" begin
         txt = DistSSHKit.setup_help_text()
-        @test occursin("--rsync", txt)
+        @test occursin("--prune", txt)
+        @test occursin("--older-than", txt)
         @test occursin("--runtest", txt)
         @test occursin("--hosts", txt)
         @test occursin("progress DIR", txt)

@@ -63,6 +63,51 @@ using Test
         end
     end
 
+    @testset "prune leaves" begin
+        _with_tempdir() do proj
+            go_old = joinpath(proj, ".distsshkit", "go", "job_20200101T000000Z")
+            go_keep = joinpath(proj, "scripts", ".distsshkit", "go", "job_keep_id")
+            drive = joinpath(proj, "scripts", ".distsshkit", "drive")
+            mkpath(go_old)
+            mkpath(go_keep)
+            mkpath(drive)
+            write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\n")
+            n = DistSSHKit.prune_kit_leaf_dirs!(proj; id="keep_id")
+            @test n == 1
+            @test isdir(go_old)
+            @test !isdir(go_keep)
+            @test isdir(drive)
+            n2 = DistSSHKit.prune_kit_leaf_dirs!(proj)
+            @test n2 >= 2
+            @test !isdir(go_old)
+            @test !isdir(drive)
+            @test isfile(joinpath(proj, "Project.toml"))
+        end
+
+        _with_fake_remotes() do state_dir
+            _with_tempdir() do proj
+                host = "host1"
+                slot = replace(host, r"[@:/]" => "_")
+                tree = joinpath(state_dir, slot, "tree")
+                mkpath(joinpath(tree, ".distsshkit", "go", "batch_a"))
+                mkpath(joinpath(tree, "keep"))
+                write(joinpath(tree, "keep", "Project.toml"), "name = \"Tmp\"\n")
+                write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\n")
+                session = DistSSHKit.KitSession(
+                    project=proj,
+                    workers=["child:$host"],
+                    remote="~/App.jl",
+                    yes=true,
+                    quiet=true,
+                )
+                pr = DistSSHKit.setup!(session, :prune)
+                @test pr.ok && !pr.cancelled
+                @test isfile(joinpath(tree, "keep", "Project.toml"))
+                @test !isdir(joinpath(tree, ".distsshkit", "go", "batch_a"))
+            end
+        end
+    end
+
     @testset "quiet suppresses Log file on stdout" begin
         _with_fake_remotes() do state_dir
             _with_tempdir() do proj

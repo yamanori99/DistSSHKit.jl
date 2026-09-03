@@ -42,6 +42,10 @@ Pick **one mode** per invocation (except shared options).
 - `--instantiate`: `Pkg.instantiate` on remotes after deploy
 - `--runtest`: `Pkg.test()` of the **job** project on remotes (not
   DistSSHKit's tests)
+- `--prune`: delete `.distsshkit/{go,drive,setup}` leaves on localhost
+  (job project) and remotes (confirm unless `-y`). Does not `--delete`
+  the deploy tree. `--older-than DAYS` (mtime). `--id TOKEN` (go batch
+  name contains TOKEN; skips drive/setup)
 - `--cleanup`: kill stale Julia worker processes (local + remotes);
   `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` skips the `pkill`
 - `--delete`: remove remote project dirs (destructive; confirm unless
