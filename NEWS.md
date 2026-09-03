@@ -11,6 +11,7 @@ GitHub Releases may copy these sections (`Release notes:` on
   the topology and the footer mark.
 - Docs: DistSSHQueue links go to its stable docs, not the GitHub
   repository. README / README.ja keep the repository URL.
+- CI probe (do not merge): allowlisted-only change to exercise job skip.
 
 ## 0.5.1
 
