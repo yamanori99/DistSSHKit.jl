@@ -33,12 +33,17 @@ jobs:
     name: detect
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       heavy: ${{ steps.heavy.outputs.heavy }}
       e2e: ${{ steps.gate.outputs.e2e }}
       coverage: ${{ steps.gate.outputs.coverage }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/ci-heavy
         id: heavy
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
