@@ -71,6 +71,14 @@ using Dates
             @test count(x -> x.kind === :parent, s) == 1
             @test count(x -> x.host == "h1", s) == 3
         end
+        let pool = DistSSHKit._go_repeat_pool(["parent:1", "child:h1"])
+            @test length(pool) == 2
+            @test pool[1].role === :parent && pool[1].name == "parent"
+            @test pool[2].role === :child && pool[2].name == "h1"
+        end
+        @test_throws ArgumentError DistSSHKit._go_plan_slots(
+            ["parent:1", "child:parent:1"]; total=2,
+        )
         @test_throws ArgumentError DistSSHKit._go_plan_slots(["child:h1:1"]; total=2)
         @test_throws ArgumentError DistSSHKit._go_plan_slots(String[]; total=0)
         @test_throws ArgumentError DistSSHKit._go_plan_slots(String[]; total=true)

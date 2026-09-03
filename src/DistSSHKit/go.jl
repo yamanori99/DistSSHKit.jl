@@ -100,12 +100,11 @@ function _go_repeat_pool(
     if isempty(host_tokens)
         return [GoRepeatHost(:parent, PARENT_HOST_NAME, nothing)]
     end
-    order = String[]
-    roles = Dict{String,Symbol}()
-    caps = Dict{String,Union{Nothing,Int}}()
+    order = Tuple{Symbol,String}[]
+    caps = Dict{Tuple{Symbol,String},Union{Nothing,Int}}()
     for raw in host_tokens
         p = parse_placement_token(String(raw))
-        key = p.role === :parent ? PARENT_HOST_NAME : p.name
+        key = (p.role, p.name)
         cap = p.n
         if p.role === :parent
             cap === nothing || cap >= 0 || throw(ArgumentError(
@@ -116,7 +115,6 @@ function _go_repeat_pool(
         end
         if !haskey(caps, key)
             push!(order, key)
-            roles[key] = p.role
             caps[key] = cap
         else
             caps[key] = _go_merge_repeat_cap(caps[key], cap)
@@ -126,7 +124,7 @@ function _go_repeat_pool(
     for key in order
         cap = caps[key]
         cap === 0 && continue
-        push!(pool, GoRepeatHost(roles[key], key, cap))
+        push!(pool, GoRepeatHost(key[1], key[2], cap))
     end
     return pool
 end
