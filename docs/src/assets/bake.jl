@@ -28,6 +28,7 @@ Documenter looks for assets/logo.svg and assets/logo-dark.svg; bake makes
   julia docs/src/assets/bake.jl --png --gif
 =#
 
+using Dates
 using Printf
 using Zlib_jll
 
@@ -940,6 +941,11 @@ function main(args)
     if do_gif
         println("baking GIFs (Chromium ×$(GIF_WORKERS) + ffmpeg)…")
         bake_gifs!(arts)
+    end
+    if do_png || do_gif
+        stamp = joinpath(ROOT, ".raster-stamp")
+        write(stamp, string(Dates.now(Dates.UTC), "Z\n"))
+        println("wrote .raster-stamp")
     end
 
     remove_legacy!()
