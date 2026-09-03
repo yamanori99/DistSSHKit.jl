@@ -7,7 +7,7 @@ Full flag lists: `julia --project=. -m DistSSHKit {cmd} --help`.
 Each command page starts with **Flags** for that command.
 
 - [setup](@ref Manual-setup): check hosts, clone / rsync / sync,
-  instantiate, cleanup
+  instantiate, prune, cleanup
 - [go](@ref Manual-go): standalone script as-is; one full run per slot
   (`--repeat N` = N runs, spread across listed hosts)
 - [drive](@ref Manual-drive): master + Distributed workers; driver farms

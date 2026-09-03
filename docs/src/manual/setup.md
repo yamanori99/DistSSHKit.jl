@@ -8,7 +8,7 @@ julia --project=. -m DistSSHKit setup [options] HOST...
 
 From Julia, use [`setup!`](@ref) for the same modes as this CLI
 (`:delete`, `:rsync`, `:clone`, `:instantiate`, `:check`, `:runtest`,
-…), or the shorter [`sync!`](@ref) / [`instantiate!`](@ref) aliases
+`:prune`, …), or the shorter [`sync!`](@ref) / [`instantiate!`](@ref) aliases
 ([API](@ref API), [First Steps · Prepare](@ref Tutorial-Prepare)).
 `setup!(session, :clone)` requires an explicit `repo=` URL (clone runs
 on the remote).

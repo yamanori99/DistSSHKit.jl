@@ -64,7 +64,8 @@ setup!(session, :runtest)  # optional: job Pkg.test() on remotes
 ```
 
 [`setup!`](@ref) mirrors `julia -m DistSSHKit setup --…` (`:delete`, `:rsync`,
-`:clone`, `:sync`, `:pull`, `:instantiate`, `:check`, `:runtest`, `:cleanup`).
+`:clone`, `:sync`, `:pull`, `:instantiate`, `:check`, `:runtest`, `:cleanup`,
+`:prune`).
 Confirmations follow `session.yes`. **`:clone` requires `repo=`** — no silent
 `origin` lookup; clone runs on the remote.
 [`sync!`](@ref) / [`instantiate!`](@ref)

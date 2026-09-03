@@ -6,14 +6,13 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
-### Breaking (Unreleased)
+## 0.5.1
+
+Patch after `0.5.0`.
 
 - `demo install` copies into `./distsshkit_demos/` (or
   `DIR/distsshkit_demos/` with `--dest DIR`), not `./demos/`. Package
   sources stay `demos/with_kit/` and `demos/without_kit/`.
-
-### Other
-
 - `setup --prune` removes `.distsshkit/{go,drive,setup}` leaves on the
   job project and remotes (`--older-than DAYS`, `--id TOKEN` for go
   batches). Does not wipe the deploy (`--delete`) or kill workers
