@@ -150,7 +150,8 @@ JETLS / Aqua do not run). Documenter still runs when `docs/**`, README,
 A new root markdown file stays heavy until listed in
 [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml).
 A `cut` label skips none of this: Pkg.test, JETLS, Aqua, Documenter,
-and Linux E2E all run. macOS / WSL stay on `E2E weekly`, not the PR.
+and Linux E2E all run. macOS / WSL stay on `E2E weekly`, not the PR
+(Full starts on the merge commit when `version` went up).
 Register only after that matrix is green on the merge commit.
 
 Required to merge (branch protection uses these names). Tip jobs are
@@ -194,11 +195,13 @@ not rewrite files you did not mean to touch.
 
 ### Scheduled CI
 
-**E2E weekly** (Sunday 04:00 JST, or Run workflow): `ubuntu-latest`,
-`macos-15-intel`, WSL2 → `ubuntu-24.04`. Linux job uploads E2E Codecov.
-Not a PR check. Failure opens (or comments on) Issue `E2E weekly
-failed`; a later green run closes it. After a `cut` merge, dispatch
-this on that commit and wait for green before register.
+**E2E weekly** (Sunday 04:00 JST, Run workflow, or a `cut` squash on
+`main`): `ubuntu-latest`, `macos-15-intel`, WSL2 → `ubuntu-24.04`.
+Linux job uploads E2E Codecov. Not a PR check. Failure opens (or
+comments on) Issue `E2E weekly failed`; a later green run closes it.
+A red run after a `cut` merge also adds `cut-hold`. Register only
+after Full is green on that merge commit. Cron still runs when no
+cut landed that week.
 
 **CI weekly** (Sunday 10:00 JST, or Run workflow): same `Pkg.test` /
 JETLS / Aqua slots as a PR (no coverage). Not a PR check. Catches max /
@@ -232,6 +235,10 @@ with `setup --delete`. First deploy `--rsync`; later git `--sync` /
   bump. About behavior, not the bump.
 - `cut`: `Project.toml` `version` went up. CI adds this; other
   `Project.toml` edits do not. The PR suite does not path-skip.
+- `cut-hold`: postpone register. CI adds this on Issue `E2E weekly
+  failed` when Full is red after a `cut` merge; remove it (or wait
+  for a green Full) before register. You may add it yourself to
+  pause. Do not lower `version`; General never takes a version down.
 
 On a breaking line bump `x` in `0.x.y`; otherwise bump `y`.
 
@@ -252,15 +259,20 @@ two-week rule above unless a General user needs them sooner.
 
 ### After a cut merges
 
-1. Run **E2E weekly** on the **merge commit**
-   (`gh workflow run "E2E weekly" --ref <sha>`). Do not register until
-   Linux, macOS Intel, and WSL are green. Ordinary PRs skip Linux E2E;
-   `cut` and this dispatch cover it. A same-day green run on that SHA
-   is enough; do not wait for the Sunday cron if you dispatched.
-2. `@JuliaRegistrator register` on the **merge commit** (not the PR
-   body).
-3. Paste the NEWS section under `Release notes:`.
-4. TagBot tags once General has the release.
+1. **E2E weekly** starts on the **merge commit** (`Project.toml`
+   version went up). Do not register until Linux, macOS Intel, and
+   WSL are green. Ordinary PRs skip Linux E2E; `cut` covers that on
+   the PR, Full covers macOS / WSL after squash. Do not wait for
+   Sunday cron. `workflow_dispatch` remains for a re-run.
+2. Full red: Issue `E2E weekly failed` gets `cut-hold`. Do not
+   `@JuliaRegistrator register` while `cut-hold` is open. Do not
+   lower `version`.
+3. Full green: CI removes `cut-hold` and closes the Issue. Register
+   on that merge commit (not the PR body). Paste the NEWS section
+   under `Release notes:`.
+4. Skip that version on General instead: keep `cut-hold` until a later
+   cut (higher `version`) is ready, then register that later cut.
+5. TagBot tags once General has the release.
 
 TagBot uses SSH deploy key secret `DOCUMENTER_KEY` (write deploy key on
 this repo) so the `vX.Y.Z` tag starts Docs and `stable` updates. Docs
@@ -288,7 +300,7 @@ domains share a shape.
 **Issues** (Bug / Enhancement forms only): `bug` or `enhancement`. The
 area dropdown is triage; add `area:*` if useful. Usage questions are
 Discussions. Confirmed bugs are Issues. `breaking` and `cut` are PR
-labels. Direction:
+labels; `cut-hold` is an Issue label after a cut merge. Direction:
 [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26).
 Security: [SECURITY.md](SECURITY.md).
 
@@ -353,8 +365,8 @@ CI infers, in order:
    anything else → chore
 
 `fix/` plus `Fixes` an enhancement issue gets `enhancement`. `breaking`
-may sit next to the type label. After merge a human registers; TagBot
-tags.
+may sit next to the type label. After merge Full runs; a human
+registers when green (or holds with `cut-hold`); TagBot tags.
 
 ## Language
 

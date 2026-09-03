@@ -93,15 +93,16 @@ jobs:
               }
             }
 
+            function parseVer(s) {
+              const m = String(s || "").match(/^(\d+)\.(\d+)\.(\d+)/);
+              return m
+                ? { major: Number(m[1]), minor: Number(m[2]), patch: Number(m[3]) }
+                : null;
+            }
+
             function isVersionCut(oldS, newS) {
-              const parse = (s) => {
-                const m = String(s || "").match(/^(\d+)\.(\d+)\.(\d+)/);
-                return m
-                  ? { major: Number(m[1]), minor: Number(m[2]), patch: Number(m[3]) }
-                  : null;
-              };
-              const oldV = parse(oldS);
-              const newV = parse(newS);
+              const oldV = parseVer(oldS);
+              const newV = parseVer(newS);
               if (!oldV || !newV) return false;
               if (newV.major !== oldV.major) return newV.major > oldV.major;
               if (newV.minor !== oldV.minor) return newV.minor > oldV.minor;

@@ -3,6 +3,7 @@
 # (`feat/` → enhancement, `fix/` → bug, …). Dependabot is exempt (`dependencies`).
 # Also add `cut` when Project.toml `version` increases (patch, minor, or major).
 # `breaking` is incompatible API/CLI; `cut` is the version bump. They may combine.
+# Do not lower `version` for General; postpone with `cut-hold` instead.
 name: Type
 
 on:

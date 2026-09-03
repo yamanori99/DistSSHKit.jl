@@ -2,7 +2,13 @@ name: E2E weekly
 
 # Not on pull_request: skipped macOS/WSL jobs would show on every PR, and
 # job-name expressions do not expand when skipped.
+# Push to main with a version increase (a `cut` squash) runs Full on that SHA.
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - Project.toml
   workflow_dispatch:
   # Sunday 04:00 JST (Saturday 19:00 UTC). Misses CI weekly (Sunday 10:00 JST).
   # GitHub often delays cron; start early so it still finishes before morning.
@@ -18,7 +24,54 @@ permissions:
   actions: write # julia-actions/cache delete-old-caches
 
 jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    name: gate
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+    steps:
+      - id: decide
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" != "push" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          zeros="$(printf '0%.0s' {1..40})"
+          if [ -z "${BEFORE:-}" ] || [ "$BEFORE" = "$zeros" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git init -q
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git fetch --depth=1 origin "$BEFORE"
+          git fetch --depth=1 origin "$GITHUB_SHA"
+          old="$(git cat-file -p "${BEFORE}:Project.toml" | grep -E '^version[[:space:]]*=' | head -1 || true)"
+          new="$(git cat-file -p "${GITHUB_SHA}:Project.toml" | grep -E '^version[[:space:]]*=' | head -1 || true)"
+          parse() {
+            echo "$1" | sed -n 's/^version[[:space:]]*=[[:space:]]*"\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1 \2 \3/p'
+          }
+          read -r om oi op <<<"$(parse "$old")"
+          read -r nm ni np <<<"$(parse "$new")"
+          cut=false
+          if [ -n "${om:-}" ] && [ -n "${nm:-}" ]; then
+            if [ "$nm" -gt "$om" ] || { [ "$nm" -eq "$om" ] && [ "$ni" -gt "$oi" ]; } || { [ "$nm" -eq "$om" ] && [ "$ni" -eq "$oi" ] && [ "$np" -gt "$op" ]; }; then
+              cut=true
+            fi
+          fi
+          echo "version ${old:-?} → ${new:-?} cut=${cut}"
+          if [ "$cut" = true ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
   linux-image:
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     name: ubuntu-latest (image)
@@ -202,10 +255,10 @@ jobs:
             (cd "$dest" && ./testenv/docker-ssh/scripts/down.sh) || true
           fi
 
-  # Schedule runs are not PR checks, and github-actions[bot] does not email.
+  # Schedule / post-cut runs are not PR checks, and github-actions[bot] does not email.
   notify:
-    needs: [linux-image, linux-e2e, macos-e2e, wsl-e2e]
-    if: always()
+    needs: [gate, linux-image, linux-e2e, macos-e2e, wsl-e2e]
+    if: always() && needs.gate.result == 'success' && needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     name: notify
@@ -217,22 +270,31 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FAILED: ${{ contains(join(needs.*.result, ','), 'failure') }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          CUT_PUSH: ${{ github.event_name == 'push' }}
         run: |
           title='E2E weekly failed'
           existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label ci --search "in:title $title" --json number --jq '.[0].number // empty')"
           if [ "$FAILED" = "true" ]; then
             body="Latest run: $RUN_URL
 
-          Not a PR check (Linux / macOS / WSL are schedule-only). Re-run **E2E weekly** after a fix."
+          Not a PR check. Re-run **E2E weekly** after a fix. A red run after a \`cut\` merge adds \`cut-hold\` (do not register)."
+            labels=ci
+            if [ "$CUT_PUSH" = "true" ]; then
+              labels=ci,cut-hold
+            fi
             if [ -n "$existing" ]; then
               gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+              if [ "$CUT_PUSH" = "true" ]; then
+                gh issue edit "$existing" --repo "$GITHUB_REPOSITORY" --add-label cut-hold
+              fi
             else
-              gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label ci --body "$body"
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label "$labels" --body "$body"
             fi
           else
             for t in 'E2E weekly failed' 'E2E daily failed'; do
               n="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label ci --search "in:title $t" --json number --jq '.[0].number // empty')"
               if [ -n "$n" ]; then
+                gh issue edit "$n" --repo "$GITHUB_REPOSITORY" --remove-label cut-hold || true
                 gh issue close "$n" --repo "$GITHUB_REPOSITORY" --reason completed --comment "Latest run succeeded: $RUN_URL"
               fi
             done
