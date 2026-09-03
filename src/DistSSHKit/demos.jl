@@ -198,8 +198,8 @@ when present.
 By default, existing files at the destination are left alone — pass `force=true` to
 overwrite them.
 
-Refuses `dest` equal to this package root. Use [`list_demos`](@ref) /
-`demo list`, or `--dest` / `dest=`.
+Refuses `dest` equal to this package root or its bundled `demos/` tree.
+Use [`list_demos`](@ref) / `demo list`, or `--dest` / `dest=`.
 """
 function install_demos(
     dest::AbstractString=pwd();
@@ -214,7 +214,8 @@ function install_demos(
     dest_demos = joinpath(dest_root, DEMO_INSTALL_DIR)
     kit_root = realpath(_KIT_ROOT)
     kit_demos = realpath(src_root)
-    dest_is_kit = isdir(dest_root) && realpath(dest_root) == kit_root
+    dest_real = isdir(dest_root) ? realpath(dest_root) : dest_root
+    dest_is_kit = dest_real == kit_root || dest_real == kit_demos
     dest_is_kit_demos = isdir(dest_demos) && realpath(dest_demos) == kit_demos
     if dest_is_kit || dest_is_kit_demos
         list = _demo_list_phrase(surface)

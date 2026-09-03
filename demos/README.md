@@ -1,7 +1,9 @@
 # demos/
 
-The package layout is `demos/` below. After `demo install`, the same files
-land in `./distsshkit_demos/` (not `./demos/`).
+The package layout is `demos/` below. After `demo install` from a **job**
+project, the same files land in `./distsshkit_demos/` (not `./demos/`).
+From this checkout, pass `--dest DIR` (install into the kit tree is
+refused).
 
 - [`with_kit/`](with_kit/): driver scripts (`init` / `main`). `drive` or
   `pipeline!`

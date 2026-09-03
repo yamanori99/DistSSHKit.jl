@@ -121,6 +121,9 @@ using Test
         link = joinpath(tmp, "kit_root")
         symlink(realpath(kit_root), link)
         @test_throws ArgumentError DistSSHKit.install_demos(
+            kit_demos; family="with_kit", surface=:api,
+        )
+        @test_throws ArgumentError DistSSHKit.install_demos(
             link; family="with_kit", surface=:api,
         )
     end

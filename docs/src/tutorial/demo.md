@@ -8,6 +8,9 @@ Also see [User Guide · demo](@ref Manual-demo), [go](@ref Manual-go),
 
 ## Install
 
+Run this from a **job** project, not the DistSSHKit checkout (that
+`dest` is refused; use `--dest DIR` there).
+
 ```bash
 julia --project=. -m DistSSHKit demo install with_kit
 julia --project=. -m DistSSHKit demo install without_kit
