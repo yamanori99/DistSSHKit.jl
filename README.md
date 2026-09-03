@@ -4,6 +4,7 @@
 
 <!-- markdownlint-disable MD013 -->
 [![Test](https://img.shields.io/github/actions/workflow/status/yamanori99/DistSSHKit.jl/CI.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=Test)](https://github.com/yamanori99/DistSSHKit.jl/actions/workflows/CI.yml)
+[![PkgEval](https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/pkgeval.svg)](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/D/DistSSHKit.html)
 [![Codecov](https://img.shields.io/codecov/c/github/yamanori99/DistSSHKit.jl?style=flat-square&logo=codecov&logoColor=white)](https://codecov.io/gh/yamanori99/DistSSHKit.jl)
 [![docs-stable](https://img.shields.io/badge/docs-stable-blue?style=flat-square&logo=gitbook&logoColor=white)](https://yamanori99.github.io/DistSSHKit.jl/stable/)
 [![docs-dev](https://img.shields.io/badge/docs-dev-blue?style=flat-square&logo=gitbook&logoColor=white)](https://yamanori99.github.io/DistSSHKit.jl/dev/)
@@ -68,10 +69,10 @@ none), and you can add as many remote machines as you like.
   <picture>
     <source
       media="(prefers-color-scheme: dark)"
-      srcset="docs/src/assets/diagram/topology-dark.svg">
+      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/diagram/topology-dark.svg">
     <img
       alt="Drive topology: master and workers"
-      src="docs/src/assets/diagram/topology.svg">
+      src="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/diagram/topology.svg">
   </picture>
 </p>
 <!-- markdownlint-enable MD033 -->
@@ -301,13 +302,14 @@ DistSSHKit adapts them. Details: [LICENSE](LICENSE) and
 
 <!-- markdownlint-disable MD033 -->
 <p align="center">
-  <img
-    src="docs/src/assets/logo/logo-static.svg#gh-light-mode-only"
-    width="180"
-    alt="DistSSHKit.jl logo"/>
-  <img
-    src="docs/src/assets/logo/logo-dark-static.svg#gh-dark-mode-only"
-    width="180"
-    alt="DistSSHKit.jl logo"/>
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/logo/logo-dark-static.svg">
+    <img
+      src="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/logo/logo-static.svg"
+      width="180"
+      alt="DistSSHKit.jl logo"/>
+  </picture>
 </p>
 <!-- markdownlint-enable MD033 -->
