@@ -9,6 +9,8 @@ GitHub Releases may copy these sections (`Release notes:` on
 - README / README.ja: `<picture>` keeps GitHub light/dark SVGs; the
   fallback `img` is the paper PNG so JuliaHub dark mode still shows
   the topology and the footer mark.
+- README, README.ja, and docs: DistSSHQueue links go to its stable
+  docs, not the GitHub repository.
 
 ## 0.5.1
 

@@ -9,7 +9,7 @@ native Windows).
 Even small labs and individuals often have a few high-performance machines or
 workstations. DistSSHKit helps you use that hardware as a small set of
 compute nodes. To run one after another, see
-[DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl).
+[DistSSHQueue.jl](https://yamanori99.github.io/DistSSHQueue.jl/stable/).
 
 ## What is DistSSHKit?
 
