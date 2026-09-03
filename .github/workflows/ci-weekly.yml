@@ -173,6 +173,7 @@ jobs:
       - jetls-max
       - aqua-min
       - aqua-max
+      - cache-gc
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

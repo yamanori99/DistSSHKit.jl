@@ -3,7 +3,16 @@
 # Needs gh + GH_TOKEN with actions: write. Safe to re-run.
 set -euo pipefail
 
-list_json="$(gh cache list --limit 500 --json id,key,createdAt,lastAccessedAt)"
+# gh paginates; --limit is the max rows returned. Fail if we hit the cap so
+# a full repo does not look "clean" while older caches remain.
+LIMIT=10000
+list_json="$(gh cache list --limit "$LIMIT" --json id,key,createdAt,lastAccessedAt)"
+count="$(python3 -c 'import json,sys; print(len(json.load(sys.stdin)))' <<<"$list_json")"
+if (( count >= LIMIT )); then
+  echo "cache-gc: hit --limit $LIMIT; raise LIMIT so every cache is listed" >&2
+  exit 1
+fi
+
 ids_txt="$(python3 -c '
 import json, sys
 
