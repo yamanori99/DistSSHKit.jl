@@ -20,226 +20,27 @@ permissions:
 jobs:
   # Full `Pkg.test()` stays Linux-only. Slow SSH E2E controllers are `E2E weekly`.
   # PRs run `ubuntu-latest → ubuntu-24.04` in this workflow.
-  # Detect runs in each job (no `needs` hop). Markdown-only docs skip Pkg.test.
+  # One detect job; markdown-only / allowlisted PRs skip heavy jobs (UI: skipping).
   # Required check names are slot literals (min/max), not Julia versions.
   # Codecov (flag pkgtest): main push, max slot only — not on pull_request.
   # cache-scratchspaces: false — registry_updates.toml in scratchspaces can
   # poison Pkg.Registry.update on 1.13 if restored corrupt.
   # Aqua / JETLS share this workflow so the Test badge is the PR gate.
-  # Ordinary PRs skip Linux E2E (job still green). `cut`, main, weekly, dispatch run it.
-  # JETLS uses `.github/actions/jetls-check` (no nested cache; julia-actions/cache#236).
-  test-min:
-    name: Pkg.test - min - ubuntu-latest
+  # Ordinary PRs skip Linux E2E (job skipped). `cut`, main (path filter),
+  # dispatch run it. JETLS uses `.github/actions/jetls-check` (no nested
+  # cache; julia-actions/cache#236).
+  detect:
+    name: detect
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 5
+    outputs:
+      heavy: ${{ steps.heavy.outputs.heavy }}
+      e2e: ${{ steps.gate.outputs.e2e }}
+      coverage: ${{ steps.gate.outputs.coverage }}
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/ci-heavy
-        id: detect
-      - uses: ./.github/actions/julia-slot
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        with:
-          slot: min
-      - uses: julia-actions/cache@v3
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        with:
-          cache-scratchspaces: false
-      - uses: ./.github/actions/pkg-test
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-
-  test-max:
-    name: Pkg.test - max - ubuntu-latest
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    permissions:
-      contents: read
-      id-token: write # Codecov OIDC on main push
-      actions: write
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/ci-heavy
-        id: detect
-      - uses: ./.github/actions/julia-slot
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        with:
-          slot: max
-      - uses: julia-actions/cache@v3
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        with:
-          cache-scratchspaces: false
-      - uses: ./.github/actions/pkg-test
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        with:
-          coverage: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-          upload: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-
-  test-tip:
-    name: Pkg.test - tip - ubuntu-latest
-    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'cut')
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/ci-heavy
-        id: detect
-      - uses: ./.github/actions/julia-slot
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        with:
-          slot: tip
-      - uses: julia-actions/cache@v3
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        with:
-          cache-scratchspaces: false
-      - uses: ./.github/actions/pkg-test
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-
-  # Not a Julia slot. Not required to merge. Catches checkout-only Pkg.test assumptions.
-  test-registry-tree:
-    name: Pkg.test - registry tree - ubuntu-latest
-    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'cut')
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - uses: ./.github/actions/ci-heavy
-        id: detect
-      - uses: ./.github/actions/julia-slot
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        with:
-          slot: tip
-      - uses: julia-actions/cache@v3
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        with:
-          cache-scratchspaces: false
-      - uses: ./.github/actions/registry-tree-test
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-
-  aqua-min:
-    name: Aqua - min - ubuntu-latest
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/ci-heavy
-        id: detect
-      - uses: ./.github/actions/julia-slot
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        with:
-          slot: min
-      - uses: julia-actions/cache@v3
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        with:
-          cache-scratchspaces: false
-      - name: Aqua.test_all (latest Aqua)
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        run: ./.github/aqua-check.sh
-
-  aqua-max:
-    name: Aqua - max - ubuntu-latest
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/ci-heavy
-        id: detect
-      - uses: ./.github/actions/julia-slot
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        with:
-          slot: max
-      - uses: julia-actions/cache@v3
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        with:
-          cache-scratchspaces: false
-      - name: Aqua.test_all (latest Aqua)
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        run: ./.github/aqua-check.sh
-
-  aqua-tip:
-    name: Aqua - tip - ubuntu-latest
-    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'cut')
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/ci-heavy
-        id: detect
-      - uses: ./.github/actions/julia-slot
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        with:
-          slot: tip
-      - uses: julia-actions/cache@v3
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        with:
-          cache-scratchspaces: false
-      - name: Aqua.test_all (latest Aqua)
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        run: ./.github/aqua-check.sh
-
-  # Literal names: skipped matrix jobs leave ${{ matrix.* }} unexpanded.
-  # Ceiling is JULIA_SLOT_JETLS_MAX (JETLS 1.12.2–1.13), not slot max/tip.
-  jetls-min:
-    name: JETLS - min - ubuntu-latest
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/ci-heavy
-        id: detect
-      - id: files
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
-      - uses: ./.github/actions/julia-slot
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        with:
-          slot: min
-      - uses: julia-actions/cache@v3
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        with:
-          cache-scratchspaces: false
-      - uses: ./.github/actions/jetls-check
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        with:
-          files: ${{ steps.files.outputs.list }}
-
-  jetls-max:
-    name: JETLS - max - ubuntu-latest
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/ci-heavy
-        id: detect
-      - id: files
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
-      - uses: ./.github/actions/julia-slot
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        with:
-          slot: jetls-max
-      - uses: julia-actions/cache@v3
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        with:
-          cache-scratchspaces: false
-      - uses: ./.github/actions/jetls-check
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
-        with:
-          files: ${{ steps.files.outputs.list }}
-
-  ssh-e2e:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    name: ubuntu-latest → ubuntu-24.04
-    permissions:
-      contents: read
-      actions: write
-      id-token: write # Codecov OIDC when cut PR runs E2E coverage
-    steps:
-      - uses: actions/checkout@v7
+        id: heavy
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
         if: github.event_name == 'push'
         id: filter
@@ -274,34 +75,210 @@ jobs:
             echo "coverage=false" >> "$GITHUB_OUTPUT"
           fi
 
+  test-min:
+    name: Pkg.test - min - ubuntu-latest
+    needs: detect
+    if: github.event_name != 'pull_request' || needs.detect.outputs.heavy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/julia-slot
-        if: steps.gate.outputs.e2e == 'true'
+        with:
+          slot: min
+      - uses: julia-actions/cache@v3
+        with:
+          cache-scratchspaces: false
+      - uses: ./.github/actions/pkg-test
+
+  test-max:
+    name: Pkg.test - max - ubuntu-latest
+    needs: detect
+    if: github.event_name != 'pull_request' || needs.detect.outputs.heavy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write # Codecov OIDC on main push
+      actions: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/julia-slot
+        with:
+          slot: max
+      - uses: julia-actions/cache@v3
+        with:
+          cache-scratchspaces: false
+      - uses: ./.github/actions/pkg-test
+        with:
+          coverage: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          upload: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+
+  test-tip:
+    name: Pkg.test - tip - ubuntu-latest
+    needs: detect
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'cut')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/julia-slot
+        with:
+          slot: tip
+      - uses: julia-actions/cache@v3
+        with:
+          cache-scratchspaces: false
+      - uses: ./.github/actions/pkg-test
+
+  # Not a Julia slot. Not required to merge. Catches checkout-only Pkg.test assumptions.
+  test-registry-tree:
+    name: Pkg.test - registry tree - ubuntu-latest
+    needs: detect
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'cut')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/julia-slot
+        with:
+          slot: tip
+      - uses: julia-actions/cache@v3
+        with:
+          cache-scratchspaces: false
+      - uses: ./.github/actions/registry-tree-test
+
+  aqua-min:
+    name: Aqua - min - ubuntu-latest
+    needs: detect
+    if: github.event_name != 'pull_request' || needs.detect.outputs.heavy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/julia-slot
+        with:
+          slot: min
+      - uses: julia-actions/cache@v3
+        with:
+          cache-scratchspaces: false
+      - name: Aqua.test_all (latest Aqua)
+        run: ./.github/aqua-check.sh
+
+  aqua-max:
+    name: Aqua - max - ubuntu-latest
+    needs: detect
+    if: github.event_name != 'pull_request' || needs.detect.outputs.heavy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/julia-slot
+        with:
+          slot: max
+      - uses: julia-actions/cache@v3
+        with:
+          cache-scratchspaces: false
+      - name: Aqua.test_all (latest Aqua)
+        run: ./.github/aqua-check.sh
+
+  aqua-tip:
+    name: Aqua - tip - ubuntu-latest
+    needs: detect
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'cut')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/julia-slot
+        with:
+          slot: tip
+      - uses: julia-actions/cache@v3
+        with:
+          cache-scratchspaces: false
+      - name: Aqua.test_all (latest Aqua)
+        run: ./.github/aqua-check.sh
+
+  # Literal names: skipped matrix jobs leave ${{ matrix.* }} unexpanded.
+  # Ceiling is JULIA_SLOT_JETLS_MAX (JETLS 1.12.2–1.13), not slot max/tip.
+  jetls-min:
+    name: JETLS - min - ubuntu-latest
+    needs: detect
+    if: github.event_name != 'pull_request' || needs.detect.outputs.heavy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - id: files
+        run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/julia-slot
+        with:
+          slot: min
+      - uses: julia-actions/cache@v3
+        with:
+          cache-scratchspaces: false
+      - uses: ./.github/actions/jetls-check
+        with:
+          files: ${{ steps.files.outputs.list }}
+
+  jetls-max:
+    name: JETLS - max - ubuntu-latest
+    needs: detect
+    if: github.event_name != 'pull_request' || needs.detect.outputs.heavy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - id: files
+        run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/julia-slot
+        with:
+          slot: jetls-max
+      - uses: julia-actions/cache@v3
+        with:
+          cache-scratchspaces: false
+      - uses: ./.github/actions/jetls-check
+        with:
+          files: ${{ steps.files.outputs.list }}
+
+  ssh-e2e:
+    name: ubuntu-latest → ubuntu-24.04
+    needs: detect
+    if: needs.detect.outputs.e2e == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: write
+      id-token: write # Codecov OIDC when cut PR runs E2E coverage
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/julia-slot
         id: julia
         with:
           slot: max
       - name: Julia ${{ steps.julia.outputs.version }}
-        if: steps.gate.outputs.e2e == 'true'
         run: julia --version
 
       - uses: julia-actions/cache@v3
-        if: steps.gate.outputs.e2e == 'true'
         with:
           cache-scratchspaces: false
 
       - uses: julia-actions/julia-buildpkg@v1
-        if: steps.gate.outputs.e2e == 'true'
 
       - name: docker-ssh up + SSH E2E
         id: e2e
-        if: steps.gate.outputs.e2e == 'true'
         env:
-          DISTSSHKIT_CODE_COVERAGE: ${{ steps.gate.outputs.coverage == 'true' && '1' || '' }}
+          DISTSSHKIT_CODE_COVERAGE: ${{ needs.detect.outputs.coverage == 'true' && '1' || '' }}
         run: ./testenv/docker-ssh/scripts/up.sh --e2e
 
       - uses: ./.github/actions/e2e-codecov
-        if: ${{ always() && steps.e2e.outcome == 'success' && steps.gate.outputs.coverage == 'true' }}
+        if: ${{ always() && steps.e2e.outcome == 'success' && needs.detect.outputs.coverage == 'true' }}
 
       - name: Teardown workers
-        if: ${{ always() && steps.gate.outputs.e2e == 'true' }}
+        if: ${{ always() }}
         run: ./testenv/docker-ssh/scripts/down.sh || true
-

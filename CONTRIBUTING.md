@@ -138,9 +138,10 @@ on **main** push (path filter minus markdown under `test/` / `demos/` /
 `Pkg.test` / Aqua stay on **main**, **CI weekly**, and `cut`. Registry
 tree stays on **main** and `cut` (ci-cut), not ordinary PRs.
 
-These files **alone** skip the heavy steps (job still starts; Pkg.test /
-JETLS / Aqua do not run). Documenter still runs when `docs/**`, README,
-`src/**`, or `Project.toml` changed:
+These files **alone** skip the heavy jobs (UI: skipping; Pkg.test /
+JETLS / Aqua do not start). Documenter still runs when `docs/**`, README,
+`src/**`, or `Project.toml` changed; otherwise it is skipped too.
+Linux E2E is skipped on ordinary PRs (same skipping UI):
 
 - `README.md`, `README.ja.md`, `CONTRIBUTING.md`, `NEWS.md`,
   `SECURITY.md`, `LICENSE`
@@ -155,7 +156,8 @@ and Linux E2E all run. macOS / WSL stay on `E2E weekly`, not the PR
 Register only after that matrix is green on the merge commit.
 
 Required to merge (branch protection uses these names). Tip jobs are
-allow-failure. A skipped heavy step still leaves the job green.
+allow-failure. A job skipped by the heavy / E2E gate shows as skipping
+(not a green empty run).
 
 - `Pkg.test - min - ubuntu-latest`
 - `Pkg.test - max - ubuntu-latest`
