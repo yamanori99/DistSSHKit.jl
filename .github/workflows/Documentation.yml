@@ -33,15 +33,15 @@ jobs:
       - uses: ./.github/actions/ci-heavy
         id: detect
       - uses: ./.github/actions/julia-slot
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true' || steps.detect.outputs.docs == 'true'
         with:
           slot: min
       - uses: julia-actions/cache@v3
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true' || steps.detect.outputs.docs == 'true'
         with:
           cache-scratchspaces: false
       - name: Install docs dependencies
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true' || steps.detect.outputs.docs == 'true'
         run: |
           julia --project=docs -e '
             using Pkg
@@ -49,7 +49,7 @@ jobs:
             Pkg.instantiate()
           '
       - name: Doctests
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true' || steps.detect.outputs.docs == 'true'
         run: |
           julia --project=docs -e '
             using Documenter, DistSSHKit, Test
@@ -57,7 +57,7 @@ jobs:
             doctest(DistSSHKit)
           '
       - name: Build and deploy
-        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true'
+        if: github.event_name != 'pull_request' || steps.detect.outputs.heavy == 'true' || steps.detect.outputs.docs == 'true'
         env:
           # Deploy via HTTPS + contents:write (no DOCUMENTER_KEY SSH secret required).
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -20,12 +20,13 @@ permissions:
 jobs:
   # Full `Pkg.test()` stays Linux-only. Slow SSH E2E controllers are `E2E weekly`.
   # PRs run `ubuntu-latest → ubuntu-24.04` in this workflow.
-  # Detect runs in each job (no `needs` hop). Docs-only PRs skip Pkg.test steps.
+  # Detect runs in each job (no `needs` hop). Markdown-only docs skip Pkg.test.
   # Required check names are slot literals (min/max), not Julia versions.
   # Codecov (flag pkgtest): main push, max slot only — not on pull_request.
   # cache-scratchspaces: false — registry_updates.toml in scratchspaces can
   # poison Pkg.Registry.update on 1.13 if restored corrupt.
-  # Aqua / JETLS / Linux E2E share this workflow so the Test badge is the PR gate.
+  # Aqua / JETLS share this workflow so the Test badge is the PR gate.
+  # Ordinary PRs skip Linux E2E (job still green). `cut`, main, weekly, dispatch run it.
   # JETLS uses `.github/actions/jetls-check` (no nested cache; julia-actions/cache#236).
   test-min:
     name: Pkg.test - min - ubuntu-latest
@@ -74,6 +75,7 @@ jobs:
 
   test-tip:
     name: Pkg.test - tip - ubuntu-latest
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'cut')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     continue-on-error: true
@@ -95,6 +97,7 @@ jobs:
   # Not a Julia slot. Not required to merge. Catches checkout-only Pkg.test assumptions.
   test-registry-tree:
     name: Pkg.test - registry tree - ubuntu-latest
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'cut')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     continue-on-error: true
@@ -157,6 +160,7 @@ jobs:
 
   aqua-tip:
     name: Aqua - tip - ubuntu-latest
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'cut')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     continue-on-error: true
@@ -237,15 +241,19 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
-        if: github.event_name == 'pull_request' || github.event_name == 'push'
+        if: github.event_name == 'push'
         id: filter
         with:
+          predicate-quantifier: some-with-excludes
           filters: |
             e2e:
               - "src/**"
               - "test/**"
+              - "!test/**/*.md"
               - "demos/**"
+              - "!demos/**/*.md"
               - "testenv/**"
+              - "!testenv/**/*.md"
               - "Project.toml"
               - ".github/workflows/CI.yml"
       - id: gate
@@ -255,8 +263,10 @@ jobs:
         run: |
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] || [ "$CUT" = "true" ]; then
             echo "e2e=true" >> "$GITHUB_OUTPUT"
-          else
+          elif [ "$GITHUB_EVENT_NAME" = "push" ]; then
             echo "e2e=${FILTER_E2E}" >> "$GITHUB_OUTPUT"
+          else
+            echo "e2e=false" >> "$GITHUB_OUTPUT"
           fi
           if [ "$CUT" = "true" ]; then
             echo "coverage=true" >> "$GITHUB_OUTPUT"

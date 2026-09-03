@@ -88,7 +88,7 @@ Exactly three pins, in [`.github/julia-slots.env`](.github/julia-slots.env). Do 
 | Slot | Role | Required |
 | --- | --- | --- |
 | **min** | `Project.toml` julia floor. Pkg.test (no coverage), Aqua, JETLS, Documenter, bake | yes |
-| **max** | Newest tagged or prerelease (`versions.json`). Pkg.test, Aqua, PR / weekly E2E, GHCR worker. Codecov `pkgtest` on **main push** only | yes |
+| **max** | Newest tagged or prerelease (`versions.json`). Pkg.test, Aqua, **main** / weekly / `cut` E2E, GHCR worker. Codecov `pkgtest` on **main push** only | yes |
 | **tip** | Next-minor nightly. Pkg.test, Aqua. `continue-on-error` | no |
 
 JETLS is min plus `JULIA_SLOT_JETLS_MAX` (job name still `JETLS - max`). That pin lags when `max` / `tip` move past what JETLS lists (today 1.12.2–1.13). Raise it only after JETLS supports that runtime. No JETLS **tip**.
@@ -97,14 +97,15 @@ When a new RC lands, change `JULIA_SLOT_MAX` only. If that RC is a new **major.m
 
 ### PR CI
 
-These run as jobs of the `Test` workflow ([`.github/workflows/CI.yml`](.github/workflows/CI.yml)). Ubuntu: `Pkg.test` min / max / tip, JETLS min / max, Aqua min / max / tip, Documenter min, Gitleaks. Linux E2E (max) runs if `src/`, `test/`, `demos/`, `testenv/`, `Project.toml`, or that workflow file changed.
+These run as jobs of the `Test` workflow ([`.github/workflows/CI.yml`](.github/workflows/CI.yml)). Ubuntu: `Pkg.test` min / max, JETLS min / max, Aqua min / max, Documenter min, Gitleaks. Linux E2E (max) does **not** run on an ordinary PR. It runs on **main** push (same path filter as below, minus markdown-only hits under `test/` / `demos/` / `testenv/`), **`cut`**, **E2E weekly**, and `workflow_dispatch`. Tip `Pkg.test` / Aqua and `Pkg.test - registry tree` stay on **main**, weekly, and `cut` (ci-cut), not ordinary PRs.
 
-These files **alone** skip the heavy steps (job still starts; Pkg.test / JETLS / Aqua / Documenter do not run):
+These files **alone** skip the heavy steps (job still starts; Pkg.test / JETLS / Aqua do not run). Documenter still runs when `docs/**`, README, `src/**`, or `Project.toml` changed:
 
 - `README.md`, `README.ja.md`, `CONTRIBUTING.md`, `NEWS.md`, `SECURITY.md`, `LICENSE`
 - `.gitignore`, `.github/pull_request_template.md`, `.coderabbit.yaml`
+- `docs/**`, and markdown under `test/` / `demos/` / `testenv/`
 
-A new root markdown file stays heavy until listed in [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml). Changes under `docs/src` still run those jobs. A `cut` label skips none of this: Pkg.test, JETLS, Aqua, Documenter, and Linux E2E all run. `Pkg.test - registry tree` runs on heavy PRs, **main** push, and when `cut` is added (slot tip; not required to merge). macOS / WSL stay on `E2E weekly`, not the PR. Register only after that matrix is green on the merge commit.
+A new root markdown file stays heavy until listed in [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml). A `cut` label skips none of this: Pkg.test, JETLS, Aqua, Documenter, and Linux E2E all run. macOS / WSL stay on `E2E weekly`, not the PR. Register only after that matrix is green on the merge commit.
 
 Required to merge (branch protection uses these names). Tip jobs are allow-failure. A skipped heavy step still leaves the job green.
 
@@ -183,7 +184,7 @@ rule above unless a General user needs them sooner.
 
 ### After a cut merges
 
-1. Run **E2E weekly** on the **merge commit** (`gh workflow run "E2E weekly" --ref <sha>`). Do not register until Linux, macOS Intel, and WSL are green. The PR already ran Linux E2E; this is the other controllers plus a fresh image. A same-day green run on that SHA is enough; do not wait for the Sunday cron if you dispatched.
+1. Run **E2E weekly** on the **merge commit** (`gh workflow run "E2E weekly" --ref <sha>`). Do not register until Linux, macOS Intel, and WSL are green. Ordinary PRs skip Linux E2E; `cut` and this dispatch cover it. A same-day green run on that SHA is enough; do not wait for the Sunday cron if you dispatched.
 2. `@JuliaRegistrator register` on the **merge commit** (not the PR body).
 3. Paste the NEWS section under `Release notes:`.
 4. TagBot tags once General has the release.

@@ -1,11 +1,14 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-action.json
 name: ci-heavy
-description: Whether Pkg.test / JETLS / Aqua / Documenter should run
+description: Whether Pkg.test / JETLS / Aqua and Documenter should run
 
 outputs:
   heavy:
-    description: true when heavy CI should run
+    description: true when Pkg.test / JETLS / Aqua should run
     value: ${{ steps.out.outputs.heavy }}
+  docs:
+    description: true when Documenter should run
+    value: ${{ steps.out.outputs.docs }}
 
 runs:
   using: composite
@@ -30,20 +33,34 @@ runs:
             - "!.gitignore"
             - "!.github/pull_request_template.md"
             - "!.coderabbit.yaml"
+            - "!docs/**"
+            - "!test/**/*.md"
+            - "!demos/**/*.md"
+            - "!testenv/**/*.md"
+          docs:
+            - "docs/**"
+            - "README.md"
+            - "README.ja.md"
+            - "src/**"
+            - "Project.toml"
     - id: out
       shell: bash
       env:
         HEAVY: ${{ steps.filter.outputs.heavy }}
+        DOCS: ${{ steps.filter.outputs.docs }}
         # Exact name `cut` (version bump). Path skips do not apply.
         CUT: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'cut') }}
       run: |
         if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
           echo "heavy=true" >> "$GITHUB_OUTPUT"
-          echo "non-PR: heavy=true"
+          echo "docs=true" >> "$GITHUB_OUTPUT"
+          echo "non-PR: heavy=true docs=true"
         elif [ "${CUT}" = "true" ]; then
           echo "heavy=true" >> "$GITHUB_OUTPUT"
-          echo "PR cut: heavy=true"
+          echo "docs=true" >> "$GITHUB_OUTPUT"
+          echo "PR cut: heavy=true docs=true"
         else
           echo "heavy=${HEAVY}" >> "$GITHUB_OUTPUT"
-          echo "PR: heavy=${HEAVY}"
+          echo "docs=${DOCS}" >> "$GITHUB_OUTPUT"
+          echo "PR: heavy=${HEAVY} docs=${DOCS}"
         fi

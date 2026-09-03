@@ -116,8 +116,8 @@ open "$(cat test/artifacts/ssh-e2e/LATEST)/SUMMARY.txt"
 ```
 
 Coverage uploads on **main push** (`Pkg.test` max) and **E2E weekly** / **`cut` PR**
-E2E (`DISTSSHKIT_CODE_COVERAGE=1` on `up.sh --e2e`). Ordinary PR E2E has no
-coverage. Local:
+E2E (`DISTSSHKIT_CODE_COVERAGE=1` on `up.sh --e2e`). Ordinary PRs do not run
+Linux E2E. Local:
 
 ```bash
 DISTSSHKIT_CODE_COVERAGE=1 testenv/docker-ssh/scripts/up.sh --e2e
