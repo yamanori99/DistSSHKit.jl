@@ -1,7 +1,7 @@
 name: Assets
 
 # Regenerate vector derivatives via bake.jl when logo/social sources change.
-# PNG/GIF: warn when git history says rasters are older than sources (no cross-OS pixel compare).
+# PNG/GIF: fail when git history says rasters are older than sources (no cross-OS pixel compare).
 
 on:
   push:
@@ -44,31 +44,40 @@ jobs:
             echo "::error::docs/src/assets/ is out of date. Run: julia docs/src/assets/bake.jl (and --png/--gif if needed), then commit."
             exit 1
           fi
-      - name: Warn if PNG/GIF look stale vs sources
+      - name: Fail if PNG/GIF look stale vs sources
         working-directory: docs/src/assets
         run: |
           set -euo pipefail
           commit_ts() {
             git log -1 --format=%ct -- "$1" 2>/dev/null || echo 0
           }
-          warn_if_stale() {
+          stale=0
+          fail_if_stale() {
             local raster="$1"
-            shift
+            local stamp="$2"
+            shift 2
             local raster_ts sources_ts=0 t
             raster_ts="$(commit_ts "$raster")"
+            stamp_ts="$(commit_ts "$stamp")"
+            if (( stamp_ts > raster_ts )); then raster_ts=$stamp_ts; fi
             for src in "$@"; do
               t="$(commit_ts "$src")"
               if (( t > sources_ts )); then sources_ts=$t; fi
             done
             if (( sources_ts > raster_ts )); then
-              echo "::warning file=docs/src/assets/${raster}::${raster} looks older than its sources. Run locally: julia docs/src/assets/bake.jl --png --gif"
+              echo "::error file=docs/src/assets/${raster}::${raster} looks older than its sources. Run locally: julia docs/src/assets/bake.jl --png --gif"
+              stale=1
             fi
           }
-          warn_if_stale logo/logo-static.png logo/logo-static.svg bake.jl
-          warn_if_stale favicon.ico favicon.svg bake.jl
-          warn_if_stale favicon.png favicon.svg bake.jl
-          warn_if_stale favicon-dark.png favicon-dark.svg bake.jl
-          warn_if_stale social/social-preview-static.png logo/logo-static.svg bake.jl
-          warn_if_stale diagram/topology.png diagram/topology.svg bake.jl
-          warn_if_stale logo/logo-dynamic.gif logo/logo-dynamic.svg bake.jl
-          warn_if_stale social/social-preview-dynamic.gif logo/logo-dynamic.svg bake.jl
+          fail_if_stale logo/logo-static.png .raster-stamp-png logo/logo-static.svg bake.jl
+          fail_if_stale favicon.ico .raster-stamp-png favicon.svg bake.jl
+          fail_if_stale favicon.png .raster-stamp-png favicon.svg bake.jl
+          fail_if_stale favicon-dark.png .raster-stamp-png favicon-dark.svg bake.jl
+          fail_if_stale social/social-preview-static.png .raster-stamp-png logo/logo-static.svg bake.jl
+          fail_if_stale diagram/topology.png .raster-stamp-png diagram/topology.svg bake.jl
+          fail_if_stale logo/logo-dynamic.gif .raster-stamp-gif logo/logo-dynamic.svg bake.jl
+          fail_if_stale social/social-preview-dynamic.gif .raster-stamp-gif logo/logo-dynamic.svg bake.jl
+          if (( stale )); then
+            echo "PNG/GIF older than sources. Bake locally and commit the rasters."
+            exit 1
+          fi
