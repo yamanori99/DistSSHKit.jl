@@ -1,8 +1,8 @@
 #!/usr/bin/env julia
 # DistSSHKit driver: pmap p→p² and write CSV (pair with square_echo.jl).
 #
-#   julia --project=. -m DistSSHKit drive parent:2 demos/with_kit/square_file.jl
-#   julia --project=. -m DistSSHKit drive parent:2 demos/with_kit/square_file.jl --n 4
+#   julia --project=. -m DistSSHKit drive parent:2 distsshkit_demos/with_kit/square_file.jl
+#   julia --project=. -m DistSSHKit drive parent:2 distsshkit_demos/with_kit/square_file.jl --n 4
 
 using Distributed
 using DistSSHKit

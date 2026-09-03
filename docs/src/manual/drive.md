@@ -122,7 +122,7 @@ after job stdout, with a `progress DIR` line to replay:
 
 ```bash
 julia --project=. -m DistSSHKit drive -y parent:4 \
-  demos/with_kit/square_echo.jl --n 4
+  distsshkit_demos/with_kit/square_echo.jl --n 4
 julia --project=. -m DistSSHKit progress DIR
 ```
 

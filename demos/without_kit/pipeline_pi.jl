@@ -4,12 +4,12 @@
 #
 # Local (this script):
 #
-#   julia --project=. demos/without_kit/pipeline_pi.jl
-#   julia --project=. demos/without_kit/pipeline_pi.jl --n 5000
+#   julia --project=. distsshkit_demos/without_kit/pipeline_pi.jl
+#   julia --project=. distsshkit_demos/without_kit/pipeline_pi.jl --n 5000
 #
 # Same job via CLI:
 #
-#   julia --project=. -m DistSSHKit go parent:2 demos/without_kit/pi_file.jl --n 5000
+#   julia --project=. -m DistSSHKit go parent:2 distsshkit_demos/without_kit/pi_file.jl --n 5000
 
 using DistSSHKit
 

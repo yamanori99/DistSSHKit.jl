@@ -76,8 +76,8 @@ DistSSHKit assumes a Julia **project** — `Project.toml` at the project root
   `setup --instantiate` on remotes (after `--clone` or `--rsync`), or
   `go --rsync` / `drive --rsync` onto an empty/missing path.
 
-Demo scripts live under `./demos/` after `demo install with_kit` (or
-`without_kit`); see
+Demo scripts live under `./distsshkit_demos/` after `demo install
+with_kit` (or `without_kit`); see
 [Introduction](@ref DistSSHKit.jl).
 
 ## Checks

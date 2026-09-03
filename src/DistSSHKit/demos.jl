@@ -2,6 +2,9 @@
 
 const _DEMO_GROUPS = ("with_kit", "without_kit")
 
+# Job-project install dir. Package sources stay `demos/with_kit/` etc.
+const DEMO_INSTALL_DIR = "distsshkit_demos"
+
 """Package `demos/` root (with_kit + without_kit)."""
 demos_root()::String = joinpath(_KIT_ROOT, "demos")
 
@@ -45,18 +48,21 @@ function demo_script(name::AbstractString)::Union{Nothing,String}
     return nothing
 end
 
-"""Relative path under `project_root/demos/`, or `nothing` if outside that tree."""
-function _relpath_under_project_demos(
+"""`(rel, tree)` under `distsshkit_demos/` or `demos/`, or `nothing`."""
+function _relpath_under_demo_trees(
     script_path::AbstractString,
     project_root::AbstractString,
-)::Union{Nothing,String}
+)::Union{Nothing,@NamedTuple{rel::String, tree::String}}
     root = abspath(String(project_root))
     path = abspath(String(script_path))
-    demos = joinpath(root, "demos")
-    path == demos && return "."
-    prefix = demos * Base.Filesystem.path_separator
-    startswith(path, prefix) || return nothing
-    return relpath(path, demos)
+    for tree in (DEMO_INSTALL_DIR, "demos")
+        base = joinpath(root, tree)
+        path == base && return (rel=".", tree=tree)
+        prefix = base * Base.Filesystem.path_separator
+        startswith(path, prefix) || continue
+        return (rel=relpath(path, base), tree=tree)
+    end
+    return nothing
 end
 
 # Demo-domain diagnose/explain (shared surface helpers: `explain.jl`).
@@ -83,40 +89,43 @@ end
 Facts about a missing script path when a demo-related tip applies.
 
 Returns `nothing`, or a NamedTuple with `kind`:
-- `:use_path` — file already at `demos/<group>/<name>`
+- `:use_path` — file already at `<tree>/<group>/<name>`
 - `:install_bundled` — basename matches a package demo
-- `:demos_tree_missing` — path under `./demos/` but that tree is absent
-- `:demos_file_missing` — under `./demos/` but this file is absent
+- `:demos_tree_missing` — path under that tree but the tree is absent
+- `:demos_file_missing` — under that tree but this file is absent
 
 Keep diagnosis free of CLI/API wording; [`explain_missing_script_hint`](@ref) formats.
 """
 function diagnose_missing_script(
     script_path::AbstractString,
     project_root::AbstractString,
-)::Union{Nothing,@NamedTuple{kind::Symbol, group::Union{Nothing,String}, name::Union{Nothing,String}}}
+)::Union{Nothing,@NamedTuple{kind::Symbol, group::Union{Nothing,String}, name::Union{Nothing,String}, tree::Union{Nothing,String}}}
     path = String(script_path)
     root = String(project_root)
     base = basename(path)
     if endswith(base, ".jl")
         for group in _DEMO_GROUPS
-            installed = joinpath(root, "demos", group, base)
-            if isfile(installed)
-                return (kind=:use_path, group=String(group), name=base)
+            for tree in (DEMO_INSTALL_DIR, "demos")
+                installed = joinpath(root, tree, group, base)
+                if isfile(installed)
+                    return (kind=:use_path, group=String(group), name=base, tree=tree)
+                end
             end
         end
         bundled = demo_script(base)
         if bundled !== nothing
             group = basename(dirname(bundled))
-            return (kind=:install_bundled, group=group, name=base)
+            return (kind=:install_bundled, group=group, name=base, tree=DEMO_INSTALL_DIR)
         end
     end
-    under = _relpath_under_project_demos(path, root)
+    under = _relpath_under_demo_trees(path, root)
     under === nothing && return nothing
-    demos_dir = joinpath(abspath(root), "demos")
-    if !isdir(demos_dir)
-        return (kind=:demos_tree_missing, group=nothing, name=endswith(base, ".jl") ? base : nothing)
+    tree_dir = joinpath(abspath(root), under.tree)
+    name = endswith(base, ".jl") ? base : nothing
+    if !isdir(tree_dir)
+        return (kind=:demos_tree_missing, group=nothing, name=name, tree=under.tree)
     end
-    return (kind=:demos_file_missing, group=nothing, name=endswith(base, ".jl") ? base : nothing)
+    return (kind=:demos_file_missing, group=nothing, name=name, tree=under.tree)
 end
 
 """Render a [`diagnose_missing_script`](@ref) result for `:cli` or `:api`."""
@@ -129,14 +138,15 @@ function explain_missing_script_hint(
     install = _demo_install_phrase(surface; family=fam)
     list = _demo_list_phrase(surface)
     kind = diag.kind
+    tree = something(diag.tree, DEMO_INSTALL_DIR)
     if kind === :use_path
-        return "Hint: use demos/$(diag.group)/$(diag.name)"
+        return "Hint: use $tree/$(diag.group)/$(diag.name)"
     elseif kind === :install_bundled
-        return "Hint: run $install to copy that family into ./demos/, then use demos/$(diag.group)/$(diag.name)"
+        return "Hint: run $install to copy that family into ./$tree/, then use $tree/$(diag.group)/$(diag.name)"
     elseif kind === :demos_tree_missing
-        return "Hint: ./demos/ is missing — run $install first, or create this script under demos/"
+        return "Hint: ./$tree/ is missing — run $install first, or create this script under $tree/"
     elseif kind === :demos_file_missing
-        return "Hint: no such file under ./demos/ — run $install / $list, or check the script name"
+        return "Hint: no such file under ./$tree/ — run $install / $list, or check the script name"
     end
     throw(ArgumentError("unknown missing-script diagnosis kind: $(repr(kind))"))
 end
@@ -181,14 +191,15 @@ end
 """
     install_demos(dest=pwd(); family, force=false) -> (installed=Vector{String}, skipped=Vector{String})
 
-Copy one bundled family (`with_kit` or `without_kit`) into `joinpath(dest, "demos")`.
-Also copies `demos/.gitignore` when present.
+Copy one bundled family (`with_kit` or `without_kit`) into
+`joinpath(dest, DistSSHKit.DEMO_INSTALL_DIR)`. Also copies `demos/.gitignore`
+when present.
 
 By default, existing files at the destination are left alone — pass `force=true` to
 overwrite them.
 
-Refuses to install into this package's own `demos/` tree (would overwrite the kit).
-Use [`list_demos`](@ref) / `demo list`, or install with an explicit `dest` / `--dest`.
+Refuses `dest` equal to this package root. Use [`list_demos`](@ref) /
+`demo list`, or `--dest` / `dest=`.
 """
 function install_demos(
     dest::AbstractString=pwd();
@@ -200,9 +211,12 @@ function install_demos(
     src_root::String = demos_root()
     isdir(src_root) || return (installed=String[], skipped=String[])
     dest_root = canonical_local_path(dest)
-    dest_demos = joinpath(dest_root, "demos")
+    dest_demos = joinpath(dest_root, DEMO_INSTALL_DIR)
+    kit_root = realpath(_KIT_ROOT)
     kit_demos = realpath(src_root)
-    if isdir(dest_demos) && realpath(dest_demos) == kit_demos
+    dest_is_kit = isdir(dest_root) && realpath(dest_root) == kit_root
+    dest_is_kit_demos = isdir(dest_demos) && realpath(dest_demos) == kit_demos
+    if dest_is_kit || dest_is_kit_demos
         list = _demo_list_phrase(surface)
         install = if _normalize_hint_surface(surface) === :api
             "`DistSSHKit.install_demos(dest=...; family=$(repr(group)))`"
@@ -210,7 +224,7 @@ function install_demos(
             "`julia --project=. -m DistSSHKit demo install $group --dest DIR`"
         end
         throw(ArgumentError(
-            "destination would be the package's bundled demos tree ($kit_demos); " *
+            "destination would be the DistSSHKit package tree ($kit_root); " *
             "use $list to see paths, or $install to copy elsewhere",
         ))
     end
@@ -284,7 +298,7 @@ function show_demo_usage(io::IO=stdout)
     print_help_blank(io)
     print_help_section("Commands"; io=io)
     print_help_lines(io,
-        "  install FAMILY  Copy demos/FAMILY/ into ./demos/ (with_kit or without_kit).",
+        "  install FAMILY  Copy package demos/FAMILY/ into ./$DEMO_INSTALL_DIR/.",
         "                  Existing files left alone; --force overwrites. Not both families.",
         "  list            Show demo ids and package paths.",
     )
@@ -302,17 +316,17 @@ function show_demo_usage(io::IO=stdout)
     print_help_blank(io)
     print_help_section("Options"; io=io)
     print_help_lines(io,
-        "  --dest DIR   Install under DIR/demos/ (default: ./demos/)",
+        "  --dest DIR   Install under DIR/$DEMO_INSTALL_DIR/ (default: ./$DEMO_INSTALL_DIR/)",
         "  --force      Overwrite existing demo files",
         "  -h, --help   Show this help",
     )
     print_help_blank(io)
     print_help_section("After install"; io=io)
     print_help_lines(io,
-        "  julia --project=. -m DistSSHKit drive parent:2 demos/with_kit/square_file.jl",
-        "  julia --project=. demos/with_kit/pipeline_square.jl",
-        "  julia --project=. demos/without_kit/pipeline_pi.jl",
-        "  julia --project=. -m DistSSHKit go demos/without_kit/pi_file.jl",
+        "  julia --project=. -m DistSSHKit drive parent:2 $DEMO_INSTALL_DIR/with_kit/square_file.jl",
+        "  julia --project=. $DEMO_INSTALL_DIR/with_kit/pipeline_square.jl",
+        "  julia --project=. $DEMO_INSTALL_DIR/without_kit/pipeline_pi.jl",
+        "  julia --project=. -m DistSSHKit go $DEMO_INSTALL_DIR/without_kit/pi_file.jl",
     )
     return nothing
 end
@@ -323,9 +337,9 @@ end
 Install or list bundled demos. See [`(@main)`](@ref).
 
     julia --project=. -m DistSSHKit demo install with_kit
-    julia --project=. -m DistSSHKit drive parent:2 demos/with_kit/square_file.jl
-    julia --project=. demos/with_kit/pipeline_square.jl
-    julia --project=. demos/without_kit/pipeline_pi.jl
+    julia --project=. -m DistSSHKit drive parent:2 distsshkit_demos/with_kit/square_file.jl
+    julia --project=. distsshkit_demos/with_kit/pipeline_square.jl
+    julia --project=. distsshkit_demos/without_kit/pipeline_pi.jl
 """
 function demo(args::Vector{String}=copy(ARGS))::Cint
     if isempty(args) || args[1] in ("-h", "--help", "help")
@@ -354,7 +368,7 @@ function demo(args::Vector{String}=copy(ARGS))::Cint
             for path in result.skipped
                 println("skipped (already exists, use --force to overwrite): ", path)
             end
-            dest_demos = joinpath(dest, "demos")
+            dest_demos = joinpath(dest, DEMO_INSTALL_DIR)
             rel_demos = relpath(dest_demos, dest)
             println()
             println("Demos are in ", dest_demos, "; open and edit them, then run for example:")

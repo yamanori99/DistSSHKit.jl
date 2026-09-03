@@ -233,8 +233,8 @@ julia --project=. -m DistSSHKit demo install without_kit
 ```
 
 ```bash
-julia --project=. -m DistSSHKit drive parent:2 demos/with_kit/square_file.jl
-julia --project=. -m DistSSHKit go parent:2 demos/without_kit/pi_file.jl
+julia --project=. -m DistSSHKit drive parent:2 distsshkit_demos/with_kit/square_file.jl
+julia --project=. -m DistSSHKit go parent:2 distsshkit_demos/without_kit/pi_file.jl
 ```
 
 詳細: [Demo](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/demo/)。

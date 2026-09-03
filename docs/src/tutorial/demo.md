@@ -13,10 +13,12 @@ julia --project=. -m DistSSHKit demo install with_kit
 julia --project=. -m DistSSHKit demo install without_kit
 ```
 
-That copies `demos/with_kit/` and `demos/without_kit/`.
+That copies each family into `./distsshkit_demos/` (not `./demos/`, so a
+job's own `demos/` is untouched). Package sources stay `demos/with_kit/`
+and `demos/without_kit/`.
 
 ```text
-demos/
+distsshkit_demos/
   with_kit/          # driver scripts — use drive or pipeline!
     square_file.jl   # file: square_results.csv
     square_echo.jl   # stdout only
@@ -31,7 +33,8 @@ Each topic has a `*_file.jl` and `*_echo.jl` pair: same job, but `*_file.jl`
 writes under the slot's `DISTRIBUTED_OUTPUT_DIR` (so `go` / `drive` can collect
 results from remotes). Use `*_echo.jl` when you only want terminal output.
 
-Keep `Project.toml` at the project root — do not add `demos/Project.toml`.
+Keep `Project.toml` at the project root — do not add
+`distsshkit_demos/Project.toml`.
 
 Prefer **`go`** unless you already need in-script parallelism; use **`drive`**
 for driver scripts that farm work with `pmap`.
@@ -41,20 +44,20 @@ for driver scripts that farm work with `pmap`.
 These run on their own — no DistSSHKit import.
 
 ```bash
-julia demos/without_kit/pi_file.jl --n 5000
+julia distsshkit_demos/without_kit/pi_file.jl --n 5000
 ```
 
 Two local slots:
 
 ```bash
 julia --project=. -m DistSSHKit go parent:2 \
-  demos/without_kit/pi_file.jl --n 5000
+  distsshkit_demos/without_kit/pi_file.jl --n 5000
 ```
 
 Same job through the API (`go!`):
 
 ```bash
-julia --project=. demos/without_kit/pipeline_pi.jl --n 5000
+julia --project=. distsshkit_demos/without_kit/pipeline_pi.jl --n 5000
 ```
 
 With remotes (after [First-time remotes](@ref first-time-remotes)):
@@ -62,7 +65,7 @@ With remotes (after [First-time remotes](@ref first-time-remotes)):
 ```bash
 julia --project=. -m DistSSHKit go \
     parent:2 child:YourHost1:2 child:YourHost2:2 \
-    demos/without_kit/pi_file.jl --n 5000
+    distsshkit_demos/without_kit/pi_file.jl --n 5000
 ```
 
 ## Driver scripts (`with_kit/`)
@@ -73,13 +76,13 @@ over workers instead of N independent script runs, use `drive` (not `go`):
 
 ```bash
 julia --project=. -m DistSSHKit drive parent:2 \
-  demos/with_kit/square_file.jl --n 4
+  distsshkit_demos/with_kit/square_file.jl --n 4
 ```
 
 Same driver through the API (`pipeline!` — local workers, no sync/collect):
 
 ```bash
-julia --project=. demos/with_kit/pipeline_square.jl --n 4
+julia --project=. distsshkit_demos/with_kit/pipeline_square.jl --n 4
 ```
 
 With remotes (after [First-time remotes](@ref first-time-remotes)):
@@ -87,7 +90,7 @@ With remotes (after [First-time remotes](@ref first-time-remotes)):
 ```bash
 julia --project=. -m DistSSHKit drive \
     parent:2 child:YourHost1:2 child:YourHost2:2 \
-    demos/with_kit/square_file.jl --n 4
+    distsshkit_demos/with_kit/square_file.jl --n 4
 ```
 
 Driver contract (`init_output_dir!` / `main`) and further topics: see
