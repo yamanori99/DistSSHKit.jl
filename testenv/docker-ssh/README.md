@@ -103,12 +103,13 @@ paths), `cut` PRs, and manual dispatch
 (`ubuntu-latest → ubuntu-24.04`). Ordinary PRs skip that job's Docker
 steps.
 [`.github/workflows/ssh-e2e-weekly.yml`][e2e-weekly]
-(`E2E weekly`) runs Sunday 04:00 JST or via Run workflow: bake
+(`E2E weekly`) runs Sunday 04:00 JST, via Run workflow, or on a `cut`
+squash to `main` (`Project.toml` version up): bake
 `ubuntu-latest (image)` to GHCR, then `ubuntu-latest`, `macos-15-intel`, and
 `windows-latest (WSL2)` pull that tag and run the suite. Weekly Linux is the
-same suite as `cut` / **main** Linux E2E, on the timer, not a PR check.
-After a `cut` merge,
-dispatch it on that commit before `@JuliaRegistrator register`.
+same suite as `cut` / **main** Linux E2E, not a PR check.
+Wait for that Full green on the merge commit before
+`@JuliaRegistrator register`.
 
 Those controller jobs wait for `ubuntu-latest (image)` then pull
 `ghcr.io/<owner>/distsshkit-linux-ssh-worker:<sha>` instead of building

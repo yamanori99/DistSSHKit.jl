@@ -73,7 +73,7 @@ Green on one layer does not imply the others. `Pkg.test()` does not run
   `cut` / weekly / dispatch (Compose). Not ordinary PRs. Not local-only
   CLI wiring.
 - **e2e weekly** (10–50 min): same `e2e.jl` from Linux, macOS Intel, or
-  WSL2 (not a PR check; required after a `cut` merge before register).
+  WSL2 (not a PR check; starts on a `cut` merge, required before register).
   Not macOS workers.
 - **doctests** (~5 s): `src/` docstring examples (Documenter, Julia 1.12).
   Not workers / SSH.
