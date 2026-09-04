@@ -322,7 +322,7 @@ function _julia_spec_is_auto(spec::AbstractString)::Bool
 end
 
 """
-Resolve the Julia binary on this controller (`nothing` / `"auto"` / empty →
+Resolve the Julia binary on this kit parent (`nothing` / `"auto"` / empty →
 the running process). Explicit paths are kept as given after usability check.
 
 Throws `ArgumentError` when the binary is missing or `--version` does not parse.
@@ -333,16 +333,16 @@ function resolve_controller_julia(spec::Union{Nothing,AbstractString}=nothing)::
     else
         String(strip(String(spec::AbstractString)))
     end
-    isempty(path) && throw(ArgumentError("Julia binary not resolved on controller"))
+    isempty(path) && throw(ArgumentError("Julia binary not resolved on the kit parent"))
     abs = isabspath(path) ? path : abspath(path)
     try
         out = read(pipeline(Cmd([abs, "--version"]); stderr=devnull), String)
         parse_julia_version(out) === nothing && throw(ArgumentError(
-            "controller Julia at $(abs) did not report a parseable --version",
+            "kit parent Julia at $(abs) did not report a parseable --version",
         ))
     catch e
         e isa ArgumentError && rethrow()
-        throw(ArgumentError("controller Julia not usable at $(abs): $(sprint(showerror, e))"))
+        throw(ArgumentError("kit parent Julia not usable at $(abs): $(sprint(showerror, e))"))
     end
     return abs
 end
@@ -776,7 +776,7 @@ List all files under `remote_root` on `host` recursively via SSH `find`, returni
 
 Tilde roots (`~/…`) are expanded **on the remote** before `find`. Matching must
 not use local `relpath`/`abspath` against a tilde base (that expands `~` to the
-controller home and yields bogus `../…` relatives).
+kit parent home and yields bogus `../…` relatives).
 """
 function collect_tree_remote_files_ssh(host::AbstractString, remote_root::AbstractString)::Vector{Tuple{String,String}}
     hp = String(host)
@@ -805,9 +805,9 @@ function collect_tree_remote_files_ssh(host::AbstractString, remote_root::Abstra
 end
 
 """
-Absolute path for `remote_path` on `host` — the controller/remote path boundary.
+Absolute path for `remote_path` on `host` — the kit-parent/remote path boundary.
 
-Use this before any controller-side join, compare, `relpath`, or rsync URI that
+Use this before any kit-parent-side join, compare, `relpath`, or rsync URI that
 involves a remote path. Already-absolute paths (`/` prefix) are returned
 unchanged. Paths starting with `~` are resolved **on the remote** via
 [`resolve_remote_abs_path_on_host`](@ref). Returns `nothing` when resolution fails.
@@ -829,7 +829,7 @@ end
 Map remote absolute path under `remote_repo` to the same repo-relative path under `local_repo`.
 
 `remote_abs` and `remote_repo` must already be absolute (`/` prefix). Pass
-[`ensure_remote_abs_path`](@ref) results — never `~/…` (controller `abspath` would
+[`ensure_remote_abs_path`](@ref) results — never `~/…` (kit parent `abspath` would
 expand tilde to the **local** home).
 """
 function local_dir_from_remote_mirror(
@@ -869,7 +869,7 @@ Priority:
 1. `cli_override` if non-empty (e.g. `setup.jl --remote-path`)
 2. `ENV["DISTRIBUTED_REMOTE_PROJECT_ROOT"]` if set (prefer an absolute path on the remote;
    `~` is OK for setup SSH shell commands; drive collect expands `~` on each host before
-   `find` / rsync so controller `relpath` never sees a tilde base)
+   `find` / rsync so kit parent `relpath` never sees a tilde base)
 3. `default_remote_project_path(local_project_root)`
 
 Does not force `abspath` on tilde paths so remote shells can expand `~` per host.
@@ -887,9 +887,9 @@ function resolve_remote_project_root(
     return default_remote_project_path(local_project_root)
 end
 
-"""Layout path for `DISTRIBUTED_REMOTE_PROJECT_ROOT` (controller ENV / `execute!`).
+"""Layout path for `DISTRIBUTED_REMOTE_PROJECT_ROOT` (kit parent ENV / `execute!`).
 
-`~…` stays a remote-shell layout (do not `expanduser` on the controller).
+`~…` stays a remote-shell layout (do not `expanduser` on the kit parent).
 Absolute paths are [`canonical_local_path`](@ref).
 """
 function remote_env_project_root(raw::AbstractString)::String
@@ -953,7 +953,7 @@ remote repo root from [`resolve_remote_project_root`](@ref) (same default as `se
 Paths outside the local repo root fall back to `local_abs_dir` unchanged.
 
 Returns a **layout** path (may still start with `~`). Callers that build find lists,
-rsync URIs, or `relpath` on the controller must pass the result through
+rsync URIs, or `relpath` on the kit parent must pass the result through
 [`ensure_remote_abs_path`](@ref) per host first. Prefer an absolute
 `DISTRIBUTED_REMOTE_PROJECT_ROOT` when possible; `~` is sugar for remote shells.
 """

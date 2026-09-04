@@ -40,12 +40,12 @@ Pick **one mode** per invocation (except shared options).
 - `--pull`: `git pull` on laptop first, then remotes (no push; confirm
   unless `-y`)
 - `--instantiate`: `Pkg.instantiate` on remotes after deploy
-- `--juliaup`: align remote Julia via juliaup to the controller
+- `--juliaup`: align remote Julia via juliaup to the kit parent
   major.minor (`add` / `update` / `default`; confirm unless `-y`;
   changes host default). Requires juliaup already on the host
   (`$HOME/.juliaup/bin/juliaup` or macOS Homebrew
   `/opt/homebrew/bin/juliaup` / `/usr/local/bin/juliaup`). If remotes
-  land on a newer patch than the controller, prints a Tip
+  land on a newer patch than the kit parent, prints a Tip
 - `--runtest`: `Pkg.test()` of the **job** project on remotes (not
   DistSSHKit's tests)
 - `--prune`: delete `.distsshkit/{go,drive,setup}` leaves on localhost
@@ -85,7 +85,7 @@ Default: `~/Parent/RepoName` from the local tree. Override with
 `drive`).
 
 `~` is fine for setup shell ops (`rsync` / `clone` / `check`). Before
-controller-side collect / path math, DistSSHKit expands `~` **on each SSH
+kit-parent-side collect / path math, DistSSHKit expands `~` **on each SSH
 host** to an absolute path. Prefer an absolute remote root when you can.
 
 ## After `--rsync`

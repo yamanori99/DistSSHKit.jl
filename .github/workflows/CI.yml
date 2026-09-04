@@ -18,7 +18,7 @@ permissions:
   actions: write # julia-actions/cache delete-old-caches
 
 jobs:
-  # Full `Pkg.test()` stays Linux-only. Slow SSH E2E controllers are `E2E weekly`.
+  # Full `Pkg.test()` stays Linux-only. Slow SSH E2E kit parents are `E2E weekly`.
   # PRs run `ubuntu-latest → ubuntu-24.04` in this workflow.
   # One detect job; markdown-only / allowlisted PRs skip heavy jobs (UI: skipping).
   # Required check names are slot literals (min/max), not Julia versions.

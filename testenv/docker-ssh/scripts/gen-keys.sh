@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Generate controller + inter-worker keys and SSH config for docker-ssh workers.
+# Generate kit-parent + inter-worker keys and SSH config for docker-ssh workers.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -59,4 +59,4 @@ EOF
 
 echo "Wrote ${SSH_CONFIG}"
 echo "Wrote ${HOSTS_FILE}"
-echo "Controller pub → ${KEYS}/controller.pub"
+echo "Kit parent pub → ${KEYS}/controller.pub"

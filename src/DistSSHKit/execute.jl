@@ -235,7 +235,7 @@ verbatim to the chosen function.
 `workers`. Go-only `repeat`. `yes` must be `true` (the
 default): an unattended child cannot answer a prompt. `remote` that starts
 with `~` is stored in `DISTRIBUTED_REMOTE_PROJECT_ROOT` as a layout path
-(not `expanduser` on the controller). Child stdio defaults to
+(not `expanduser` on the kit parent). Child stdio defaults to
 `kit.out` / `kit.err` in `output_dir`. Pass `stdout` / `stderr` (`IO`) to
 override; `stdout=stdout` inherits the parent. Parent `redirect_stdout` does
 not apply to the subprocess.

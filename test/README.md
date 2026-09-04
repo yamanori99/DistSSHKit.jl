@@ -167,7 +167,7 @@ docker run --rm \
 
 ## SSH E2E
 
-Two Linux workers. `DISTSSHKIT_SSH_E2E=1`. Controller OS matrix:
+Two Linux workers. `DISTSSHKIT_SSH_E2E=1`. Kit parent OS matrix:
 [`testenv/docker-ssh/README.md`](../testenv/docker-ssh/README.md). Apple
 silicon without Compose:
 [apple-container-ssh README](../testenv/apple-container-ssh/README.md)
@@ -190,7 +190,7 @@ DISTSSHKIT_CODE_COVERAGE=1 \
 
 ### Setup (rsync tree)
 
-- Julia resolve: controller and remotes share major.minor
+- Julia resolve: kit parent and remotes share major.minor
 - `run_on_host`: `--version` exit 0; `-e exit(3)` is `.exitcode == 3`
   (no throw)
 - `--delete`: remote `Project.toml` is gone
@@ -203,7 +203,7 @@ DISTSSHKIT_CODE_COVERAGE=1 \
 
 ### Drive / go / size
 
-`square_file` writes the CSV in `main()` on the **controller**. Workers
+`square_file` writes the CSV in `main()` on the **kit parent**. Workers
 only return numbers. Collect tests use files workers write.
 
 - `size`: both hosts, `GB`, `Total:`
@@ -235,7 +235,7 @@ only return numbers. Collect tests use files workers write.
 - `--clone` / `--instantiate` / `--check`: remote hash matches
 - `--require-git` after a local bump: fails
 - `--sync` then `--require-git`: pass
-- `--pull` after controller `git push`: `e2e_sync_marker.txt` on the
+- `--pull` after kit parent `git push`: `e2e_sync_marker.txt` on the
   workers matches
 
 Child-1 can SSH to child-2 (compose DNS).

@@ -34,7 +34,7 @@ RUN useradd -m -s /bin/bash "${SSH_USER}" \
     && chmod 440 "/etc/sudoers.d/${SSH_USER}"
 
 # Patch floats within each channel; setup --check fails on major.minor mismatch
-# without --ignore-julia-version. Default channel matches CI E2E controller (max).
+# without --ignore-julia-version. Default channel matches CI E2E kit parent (max).
 RUN su - "${SSH_USER}" -c "\
     curl --retry 5 --retry-delay 5 --retry-connrefused --connect-timeout 10 \
         -fsSL https://install.julialang.org | sh -s -- --yes --default-channel ${JULIA_DEFAULT_CHANNEL} && \
