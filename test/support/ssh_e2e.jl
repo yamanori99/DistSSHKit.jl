@@ -90,6 +90,43 @@ function _ssh_e2e_juliaup_default!(host::AbstractString, channel::AbstractString
     DistSSHKit.clear_detect_julia_path_cache!(String(host))
     return nothing
 end
+
+"""Local juliaup on the kit parent (required for `setup --juliaup parent` E2E)."""
+function _ssh_e2e_local_juliaup()::String
+    ju = DistSSHKit.find_local_juliaup()
+    ju === nothing && error(
+        "local juliaup not found; kit parent E2E needs \$HOME/.juliaup/bin/juliaup " *
+        "or Homebrew juliaup",
+    )
+    return ju
+end
+
+"""`juliaup default` on the kit parent (`add` first if the channel is missing)."""
+function _ssh_e2e_juliaup_default_local!(channel::AbstractString)
+    ju = _ssh_e2e_local_juliaup()
+    ch = String(channel)
+    add = run(ignorestatus(Cmd([ju, "add", ch])); wait=true)
+    if add.exitcode != 0
+        st = try
+            read(Cmd([ju, "status"]), String)
+        catch
+            ""
+        end
+        occursin(ch, st) || error("juliaup add $ch failed on kit parent")
+    end
+    run(Cmd([ju, "default", ch]); wait=true)
+    return nothing
+end
+
+"""Version of the Julia shim beside the kit parent's juliaup."""
+function _ssh_e2e_local_juliaup_julia_version()::VersionNumber
+    ju = _ssh_e2e_local_juliaup()
+    jl = DistSSHKit._local_julia_beside_juliaup(ju)
+    isfile(jl) || error("Julia not found beside juliaup: $jl")
+    ver = DistSSHKit.parse_julia_version(read(`$jl --version`, String))
+    ver === nothing && error("unparseable julia --version from $jl")
+    return ver
+end
 # Empty-tree `go --rsync` (copy + instantiate). Not the main rsync root:
 # later `setup --rsync` nonempty checks would fail if we reused that path.
 _ssh_e2e_go_rsync_remote_root() = "/home/dev/distsshkit-e2e-go-rsync"
