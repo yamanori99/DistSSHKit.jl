@@ -79,7 +79,9 @@ post-run collect, and `size` Julia-path detection.
 
 Run [`setup --check`](@ref Manual-setup) on new clusters. Remotes need the
 project tree and an instantiate (`setup --instantiate`, or `drive --rsync`
-onto an empty path). Prefer matching Julia **major.minor**.
+onto an empty path). Prefer matching Julia **major.minor**; align with
+[`setup --juliaup`](@ref Manual-setup) when juliaup is already on the host
+([Requirements](@ref)).
 
 ## Workers
 

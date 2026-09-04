@@ -39,5 +39,5 @@ distsshkit go child:user@host1:1 path/to/script.jl
 
 `drive` / `size` stay on `-m` because Apps pins `JULIA_LOAD_PATH`.
 
-After changing juliaup: `pkg> app update DistSSHKit`. Flag lists:
-`distsshkit {cmd} --help` or the [command pages](@ref Manual).
+After you change the Julia / juliaup channel that Apps pins: `pkg> app update DistSSHKit`.
+Flag lists: `distsshkit {cmd} --help` or the [command pages](@ref Manual).

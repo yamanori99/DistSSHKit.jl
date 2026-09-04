@@ -87,8 +87,9 @@ testenv/docker-ssh/scripts/up.sh --e2e
 
 CI uploads Codecov on **main push** only (`Pkg.test` max slot, flag
 `pkgtest`). PR `Pkg.test` runs without coverage instrumentation. E2E
-coverage (flag `e2e`) runs on **E2E weekly** and **`cut` PR** E2E — not
-on ordinary PR E2E. Local coverage:
+**Codecov** (flag `e2e`) runs on **E2E weekly** and **`cut` PR** E2E — not
+on ordinary PR E2E (path-filtered PR E2E still runs the job; it just does
+not upload coverage). Local coverage:
 
 ```bash
 DISTSSHKIT_CODE_COVERAGE=1 \

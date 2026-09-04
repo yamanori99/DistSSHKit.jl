@@ -22,10 +22,14 @@ jobs.
   - Same **major.minor** on the controller and SSH hosts (`setup --check`
     fails on a mismatch unless `--ignore-julia-version`; patch-only
     differences warn)
-  - Prefer **[juliaup](https://github.com/JuliaLang/juliaup)** at
-    `$HOME/.juliaup/bin/julia`. If it is not there, put a 1.12+ binary at a
-    usual OS path ([Checks](@ref)) or set `--julia` /
-    `JULIA_DISTRIBUTED_EXE`. Missing path or a related bug:
+  - Prefer **[juliaup](https://github.com/JuliaLang/juliaup)** so
+    `$HOME/.juliaup/bin/julia` is available (or macOS Homebrew
+    `/opt/homebrew/bin/julia` / `/usr/local/bin/julia`). Otherwise put a
+    1.12+ binary at a usual OS path ([Checks](@ref)) or set `--julia` /
+    `JULIA_DISTRIBUTED_EXE`. On major.minor mismatch, use
+    [`setup --juliaup`](@ref Manual-setup) when juliaup is already on the
+    host (official install or Homebrew; see [Checks](@ref)). Missing path
+    or a related bug:
     [open an Issue](https://github.com/yamanori99/DistSSHKit.jl/issues).
 
 WSL2 is Linux, with a few extra rules:

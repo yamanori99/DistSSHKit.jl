@@ -6,8 +6,8 @@ Command reference. For a hands-on path, use
 Full flag lists: `julia --project=. -m DistSSHKit {cmd} --help`.
 Each command page starts with **Flags** for that command.
 
-- [setup](@ref Manual-setup): check hosts, clone / rsync / sync,
-  instantiate, prune, cleanup
+- [setup](@ref Manual-setup): check hosts, juliaup align, clone / rsync /
+  sync, instantiate, prune, cleanup
 - [go](@ref Manual-go): standalone script as-is; one full run per slot
   (`--repeat N` = N runs, spread across listed hosts)
 - [drive](@ref Manual-drive): master + Distributed workers; driver farms
