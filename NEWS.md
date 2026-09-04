@@ -6,6 +6,10 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+- `setup --juliaup` / `setup!(session, :juliaup)` accept `parent` (kit
+  parent machine) alongside SSH hosts (#328). Tip for parent lagging the
+  channel points at `setup --juliaup parent`. SSH E2E: mismatch then
+  align `parent` + one remote.
 - CI: Downstream workflow runs DistSSHQueue tip `Pkg.test()` against the
   Kit checkout (`src/**` / `Project.toml` / `cut` / dispatch; soft gate).
 - Docs: exported help / display helpers (`print_help_*`, `print_colored`,

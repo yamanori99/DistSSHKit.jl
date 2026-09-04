@@ -14,6 +14,7 @@ function show_requirements(; io::IO=stdout)
         "  setup --instantiate host1 host2",
         "  setup --check host1 host2",
         "  setup --juliaup host1 host2",
+        "  setup --juliaup parent host1",
         "  setup --runtest host1 host2",
     )
     print_help_blank(io)
@@ -23,7 +24,8 @@ function show_requirements(; io::IO=stdout)
         "                       --delete first to replace",
         "  --sync / --pull      git update (confirm unless -y)",
         "  --instantiate        Pkg.instantiate on remotes",
-        "  --juliaup            align Julia via juliaup (confirm unless -y)",
+        "  --juliaup            align Julia via juliaup (confirm unless -y;",
+        "                       SSH hosts and/or parent)",
         "  --check              SSH, Julia, project, deps",
         "  --runtest            Pkg.test of the job project on remotes",
         "  --cleanup / --delete stale workers / remote tree",
@@ -40,7 +42,8 @@ function show_requirements(; io::IO=stdout)
         "  $(KIT_VERBOSE_FLAG_HELP)",
         "  $(KIT_TIME_HELP)",
         "  -y, --yes            skip confirmations",
-        "  --hosts CSV          SSH names (`:N` stripped)",
+        "  --hosts CSV          SSH names (`:N` stripped); juliaup also",
+        "                       accepts parent",
         "  --hosts-file PATH    one host per line (`:N` stripped)",
         "  --version, -v        print version and exit",
         "  --older-than DAYS    with --prune: mtime at least DAYS old",

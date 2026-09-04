@@ -214,6 +214,85 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             end
         end
 
+        @testset "setup --juliaup parent + one remote" begin
+            ch = _ssh_e2e_julia_channels()
+            @test ch.alt != ch.default
+            host = hosts[1]
+            parent_restore = _ssh_e2e_local_juliaup_default_channel()
+            try
+                _ssh_e2e_juliaup_default_local!(ch.alt)
+                _ssh_e2e_juliaup_default!(host, ch.alt)
+                parent_alt = _ssh_e2e_local_juliaup_julia_version()
+                alt_parts = split(ch.alt, '.')
+                @test length(alt_parts) >= 2
+                @test parent_alt.major == parse(Int, alt_parts[1])
+                @test parent_alt.minor == parse(Int, alt_parts[2])
+                @test DistSSHKit.julia_version_mismatch_kind(VERSION, parent_alt) == :minor
+
+                proc_up, out_up = _run_kit_setup(;
+                    setup_args=["--juliaup", "parent", host],
+                    project_root=proj,
+                    extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
+                )
+                _assert_ssh_e2e_ok(
+                    suite, "setup_juliaup_parent_remote", proc_up, out_up;
+                    project=proj, kit=:setup,
+                )
+                @test occursin("parent", lowercase(out_up))
+
+                parent_ver = _ssh_e2e_local_juliaup_julia_version()
+                @test parent_ver.major == VERSION.major
+                @test parent_ver.minor == VERSION.minor
+                _assert_ssh_e2e_api_ok(
+                    suite,
+                    "juliaup_aligned_parent",
+                    true,
+                    "ver=$(parent_ver) channel=$(ch.default)",
+                )
+
+                DistSSHKit.clear_detect_julia_path_cache!()
+                withenv(_e2e_base_env()...) do
+                    found = DistSSHKit.resolve_remote_julia(host, "auto")
+                    @test found isa AbstractString
+                    found isa AbstractString || error("expected remote julia after --juliaup")
+                    ver = DistSSHKit.get_remote_julia_version(host, found)
+                    @test ver isa VersionNumber
+                    ver isa VersionNumber || error("expected remote version")
+                    @test ver.major == VERSION.major
+                    @test ver.minor == VERSION.minor
+                    _assert_ssh_e2e_api_ok(
+                        suite,
+                        "juliaup_aligned_$(host)_with_parent",
+                        true,
+                        "path=$(found) ver=$(ver) channel=$(ch.default)",
+                    )
+                end
+
+                # Second remote was not a target; leave it alone. Re-check listed hosts.
+                proc_ok, out_ok = _run_kit_setup(;
+                    setup_args=["--check", "--remote-path", remote_root, host],
+                    project_root=proj,
+                    extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
+                )
+                _assert_ssh_e2e_ok(
+                    suite, "setup_check_after_juliaup_parent", proc_ok, out_ok;
+                    project=proj, kit=:setup,
+                )
+            finally
+                try
+                    _ssh_e2e_juliaup_default_local!(parent_restore)
+                catch e
+                    @warn "restore kit parent juliaup default failed" exception=e
+                end
+                try
+                    _ssh_e2e_juliaup_default!(host, ch.default)
+                catch e
+                    @warn "restore juliaup default failed" host=host exception=e
+                end
+                DistSSHKit.clear_detect_julia_path_cache!()
+            end
+        end
+
         @testset "setup --runtest (job Pkg.test)" begin
             proc, out = _run_kit_setup(;
                 setup_args=["--runtest", "--remote-path", remote_root, hosts...],

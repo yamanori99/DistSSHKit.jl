@@ -28,7 +28,7 @@ Prepare SSH hosts — same jobs as `julia -m DistSSHKit setup --…`.
 | `:sync` | `--sync` | Local push + remote pull (git remotes); confirm unless `session.yes` |
 | `:pull` | `--pull` | Local pull then remote pull; confirm unless `session.yes` |
 | `:instantiate` | `--instantiate` | `julia=` (default `"auto"`) |
-| `:juliaup` | `--juliaup` | Align remote Julia via juliaup (`\$HOME/.juliaup` or Homebrew); confirm unless `session.yes`. Tip if kit parent patch lags channel latest |
+| `:juliaup` | `--juliaup` | Align Julia via juliaup on SSH hosts and/or `parent` (`\$HOME/.juliaup` or Homebrew); confirm unless `session.yes`. Tip if kit parent patch lags channel latest |
 | `:check` | `--check` | `ignore_julia_version=`, `check_code_sync=` |
 | `:runtest` | `--runtest` | job `Pkg.test()` on remotes; `julia=` |
 | `:cleanup` | `--cleanup` | Kill stale workers (no confirm) |
@@ -132,7 +132,7 @@ function _setup_one!(
     id::Union{Nothing,AbstractString}=nothing,
 )::SyncResult
     _setup_bang_preflight!(session, mode; repo=repo)
-    hosts = _setup_bang_hosts!(session)
+    hosts = _setup_bang_hosts!(session; allow_parent=mode === :juliaup)
     remote_path = session_remote_root(session)
     julia_path = isempty(strip(String(julia))) ? "auto" : String(julia)
 
@@ -167,7 +167,10 @@ function _setup_one!(
     elseif mode === :instantiate
         return instantiate!(session; julia=julia_path)
     elseif mode === :juliaup
-        preflight_setup_ssh(hosts) || return SyncResult(true, HostResult[]; ok=false)
+        ssh_hosts = setup_juliaup_ssh_hosts(hosts)
+        if !isempty(ssh_hosts)
+            preflight_setup_ssh(ssh_hosts) || return SyncResult(true, HostResult[]; ok=false)
+        end
         raw = juliaup_align_remotes(hosts; confirm=!session.yes)
         return _sync_result_from_host_op(raw)
     elseif mode === :runtest
@@ -217,13 +220,29 @@ function _setup_one!(
     throw(ArgumentError("setup! mode $(repr(mode)) is not implemented"))
 end
 
-function _setup_bang_hosts!(session::KitSession)
+function _setup_bang_hosts!(session::KitSession; allow_parent::Bool=false)
     apply_session_env!(session)
-    isempty(session.hosts) && throw(ArgumentError(
+    hosts = copy(session.hosts)
+    # `session.hosts` is SSH children only; parent lives on `tokens`.
+    # Always surface `parent` so non-`:juliaup` modes hit validate_setup_hosts
+    # instead of silently dropping it.
+    for t in session.tokens
+        pt = try
+            parse_placement_token(t)
+        catch
+            nothing
+        end
+        pt === nothing && continue
+        if pt.role === :parent
+            push!(hosts, PARENT_HOST_NAME)
+            break
+        end
+    end
+    isempty(hosts) && throw(ArgumentError(
         explain_no_hosts(; surface=hint_surface(session), kind=:ssh),
     ))
-    validate_setup_hosts(session.hosts)
-    return session.hosts
+    validate_setup_hosts(hosts; allow_parent=allow_parent)
+    return hosts
 end
 
 function _sync_result_from_host_op(raw)::SyncResult

@@ -91,6 +91,8 @@ echo "SSH config: ${ROOT}/.generated/ssh_config"
 if [[ "$RUN_E2E" -eq 1 ]]; then
   export DISTSSHKIT_SSH_E2E=1
   export DISTSSHKIT_YES=1
+  # Parent --juliaup E2E needs local juliaup (CI setup-julia alone has none).
+  "${ROOT}/scripts/ensure-kit-parent-juliaup.sh"
   cd "${KIT_ROOT}"
   # WSL weekly has no julia-buildpkg. Fresh juliaup has no registries
   # (`Registry.update` then fails). linux/macOS already instantiated (no-op).
