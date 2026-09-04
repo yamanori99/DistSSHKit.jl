@@ -6,6 +6,10 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+- Docs: exported help / display helpers (`print_help_*`, `print_colored`,
+  `SPINNER_FRAMES`) are a DistSSHQueue-oriented extension surface —
+  names and signatures only; rendered output is not frozen (#323).
+
 ## 0.5.2
 
 Patch after `0.5.1`.

@@ -303,9 +303,18 @@ Without `job_id`, only the child pid is signaled.
 
 ## CLI parsers and helpers
 
-A second package may call these. They are exported so a rename is a Semver
-break, not a silent `DistSSHKit._…` change. `go` / `drive` argv wrappers stay
-unexported.
+Exported so a rename is a Semver break, not a silent `DistSSHKit._…` change.
+`go` / `drive` argv wrappers stay unexported.
+
+**Parsers / SSH helpers** (`parse_*`, `ssh_opts`, `run_on_host`, …) are for
+callers that share kit CLI behavior.
+
+**Help / display helpers** (`print_help_*`, `print_colored`, `SPINNER_FRAMES`)
+are an extension surface aimed at
+[DistSSHQueue.jl](https://yamanori99.github.io/DistSSHQueue.jl/stable/)
+(and similar). Guaranteed: **names and call signatures**. Not guaranteed:
+exact rendered text, colors, or spinner glyphs — presentation may change
+without a breaking version bump.
 
 ```@docs
 parse_go_args
