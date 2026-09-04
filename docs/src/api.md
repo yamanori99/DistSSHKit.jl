@@ -4,16 +4,15 @@
 CurrentModule = DistSSHKit
 ```
 
-Julia entry points when you embed DistSSHKit in a notebook or your own package.
-Day-to-day work stays on the CLI (`julia --project=. -m DistSSHKit …`); see
+Julia entry points for notebooks and packages.
+Day-to-day: CLI (`julia --project=. -m DistSSHKit …`); see
 [Introduction](@ref DistSSHKit.jl),
 [First Steps](@ref Tutorial-Prepare), and the [User Guide](@ref Manual).
-REPL help also works
-(`?DistSSHKit.go!`).
+REPL help also works (`?DistSSHKit.go!`).
 
 The shape mirrors the CLI: **`go!`** for as-is scripts, **`drive!`**
-(and friends) for Distributed drivers. **`pipeline!`** is optional sugar
-that runs the usual remote order in one call. Worker placement uses the
+(and friends) for Distributed drivers. **`pipeline!`** is an optional
+one-shot for the usual remote order. Worker placement uses the
 same tokens as the CLI (`parent:2`, `child:user@host:1`):
 
 ```julia

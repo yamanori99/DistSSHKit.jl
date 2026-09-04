@@ -1,6 +1,6 @@
 # [Demo](@id Tutorial-Demo)
 
-Walkthrough with the bundled examples: local first, then optional remotes
+Bundled examples: local first, then optional remotes
 (after [Prepare](@ref Tutorial-Prepare)).
 
 Also see [User Guide · demo](@ref Manual-demo), [go](@ref Manual-go),

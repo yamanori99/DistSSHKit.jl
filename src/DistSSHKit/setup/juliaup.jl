@@ -82,8 +82,8 @@ function print_juliaup_align_fix!(
     kit_println("    Fix: julia --project=. -m DistSSHKit setup --juliaup $h")
     kit_println("         (or on $h: juliaup add $ch && juliaup update $ch && \\")
     kit_println("          juliaup default $ch —")
-    kit_println("          \$HOME/.juliaup/bin/juliaup or /opt/homebrew/bin/juliaup;")
-    kit_println("          changes host default Julia)")
+    kit_println("          \$HOME/.juliaup/bin/juliaup, /opt/homebrew/bin/juliaup,")
+    kit_println("          or /usr/local/bin/juliaup; changes host default Julia)")
     kit_println("         No juliaup? install it first (see Requirements), or use --julia PATH /")
     kit_println("         JULIA_DISTRIBUTED_EXE.")
     if kind === :mismatch

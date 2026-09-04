@@ -1,31 +1,25 @@
 # [DistSSHKit.jl](@id DistSSHKit.jl)
 
-DistSSHKit is a kit for running the same Julia project locally and over SSH,
-then collecting the results. It makes SSH-distributed runs easier and more
-uniform, which helps keep those runs reproducible. It uses Distributed.jl
-processes, not threads. Supported on **macOS, Linux, and WSL2 Ubuntu** (not
-native Windows).
+DistSSHKit runs the same Julia project on this machine and over SSH, then
+collects the results. It uses Distributed.jl processes, not threads.
+Supported on **macOS, Linux, and WSL2 Ubuntu** (not native Windows).
 
-Even small labs and individuals often have a few high-performance machines or
-workstations. DistSSHKit helps you use that hardware as a small set of
-compute nodes. To run one after another, see
+To queue jobs on a machine that stays up, see
 [DistSSHQueue.jl](https://yamanori99.github.io/DistSSHQueue.jl/stable/).
 
 ## What is DistSSHKit?
 
 Two ways to run a script:
 
-- **Same script on each machine** (`go`) — each host runs your `.jl` from start
-  to finish. No rewrite needed. Prefer this when every run is already a complete
-  job.
-- **One machine coordinates** (`drive`) — your main Julia process stays
-  in charge and hands pieces of the work to the others
-  ([Distributed.jl][dist-jl]).
+- **Same script on each machine** (`go`) — each host runs your `.jl` end to
+  end. Prefer when every run is already a complete job.
+- **One machine coordinates** (`drive`) — the main process farms work to
+  the others ([Distributed.jl][dist-jl]).
 
-Around that, the kit handles remote project setup, sync, and collecting outputs.
-Use it from the terminal or from Julia code / notebooks.
+The kit also covers remote project setup, sync, and collecting outputs —
+from the terminal or from Julia / notebooks.
 
-How you call it is a separate choice:
+Call paths:
 
 - **Julia API** — `setup!` for remotes, `go!` / `drive!` to run, or
   `pipeline!` for optional sync → `size!` → `drive!` → collect (not `setup!`;
@@ -34,7 +28,7 @@ How you call it is a separate choice:
   (and `setup`, `demo`, …)
 - **`distsshkit` (experimental)** — after `pkg> app add DistSSHKit`, a
   `distsshkit` command on the terminal. Same flags as `-m`, but always the
-  Apps copy, not `--project=.`. Fine for `go` / `setup` / `demo`; keep `drive`
+  Apps copy, not `--project=.`. Use for `go` / `setup` / `demo`; keep `drive`
   and `size` on `julia --project=. -m DistSSHKit`. When to use it:
   [User Guide](@ref Manual-distsshkit).
 
@@ -52,11 +46,7 @@ From the Julia REPL, type `]` to enter the Pkg REPL mode and run:
 pkg> add DistSSHKit
 ```
 
-Or, equivalently, via the `Pkg` API:
-
-```julia
-julia> import Pkg; Pkg.add("DistSSHKit")
-```
+Or: `import Pkg; Pkg.add("DistSSHKit")`.
 
 Optional `distsshkit` command (**1.12+**, experimental):
 [User Guide](@ref Manual-distsshkit).
@@ -66,20 +56,18 @@ Also needs **`ssh`**, **`rsync`**, and **`git`** (git deploy only);
 
 ## Basic terms
 
-- **Host** — a machine. Here you specify it as a host token like `parent`
-  or `child:user@hostname`.
-- **Process** — one running `julia`. Each process has its own memory and
-  runs independently at the OS level.
-  (This kit launches multiple `julia` processes, even on a single machine,
-  to run work in parallel — built on Distributed.jl)
-- **Master** — the process on the kit parent that plans slots (`go`) or hands
-  work to workers (`drive`) and collects results. The kit parent is the machine
-  that started that process.
+- **Host** — a machine, given as a token like `parent` or
+  `child:user@hostname`.
+- **Process** — one `julia` OS process with its own memory. The kit may
+  start several per machine (Distributed.jl).
+- **Master** — the process on the kit parent that plans slots (`go`) or
+  farms work to workers (`drive`) and collects results. The kit parent is
+  the machine that started that process.
 - **Worker** — a process that receives work from the master and runs it.
 
-Example: when you run `go` / `drive` on your own machine, that machine is
-the kit parent. Each machine can run several workers (the kit parent may run
-none), and you can add as many remote machines as you like.
+Example: running `go` / `drive` on your machine makes that machine the kit
+parent. Each host can run several workers (including zero on the parent).
+Remotes are optional.
 
 ```@raw html
 <p style="text-align:center">
@@ -103,9 +91,8 @@ child:user@hostname    # SSH child (user@host, IP, or Host alias)
 child:user@hostname:4  # four on that child
 ```
 
-There's no limit on the number of SSH hosts — more hosts just means more
-time spent on SSH connections and deployment, so it's best to start with a few
-and scale up. Each SSH host needs:
+No hard limit on SSH hosts; more remotes means more SSH and deploy time —
+start with a few. Each SSH host needs:
 
 - Passwordless SSH from the kit parent
 - Julia with the same major.minor version as the kit parent

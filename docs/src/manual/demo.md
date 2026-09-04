@@ -8,7 +8,7 @@ julia --project=. -m DistSSHKit demo list
 julia --project=. -m DistSSHKit demo install without_kit --dest DIR
 ```
 
-Walkthrough: [First Steps · Demo](@ref Tutorial-Demo).
+Examples: [First Steps · Demo](@ref Tutorial-Demo).
 
 ## Flags / subcommands
 
