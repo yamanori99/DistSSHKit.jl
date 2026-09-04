@@ -86,7 +86,7 @@ ln -sfn "$(brew --prefix docker-compose)/bin/docker-compose" "${HOME}/.docker/cl
 ln -sfn "$(brew --prefix docker-buildx)/bin/docker-buildx" "${HOME}/.docker/cli-plugins/docker-buildx"
 echo "::endgroup::"
 
-# Cap the VM so host Julia (Darwin controller) keeps RAM. Full-host Colima
+# Cap the VM so host Julia (Darwin kit parent) keeps RAM. Full-host Colima
 # swaps on 14 GB macos-*-intel runners. Override with COLIMA_CPU / COLIMA_MEMORY_GB.
 COLIMA_CPU="${COLIMA_CPU:-3}"
 COLIMA_MEMORY_GB="${COLIMA_MEMORY_GB:-8}"

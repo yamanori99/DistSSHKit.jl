@@ -24,7 +24,7 @@ Build a session for drive APIs. `workers` are CLI-style tokens
 `session.tokens` keeps the original tokens (including `parent:N`).
 `remote` is the remote project path (`DISTRIBUTED_REMOTE_PROJECT_ROOT`).
 A value that starts with `~` stays a remote-shell layout (not `expanduser`
-on the controller).
+on the kit parent).
 
 `hosts_file` is appended when given. `ENV["DISTSSHKIT_HOSTS_FILE"]` is used
 only when `hosts_file` is omitted **and** `workers` is empty (same as

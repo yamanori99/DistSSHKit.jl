@@ -1,5 +1,5 @@
-# Write a file on each SSH worker (not on the controller).
-# square_file.jl writes CSV in main() on the controller; this is for collect bytes.
+# Write a file on each SSH worker (not on the kit parent).
+# square_file.jl writes CSV in main() on the kit parent; this is for collect bytes.
 
 using Distributed
 using DistSSHKit

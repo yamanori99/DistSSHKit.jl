@@ -151,7 +151,7 @@ function _ssh_e2e_write_summary!(suite::SshE2ESuite)
     return path
 end
 
-"""Append one controller/remote Julia resolution line for SUMMARY."""
+"""Append one kit-parent/remote Julia resolution line for SUMMARY."""
 function _ssh_e2e_record_julia!(
     suite::SshE2ESuite,
     role::AbstractString,
@@ -432,7 +432,7 @@ function _ssh_e2e_latest_go_batch(proj::AbstractString)::Union{Nothing,String}
     return last(sort(candidates; by=mtime))
 end
 
-"""Controller → bare URL using docker-ssh Host alias (`User`/`Port` from ssh_config)."""
+"""Kit parent → bare URL using docker-ssh Host alias (`User`/`Port` from ssh_config)."""
 function _ssh_e2e_bare_origin_from_controller()::String
     return "distsshkit-w1:" * _ssh_e2e_bare_origin()
 end
@@ -470,7 +470,7 @@ function _ssh_e2e_seed_git_origin!(proj::AbstractString)
     end
 
     proj = abspath(proj)
-    # Detach any previous origin; set controller-reachable origin for push/sync.
+    # Detach any previous origin; set kit-parent-reachable origin for push/sync.
     try
         run(pipeline(`git -C $proj remote remove origin`; stdout=devnull, stderr=devnull))
     catch

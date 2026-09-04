@@ -1,7 +1,7 @@
 #!/usr/bin/env julia
 # Real-SSH E2E against testenv/docker-ssh workers. Not part of Pkg.test().
 # Oracle: OpenSSH + rsync + remote Julia (setup / drive / go / git). Assert
-# files workers write (`run_on_host` / collect). Controller-side demo CSV is not
+# files workers write (`run_on_host` / collect). Kit-parent-side demo CSV is not
 # a remote collect. Inventory: test/README.md § SSH E2E.
 # Local with_kit recipes are test/integration/demos/.
 #
@@ -40,7 +40,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
 
 @testset "SSH E2E (docker-ssh)" verbose=true begin
     _with_ssh_e2e_suite() do suite
-        @testset "julia path resolve (controller + remotes)" begin
+        @testset "julia path resolve (kit parent + remotes)" begin
             withenv(_e2e_base_env()...) do
                 ctrl = DistSSHKit.resolve_controller_julia("auto")
                 @test isabspath(ctrl)
@@ -49,8 +49,8 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
                 ctrl_ver = DistSSHKit.parse_julia_version(read(`$ctrl --version`, String))
                 @test ctrl_ver isa VersionNumber
                 os_label = Sys.isapple() ? "darwin" : (Sys.islinux() ? "linux" : Sys.KERNEL)
-                _ssh_e2e_record_julia!(suite, "controller($(os_label))", ctrl, string(ctrl_ver))
-                _assert_ssh_e2e_api_ok(suite, "controller_julia", true, "path=$(ctrl) ver=$(ctrl_ver)")
+                _ssh_e2e_record_julia!(suite, "kit_parent($(os_label))", ctrl, string(ctrl_ver))
+                _assert_ssh_e2e_api_ok(suite, "kit_parent_julia", true, "path=$(ctrl) ver=$(ctrl_ver)")
 
                 for host in hosts
                     found = DistSSHKit.resolve_remote_julia(host, "auto")
@@ -149,7 +149,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             @test occursin("Julia", out)
         end
 
-        @testset "setup --juliaup (mismatch then align to controller)" begin
+        @testset "setup --juliaup (mismatch then align to kit parent)" begin
             ch = _ssh_e2e_julia_channels()
             @test ch.alt != ch.default
             host = hosts[1]
@@ -269,7 +269,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             _assert_kit_progress_done(joinpath(proj, "demos", "with_kit", "output"); kind=:drive)
         end
 
-        @testset "drive square_file CSV is local (controller main)" begin
+        @testset "drive square_file CSV is local (kit parent main)" begin
             square_file = joinpath(proj, "demos", "with_kit", "square_file.jl")
             out_csv = joinpath(proj, "demos", "with_kit", "output", "square_results.csv")
             isfile(out_csv) && rm(out_csv)

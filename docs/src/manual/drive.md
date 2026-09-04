@@ -109,7 +109,7 @@ only with `--progress` (TTY default) or `DISTSSHKIT_PROGRESS=1`.
 (Progress lines).
 
 Collect expands remote `~/…` roots on each host before `find` / rsync so the
-controller never `relpath`s against a tilde base (same ENV as
+kit parent never `relpath`s against a tilde base (same ENV as
 [setup remote path](@ref Manual-setup)).
 
 ## Driver script

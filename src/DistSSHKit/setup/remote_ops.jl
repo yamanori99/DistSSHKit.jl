@@ -112,7 +112,7 @@ Returns `(cancelled, succeeded, failed, hosts)`.
 Pass `confirm=false` to skip the proceed prompt (CLI `-y` / API `session.yes`).
 
 Runs `git clone` **on each remote**. Private URLs need credentials **on that host**
-(deploy key, HTTPS token, or agent forward) — not the controller's agent alone.
+(deploy key, HTTPS token, or agent forward) — not the kit parent's agent alone.
 """
 function clone_to_remotes(
     hosts::Vector{String},

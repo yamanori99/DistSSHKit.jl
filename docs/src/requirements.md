@@ -19,7 +19,7 @@ jobs.
   - Library (`Pkg.add` / `using` / `go!` / `drive!`), CLI
     (`julia -m DistSSHKit`), and optional `distsshkit`
     ([User Guide](@ref Manual-distsshkit))
-  - Same **major.minor** on the controller and SSH hosts (`setup --check`
+  - Same **major.minor** on the kit parent and SSH hosts (`setup --check`
     fails on a mismatch unless `--ignore-julia-version`; patch-only
     differences warn)
   - Prefer **[juliaup](https://github.com/JuliaLang/juliaup)** so
@@ -106,7 +106,7 @@ kit (`ConnectTimeout` here is `5`; the kit uses `10` plus keepalives).
 - `which rsync` — remotes / collect
 - `which git` — git deploy path only
 
-`setup --check` prints the same three on the controller (`ssh` missing
+`setup --check` prints the same three on the kit parent (`ssh` missing
 fails the check; `rsync` / `git` warn). Spawn uses those messages instead
 of a raw `ENOENT`.
 
@@ -147,7 +147,7 @@ julia --project=. -m DistSSHKit setup --juliaup USER@HOST
 #   /opt/homebrew/bin/juliaup default 1.12'
 ```
 
-Use your controller's major.minor in place of `1.12`. If juliaup is not
+Use your kit parent's major.minor in place of `1.12`. If juliaup is not
 installed on the host, install it first
 ([juliaup](https://github.com/JuliaLang/juliaup) or `brew install juliaup`);
 DistSSHKit does not bootstrap juliaup.

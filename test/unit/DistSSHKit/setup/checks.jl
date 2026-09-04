@@ -30,14 +30,14 @@ using Pkg
     @test !occursin("juliaup add 1.12\$(id) failed", sh_meta)
     DistSSHKit.print_juliaup_align_fix!("user@host"; kind=:missing, channel="1.12")
     DistSSHKit.print_juliaup_align_fix!("user@host"; kind=:mismatch, channel="1.12")
-    @test DistSSHKit.juliaup_controller_behind_channel(v"1.12.6", v"1.12.9")
-    @test !DistSSHKit.juliaup_controller_behind_channel(v"1.12.9", v"1.12.6")
-    @test !DistSSHKit.juliaup_controller_behind_channel(v"1.12.6", v"1.12.6")
-    @test !DistSSHKit.juliaup_controller_behind_channel(v"1.12.6", v"1.11.9")
-    @test DistSSHKit.print_juliaup_controller_patch_note!(
+    @test DistSSHKit.juliaup_parent_behind_channel(v"1.12.6", v"1.12.9")
+    @test !DistSSHKit.juliaup_parent_behind_channel(v"1.12.9", v"1.12.6")
+    @test !DistSSHKit.juliaup_parent_behind_channel(v"1.12.6", v"1.12.6")
+    @test !DistSSHKit.juliaup_parent_behind_channel(v"1.12.6", v"1.11.9")
+    @test DistSSHKit.print_juliaup_parent_patch_note!(
         v"1.12.9"; local_version=v"1.12.6", channel="1.12",
     )
-    @test !DistSSHKit.print_juliaup_controller_patch_note!(
+    @test !DistSSHKit.print_juliaup_parent_patch_note!(
         v"1.12.6"; local_version=v"1.12.6", channel="1.12",
     )
 

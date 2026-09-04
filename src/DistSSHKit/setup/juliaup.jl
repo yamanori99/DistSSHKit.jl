@@ -93,7 +93,7 @@ function print_juliaup_align_fix!(
 end
 
 """True when `remote` is same major.minor as `local` but a newer VersionNumber."""
-function juliaup_controller_behind_channel(
+function juliaup_parent_behind_channel(
     local_version::VersionNumber,
     remote_version::VersionNumber,
 )::Bool
@@ -101,16 +101,16 @@ function juliaup_controller_behind_channel(
     return remote_version > local_version
 end
 
-"""Note when remotes landed on a newer patch than the controller (channel latest)."""
-function print_juliaup_controller_patch_note!(
+"""Note when remotes landed on a newer patch than the kit parent (channel latest)."""
+function print_juliaup_parent_patch_note!(
     remote_version::VersionNumber;
     local_version::VersionNumber=VERSION,
     channel::AbstractString=juliaup_channel(local_version),
 )
-    juliaup_controller_behind_channel(local_version, remote_version) || return false
+    juliaup_parent_behind_channel(local_version, remote_version) || return false
     ch = String(channel)
-    warn("controller Julia $local_version is behind channel $ch latest on remotes ($remote_version)")
-    kit_println("    Tip: update the controller (e.g. juliaup update $ch), then re-run workers.")
+    warn("kit parent Julia $local_version is behind channel $ch latest on remotes ($remote_version)")
+    kit_println("    Tip: update the kit parent (e.g. juliaup update $ch), then re-run workers.")
     return true
 end
 
@@ -132,7 +132,7 @@ function _remote_julia_version_setup_ssh(
 end
 
 """
-Align each host's juliaup default to `channel` (controller major.minor).
+Align each host's juliaup default to `channel` (kit parent major.minor).
 
 Requires an existing remote `juliaup` (official `\$HOME/.juliaup/bin/juliaup` or
 macOS Homebrew `/opt/homebrew/bin/juliaup` / `/usr/local/bin/juliaup`). Does not
@@ -194,7 +194,7 @@ function juliaup_align_remotes(
             end
             print_ok("✓ Julia $ver (channel $ch)")
             kit_println()
-            print_juliaup_controller_patch_note!(ver; channel=ch)
+            print_juliaup_parent_patch_note!(ver; channel=ch)
             succeeded += 1
             push!(host_results, HostResult(host, true, "juliaup $ch"))
             _setup_host_span!(host, :ok)
