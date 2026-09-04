@@ -218,6 +218,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             ch = _ssh_e2e_julia_channels()
             @test ch.alt != ch.default
             host = hosts[1]
+            parent_restore = _ssh_e2e_local_juliaup_default_channel()
             try
                 _ssh_e2e_juliaup_default_local!(ch.alt)
                 _ssh_e2e_juliaup_default!(host, ch.alt)
@@ -279,7 +280,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
                 )
             finally
                 try
-                    _ssh_e2e_juliaup_default_local!(ch.default)
+                    _ssh_e2e_juliaup_default_local!(parent_restore)
                 catch e
                     @warn "restore kit parent juliaup default failed" exception=e
                 end

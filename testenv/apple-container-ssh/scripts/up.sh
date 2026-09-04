@@ -165,6 +165,7 @@ ssh -F "${DOCKER_ROOT}/.generated/ssh_config" distsshkit-w2 \
 if [[ "$RUN_E2E" -eq 1 ]]; then
   export DISTSSHKIT_SSH_E2E=1
   export DISTSSHKIT_YES=1
+  "${DOCKER_ROOT}/scripts/ensure-kit-parent-juliaup.sh"
   cd "${KIT_ROOT}"
   julia_e2e=(julia --project=. --color=yes)
   if [[ "${DISTSSHKIT_CODE_COVERAGE:-}" == "1" ]]; then

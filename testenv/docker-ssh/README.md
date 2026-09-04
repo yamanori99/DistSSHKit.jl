@@ -45,6 +45,10 @@ Worker image installs **two** juliaup channels from
 `DISTSSHKIT_E2E_JULIA_{DEFAULT,ALT}_CHANNEL` for `test/e2e.jl`. Patch floats
 within a channel; only major.minor is required. Install policy:
 [Requirements](https://yamanori99.github.io/DistSSHKit.jl/dev/requirements/).
+`--e2e` also runs
+[`scripts/ensure-kit-parent-juliaup.sh`](scripts/ensure-kit-parent-juliaup.sh)
+so the kit parent has juliaup + both channels (`setup --juliaup parent`;
+CI `setup-julia` alone does not install juliaup).
 
 On macOS, publish ports on `127.0.0.1` (Docker Desktop / Colima defaults)
 so macOS 15 Local
@@ -57,6 +61,7 @@ Network Privacy does not block SSH from the kit parent.
 | [`Dockerfile`](Dockerfile) / [`start.sh`](start.sh) | Worker image |
 | [`compose.yml`](compose.yml) | Two children (`child-1` / `child-2`) |
 | [`scripts/julia-channels.sh`](scripts/julia-channels.sh) | slots → juliaup channel build-args |
+| [`scripts/ensure-kit-parent-juliaup.sh`](scripts/ensure-kit-parent-juliaup.sh) | kit parent juliaup + channels for `--e2e` |
 | [`scripts/gen-keys.sh`](scripts/gen-keys.sh) | Keys and SSH config |
 | [`scripts/up.sh`](scripts/up.sh) | Keys → compose up → wait |
 | [`scripts/wait-ready.sh`](scripts/wait-ready.sh) | SSH + Julia probe |

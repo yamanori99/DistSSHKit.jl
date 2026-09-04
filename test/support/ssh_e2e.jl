@@ -127,6 +127,11 @@ function _ssh_e2e_local_juliaup_julia_version()::VersionNumber
     ver === nothing && error("unparseable julia --version from $jl")
     return ver
 end
+
+"""Channel string for the kit parent's current juliaup default shim."""
+function _ssh_e2e_local_juliaup_default_channel()::String
+    return DistSSHKit.juliaup_channel(_ssh_e2e_local_juliaup_julia_version())
+end
 # Empty-tree `go --rsync` (copy + instantiate). Not the main rsync root:
 # later `setup --rsync` nonempty checks would fail if we reused that path.
 _ssh_e2e_go_rsync_remote_root() = "/home/dev/distsshkit-e2e-go-rsync"

@@ -198,7 +198,9 @@ DISTSSHKIT_CODE_COVERAGE=1 \
 - `--instantiate` / `--check`: job deps; Julia version (no
   `--ignore-julia-version`)
 - `--juliaup`: remotes (mismatch → align); `parent` + one remote
-  (kit parent + child default restored in `finally`)
+  (kit parent + child default restored in `finally`). `--e2e` ensures
+  kit-parent juliaup + both channels via
+  `ensure-kit-parent-juliaup.sh` (needed on CI `setup-julia`)
 - `--runtest`: job `Pkg.test` pass; a planted failure is non-zero
 - `--rsync` nonempty: refused
 - `~/…` remote path: delete → rsync → instantiate → drive still run
