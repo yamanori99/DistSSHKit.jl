@@ -144,7 +144,7 @@ CLI のオプションと Julia API は1対1である。
   (push せず pull だけ)、または再度 `--rsync`
 - その他
   - `--check` (SSH / Julia / 依存関係の疎通確認)
-  - `--juliaup` (juliaup でリモート Julia を揃える。確認あり。`-y` で省略)
+  - `--juliaup` (juliaup で SSH ホストや `parent` の Julia を揃える。確認あり。`-y` で省略)
   - `--prune` (`.distsshkit` の go / drive / setup を消す。配置ツリーは残す)
   - `--cleanup` (残っているワーカープロセスの掃除)
   - `--delete` (リモートのプロジェクトディレクトリを削除。破壊的操作)
