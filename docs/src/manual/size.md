@@ -29,6 +29,17 @@ Flag vocabulary: [User Guide](@ref Manual).
 - `-v` / `--version`: print DistSSHKit version and exit
 - `-h` / `--help`: full help
 
+The CPU term prefers the OS core count: remotes use `hw.ncpu` (macOS) or
+`nproc` (Linux); the local host prefers `hw.ncpu` and falls back to
+`Sys.CPU_THREADS` when that query fails (typical on Linux controllers).
+Parent hosts reserve 2 cores, children reserve 1. The formula does not
+change with the Julia minor. Kit sizes **process** counts; it does not set
+`--threads=auto` or worker thread pools. On Apple Silicon with Julia ≤1.12,
+`Sys.CPU_THREADS` may look smaller (performance-core heuristic) than
+`hw.ncpu`; remotes and macOS locals still size from OS cores. Julia 1.13+
+counts all cores too
+([JuliaLang/julia#62891](https://github.com/JuliaLang/julia/pull/62891)).
+
 Drive preflight uses the same RAM fraction, `parent_gb`, and CPU reserve as
 `size_worker_count` (`pipeline!` / `drive!` / CLI `drive --mem-headroom`).
 RSS safety / floor / fallback stay unexported constants (not flags).
