@@ -6,27 +6,26 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
-- CI: Linux SSH E2E uses the same path filter on **pull requests** as on
-  **main** push (`src/` / `test/` / `testenv/` / …). Markdown-only
-  allowlisted PRs still skip it; `cut` and `workflow_dispatch` still
-  force it.
-- `setup --juliaup` / `setup!(session, :juliaup)`: on each SSH host, run
-  juliaup `add` / `update` / `default` for the kit parent's major.minor
-  channel (confirm unless `-y`; changes the host default Julia). Requires
-  existing `$HOME/.juliaup/bin/juliaup` or macOS Homebrew
-  (`/opt/homebrew/bin/juliaup` / `/usr/local/bin/juliaup`; does not install
-  juliaup). When remotes end newer than the kit parent patch, prints a Tip to
-  update the kit parent. `setup --check` Fix text points at `--juliaup` and the
-  same manual commands (#311).
-- E2E worker image: bake juliaup channels for slot **max** (default) and
-  **min** (alt); `setup --juliaup` E2E mismatches via alt then realigns
-  (`testenv/docker-ssh`, apple-container build-args from
-  `.github/julia-slots.env`).
-- README / README.ja: `<picture>` keeps GitHub light/dark SVGs; the
-  fallback `img` is the paper PNG so JuliaHub dark mode still shows
-  the topology and the footer mark.
-- Docs: DistSSHQueue links go to its stable docs, not the GitHub
-  repository. README / README.ja keep the repository URL.
+## 0.5.2
+
+Patch after `0.5.1`.
+
+- `setup --juliaup` / `setup!(session, :juliaup)`: align remotes to the
+  kit parent's major.minor (`add` / `update` / `default`; confirm unless
+  `-y`; changes host default). Needs existing juliaup at
+  `$HOME/.juliaup/bin/juliaup` or Homebrew (`/opt/homebrew` /
+  `/usr/local`); does not install it. Tip if remotes are a newer patch.
+  `setup --check` Fix points at `--juliaup` (#311).
+- E2E worker image bakes juliaup channels for slots **max** and **min**;
+  the suite mismatches then realigns with `--juliaup`.
+- Copy says **kit parent** (not controller) (#316).
+- Requirements: SSH (LAN/VPN) is enough; constant internet is mainly for
+  `Pkg` / `git` / installing Julia (#313).
+- Docs: `size` uses OS cores (`hw.ncpu` / `nproc`), not Julia threads
+  (#312). DistSSHQueue links go to its stable docs (README keeps GitHub).
+- README: paper PNG fallback under `<picture>` for JuliaHub dark mode.
+- CI: path-filtered Linux E2E on ordinary PRs (same as **main**); `cut` /
+  `workflow_dispatch` still force it.
 
 ## 0.5.1
 
