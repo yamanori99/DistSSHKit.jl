@@ -6,6 +6,10 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+## 0.5.3
+
+Patch after `0.5.2`.
+
 - `setup --juliaup` / `setup!(session, :juliaup)` accept `parent` (kit
   parent machine) alongside SSH hosts (#328). Tip for parent lagging the
   channel points at `setup --juliaup parent`. SSH E2E: mismatch then

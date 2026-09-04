@@ -1,7 +1,7 @@
 name = "DistSSHKit"
 uuid = "ceec0504-c968-4be5-b215-667cae0e8f81"
 license = "MIT"
-version = "0.5.2"
+version = "0.5.3"
 authors = ["Yamamoto, Takanori <takanori.yamamoto.99@gmail.com>", "Ampuku, Honoka <ampk.hono@gmail.com>"]
 
 [workspace]
