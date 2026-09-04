@@ -22,6 +22,7 @@ using .DistSSHKit:
     resolve_remote_project_root,
     rsync_push_to_remotes,
     runtest_remotes,
+    setup_juliaup_ssh_hosts,
     show_requirements,
     show_usage,
     validate_setup_hosts,

@@ -232,12 +232,10 @@ function juliaup_align_remotes(
         out_buf = IOBuffer()
         try
             if is_parent_host_name(host)
-                ver = Ref{VersionNumber}(v"0.0.0")
-                kit_spin!("  $PARENT_HOST_NAME: ") do
-                    ver[] = _juliaup_align_local!(ch)
-                    return nothing
+                ver = kit_spin!("  $PARENT_HOST_NAME: ") do
+                    _juliaup_align_local!(ch)
                 end
-                print_ok("✓ Julia $(ver[]) (channel $ch)")
+                print_ok("✓ Julia $ver (channel $ch)")
                 kit_println()
                 kit_println("    Note: this process still runs Julia $VERSION until you restart.")
                 succeeded += 1
