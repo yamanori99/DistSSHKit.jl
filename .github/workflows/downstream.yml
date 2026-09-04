@@ -1,5 +1,7 @@
 # DistSSHQueue.jl tip against this Kit checkout (PR / main).
 # Soft gate: continue-on-error until the check is trusted as required.
+# `labeled` so adding `cut` after open starts this workflow (default
+# pull_request types omit it; Test keeps labeled off — see ci-cut.yml).
 name: Downstream
 
 on:
@@ -7,6 +9,7 @@ on:
     branches:
       - main
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
 
 concurrency:
@@ -45,7 +48,14 @@ jobs:
         env:
           FILTER: ${{ steps.filter.outputs.kit }}
           CUT: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'cut') }}
+          ACTION: ${{ github.event.action }}
+          LABEL: ${{ github.event.label.name }}
         run: |
+          # Other labels must not re-run Queue tip.
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ] && [ "$ACTION" = "labeled" ] && [ "$LABEL" != "cut" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] || [ "$CUT" = "true" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           elif [ "$GITHUB_EVENT_NAME" = "push" ] || [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then

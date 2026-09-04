@@ -176,8 +176,9 @@ allow-failure. A job skipped by the heavy / E2E gate shows as skipping
 - `PR label`
 
 **Downstream** ([`.github/workflows/downstream.yml`](.github/workflows/downstream.yml)):
-on `src/**`, `Project.toml`, that workflow, **`cut`**, or dispatch,
-checkout [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
+on `src/**`, `Project.toml`, that workflow, **`cut`** (including when the
+label is added after open — `labeled` is on this workflow only), or
+dispatch, checkout [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
 `main`, `Pkg.develop` this Kit tree, then Queue `Pkg.test()` (unit +
 integration; no SSH E2E). Job name
 `DistSSHQueue - max - ubuntu-latest`. Soft (`continue-on-error`); not
