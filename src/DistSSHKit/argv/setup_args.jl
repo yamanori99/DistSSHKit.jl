@@ -13,6 +13,7 @@ function show_requirements(; io::IO=stdout)
         "  setup --rsync host1 host2",
         "  setup --instantiate host1 host2",
         "  setup --check host1 host2",
+        "  setup --juliaup host1 host2",
         "  setup --runtest host1 host2",
     )
     print_help_blank(io)
@@ -22,6 +23,7 @@ function show_requirements(; io::IO=stdout)
         "                       --delete first to replace",
         "  --sync / --pull      git update (confirm unless -y)",
         "  --instantiate        Pkg.instantiate on remotes",
+        "  --juliaup            align Julia via juliaup (confirm unless -y)",
         "  --check              SSH, Julia, project, deps",
         "  --runtest            Pkg.test of the job project on remotes",
         "  --cleanup / --delete stale workers / remote tree",
@@ -82,6 +84,9 @@ function parse_setup_args(args::Vector{String})
             cli_consume!(c)
         elseif arg == "--instantiate"
             mode = :instantiate
+            cli_consume!(c)
+        elseif arg == "--juliaup"
+            mode = :juliaup
             cli_consume!(c)
         elseif arg == "--runtest"
             mode = :runtest

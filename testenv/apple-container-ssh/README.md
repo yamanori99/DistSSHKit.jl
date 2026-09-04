@@ -30,7 +30,8 @@ From this directory (kit root also works if you keep the path):
 Each `up.sh` runs `container system start` and rebuilds
 `local/linux-ssh-worker:latest` from
 [`../docker-ssh/Dockerfile`](../docker-ssh/Dockerfile)
-(layer cache if the file is unchanged). Then it removes and recreates
+with juliaup channels from `.github/julia-slots.env` (same as Compose).
+Layer cache if the file is unchanged. Then it removes and recreates
 `child-1` / `child-2`.
 Keys come from `docker-ssh/scripts/gen-keys.sh` (mounted from
 `docker-ssh/mounted-keys`).

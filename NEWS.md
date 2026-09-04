@@ -6,6 +6,17 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+- `setup --juliaup` / `setup!(session, :juliaup)`: on each SSH host, run
+  juliaup `add` / `update` / `default` for the controller's major.minor
+  channel (confirm unless `-y`; changes the host default Julia). Requires
+  existing `$HOME/.juliaup/bin/juliaup` (does not install juliaup).
+  When remotes end newer than the controller patch, prints a Tip to update
+  the controller. `setup --check` Fix text points at `--juliaup` and the
+  same manual commands (#311).
+- E2E worker image: bake juliaup channels for slot **max** (default) and
+  **min** (alt); `setup --juliaup` E2E mismatches via alt then realigns
+  (`testenv/docker-ssh`, apple-container build-args from
+  `.github/julia-slots.env`).
 - README / README.ja: `<picture>` keeps GitHub light/dark SVGs; the
   fallback `img` is the paper PNG so JuliaHub dark mode still shows
   the topology and the footer mark.

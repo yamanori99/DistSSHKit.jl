@@ -7,6 +7,7 @@ const _SETUP_BANG_MODES = (
     :sync,
     :pull,
     :instantiate,
+    :juliaup,
     :check,
     :runtest,
     :cleanup,
@@ -27,6 +28,7 @@ Prepare SSH hosts — same jobs as `julia -m DistSSHKit setup --…`.
 | `:sync` | `--sync` | Local push + remote pull (git remotes); confirm unless `session.yes` |
 | `:pull` | `--pull` | Local pull then remote pull; confirm unless `session.yes` |
 | `:instantiate` | `--instantiate` | `julia=` (default `"auto"`) |
+| `:juliaup` | `--juliaup` | Align remote Julia via juliaup; confirm unless `session.yes`. Tip if controller patch lags channel latest |
 | `:check` | `--check` | `ignore_julia_version=`, `check_code_sync=` |
 | `:runtest` | `--runtest` | job `Pkg.test()` on remotes; `julia=` |
 | `:cleanup` | `--cleanup` | Kill stale workers (no confirm) |
@@ -164,6 +166,10 @@ function _setup_one!(
         return SyncResult(false, raw.host_results; ok=raw.ok)
     elseif mode === :instantiate
         return instantiate!(session; julia=julia_path)
+    elseif mode === :juliaup
+        preflight_setup_ssh(hosts) || return SyncResult(true, HostResult[]; ok=false)
+        raw = juliaup_align_remotes(hosts; confirm=!session.yes)
+        return _sync_result_from_host_op(raw)
     elseif mode === :runtest
         preflight_setup_ssh(hosts) || return SyncResult(true, HostResult[]; ok=false)
         raw = runtest_remotes(

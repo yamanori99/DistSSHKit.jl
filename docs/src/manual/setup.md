@@ -7,7 +7,7 @@ julia --project=. -m DistSSHKit setup [options] HOST...
 ```
 
 From Julia, use [`setup!`](@ref) for the same modes as this CLI
-(`:delete`, `:rsync`, `:clone`, `:instantiate`, `:check`, `:runtest`,
+(`:delete`, `:rsync`, `:clone`, `:instantiate`, `:juliaup`, `:check`, `:runtest`,
 `:prune`, …), or the shorter [`sync!`](@ref) / [`instantiate!`](@ref) aliases
 ([API](@ref API), [First Steps · Prepare](@ref Tutorial-Prepare)).
 `setup!(session, :clone)` requires an explicit `repo=` URL (clone runs
@@ -40,6 +40,10 @@ Pick **one mode** per invocation (except shared options).
 - `--pull`: `git pull` on laptop first, then remotes (no push; confirm
   unless `-y`)
 - `--instantiate`: `Pkg.instantiate` on remotes after deploy
+- `--juliaup`: align remote Julia via juliaup to the controller
+  major.minor (`add` / `update` / `default`; confirm unless `-y`;
+  changes host default). Requires juliaup already on the host. If
+  remotes land on a newer patch than the controller, prints a Tip
 - `--runtest`: `Pkg.test()` of the **job** project on remotes (not
   DistSSHKit's tests)
 - `--prune`: delete `.distsshkit/{go,drive,setup}` leaves on localhost

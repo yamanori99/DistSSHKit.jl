@@ -10,6 +10,25 @@ using Pkg
     @test DistSSHKit.julia_version_mismatch_kind(VERSION, VersionNumber(VERSION.major, VERSION.minor + 1, 0)) ==
         :minor
 
+    @test DistSSHKit.juliaup_channel(v"1.12.6") == "1.12"
+    @test DistSSHKit.juliaup_channel(VERSION) == "$(VERSION.major).$(VERSION.minor)"
+    sh = DistSSHKit._juliaup_align_remote_sh("1.12")
+    @test occursin(raw"$HOME/.juliaup/bin/juliaup", sh)
+    @test occursin(" add ", sh) || occursin("add '", sh)
+    @test occursin("update", sh) && occursin("default", sh)
+    DistSSHKit.print_juliaup_align_fix!("user@host"; kind=:missing, channel="1.12")
+    DistSSHKit.print_juliaup_align_fix!("user@host"; kind=:mismatch, channel="1.12")
+    @test DistSSHKit.juliaup_controller_behind_channel(v"1.12.6", v"1.12.9")
+    @test !DistSSHKit.juliaup_controller_behind_channel(v"1.12.9", v"1.12.6")
+    @test !DistSSHKit.juliaup_controller_behind_channel(v"1.12.6", v"1.12.6")
+    @test !DistSSHKit.juliaup_controller_behind_channel(v"1.12.6", v"1.11.9")
+    @test DistSSHKit.print_juliaup_controller_patch_note!(
+        v"1.12.9"; local_version=v"1.12.6", channel="1.12",
+    )
+    @test !DistSSHKit.print_juliaup_controller_patch_note!(
+        v"1.12.6"; local_version=v"1.12.6", channel="1.12",
+    )
+
     r = withenv("PATH" => "/nonexistent-distsshkit-path") do
         redirect_stdout(devnull) do
             redirect_stderr(devnull) do

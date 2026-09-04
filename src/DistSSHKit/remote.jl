@@ -491,6 +491,16 @@ end
 # `size!` then `drive!` / `--check` then `--instantiate` skips repeat SSH.
 const _DETECT_JULIA_PATH_CACHE = Dict{String,Union{Nothing,String}}()
 
+"""Drop cached `detect_julia_path` results (`host=nothing` → all hosts)."""
+function clear_detect_julia_path_cache!(host::Union{Nothing,AbstractString}=nothing)
+    if host === nothing
+        empty!(_DETECT_JULIA_PATH_CACHE)
+    else
+        delete!(_DETECT_JULIA_PATH_CACHE, String(strip(host)))
+    end
+    return nothing
+end
+
 """Detect Julia path on remote host via SSH (executable + parseable `--version`)."""
 function detect_julia_path(host::String)::Union{Nothing,String}
     h = String(strip(host))

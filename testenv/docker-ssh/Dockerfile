@@ -4,11 +4,18 @@ FROM ubuntu:24.04
 # https://docs.github.com/packages/working-with-a-github-packages-registry/working-with-the-container-registry
 LABEL org.opencontainers.image.source="https://github.com/yamanori99/DistSSHKit.jl"
 LABEL org.opencontainers.image.documentation="https://github.com/yamanori99/DistSSHKit.jl/blob/main/testenv/docker-ssh/README.md"
-LABEL org.opencontainers.image.description="Linux SSH worker for DistSSHKit E2E (sshd, rsync, git, Julia 1.13). Not the DistSSHKit runtime."
+LABEL org.opencontainers.image.description="Linux SSH worker for DistSSHKit E2E (sshd, rsync, git, Julia via juliaup). Not the DistSSHKit runtime."
 LABEL org.opencontainers.image.licenses="MIT"
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV SSH_USER=dev
+
+# Channels from `.github/julia-slots.env` (major.minor). DEFAULT = slot max,
+# ALT = slot min — both baked so E2E can mismatch then `setup --juliaup`.
+ARG JULIA_DEFAULT_CHANNEL=1.13
+ARG JULIA_ALT_CHANNEL=1.12
+ENV DISTSSHKIT_WORKER_JULIA_DEFAULT=${JULIA_DEFAULT_CHANNEL}
+ENV DISTSSHKIT_WORKER_JULIA_ALT=${JULIA_ALT_CHANNEL}
 
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -26,12 +33,13 @@ RUN useradd -m -s /bin/bash "${SSH_USER}" \
     && echo "${SSH_USER} ALL=(ALL) NOPASSWD:ALL" > "/etc/sudoers.d/${SSH_USER}" \
     && chmod 440 "/etc/sudoers.d/${SSH_USER}"
 
-# Pin major.minor to JULIA_SLOT_MAX in .github/julia-slots.env (E2E is the max
-# pair). Patch floats; setup --check fails on major.minor mismatch without
-# --ignore-julia-version.
-RUN su - "${SSH_USER}" -c \
-    'curl --retry 5 --retry-delay 5 --retry-connrefused --connect-timeout 10 \
-        -fsSL https://install.julialang.org | sh -s -- --yes --default-channel 1.13' \
+# Patch floats within each channel; setup --check fails on major.minor mismatch
+# without --ignore-julia-version. Default channel matches CI E2E controller (max).
+RUN su - "${SSH_USER}" -c "\
+    curl --retry 5 --retry-delay 5 --retry-connrefused --connect-timeout 10 \
+        -fsSL https://install.julialang.org | sh -s -- --yes --default-channel ${JULIA_DEFAULT_CHANNEL} && \
+    \"\$HOME/.juliaup/bin/juliaup\" add ${JULIA_ALT_CHANNEL} && \
+    \"\$HOME/.juliaup/bin/juliaup\" default ${JULIA_DEFAULT_CHANNEL}" \
     && ln -sf "/home/${SSH_USER}/.juliaup/bin/julia" /usr/local/bin/julia
 
 RUN mkdir -p /run/sshd /mounted-keys \

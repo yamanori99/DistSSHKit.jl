@@ -28,6 +28,7 @@ using Test
         "--sync" => :sync,
         "--pull" => :pull,
         "--instantiate" => :instantiate,
+        "--juliaup" => :juliaup,
         "--cleanup" => :cleanup,
         "--prune" => :prune,
         "--delete" => :delete,
@@ -89,6 +90,7 @@ using Test
         @test occursin("--prune", txt)
         @test occursin("--older-than", txt)
         @test occursin("--runtest", txt)
+        @test occursin("--juliaup", txt)
         @test occursin("--hosts", txt)
         @test occursin("progress DIR", txt)
         @test occursin("Recommended:", txt)

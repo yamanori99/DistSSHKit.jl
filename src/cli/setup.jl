@@ -78,6 +78,7 @@ if !isdefined(@__MODULE__, :setup_main)
                 :sync => "Sync",
                 :rsync_push => "rsync (no git)",
                 :instantiate => "Instantiate",
+                :juliaup => "juliaup (align Julia)",
                 :runtest => "Pkg.test (job)",
                 :cleanup => "Cleanup Workers",
                 :prune => "Prune kit leaves",
@@ -89,7 +90,8 @@ if !isdefined(@__MODULE__, :setup_main)
 
             # Mutating / multi-host SSH ops: fail fast before confirmations.
             if mode === :delete || mode === :clone || mode === :rsync_push ||
-               mode === :instantiate || mode === :runtest || mode === :prune
+               mode === :instantiate || mode === :runtest || mode === :prune ||
+               mode === :juliaup
                 if !preflight_setup_ssh(opts.hosts)
                     print_err("SSH preflight failed. Fix connectivity, then retry.")
                     kit_println()
@@ -129,6 +131,13 @@ if !isdefined(@__MODULE__, :setup_main)
                         opts.hosts, opts.julia_path, remote_path, project;
                         path_anchor=path_anchor,
                     ),
+                ) ? 0 : 1)
+            end
+
+            if mode === :juliaup
+                return Cint(finish_host_op!(
+                    "juliaup",
+                    juliaup_align_remotes(opts.hosts),
                 ) ? 0 : 1)
             end
 

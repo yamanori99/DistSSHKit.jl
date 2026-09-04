@@ -241,6 +241,12 @@ using Test
             @test DistSSHKit._DETECT_JULIA_PATH_CACHE["no-such-host.invalid"] === nothing
             DistSSHKit._DETECT_JULIA_PATH_CACHE["cache-hit.host"] = "/opt/julia"
             @test DistSSHKit.detect_julia_path("cache-hit.host") == "/opt/julia"
+            DistSSHKit.clear_detect_julia_path_cache!("cache-hit.host")
+            @test !haskey(DistSSHKit._DETECT_JULIA_PATH_CACHE, "cache-hit.host")
+            DistSSHKit._DETECT_JULIA_PATH_CACHE["a"] = "/a"
+            DistSSHKit._DETECT_JULIA_PATH_CACHE["b"] = "/b"
+            DistSSHKit.clear_detect_julia_path_cache!()
+            @test isempty(DistSSHKit._DETECT_JULIA_PATH_CACHE)
         finally
             empty!(DistSSHKit._DETECT_JULIA_PATH_CACHE)
         end
