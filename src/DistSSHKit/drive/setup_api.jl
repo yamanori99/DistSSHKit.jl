@@ -223,19 +223,19 @@ end
 function _setup_bang_hosts!(session::KitSession; allow_parent::Bool=false)
     apply_session_env!(session)
     hosts = copy(session.hosts)
-    if allow_parent
-        # `session.hosts` is SSH children only; parent lives on `tokens`.
-        for t in session.tokens
-            pt = try
-                parse_placement_token(t)
-            catch
-                nothing
-            end
-            pt === nothing && continue
-            if pt.role === :parent
-                push!(hosts, PARENT_HOST_NAME)
-                break
-            end
+    # `session.hosts` is SSH children only; parent lives on `tokens`.
+    # Always surface `parent` so non-`:juliaup` modes hit validate_setup_hosts
+    # instead of silently dropping it.
+    for t in session.tokens
+        pt = try
+            parse_placement_token(t)
+        catch
+            nothing
+        end
+        pt === nothing && continue
+        if pt.role === :parent
+            push!(hosts, PARENT_HOST_NAME)
+            break
         end
     end
     isempty(hosts) && throw(ArgumentError(

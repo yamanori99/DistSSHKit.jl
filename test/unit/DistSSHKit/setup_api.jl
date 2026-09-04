@@ -171,6 +171,18 @@ using Test
                 end
             end
         end
+        _with_tempdir() do proj
+            write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\n")
+            session = DistSSHKit.KitSession(
+                project=proj,
+                workers=["parent", "child:host1"],
+                remote="~/App.jl",
+                yes=true,
+                quiet=true,
+            )
+            @test_throws ArgumentError DistSSHKit.setup!(session, :check)
+            @test_throws ArgumentError DistSSHKit.setup!(session, :delete)
+        end
     end
 
     @testset "quiet suppresses Log file on stdout" begin
