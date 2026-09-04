@@ -8,6 +8,9 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 - CI: Downstream workflow runs DistSSHQueue tip `Pkg.test()` against the
   Kit checkout (`src/**` / `Project.toml` / `cut` / dispatch; soft gate).
+- Docs: exported help / display helpers (`print_help_*`, `print_colored`,
+  `SPINNER_FRAMES`) are a DistSSHQueue-oriented extension surface —
+  names and signatures only; rendered output is not frozen (#323).
 
 ## 0.5.2
 
