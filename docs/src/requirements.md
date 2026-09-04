@@ -7,7 +7,7 @@ pieces when you SSH to other hosts. `pkg> add DistSSHKit` does not install
 
 Runs need **SSH between machines** (LAN or VPN is enough). Constant
 internet is not required; you mainly need it for `Pkg.add` /
-`instantiate`, an outbound `git clone`, or installing Julia.
+`instantiate`, outbound `git clone` / `git pull`, or installing Julia.
 
 ## All machines
 
