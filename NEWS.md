@@ -6,6 +6,9 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+- CI: Downstream workflow runs DistSSHQueue tip `Pkg.test()` against the
+  Kit checkout (`src/**` / `Project.toml` / `cut` / dispatch; soft gate).
+
 ## 0.5.2
 
 Patch after `0.5.1`.
