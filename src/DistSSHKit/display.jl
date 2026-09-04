@@ -1844,6 +1844,8 @@ Kit help chrome — every overview / `--help` starts here:
     DistSSHKit drive
     ────────────────
 
+Exported for DistSSHQueue-style callers; signature is stable, exact
+glyphs / colors are not (see API · CLI parsers and helpers).
 """
 function print_help_chrome(title::AbstractString; io::IO=stdout)
     t = String(title)
