@@ -68,6 +68,7 @@ If check fails on Julia major.minor (and hosts already have juliaup):
 
 ```bash
 julia --project=. -m DistSSHKit setup --juliaup YourHost1 YourHost2
+julia --project=. -m DistSSHKit setup --juliaup parent   # this machine too
 ```
 
 Clean slate (confirm when prompted):

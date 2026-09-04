@@ -16,6 +16,10 @@ using Test
         # Representative refusals; DistSSHKit/hosts.jl covers the underlying predicates.
         @test_throws ArgumentError DistSSHKit.validate_setup_hosts(String[])
         @test_throws ArgumentError DistSSHKit.validate_setup_hosts(["parent"])
+        @test DistSSHKit.validate_setup_hosts(["parent"]; allow_parent=true) === nothing
+        @test DistSSHKit.validate_setup_hosts(["parent", "host-a"]; allow_parent=true) === nothing
+        @test DistSSHKit.setup_juliaup_ssh_hosts(["parent", "host-a"]) == ["host-a"]
+        @test DistSSHKit.setup_juliaup_ssh_hosts(["parent"]) == String[]
         @test DistSSHKit.validate_setup_hosts(["local"]) === nothing
         @test_throws ArgumentError DistSSHKit.validate_setup_hosts(["demos/foo.jl"])
         @test DistSSHKit.validate_setup_hosts(["root@192.0.2.10", "host-b"]) === nothing

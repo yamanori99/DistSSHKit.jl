@@ -137,6 +137,40 @@ using Test
                 end
             end
         end
+        _with_tempdir() do proj
+            write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\n")
+            mktempdir() do d
+                ju = joinpath(d, "juliaup")
+                jl = joinpath(d, "julia")
+                write(ju, """
+                    #!/bin/sh
+                    case "\$1" in
+                      add|update|default) exit 0 ;;
+                      status) echo ok; exit 0 ;;
+                      *) exit 1 ;;
+                    esac
+                    """)
+                write(jl, """
+                    #!/bin/sh
+                    echo "julia version $(VERSION.major).$(VERSION.minor).$(VERSION.patch)"
+                    """)
+                chmod(ju, 0o755)
+                chmod(jl, 0o755)
+                session = DistSSHKit.KitSession(
+                    project=proj,
+                    workers=["parent"],
+                    remote="~/App.jl",
+                    yes=true,
+                    quiet=true,
+                )
+                withenv("DISTSSHKIT_TEST_LOCAL_JULIAUP" => ju) do
+                    up = DistSSHKit.setup!(session, :juliaup)
+                    @test up.ok && !up.cancelled
+                    @test length(up.hosts) == 1 && up.hosts[1].ok
+                    @test up.hosts[1].host == "parent"
+                end
+            end
+        end
     end
 
     @testset "quiet suppresses Log file on stdout" begin

@@ -7,11 +7,14 @@ host_op_result(; cancelled::Bool=false, succeeded::Int=0, failed::Int=0) =
 """
 Validate setup CLI hosts.
 
-Setup hosts are **SSH targets only**. Unlike `drive` / `go`, `parent` is not
-an SSH target — pass `user@host` (or an SSH config `Host` alias), with no
-`child:` prefix (every setup host is a child).
+Most modes are **SSH targets only** (no `child:` prefix). `setup --juliaup`
+also accepts [`PARENT_HOST_NAME`](@ref) (`parent`) for the kit parent machine
+when `allow_parent=true`.
 """
-function validate_setup_hosts(hosts::AbstractVector{<:AbstractString})
+function validate_setup_hosts(
+    hosts::AbstractVector{<:AbstractString};
+    allow_parent::Bool=false,
+)
     isempty(hosts) && throw(ArgumentError("No hosts specified"))
     for raw in hosts
         host = String(raw)
@@ -22,11 +25,12 @@ function validate_setup_hosts(hosts::AbstractVector{<:AbstractString})
         end
         throw_legacy_placement_token(host)
         if is_parent_host_name(host)
-            throw(ArgumentError(
+            allow_parent || throw(ArgumentError(
                 "setup hosts are SSH targets only; $(repr(host)) means this job's DistSSHKit parent in drive/go. " *
                 "Pass user@host (or an SSH config Host alias). " *
-                "To remove a local project tree, delete it on this machine yourself.",
+                "Exception: `setup --juliaup parent` aligns juliaup on this machine.",
             ))
+            continue
         end
         if looks_like_path_host(host)
             throw(ArgumentError(
@@ -38,6 +42,11 @@ function validate_setup_hosts(hosts::AbstractVector{<:AbstractString})
         isempty(strip(host)) && throw(ArgumentError("empty host name"))
     end
     return nothing
+end
+
+"""SSH names from a juliaup target list (drops `parent`)."""
+function setup_juliaup_ssh_hosts(hosts::AbstractVector{<:AbstractString})::Vector{String}
+    return String[String(h) for h in hosts if !is_parent_host_name(h)]
 end
 
 """

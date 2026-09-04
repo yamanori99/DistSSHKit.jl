@@ -110,8 +110,69 @@ function print_juliaup_parent_patch_note!(
     juliaup_parent_behind_channel(local_version, remote_version) || return false
     ch = String(channel)
     warn("kit parent Julia $local_version is behind channel $ch latest on remotes ($remote_version)")
-    kit_println("    Tip: update the kit parent (e.g. juliaup update $ch), then re-run workers.")
+    kit_println("    Tip: julia --project=. -m DistSSHKit setup --juliaup $PARENT_HOST_NAME")
+    kit_println("         (or: juliaup update $ch && juliaup default $ch), then re-run workers.")
     return true
+end
+
+"""Local juliaup candidates (same layout as remotes; expands `\$HOME`)."""
+function local_juliaup_candidates()::Vector{String}
+    test = strip(get(ENV, "DISTSSHKIT_TEST_LOCAL_JULIAUP", ""))
+    isempty(test) || return String[test]
+    home = joinpath(homedir(), ".juliaup", "bin", "juliaup")
+    if Sys.isapple()
+        return String[home, "/opt/homebrew/bin/juliaup", "/usr/local/bin/juliaup"]
+    end
+    return String[home]
+end
+
+"""First existing local juliaup path, or `nothing`."""
+function find_local_juliaup(
+    candidates::Vector{String}=local_juliaup_candidates(),
+)::Union{Nothing,String}
+    for c in candidates
+        p = String(c)
+        isfile(p) && return p
+    end
+    return nothing
+end
+
+"""Julia binary beside a local juliaup (official / Homebrew shim layout)."""
+function _local_julia_beside_juliaup(juliaup_path::AbstractString)::String
+    return joinpath(dirname(String(juliaup_path)), "julia")
+end
+
+"""Run local `juliaup add` / `update` / `default` for `channel`."""
+function _juliaup_align_local!(
+    channel::AbstractString;
+    candidates::Vector{String}=local_juliaup_candidates(),
+)::VersionNumber
+    ch = String(channel)
+    ju = find_local_juliaup(candidates)
+    ju === nothing && error(
+        "juliaup not found (tried: $(join(candidates, ", ")))",
+    )
+    add = run(ignorestatus(Cmd([ju, "add", ch])); wait=true)
+    if add.exitcode != 0
+        st = sprint() do io
+            try
+                run(pipeline(Cmd([ju, "status"]); stdout=io, stderr=devnull); wait=true)
+            catch
+            end
+        end
+        occursin(ch, st) || error("juliaup add $ch failed")
+    end
+    run(Cmd([ju, "update", ch]); wait=true)
+    run(Cmd([ju, "default", ch]); wait=true)
+    jl = _local_julia_beside_juliaup(ju)
+    isfile(jl) || error("Julia not found after juliaup align ($jl)")
+    out = read(`$jl --version`, String)
+    ver = parse_julia_version(out)
+    ver === nothing && error("Julia --version unparseable after juliaup align")
+    if julia_version_mismatch_kind(VERSION, ver) == :minor
+        error("still mismatched after align: process $(VERSION), juliaup default $ver")
+    end
+    return ver
 end
 
 """Parse remote Julia version via setup SSH transport (`DISTSSHKIT_TEST_SSH`)."""
@@ -132,11 +193,13 @@ function _remote_julia_version_setup_ssh(
 end
 
 """
-Align each host's juliaup default to `channel` (kit parent major.minor).
+Align each target's juliaup default to `channel` (kit parent major.minor).
 
-Requires an existing remote `juliaup` (official `\$HOME/.juliaup/bin/juliaup` or
-macOS Homebrew `/opt/homebrew/bin/juliaup` / `/usr/local/bin/juliaup`). Does not
-install juliaup. Runs `add` → `update` → `default`. Confirm unless `confirm=false`.
+Targets may be SSH hosts and/or [`PARENT_HOST_NAME`](@ref) (`parent`). Requires
+an existing `juliaup` (official `\$HOME/.juliaup/bin/juliaup` or macOS Homebrew
+`/opt/homebrew/bin/juliaup` / `/usr/local/bin/juliaup`). Does not install
+juliaup. Runs `add` → `update` → `default`. Confirm unless `confirm=false`.
+Changing the default does not alter the Julia process already running this kit.
 """
 function juliaup_align_remotes(
     hosts::Vector{String};
@@ -145,11 +208,12 @@ function juliaup_align_remotes(
 )::NamedTuple
     ch = String(channel)
     if confirm && !kit_noninteractive()
-        print_err("  This will run juliaup add/update/default $ch on each host.\n")
+        print_err("  This will run juliaup add/update/default $ch on each target.\n")
         println_fatal("  That changes the host default Julia.")
-        println_fatal("  Hosts: $(join(hosts, ", "))")
+        println_fatal("  Targets: $(join(hosts, ", "))")
         println_fatal("  Needs juliaup at \$HOME/.juliaup/bin/juliaup or Homebrew")
         println_fatal("  (/opt/homebrew/bin/juliaup or /usr/local/bin/juliaup).")
+        println_fatal("  The running kit process keeps its current Julia until restart.")
         println_fatal()
         kit_confirm("Type 'juliaup' to confirm: "; keyword="juliaup") || begin
             println_fatal("Cancelled.")
@@ -167,6 +231,20 @@ function juliaup_align_remotes(
         err_buf = IOBuffer()
         out_buf = IOBuffer()
         try
+            if is_parent_host_name(host)
+                ver = Ref{VersionNumber}(v"0.0.0")
+                kit_spin!("  $PARENT_HOST_NAME: ") do
+                    ver[] = _juliaup_align_local!(ch)
+                    return nothing
+                end
+                print_ok("✓ Julia $(ver[]) (channel $ch)")
+                kit_println()
+                kit_println("    Note: this process still runs Julia $VERSION until you restart.")
+                succeeded += 1
+                push!(host_results, HostResult(PARENT_HOST_NAME, true, "juliaup $ch"))
+                _setup_host_span!(host, :ok)
+                continue
+            end
             kit_spin!("  $host: ") do
                 proc = run(
                     pipeline(

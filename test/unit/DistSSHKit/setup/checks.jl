@@ -40,6 +40,39 @@ using Pkg
     @test !DistSSHKit.print_juliaup_parent_patch_note!(
         v"1.12.6"; local_version=v"1.12.6", channel="1.12",
     )
+    tip_out, _ = with_kit_verbosity(:verbose) do
+        _capture_stdio() do _, _
+            DistSSHKit.print_juliaup_parent_patch_note!(
+                v"1.12.9"; local_version=v"1.12.6", channel="1.12",
+            )
+        end
+    end
+    @test occursin("setup --juliaup parent", tip_out)
+    @test occursin(".juliaup", DistSSHKit.local_juliaup_candidates()[1])
+    @test DistSSHKit.find_local_juliaup(String[]) === nothing
+    mktempdir() do d
+        ju = joinpath(d, "juliaup")
+        jl = joinpath(d, "julia")
+        write(ju, """
+            #!/bin/sh
+            case "\$1" in
+              add|update|default) exit 0 ;;
+              status) echo "1.12"; exit 0 ;;
+              *) exit 1 ;;
+            esac
+            """)
+        write(jl, """
+            #!/bin/sh
+            echo "julia version $(VERSION.major).$(VERSION.minor).$(VERSION.patch)"
+            """)
+        chmod(ju, 0o755)
+        chmod(jl, 0o755)
+        withenv("DISTSSHKIT_TEST_LOCAL_JULIAUP" => ju) do
+            @test DistSSHKit.find_local_juliaup() == ju
+            ver = DistSSHKit._juliaup_align_local!("$(VERSION.major).$(VERSION.minor)")
+            @test DistSSHKit.julia_version_mismatch_kind(VERSION, ver) != :minor
+        end
+    end
 
     r = withenv("PATH" => "/nonexistent-distsshkit-path") do
         redirect_stdout(devnull) do

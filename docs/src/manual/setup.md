@@ -40,12 +40,14 @@ Pick **one mode** per invocation (except shared options).
 - `--pull`: `git pull` on laptop first, then remotes (no push; confirm
   unless `-y`)
 - `--instantiate`: `Pkg.instantiate` on remotes after deploy
-- `--juliaup`: align remote Julia via juliaup to the kit parent
-  major.minor (`add` / `update` / `default`; confirm unless `-y`;
-  changes host default). Requires juliaup already on the host
-  (`$HOME/.juliaup/bin/juliaup` or macOS Homebrew
-  `/opt/homebrew/bin/juliaup` / `/usr/local/bin/juliaup`). If remotes
-  land on a newer patch than the kit parent, prints a Tip
+- `--juliaup`: align Julia via juliaup to the kit parent major.minor
+  (`add` / `update` / `default`; confirm unless `-y`; changes host
+  default). Targets: SSH hosts and/or `parent` (this machine). Requires
+  juliaup already on the target (`$HOME/.juliaup/bin/juliaup` or macOS
+  Homebrew `/opt/homebrew/bin/juliaup` / `/usr/local/bin/juliaup`). Does
+  not change the Julia process already running the kit. If remotes land
+  on a newer patch than the kit parent, prints a Tip pointing at
+  `setup --juliaup parent`
 - `--runtest`: `Pkg.test()` of the **job** project on remotes (not
   DistSSHKit's tests)
 - `--prune`: delete `.distsshkit/{go,drive,setup}` leaves on localhost

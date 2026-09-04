@@ -51,7 +51,7 @@ if !isdefined(@__MODULE__, :setup_main)
         end
 
         try
-            validate_setup_hosts(opts.hosts)
+            validate_setup_hosts(opts.hosts; allow_parent=opts.mode === :juliaup)
         catch e
             e isa ArgumentError || rethrow()
             # Fatal: always on terminal.
@@ -90,9 +90,15 @@ if !isdefined(@__MODULE__, :setup_main)
 
             # Mutating / multi-host SSH ops: fail fast before confirmations.
             if mode === :delete || mode === :clone || mode === :rsync_push ||
-               mode === :instantiate || mode === :runtest || mode === :prune ||
-               mode === :juliaup
+               mode === :instantiate || mode === :runtest || mode === :prune
                 if !preflight_setup_ssh(opts.hosts)
+                    print_err("SSH preflight failed. Fix connectivity, then retry.")
+                    kit_println()
+                    return Cint(1)
+                end
+            elseif mode === :juliaup
+                ssh_hosts = setup_juliaup_ssh_hosts(opts.hosts)
+                if !isempty(ssh_hosts) && !preflight_setup_ssh(ssh_hosts)
                     print_err("SSH preflight failed. Fix connectivity, then retry.")
                     kit_println()
                     return Cint(1)

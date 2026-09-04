@@ -6,6 +6,10 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+- `setup --juliaup` / `setup!(session, :juliaup)` accept `parent` (kit
+  parent machine) alongside SSH hosts (#328). Tip for parent lagging the
+  channel points at `setup --juliaup parent`.
+
 ## 0.5.2
 
 Patch after `0.5.1`.
