@@ -42,15 +42,14 @@ WSL2 is Linux, with a few extra rules:
 
 ## Remotes
 
-No hard limit on the number of remote hosts. More hosts just means more time
-spent on SSH connections and deployment, so start with a few and scale up.
+No hard limit on remote hosts. More remotes means more SSH and deploy time —
+start with a few.
 
 DistSSHKit runs one job while you stay connected.
 [DistSSHQueue.jl](https://yamanori99.github.io/DistSSHQueue.jl/stable/)
-(`pkg> add DistSSHQueue`) lets you line jobs up on a machine that stays on,
-so a dropped connection does not stop the run. DistSSHKit still does the
-running. `tmux` can keep a job that is already running. It will not look
-after jobs that come later.
+(`pkg> add DistSSHQueue`) queues jobs on a machine that stays on.
+DistSSHKit still does the running. `tmux` keeps an already-running job;
+it does not queue later ones.
 
 When you use SSH hosts (not just `parent:N`):
 

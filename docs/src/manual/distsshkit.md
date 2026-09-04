@@ -23,8 +23,8 @@ The first always runs the Apps copy of DistSSHKit, not the kit in
 
 | Command | Use |
 | --- | --- |
-| `go` / `setup` / `demo` | `distsshkit …` is fine |
-| `drive` / `size` | stay on `julia --project=. -m DistSSHKit …` |
+| `go` / `setup` / `demo` | `distsshkit …` |
+| `drive` / `size` | `julia --project=. -m DistSSHKit …` |
 
 ```bash
 distsshkit demo install with_kit
