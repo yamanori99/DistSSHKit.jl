@@ -6,6 +6,10 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+- CI: Linux SSH E2E uses the same path filter on **pull requests** as on
+  **main** push (`src/` / `test/` / `testenv/` / …). Markdown-only
+  allowlisted PRs still skip it; `cut` and `workflow_dispatch` still
+  force it.
 - `setup --juliaup` / `setup!(session, :juliaup)`: on each SSH host, run
   juliaup `add` / `update` / `default` for the controller's major.minor
   channel (confirm unless `-y`; changes the host default Julia). Requires
