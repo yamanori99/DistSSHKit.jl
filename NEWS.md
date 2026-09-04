@@ -6,10 +6,10 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
-- CI: Linux SSH E2E uses the same path filter on **pull requests** as on
-  **main** push (`src/` / `test/` / `testenv/` / …). Markdown-only
-  allowlisted PRs still skip it; `cut` and `workflow_dispatch` still
-  force it.
+## 0.5.2
+
+Patch after `0.5.1`.
+
 - `setup --juliaup` / `setup!(session, :juliaup)`: on each SSH host, run
   juliaup `add` / `update` / `default` for the kit parent's major.minor
   channel (confirm unless `-y`; changes the host default Julia). Requires
@@ -22,11 +22,22 @@ GitHub Releases may copy these sections (`Release notes:` on
   **min** (alt); `setup --juliaup` E2E mismatches via alt then realigns
   (`testenv/docker-ssh`, apple-container build-args from
   `.github/julia-slots.env`).
+- User-facing copy says **kit parent** (not controller) for the machine that
+  started the kit (#316).
+- Requirements: runs need SSH between machines (LAN/VPN). Constant internet
+  is mainly for `Pkg.add` / `instantiate`, outbound `git`, or installing
+  Julia (#313).
+- Docs: `size` worker counts use OS cores (`hw.ncpu` / `nproc`), not
+  `Sys.CPU_THREADS` / `--threads=auto` (#312).
+- Docs: DistSSHQueue links go to its stable docs, not the GitHub
+  repository. README / README.ja keep the repository URL.
 - README / README.ja: `<picture>` keeps GitHub light/dark SVGs; the
   fallback `img` is the paper PNG so JuliaHub dark mode still shows
   the topology and the footer mark.
-- Docs: DistSSHQueue links go to its stable docs, not the GitHub
-  repository. README / README.ja keep the repository URL.
+- CI: Linux SSH E2E uses the same path filter on **pull requests** as on
+  **main** push (`src/` / `test/` / `testenv/` / …). Markdown-only
+  allowlisted PRs still skip it; `cut` and `workflow_dispatch` still
+  force it.
 
 ## 0.5.1
 
