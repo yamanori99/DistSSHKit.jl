@@ -5,6 +5,10 @@ Prerequisites for [Introduction](@ref DistSSHKit.jl) and
 pieces when you SSH to other hosts. `pkg> add DistSSHKit` does not install
 **`ssh`**, **`rsync`**, or **`git`**.
 
+Runs need **SSH between machines** (LAN or VPN is enough). Constant
+internet is not required; you mainly need it for `Pkg.add` /
+`instantiate`, an outbound `git clone`, or installing Julia.
+
 ## All machines
 
 Applies to the machine where you run the kit **and** each SSH host that runs
