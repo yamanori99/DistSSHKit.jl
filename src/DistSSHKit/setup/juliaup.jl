@@ -1,19 +1,61 @@
 # Align remote Julia via juliaup (`setup --juliaup` / check Fix hints).
 
-"""Remote juliaup binary (non-interactive SSH has no login PATH)."""
-const _JULIAUP_REMOTE_BIN = raw"$HOME/.juliaup/bin/juliaup"
+"""Official install path for remote juliaup (non-interactive SSH has no login PATH)."""
+const _JULIAUP_REMOTE_BIN_HOME = raw"$HOME/.juliaup/bin/juliaup"
+
+"""
+Ordered remote `juliaup` candidates (same preference as Julia binaries).
+
+Prefers the official install under `\$HOME/.juliaup`, then Homebrew on macOS
+(`/opt/homebrew`, `/usr/local`). Linux only needs the home install today.
+"""
+function remote_juliaup_candidates(uname_s::AbstractString)::Vector{String}
+    os = lowercase(strip(String(uname_s)))
+    home = _JULIAUP_REMOTE_BIN_HOME
+    if startswith(os, "darwin")
+        return String[home, "/opt/homebrew/bin/juliaup", "/usr/local/bin/juliaup"]
+    end
+    return String[home]
+end
+
+"""Candidates when remote OS is unknown: try home + Homebrew paths."""
+function remote_juliaup_candidates()::Vector{String}
+    return String[
+        _JULIAUP_REMOTE_BIN_HOME,
+        "/opt/homebrew/bin/juliaup",
+        "/usr/local/bin/juliaup",
+    ]
+end
+
+"""Shell word for a juliaup candidate (`\$HOME/...` expands on the remote)."""
+function _juliaup_candidate_sh_word(path::AbstractString)::String
+    p = String(path)
+    p == _JULIAUP_REMOTE_BIN_HOME && return "\"\$HOME/.juliaup/bin/juliaup\""
+    return p
+end
 
 """Channel string for juliaup from a Julia `VersionNumber` (`\"1.12\"`)."""
 juliaup_channel(v::VersionNumber=VERSION)::String = "$(v.major).$(v.minor)"
 
 """SSH body: add / update / default `channel` with remote juliaup."""
-function _juliaup_align_remote_sh(channel::AbstractString)::String
+function _juliaup_align_remote_sh(
+    channel::AbstractString;
+    candidates::Vector{String}=remote_juliaup_candidates(),
+)::String
     ch = String(channel)
     cq = _remote_sh_quote(ch)
+    words = join(_juliaup_candidate_sh_word.(candidates), " ")
+    tried = join(candidates, ", ")
     return """
-JU=$(_JULIAUP_REMOTE_BIN)
-if [ ! -x \"\$JU\" ]; then
-  echo \"juliaup not found at \$HOME/.juliaup/bin/juliaup\" >&2
+JU=\"\"
+for c in $words; do
+  if [ -x \"\$c\" ]; then
+    JU=\"\$c\"
+    break
+  fi
+done
+if [ -z \"\$JU\" ]; then
+  echo \"juliaup not found (tried: $tried)\" >&2
   exit 127
 fi
 if ! \"\$JU\" add $cq; then
@@ -38,9 +80,9 @@ function print_juliaup_align_fix!(
     ch = String(channel)
     h = String(host)
     kit_println("    Fix: julia --project=. -m DistSSHKit setup --juliaup $h")
-    kit_println("         (or on $h: $(_JULIAUP_REMOTE_BIN) add $ch && \\")
-    kit_println("          $(_JULIAUP_REMOTE_BIN) update $ch && \\")
-    kit_println("          $(_JULIAUP_REMOTE_BIN) default $ch -- changes host default Julia)")
+    kit_println("         (or on $h: juliaup add $ch && update $ch && default $ch —")
+    kit_println("          \$HOME/.juliaup/bin/juliaup or /opt/homebrew/bin/juliaup;")
+    kit_println("          changes host default Julia)")
     kit_println("         No juliaup? install it first (see Requirements), or use --julia PATH /")
     kit_println("         JULIA_DISTRIBUTED_EXE.")
     if kind === :mismatch
@@ -91,8 +133,9 @@ end
 """
 Align each host's juliaup default to `channel` (controller major.minor).
 
-Requires existing `\$HOME/.juliaup/bin/juliaup` on the remote (does not install
-juliaup). Runs `add` → `update` → `default`. Confirm unless `confirm=false`.
+Requires an existing remote `juliaup` (official `\$HOME/.juliaup/bin/juliaup` or
+macOS Homebrew `/opt/homebrew/bin/juliaup` / `/usr/local/bin/juliaup`). Does not
+install juliaup. Runs `add` → `update` → `default`. Confirm unless `confirm=false`.
 """
 function juliaup_align_remotes(
     hosts::Vector{String};
@@ -102,9 +145,10 @@ function juliaup_align_remotes(
     ch = String(channel)
     if confirm && !kit_noninteractive()
         print_err("  This will run juliaup add/update/default $ch on each host.\n")
-        println_fatal("  That changes the host default Julia (\$HOME/.juliaup/bin/julia).")
+        println_fatal("  That changes the host default Julia.")
         println_fatal("  Hosts: $(join(hosts, ", "))")
-        println_fatal("  juliaup must already exist at \$HOME/.juliaup/bin/juliaup.")
+        println_fatal("  Needs juliaup at \$HOME/.juliaup/bin/juliaup or Homebrew")
+        println_fatal("  (/opt/homebrew/bin/juliaup or /usr/local/bin/juliaup).")
         println_fatal()
         kit_confirm("Type 'juliaup' to confirm: "; keyword="juliaup") || begin
             println_fatal("Cancelled.")

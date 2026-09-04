@@ -28,7 +28,7 @@ Prepare SSH hosts — same jobs as `julia -m DistSSHKit setup --…`.
 | `:sync` | `--sync` | Local push + remote pull (git remotes); confirm unless `session.yes` |
 | `:pull` | `--pull` | Local pull then remote pull; confirm unless `session.yes` |
 | `:instantiate` | `--instantiate` | `julia=` (default `"auto"`) |
-| `:juliaup` | `--juliaup` | Align remote Julia via juliaup; confirm unless `session.yes`. Tip if controller patch lags channel latest |
+| `:juliaup` | `--juliaup` | Align remote Julia via juliaup (`\$HOME/.juliaup` or Homebrew); confirm unless `session.yes`. Tip if controller patch lags channel latest |
 | `:check` | `--check` | `ignore_julia_version=`, `check_code_sync=` |
 | `:runtest` | `--runtest` | job `Pkg.test()` on remotes; `julia=` |
 | `:cleanup` | `--cleanup` | Kill stale workers (no confirm) |

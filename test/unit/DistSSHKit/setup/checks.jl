@@ -12,8 +12,15 @@ using Pkg
 
     @test DistSSHKit.juliaup_channel(v"1.12.6") == "1.12"
     @test DistSSHKit.juliaup_channel(VERSION) == "$(VERSION.major).$(VERSION.minor)"
+    @test DistSSHKit.remote_juliaup_candidates("Darwin") == [
+        raw"$HOME/.juliaup/bin/juliaup",
+        "/opt/homebrew/bin/juliaup",
+        "/usr/local/bin/juliaup",
+    ]
+    @test DistSSHKit.remote_juliaup_candidates("Linux") == [raw"$HOME/.juliaup/bin/juliaup"]
     sh = DistSSHKit._juliaup_align_remote_sh("1.12")
     @test occursin(raw"$HOME/.juliaup/bin/juliaup", sh)
+    @test occursin("/opt/homebrew/bin/juliaup", sh)
     @test occursin(" add ", sh) || occursin("add '", sh)
     @test occursin("update", sh) && occursin("default", sh)
     @test occursin("printf 'juliaup add %s failed", sh)

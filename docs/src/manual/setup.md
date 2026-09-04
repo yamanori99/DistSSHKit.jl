@@ -42,8 +42,10 @@ Pick **one mode** per invocation (except shared options).
 - `--instantiate`: `Pkg.instantiate` on remotes after deploy
 - `--juliaup`: align remote Julia via juliaup to the controller
   major.minor (`add` / `update` / `default`; confirm unless `-y`;
-  changes host default). Requires juliaup already on the host. If
-  remotes land on a newer patch than the controller, prints a Tip
+  changes host default). Requires juliaup already on the host
+  (`$HOME/.juliaup/bin/juliaup` or macOS Homebrew
+  `/opt/homebrew/bin/juliaup` / `/usr/local/bin/juliaup`). If remotes
+  land on a newer patch than the controller, prints a Tip
 - `--runtest`: `Pkg.test()` of the **job** project on remotes (not
   DistSSHKit's tests)
 - `--prune`: delete `.distsshkit/{go,drive,setup}` leaves on localhost

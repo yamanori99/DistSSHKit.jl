@@ -65,11 +65,11 @@ function main()
         exit(1)
     end
 
-    # setup --juliaup remote body
-    if occursin(".juliaup/bin/juliaup", script) &&
+    # setup --juliaup remote body (home install and/or Homebrew candidates)
+    if (occursin(".juliaup/bin/juliaup", script) || occursin("/opt/homebrew/bin/juliaup", script)) &&
        (occursin(" add ", script) || occursin("default", script))
         if get(ENV, "DISTSSHKIT_TEST_NO_JULIAUP", "") == "1"
-            println(stderr, "juliaup not found at \$HOME/.juliaup/bin/juliaup")
+            println(stderr, "juliaup not found (tried: \$HOME/.juliaup/bin/juliaup, /opt/homebrew/bin/juliaup)")
             exit(127)
         end
         println("ok")
