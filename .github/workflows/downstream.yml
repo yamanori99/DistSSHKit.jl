@@ -1,0 +1,104 @@
+# DistSSHQueue.jl tip against this Kit checkout (PR / main).
+# Soft gate: continue-on-error until the check is trusted as required.
+# `labeled` so adding `cut` after open starts this workflow (default
+# pull_request types omit it; Test keeps labeled off — see ci-cut.yml).
+name: Downstream
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+permissions:
+  contents: read
+  actions: write # julia-actions/cache delete-old-caches
+
+jobs:
+  detect:
+    name: detect
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      run: ${{ steps.gate.outputs.run }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
+        if: github.event_name == 'push' || github.event_name == 'pull_request'
+        id: filter
+        with:
+          predicate-quantifier: some-with-excludes
+          filters: |
+            kit:
+              - "src/**"
+              - "Project.toml"
+              - ".github/workflows/downstream.yml"
+      - id: gate
+        env:
+          FILTER: ${{ steps.filter.outputs.kit }}
+          CUT: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'cut') }}
+          ACTION: ${{ github.event.action }}
+          LABEL: ${{ github.event.label.name }}
+        run: |
+          # Other labels must not re-run Queue tip.
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ] && [ "$ACTION" = "labeled" ] && [ "$LABEL" != "cut" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] || [ "$CUT" = "true" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif [ "$GITHUB_EVENT_NAME" = "push" ] || [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            echo "run=${FILTER}" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  queue:
+    name: DistSSHQueue - max - ubuntu-latest
+    needs: detect
+    if: needs.detect.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Soft until Queue tip is a reliable Kit gate.
+    continue-on-error: true
+    steps:
+      - name: Checkout DistSSHKit
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Checkout DistSSHQueue tip
+        uses: actions/checkout@v7
+        with:
+          repository: yamanori99/DistSSHQueue.jl
+          ref: main
+          path: downstream
+          persist-credentials: false
+
+      - uses: ./.github/actions/julia-slot
+        with:
+          slot: max
+
+      - uses: julia-actions/cache@v3
+        with:
+          cache-scratchspaces: false
+
+      - name: Pkg.develop Kit + Pkg.test Queue
+        run: |
+          set -euo pipefail
+          julia --project=downstream -e '
+            using Pkg
+            Pkg.develop(path=".")
+            Pkg.test()
+          '
