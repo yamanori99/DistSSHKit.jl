@@ -18,7 +18,7 @@ if [ ! -x \"\$JU\" ]; then
 fi
 if ! \"\$JU\" add $cq; then
   if ! \"\$JU\" status 2>/dev/null | grep -F -q $cq; then
-    echo \"juliaup add $ch failed\" >&2
+    printf 'juliaup add %s failed\\n' $cq >&2
     exit 1
   fi
 fi

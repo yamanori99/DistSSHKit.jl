@@ -16,6 +16,11 @@ using Pkg
     @test occursin(raw"$HOME/.juliaup/bin/juliaup", sh)
     @test occursin(" add ", sh) || occursin("add '", sh)
     @test occursin("update", sh) && occursin("default", sh)
+    @test occursin("printf 'juliaup add %s failed", sh)
+    # Channel must not enter remote diagnostics unquoted (shell metacharacters).
+    sh_meta = DistSSHKit._juliaup_align_remote_sh("1.12\$(id)")
+    @test occursin("'1.12\$(id)'", sh_meta)
+    @test !occursin("juliaup add 1.12\$(id) failed", sh_meta)
     DistSSHKit.print_juliaup_align_fix!("user@host"; kind=:missing, channel="1.12")
     DistSSHKit.print_juliaup_align_fix!("user@host"; kind=:mismatch, channel="1.12")
     @test DistSSHKit.juliaup_controller_behind_channel(v"1.12.6", v"1.12.9")
