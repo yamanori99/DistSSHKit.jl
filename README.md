@@ -157,13 +157,14 @@ remote, `go --rsync` / `drive --rsync` can copy and instantiate in one shot
   `--pull` (`pull` only, no push), or `--rsync` again
 - Other modes:
   - `--check` (verify SSH / Julia / dependencies)
+  - `--juliaup` (align remote Julia via juliaup; confirm unless `-y`)
   - `--cleanup` (kill leftover worker processes)
   - `--prune` (remove `.distsshkit` go/drive/setup leaves; keeps the deploy)
   - `--delete` (remove the remote project directory — destructive)
 
-`--rsync` / `--clone` / `--sync` / `--pull` / `--delete` / `--prune` all ask for
-confirmation before running. Pass `-y` / `--yes` to run non-interactively,
-e.g. from a script.
+`--rsync` / `--clone` / `--sync` / `--pull` / `--delete` / `--prune` /
+`--juliaup` all ask for confirmation before running. Pass `-y` / `--yes` to run
+non-interactively, e.g. from a script.
 
 Details:
 [setup](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/setup/).

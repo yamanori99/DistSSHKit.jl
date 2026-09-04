@@ -4,6 +4,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        JULIA_DEFAULT_CHANNEL: ${JULIA_DEFAULT_CHANNEL:-1.13}
+        JULIA_ALT_CHANNEL: ${JULIA_ALT_CHANNEL:-1.12}
     image: local/linux-ssh-worker:latest
     container_name: distsshkit-child-1
     ports:
@@ -16,6 +19,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        JULIA_DEFAULT_CHANNEL: ${JULIA_DEFAULT_CHANNEL:-1.13}
+        JULIA_ALT_CHANNEL: ${JULIA_ALT_CHANNEL:-1.12}
     image: local/linux-ssh-worker:latest
     container_name: distsshkit-child-2
     ports:

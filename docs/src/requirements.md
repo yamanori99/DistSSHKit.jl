@@ -130,6 +130,25 @@ ssh -o ConnectTimeout=5 -o BatchMode=yes \
   USER@HOST '$HOME/.juliaup/bin/julia --version'
 ```
 
+If the major.minor does not match the kit machine, align with juliaup
+(changes that host's **default** Julia):
+
+```bash
+julia --project=. -m DistSSHKit setup --juliaup USER@HOST
+# or manually (official install or macOS Homebrew):
+# ssh USER@HOST '$HOME/.juliaup/bin/juliaup add 1.12 &&
+#   $HOME/.juliaup/bin/juliaup update 1.12 &&
+#   $HOME/.juliaup/bin/juliaup default 1.12'
+# ssh USER@HOST '/opt/homebrew/bin/juliaup add 1.12 &&
+#   /opt/homebrew/bin/juliaup update 1.12 &&
+#   /opt/homebrew/bin/juliaup default 1.12'
+```
+
+Use your controller's major.minor in place of `1.12`. If juliaup is not
+installed on the host, install it first
+([juliaup](https://github.com/JuliaLang/juliaup) or `brew install juliaup`);
+DistSSHKit does not bootstrap juliaup.
+
 If Julia is at another path above, put that path in the command instead.
 
 The kit covers the same ground (`ssh`, Julia path / version, remote project)
@@ -138,6 +157,9 @@ with `setup --check` (this **is** a DistSSHKit command):
 ```bash
 julia --project=. -m DistSSHKit setup --check USER@HOST
 ```
+
+`setup --check` prints a `--juliaup` Fix when Julia is missing or the
+major.minor differs.
 
 Example — `git` only if that host will clone / pull:
 

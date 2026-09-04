@@ -132,16 +132,18 @@ only.
 These run as jobs of the `Test` workflow
 ([`.github/workflows/CI.yml`](.github/workflows/CI.yml)). Ubuntu:
 `Pkg.test` min / max, JETLS min / max, Aqua min / max, Documenter min,
-Gitleaks. Linux E2E (max) does **not** run on an ordinary PR. It runs
-on **main** push (path filter minus markdown under `test/` / `demos/` /
-`testenv/`), **`cut`**, **E2E weekly**, and `workflow_dispatch`. Tip
-`Pkg.test` / Aqua stay on **main**, **CI weekly**, and `cut`. Registry
-tree stays on **main** and `cut` (ci-cut), not ordinary PRs.
+Gitleaks. Linux E2E (max) uses the same **path filter** as **main** push
+(`src/**`, `test/**`, `demos/**`, `testenv/**` minus markdown under those
+trees, `Project.toml`, `.github/workflows/CI.yml`). It also runs on
+**`cut`**, **E2E weekly**, and `workflow_dispatch`. Tip `Pkg.test` / Aqua
+stay on **main**, **CI weekly**, and `cut`. Registry tree stays on
+**main** and `cut` (ci-cut), not ordinary PRs.
 
 These files **alone** skip the heavy jobs (UI: skipping; Pkg.test /
 JETLS / Aqua do not start). Documenter still runs when `docs/**`, README,
 `src/**`, or `Project.toml` changed; otherwise it is skipped too.
-Linux E2E is skipped on ordinary PRs (same skipping UI):
+Allowlisted markdown-only PRs also skip Linux E2E (same path filter /
+skipping UI):
 
 - `README.md`, `README.ja.md`, `CONTRIBUTING.md`, `NEWS.md`,
   `SECURITY.md`, `LICENSE`
@@ -151,8 +153,8 @@ Linux E2E is skipped on ordinary PRs (same skipping UI):
 A new root markdown file stays heavy until listed in
 [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml).
 A `cut` label skips none of this: Pkg.test, JETLS, Aqua, Documenter,
-and Linux E2E all run. macOS / WSL stay on `E2E weekly`, not the PR
-(Full starts on the merge commit when `version` went up).
+and Linux E2E all run (E2E Codecov too). macOS / WSL stay on `E2E weekly`,
+not the PR (Full starts on the merge commit when `version` went up).
 Register only after that matrix is green on the merge commit.
 
 Required to merge (branch protection uses these names). Tip jobs are
@@ -263,9 +265,10 @@ two-week rule above unless a General user needs them sooner.
 
 1. **E2E weekly** starts on the **merge commit** (`Project.toml`
    version went up). Do not register until Linux, macOS Intel, and
-   WSL are green. Ordinary PRs skip Linux E2E; `cut` covers that on
-   the PR, Full covers macOS / WSL after squash. Do not wait for
-   Sunday cron. `workflow_dispatch` remains for a re-run.
+   WSL are green. Path-filtered PRs already run Linux E2E; `cut` still
+   forces it (with Codecov) on the version-bump PR. Full covers macOS /
+   WSL after squash. Do not wait for Sunday cron. `workflow_dispatch`
+   remains for a re-run.
 2. Full red: Issue `E2E weekly failed` gets `cut-hold`. Do not
    `@JuliaRegistrator register` while `cut-hold` is open. Do not
    lower `version`.

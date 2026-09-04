@@ -109,10 +109,17 @@ container system start
 
 "${DOCKER_ROOT}/scripts/gen-keys.sh"
 
+# shellcheck source=../../docker-ssh/scripts/julia-channels.sh
+source "${DOCKER_ROOT}/scripts/julia-channels.sh"
+_distsshkit_export_julia_channels "${KIT_ROOT}"
+
 # Always build so Dockerfile pin changes (e.g. Julia 1.12 → 1.13) take effect.
 # Layer cache keeps this cheap when the file is unchanged.
 echo "Building ${LOCAL_IMAGE} from docker-ssh/Dockerfile..."
-(cd "${DOCKER_ROOT}" && container build -t "${LOCAL_IMAGE}" .)
+(cd "${DOCKER_ROOT}" && container build \
+  --build-arg "JULIA_DEFAULT_CHANNEL=${JULIA_DEFAULT_CHANNEL}" \
+  --build-arg "JULIA_ALT_CHANNEL=${JULIA_ALT_CHANNEL}" \
+  -t "${LOCAL_IMAGE}" .)
 
 "${APPLE_ROOT}/scripts/down.sh"
 MOUNT="type=bind,source=${DOCKER_ROOT}/mounted-keys,target=/mounted-keys,readonly"

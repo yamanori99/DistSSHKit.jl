@@ -33,10 +33,17 @@ Suite inventory: [`test/README.md`](../../test/README.md#ssh-e2e).
   is checked by reading `e2e_sync_marker.txt` on the workers.
   The rsync path still excludes `.git/` and does not claim parity.
 
-Worker image pins Julia to CI slot **max** (juliaup `--default-channel`,
-today **1.13**)
-so `--check` can run **without** `--ignore-julia-version`. Pins live in
-[`.github/julia-slots.env`](../../.github/julia-slots.env). Install policy:
+Worker image installs **two** juliaup channels from
+[`.github/julia-slots.env`](../../.github/julia-slots.env):
+
+- **default** = slot **max** major.minor (today **1.13**) — matches the E2E
+  controller so `--check` runs **without** `--ignore-julia-version`
+- **alt** = slot **min** major.minor (today **1.12**) — baked so E2E can
+  `juliaup default` to mismatch, then `setup --juliaup` to realign
+
+`up.sh` passes both as Docker / `container` build-args and exports
+`DISTSSHKIT_E2E_JULIA_{DEFAULT,ALT}_CHANNEL` for `test/e2e.jl`. Patch floats
+within a channel; only major.minor is required. Install policy:
 [Requirements](https://yamanori99.github.io/DistSSHKit.jl/dev/requirements/).
 
 On macOS, publish ports on `127.0.0.1` (Docker Desktop / Colima defaults)
@@ -49,6 +56,7 @@ Network Privacy does not block SSH from the controller.
 | --- | --- |
 | [`Dockerfile`](Dockerfile) / [`start.sh`](start.sh) | Worker image |
 | [`compose.yml`](compose.yml) | Two children (`child-1` / `child-2`) |
+| [`scripts/julia-channels.sh`](scripts/julia-channels.sh) | slots → juliaup channel build-args |
 | [`scripts/gen-keys.sh`](scripts/gen-keys.sh) | Keys and SSH config |
 | [`scripts/up.sh`](scripts/up.sh) | Keys → compose up → wait |
 | [`scripts/wait-ready.sh`](scripts/wait-ready.sh) | SSH + Julia probe |

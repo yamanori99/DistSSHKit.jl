@@ -69,9 +69,9 @@ Green on one layer does not imply the others. `Pkg.test()` does not run
   `addprocs`, SSH.
 - **integration** (~3 min): child CLI and/or **local** `addprocs`. Not
   real SSH / rsync.
-- **e2e** (~15–25 min): real SSH + rsync, two Linux workers; **main** /
-  `cut` / weekly / dispatch (Compose). Not ordinary PRs. Not local-only
-  CLI wiring.
+- **e2e** (~15–25 min): real SSH + rsync, two Linux workers; **PR** /
+  **main** (path filter), `cut` / weekly / dispatch (Compose). Not
+  markdown-only allowlisted PRs. Not local-only CLI wiring.
 - **e2e weekly** (10–50 min): same `e2e.jl` from Linux, macOS Intel, or
   WSL2 (not a PR check; starts on a `cut` merge, required before register).
   Not macOS workers.

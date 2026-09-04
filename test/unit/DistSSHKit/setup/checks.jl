@@ -10,6 +10,37 @@ using Pkg
     @test DistSSHKit.julia_version_mismatch_kind(VERSION, VersionNumber(VERSION.major, VERSION.minor + 1, 0)) ==
         :minor
 
+    @test DistSSHKit.juliaup_channel(v"1.12.6") == "1.12"
+    @test DistSSHKit.juliaup_channel(VERSION) == "$(VERSION.major).$(VERSION.minor)"
+    @test DistSSHKit.remote_juliaup_candidates("Darwin") == [
+        raw"$HOME/.juliaup/bin/juliaup",
+        "/opt/homebrew/bin/juliaup",
+        "/usr/local/bin/juliaup",
+    ]
+    @test DistSSHKit.remote_juliaup_candidates("Linux") == [raw"$HOME/.juliaup/bin/juliaup"]
+    sh = DistSSHKit._juliaup_align_remote_sh("1.12")
+    @test occursin(raw"$HOME/.juliaup/bin/juliaup", sh)
+    @test occursin("/opt/homebrew/bin/juliaup", sh)
+    @test occursin(" add ", sh) || occursin("add '", sh)
+    @test occursin("update", sh) && occursin("default", sh)
+    @test occursin("printf 'juliaup add %s failed", sh)
+    # Channel must not enter remote diagnostics unquoted (shell metacharacters).
+    sh_meta = DistSSHKit._juliaup_align_remote_sh("1.12\$(id)")
+    @test occursin("'1.12\$(id)'", sh_meta)
+    @test !occursin("juliaup add 1.12\$(id) failed", sh_meta)
+    DistSSHKit.print_juliaup_align_fix!("user@host"; kind=:missing, channel="1.12")
+    DistSSHKit.print_juliaup_align_fix!("user@host"; kind=:mismatch, channel="1.12")
+    @test DistSSHKit.juliaup_controller_behind_channel(v"1.12.6", v"1.12.9")
+    @test !DistSSHKit.juliaup_controller_behind_channel(v"1.12.9", v"1.12.6")
+    @test !DistSSHKit.juliaup_controller_behind_channel(v"1.12.6", v"1.12.6")
+    @test !DistSSHKit.juliaup_controller_behind_channel(v"1.12.6", v"1.11.9")
+    @test DistSSHKit.print_juliaup_controller_patch_note!(
+        v"1.12.9"; local_version=v"1.12.6", channel="1.12",
+    )
+    @test !DistSSHKit.print_juliaup_controller_patch_note!(
+        v"1.12.6"; local_version=v"1.12.6", channel="1.12",
+    )
+
     r = withenv("PATH" => "/nonexistent-distsshkit-path") do
         redirect_stdout(devnull) do
             redirect_stderr(devnull) do

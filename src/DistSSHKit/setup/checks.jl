@@ -242,12 +242,12 @@ function check_prerequisites(
             check_julia(host, String(host_julia))
         if !julia_check.found
             fail("Julia not found (checked: $(host_julia === nothing ? "auto-detect" : host_julia))")
-            kit_println("    Fix: Install Julia or use --julia PATH or set JULIA_DISTRIBUTED_EXE")
+            print_juliaup_align_fix!(host; kind=:missing)
             all_ok = false
             host_ok[] = false
         elseif julia_check.mismatch_kind == :minor && !ignore_julia_version
             fail("Julia version mismatch: local $(VERSION), $host has $(julia_check.version) (at $host_julia)")
-            kit_println("    Fix: install a matching Julia on $host, or pass --ignore-julia-version to continue anyway")
+            print_juliaup_align_fix!(host; kind=:mismatch)
             all_ok = false
             host_ok[] = false
         elseif julia_check.mismatch_kind == :minor

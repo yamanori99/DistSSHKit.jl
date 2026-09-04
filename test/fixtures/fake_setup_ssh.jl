@@ -50,8 +50,35 @@ function main()
         exit(0)
     end
 
+    # detect_julia_path candidates: `test -x PATH && echo PATH`
+    if occursin("test -x", script) && occursin("&& echo", script)
+        if occursin("juliaup", script) && get(ENV, "DISTSSHKIT_TEST_NO_JULIAUP", "") == "1"
+            exit(1)
+        end
+        m = match(r"&&\s*echo\s+(.+)$", script)
+        if m !== nothing
+            cap = m.captures[1]
+            cap isa AbstractString || exit(1)
+            println(strip(String(cap)))
+            exit(0)
+        end
+        exit(1)
+    end
+
+    # setup --juliaup remote body (home install and/or Homebrew candidates)
+    if (occursin(".juliaup/bin/juliaup", script) || occursin("/opt/homebrew/bin/juliaup", script)) &&
+       (occursin(" add ", script) || occursin("default", script))
+        if get(ENV, "DISTSSHKIT_TEST_NO_JULIAUP", "") == "1"
+            println(stderr, "juliaup not found (tried: \$HOME/.juliaup/bin/juliaup, /opt/homebrew/bin/juliaup)")
+            exit(127)
+        end
+        println("ok")
+        exit(0)
+    end
+
     if occursin("--version", script)
-        println("julia version 1.12.6")
+        ver = strip(get(ENV, "DISTSSHKIT_TEST_JULIA_VERSION", ""))
+        println(isempty(ver) ? "julia version 1.12.6" : ver)
         exit(0)
     end
 

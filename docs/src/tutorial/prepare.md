@@ -40,7 +40,7 @@ Same steps from Julia:
 ```julia
 session = KitSession(workers=["child:YourHost1", "child:YourHost2"], yes=true)
 setup!(session, :rsync, :instantiate)
-# optional: setup!(session, :check); setup!(session, :runtest)
+# optional: setup!(session, :check); setup!(session, :juliaup); setup!(session, :runtest)
 # git remotes: setup!(session, :clone; repo="https://…") then :instantiate
 # later updates: setup!(session, :sync)
 ```
@@ -62,6 +62,12 @@ Verify when ready:
 
 ```bash
 julia --project=. -m DistSSHKit setup --check YourHost1 YourHost2
+```
+
+If check fails on Julia major.minor (and hosts already have juliaup):
+
+```bash
+julia --project=. -m DistSSHKit setup --juliaup YourHost1 YourHost2
 ```
 
 Clean slate (confirm when prompted):

@@ -144,11 +144,13 @@ CLI のオプションと Julia API は1対1である。
   (push せず pull だけ)、または再度 `--rsync`
 - その他
   - `--check` (SSH / Julia / 依存関係の疎通確認)
+  - `--juliaup` (juliaup でリモート Julia を揃える。確認あり。`-y` で省略)
   - `--prune` (`.distsshkit` の go / drive / setup を消す。配置ツリーは残す)
   - `--cleanup` (残っているワーカープロセスの掃除)
   - `--delete` (リモートのプロジェクトディレクトリを削除。破壊的操作)
 
-`--rsync` / `--clone` / `--sync` / `--pull` / `--delete` / `--prune` は実行前に確認する。
+`--rsync` / `--clone` / `--sync` / `--pull` / `--delete` / `--prune` /
+`--juliaup` は実行前に確認する。
 スクリプトなどで非対話に実行したい場合は `-y` / `--yes` を付ける。
 
 詳細: [setup](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/setup/)。

@@ -108,6 +108,37 @@ using Test
         end
     end
 
+    @testset "juliaup align" begin
+        _with_fake_remotes() do _
+            _with_tempdir() do proj
+                write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\n")
+                host = "host1"
+                session = DistSSHKit.KitSession(
+                    project=proj,
+                    workers=["child:$host"],
+                    remote="~/App.jl",
+                    yes=true,
+                    quiet=true,
+                )
+                empty!(DistSSHKit._DETECT_JULIA_PATH_CACHE)
+                ver_env = Dict(
+                    "DISTSSHKIT_TEST_JULIA_VERSION" => "julia version $(VERSION)",
+                    "DISTSSHKIT_TEST_UNAME" => "Linux",
+                )
+                withenv(ver_env...) do
+                    up = DistSSHKit.setup!(session, :juliaup)
+                    @test up.ok && !up.cancelled
+                    @test length(up.hosts) == 1 && up.hosts[1].ok
+                end
+                withenv("DISTSSHKIT_TEST_NO_JULIAUP" => "1") do
+                    empty!(DistSSHKit._DETECT_JULIA_PATH_CACHE)
+                    bad = DistSSHKit.setup!(session, :juliaup)
+                    @test !bad.ok
+                end
+            end
+        end
+    end
+
     @testset "quiet suppresses Log file on stdout" begin
         _with_fake_remotes() do state_dir
             _with_tempdir() do proj

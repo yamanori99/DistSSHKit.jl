@@ -32,6 +32,10 @@ done
 
 cd "${ROOT}"
 
+# shellcheck source=julia-channels.sh
+source "${ROOT}/scripts/julia-channels.sh"
+_distsshkit_export_julia_channels "${KIT_ROOT}"
+
 ./scripts/gen-keys.sh
 
 if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
@@ -66,6 +70,7 @@ if [[ -n "${DISTSSHKIT_WORKER_IMAGE:-}" ]]; then
   pull_worker_image "$DISTSSHKIT_WORKER_IMAGE"
 else
   # Build a single service so logs are not interleaved (both share the same image).
+  # Compose passes JULIA_*_CHANNEL from the environment into Dockerfile ARGs.
   "${COMPOSE[@]}" -f compose.yml build child-1
   if [[ -n "${DISTSSHKIT_PUSH_IMAGE:-}" ]]; then
     DISTSSHKIT_LOCAL_IMAGE="$LOCAL_IMAGE" ./scripts/push-image.sh "$DISTSSHKIT_PUSH_IMAGE"

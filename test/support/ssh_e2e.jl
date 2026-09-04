@@ -66,6 +66,30 @@ end
 
 _ssh_e2e_hosts() = ("distsshkit-w1", "distsshkit-w2")
 _ssh_e2e_remote_root() = "/home/dev/distsshkit-e2e"
+
+"""juliaup channels baked into the worker image (from `up.sh` / julia-slots.env)."""
+function _ssh_e2e_julia_channels()::NamedTuple{(:default, :alt),Tuple{String,String}}
+    def = strip(get(ENV, "DISTSSHKIT_E2E_JULIA_DEFAULT_CHANNEL", ""))
+    alt = strip(get(ENV, "DISTSSHKIT_E2E_JULIA_ALT_CHANNEL", ""))
+    isempty(def) && (def = DistSSHKit.juliaup_channel())
+    isempty(alt) && throw(ArgumentError(
+        "DISTSSHKIT_E2E_JULIA_ALT_CHANNEL unset; run testenv/docker-ssh/scripts/up.sh --e2e " *
+        "(or apple-container-ssh) so slots min/max are exported",
+    ))
+    return (; default=String(def), alt=String(alt))
+end
+
+"""Set remote juliaup default channel (`\$HOME/.juliaup/bin/juliaup default …`)."""
+function _ssh_e2e_juliaup_default!(host::AbstractString, channel::AbstractString)
+    ch = String(channel)
+    proc, out = _ssh_e2e_ssh(
+        host,
+        "\$HOME/.juliaup/bin/juliaup default $(Base.shell_escape(ch))",
+    )
+    proc.exitcode == 0 || error("juliaup default $ch on $host failed: $out")
+    DistSSHKit.clear_detect_julia_path_cache!(String(host))
+    return nothing
+end
 # Empty-tree `go --rsync` (copy + instantiate). Not the main rsync root:
 # later `setup --rsync` nonempty checks would fail if we reused that path.
 _ssh_e2e_go_rsync_remote_root() = "/home/dev/distsshkit-e2e-go-rsync"
