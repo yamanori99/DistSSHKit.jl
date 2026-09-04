@@ -54,7 +54,7 @@ it does not queue later ones.
 When you use SSH hosts (not just `parent:N`):
 
 Passwordless SSH means the kit parent and those hosts are **one trust
-domain**: whoever can run the kit as you can run arbitrary Julia on each
+domain**: whoever can run the kit as you, can run arbitrary Julia on each
 listed host as that remote user. That is the intended lab premise (shared
 shell access). With
 [DistSSHQueue.jl](https://yamanori99.github.io/DistSSHQueue.jl/stable/),
