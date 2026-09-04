@@ -18,6 +18,7 @@ if [ ! -x \"\$JU\" ]; then
 fi
 if ! \"\$JU\" add $cq; then
   if ! \"\$JU\" status 2>/dev/null | grep -F -q $cq; then
+    # `$cq` (not raw `$ch`): channel may come from the API; keep it shell-safe.
     printf 'juliaup add %s failed\\n' $cq >&2
     exit 1
   fi
