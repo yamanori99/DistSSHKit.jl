@@ -45,12 +45,17 @@ cd DistSSHKit.jl
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 ```
 
-From another app:
+From another app (a **separate** env, not a job you rsync):
 
 ```bash
-julia --project=/path/to/MyProject.jl \
+julia --project=/path/to/KitDevEnv.jl \
   -e 'using Pkg; Pkg.develop(path="/path/to/DistSSHKit.jl")'
 ```
+
+Do not `Pkg.develop` the kit from a project you actually run
+distributed jobs from — the Manifest records an absolute path the
+workers do not have. Keep a separate environment for kit development.
+Real jobs `Pkg.add` DistSSHKit from General.
 
 On 1.12+, `julia --project=. -m DistSSHKit …` matches `Pkg.add`.
 
