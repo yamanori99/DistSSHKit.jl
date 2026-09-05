@@ -89,6 +89,10 @@ DistSSHKit assumes a Julia **project** — `Project.toml` at the project root
   **every** machine that runs jobs: local `Pkg.instantiate()`, and
   `setup --instantiate` on remotes (after `--clone` or `--rsync`), or
   `go --rsync` / `drive --rsync` onto an empty/missing path.
+- Do not `Pkg.develop` DistSSHKit (or a `[sources]` path) in a job project
+  you copy to workers. The Manifest records an absolute path the workers
+  do not have. `Pkg.add` from General for real runs; keep a separate env
+  to develop the kit.
 
 Demo scripts live under `./distsshkit_demos/` after `demo install
 with_kit` (or `without_kit`); see
