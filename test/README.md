@@ -268,13 +268,13 @@ ephemeral project unless `project_root` is set (E2E uses
 
 Tests follow the same two surfaces as the kit. No extra test harness:
 
-- go / drive / size CLI and `KitSession(workers=…)` use placement tokens
-  (`parent:2`, `child:host-a:4`)
-- setup, collect-only HOST, fake SSH trees, `session.hosts`, and
-  `HostRunResult.host` use the SSH name (`host-a`)
+- CLI (`setup` / `go` / `drive` / `size`), `KitSession(workers=…)`, and
+  hosts files use placement tokens (`parent:2`, `child:host-a:4`).
+  setup / size ignore `:N`; setup accepts `parent` only with `--juliaup`
+- Internal SSH names stay bare (`host-a`): `session.hosts`,
+  `HostRunResult.host`, collect-only `HOST`, and fake SSH trees
 - `_sample_hosts_file` / `_sample_setup_hosts_file` are placement tokens
   (`child:…`)
-  names
 
 Do not search-replace a host name into a token (that produced
 `child:child:…` and collect dirs named `child:host1`).

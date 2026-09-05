@@ -73,7 +73,9 @@ Same **names** are shared on purpose; a few meanings differ by command:
 - `--hosts-file` (default path from `DISTSSHKIT_HOSTS_FILE`)
 
 `setup` / `size` strip `:N` and use host names only. Bare SSH names are
-not accepted on setup (use `child:NAME`).
+not accepted on setup (use `child:NAME`). On setup, `parent` /
+`parent:N` are only for `--juliaup`; other modes take `child:NAME`
+only.
 
 **Jobs.** `DISTSSHKIT_JOBS` (default 1) is the max concurrent SSH host jobs
 for `setup --rsync`, drive post-run collect, and `size` Julia detection.

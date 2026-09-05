@@ -72,5 +72,6 @@ julia --project=. distsshkit_demos/without_kit/pipeline_pi.jl
 file (`setup!` first).
 
 Remote: set `DISTRIBUTED_REMOTE_PROJECT_ROOT` when needed. Optional:
-`DISTSSHKIT_HOSTS` (comma-separated `host` or `child:NAME:N`; used by `go` /
-`drive` / `pipeline!`), `SYNC_MODE=sync|rsync|off` (pipeline env).
+`DISTSSHKIT_HOSTS` (comma-separated `parent[:N]` / `child:NAME[:N]`;
+used by `go` / `drive` / `pipeline!`), `SYNC_MODE=sync|rsync|off`
+(pipeline env).
