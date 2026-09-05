@@ -3,8 +3,9 @@
 Prepare SSH hosts before [`go`](@ref Manual-go) / [`drive`](@ref Manual-drive).
 
 ```bash
-julia --project=. -m DistSSHKit setup [options] [child:NAME...]
-# --juliaup also accepts parent / parent:N (:N ignored)
+julia --project=. -m DistSSHKit setup [options] [child:NAME]
+# Repeat child:NAME for more hosts. --juliaup also accepts parent / parent:N
+# (:N ignored).
 ```
 
 From Julia, use [`setup!`](@ref) for the same modes as this CLI
