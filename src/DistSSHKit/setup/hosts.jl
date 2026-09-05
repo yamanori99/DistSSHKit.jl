@@ -5,11 +5,12 @@ host_op_result(; cancelled::Bool=false, succeeded::Int=0, failed::Int=0) =
     (; cancelled, succeeded, failed)
 
 """
-Validate setup CLI hosts.
+Validate normalized setup hosts (SSH names after CLI placement parse).
 
-Most modes are **SSH targets only** (no `child:` prefix). `setup --juliaup`
-also accepts [`PARENT_HOST_NAME`](@ref) (`parent`) for the kit parent machine
-when `allow_parent=true`.
+CLI entry is the same vocabulary as go / drive / size (`parent[:N]` /
+`child:NAME[:N]`; `:N` ignored). After parse, this checks the stripped
+names. `setup --juliaup` also accepts [`PARENT_HOST_NAME`](@ref) when
+`allow_parent=true`.
 """
 function validate_setup_hosts(
     hosts::AbstractVector{<:AbstractString};
@@ -18,30 +19,31 @@ function validate_setup_hosts(
     isempty(hosts) && throw(ArgumentError("No hosts specified"))
     for raw in hosts
         host = String(raw)
-        if startswith(host, CHILD_TOKEN_PREFIX)
-            throw(ArgumentError(
-                "setup hosts are SSH names only; drop the `child:` prefix (got $(repr(host))).",
-            ))
-        end
         throw_legacy_placement_token(host)
         if is_parent_host_name(host)
             allow_parent || throw(ArgumentError(
-                "setup hosts are SSH targets only; $(repr(host)) means this job's DistSSHKit parent in drive/go. " *
-                "Pass user@host (or an SSH config Host alias). " *
-                "Exception: `setup --juliaup parent` aligns juliaup on this machine.",
+                "setup: $(repr(host)) is only for --juliaup (kit parent machine). " *
+                "SSH targets use `child:NAME` (or `child:NAME:N`; `:N` ignored).",
             ))
             continue
         end
         if looks_like_path_host(host)
             throw(ArgumentError(
-                "refusing path-like host $(repr(host)); setup expects SSH hosts " *
-                "(user@host or config alias), not a local script/path. " *
+                "refusing path-like host $(repr(host)); setup expects `child:NAME` " *
+                "(SSH host or config alias), not a local script/path. " *
                 "Put SCRIPT.jl after hosts for drive/go, not for setup.",
             ))
         end
         isempty(strip(host)) && throw(ArgumentError("empty host name"))
     end
     return nothing
+end
+
+"""CLI token for a normalized setup host (Fix / Tip copy-paste)."""
+function setup_cli_host_token(host::AbstractString)::String
+    h = String(host)
+    is_parent_host_name(h) && return PARENT_HOST_NAME
+    return format_placement_token(:child, h)
 end
 
 """SSH names from a juliaup target list (drops `parent`)."""

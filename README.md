@@ -157,7 +157,8 @@ remote, `go --rsync` / `drive --rsync` can copy and instantiate in one shot
   `--pull` (`pull` only, no push), or `--rsync` again
 - Other modes:
   - `--check` (verify SSH / Julia / dependencies)
-  - `--juliaup` (align Julia via juliaup on SSH hosts and/or `parent`; confirm unless `-y`)
+  - `--juliaup` (align Julia via juliaup on `child:NAME` and/or
+    `parent`; confirm unless `-y`)
   - `--cleanup` (kill leftover worker processes)
   - `--prune` (remove `.distsshkit` go/drive/setup leaves; keeps the deploy)
   - `--delete` (remove the remote project directory — destructive)
@@ -182,22 +183,22 @@ A typical first-time setup (rsync path) looks like this:
 
 ```bash
 # Copy the files over
-julia --project=. -m DistSSHKit setup --rsync user@host1 user@host2
+julia --project=. -m DistSSHKit setup --rsync child:user@host1 child:user@host2
 # Install dependencies
-julia --project=. -m DistSSHKit setup --instantiate user@host1 user@host2
+julia --project=. -m DistSSHKit setup --instantiate child:user@host1 child:user@host2
 # Sanity check
-julia --project=. -m DistSSHKit setup --check user@host1 user@host2
+julia --project=. -m DistSSHKit setup --check child:user@host1 child:user@host2
 ```
 
 Other commands that come in handy:
 
 ```bash
 # Remove go/drive/setup leaves (keeps the project tree)
-julia --project=. -m DistSSHKit setup --prune user@host1 user@host2
+julia --project=. -m DistSSHKit setup --prune child:user@host1 child:user@host2
 # Clean up leftover worker processes
-julia --project=. -m DistSSHKit setup --cleanup user@host1 user@host2
+julia --project=. -m DistSSHKit setup --cleanup child:user@host1 child:user@host2
 # Start over from scratch (asks for confirmation)
-julia --project=. -m DistSSHKit setup --delete user@host1 user@host2
+julia --project=. -m DistSSHKit setup --delete child:user@host1 child:user@host2
 ```
 
 ### Examples

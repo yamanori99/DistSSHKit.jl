@@ -34,6 +34,7 @@ if !isfile(g.ssh_config) || !isfile(g.hosts_file)
 end
 
 const hosts = collect(String, _ssh_e2e_hosts())
+const setup_hosts = String["child:$h" for h in hosts]
 const remote_root = _ssh_e2e_remote_root()
 const remote_tokens = String["child:$(hosts[1]):1", "child:$(hosts[2]):1"]
 _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
@@ -100,7 +101,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
 
         @testset "setup --delete (clean slate)" begin
             proc, out = _run_kit_setup(;
-                setup_args=["--delete", "--remote-path", remote_root, hosts...],
+                setup_args=["--delete", "--remote-path", remote_root, setup_hosts...],
                 project_root=proj,
                 extra_env=_e2e_base_env(),
             )
@@ -113,7 +114,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
 
         @testset "setup --rsync" begin
             proc, out = _run_kit_setup(;
-                setup_args=["--rsync", "--remote-path", remote_root, hosts...],
+                setup_args=["--rsync", "--remote-path", remote_root, setup_hosts...],
                 project_root=proj,
                 extra_env=_e2e_base_env(),
             )
@@ -129,7 +130,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
 
         @testset "setup --instantiate" begin
             proc, out = _run_kit_setup(;
-                setup_args=["--instantiate", "--remote-path", remote_root, hosts...],
+                setup_args=["--instantiate", "--remote-path", remote_root, setup_hosts...],
                 project_root=proj,
                 extra_env=_e2e_base_env(),
             )
@@ -141,7 +142,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             # still pass Julia major.minor + project/deps. Git parity is not
             # claimed for the rsync path (see docker-ssh README).
             proc, out = _run_kit_setup(;
-                setup_args=["--check", "--remote-path", remote_root, hosts...],
+                setup_args=["--check", "--remote-path", remote_root, setup_hosts...],
                 project_root=proj,
                 extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
             )
@@ -156,7 +157,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             try
                 _ssh_e2e_juliaup_default!(host, ch.alt)
                 proc_bad, out_bad = _run_kit_setup(;
-                    setup_args=["--check", "--remote-path", remote_root, hosts...],
+                    setup_args=["--check", "--remote-path", remote_root, setup_hosts...],
                     project_root=proj,
                     extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
                 )
@@ -169,7 +170,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
                       occursin("version", lowercase(out_bad))
 
                 proc_up, out_up = _run_kit_setup(;
-                    setup_args=["--juliaup", hosts...],
+                    setup_args=["--juliaup", setup_hosts...],
                     project_root=proj,
                     extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
                 )
@@ -194,7 +195,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
                 end
 
                 proc_ok, out_ok = _run_kit_setup(;
-                    setup_args=["--check", "--remote-path", remote_root, hosts...],
+                    setup_args=["--check", "--remote-path", remote_root, setup_hosts...],
                     project_root=proj,
                     extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
                 )
@@ -230,7 +231,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
                 @test DistSSHKit.julia_version_mismatch_kind(VERSION, parent_alt) == :minor
 
                 proc_up, out_up = _run_kit_setup(;
-                    setup_args=["--juliaup", "parent", host],
+                    setup_args=["--juliaup", "parent", DistSSHKit.setup_cli_host_token(host)],
                     project_root=proj,
                     extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
                 )
@@ -270,7 +271,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
 
                 # Second remote was not a target; leave it alone. Re-check listed hosts.
                 proc_ok, out_ok = _run_kit_setup(;
-                    setup_args=["--check", "--remote-path", remote_root, host],
+                    setup_args=["--check", "--remote-path", remote_root, DistSSHKit.setup_cli_host_token(host)],
                     project_root=proj,
                     extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
                 )
@@ -295,7 +296,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
 
         @testset "setup --runtest (job Pkg.test)" begin
             proc, out = _run_kit_setup(;
-                setup_args=["--runtest", "--remote-path", remote_root, hosts...],
+                setup_args=["--runtest", "--remote-path", remote_root, setup_hosts...],
                 project_root=proj,
                 extra_env=_e2e_base_env(),
             )
@@ -306,7 +307,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             try
                 _ssh_e2e_push_job_runtests!(hosts, remote_root; fail=true)
                 proc, out = _run_kit_setup(;
-                    setup_args=["--runtest", "--remote-path", remote_root, hosts...],
+                    setup_args=["--runtest", "--remote-path", remote_root, setup_hosts...],
                     project_root=proj,
                     extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
                 )
@@ -560,7 +561,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             oneshot_env = _ssh_e2e_env(; remote_project=oneshot)
             try
                 proc, out = _run_kit_setup(;
-                    setup_args=["--delete", "--remote-path", oneshot, hosts...],
+                    setup_args=["--delete", "--remote-path", oneshot, setup_hosts...],
                     project_root=proj,
                     extra_env=oneshot_env,
                 )
@@ -591,7 +592,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
                 end
             finally
                 proc, out = _run_kit_setup(;
-                    setup_args=["--delete", "--remote-path", oneshot, hosts...],
+                    setup_args=["--delete", "--remote-path", oneshot, setup_hosts...],
                     project_root=proj,
                     extra_env=oneshot_env,
                 )
@@ -611,21 +612,21 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             isfile(out_csv) && rm(out_csv)
 
             proc, out = _run_kit_setup(;
-                setup_args=["--delete", "--remote-path", tilde_root, hosts...],
+                setup_args=["--delete", "--remote-path", tilde_root, setup_hosts...],
                 project_root=proj,
                 extra_env=tilde_env,
             )
             _assert_ssh_e2e_ok(suite, "tilde_delete", proc, out; project=proj, kit=:setup)
 
             proc, out = _run_kit_setup(;
-                setup_args=["--rsync", "--remote-path", tilde_root, hosts...],
+                setup_args=["--rsync", "--remote-path", tilde_root, setup_hosts...],
                 project_root=proj,
                 extra_env=tilde_env,
             )
             _assert_ssh_e2e_ok(suite, "tilde_rsync", proc, out; project=proj, kit=:setup)
 
             proc, out = _run_kit_setup(;
-                setup_args=["--instantiate", "--remote-path", tilde_root, hosts...],
+                setup_args=["--instantiate", "--remote-path", tilde_root, setup_hosts...],
                 project_root=proj,
                 extra_env=tilde_env,
             )
@@ -852,7 +853,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
 
         @testset "setup --rsync refuses nonempty" begin
             proc, out = _run_kit_setup(;
-                setup_args=["--rsync", "--remote-path", remote_root, hosts[1]],
+                setup_args=["--rsync", "--remote-path", remote_root, setup_hosts[1]],
                 project_root=proj,
                 extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
             )
@@ -884,7 +885,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
 
             proc, out = _run_kit_setup(;
                 setup_args=[
-                    "--delete", "--remote-path", git_root, hosts...,
+                    "--delete", "--remote-path", git_root, setup_hosts...,
                 ],
                 project_root=proj,
                 extra_env=git_env,
@@ -896,7 +897,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
                     "--clone",
                     "--repo", seed.origin_workers,
                     "--remote-path", git_root,
-                    hosts...,
+                    setup_hosts...,
                 ],
                 project_root=proj,
                 extra_env=git_env,
@@ -905,7 +906,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
 
             proc, out = _run_kit_setup(;
                 setup_args=[
-                    "--instantiate", "--remote-path", git_root, hosts...,
+                    "--instantiate", "--remote-path", git_root, setup_hosts...,
                 ],
                 project_root=proj,
                 extra_env=git_env,
@@ -913,7 +914,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             _assert_ssh_e2e_ok(suite, "git_instantiate", proc, out; project=proj, kit=:setup)
 
             proc, out = _run_kit_setup(;
-                setup_args=["--check", "--remote-path", git_root, hosts...],
+                setup_args=["--check", "--remote-path", git_root, setup_hosts...],
                 project_root=proj,
                 extra_env=merge(git_env, Dict("DISTSSHKIT_QUIET" => "0")),
             )
@@ -945,14 +946,14 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             @test occursin("mismatch", lowercase(out)) || occursin("could not be verified", lowercase(out))
 
             proc, out = _run_kit_setup(;
-                setup_args=["--sync", "--remote-path", git_root, hosts...],
+                setup_args=["--sync", "--remote-path", git_root, setup_hosts...],
                 project_root=proj,
                 extra_env=merge(git_env, Dict("DISTSSHKIT_QUIET" => "0")),
             )
             _assert_ssh_e2e_ok(suite, "git_sync", proc, out; project=proj, kit=:setup)
 
             proc, out = _run_kit_setup(;
-                setup_args=["--check", "--remote-path", git_root, hosts...],
+                setup_args=["--check", "--remote-path", git_root, setup_hosts...],
                 project_root=proj,
                 extra_env=merge(git_env, Dict("DISTSSHKIT_QUIET" => "0")),
             )
@@ -981,7 +982,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             marker = read(joinpath(proj, "e2e_sync_marker.txt"), String)
 
             proc, out = _run_kit_setup(;
-                setup_args=["--pull", "--remote-path", git_root, hosts...],
+                setup_args=["--pull", "--remote-path", git_root, setup_hosts...],
                 project_root=proj,
                 extra_env=merge(git_env, Dict("DISTSSHKIT_QUIET" => "0")),
             )

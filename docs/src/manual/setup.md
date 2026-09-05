@@ -3,7 +3,9 @@
 Prepare SSH hosts before [`go`](@ref Manual-go) / [`drive`](@ref Manual-drive).
 
 ```bash
-julia --project=. -m DistSSHKit setup [options] HOST...
+julia --project=. -m DistSSHKit setup [options] [child:NAME]
+# Repeat child:NAME for more hosts. --juliaup also accepts parent / parent:N
+# (:N ignored).
 ```
 
 From Julia, use [`setup!`](@ref) for the same modes as this CLI
@@ -42,9 +44,10 @@ Pick **one mode** per invocation (except shared options).
 - `--instantiate`: `Pkg.instantiate` on remotes after deploy
 - `--juliaup`: align Julia via juliaup to the kit parent major.minor
   (`add` / `update` / `default`; confirm unless `-y`; changes host
-  default). Targets: SSH hosts and/or `parent` (this machine). Requires
-  juliaup already on the target (`$HOME/.juliaup/bin/juliaup` or macOS
-  Homebrew `/opt/homebrew/bin/juliaup` / `/usr/local/bin/juliaup`). Does
+  default). Targets: `child:NAME` and/or `parent` (this machine; `:N`
+  ignored). Requires juliaup already on the target
+  (`$HOME/.juliaup/bin/juliaup` or macOS Homebrew
+  `/opt/homebrew/bin/juliaup` / `/usr/local/bin/juliaup`). Does
   not change the Julia process already running the kit. If remotes land
   on a newer patch than the kit parent, prints a Tip pointing at
   `setup --juliaup parent`
@@ -69,8 +72,9 @@ Pick **one mode** per invocation (except shared options).
 - `--progress`: live status (TTY default)
 - `--verbose`: full detail (non-TTY default)
 - `-y` / `--yes`: accept confirmation prompts non-interactively
-- `--hosts CSV`: comma-separated SSH hosts (`host:N` → host name only)
-- `--hosts-file PATH`: append SSH hosts (`host:N` → host name only)
+- `--hosts CSV`: comma-separated `child:NAME[:N]` (`:N` stripped). With
+  `--juliaup`, also `parent` / `parent:N`
+- `--hosts-file PATH`: append the same tokens (`:N` stripped)
 - `-v` / `--version`: print DistSSHKit version and exit
 - `-h` / `--help`: full help
 

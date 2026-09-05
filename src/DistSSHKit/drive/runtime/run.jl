@@ -221,10 +221,10 @@ function _run_drive_parsed_locked!(
                         println_fatal("Git hash mismatch on $(join(mismatches, ", "))")
                         println_fatal()
                         println_fatal("To re-deploy with git:")
-                        println_fatal("  julia --project=. -m DistSSHKit setup --sync $(join(mismatches, " "))")
+                        println_fatal("  julia --project=. -m DistSSHKit setup --sync $(join(setup_cli_host_token.(mismatches), " "))")
                         println_fatal()
                         println_fatal("Or re-deploy with rsync (after setup --delete if the path is nonempty):")
-                        println_fatal("  julia --project=. -m DistSSHKit setup --rsync $(join(mismatches, " "))")
+                        println_fatal("  julia --project=. -m DistSSHKit setup --rsync $(join(setup_cli_host_token.(mismatches), " "))")
                         println_fatal()
                     end
                     if !isempty(unverifiable)
@@ -234,8 +234,8 @@ function _run_drive_parsed_locked!(
                         println_fatal("For rsync-deployed remotes, omit --require-git (the default).")
                         println_fatal()
                         println_fatal("Or use git-managed remotes:")
-                        println_fatal("  julia --project=. -m DistSSHKit setup --clone HOST ...")
-                        println_fatal("  julia --project=. -m DistSSHKit setup --sync HOST ...")
+                        println_fatal("  julia --project=. -m DistSSHKit setup --clone child:HOST ...")
+                        println_fatal("  julia --project=. -m DistSSHKit setup --sync child:HOST ...")
                         println_fatal()
                     end
                     println_fatal("Or omit --require-git and run without git parity.")

@@ -266,7 +266,7 @@ CLI entry. Prefer Julia 1.12+ and `julia -m DistSSHKit SUBCOMMAND …`:
 
     julia --project=. -m DistSSHKit go SCRIPT.jl
     julia --project=. -m DistSSHKit drive parent:2 script.jl
-    julia --project=. -m DistSSHKit setup --clone host1 host2
+    julia --project=. -m DistSSHKit setup --clone child:host1 child:host2
     julia --project=. -m DistSSHKit size parent child:host1
     julia --project=. -m DistSSHKit progress DIR
 

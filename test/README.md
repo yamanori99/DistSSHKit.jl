@@ -272,7 +272,8 @@ Tests follow the same two surfaces as the kit. No extra test harness:
   (`parent:2`, `child:host-a:4`)
 - setup, collect-only HOST, fake SSH trees, `session.hosts`, and
   `HostRunResult.host` use the SSH name (`host-a`)
-- `_sample_hosts_file` is tokens; `_sample_setup_hosts_file` is bare
+- `_sample_hosts_file` / `_sample_setup_hosts_file` are placement tokens
+  (`child:…`)
   names
 
 Do not search-replace a host name into a token (that produced

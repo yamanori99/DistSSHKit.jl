@@ -34,8 +34,8 @@ Call paths:
 
 All of these need **Julia 1.12+** ([Requirements](@ref)).
 
-Same host tokens for go / drive / size (`parent:2`, `child:user@host:1`).
-`setup` uses the SSH name with no prefix. Details:
+Same host tokens for setup / go / drive / size (`parent:2`,
+`child:user@host:1`; setup / size ignore `:N`). Details:
 [API](@ref API), [User Guide](@ref Manual).
 
 ## Installation

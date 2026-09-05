@@ -3,19 +3,21 @@ function show_requirements(; io::IO=stdout)
     print_help_lines(io,
         "Deploy and check the project on SSH hosts before go / drive.",
         "Recommended: --rsync, --instantiate, --check, then optional --runtest.",
+        "Hosts: child:NAME[:N] (same as go / drive / size; :N ignored).",
+        "       --juliaup also accepts parent[:N].",
         "Remote path: ~/Parent/RepoName, or --remote-path / ENV.",
         "Git parity is drive --require-git (off by default).",
     )
     print_help_blank(io)
     print_help_section("Usage"; io=io)
     print_help_lines(io,
-        "  julia --project=. -m DistSSHKit setup MODE host1 host2",
-        "  setup --rsync host1 host2",
-        "  setup --instantiate host1 host2",
-        "  setup --check host1 host2",
-        "  setup --juliaup host1 host2",
-        "  setup --juliaup parent host1",
-        "  setup --runtest host1 host2",
+        "  julia --project=. -m DistSSHKit setup MODE child:host1 child:host2",
+        "  setup --rsync child:host1 child:host2",
+        "  setup --instantiate child:host1 child:host2",
+        "  setup --check child:host1 child:host2",
+        "  setup --juliaup child:host1 child:host2",
+        "  setup --juliaup parent child:host1",
+        "  setup --runtest child:host1 child:host2",
     )
     print_help_blank(io)
     print_help_section("Modes (one per run)"; io=io)
@@ -25,7 +27,7 @@ function show_requirements(; io::IO=stdout)
         "  --sync / --pull      git update (confirm unless -y)",
         "  --instantiate        Pkg.instantiate on remotes",
         "  --juliaup            align Julia via juliaup (confirm unless -y;",
-        "                       SSH hosts and/or parent)",
+        "                       child:NAME and/or parent)",
         "  --check              SSH, Julia, project, deps",
         "  --runtest            Pkg.test of the job project on remotes",
         "  --cleanup / --delete stale workers / remote tree",
@@ -42,9 +44,9 @@ function show_requirements(; io::IO=stdout)
         "  $(KIT_VERBOSE_FLAG_HELP)",
         "  $(KIT_TIME_HELP)",
         "  -y, --yes            skip confirmations",
-        "  --hosts CSV          SSH names (`:N` stripped); juliaup also",
-        "                       accepts parent",
-        "  --hosts-file PATH    one host per line (`:N` stripped)",
+        "  --hosts CSV          child:NAME[:N] (`:N` stripped; --juliaup",
+        "                       also accepts parent[:N])",
+        "  --hosts-file PATH    one token per line (`:N` stripped)",
         "  --version, -v        print version and exit",
         "  --older-than DAYS    with --prune: mtime at least DAYS old",
         "  --id TOKEN           with --prune: go batch name contains TOKEN",
@@ -135,12 +137,14 @@ function parse_setup_args(args::Vector{String})
             show_help = true
             cli_consume!(c)
         else
-            push!(hosts, split_worker_token(arg)[1])
+            let p = parse_placement_token(arg)
+                push!(hosts, p.role === :parent ? PARENT_HOST_NAME : p.name)
+            end
             cli_consume!(c)
         end
     end
 
-    append_kit_host_sources!(hosts, cli_session; keep_counts=false)
+    append_kit_host_sources!(hosts, cli_session; keep_counts=false, roles=true)
     apply_kit_cli_session!(cli_session)
 
     if (older_days !== nothing || prune_id !== nothing) && mode !== :prune

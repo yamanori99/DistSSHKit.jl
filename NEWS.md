@@ -6,6 +6,11 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+- `setup` CLI hosts use the same placement tokens as go / drive / size:
+  `child:NAME[:N]` (`:N` ignored). Bare SSH names are rejected.
+  `setup --juliaup` also accepts `parent` / `parent:N`; remotes stay
+  `child:…`.
+
 ## 0.5.3
 
 Patch after `0.5.2`.

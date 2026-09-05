@@ -323,10 +323,10 @@ function _go_assert_remote_ready!(host::AbstractString, remote_root::AbstractStr
 
         msg = "remote project not ready on $host ($remote_root).\n" *
             "Run setup first (pick one deploy path), then instantiate:\n" *
-            "  rsync:  julia --project=. -m DistSSHKit setup --rsync $host\n" *
-            "  git:    julia --project=. -m DistSSHKit setup --clone $host\n" *
-            "          (later updates: setup --sync $host)\n" *
-            "  then:   julia --project=. -m DistSSHKit setup --instantiate $host\n" *
+            "  rsync:  julia --project=. -m DistSSHKit setup --rsync $(setup_cli_host_token(host))\n" *
+            "  git:    julia --project=. -m DistSSHKit setup --clone $(setup_cli_host_token(host))\n" *
+            "          (later updates: setup --sync $(setup_cli_host_token(host)))\n" *
+            "  then:   julia --project=. -m DistSSHKit setup --instantiate $(setup_cli_host_token(host))\n" *
             "Or one-shot onto an empty path: go --rsync (instantiates missing deps).\n" *
             "Or from Julia: setup!(session, :rsync, :instantiate)\n" *
             "  (or go!(…; sync=:rsync); or :clone; repo=\"…\" then :instantiate; later :sync)\n" *
@@ -339,7 +339,7 @@ function _go_assert_remote_ready!(host::AbstractString, remote_root::AbstractStr
     if deps_err !== nothing
         throw(ArgumentError(
             "remote project deps not ready on $host ($remote_root): $deps_err\n" *
-            "Fix: julia --project=. -m DistSSHKit setup --instantiate $host\n" *
+            "Fix: julia --project=. -m DistSSHKit setup --instantiate $(setup_cli_host_token(host))\n" *
             "  (or setup!(session, :instantiate) after :rsync / :clone)",
         ))
     end

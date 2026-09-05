@@ -144,7 +144,7 @@ CLI のオプションと Julia API は1対1である。
   (push せず pull だけ)、または再度 `--rsync`
 - その他
   - `--check` (SSH / Julia / 依存関係の疎通確認)
-  - `--juliaup` (juliaup で SSH ホストや `parent` の Julia を揃える。確認あり。`-y` で省略)
+  - `--juliaup` (juliaup で `child:NAME` や `parent` の Julia を揃える。確認あり。`-y` で省略)
   - `--prune` (`.distsshkit` の go / drive / setup を消す。配置ツリーは残す)
   - `--cleanup` (残っているワーカープロセスの掃除)
   - `--delete` (リモートのプロジェクトディレクトリを削除。破壊的操作)
@@ -166,22 +166,22 @@ CLI のオプションと Julia API は1対1である。
 
 ```bash
 # ファイル転送
-julia --project=. -m DistSSHKit setup --rsync user@host1 user@host2
+julia --project=. -m DistSSHKit setup --rsync child:user@host1 child:user@host2
 # 依存の用意
-julia --project=. -m DistSSHKit setup --instantiate user@host1 user@host2
+julia --project=. -m DistSSHKit setup --instantiate child:user@host1 child:user@host2
 # 疎通確認
-julia --project=. -m DistSSHKit setup --check user@host1 user@host2
+julia --project=. -m DistSSHKit setup --check child:user@host1 child:user@host2
 ```
 
 その他、困ったときによく使うコマンド:
 
 ```bash
 # `.distsshkit` の go / drive / setup を消す (配置は残す)
-julia --project=. -m DistSSHKit setup --prune user@host1 user@host2
+julia --project=. -m DistSSHKit setup --prune child:user@host1 child:user@host2
 # 残っている古いワーカープロセスを掃除する
-julia --project=. -m DistSSHKit setup --cleanup user@host1 user@host2
+julia --project=. -m DistSSHKit setup --cleanup child:user@host1 child:user@host2
 # 全部やり直したいとき (実行確認あり)
-julia --project=. -m DistSSHKit setup --delete user@host1 user@host2
+julia --project=. -m DistSSHKit setup --delete child:user@host1 child:user@host2
 ```
 
 ### 実行例

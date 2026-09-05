@@ -23,6 +23,8 @@ using Test
         @test DistSSHKit.validate_setup_hosts(["local"]) === nothing
         @test_throws ArgumentError DistSSHKit.validate_setup_hosts(["demos/foo.jl"])
         @test DistSSHKit.validate_setup_hosts(["root@192.0.2.10", "host-b"]) === nothing
+        @test DistSSHKit.setup_cli_host_token("host-a") == "child:host-a"
+        @test DistSSHKit.setup_cli_host_token("parent") == "parent"
     end
 
         @testset "finish_host_op!" begin

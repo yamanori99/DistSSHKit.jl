@@ -36,7 +36,7 @@ function _kit_cli_cmd(
     return Cmd(vcat(prefix, ["-m", "DistSSHKit"], argv))
 end
 
-"""Temp go/drive/size hosts file: comment, `child:host-a`, `child:host-b:4`."""
+"""Temp go/drive/size/setup hosts file: comment, `child:host-a`, `child:host-b:4`."""
 function _sample_hosts_file()::String
     path, io = mktemp()
     try
@@ -50,19 +50,7 @@ function _sample_hosts_file()::String
     return path
 end
 
-"""Temp setup hosts file: bare SSH names (`host:N` stripped by setup)."""
-function _sample_setup_hosts_file()::String
-    path, io = mktemp()
-    try
-        write(io, "# lab hosts (comments and host:N lines)\nhost-a\nhost-b:4\n")
-        close(io)
-    catch
-        close(io)
-        rm(path; force=true)
-        rethrow()
-    end
-    return path
-end
+const _sample_setup_hosts_file = _sample_hosts_file
 
 """Last `progress:` in `dir` (`kit.progress` even with `--no-log`) is `done`."""
 function _assert_kit_progress_done(dir::AbstractString; kind::Symbol)

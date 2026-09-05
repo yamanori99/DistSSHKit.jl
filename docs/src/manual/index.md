@@ -56,9 +56,8 @@ Same **names** are shared on purpose; a few meanings differ by command:
   default; exclusive with `--sync` / `--rsync` on go).
 - `--output-dir`: **`go`** is batch root (`PATH/{slot}/`). **`drive`** is
   result root (`DISTRIBUTED_OUTPUT_DIR`). Different on purpose.
-- `--hosts`: CSV tokens. `setup` strips `:N` from bare SSH names. `size`
-  strips `:N` from `parent` / `child:NAME[:N]`. `go` / `drive` keep
-  `child:NAME:N`.
+- `--hosts`: CSV tokens. `setup` / `size` strip `:N` from `parent` /
+  `child:NAME[:N]`. `go` / `drive` keep `child:NAME:N`.
 - `--hosts-file`: same as `--hosts` for that command.
 - Shared flags: `-q`/`--quiet`, `--progress`, `--verbose`, `-y`/`--yes`,
   `--hosts`, `--hosts-file`, `-v`/`--version` — same on setup / go /
@@ -68,13 +67,13 @@ Same **names** are shared on purpose; a few meanings differ by command:
 
 **Hosts.** Sources, in the order they append after positional tokens:
 
-- CLI tokens on go / drive / size: `parent[:N]`, `child:NAME[:N]`
-- CLI tokens on setup and drive collect-only: SSH name with no prefix
+- CLI tokens on setup / go / drive / size: `parent[:N]`, `child:NAME[:N]`
 - `--hosts` (CSV)
 - `DISTSSHKIT_HOSTS` (comma-separated)
 - `--hosts-file` (default path from `DISTSSHKIT_HOSTS_FILE`)
 
-`setup` / `size` strip `:N` and use host names only.
+`setup` / `size` strip `:N` and use host names only. Bare SSH names are
+not accepted on setup (use `child:NAME`).
 
 **Jobs.** `DISTSSHKIT_JOBS` (default 1) is the max concurrent SSH host jobs
 for `setup --rsync`, drive post-run collect, and `size` Julia detection.

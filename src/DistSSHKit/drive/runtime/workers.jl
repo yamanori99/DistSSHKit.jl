@@ -127,8 +127,8 @@ function add_drive_workers!(
                       remote_path_for_ssh_collect(script_path, repo_ra)
             print_progress_err("✗ (remote path not found: $missing)")
             writeln_both("")
-            writeln_both("    hint: julia --project=. -m DistSSHKit setup --rsync $host_name")
-            writeln_both("          julia --project=. -m DistSSHKit setup --instantiate $host_name")
+            writeln_both("    hint: julia --project=. -m DistSSHKit setup --rsync $(setup_cli_host_token(host_name))")
+            writeln_both("          julia --project=. -m DistSSHKit setup --instantiate $(setup_cli_host_token(host_name))")
             writeln_both("          or drive --rsync onto an empty path (instantiates missing deps)")
             writeln_both("           or export DISTRIBUTED_REMOTE_PROJECT_ROOT=<abs path on host>")
             continue
@@ -141,7 +141,7 @@ function add_drive_workers!(
             write_both("$host_name ($host_workers workers): ")
             print_progress_err("✗ ($deps_err)")
             writeln_both("")
-            writeln_both("    hint: julia --project=. -m DistSSHKit setup --instantiate $host_name")
+            writeln_both("    hint: julia --project=. -m DistSSHKit setup --instantiate $(setup_cli_host_token(host_name))")
             continue
         end
 

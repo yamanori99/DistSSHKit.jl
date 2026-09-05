@@ -262,7 +262,7 @@ function check_prerequisites(
             ok("Project found at $project_path")
         else
             fail("Project not found at $project_path")
-            kit_println("    Fix: --clone $host  (or --rsync $host)")
+            kit_println("    Fix: --clone $(setup_cli_host_token(host))  (or --rsync $(setup_cli_host_token(host)))")
             all_ok = false
             host_ok[] = false
             kit_println()
@@ -282,7 +282,7 @@ function check_prerequisites(
                 ok("Project dependencies resolvable")
             else
                 fail(deps_err)
-                kit_println("    Fix: julia --project=. -m DistSSHKit setup --instantiate $host")
+                kit_println("    Fix: julia --project=. -m DistSSHKit setup --instantiate $(setup_cli_host_token(host))")
                 all_ok = false
                 host_ok[] = false
             end

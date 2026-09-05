@@ -399,8 +399,8 @@ end
 """`--hosts`, `DISTSSHKIT_HOSTS`, then `--hosts-file` / `DISTSSHKIT_HOSTS_FILE`.
 
 `keep_counts=true` (go / drive) keeps tokens as written. `false` (setup / size)
-strips `:N`. Size passes `roles=true` so `child:NAME[:N]` becomes `NAME` and
-`parent` stays `parent`. Setup keeps bare SSH names (`roles=false`).
+strips `:N`. Size and setup pass `roles=true` so `child:NAME[:N]` becomes
+`NAME` and `parent` stays `parent`.
 """
 function kit_host_source_tokens(
     session::KitCliSession;
