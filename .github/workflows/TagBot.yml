@@ -7,6 +7,13 @@ on:
     types:
       - created
   workflow_dispatch:
+
+# JuliaTagBot can comment twice in seconds. A second `git push` of the same
+# tag fails and opens a false tagbot-manual issue. Do not cancel in progress.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   TagBot:
     if: github.event_name == 'workflow_dispatch' || github.actor == 'JuliaTagBot'
