@@ -79,7 +79,7 @@ function print_juliaup_align_fix!(
 )
     ch = String(channel)
     h = String(host)
-    kit_println("    Fix: julia --project=. -m DistSSHKit setup --juliaup $h")
+    kit_println("    Fix: julia --project=. -m DistSSHKit setup --juliaup $(setup_cli_host_token(h))")
     kit_println("         (or on $h: juliaup add $ch && juliaup update $ch && \\")
     kit_println("          juliaup default $ch —")
     kit_println("          \$HOME/.juliaup/bin/juliaup, /opt/homebrew/bin/juliaup,")

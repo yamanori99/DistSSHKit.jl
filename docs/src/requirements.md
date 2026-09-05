@@ -144,7 +144,7 @@ If the major.minor does not match the kit machine, align with juliaup
 (changes that host's **default** Julia):
 
 ```bash
-julia --project=. -m DistSSHKit setup --juliaup USER@HOST
+julia --project=. -m DistSSHKit setup --juliaup child:USER@HOST
 julia --project=. -m DistSSHKit setup --juliaup parent   # this machine
 # or manually (official install or macOS Homebrew):
 # ssh USER@HOST '$HOME/.juliaup/bin/juliaup add 1.12 &&
@@ -166,7 +166,7 @@ The kit covers the same ground (`ssh`, Julia path / version, remote project)
 with `setup --check` (this **is** a DistSSHKit command):
 
 ```bash
-julia --project=. -m DistSSHKit setup --check USER@HOST
+julia --project=. -m DistSSHKit setup --check child:USER@HOST
 ```
 
 `setup --check` prints a `--juliaup` Fix when Julia is missing or the

@@ -7,8 +7,8 @@ Recommended workflow:
   Optional git: --clone → --instantiate → --check → --sync / --pull
   Replace a remote tree: --delete, then --rsync or --clone
 
-  julia --project=. -m DistSSHKit setup --rsync hosts...
-  julia --project=. -m DistSSHKit setup --sync hosts...   # git updates
+  julia --project=. -m DistSSHKit setup --rsync child:host1...
+  julia --project=. -m DistSSHKit setup --sync child:host1...   # git updates
 
 See `--help`.
 """
@@ -33,7 +33,16 @@ end
 
 if !isdefined(@__MODULE__, :setup_main)
     function setup_main()::Cint
-        opts = parse_setup_args(ARGS)
+        opts = try
+            parse_setup_args(ARGS)
+        catch e
+            e isa ArgumentError || rethrow()
+            print_err("Error: "; bold=true)
+            println_fatal(e.msg)
+            println_fatal()
+            show_usage()
+            return 1
+        end
 
         if opts.show_version
             DistSSHKit.println_kit_version()

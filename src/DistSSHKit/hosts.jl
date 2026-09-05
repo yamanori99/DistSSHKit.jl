@@ -78,7 +78,7 @@ format_placement_token(
 ) = format_placement_token(role, name isa String ? name : string(name), n)
 
 const _PLACEMENT_HINT =
-    "use `parent[:N]` or `child:NAME[:N]` (setup: SSH name, no prefix)"
+    "use `parent[:N]` or `child:NAME[:N]` (setup / size ignore `:N`)"
 
 function throw_legacy_placement_token(raw::AbstractString)
     s = String(raw)

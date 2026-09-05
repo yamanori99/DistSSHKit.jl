@@ -107,7 +107,7 @@ function remote_dest_busy_message(host::AbstractString, remote_path::AbstractStr
         remote_path,
         " (refusing to overwrite). ",
         "Delete it first, e.g.: julia --project=. -m DistSSHKit setup --delete ",
-        host,
+        setup_cli_host_token(host),
     )
 end
 

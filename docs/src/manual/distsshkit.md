@@ -28,8 +28,8 @@ The first always runs the Apps copy of DistSSHKit, not the kit in
 
 ```bash
 distsshkit demo install with_kit
-distsshkit setup --rsync user@host1
-distsshkit setup --instantiate user@host1
+distsshkit setup --rsync child:user@host1
+distsshkit setup --instantiate child:user@host1
 # or one-shot onto an empty path (instantiates if needed):
 # distsshkit go --rsync child:user@host1:1 path/to/script.jl
 # size / drive: job project, not the Apps copy

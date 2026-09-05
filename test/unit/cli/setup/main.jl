@@ -33,6 +33,11 @@ using Test
     end
     let (code, out, err) = _setup_capture(["--delete", "parent"])
         @test code == 1
-        @test occursin("SSH targets only", out * err)
+        @test occursin("only for --juliaup", out * err)
+    end
+    let (code, out, err) = _setup_capture(["--delete", "host1"])
+        @test code == 1
+        combined = out * err
+        @test occursin("child:NAME", combined) || occursin("parent[:N]", combined)
     end
 end

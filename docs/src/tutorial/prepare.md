@@ -17,11 +17,11 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 # Remotes: deploy the tree, then install deps from Manifest.toml
 # Pick one first deploy (rsync: no remote .git/):
-julia --project=. -m DistSSHKit setup --rsync YourHost1 YourHost2
-# or: julia --project=. -m DistSSHKit setup --clone YourHost1 YourHost2
-julia --project=. -m DistSSHKit setup --instantiate YourHost1 YourHost2
+julia --project=. -m DistSSHKit setup --rsync child:YourHost1 child:YourHost2
+# or: julia --project=. -m DistSSHKit setup --clone child:YourHost1 child:YourHost2
+julia --project=. -m DistSSHKit setup --instantiate child:YourHost1 child:YourHost2
 # optional: job Pkg.test() on remotes (not DistSSHKit's tests)
-# julia --project=. -m DistSSHKit setup --runtest YourHost1 YourHost2
+# julia --project=. -m DistSSHKit setup --runtest child:YourHost1 child:YourHost2
 ```
 
 `--rsync` is the usual first deploy; `--clone` is the git path (later updates:
@@ -61,20 +61,20 @@ rsync tree. Commit parity is drive-only:
 Verify when ready:
 
 ```bash
-julia --project=. -m DistSSHKit setup --check YourHost1 YourHost2
+julia --project=. -m DistSSHKit setup --check child:YourHost1 child:YourHost2
 ```
 
 If check fails on Julia major.minor (and hosts already have juliaup):
 
 ```bash
-julia --project=. -m DistSSHKit setup --juliaup YourHost1 YourHost2
+julia --project=. -m DistSSHKit setup --juliaup child:YourHost1 child:YourHost2
 julia --project=. -m DistSSHKit setup --juliaup parent   # this machine too
 ```
 
 Clean slate (confirm when prompted):
 
 ```bash
-julia --project=. -m DistSSHKit setup --delete YourHost1 YourHost2
+julia --project=. -m DistSSHKit setup --delete child:YourHost1 child:YourHost2
 ```
 
 Next: [Demo](@ref Tutorial-Demo).
