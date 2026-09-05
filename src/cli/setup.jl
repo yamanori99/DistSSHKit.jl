@@ -7,8 +7,8 @@ Recommended workflow:
   Optional git: --clone → --instantiate → --check → --sync / --pull
   Replace a remote tree: --delete, then --rsync or --clone
 
-  julia --project=. -m DistSSHKit setup --rsync child:host1...
-  julia --project=. -m DistSSHKit setup --sync child:host1...   # git updates
+  julia --project=. -m DistSSHKit setup --rsync child:host1 child:host2
+  julia --project=. -m DistSSHKit setup --sync child:host1 child:host2   # git updates
 
 See `--help`.
 """

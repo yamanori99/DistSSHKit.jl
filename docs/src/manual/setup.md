@@ -3,7 +3,8 @@
 Prepare SSH hosts before [`go`](@ref Manual-go) / [`drive`](@ref Manual-drive).
 
 ```bash
-julia --project=. -m DistSSHKit setup [options] [parent] [child:NAME...]
+julia --project=. -m DistSSHKit setup [options] [child:NAME...]
+# --juliaup also accepts parent / parent:N (:N ignored)
 ```
 
 From Julia, use [`setup!`](@ref) for the same modes as this CLI
@@ -70,8 +71,8 @@ Pick **one mode** per invocation (except shared options).
 - `--progress`: live status (TTY default)
 - `--verbose`: full detail (non-TTY default)
 - `-y` / `--yes`: accept confirmation prompts non-interactively
-- `--hosts CSV`: comma-separated `parent` / `child:NAME[:N]` (`:N`
-  stripped)
+- `--hosts CSV`: comma-separated `child:NAME[:N]` (`:N` stripped). With
+  `--juliaup`, also `parent` / `parent:N`
 - `--hosts-file PATH`: append the same tokens (`:N` stripped)
 - `-v` / `--version`: print DistSSHKit version and exit
 - `-h` / `--help`: full help
