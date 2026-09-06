@@ -297,8 +297,8 @@ Helpers (via `support.jl`): `_child_julia_env`, `_run_kit_drive` /
 `_capture_stdio` / `with_kit_verbosity`.
 
 - `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL` (default `1` in test children):
-  skip remote / `setup --cleanup` `pkill`; each child `rmprocs`es its own
-  local workers
+  skip drive leftover tagged remote `pkill`; each child `rmprocs`es its own
+  local workers. Untagged sweep is `setup --cleanup` only.
 - `DISTSSHKIT_SSH_E2E` (unset): `1` runs `test/e2e.jl` (needs docker-ssh
   workers)
 - `DISTSSHKIT_CODE_COVERAGE` (unset): `1` with `up.sh --e2e` →

@@ -83,6 +83,20 @@ end
             end
         end
 
+        @testset "cleanup_stale_workers! skips untagged remote pkill" begin
+            withenv("DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL" => nothing, "DISTSSHKIT_JOB_ID" => nothing) do
+                mktemp() do path, io
+                    redirect_stdout(io) do
+                        Main.cleanup_stale_workers!(
+                            Tuple{String,Union{Int,Nothing}}[("example.invalid", 1)],
+                        )
+                    end
+                    flush(io)
+                    @test !occursin("Cleaning up stale workers", read(path, String))
+                end
+            end
+        end
+
         @testset "cleanup_stale_workers! DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL" begin
             withenv("DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL" => "1") do
                 mktemp() do path, io

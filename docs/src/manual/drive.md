@@ -93,9 +93,9 @@ onto an empty path). Prefer matching Julia **major.minor**; align with
 [`size`](@ref Manual-size).
 
 - Local workers are torn down with `rmprocs` at the end of every `drive` run
-- Before adding SSH workers, `drive` may `pkill` leftover Distributed
-  processes on those hosts; skip with `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1`
-  ([User Guide](@ref Manual))
+- SSH leftover `pkill` is only argv tagged with `DISTSSHKIT_JOB_ID`. Untagged
+  `julia --worker` sweep is `setup --cleanup`. Skip leftover tagged `pkill` with
+  `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` ([User Guide](@ref Manual))
 - Machine-wide local kill is `setup --cleanup`
 
 ## Results / collect

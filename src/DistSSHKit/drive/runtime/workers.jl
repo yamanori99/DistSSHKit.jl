@@ -21,25 +21,25 @@ function _skip_global_worker_pkill()::Bool
     return get(ENV, "DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL", "") == "1"
 end
 
-function _pkill_stale_julia_workers_remote!(host_name::String)::Bool
-    return DistSSHKit._pkill_remote_julia_workers!(host_name)
-end
-
 # Pre-run local `pkill -f julia.*--worker` is gone: it is not pid-scoped and
 # would reap workers belonging to other Julia processes on the same login
 # (parallel tests, another drive). Local teardown is `rmprocs` at atexit.
-# Remote hosts are treated as dedicated; skip with DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1.
-# Explicit machine-wide local kill remains `setup --cleanup`.
+# Remote untagged `pkill` is the same class (shared SSH host). Drive only
+# `pkill`s argv tagged with `DISTSSHKIT_JOB_ID`. Machine-wide sweep remains
+# `setup --cleanup`. Skip leftover tagged pkill with
+# DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1.
 function cleanup_stale_workers!(hosts::Vector{Tuple{String,Union{Int,Nothing}}})
     if _skip_global_worker_pkill() || isempty(hosts)
         return
     end
+    job_id = DistSSHKit.resolved_kit_job_id()
+    job_id === nothing && return
     writeln_both("Cleaning up stale workers..."; color=:light_black)
 
     for (host_name, _) in hosts
         DistSSHKit._drive_host_span!(host_name, "cleanup", :running)
         write_both("  $host_name: ")
-        if _pkill_stale_julia_workers_remote!(host_name)
+        if DistSSHKit._pkill_remote_tagged_workers!(host_name, job_id)
             print_ok("✓")
             DistSSHKit._drive_host_span!(host_name, "cleanup", :ok)
         else
@@ -245,12 +245,8 @@ function register_worker_cleanup!(successful_hosts::Vector{String})
 
         for host in successful_hosts
             job_id = DistSSHKit.resolved_kit_job_id()
-            if job_id !== nothing
-                DistSSHKit._pkill_remote_tagged_workers!(host, job_id)
-                continue
-            end
-            _skip_global_worker_pkill() && continue
-            _pkill_stale_julia_workers_remote!(host)
+            job_id === nothing && continue
+            DistSSHKit._pkill_remote_tagged_workers!(host, job_id)
         end
     end
     atexit(drive_atexit_cleanup)

@@ -6,6 +6,9 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+- `drive` / `ride` no longer `pkill -f julia.*--worker` on SSH hosts. Leftover
+  remote workers are `pkill`d only when `DISTSSHKIT_JOB_ID` is set (same tag as
+  [`terminate!`](@ref)). Untagged machine-wide sweep stays `setup --cleanup`.
 - `drive` / `drive!`: omitted `--output-dir` (and no `init_output_dir!`
   / `DISTRIBUTED_OUTPUT_DIR`) now uses a unique
   `{script}/.distsshkit/drive/<stem>_<UTC>/`, like go / ride. Drivers that

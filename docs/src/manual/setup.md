@@ -57,8 +57,9 @@ Pick **one mode** per invocation (except shared options).
   (job project) and remotes (confirm unless `-y`). Does not `--delete`
   the deploy tree. `--older-than DAYS` (mtime). `--id TOKEN` (go batch
   name contains TOKEN; skips drive/setup)
-- `--cleanup`: kill stale Julia worker processes (local + remotes);
-  `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` skips the `pkill`
+- `--cleanup`: kill stale Julia worker processes (local + remotes;
+  untagged `julia --worker` / `--bind-to`. Drive leftover pkill is
+  `job_id`-tagged only; `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` skips that)
 - `--delete`: remove remote project dirs (destructive; confirm unless
   `-y`)
 - `--repo URL`: clone URL (default: local `origin`)
