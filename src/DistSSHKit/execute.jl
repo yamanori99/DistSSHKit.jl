@@ -1054,14 +1054,17 @@ and return its path. `kind` is `:go`, `:drive`, or `:ride` (the same values as
 
 Layout is `{script dir}/.distsshkit/<kind>/<script-stem>_<UTC-stamp>/`. When
 `job_id` is set it is appended after the stamp (same charset as
-[`execute!`](@ref) `job_id`). If that path already exists, a nanosecond
-suffix is added so two allocations in the same second do not share a
-directory.
+[`execute!`](@ref) `job_id`). The leaf is created with exclusive `mkdir`;
+if it already exists (same-second collision), a nanosecond suffix is
+retried so two allocations do not share a directory.
 
 This matches omitted in-process defaults for go, ride, and drive:
 `{script}/.distsshkit/<kind>/<stem>_<UTC>/`. Drive still honors
 `output_dir` / `--output-dir` and a driver's `init_output_dir!`
-(`DISTRIBUTED_OUTPUT_DIR`) when those are set.
+(`DISTRIBUTED_OUTPUT_DIR`) when those are set. Detached `execute!(:drive)`
+pins that path with `--output-dir` before spawn (`KitProcess.output_dir`);
+it does not wait for `init_output_dir!`. A non-blank inherited
+`DISTRIBUTED_OUTPUT_DIR` is used when `output_dir` is omitted.
 """
 function allocate_output_dir(
     kind::Symbol,
@@ -1083,11 +1086,23 @@ function allocate_output_dir(
     raw = String(script)
     script_path = isabspath(raw) ? raw : joinpath(proj, raw)
     dir = joinpath(kit_dir_beside_script(dirname(canonical_local_path(script_path)), kind), leaf)
-    if ispath(dir)
-        dir = dir * "-" * string(time_ns())
+    return _mkdir_unique!(dir)
+end
+
+"""Exclusive `mkdir` of `dir`. On EEXIST, retry `dir-<time_ns>`."""
+function _mkdir_unique!(dir::AbstractString)::String
+    mkpath(dirname(dir))
+    base = String(dir)
+    while true
+        try
+            mkdir(base)
+            return canonical_local_path(base)
+        catch e
+            e isa Base.IOError || rethrow()
+            e.code == Base.UV_EEXIST || rethrow()
+            base = String(dir) * "-" * string(time_ns())
+        end
     end
-    mkpath(dir)
-    return dir
 end
 
 """Set `DISTRIBUTED_OUTPUT_DIR` for a drive run and return it.
@@ -1127,7 +1142,14 @@ function _execute_detached_dirs(
     elseif kind === :ride
         _ride_batch_dir(script_path, nothing; project=project)
     else
-        allocate_output_dir(:drive, script_path; project=project)
+        inherited = strip(get(ENV, "DISTRIBUTED_OUTPUT_DIR", ""))
+        if !isempty(inherited)
+            d = canonical_local_path(inherited)
+            mkpath(d)
+            d
+        else
+            allocate_output_dir(:drive, script_path; project=project)
+        end
     end
     resolved_log = if kind === :go || kind === :ride || enable_log === false
         nothing

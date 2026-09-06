@@ -141,6 +141,11 @@ using Test
                 e
             end
             @test err_id isa ArgumentError
+            taken = DistSSHKit.allocate_output_dir(:go, "same.jl"; project)
+            again = DistSSHKit._mkdir_unique!(taken)
+            @test again != taken
+            @test isdir(again)
+            @test startswith(basename(again), basename(taken))
         end
     end
 
@@ -189,6 +194,14 @@ using Test
             )
             @test c == DistSSHKit.canonical_local_path(custom)
             @test lc == c
+            inherited = joinpath(project, "from_env")
+            withenv("DISTRIBUTED_OUTPUT_DIR" => inherited) do
+                e, le = DistSSHKit._execute_detached_dirs(
+                    :drive, project, script, nothing, nothing, true,
+                )
+                @test e == DistSSHKit.canonical_local_path(inherited)
+                @test le == e
+            end
         end
     end
 
