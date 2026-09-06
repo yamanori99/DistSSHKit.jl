@@ -12,6 +12,9 @@ using Test
         fx = Meta.parse("filter(iseven, xs)")
         @test DistSSHKit._ride_rewrite(fx).args[1] === GlobalRef(DistSSHKit, :_ride_filter)
 
+        mx2 = Meta.parse("map(+, xs, ys)")
+        @test DistSSHKit._ride_rewrite(mx2).args[1] === :map
+
         cx = Meta.parse("[x^2 for x in xs]")
         cr = DistSSHKit._ride_rewrite(cx)
         @test cr.args[1] === GlobalRef(DistSSHKit, :_ride_map)
@@ -39,6 +42,14 @@ using Test
         )
         @test plan.parent_workers == 1
         @test plan.child_workers["h"] == 2
+
+        _with_tempdir() do tmp
+            script = joinpath(tmp, "map.jl")
+            d1 = DistSSHKit._ride_batch_dir(script, nothing; project=tmp)
+            d2 = DistSSHKit._ride_batch_dir(script, nothing; project=tmp)
+            @test isdir(d1) && isdir(d2)
+            @test d1 != d2
+        end
     end
 
     @testset "kit_run_result" begin

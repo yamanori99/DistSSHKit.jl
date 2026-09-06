@@ -377,10 +377,15 @@ function _execute_detached!(
         (sync === nothing || sync === false) || throw(ArgumentError(
             "execute!(:ride, ...; detached=true) does not accept sync=$(repr(sync))",
         ))
-    elseif haskey(kwargs, :repeat)
-        throw(ArgumentError(
+    elseif kind === :drive
+        haskey(kwargs, :repeat) && throw(ArgumentError(
             "execute!(:drive, ...; detached=true) does not accept keyword :repeat",
         ))
+        for k in (:spi_check, :gb_per_worker, :probe)
+            haskey(kwargs, k) && throw(ArgumentError(
+                "execute!(:drive, ...; detached=true) does not accept keyword $(repr(k))",
+            ))
+        end
     end
     yes = get(kwargs, :yes, true)
     yes === true || throw(ArgumentError("execute!(...; detached=true) requires yes=true"))
@@ -1102,7 +1107,7 @@ function _execute_detached_dirs(
     elseif kind === :go
         _go_batch_output_dir(project, script_path)
     elseif kind === :ride
-        _ride_batch_dir(script_path, nothing)
+        _ride_batch_dir(script_path, nothing; project=proj)
     else
         resolve_drive_output_dir(script_dir)
     end

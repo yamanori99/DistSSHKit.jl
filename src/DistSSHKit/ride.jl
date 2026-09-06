@@ -161,7 +161,7 @@ function _ride_rewrite(ex)
     args = ex.args
     if h === :call && !isempty(args)
         name = _plan_call_name(args[1])
-        if name === :map && length(args) >= 3
+        if name === :map && length(args) == 3
             fex = _ride_map_fn_arg(args[2])
             rest = Any[_ride_rewrite(a) for a in args[3:end]]
             return Expr(
@@ -170,7 +170,7 @@ function _ride_rewrite(ex)
                 fex,
                 rest...,
             )
-        elseif name === :filter && length(args) >= 3
+        elseif name === :filter && length(args) == 3
             fex = _ride_map_fn_arg(args[2])
             rest = Any[_ride_rewrite(a) for a in args[3:end]]
             return Expr(
@@ -297,57 +297,61 @@ function _ride_add_workers!(
     require_all_hosts::Bool,
 )::Vector{Int}
     before = Set(workers())
-    child_hosts = Tuple{String,Union{Int,Nothing}}[
-        (String(h), Int(n)) for (h, n) in plan.child_workers if n > 0
-    ]
-    if isempty(child_hosts)
-        n = plan.parent_workers
-        n > 0 && addprocs(
-            n;
-            topology=:master_worker,
-            exeflags=_drive_worker_exeflags(project),
-        )
+    try
+        child_hosts = Tuple{String,Union{Int,Nothing}}[
+            (String(h), Int(n)) for (h, n) in plan.child_workers if n > 0
+        ]
+        if isempty(child_hosts)
+            n = plan.parent_workers
+            n > 0 && addprocs(
+                n;
+                topology=:master_worker,
+                exeflags=_drive_worker_exeflags(project),
+            )
+        else
+            _ensure_drive_fragments!(project)
+            isdefined(Main, :add_drive_workers!) || error("ride: drive runtime not loaded")
+            julia_exe = if julia === nothing || strip(String(julia)) == "" ||
+                    lowercase(strip(String(julia))) == "auto"
+                nothing
+            else
+                String(julia)
+            end
+            addw = getfield(Main, :add_drive_workers!)
+            successful = addw(
+                child_hosts,
+                plan.parent_workers,
+                1,
+                julia_exe,
+                String(project),
+                String(script_path),
+            )
+            if require_all_hosts
+                wanted = String[h for (h, _) in child_hosts]
+                missing = String[h for h in wanted if !(h in successful)]
+                isempty(missing) || error(
+                    "ride: required hosts did not join: $(join(missing, ", "))",
+                )
+                if plan.parent_workers > 0
+                    got = _drive_parent_worker_count()
+                    got >= plan.parent_workers || error(
+                        "ride: required parent workers did not join: wanted $(plan.parent_workers), got $got",
+                    )
+                end
+            end
+            if isdefined(Main, :wait_for_worker_connections!)
+                getfield(Main, :wait_for_worker_connections!)(; ssh=!isempty(child_hosts))
+            end
+            _ride_init_drive_workers!(project)
+        end
         added = Int[w for w in workers() if w ∉ before]
         isempty(added) || _ride_load_self_on_workers!()
         return added
+    catch
+        leftover = Int[w for w in workers() if w ∉ before]
+        isempty(leftover) || rmprocs(leftover; waitfor=30)
+        rethrow()
     end
-    _ensure_drive_fragments!(project)
-    isdefined(Main, :add_drive_workers!) || error("ride: drive runtime not loaded")
-    julia_exe = if julia === nothing || strip(String(julia)) == "" ||
-            lowercase(strip(String(julia))) == "auto"
-        nothing
-    else
-        String(julia)
-    end
-    addw = getfield(Main, :add_drive_workers!)
-    successful = addw(
-        child_hosts,
-        plan.parent_workers,
-        1,
-        julia_exe,
-        String(project),
-        String(script_path),
-    )
-    if require_all_hosts
-        wanted = String[h for (h, _) in child_hosts]
-        missing = String[h for h in wanted if !(h in successful)]
-        isempty(missing) || error(
-            "ride: required hosts did not join: $(join(missing, ", "))",
-        )
-        if plan.parent_workers > 0
-            got = _drive_parent_worker_count()
-            got >= plan.parent_workers || error(
-                "ride: required parent workers did not join: wanted $(plan.parent_workers), got $got",
-            )
-        end
-    end
-    if isdefined(Main, :wait_for_worker_connections!)
-        getfield(Main, :wait_for_worker_connections!)(; ssh=!isempty(child_hosts))
-    end
-    _ride_init_drive_workers!(project)
-    added = Int[w for w in workers() if w ∉ before]
-    isempty(added) || _ride_load_self_on_workers!()
-    return added
 end
 
 """
@@ -376,15 +380,13 @@ end
 
 function _ride_batch_dir(
     script::AbstractString,
-    output_dir::Union{Nothing,AbstractString},
+    output_dir::Union{Nothing,AbstractString};
+    project::AbstractString=pwd(),
 )::String
     if output_dir !== nothing
         return canonical_local_path(String(output_dir))
     end
-    script_dir = dirname(canonical_local_path(script))
-    stem = splitext(basename(String(script)))[1]
-    stamp = Dates.format(Dates.now(Dates.UTC), dateformat"yyyymmddTHHMMSS") * "Z"
-    return joinpath(kit_dir_beside_script(script_dir, :ride), "$(stem)_$(stamp)")
+    return allocate_output_dir(:ride, script; project=project)
 end
 
 function _ride_run_script!(rewritten)
@@ -485,7 +487,7 @@ function ride!(
     old_args = copy(ARGS)
     old_out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", nothing)
     old_remote = get(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT", nothing)
-    batch_dir = _ride_batch_dir(path, output_dir)
+    batch_dir = _ride_batch_dir(path, output_dir; project=project)
     release_lock = () -> nothing
     progress_started = false
     progress_ok = false

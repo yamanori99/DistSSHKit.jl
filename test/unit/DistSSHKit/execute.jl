@@ -446,6 +446,15 @@ using Test
         end
         @test err5 isa ArgumentError
         @test occursin(":workers", sprint(showerror, err5))
+
+        err6 = try
+            DistSSHKit.execute!(:drive, "job.jl", ["parent:1"]; detached=true, spi_check=false)
+            nothing
+        catch e
+            e
+        end
+        @test err6 isa ArgumentError
+        @test occursin(":spi_check", sprint(showerror, err6))
     end
 
     @testset ":go dispatch" begin
