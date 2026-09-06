@@ -709,8 +709,10 @@ using Test
             @test_throws ArgumentError DistSSHKit._acquire_kit_inproc_run!(:ride)
             put!(finish, nothing)
             wait(t)
-            DistSSHKit._with_kit_inproc_run!(:ride) do
-                @test DistSSHKit._kit_inproc_run_kind() === :ride
+            DistSSHKit._with_kit_inproc_run!(:setup) do
+                DistSSHKit._with_kit_inproc_run!(:setup) do
+                    @test DistSSHKit._kit_inproc_run_kind() === :setup
+                end
             end
         end
 

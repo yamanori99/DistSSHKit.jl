@@ -57,10 +57,10 @@ function setup!(
     id::Union{Nothing,AbstractString}=nothing,
 )::SyncResult
     _setup_bang_preflight!(session, mode; repo=repo)
-    apply_session_env!(session)
     log_dir = joinpath(session.project, ".distsshkit", "setup")
     step = setup_progress_step_name(mode)
     return _with_kit_inproc_run!(:setup) do
+        apply_session_env!(session)
         with_kit_setup_progress(
             log_dir,
             step;
@@ -89,11 +89,13 @@ function setup!(session::KitSession, mode::Symbol, more::Symbol...; kwargs...)
         ))
     end
     local result = SyncResult(false, HostResult[]; ok=true)
-    for m in modes
-        result = setup!(session, m; kwargs...)
-        result.ok || return result
+    return _with_kit_inproc_run!(:setup) do
+        for m in modes
+            result = setup!(session, m; kwargs...)
+            result.ok || return result
+        end
+        return result
     end
-    return result
 end
 
 """Non-empty clone URL, or throw."""

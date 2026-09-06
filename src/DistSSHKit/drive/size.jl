@@ -66,13 +66,13 @@ function size!(
     mem_headroom::Real=DEFAULT_MEM_HEADROOM,
     parent_gb::Real=DEFAULT_PARENT_GB,
 )::WorkerPlan
-    apply_session_env!(session)
     all_hosts, child_hosts = session_size_hosts(session)
     isempty(all_hosts) && throw(ArgumentError(
         explain_no_hosts(; surface=hint_surface(session), kind=:size),
     ))
 
     return _with_kit_inproc_run!(:size) do
+        apply_session_env!(session)
         per_worker_gb = Dict{String,Float64}()
         if gb_per_worker !== nothing
             g = Float64(gb_per_worker)

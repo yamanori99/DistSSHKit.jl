@@ -143,7 +143,6 @@ function pool!(
     mem_headroom::Real=DEFAULT_MEM_HEADROOM,
     parent_gb::Real=DEFAULT_PARENT_GB,
 )::ResourcePool
-    apply_session_env!(session)
     parsed = parse_worker_tokens(session.tokens)
     want_parent = session.include_parent_for_size ||
         parsed.parent_autosize || parsed.parent_workers > 0
@@ -155,6 +154,7 @@ function pool!(
         explain_no_hosts(; surface=hint_surface(session), kind=:pool),
     ))
     return _with_kit_inproc_run!(:pool) do
+        apply_session_env!(session)
         pw = Float64(something(gb_per_worker, WORKER_MEMORY_GB_FALLBACK))
         rows = HostInventory[]
         for host in all_hosts

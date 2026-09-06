@@ -76,10 +76,11 @@ function run_drive_parsed!(
         println_fatal()
     end
 
-    activate_drive_project!(proj_dir)
-
     DistSSHKit._acquire_kit_inproc_run!(:drive)
-    old_out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", nothing)
+    try
+        activate_drive_project!(proj_dir)
+
+        old_out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", nothing)
     release_output_dir_lock = nothing
     code = Cint(1)
     hosts_acc = resolved_hosts === nothing ?
@@ -133,6 +134,8 @@ function run_drive_parsed!(
         else
             ENV["DISTRIBUTED_OUTPUT_DIR"] = String(old_out)
         end
+    end
+    finally
         DistSSHKit._release_kit_inproc_run!()
     end
 end
