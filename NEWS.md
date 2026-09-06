@@ -23,8 +23,11 @@ GitHub Releases may copy these sections (`Release notes:` on
   Rejects Distributed vocabulary (use `drive`). `--spi-check` is on by
   default (printed on `--progress` success). Analysis stays on `plan`.
   Queue callers use [`execute!`](@ref) `:ride` (in-process or `detached=true`);
-  `kit.result` / `kit.pid` land in the ride batch dir. The scheduler stays in
+  `kit.result` / `kit.pid` land in the ride batch dir; SSH `child:` also
+  writes `kit.hosts` for [`terminate!`](@ref). The scheduler stays in
   DistSSHQueue, not Kit.
+- `go`: default batch dirs use exclusive `mkdir` (same-second collisions
+  get a nanosecond suffix), matching `allocate_output_dir`.
 - `drive` / `drive!`: Load (master `include`), Publish (defs / `using` /
   `import` / `include` on workers), Run (`main()` if defined). Warns when this
   file has no Distributed vocabulary and still runs. `--sync-script` /

@@ -295,8 +295,9 @@ function _ride_add_workers!(
     script_path::AbstractString,
     julia,
     require_all_hosts::Bool,
-)::Vector{Int}
+)::Tuple{Vector{Int},Vector{String}}
     before = Set(workers())
+    ssh_hosts = String[]
     try
         child_hosts = Tuple{String,Union{Int,Nothing}}[
             (String(h), Int(n)) for (h, n) in plan.child_workers if n > 0
@@ -326,6 +327,7 @@ function _ride_add_workers!(
                 String(project),
                 String(script_path),
             )
+            ssh_hosts = String[String(h) for h in successful]
             if require_all_hosts
                 wanted = String[h for (h, _) in child_hosts]
                 missing = String[h for h in wanted if !(h in successful)]
@@ -346,7 +348,7 @@ function _ride_add_workers!(
         end
         added = Int[w for w in workers() if w ∉ before]
         isempty(added) || _ride_load_self_on_workers!()
-        return added
+        return added, ssh_hosts
     catch
         leftover = Int[w for w in workers() if w ∉ before]
         isempty(leftover) || rmprocs(leftover; waitfor=30)
@@ -368,7 +370,8 @@ functions used by `map` / `filter` are sent to workers as a prelude.
 `--spi-check` (default on) compares the distributed result to a sequential
 `map` / `filter`. Unknown syntax stays sequential. Inspect first with
 [`plan`](@ref). Listed `child:` hosts are fail-closed (`require_all_hosts=true`).
-Queue: [`execute!`](@ref) `:ride` (`detached=true` writes `kit.result` like go).
+Queue: [`execute!`](@ref) `:ride` (`detached=true` writes `kit.result` like go;
+SSH `child:` also writes `kit.hosts` for [`terminate!`](@ref)).
 """
 function ride!(
     script::AbstractString,
@@ -516,7 +519,8 @@ function ride!(
         kit_progress_begin!("ride"; steps=3, kind=:ride)
         progress_started = true
         kit_progress_step!("workers")
-        added = _ride_add_workers!(wp, project, path, julia, require_all_hosts)
+        added, ssh_hosts = _ride_add_workers!(wp, project, path, julia, require_all_hosts)
+        _write_kit_hosts_file(ssh_hosts, batch_dir, nothing)
         kit_progress_step!("init")
         _ride_push_prelude!(expr)
         kit_progress_step!("run")

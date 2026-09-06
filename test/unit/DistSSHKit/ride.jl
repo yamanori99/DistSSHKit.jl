@@ -75,6 +75,13 @@ using Test
         @test r.workers == 1
         @test r.spi_ok === true
         @test read(out, String) == "2,3,4,5"
+        @test r.output_dir !== nothing
+        @test !isfile(joinpath(something(r.output_dir, ""), "kit.hosts"))
+
+        _with_tempdir() do hosts_tmp
+            DistSSHKit._write_kit_hosts_file(["alice@h1", "bob@h2"], hosts_tmp, nothing)
+            @test DistSSHKit._read_kit_hosts(hosts_tmp) == ["alice@h1", "bob@h2"]
+        end
 
         fout = joinpath(tmp, "filt.txt")
         filt = joinpath(tmp, "filt.jl")
