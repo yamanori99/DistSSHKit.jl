@@ -1,6 +1,6 @@
 #!/usr/bin/env julia
 # Real-SSH E2E against testenv/docker-ssh workers. Not part of Pkg.test().
-# Oracle: OpenSSH + rsync + remote Julia (setup / drive / go / git). Assert
+# Oracle: OpenSSH + rsync + remote Julia (setup / drive / go / ride / git). Assert
 # files workers write (`run_on_host` / collect). Kit-parent-side demo CSV is not
 # a remote collect. Inventory: test/README.md § SSH E2E.
 # Local with_kit recipes are test/integration/demos/.
@@ -848,6 +848,94 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
                 sleep(0.5)
             end
             _assert_ssh_e2e_api_ok(suite, "heartbeat_reap", gone, "leftover=$(leftover)")
+            @test gone
+        end
+
+        # Detached SSH ride writes `kit.hosts`; `terminate!` SIGTERMs then
+        # tagged `pkill` (never `julia.*--worker`). Parent-only ride is unit.
+        @testset "detached ride terminate! reaps remote workers" begin
+            ride_script = joinpath(proj, "ride_sleep.jl")
+            host = hosts[1]
+            _ssh_e2e_ssh(host, "pkill -f 'julia.*--worker' || true")
+            kp = withenv(_e2e_base_env()...) do
+                DistSSHKit.execute!(
+                    :ride,
+                    ride_script,
+                    ["child:$(host):1"];
+                    project=proj,
+                    remote=remote_root,
+                    detached=true,
+                    yes=true,
+                    quiet=true,
+                    spi_check=false,
+                    job_id="e2e-ride-term",
+                )
+            end
+            out = kp.output_dir
+            @test out isa AbstractString
+            hosts_path = joinpath(String(out), "kit.hosts")
+            hosts_ready = false
+            t0h = time()
+            while (time() - t0h) < 90
+                if isfile(hosts_path) && !isempty(strip(read(hosts_path, String)))
+                    hosts_ready = true
+                    break
+                end
+                process_running(kp.process) || break
+                sleep(0.5)
+            end
+            listed = hosts_ready ? DistSSHKit._read_kit_hosts(String(out)) : String[]
+            _assert_ssh_e2e_api_ok(
+                suite,
+                "ride_kit_hosts",
+                hosts_ready && host in listed,
+                "ready=$(hosts_ready) listed=$(listed) path=$(hosts_path)",
+            )
+            @test hosts_ready
+            @test host in listed
+
+            function _ride_worker_pids()
+                _, body = _ssh_e2e_ssh(host, "pgrep -f 'julia.*--worker' || true")
+                return Int[parse(Int, s) for s in split(strip(body); keepempty=false)]
+            end
+            workers_ready = false
+            t0w = time()
+            while (time() - t0w) < 60
+                if !isempty(_ride_worker_pids())
+                    workers_ready = true
+                    break
+                end
+                process_running(kp.process) || break
+                sleep(0.5)
+            end
+            pids = _ride_worker_pids()
+            _assert_ssh_e2e_api_ok(
+                suite,
+                "ride_workers_up",
+                workers_ready && !isempty(pids),
+                "pids=$(pids)",
+            )
+            @test workers_ready
+            @test !isempty(pids)
+
+            result = DistSSHKit.terminate!(kp; grace=15)
+            @test result isa DistSSHKit.KitRunResult
+            @test result.kind === :ride
+            @test !process_running(kp.process)
+
+            gone = false
+            leftover = pids
+            t1 = time()
+            while (time() - t1) < 30
+                live = Set(_ride_worker_pids())
+                leftover = Int[p for p in pids if p in live]
+                if isempty(leftover)
+                    gone = true
+                    break
+                end
+                sleep(0.5)
+            end
+            _assert_ssh_e2e_api_ok(suite, "ride_terminate_reap", gone, "leftover=$(leftover)")
             @test gone
         end
 
