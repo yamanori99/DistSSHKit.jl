@@ -88,14 +88,18 @@ function setup!(session::KitSession, mode::Symbol, more::Symbol...; kwargs...)
             "call setup!(session, mode; …) per step, or pass modes that need no kwargs",
         ))
     end
-    local result = SyncResult(false, HostResult[]; ok=true)
     return _with_kit_inproc_run!(:setup) do
-        for m in modes
-            result = setup!(session, m; kwargs...)
-            result.ok || return result
-        end
-        return result
+        _setup_bang_run_modes!(session, modes; kwargs...)
     end
+end
+
+function _setup_bang_run_modes!(session::KitSession, modes; kwargs...)
+    result = SyncResult(false, HostResult[]; ok=true)
+    for m in modes
+        result = setup!(session, m; kwargs...)
+        result.ok || return result
+    end
+    return result
 end
 
 """Non-empty clone URL, or throw."""
