@@ -493,10 +493,8 @@ function ride!(
     progress_ok = false
     outcome = RideResult(false, path, 0, nothing, "aborted", julia_s, batch_dir)
     try
-        if output_dir !== nothing
-            ENV["DISTRIBUTED_OUTPUT_DIR"] = canonical_local_path(String(output_dir))
-            mkpath(ENV["DISTRIBUTED_OUTPUT_DIR"])
-        end
+        ENV["DISTRIBUTED_OUTPUT_DIR"] = batch_dir
+        mkpath(batch_dir)
         if remote !== nothing
             rr = strip(String(remote))
             !isempty(rr) && (ENV["DISTRIBUTED_REMOTE_PROJECT_ROOT"] = rr)
@@ -506,7 +504,6 @@ function ride!(
         end
         empty!(ARGS)
         append!(ARGS, String[String(a) for a in args])
-        mkpath(batch_dir)
         job_raw = strip(get(ENV, "DISTSSHKIT_JOB_ID", ""))
         _write_kit_pid_file(
             getpid(),
