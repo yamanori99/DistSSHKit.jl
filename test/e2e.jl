@@ -886,7 +886,12 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
             end
             listed = hosts_ready ? DistSSHKit._read_kit_hosts(String(out)) : String[]
             err_snip = let p = joinpath(String(out), "kit.out")
-                isfile(p) ? strip(read(p, String))[max(1, end - 800):end] : ""
+                if isfile(p)
+                    text = strip(read(p, String))
+                    last(text, min(length(text), 800))
+                else
+                    ""
+                end
             end
             _assert_ssh_e2e_api_ok(
                 suite,

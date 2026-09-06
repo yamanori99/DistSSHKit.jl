@@ -285,6 +285,15 @@ function _ride_activate_project!(project::AbstractString)
     return nothing
 end
 
+function _ride_restore_project!(prev)
+    if prev === nothing
+        Base.set_active_project(nothing)
+    else
+        Pkg.activate(String(prev); io=devnull)
+    end
+    return nothing
+end
+
 function _ride_main_call(name::Symbol, args...; kwargs...)
     Base.invokelatest(isdefined, Main, name) ||
         error("ride: drive runtime not loaded ($name)")
@@ -541,6 +550,7 @@ function _ride_run!(
     old_args = copy(ARGS)
     old_out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", nothing)
     old_remote = get(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT", nothing)
+    old_proj = Base.active_project()
     batch_dir = _ride_batch_dir(path, output_dir; project=project)
     release_lock = () -> nothing
     progress_started = false
@@ -623,6 +633,7 @@ function _ride_run!(
         !isempty(added) && rmprocs(added; waitfor=30)
         _clear_drive_host_worker_ids!()
         _RIDE_DEPTH[] = 0
+        _ride_restore_project!(old_proj)
     end
 end
 

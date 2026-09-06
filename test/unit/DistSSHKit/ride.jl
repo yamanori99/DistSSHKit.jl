@@ -10,6 +10,7 @@ using Test
     end
 
     @testset "activate project" begin
+        prev = Base.active_project()
         _with_tempdir() do tmp
             write(
                 joinpath(tmp, "Project.toml"),
@@ -19,9 +20,14 @@ using Test
                 version = "0.1.0"
                 """,
             )
-            DistSSHKit._ride_activate_project!(tmp)
-            @test startswith(Base.active_project(), tmp)
+            try
+                DistSSHKit._ride_activate_project!(tmp)
+                @test startswith(Base.active_project(), tmp)
+            finally
+                DistSSHKit._ride_restore_project!(prev)
+            end
         end
+        @test Base.active_project() == prev
     end
 
     @testset "rewrite" begin
