@@ -335,17 +335,6 @@ CLI entry. Prefer Julia 1.12+ and `julia -m DistSSHKit SUBCOMMAND …`:
 A `.jl` path with no command is not implicit `go`.
 """
 function main(args::Vector{String}=copy(ARGS))::Cint
-    known_subcommands = (
-        "setup",
-        "go",
-        "ride",
-        "drive",
-        "plan",
-        "size",
-        "pool",
-        "demo",
-        "progress",
-    )
     if _consume_kit_cli_subcommand_done!()
         return 0
     end
