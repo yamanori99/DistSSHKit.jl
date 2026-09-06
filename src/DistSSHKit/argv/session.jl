@@ -38,7 +38,7 @@ const KIT_VERBOSE_ENV_HELP =
 const KIT_HOSTS_ENV_HELP =
     "DISTSSHKIT_HOSTS                  Same as --hosts"
 const KIT_SKIP_PKILL_ENV_HELP =
-    "DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL  skip leftover-worker pkill"
+    "DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL  skip drive leftover tagged remote pkill"
 const KIT_JOBS_ENV_HELP =
     "DISTSSHKIT_JOBS                   max concurrent host jobs (default 1)"
 const KIT_REQUIRE_ALL_HOSTS_ENV_HELP =

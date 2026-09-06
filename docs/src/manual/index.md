@@ -100,15 +100,13 @@ Worker `addprocs` stays sequential.
 **Stale workers.**
 
 - Local `drive` workers are torn down with `rmprocs`, not a pattern `pkill`
-- Before adding SSH workers, `drive` may `pkill -9 -f` `julia --worker` /
-  `julia --bind-to` on those remotes
+- `drive` does not `pkill -f julia --worker` on remotes. With `job_id` /
+  `DISTSSHKIT_JOB_ID` it `pkill`s argv `distsshkit-job:<id>`. Skip that leftover
+  pkill with `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1`; `rmprocs` still runs
 - `setup --prune` removes `.distsshkit/{go,drive,setup}` leaves (not the
-  deploy). `--cleanup` kills stale workers. `--delete` removes the remote
-  project tree
-- `setup --cleanup` runs that same sweep on localhost and remotes (other
-  Distributed jobs on the same login can match)
-- `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` skips those `pkill`s; `rmprocs`
-  still runs for the current drive
+  deploy). `--cleanup` kills stale workers (untagged `julia --worker` /
+  `--bind-to` on localhost and remotes; other Distributed jobs on the same
+  login can match). `--delete` removes the remote project tree
 - Detached `execute!(…; job_id=)` is a different contract: `pkill` only
   argv containing `distsshkit-job:<id>` ([`terminate!`](@ref)). Go slots
   `-L` a no-op file of that name so the script still runs; drive workers
