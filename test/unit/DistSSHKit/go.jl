@@ -143,6 +143,11 @@ using Dates
             write(outside, "nothing\n")
             other = DistSSHKit._go_batch_output_dir(proj, outside; now=t)
             @test other == joinpath(proj, ".distsshkit", "go", "outside-job_20260803T134428Z")
+            @test isdir(batch)
+            again = DistSSHKit._go_batch_output_dir(proj, script; now=t)
+            @test again != batch
+            @test isdir(again)
+            @test startswith(basename(again), "demo_20260803T134428Z")
         end
     end
 

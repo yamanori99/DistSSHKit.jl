@@ -307,7 +307,11 @@ function _go_kit_parent(
     return kit_dir_beside_script(dir, :go)
 end
 
-"""Batch output directory: `{.distsshkit/go}/<stem>_<UTC>/` (`kit.progress` + slots)."""
+"""Batch output directory: `{.distsshkit/go}/<stem>_<UTC>/` (`kit.progress` + slots).
+
+Creates the leaf with exclusive `mkdir`. Same-second collisions get a
+nanosecond suffix (`_mkdir_unique!`).
+"""
 function _go_batch_output_dir(
     project::AbstractString,
     script::AbstractString;
@@ -315,7 +319,8 @@ function _go_batch_output_dir(
 )::String
     stem = splitext(basename(canonical_local_path(script)))[1]
     stamp = Dates.format(now, dateformat"yyyymmddTHHMMSS") * "Z"
-    return joinpath(_go_kit_parent(project, script), "$(stem)_$(stamp)")
+    dir = joinpath(_go_kit_parent(project, script), "$(stem)_$(stamp)")
+    return _mkdir_unique!(dir)
 end
 
 function _go_host_ssh_hint(host::AbstractString)::String

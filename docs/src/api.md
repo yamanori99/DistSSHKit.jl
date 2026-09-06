@@ -276,7 +276,8 @@ stay in `output_dir`. Kit logs (`go_*.log` / `drive_*.log`) are not this list.
 - `kit.job`: `job_id` when set. [`terminate_run!`](@ref) uses it for
   tagged `pkill` after a restart.
 - `kit.hosts`: remote hosts this run started (one name per line), written
-  after workers join. `terminate_run!` reaps these.
+  after workers join (`go` children, `drive` SSH joins, `ride` SSH
+  children). `terminate_run!` reaps these. Parent-only ride writes nothing.
 - `kit.hosts.status`: live per-host membership during `drive` (`:joined` /
   `:alive` / `:left` / `:collect_pending`). Read with
   [`drive_host_status`](@ref). Not the post-run collect vector.
