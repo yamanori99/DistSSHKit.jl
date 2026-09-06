@@ -49,4 +49,6 @@ if [[ -z "${JULIA_APPS_JULIA_CMD:-}" ]]; then
     export JULIA_APPS_JULIA_CMD="$(command -v julia)"
 fi
 
-exec jetls --threads=auto -- check --exit-severity=hint "${jetls_args[@]}" "${files[@]}"
+# Match aviatesk/JETLS.jl check@release and CI: do not pass `--threads=auto`.
+# That segfaults on Julia 1.13 in signature_analysis_worker (exit 139).
+exec jetls check --root=. --exit-severity=hint "${jetls_args[@]}" "${files[@]}"

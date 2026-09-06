@@ -24,18 +24,18 @@ Call paths:
 - **Julia API** — `setup!` for remotes, `go!` / `drive!` to run, or
   `pipeline!` for optional sync → `size!` → `drive!` → collect (not `setup!`;
   rsync there does not instantiate)
-- **CLI** — `julia --project=. -m DistSSHKit go …` / `drive …`
-  (and `setup`, `demo`, …)
+- **CLI** — `julia --project=. -m DistSSHKit go …` / `ride …` / `drive …` /
+  `plan …` (and `setup`, `demo`, …)
 - **`distsshkit` (experimental)** — after `pkg> app add DistSSHKit`, a
   `distsshkit` command on the terminal. Same flags as `-m`, but always the
-  Apps copy, not `--project=.`. Use for `go` / `setup` / `demo`; keep `drive`
-  and `size` on `julia --project=. -m DistSSHKit`. When to use it:
+  Apps copy, not `--project=.`. Use for `go` / `setup` / `demo`; keep `drive`,
+  `size`, and `pool` on `julia --project=. -m DistSSHKit`. When to use it:
   [User Guide](@ref Manual-distsshkit).
 
 All of these need **Julia 1.12+** ([Requirements](@ref)).
 
-Same host tokens for setup / go / drive / size (`parent:2`,
-`child:user@host:1`; setup / size ignore `:N`). Details:
+Same host tokens for setup / go / drive / size / pool (`parent:2`,
+`child:user@host:1`; setup / size / pool ignore `:N`). Details:
 [API](@ref API), [User Guide](@ref Manual).
 
 ## Installation

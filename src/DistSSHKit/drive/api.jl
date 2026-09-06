@@ -6,6 +6,10 @@
     drive!(script, workers::AbstractVector; kwargs...)
 
 Run a driver script on workers. Tokens match the CLI (`parent:2`, `child:user@host:1`).
+A file with no Distributed vocabulary warns (this-file scan only) and still runs.
+Load is the master `include`. Publish sends definitions to workers (not top-level
+work). Run is `main()` when defined. Use [`plan`](@ref) / [`go!`](@ref) / [`ride!`](@ref)
+when that matches the script.
 
 ```julia
 drive!("job.jl", "parent:2"; args=["8"])
@@ -33,6 +37,10 @@ passes `config.mem_headroom` and `config.parent_gb`.
 CLI `--julia`). `plan` is an optional explicit [`WorkerPlan`](@ref).
 [`pipeline!`](@ref) syncs separately and does not pass `sync=` into `drive!`,
 so it does not instantiate after rsync.
+
+`sync_script=true` (CLI `--sync-script`) re-`include`s the full driver on
+workers. The default publishes definitions / `using` / `import` / `include`
+only, so top-level work on Load is not repeated on workers.
 """
 function drive!(
     session::KitSession,
@@ -49,6 +57,7 @@ function drive!(
     require_all_hosts::Bool=true,
     mem_headroom::Real=DEFAULT_MEM_HEADROOM,
     parent_gb::Real=DEFAULT_PARENT_GB,
+    sync_script::Bool=false,
 )::DriveResult
     apply_session_env!(session)
     _ensure_drive_fragments!(session.project)
@@ -71,6 +80,7 @@ function drive!(
         require_all_hosts=require_all_hosts,
         mem_headroom=mem_headroom,
         parent_gb=parent_gb,
+        sync_script=sync_script,
     )
     apply_kit_cli_session!(parsed.cli_session)
     original_args = copy(ARGS)

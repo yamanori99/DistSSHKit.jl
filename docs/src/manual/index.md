@@ -10,9 +10,15 @@ Each command page starts with **Flags** for that command.
   sync, instantiate, prune, cleanup
 - [go](@ref Manual-go): standalone script as-is; one full run per slot
   (`--repeat N` = N runs, spread across listed hosts)
+- [ride](@ref Manual-ride): experimental auto-split of map / filter
+  (parent or SSH workers)
 - [drive](@ref Manual-drive): master + Distributed workers; driver farms
   work
+- [plan](@ref Manual-plan): inspect a script; suggest go / ride / drive
+  (does not run)
 - [size](@ref Manual-size): estimate worker counts from RAM / CPU
+- [pool](@ref Manual-pool): cluster cores / health; no job
+- [paths](@ref Manual-paths): `ns_path` / content-hash cache / `push_cache!`
 - [demo](@ref Manual-demo): install or list bundled example scripts
 - [distsshkit](@ref Manual-distsshkit): optional terminal command
   (`pkg> app add`; experimental)
@@ -24,7 +30,8 @@ Both share host tokens (`parent:N`, `child:NAME:N`) and optional `--sync` /
 
 - **Script:** go is ordinary `.jl` (no Kit APIs). Drive is a driver with
   `init_output_dir!` / `main`.
-- **`child:NAME:N`:** go is N **concurrent full script runs**. Drive is N
+- **`child:NAME:N`:** go is N **concurrent full script runs**. Omit `:N`
+  (without `--repeat`) to [`size!`](@ref) that host. Drive is N
   **Distributed workers**.
 - **Collect:** go is slot-overwrite after remotes. Drive is post-run-new
   after `main()`; optional collect-only flags.
@@ -56,23 +63,23 @@ Same **names** are shared on purpose; a few meanings differ by command:
   default; exclusive with `--sync` / `--rsync` on go).
 - `--output-dir`: **`go`** is batch root (`PATH/{slot}/`). **`drive`** is
   result root (`DISTRIBUTED_OUTPUT_DIR`). Different on purpose.
-- `--hosts`: CSV tokens. `setup` / `size` strip `:N` from `parent` /
+- `--hosts`: CSV tokens. `setup` / `size` / `pool` strip `:N` from `parent` /
   `child:NAME[:N]`. `go` / `drive` keep `child:NAME:N`.
 - `--hosts-file`: same as `--hosts` for that command.
 - Shared flags: `-q`/`--quiet`, `--progress`, `--verbose`, `-y`/`--yes`,
   `--hosts`, `--hosts-file`, `-v`/`--version` — same on setup / go /
-  drive / size.
+  drive / size / pool.
 
 ## Shared concepts
 
 **Hosts.** Sources, in the order they append after positional tokens:
 
-- CLI tokens on setup / go / drive / size: `parent[:N]`, `child:NAME[:N]`
+- CLI tokens on setup / go / drive / size / pool: `parent[:N]`, `child:NAME[:N]`
 - `--hosts` (CSV)
 - `DISTSSHKIT_HOSTS` (comma-separated)
 - `--hosts-file` (default path from `DISTSSHKIT_HOSTS_FILE`)
 
-`setup` / `size` strip `:N` and use host names only. Bare SSH names are
+`setup` / `size` / `pool` strip `:N` and use host names only. Bare SSH names are
 not accepted on setup (use `child:NAME`). On setup, `parent` /
 `parent:N` are only for `--juliaup`; other modes take `child:NAME`
 only.

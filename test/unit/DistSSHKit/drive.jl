@@ -250,6 +250,10 @@ using Test
 
             parsed = DistSSHKit.drive_parsed_from_session(session, script)
             @test parsed.sync_mode === nothing
+            @test parsed.sync_script == false
+            @test DistSSHKit.drive_parsed_from_session(
+                session, script; sync_script=true,
+            ).sync_script == true
             @test parsed.skip_hash_check == true
             @test parsed.hint_surface === :api
             @test parsed.julia === nothing
@@ -487,6 +491,78 @@ using Test
                 empty = DistSSHKit.KitSession(workers=String[])
                 @test empty.tokens == ["child:host-a", "child:host-b:4"]
             end
+        end
+    end
+
+    @testset "warn plain script" begin
+        _with_tempdir() do tmp
+            p = joinpath(tmp, "plain.jl")
+            write(p, "ys = map(x -> x * x, 1:3)\nprintln(join(ys, \",\"))\n")
+            msg = DistSSHKit._drive_plain_script_hint(p, tmp; shown="plain.jl")
+            @test msg isa String
+            @test occursin("no Distributed vocabulary", msg)
+            @test occursin("Load is this include", msg)
+            @test occursin("Publish", msg)
+            @test occursin("--sync-script", msg)
+            @test occursin("ride", msg)
+            @test occursin("plain.jl", msg)
+
+            g = joinpath(tmp, "loop.jl")
+            write(g, "for i in 1:2\nend\n")
+            gmsg = DistSSHKit._drive_plain_script_hint(g, tmp; shown="loop.jl")
+            @test gmsg isa String
+            @test occursin("go", gmsg)
+
+            d = joinpath(tmp, "driver.jl")
+            write(d, "using Distributed\npmap(identity, 1:2)\n")
+            @test DistSSHKit._drive_plain_script_hint(d, tmp) === nothing
+        end
+    end
+
+    @testset "publish source" begin
+        _with_tempdir() do tmp
+            p = joinpath(tmp, "plain.jl")
+            write(p, """
+                function work(x)
+                    return x * x
+                end
+                work(x) = x
+                xs = 1:8
+                ys = map(work, xs)
+                println(join(ys, ","))
+                """)
+            src = DistSSHKit._drive_publish_source(p)
+            @test occursin("function work", src)
+            @test !occursin("println", src)
+            @test !occursin("1:8", src)
+
+            lib = joinpath(tmp, "lib.jl")
+            write(lib, "f() = 1\n")
+            d = joinpath(tmp, "driver.jl")
+            write(d, """
+                using Distributed
+                include("lib.jl")
+                function main()
+                    pmap(identity, 1:2)
+                end
+                println("no")
+                """)
+            dsrc = DistSSHKit._drive_publish_source(d)
+            @test occursin("using Distributed", dsrc)
+            @test occursin("include", dsrc)
+            @test occursin("function main", dsrc)
+            @test occursin("pmap", dsrc)
+            @test !occursin("println", dsrc)
+        end
+    end
+
+    @testset "init delay" begin
+        @test DistSSHKit._drive_init_delay_sec(; ssh=false) == 0.0
+        withenv("DISTRIBUTED_INIT_DELAY_SEC" => nothing) do
+            @test DistSSHKit._drive_init_delay_sec(; ssh=true) == 5.0
+        end
+        withenv("DISTRIBUTED_INIT_DELAY_SEC" => "0") do
+            @test DistSSHKit._drive_init_delay_sec(; ssh=true) == 0.0
         end
     end
 end

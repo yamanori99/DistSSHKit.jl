@@ -9,7 +9,8 @@ using Test
     @test "with_kit/square_file" in demos
     @test "without_kit/pi_file" in demos
     @test "without_kit/pipeline_pi" in demos
-    @test DistSSHKit.demo_script("square_file") !== nothing
+    @test "ride/map_echo" in demos
+    @test DistSSHKit.demo_script("map_echo") !== nothing
     @test DistSSHKit.demo_script("no_such_demo") === nothing
 
     _with_tempdir() do tmp
@@ -136,7 +137,7 @@ using Test
         end
         flush(io)
         @test code == 1
-        @test occursin("with_kit or without_kit", read(path, String))
+        @test occursin("with_kit or without_kit or ride", read(path, String))
     end
     _with_tempdir() do tmp
         code = withenv("DISTSSHKIT_CLI_SUBCOMMAND_DONE" => "") do

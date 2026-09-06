@@ -104,7 +104,17 @@ using Test
                 @test r.hosts == ["child:env-a:2", "child:env-b"]
             end
         end
-        @test_throws ArgumentError parse_go_args(["--output-dir"])
+        let r = parse_go_args([
+                "--gb-per-worker", "1.5", "--mem-headroom", "0.5",
+                "--parent-gb", "0.2", "--probe", "warm.jl",
+                "parent", "job.jl",
+            ])
+            @test r.gb_per_worker == 1.5
+            @test r.mem_headroom == 0.5
+            @test r.parent_gb == 0.2
+            @test r.probe == "warm.jl"
+            @test r.hosts == ["parent"]
+        end
         @test_throws ArgumentError parse_go_args(["--julia"])
     end
 

@@ -10,9 +10,10 @@ Internals of this repo.
 
 ## Scope
 
-This repo is one run (`go` / `drive` / `setup` and the bang APIs). Jobs
+This repo is one run (`go` / `ride` / `drive` / `setup` and the bang APIs). Jobs
 that wait in line are
-[DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl).
+[DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
+(`execute!(:go|:ride|:drive, ...; detached=true)`).
 
 Happy-path bugs (ordinary `~/` roots, default `drive` / `go` / `setup`);
 CI / Julia slots / Aqua / JETLS drift. Enhancement Issue first, then a PR.
@@ -24,6 +25,15 @@ Windows and GPU-package help stay on the horizon
 Chat: [Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions).
 Tracked bugs stay Issues. Direction for the kit as a whole is still
 [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26).
+
+## ride and `:effect_free`
+
+`ride` rewrites `map` / `filter` / simple comprehensions and may `pmap`
+them. Safety is borrowed from the discussion on
+[JuliaLang/julia#43910](https://github.com/JuliaLang/julia/issues/43910)
+(`:effect_free` on `f` and `getindex`). That issue is a thread-parallel
+POC; Kit `ride` is process/`pmap` (parent or SSH). Do not describe `ride`
+as an implementation of that POC in README or contract Discussions.
 
 ## Requirements
 
@@ -192,7 +202,7 @@ required to merge.
 ### Local checks
 
 ```bash
-./.github/jetls-check.sh    # hint+; same files as CI
+./.github/jetls-check.sh    # hint+; same files as CI (no `--threads=auto`)
 ./.github/aqua-check.sh     # latest registry Aqua; not part of Pkg.test()
 julia --project=docs -e 'using Pkg; Pkg.instantiate()'
 julia --project=docs --color=yes docs/make.jl

@@ -13,18 +13,22 @@ Also: [First Steps · Demo](@ref Tutorial-Demo), [go](@ref Manual-go),
 [API](@ref API) (`drive!`, `pipeline!`), `drive --help`.
 Flag vocabulary and a short **go vs drive** table: [User Guide](@ref Manual).
 
-**vs go:** one master plus Distributed workers; `child:NAME:N` is worker count.
-Opt-in git parity is here only (`--require-git`). For a plain script with no
-driver contract, prefer [`go`](@ref Manual-go). Prepare remotes with
+**vs go / ride:** one master plus Distributed workers; `child:NAME:N` is
+worker count. Three phases: **Load** (master `include`), **Publish** (defs /
+`using` / `import` / `include` on workers), **Run** (`main()` if defined).
+No Distributed vocabulary in **this** file is a warning, not a refusal.
+[`plan`](@ref Manual-plan) may still suggest [`go`](@ref Manual-go) or
+[`ride`](@ref Manual-ride). Full-file worker `include`: `--sync-script`.
+Opt-in git parity is
+here only (`--require-git`). Prepare remotes with
 [`setup --rsync`](@ref Manual-setup) **or** `--clone`, then `--instantiate`.
 One-shot onto an empty/missing path: `drive --rsync` (instantiates if needed).
 
 ## Flags
 
-- `--sync`: git push/pull immediately before the run (**optional**; default
-  is none; confirm unless `-y`)
-- `--rsync`: rsync deploy first (empty/missing remote, or after
-  `setup --delete`); then instantiate if deps are missing
+- `--sync` / `--rsync`: optional pre-run copy; `--rsync` instantiates if needed
+- `--sync-script`: re-`include` the full driver on workers (default publishes
+  definitions only)
 - `--require-git`: opt-in git parity: dirty-tree warn + remote commit must
   match local
 - `--require-all-hosts`: fail unless every explicit `parent[:N]` /
@@ -114,7 +118,8 @@ kit parent never `relpath`s against a tilde base (same ENV as
 
 ## Driver script
 
-Expects `init_output_dir!` / `main` (and optional hooks). Details and ENV:
+Expects `init_output_dir!` / `main` (and optional hooks). Top-level work on
+Load is not repeated on workers unless `--sync-script`. Details and ENV:
 `drive --help`. Embed with [`drive!`](@ref) / [`pipeline!`](@ref).
 
 ## Wall time
@@ -133,7 +138,8 @@ julia --project=. -m DistSSHKit progress DIR
 
 `progress:` lines end with `t=<unix>` ([API](@ref API)). Drive labels:
 `sync` (optional), `git`, `cleanup`, `workers` (`addprocs` + Julia detect),
-`wait` (connection grace; `DISTRIBUTED_INIT_DELAY_SEC`, default 5), `init`,
+`wait` (SSH connection grace; `DISTRIBUTED_INIT_DELAY_SEC`, default 5; skipped
+when there are no SSH hosts), `init`,
 `run`, `collect`. Nested rows under each host: `workers` / `init` / `collect`
 (and `cleanup` on remotes). `wait` is a fixed sleep. Leave
 `DISTRIBUTED_INIT_DELAY_SEC` and `DISTSSHKIT_JOBS` (default 1) unless a

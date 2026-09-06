@@ -206,9 +206,9 @@ function add_drive_workers!(
     return successful_hosts
 end
 
-function wait_for_worker_connections!()
-    _init_delay = tryparse(Float64, get(ENV, "DISTRIBUTED_INIT_DELAY_SEC", "5"))
-    if _init_delay !== nothing && _init_delay > 0
+function wait_for_worker_connections!(; ssh::Bool=true)
+    _init_delay = DistSSHKit._drive_init_delay_sec(; ssh=ssh)
+    if _init_delay > 0
         label = "Waiting for worker connections ($(round(_init_delay, digits=1))s)... "
         DistSSHKit.kit_spin!(label) do
             sleep(_init_delay)

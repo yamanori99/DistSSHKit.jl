@@ -82,6 +82,13 @@ function main()
         exit(0)
     end
 
+    if occursin("DISTSSHKIT_POOL", script)
+        println("DISTSSHKIT_POOL")
+        println(get(ENV, "DISTSSHKIT_TEST_POOL_MEM", "17179869184"))
+        println(get(ENV, "DISTSSHKIT_TEST_POOL_NCPU", "4"))
+        exit(0)
+    end
+
     if occursin("DISTSSHKIT_DEST_STATUS", script)
         println("DISTSSHKIT_DEST_STATUS")
         println(_dest_status(tree))

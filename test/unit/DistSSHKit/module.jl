@@ -17,7 +17,16 @@ using Test
 
     # Public surface: sizing is `size!`; argv `go` / `drive` are unexported.
     ns = names(DistSSHKit)
-    @test :size! in ns && :go! in ns && :drive! in ns
+    @test :size! in ns && :go! in ns && :drive! in ns && :plan in ns
+    @test :pool! in ns && :ResourcePool in ns && :HostInventory in ns
+    @test :print_pool in ns && :worker_plan_from_pool in ns
+    @test :ride! in ns && :RideResult in ns && :print_ride in ns
+    @test :parse_ride_args in ns && :show_ride_usage in ns
+    @test :plan! ∉ ns && :KitPlan in ns && :PlanFinding in ns
+    @test :print_plan in ns && :parse_plan_args in ns && :show_plan_usage in ns
+    @test :ns_path in ns && :file_sha256 in ns && :cache_file in ns
+    @test :cache_path in ns && :cache_relpath in ns
+    @test :push_cache! in ns && :cache_remote_dir in ns
     @test :KitRunResult in ns && :kit_run_result in ns && :report_run_errors in ns
     @test :execute! in ns && :KitProcess in ns && :kit_result_from_dir in ns
     @test :drive_host_status in ns && :DriveHostStatus in ns

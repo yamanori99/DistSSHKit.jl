@@ -256,6 +256,15 @@ using Test
                     @test DistSSHKit._progress_can_draw() == false
                 end
             end
+            let old = DistSSHKit.KIT_PROGRESS_IO[]
+                DistSSHKit.KIT_PROGRESS_IO[] = IOBuffer()
+                try
+                    @test DistSSHKit.kit_stdout_is_live() ==
+                        (stdout isa Base.TTY && !haskey(ENV, "NO_COLOR"))
+                finally
+                    DistSSHKit.KIT_PROGRESS_IO[] = old
+                end
+            end
 
             _with_tempdir() do tmp
                 with_kit_verbosity(:progress) do
@@ -468,6 +477,22 @@ using Test
                     @test occursin("workers", out)
                     @test occursin("progress  ", out)
                     @test findfirst("param^2", out) < findfirst("Time", out)
+                end
+                mktemp() do out_path, out_io
+                    DistSSHKit._reset_job_stdout_capture!()
+                    with_kit_verbosity(:progress) do
+                        redirect_stdout(out_io) do
+                            DistSSHKit._with_progress_job_stdio_capture!() do
+                                println("      From worker 2:\t1,4,9")
+                            end
+                        end
+                    end
+                    flush(out_io)
+                    leaked = read(out_path, String)
+                    @test !occursin("From worker", leaked)
+                    captured = String(take!(DistSSHKit.KIT_JOB_STDOUT[]))
+                    DistSSHKit.KIT_JOB_STDOUT[] = IOBuffer()
+                    @test occursin("From worker", captured)
                 end
                 mktemp() do out_path, out_io
                     with_kit_verbosity(:progress) do

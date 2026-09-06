@@ -86,6 +86,7 @@ function parse_drive_args(args::Vector{String})
     explicit_package = nothing
     # nothing → no pre-run sync; :sync / :rsync → sync!
     sync_mode = nothing
+    sync_script = false
     require_git = false
     skip_git_guard = false
     require_all_hosts = true
@@ -121,6 +122,12 @@ function parse_drive_args(args::Vector{String})
             i += 2
         elseif arg == "--sync"
             sync_mode = _kit_set_sync_mode!(sync_mode, :sync; source="drive")
+            i += 1
+        elseif arg == "--sync-script"
+            sync_script && throw(ArgumentError(
+                "drive: --sync-script specified more than once",
+            ))
+            sync_script = true
             i += 1
         elseif arg == "--rsync"
             require_git && throw(ArgumentError(
@@ -236,6 +243,7 @@ function parse_drive_args(args::Vector{String})
                 collect_hosts=tree_hosts,
                 collect_overwrite=merge,
                 sync_mode=nothing,
+                sync_script=sync_script,
                 require_all_hosts=require_all_hosts,
                 help=false,
                 show_version=cli_session.show_version,
@@ -261,6 +269,7 @@ function parse_drive_args(args::Vector{String})
                 collect_hosts=nothing,
                 collect_overwrite=nothing,
                 sync_mode=nothing,
+                sync_script=false,
                 require_all_hosts=false,
                 help=true,
                 show_version=cli_session.show_version,
@@ -339,6 +348,7 @@ function parse_drive_args(args::Vector{String})
         collect_hosts=nothing,
         collect_overwrite=nothing,
         sync_mode=(sync_mode isa Symbol ? sync_mode : nothing),
+        sync_script=sync_script,
         require_all_hosts=require_all_hosts,
         help=false,
         show_version=cli_session.show_version,
@@ -377,6 +387,7 @@ function show_drive_usage(; io::IO=stdout)
     print_help_lines(io,
         "  -w, --workers N     default when host has no :N",
         "  --sync / --rsync    optional pre-run; --rsync instantiates if needed",
+        "  --sync-script       re-include the full driver on workers (default: defs only)",
         "  --require-git       $(REQUIRE_GIT_MEANING)",
         "  --require-all-hosts listed parent/child tokens must join, stay, and collect (default)",
         "  --best-effort       allow a partial run (missing join is not a failure)",

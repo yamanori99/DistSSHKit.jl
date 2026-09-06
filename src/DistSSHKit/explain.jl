@@ -83,16 +83,24 @@ end
 """
 No SSH / size hosts on a session.
 
-`kind` is `:ssh` (sync/setup/instantiate), `:collect`, or `:size`.
+`kind` is `:ssh` (sync/setup/instantiate), `:collect`, `:size`, or `:pool`.
 """
 function explain_no_hosts(;
     surface::Symbol=:api,
     kind::Symbol=:ssh,
 )::String
     surface = _normalize_hint_surface(surface)
-    kind in (:ssh, :collect, :size) ||
-        throw(ArgumentError("explain_no_hosts kind must be :ssh, :collect, or :size"))
-    if kind === :size
+    kind in (:ssh, :collect, :size, :pool) ||
+        throw(ArgumentError("explain_no_hosts kind must be :ssh, :collect, :size, or :pool"))
+    if kind === :pool
+        head = "KitSession has no hosts for pool!"
+        hint = if surface === :api
+            "Hint: pass workers=[\"parent:2\", …] or workers=[\"child:user@host\", …]"
+        else
+            "Hint: pass local and/or SSH hosts (see pool --help)"
+        end
+        return join_explained_message(head, hint)
+    elseif kind === :size
         head = "KitSession has no hosts for size!"
         hint = if surface === :api
             "Hint: pass workers=[\"parent:2\", …] or workers=[\"child:user@host\", …] (omit :N → autosize)"

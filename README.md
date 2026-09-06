@@ -112,15 +112,19 @@ Details:
 > running. `tmux` can keep a job that is already running. It will not look
 > after jobs that come later.
 
-### go and drive
+### go, ride, and drive
 
-There are two ways to run a script:
+Three ways to run a script:
 
 - **go** — each host runs your `.jl` as-is from start to finish
+- **ride** — kit splits independent `map` / filter / comprehension work
+  (experimental; parent or SSH workers)
 - **drive** — one master farms work to workers (built on Distributed.jl)
 
+`plan` inspects a script and suggests one of these; it does not run.
 `go` alone is plenty useful. A common path is to first check a standalone run
 with `go`, then move to `drive` / Distributed.jl when you need it.
+`plan` may already suggest `ride`.
 
 ### How you call it
 
@@ -128,11 +132,11 @@ with `go`, then move to `drive` / Distributed.jl when you need it.
   Example: `julia --project=. -m DistSSHKit go child:user@host1:1 script.jl`.
   Good for a quick try or a shell script
 - **Julia** — call functions from your own Julia code (a script, the REPL, or
-  another package): `setup!`, `go!` / `drive!`, and other `!` functions
+  another package): `setup!`, `go!` / `drive!`, `plan` (no bang), `pool!`, and other `!` functions
 - **`distsshkit` (experimental)** — after `pkg> app add DistSSHKit`, a
   `distsshkit` command on the terminal. Same flags as `-m`, but always the Apps
-  copy, not `--project=.`. Fine for `go` / `setup` / `demo`; keep `drive` and
-  `size` on `julia --project=. -m DistSSHKit`. When to use it, see
+  copy, not `--project=.`. Fine for `go` / `setup` / `demo`; keep `drive`,
+  `size`, and `pool` on `julia --project=. -m DistSSHKit`. When to use it, see
   [the distsshkit page][ug-app].
 
 CLI flags map one-to-one onto the Julia API: `setup --rsync` is

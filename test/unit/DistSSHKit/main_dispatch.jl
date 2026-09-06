@@ -29,6 +29,16 @@ using Test
         @test code == 1
         @test occursin("Unknown subcommand: bogus", err)
     end
+    let (code, _, err) = _main_capture(["map_echo.jl"])
+        @test code == 1
+        @test occursin("does not infer go / ride / drive", err)
+        @test occursin("go SCRIPT.jl", err)
+        @test !occursin("Unknown subcommand", err)
+    end
+    let (code, _, err) = _main_capture(["parent:2", "job.jl"])
+        @test code == 1
+        @test occursin("does not infer go / ride / drive", err)
+    end
     let (code, _, err) = _main_capture(["rysnc", "child:host1"])
         @test code == 1
         @test occursin("Unknown subcommand: rysnc", err)
@@ -54,7 +64,7 @@ using Test
 
     # Subcommand --help / --version load `src/cli/*.jl` in-process (no SSH / addprocs).
     @testset "subcommand help and version" begin
-        for cmd in ("drive", "go", "setup", "size")
+        for cmd in ("drive", "go", "plan", "ride", "setup", "size", "pool")
             let (code, out, err) = _main_capture([cmd, "--help"])
                 combined = out * err
                 @test code == 0

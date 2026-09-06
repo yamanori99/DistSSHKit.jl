@@ -9,6 +9,8 @@ refused).
   `pipeline!`
 - [`without_kit/`](without_kit/): standalone Julia. `julia …`, `go`, or
   `go!`
+- [`ride/`](ride/): plain scripts for `plan` / `go` / `ride` (`map`, `filter`,
+  `for` as plan out-of-scope)
 
 ```text
 demos/
@@ -20,6 +22,11 @@ demos/
     pi_file.jl          # file: pi_results.txt
     pi_echo.jl          # stdout only
     pipeline_pi.jl      # API: go!(script, "parent:2") → pi_file.jl
+  ride/
+    map_file.jl         # file: map_results.csv
+    map_echo.jl         # stdout
+    filter_echo.jl      # stdout
+    for_loop.jl         # plan: out of scope
 ```
 
 Naming: `{topic}_{file|echo}` — `*_file` writes a file, `*_echo` prints only.
@@ -70,6 +77,18 @@ julia --project=. distsshkit_demos/without_kit/pipeline_pi.jl
 `go!(script, "parent:2"; args=["--n", "5000"])`. Monte Carlo samples are
 `--n N` (default 1000). A commented remote example is at the bottom of that
 file (`setup!` first).
+
+## ride/
+
+- `map_echo.jl` / `map_file.jl` — `map` (ride candidate)
+- `filter_echo.jl` — `filter`
+- `for_loop.jl` — `plan` reports out of scope
+
+```bash
+julia --project=. -m DistSSHKit demo install ride
+julia --project=. -m DistSSHKit plan distsshkit_demos/ride/map_echo.jl
+julia --project=. -m DistSSHKit ride parent:2 distsshkit_demos/ride/map_echo.jl
+```
 
 Remote: set `DISTRIBUTED_REMOTE_PROJECT_ROOT` when needed. Optional:
 `DISTSSHKIT_HOSTS` (comma-separated `parent[:N]` / `child:NAME[:N]`;

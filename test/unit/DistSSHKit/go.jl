@@ -86,6 +86,36 @@ using Dates
         @test isempty(DistSSHKit._go_host_ssh_hint("root@192.0.2.11"))
     end
 
+    @testset "_go_autosize_tokens" begin
+        _with_tempdir() do tmp
+            session = DistSSHKit.KitSession(
+                project=tmp,
+                workers=["parent"],
+                include_parent_for_size=true,
+                quiet=true,
+            )
+            filled = with_kit_verbosity(:progress) do
+                DistSSHKit._go_autosize_tokens(
+                    ["parent"];
+                    session=session,
+                    gb_per_worker=2.0,
+                )
+            end
+            wp = with_kit_verbosity(:progress) do
+                DistSSHKit.worker_plan_from_tokens(
+                    ["parent"];
+                    session=session,
+                    gb_per_worker=2.0,
+                )
+            end
+            @test filled == DistSSHKit.resolved_placement_tokens(wp)
+            @test DistSSHKit._go_autosize_tokens(
+                ["parent:2"];
+                session=session,
+            ) == ["parent:2"]
+        end
+    end
+
     @testset "_go_script_relpath" begin
         _with_tempdir() do proj
             nested = joinpath(proj, "demos", "job.jl")

@@ -100,15 +100,18 @@ SSH 先の台数に上限はない。台数を増やすほど SSH 接続や配�
 > 接続が切れても実行は止まらない。実行そのものは DistSSHKit が用いられる。
 > `tmux` でも、走っているジョブは残せる。あとから来るジョブまでは見てくれない。
 
-### go と drive
+### go、ride、drive
 
-スクリプトの実行方法には2種類ある。
+実行は3種類である。
 
 - **go** — 各ホストが、そのままの `.jl` を最初から最後まで実行する
+- **ride** — kit が独立な `map` / filter / 内包を分割する (実験的。parent または SSH)
 - **drive** — 1つのマスターがワーカーに仕事を振る (Distributed.jl ベース)
 
+`plan` はスクリプトを見てこのどれかを提案するだけで、実行しない。
 go 単体も十分有用だが、まず go で単独実行を確認してから、
 drive / Distributed.jl 対応へ進む段階的な開発ができる。
+`plan` はすでに `ride` を提案することがある。
 
 ### 操作方法
 
@@ -116,11 +119,11 @@ drive / Distributed.jl 対応へ進む段階的な開発ができる。
   例: `julia --project=. -m DistSSHKit go child:user@host1:1 script.jl`。
   すぐ試したいときや、シェルスクリプトに組み込みたいときに向く
 - **Julia** — 自分の Julia コード (スクリプトや REPL、他パッケージ) の中から関数として呼ぶ方法。
-  `setup!`、`go!` / `drive!` などの `!` 付き関数を使う
+  `setup!`、`go!` / `plan` / `pool!` / `drive!` などの関数を使う (`plan` に bang は付かない)
 - **`distsshkit` (実験的)** — `pkg> app add DistSSHKit` のあと、ターミナルの
   `distsshkit` コマンド。
   フラグは `-m` と同じだが、常に Apps 側のコピーを使う (`--project=.` ではない)。
-  `go` / `setup` / `demo` は `distsshkit` でよいが、`drive` と `size` は
+  `go` / `setup` / `demo` は `distsshkit` でよいが、`drive` / `size` / `pool` は
   `julia --project=. -m DistSSHKit` を使う。
   使い分けは [distsshkit の頁][ug-app]。
 

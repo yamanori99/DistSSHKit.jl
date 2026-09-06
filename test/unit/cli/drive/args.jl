@@ -34,7 +34,12 @@ using Test
             end
             let r = parse_drive_args(["s.jl"])
                 @test r.hint_surface === :cli
+                @test r.sync_script == false
             end
+            let r = parse_drive_args(["--sync-script", "s.jl"])
+                @test r.sync_script == true
+            end
+            @test_throws ArgumentError parse_drive_args(["--sync-script", "--sync-script", "s.jl"])
             let r = parse_drive_args(["parent:4", "myscript.jl", "a", "b"])
                 @test r.parent_workers == 4
                 @test r.script_path == "myscript.jl"
@@ -208,6 +213,7 @@ using Test
         @test occursin("--hosts", txt)
         @test occursin("--require-git", txt)
         @test occursin("--sync", txt)
+        @test occursin("--sync-script", txt)
         @test occursin("--rsync", txt)
         @test occursin("empty path", txt)
         @test occursin("instantiates missing deps", txt)

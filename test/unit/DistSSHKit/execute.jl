@@ -68,6 +68,12 @@ using Test
             @test with_hosts.hosts[2].ok === false
             @test with_hosts.hosts[2].error == "boom"
             @test DistSSHKit.HostRunResult("h2", false, "boom").error == "boom"
+            DistSSHKit._write_kit_result_file(DistSSHKit.KitRunResult(
+                true, :ride, d, nothing, nothing, 0,
+            ))
+            ride_got = DistSSHKit.kit_result_from_dir(d)
+            @test ride_got.kind === :ride
+            @test ride_got.ok
             write(joinpath(d, "kit.result"), "not toml {")
             @test DistSSHKit.kit_result_from_dir(d) === nothing
         end
@@ -118,6 +124,9 @@ using Test
             d3 = DistSSHKit.allocate_output_dir(:go, "batch.jl"; project)
             @test isdir(d3)
             @test d1 != d3
+            d_ride = DistSSHKit.allocate_output_dir(:ride, "map.jl"; project)
+            @test isdir(d_ride)
+            @test occursin(joinpath(".distsshkit", "ride"), d_ride)
             err_kind = try
                 DistSSHKit.allocate_output_dir(:pipeline, "x.jl"; project)
                 nothing
@@ -150,11 +159,22 @@ using Test
         @test DistSSHKit.execute_detached_accepts(:repeat; kind=:go)
         @test !DistSSHKit.execute_detached_accepts(:repeat; kind=:drive)
         @test DistSSHKit.execute_detached_accepts(:workers; kind=:drive)
-        @test !DistSSHKit.execute_detached_accepts(:mem_headroom; kind=:go)
-        @test !DistSSHKit.execute_detached_accepts(:parent_gb; kind=:go)
+        @test DistSSHKit.execute_detached_accepts(:mem_headroom; kind=:go)
+        @test DistSSHKit.execute_detached_accepts(:parent_gb; kind=:go)
         @test !DistSSHKit.execute_detached_accepts(:workers; kind=:go)
         @test !DistSSHKit.execute_detached_accepts(:plan; kind=:go)
         @test !DistSSHKit.execute_detached_accepts(:plan; kind=:drive)
+        @test DistSSHKit.execute_detached_accepts(:spi_check; kind=:ride)
+        @test DistSSHKit.execute_detached_accepts(:gb_per_worker; kind=:ride)
+        @test DistSSHKit.execute_detached_accepts(:mem_headroom; kind=:ride)
+        @test DistSSHKit.execute_detached_accepts(:output_dir; kind=:ride)
+        @test !DistSSHKit.execute_detached_accepts(:repeat; kind=:ride)
+        @test !DistSSHKit.execute_detached_accepts(:sync_script; kind=:ride)
+        @test !DistSSHKit.execute_detached_accepts(:log_dir; kind=:ride)
+        @test !DistSSHKit.execute_detached_accepts(:require_all_hosts; kind=:ride)
+        @test !DistSSHKit.execute_detached_accepts(:spi_check; kind=:go)
+        @test !DistSSHKit.execute_detached_accepts(:spi_check; kind=:drive)
+        @test DistSSHKit.execute_detached_accepts(:gb_per_worker; kind=:go)
         err = try
             DistSSHKit.execute_detached_accepts(:quiet; kind=:pipeline)
             nothing
@@ -162,7 +182,7 @@ using Test
             e
         end
         @test err isa ArgumentError
-        @test occursin(":go or :drive", sprint(showerror, err))
+        @test occursin(":go, :drive, or :ride", sprint(showerror, err))
     end
 
     @testset "detached drive argv mem_headroom" begin
@@ -237,9 +257,17 @@ using Test
             require_all_hosts=nothing,
             skip_hash_check=true,
             repeat=100,
+            mem_headroom=0.5,
+            parent_gb=1.0,
+            gb_per_worker=1.5,
+            probe="/tmp/probe.jl",
         )
         @test "--repeat" in argv_rep
         @test "100" in argv_rep
+        @test "--mem-headroom" in argv_rep
+        @test "--parent-gb" in argv_rep
+        @test "--gb-per-worker" in argv_rep
+        @test "--probe" in argv_rep
         argv_strict = DistSSHKit._execute_detached_argv(
             :drive, "job.jl", ["child:host1"], String[];
             output_dir="/tmp/out",
@@ -284,6 +312,27 @@ using Test
             require_all_hosts=nothing,
             skip_hash_check=true,
         )
+        argv_ride = DistSSHKit._execute_detached_argv(
+            :ride, "job.jl", ["parent:2"], String[];
+            output_dir="/tmp/out",
+            log_dir=nothing,
+            sync=nothing,
+            julia=nothing,
+            quiet=true,
+            verbosity=nothing,
+            hosts_file=nothing,
+            enable_log=true,
+            package=nothing,
+            require_all_hosts=true,
+            skip_hash_check=true,
+            spi_check=false,
+            gb_per_worker=1.5,
+        )
+        @test argv_ride[1] == "ride"
+        @test "--no-spi-check" in argv_ride
+        @test "--gb-per-worker" in argv_ride
+        @test "1.5" in argv_ride
+        @test "--output-dir" in argv_ride
     end
 
     @testset "execute_kwargs_from_parsed" begin
@@ -302,9 +351,18 @@ using Test
         @test DistSSHKit.host_tokens(go; kind=:go) == ["child:h1"]
         @test Set(keys(gkw)) == Set([
             :output_dir, :args, :julia, :quiet, :verbosity, :sync,
+            :gb_per_worker, :probe, :mem_headroom, :parent_gb,
         ])
         go_r = DistSSHKit.parse_go_args(["--repeat", "8", "job.jl"])
         @test DistSSHKit.execute_kwargs_from_parsed(go_r; kind=:go)[:repeat] == 8
+
+        ride = DistSSHKit.parse_ride_args([
+            "--no-spi-check", "parent:2", "job.jl",
+        ])
+        rkw = DistSSHKit.execute_kwargs_from_parsed(ride; kind=:ride)
+        @test rkw[:spi_check] === false
+        @test DistSSHKit.host_tokens(ride; kind=:ride) == ["parent:2"]
+        @test !haskey(rkw, :sync)
 
         hosts_file = _sample_hosts_file()
         drive = DistSSHKit.parse_drive_args([
@@ -329,9 +387,10 @@ using Test
             e
         end
         @test errk isa ArgumentError
+        @test occursin(":go, :drive, or :ride", sprint(showerror, errk))
     end
 
-    @testset "kind not :go / :drive" begin
+    @testset "kind not :go / :drive / :ride" begin
         err = try
             DistSSHKit.execute!(:pipeline, "job.jl", String[])
             nothing
@@ -339,7 +398,7 @@ using Test
             e
         end
         @test err isa ArgumentError
-        @test occursin(":go or :drive", sprint(showerror, err))
+        @test occursin(":go, :drive, or :ride", sprint(showerror, err))
     end
 
     @testset "detached rejects unknown / yes=false" begin
@@ -371,13 +430,13 @@ using Test
         @test occursin(":log_dir", sprint(showerror, err3))
 
         err4 = try
-            DistSSHKit.execute!(:go, "job.jl", ["parent:1"]; detached=true, mem_headroom=0.5)
+            DistSSHKit.execute!(:go, "job.jl", ["parent:1"]; detached=true, skip_hash_check=true)
             nothing
         catch e
             e
         end
         @test err4 isa ArgumentError
-        @test occursin(":mem_headroom", sprint(showerror, err4))
+        @test occursin(":skip_hash_check", sprint(showerror, err4))
 
         err5 = try
             DistSSHKit.execute!(:go, "job.jl", ["parent:1"]; detached=true, workers=4)
@@ -387,6 +446,15 @@ using Test
         end
         @test err5 isa ArgumentError
         @test occursin(":workers", sprint(showerror, err5))
+
+        err6 = try
+            DistSSHKit.execute!(:drive, "job.jl", ["parent:1"]; detached=true, spi_check=false)
+            nothing
+        catch e
+            e
+        end
+        @test err6 isa ArgumentError
+        @test occursin(":spi_check", sprint(showerror, err6))
     end
 
     @testset ":go dispatch" begin

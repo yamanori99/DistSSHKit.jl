@@ -6,6 +6,41 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+- CLI: a `.jl` path with no subcommand is no longer implicit `go`.
+  Name `go` (as-is timing), `plan`, `ride`, or `drive`. Kit does not
+  pick the runner from the file.
+- `pool` / `pool!(session)`: cluster cores, RAM, and a slot hint plus
+  per-host health. Fail-closed (unreachable listed hosts stay listed;
+  `ok=false`). Does not start a job and does not change `--best-effort`.
+  RSS probes stay on `size` / `size!`.
+- `ride` / `ride!(script, "parent:N")`: experimental. Rewrites `map` /
+  `filter` / simple comprehensions and runs on Distributed workers
+  (parent and SSH `child:`). Worker add for children matches drive.
+  Rejects Distributed vocabulary (use `drive`). `--spi-check` is on by
+  default (printed on `--progress` success). Analysis stays on `plan`.
+  Queue callers use [`execute!`](@ref) `:ride` (in-process or `detached=true`);
+  `kit.result` / `kit.pid` land in the ride batch dir. The scheduler stays in
+  DistSSHQueue, not Kit.
+- `drive` / `drive!`: Load (master `include`), Publish (defs / `using` /
+  `import` / `include` on workers), Run (`main()` if defined). Warns when this
+  file has no Distributed vocabulary and still runs. `--sync-script` /
+  `sync_script=true` re-includes the full file on workers. Local-only runs skip
+  the 5s SSH connection grace.
+- `plan` / `plan(script)` inspect a `.jl` file without starting a job.
+  Suggests `go`, `ride`, or `drive` from syntax. Optional slot estimate
+  (`workers` / `--gb-per-worker` / `--probe`) calls `size!`; default is
+  syntax only. `ride` is experimental (`ride!` / CLI `ride`).
+  `size` is unchanged.
+- `go`: omitting `:N` on a listed host (without `--repeat`) now fills
+  slot counts via `size!`, like drive. `go SCRIPT.jl` with no tokens is
+  still one parent slot. `--repeat` still treats omitted `:N` as an
+  uncapped host. New flags: `--gb-per-worker`, `--probe`, `--mem-headroom`,
+  `--parent-gb`. This is a behavior change for `go child:NAME` (was 1 slot).
+- `ns_path` / `file_sha256` / `cache_file`: shared path namespace and a
+  content-hash cache under `.distsshkit/cache/sha256/`. Same bytes are
+  stored once. Project sync still excludes `.distsshkit/`;
+  `push_cache!(session)` rsyncs blobs to SSH hosts (no `--delete`).
+
 ## 0.5.4
 
 Patch after `0.5.3`.

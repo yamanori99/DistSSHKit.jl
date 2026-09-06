@@ -5,7 +5,7 @@ using Test
 
 @testset "CLI child help and version" begin
     env = _child_julia_env(Dict("DISTSSHKIT_YES" => "1"))
-    for cmd in ("drive", "go", "setup", "size")
+    for cmd in ("drive", "go", "plan", "ride", "setup", "size", "pool")
         proc, out = _run_subprocess(setenv(_kit_cli_cmd([cmd, "--help"]), env))
         @test proc.exitcode == 0
         @test occursin("Usage", out)
@@ -26,10 +26,19 @@ using Test
     @test occursin("--parent-gb", out)
 
     proc, out = _run_subprocess(setenv(_kit_cli_cmd([
+        "plan", "--gb-per-worker", "1.5", "--help",
+    ]), env))
+    @test proc.exitcode == 0
+    @test occursin("Usage", out)
+    @test occursin("--gb-per-worker", out)
+    @test occursin("--probe", out)
+
+    proc, out = _run_subprocess(setenv(_kit_cli_cmd([
         "go", "--julia", "/opt/julia/bin/julia", "--output-dir", "my_runs", "--help",
     ]), env))
     @test proc.exitcode == 0
     @test occursin("Usage", out)
     @test occursin("--julia", out)
     @test occursin("--output-dir", out)
+    @test occursin("--gb-per-worker", out)
 end
