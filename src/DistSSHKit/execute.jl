@@ -1107,7 +1107,7 @@ function _execute_detached_dirs(
     elseif kind === :go
         _go_batch_output_dir(project, script_path)
     elseif kind === :ride
-        _ride_batch_dir(script_path, nothing; project=proj)
+        _ride_batch_dir(script_path, nothing; project=project)
     else
         resolve_drive_output_dir(script_dir)
     end
