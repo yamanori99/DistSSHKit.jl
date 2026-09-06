@@ -630,6 +630,20 @@ function _clear_drive_host_worker_ids!()
     return nothing
 end
 
+function _drive_host_status_monitor_active()::Bool
+    t = DRIVE_HOST_STATUS_TASK[]
+    return t !== nothing && !istaskdone(t) && !DRIVE_HOST_STATUS_STOP[]
+end
+
+function _require_drive_host_status_idle!()
+    if _drive_host_status_monitor_active()
+        throw(ArgumentError(
+            "overlapping in-process drive!/ride! is not supported (host-status monitor already running)",
+        ))
+    end
+    return nothing
+end
+
 function _register_drive_host_worker_ids!(host::AbstractString, ids::AbstractVector{<:Integer})
     DRIVE_HOST_WORKER_IDS[String(host)] = Int[Int(i) for i in ids]
     return nothing
@@ -772,6 +786,7 @@ function _start_drive_host_status_monitor!(
     log_dir::Union{Nothing,AbstractString},
 )
     isempty(DRIVE_HOST_WORKER_IDS) && return nothing
+    _require_drive_host_status_idle!()
     _stop_drive_host_status_monitor!()
     DRIVE_HOST_STATUS_STOP[] = false
     interval = _heartbeat_config().interval
@@ -1008,10 +1023,11 @@ end
     drive_host_status(output_dir) -> Vector{DriveHostStatus}
     drive_host_status(kp::KitProcess) -> Vector{DriveHostStatus}
 
-Live per-host membership for a running (or recently collecting) `drive`.
-Reads `kit.hosts.status`. Empty when the file is missing (too early, a `go`
-run, or a hard death before join). This is not [`DriveResult.hosts`](@ref)
-(post-run collect); that vector is stored in `kit.result` as `hosts`.
+Live per-host membership for a running (or recently collecting) `drive`
+or `ride`. Reads `kit.hosts.status`. Empty when the file is missing (too
+early, a `go` run, or a hard death before join). This is not
+[`DriveResult.hosts`](@ref) (post-run collect); that vector is stored in
+`kit.result` as `hosts`.
 """
 function drive_host_status(output_dir::AbstractString)::Vector{DriveHostStatus}
     path = joinpath(canonical_local_path(output_dir), "kit.hosts.status")

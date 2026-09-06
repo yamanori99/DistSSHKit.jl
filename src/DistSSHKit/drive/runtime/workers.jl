@@ -61,6 +61,7 @@ function add_drive_workers!(
 )::Vector{String}
     empty!(RUNNER_WORKER_PROJECT_DIRS)
     empty!(RUNNER_WORKER_SCRIPT_PATHS)
+    DistSSHKit._require_drive_host_status_idle!()
     DistSSHKit._clear_drive_host_worker_ids!()
     script_path = abspath(String(script_path))
     writeln_both("Adding workers..."; color=:light_black)

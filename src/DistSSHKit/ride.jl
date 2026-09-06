@@ -299,6 +299,7 @@ function _ride_add_workers!(
     before = Set(workers())
     ssh_hosts = String[]
     try
+        _require_drive_host_status_idle!()
         child_hosts = Tuple{String,Union{Int,Nothing}}[
             (String(h), Int(n)) for (h, n) in plan.child_workers if n > 0
         ]
@@ -347,6 +348,9 @@ function _ride_add_workers!(
             _ride_init_drive_workers!(project)
         end
         added = Int[w for w in workers() if w ∉ before]
+        if isempty(child_hosts) && !isempty(added)
+            _register_drive_host_worker_ids!(PARENT_HOST_NAME, added)
+        end
         isempty(added) || _ride_load_self_on_workers!()
         return added, ssh_hosts
     catch
@@ -521,6 +525,12 @@ function ride!(
         kit_progress_step!("workers")
         added, ssh_hosts = _ride_add_workers!(wp, project, path, julia, require_all_hosts)
         _write_kit_hosts_file(ssh_hosts, batch_dir, nothing)
+        _write_joined_drive_host_status!(
+            sort!(collect(keys(DRIVE_HOST_WORKER_IDS))),
+            batch_dir,
+            nothing,
+        )
+        _start_drive_host_status_monitor!(batch_dir, nothing)
         kit_progress_step!("init")
         _ride_push_prelude!(expr)
         kit_progress_step!("run")
@@ -561,7 +571,9 @@ function ride!(
         else
             ENV["DISTRIBUTED_REMOTE_PROJECT_ROOT"] = old_remote
         end
+        _stop_drive_host_status_monitor!()
         !isempty(added) && rmprocs(added; waitfor=30)
+        _clear_drive_host_worker_ids!()
         _RIDE_DEPTH[] = 0
     end
 end

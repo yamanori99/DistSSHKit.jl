@@ -278,9 +278,10 @@ stay in `output_dir`. Kit logs (`go_*.log` / `drive_*.log`) are not this list.
 - `kit.hosts`: remote hosts this run started (one name per line), written
   after workers join (`go` children, `drive` SSH joins, `ride` SSH
   children). `terminate_run!` reaps these. Parent-only ride writes nothing.
-- `kit.hosts.status`: live per-host membership during `drive` (`:joined` /
+- `kit.hosts.status`: live per-host membership during `drive` / `ride` (`:joined` /
   `:alive` / `:left` / `:collect_pending`). Read with
   [`drive_host_status`](@ref). Not the post-run collect vector.
+  A second in-process `drive!` / `ride!` while the monitor is running throws.
 - `kit.result`: TOML with the same fields as [`KitRunResult`](@ref),
   including `hosts` (post-run collect, [`HostRunResult`](@ref) rows).
   Omitted when empty (`go`, or a `drive` that never collected). Read with
