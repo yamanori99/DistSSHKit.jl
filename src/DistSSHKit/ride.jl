@@ -76,9 +76,14 @@ function _ride_callable(f)
     return f
 end
 
+function _ride_named_fn(name::Symbol, value)
+    isdefined(Main, name) && getglobal(Main, name) === value && return name
+    return value
+end
+
 function _can_distribute(f, xs)::Bool
     isempty(xs) && return false
-    nworkers() < 1 && return false
+    nprocs() < 2 && return false
     T = eltype(xs)
     fn = try
         f isa Symbol ? getglobal(Main, f) : f
@@ -140,7 +145,12 @@ function _ride_filter(f, xs)
 end
 
 function _ride_map_fn_arg(fex)
-    fex isa Symbol && return QuoteNode(fex)
+    fex isa Symbol && return Expr(
+        :call,
+        GlobalRef(DistSSHKit, :_ride_named_fn),
+        QuoteNode(fex),
+        fex,
+    )
     return _ride_rewrite(fex)
 end
 

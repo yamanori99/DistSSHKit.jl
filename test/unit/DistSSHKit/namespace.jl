@@ -21,10 +21,12 @@ using Test
         @test DistSSHKit.cache_relpath(h) == joinpath(".distsshkit", "cache", "sha256", h)
         @test_throws ArgumentError DistSSHKit.cache_relpath("zz")
 
-        @test DistSSHKit.ns_path("a.bin"; project=tmp) == joinpath(
-            DistSSHKit.canonical_local_path(tmp), "a.bin",
-        )
-        @test DistSSHKit.ns_path(src; project=tmp) == DistSSHKit.canonical_local_path(src)
+        withenv("DISTRIBUTED_OUTPUT_DIR" => nothing) do
+            @test DistSSHKit.ns_path("a.bin"; project=tmp) == joinpath(
+                DistSSHKit.canonical_local_path(tmp), "a.bin",
+            )
+            @test DistSSHKit.ns_path(src; project=tmp) == DistSSHKit.canonical_local_path(src)
+        end
         out = joinpath(tmp, "slot")
         mkpath(out)
         write(joinpath(out, "a.bin"), "from slot")

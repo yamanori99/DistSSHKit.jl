@@ -17,7 +17,8 @@ Also: [First Steps · Demo](@ref Tutorial-Demo), [drive](@ref Manual-drive),
 host (not `--repeat`) fills the count via [`size!`](@ref), like drive.
 `go SCRIPT.jl` with no host tokens is still one parent slot.
 A bare `julia -m DistSSHKit SCRIPT.jl` is not `go`; name the command.
-`--repeat N` still spreads N runs; omitted `:N` is a cap, not size!.
+`--repeat N` still spreads N runs; explicit `:N` is a cap, while omitted
+`:N` stays uncapped and does not use `size!`.
 
 **vs drive:** each `child:NAME:N` is N full script runs (not Distributed
 workers). There is no `--require-git`; for commit parity use

@@ -51,8 +51,9 @@ function sync_driver_to_workers!(script_path::String; sync_script::Bool=false)
                 src = DistSSHKit._drive_publish_source(sp)
                 if !isempty(src)
                     for w in workers()
-                        remotecall_fetch(w, src) do code
-                            Base.invokelatest(_drive_worker_publish!, code)
+                        worker_script = get(RUNNER_WORKER_SCRIPT_PATHS, w, sp)
+                        remotecall_fetch(w, src, worker_script) do code, path
+                            Base.invokelatest(_drive_worker_publish!, code, path)
                         end
                     end
                 end
@@ -159,9 +160,20 @@ function init_drive_workers!(proj_dir::String, explicit_package, path_anchor::St
                 Base.include(Main, path)
                 return nothing
             end
-            function _drive_worker_publish!(src::String)
+            function _drive_worker_publish!(src::String, path::String)
                 isempty(src) && return nothing
-                include_string(Main, src)
+                tls = task_local_storage()
+                prev = get(tls, :SOURCE_PATH, nothing)
+                tls[:SOURCE_PATH] = path
+                try
+                    include_string(Main, src, path)
+                finally
+                    if prev === nothing
+                        delete!(tls, :SOURCE_PATH)
+                    else
+                        tls[:SOURCE_PATH] = prev
+                    end
+                end
                 return nothing
             end
         end

@@ -6,6 +6,8 @@ using Test
         rw = DistSSHKit._ride_rewrite(ex)
         @test rw.head === :call
         @test rw.args[1] === GlobalRef(DistSSHKit, :_ride_map)
+        @test rw.args[2].head === :call
+        @test rw.args[2].args[1] === GlobalRef(DistSSHKit, :_ride_named_fn)
 
         fx = Meta.parse("filter(iseven, xs)")
         @test DistSSHKit._ride_rewrite(fx).args[1] === GlobalRef(DistSSHKit, :_ride_filter)

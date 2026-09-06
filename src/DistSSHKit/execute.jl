@@ -32,8 +32,6 @@ const _EXECUTE_DETACHED_DRIVE_ONLY = (
     :package,
     :require_all_hosts,
     :skip_hash_check,
-    :mem_headroom,
-    :parent_gb,
     :workers,
     :sync_script,
 )
@@ -1215,8 +1213,22 @@ function _execute_detached_argv(
         if probe !== nothing && !isempty(strip(String(probe)))
             push!(argv, "--probe", String(probe))
         end
-    elseif repeat !== nothing
-        push!(argv, "--repeat", string(Int(repeat)))
+    else
+        if mem_headroom !== nothing
+            push!(argv, "--mem-headroom", string(Float64(mem_headroom)))
+        end
+        if parent_gb !== nothing
+            push!(argv, "--parent-gb", string(Float64(parent_gb)))
+        end
+        if gb_per_worker !== nothing
+            push!(argv, "--gb-per-worker", string(Float64(gb_per_worker)))
+        end
+        if probe !== nothing && !isempty(strip(String(probe)))
+            push!(argv, "--probe", String(probe))
+        end
+        if repeat !== nothing
+            push!(argv, "--repeat", string(Int(repeat)))
+        end
     end
     for tok in tokens
         push!(argv, String(tok))

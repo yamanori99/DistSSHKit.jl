@@ -159,8 +159,8 @@ using Test
         @test DistSSHKit.execute_detached_accepts(:repeat; kind=:go)
         @test !DistSSHKit.execute_detached_accepts(:repeat; kind=:drive)
         @test DistSSHKit.execute_detached_accepts(:workers; kind=:drive)
-        @test !DistSSHKit.execute_detached_accepts(:mem_headroom; kind=:go)
-        @test !DistSSHKit.execute_detached_accepts(:parent_gb; kind=:go)
+        @test DistSSHKit.execute_detached_accepts(:mem_headroom; kind=:go)
+        @test DistSSHKit.execute_detached_accepts(:parent_gb; kind=:go)
         @test !DistSSHKit.execute_detached_accepts(:workers; kind=:go)
         @test !DistSSHKit.execute_detached_accepts(:plan; kind=:go)
         @test !DistSSHKit.execute_detached_accepts(:plan; kind=:drive)
@@ -257,9 +257,17 @@ using Test
             require_all_hosts=nothing,
             skip_hash_check=true,
             repeat=100,
+            mem_headroom=0.5,
+            parent_gb=1.0,
+            gb_per_worker=1.5,
+            probe="/tmp/probe.jl",
         )
         @test "--repeat" in argv_rep
         @test "100" in argv_rep
+        @test "--mem-headroom" in argv_rep
+        @test "--parent-gb" in argv_rep
+        @test "--gb-per-worker" in argv_rep
+        @test "--probe" in argv_rep
         argv_strict = DistSSHKit._execute_detached_argv(
             :drive, "job.jl", ["child:host1"], String[];
             output_dir="/tmp/out",
@@ -422,13 +430,13 @@ using Test
         @test occursin(":log_dir", sprint(showerror, err3))
 
         err4 = try
-            DistSSHKit.execute!(:go, "job.jl", ["parent:1"]; detached=true, mem_headroom=0.5)
+            DistSSHKit.execute!(:go, "job.jl", ["parent:1"]; detached=true, skip_hash_check=true)
             nothing
         catch e
             e
         end
         @test err4 isa ArgumentError
-        @test occursin(":mem_headroom", sprint(showerror, err4))
+        @test occursin(":skip_hash_check", sprint(showerror, err4))
 
         err5 = try
             DistSSHKit.execute!(:go, "job.jl", ["parent:1"]; detached=true, workers=4)
