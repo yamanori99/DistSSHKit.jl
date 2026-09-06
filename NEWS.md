@@ -6,6 +6,10 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+- `drive` / `drive!`: omitted `--output-dir` (and no `init_output_dir!`
+  / `DISTRIBUTED_OUTPUT_DIR`) now uses a unique
+  `{script}/.distsshkit/drive/<stem>_<UTC>/`, like go / ride. Drivers that
+  call `init_output_dir!` still keep that path. No per-slot dirs.
 - CLI: a `.jl` path with no subcommand is no longer implicit `go`.
   Name `go` (as-is timing), `plan`, `ride`, or `drive`. Kit does not
   pick the runner from the file.

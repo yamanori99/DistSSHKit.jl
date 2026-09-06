@@ -115,8 +115,8 @@ Worker `addprocs` stays sequential.
   get `--eval=#distsshkit-job:<id>`
 
 **Kit files.** Setup logs: `{project}/.distsshkit/setup/`. Go:
-`{script}/.distsshkit/go/{stem}_{UTC}/`. Drive (no `--output-dir`):
-`{script}/.distsshkit/drive`. Add `.distsshkit/` to the **job** project's
+`{script}/.distsshkit/go/{stem}_{UTC}/`. Drive (no `--output-dir` and no
+`init_output_dir!`): `{script}/.distsshkit/drive/{stem}_{UTC}/`. Add `.distsshkit/` to the **job** project's
 `.gitignore` — DistSSHKit's own repo already ignores it, but `Pkg.add`
 does not. Otherwise go/drive output can show up as untracked files,
 including under `drive --require-git`.
