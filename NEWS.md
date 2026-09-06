@@ -7,8 +7,8 @@ GitHub Releases may copy these sections (`Release notes:` on
 ## Unreleased
 
 - `drive` / `ride` no longer `pkill -f julia.*--worker` on SSH hosts. Leftover
-  remote workers are `pkill`d only when `DISTSSHKIT_JOB_ID` is set (same tag as
-  [`terminate!`](@ref)). Untagged machine-wide sweep stays `setup --cleanup`.
+  remote workers are `pkill`d only when `job_id` / `DISTSSHKIT_JOB_ID` is set
+  (`pkill -f distsshkit-job:<id>`, same as [`terminate!`](@ref)). Untagged machine-wide sweep stays `setup --cleanup`.
 - In-process `go!` / `drive!` / `ride!` / `size!` / `pool!` / `setup!` /
   `sync!` / `instantiate!` / `collect!` / `push_cache!` / `pipeline!` reject a
   second overlapping call from another task (`ArgumentError`). Same-task nesting

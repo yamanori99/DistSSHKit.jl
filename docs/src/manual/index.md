@@ -101,8 +101,8 @@ Worker `addprocs` stays sequential.
 
 - Local `drive` workers are torn down with `rmprocs`, not a pattern `pkill`
 - `drive` does not `pkill -f julia --worker` on remotes. With `job_id` /
-  `DISTSSHKIT_JOB_ID` it `pkill`s only that tag. Skip that leftover pkill with
-  `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1`; `rmprocs` still runs
+  `DISTSSHKIT_JOB_ID` it `pkill`s argv `distsshkit-job:<id>`. Skip that leftover
+  pkill with `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1`; `rmprocs` still runs
 - `setup --prune` removes `.distsshkit/{go,drive,setup}` leaves (not the
   deploy). `--cleanup` kills stale workers (untagged `julia --worker` /
   `--bind-to` on localhost and remotes; other Distributed jobs on the same

@@ -25,8 +25,8 @@ end
 # would reap workers belonging to other Julia processes on the same login
 # (parallel tests, another drive). Local teardown is `rmprocs` at atexit.
 # Remote untagged `pkill` is the same class (shared SSH host). Drive only
-# `pkill`s argv tagged with `DISTSSHKIT_JOB_ID`. Machine-wide sweep remains
-# `setup --cleanup`. Skip leftover tagged pkill with
+# `pkill`s argv containing `distsshkit-job:<id>` when `DISTSSHKIT_JOB_ID` is set.
+# Machine-wide sweep remains `setup --cleanup`. Skip leftover tagged pkill with
 # DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1.
 function cleanup_stale_workers!(hosts::Vector{Tuple{String,Union{Int,Nothing}}})
     if _skip_global_worker_pkill() || isempty(hosts)

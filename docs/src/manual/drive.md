@@ -93,9 +93,10 @@ onto an empty path). Prefer matching Julia **major.minor**; align with
 [`size`](@ref Manual-size).
 
 - Local workers are torn down with `rmprocs` at the end of every `drive` run
-- SSH leftover `pkill` is only argv tagged with `DISTSSHKIT_JOB_ID`. Untagged
-  `julia --worker` sweep is `setup --cleanup`. Skip leftover tagged `pkill` with
-  `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` ([User Guide](@ref Manual))
+- SSH leftover `pkill` matches argv `distsshkit-job:<id>` when `job_id` /
+  `DISTSSHKIT_JOB_ID` is set (drive workers: `--eval=#distsshkit-job:<id>`).
+  Untagged `julia --worker` sweep is `setup --cleanup`. Skip leftover tagged
+  `pkill` with `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` ([User Guide](@ref Manual))
 - Machine-wide local kill is `setup --cleanup`
 
 ## Results / collect
