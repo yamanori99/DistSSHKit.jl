@@ -26,6 +26,7 @@ GitHub Releases may copy these sections (`Release notes:` on
   `kit.result` / `kit.pid` land in the ride batch dir; SSH `child:` also
   writes `kit.hosts` for [`terminate!`](@ref). Parent workers and SSH
   children write `kit.hosts.status` ([`drive_host_status`](@ref)).
+  Overlapping in-process `drive!` / `ride!` is rejected.
   The scheduler stays in DistSSHQueue, not Kit.
 - `go`: default batch dirs use exclusive `mkdir` (same-second collisions
   get a nanosecond suffix), matching `allocate_output_dir`.

@@ -109,6 +109,16 @@ using Test
             @test DistSSHKit._drive_parent_worker_count() == 0
         end
         DistSSHKit._clear_drive_host_worker_ids!()
+        DistSSHKit._register_drive_host_worker_ids!("h1", [1])
+        _with_tempdir() do d
+            DistSSHKit._start_drive_host_status_monitor!(d, nothing)
+            @test DistSSHKit._drive_host_status_monitor_active()
+            @test_throws ArgumentError DistSSHKit._start_drive_host_status_monitor!(d, nothing)
+            DistSSHKit._stop_drive_host_status_monitor!()
+            DistSSHKit._start_drive_host_status_monitor!(d, nothing)
+            DistSSHKit._stop_drive_host_status_monitor!()
+        end
+        DistSSHKit._clear_drive_host_worker_ids!()
     end
 
     @testset "allocate_output_dir" begin

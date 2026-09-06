@@ -630,6 +630,20 @@ function _clear_drive_host_worker_ids!()
     return nothing
 end
 
+function _drive_host_status_monitor_active()::Bool
+    t = DRIVE_HOST_STATUS_TASK[]
+    return t !== nothing && !istaskdone(t) && !DRIVE_HOST_STATUS_STOP[]
+end
+
+function _require_drive_host_status_idle!()
+    if _drive_host_status_monitor_active()
+        throw(ArgumentError(
+            "overlapping in-process drive!/ride! is not supported (host-status monitor already running)",
+        ))
+    end
+    return nothing
+end
+
 function _register_drive_host_worker_ids!(host::AbstractString, ids::AbstractVector{<:Integer})
     DRIVE_HOST_WORKER_IDS[String(host)] = Int[Int(i) for i in ids]
     return nothing
@@ -772,6 +786,7 @@ function _start_drive_host_status_monitor!(
     log_dir::Union{Nothing,AbstractString},
 )
     isempty(DRIVE_HOST_WORKER_IDS) && return nothing
+    _require_drive_host_status_idle!()
     _stop_drive_host_status_monitor!()
     DRIVE_HOST_STATUS_STOP[] = false
     interval = _heartbeat_config().interval

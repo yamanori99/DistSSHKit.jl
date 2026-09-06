@@ -299,6 +299,7 @@ function _ride_add_workers!(
     before = Set(workers())
     ssh_hosts = String[]
     try
+        _require_drive_host_status_idle!()
         child_hosts = Tuple{String,Union{Int,Nothing}}[
             (String(h), Int(n)) for (h, n) in plan.child_workers if n > 0
         ]
