@@ -68,17 +68,19 @@ function push_cache!(
     session::KitSession;
     hashes::Union{Nothing,AbstractVector{<:AbstractString}}=nothing,
 )::SyncResult
-    apply_session_env!(session)
     isempty(session.hosts) && throw(ArgumentError(
         explain_no_hosts(; surface=hint_surface(session), kind=:ssh),
     ))
-    local_dir = joinpath(session.project, _NS_CACHE_DIR)
-    files = _cache_blob_names(local_dir, hashes)
-    isempty(files) && return SyncResult(false, HostResult[]; ok=true)
-    remote_dir = cache_remote_dir(session_remote_root(session))
-    results = HostResult[]
-    for host in session.hosts
-        push!(results, _rsync_cache_one_host!(host, local_dir, remote_dir, files))
+    return _with_kit_inproc_run!(:sync) do
+        apply_session_env!(session)
+        local_dir = joinpath(session.project, _NS_CACHE_DIR)
+        files = _cache_blob_names(local_dir, hashes)
+        isempty(files) && return SyncResult(false, HostResult[]; ok=true)
+        remote_dir = cache_remote_dir(session_remote_root(session))
+        results = HostResult[]
+        for host in session.hosts
+            push!(results, _rsync_cache_one_host!(host, local_dir, remote_dir, files))
+        end
+        return SyncResult(false, results; ok=all(r -> r.ok, results))
     end
-    return SyncResult(false, results; ok=all(r -> r.ok, results))
 end

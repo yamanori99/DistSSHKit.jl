@@ -103,8 +103,10 @@ results — the failure mode a queue would otherwise only notice by diffing
 corrupted output.
 
 Writes `output_dir/.kit.lock` (this process's pid, plain text). An existing
-lock naming a still-alive pid throws `ArgumentError` immediately. A lock
-naming a dead pid is stale and gets overwritten.
+lock naming a still-alive **other** pid throws `ArgumentError` immediately. A lock
+naming a dead pid is stale and gets overwritten. Same-pid re-lock does not throw;
+overlapping in-process `go!` / `drive!` / `ride!` (and size / pool / setup /
+sync / collect / pipeline) throw.
 
 Returns a zero-arg closure that releases the lock; call it in a `finally`.
 Removal only happens if the file still names this process's pid (avoids
@@ -137,6 +139,59 @@ function kit_output_dir_lock!(output_dir::AbstractString)
         catch
             # best-effort only
         end
+    end
+end
+
+# One in-process Kit job at a time (`go!` / `drive!` / `ride!` / `size!` / …).
+# `.kit.lock` is per `output_dir` and pid; it does not serialize two runs in
+# this process. Nested calls on the same task (go autosize → `size!`) are ok.
+const _KIT_INPROC_GATE = ReentrantLock()
+const _KIT_INPROC_OWNER = Ref{Union{Nothing,Task}}(nothing)
+const _KIT_INPROC_KIND = Ref{Union{Nothing,Symbol}}(nothing)
+const _KIT_INPROC_DEPTH = Ref(0)
+
+function _kit_inproc_run_kind()
+    return _KIT_INPROC_KIND[]
+end
+
+function _acquire_kit_inproc_run!(kind::Symbol)
+    lock(_KIT_INPROC_GATE) do
+        owner = _KIT_INPROC_OWNER[]
+        if owner !== nothing && owner !== current_task()
+            running = something(_KIT_INPROC_KIND[], :unknown)
+            throw(ArgumentError(
+                "overlapping in-process DistSSHKit run is not supported (already running $(running))",
+            ))
+        end
+        if owner === nothing
+            _KIT_INPROC_OWNER[] = current_task()
+            _KIT_INPROC_KIND[] = kind
+        end
+        _KIT_INPROC_DEPTH[] += 1
+    end
+    return nothing
+end
+
+function _release_kit_inproc_run!()
+    lock(_KIT_INPROC_GATE) do
+        d = _KIT_INPROC_DEPTH[]
+        d < 1 && return nothing
+        d -= 1
+        _KIT_INPROC_DEPTH[] = d
+        if d == 0
+            _KIT_INPROC_OWNER[] = nothing
+            _KIT_INPROC_KIND[] = nothing
+        end
+    end
+    return nothing
+end
+
+function _with_kit_inproc_run!(f, kind::Symbol)
+    _acquire_kit_inproc_run!(kind)
+    try
+        return f()
+    finally
+        _release_kit_inproc_run!()
     end
 end
 

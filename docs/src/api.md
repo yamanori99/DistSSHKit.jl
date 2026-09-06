@@ -266,9 +266,11 @@ On-disk contract for a detached (or in-process) run. `kit.pid`, `kit.job`,
 `log_dir` when that path is distinct. `.kit.lock` and `kit.out` / `kit.err`
 stay in `output_dir`. Kit logs (`go_*.log` / `drive_*.log`) are not this list.
 
-- `.kit.lock`: pid of the process holding the dir. A second run against
+- `.kit.lock`: pid of the process holding the dir. A second **process** against
   the same path raises `ArgumentError`. A lock left by a dead pid is
-  reclaimed.
+  reclaimed. Two in-process runs share a pid, so Kit also rejects overlapping
+  `go!` / `drive!` / `ride!` / `size!` / `pool!` / `setup!` / `sync!` /
+  `instantiate!` / `collect!` / `push_cache!` / `pipeline!` (same-task nesting is ok).
 - `kit.pid`: child OS pid, optional start key on the second line.
   Running is [`kit_pid_file_running`](@ref) (pid plus start).
   [`kit_pid_alive`](@ref) is the pid-only probe. Removed on a normal

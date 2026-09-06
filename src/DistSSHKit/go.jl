@@ -832,6 +832,59 @@ function go!(
             headline="script not found: $script_path",
         )))
     end
+    _acquire_kit_inproc_run!(:go)
+    try
+        return _go_run!(
+            script_path,
+            proj,
+            workers,
+            remote,
+            hosts_file,
+            quiet,
+            verbosity,
+            yes,
+            sync,
+            output_dir,
+            collect_spec,
+            args,
+            path_anchor,
+            julia,
+            hint_surface,
+            original_args,
+            repeat,
+            gb_per_worker,
+            probe,
+            mem_headroom,
+            parent_gb,
+        )
+    finally
+        _release_kit_inproc_run!()
+    end
+end
+
+function _go_run!(
+    script_path::String,
+    proj::String,
+    workers,
+    remote,
+    hosts_file,
+    quiet,
+    verbosity,
+    yes,
+    sync,
+    output_dir,
+    collect_spec,
+    args,
+    path_anchor,
+    julia,
+    hint_surface,
+    original_args,
+    repeat,
+    gb_per_worker,
+    probe,
+    mem_headroom,
+    parent_gb,
+)
     anchor = something(path_anchor, proj)
 
     tokens = String[String(h) for h in workers]
