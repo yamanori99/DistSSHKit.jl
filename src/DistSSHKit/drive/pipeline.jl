@@ -190,6 +190,12 @@ function pipeline!(config::PipelineConfig)::PipelineResult
         )))
     end
 
+    return _with_kit_inproc_run!(:pipeline) do
+        _pipeline_run!(config, session, driver)
+    end
+end
+
+function _pipeline_run!(config::PipelineConfig, session::KitSession, driver::String)
     sync_mode = resolve_pipeline_sync(config, session)
     sync_result = nothing
     if sync_mode !== false

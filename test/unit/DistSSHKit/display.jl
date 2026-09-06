@@ -693,6 +693,29 @@ using Test
             end
         end
 
+        @testset "in-process run gate" begin
+            DistSSHKit._with_kit_inproc_run!(:go) do
+                DistSSHKit._with_kit_inproc_run!(:size) do
+                    @test DistSSHKit._kit_inproc_run_kind() === :go
+                end
+            end
+            held = Channel{Nothing}(1)
+            finish = Channel{Nothing}(1)
+            t = @async DistSSHKit._with_kit_inproc_run!(:drive) do
+                put!(held, nothing)
+                take!(finish)
+            end
+            take!(held)
+            @test_throws ArgumentError DistSSHKit._acquire_kit_inproc_run!(:ride)
+            put!(finish, nothing)
+            wait(t)
+            DistSSHKit._with_kit_inproc_run!(:pipeline) do
+                DistSSHKit._with_kit_inproc_run!(:sync) do
+                    @test DistSSHKit._kit_inproc_run_kind() === :pipeline
+                end
+            end
+        end
+
         @testset "kit_spin! skips animation off verbose TTY" begin
             with_kit_verbosity(:quiet) do
                 @test DistSSHKit._spinner_can_draw() == false

@@ -59,53 +59,55 @@ function drive!(
     parent_gb::Real=DEFAULT_PARENT_GB,
     sync_script::Bool=false,
 )::DriveResult
-    apply_session_env!(session)
-    _ensure_drive_fragments!(session.project)
-    resolved = plan
-    if resolved === nothing && !isempty(session.tokens)
-        resolved = worker_plan_from_tokens(session.tokens; session=session)
-    end
-    parsed = drive_parsed_from_session(
-        session,
-        script;
-        workers=resolved,
-        script_args=args,
-        skip_hash_check=skip_hash_check,
-        output_dir=output_dir,
-        enable_log=enable_log,
-        log_dir=log_dir,
-        package=package,
-        sync=sync,
-        julia=julia,
-        require_all_hosts=require_all_hosts,
-        mem_headroom=mem_headroom,
-        parent_gb=parent_gb,
-        sync_script=sync_script,
-    )
-    apply_kit_cli_session!(parsed.cli_session)
-    original_args = copy(ARGS)
-    resolved_output_dir = Ref{Union{Nothing,String}}(nothing)
-    resolved_log_dir = Ref{Union{Nothing,String}}(nothing)
-    resolved_hosts = Ref{Vector{HostRunResult}}(HostRunResult[])
-    try
-        run_fn = Main.eval(:(run_drive_parsed!))
-        code = Base.invokelatest(
-            run_fn,
-            parsed;
-            original_args=original_args,
-            resolved_output_dir=resolved_output_dir,
-            resolved_log_dir=resolved_log_dir,
-            resolved_hosts=resolved_hosts,
+    return _with_kit_inproc_run!(:drive) do
+        apply_session_env!(session)
+        _ensure_drive_fragments!(session.project)
+        resolved = plan
+        if resolved === nothing && !isempty(session.tokens)
+            resolved = worker_plan_from_tokens(session.tokens; session=session)
+        end
+        parsed = drive_parsed_from_session(
+            session,
+            script;
+            workers=resolved,
+            script_args=args,
+            skip_hash_check=skip_hash_check,
+            output_dir=output_dir,
+            enable_log=enable_log,
+            log_dir=log_dir,
+            package=package,
+            sync=sync,
+            julia=julia,
+            require_all_hosts=require_all_hosts,
+            mem_headroom=mem_headroom,
+            parent_gb=parent_gb,
+            sync_script=sync_script,
         )
-        return DriveResult(code == 0, Int(code);
-            output_dir=resolved_output_dir[],
-            log_dir=resolved_log_dir[],
-            failed_step=code == 0 ? nothing : "drive",
-            hosts=resolved_hosts[],
-        )
-    finally
-        empty!(ARGS)
-        append!(ARGS, original_args)
+        apply_kit_cli_session!(parsed.cli_session)
+        original_args = copy(ARGS)
+        resolved_output_dir = Ref{Union{Nothing,String}}(nothing)
+        resolved_log_dir = Ref{Union{Nothing,String}}(nothing)
+        resolved_hosts = Ref{Vector{HostRunResult}}(HostRunResult[])
+        try
+            run_fn = Main.eval(:(run_drive_parsed!))
+            code = Base.invokelatest(
+                run_fn,
+                parsed;
+                original_args=original_args,
+                resolved_output_dir=resolved_output_dir,
+                resolved_log_dir=resolved_log_dir,
+                resolved_hosts=resolved_hosts,
+            )
+            return DriveResult(code == 0, Int(code);
+                output_dir=resolved_output_dir[],
+                log_dir=resolved_log_dir[],
+                failed_step=code == 0 ? nothing : "drive",
+                hosts=resolved_hosts[],
+            )
+        finally
+            empty!(ARGS)
+            append!(ARGS, original_args)
+        end
     end
 end
 

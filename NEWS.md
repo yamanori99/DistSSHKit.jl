@@ -9,6 +9,11 @@ GitHub Releases may copy these sections (`Release notes:` on
 - `drive` / `ride` no longer `pkill -f julia.*--worker` on SSH hosts. Leftover
   remote workers are `pkill`d only when `DISTSSHKIT_JOB_ID` is set (same tag as
   [`terminate!`](@ref)). Untagged machine-wide sweep stays `setup --cleanup`.
+- In-process `go!` / `drive!` / `ride!` / `size!` / `pool!` / `setup!` /
+  `sync!` / `instantiate!` / `collect!` / `push_cache!` / `pipeline!` reject a
+  second overlapping call from another task (`ArgumentError`). Same-task nesting
+  (go autosize → `size!`, `pipeline!` → `drive!`) is allowed. Detached `execute!` is a separate process
+  and is unchanged. Remote `pkill` of untagged workers is still host-scoped.
 - `drive` / `drive!`: omitted `--output-dir` (and no `init_output_dir!`
   / `DISTRIBUTED_OUTPUT_DIR`) now uses a unique
   `{script}/.distsshkit/drive/<stem>_<UTC>/`, like go / ride. Drivers that

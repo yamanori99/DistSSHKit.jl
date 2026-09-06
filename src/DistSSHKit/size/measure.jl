@@ -73,17 +73,19 @@ function measure_rss(
         throw(ArgumentError(explain_size_probe_not_found(probe_local; surface=hint_surface)))
     end
 
-    worker_to_host = Dict{Int,String}()
-    worker_project = Dict{Int,String}()
-    worker_probe = Dict{Int,Union{Nothing,String}}()
+    return _with_kit_inproc_run!(:size) do
+        worker_to_host = Dict{Int,String}()
+        worker_project = Dict{Int,String}()
+        worker_probe = Dict{Int,Union{Nothing,String}}()
 
-    try
-        return _measure_rss!(
-            proj, hosts, include_parent, probe_local,
-            worker_to_host, worker_project, worker_probe,
-        )
-    finally
-        _rmprocs_measure_probes!(worker_to_host)
+        try
+            return _measure_rss!(
+                proj, hosts, include_parent, probe_local,
+                worker_to_host, worker_project, worker_probe,
+            )
+        finally
+            _rmprocs_measure_probes!(worker_to_host)
+        end
     end
 end
 
