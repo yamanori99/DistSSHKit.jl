@@ -6,6 +6,10 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+- In-process `go!` / `drive!` / `ride!` / `size!` / `pool!` / `setup!` reject a
+  second overlapping call from another task (`ArgumentError`). Same-task nesting
+  (go autosize → `size!`) is allowed. Detached `execute!` is a separate process
+  and is unchanged. Remote `pkill` of untagged workers is still host-scoped.
 - `drive` / `drive!`: omitted `--output-dir` (and no `init_output_dir!`
   / `DISTRIBUTED_OUTPUT_DIR`) now uses a unique
   `{script}/.distsshkit/drive/<stem>_<UTC>/`, like go / ride. Drivers that

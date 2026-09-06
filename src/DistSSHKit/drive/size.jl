@@ -72,37 +72,39 @@ function size!(
         explain_no_hosts(; surface=hint_surface(session), kind=:size),
     ))
 
-    per_worker_gb = Dict{String,Float64}()
-    if gb_per_worker !== nothing
-        g = Float64(gb_per_worker)
-        for h in all_hosts
-            per_worker_gb[h] = g
-        end
-    else
-        measured = measure_rss(
-            session.project,
-            child_hosts;
-            include_parent=session.include_parent_for_size,
-            probe=probe,
-            hint_surface=hint_surface(session),
-        )
-        isempty(measured) && throw(
-            ErrorException("per-worker memory measurement failed; pass gb_per_worker=..."),
-        )
-        for h in all_hosts
-            if haskey(measured, h)
-                per_worker_gb[h] = effective_worker_gb(measured[h])
-            else
-                per_worker_gb[h] = WORKER_MEMORY_GB_FALLBACK
+    return _with_kit_inproc_run!(:size) do
+        per_worker_gb = Dict{String,Float64}()
+        if gb_per_worker !== nothing
+            g = Float64(gb_per_worker)
+            for h in all_hosts
+                per_worker_gb[h] = g
+            end
+        else
+            measured = measure_rss(
+                session.project,
+                child_hosts;
+                include_parent=session.include_parent_for_size,
+                probe=probe,
+                hint_surface=hint_surface(session),
+            )
+            isempty(measured) && throw(
+                ErrorException("per-worker memory measurement failed; pass gb_per_worker=..."),
+            )
+            for h in all_hosts
+                if haskey(measured, h)
+                    per_worker_gb[h] = effective_worker_gb(measured[h])
+                else
+                    per_worker_gb[h] = WORKER_MEMORY_GB_FALLBACK
+                end
             end
         end
-    end
 
-    return compute_worker_plan(
-        all_hosts,
-        child_hosts,
-        per_worker_gb;
-        mem_headroom=mem_headroom,
-        parent_gb=parent_gb,
-    )
+        return compute_worker_plan(
+            all_hosts,
+            child_hosts,
+            per_worker_gb;
+            mem_headroom=mem_headroom,
+            parent_gb=parent_gb,
+        )
+    end
 end

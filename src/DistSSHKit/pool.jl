@@ -154,29 +154,31 @@ function pool!(
     isempty(all_hosts) && throw(ArgumentError(
         explain_no_hosts(; surface=hint_surface(session), kind=:pool),
     ))
-    pw = Float64(something(gb_per_worker, WORKER_MEMORY_GB_FALLBACK))
-    rows = HostInventory[]
-    for host in all_hosts
-        if is_parent_host_name(host)
-            push!(rows, _inventory_parent(;
-                per_worker_gb=pw,
-                mem_headroom=mem_headroom,
-                parent_gb=parent_gb,
-            ))
-        elseif host in child_hosts
-            push!(rows, _inventory_child(
-                host;
-                per_worker_gb=pw,
-                mem_headroom=mem_headroom,
-                parent_gb=parent_gb,
-            ))
+    return _with_kit_inproc_run!(:pool) do
+        pw = Float64(something(gb_per_worker, WORKER_MEMORY_GB_FALLBACK))
+        rows = HostInventory[]
+        for host in all_hosts
+            if is_parent_host_name(host)
+                push!(rows, _inventory_parent(;
+                    per_worker_gb=pw,
+                    mem_headroom=mem_headroom,
+                    parent_gb=parent_gb,
+                ))
+            elseif host in child_hosts
+                push!(rows, _inventory_child(
+                    host;
+                    per_worker_gb=pw,
+                    mem_headroom=mem_headroom,
+                    parent_gb=parent_gb,
+                ))
+            end
         end
+        healthy = [r for r in rows if r.ok]
+        cores = sum(r -> r.nproc, healthy; init=0)
+        gb = sum(r -> r.total_gb, healthy; init=0.0)
+        slots = sum(r -> r.slots, healthy; init=0)
+        return ResourcePool(all(r -> r.ok, rows), rows, cores, gb, slots)
     end
-    healthy = [r for r in rows if r.ok]
-    cores = sum(r -> r.nproc, healthy; init=0)
-    gb = sum(r -> r.total_gb, healthy; init=0.0)
-    slots = sum(r -> r.slots, healthy; init=0)
-    return ResourcePool(all(r -> r.ok, rows), rows, cores, gb, slots)
 end
 
 """[`WorkerPlan`](@ref) from pool slot hints (failed hosts contribute 0)."""

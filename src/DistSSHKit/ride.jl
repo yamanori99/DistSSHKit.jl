@@ -466,6 +466,35 @@ function ride!(
     !kp.ok && return RideResult(false, path, 0, nothing, something(kp.error, "plan failed"), julia_s)
     any(f -> f.status === :drive_vocab, kp.findings) &&
         return RideResult(false, path, 0, nothing, _ride_drive_vocab_error(kp), julia_s)
+    _acquire_kit_inproc_run!(:ride)
+    try
+        return _ride_run!(
+            path, julia_s, tokens, args, spi_check, output_dir, project, julia,
+            remote, session, gb_per_worker, probe, mem_headroom, parent_gb,
+            require_all_hosts,
+        )
+    finally
+        _release_kit_inproc_run!()
+    end
+end
+
+function _ride_run!(
+    path::String,
+    julia_s::String,
+    tokens,
+    args,
+    spi_check,
+    output_dir,
+    project,
+    julia,
+    remote,
+    session,
+    gb_per_worker,
+    probe,
+    mem_headroom,
+    parent_gb,
+    require_all_hosts,
+)
     tok = String[String(t) for t in tokens]
     wp = try
         _ride_resolve_plan(
