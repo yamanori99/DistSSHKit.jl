@@ -86,7 +86,8 @@ Switch back to Docker: `docker-ssh/scripts/up.sh` rewrites `ssh_config` to
 - `401` pulling the worker image: let `up.sh` build, or build in
   `../docker-ssh`
 - SSH timeout: `container ls`; empty IP → `container start` or `up.sh`
-- Host key failed / changed: `up.sh` uses `accept-new` and docker-ssh
-  `known_hosts`
+- Host key failed / changed: `wait-ready.sh` truncates docker-ssh
+  `known_hosts` before probing (Apple IPs reuse; host keys do not).
+  Re-run `up.sh` if a leftover file still fails.
 - git E2E cannot clone `dev@child-1`: re-run `up.sh` (injects
   `/etc/hosts`)
