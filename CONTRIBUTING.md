@@ -202,7 +202,7 @@ required to merge.
 ### Local checks
 
 ```bash
-./.github/jetls-check.sh    # hint+; same files as CI
+./.github/jetls-check.sh    # hint+; same files as CI (no `--threads=auto`)
 ./.github/aqua-check.sh     # latest registry Aqua; not part of Pkg.test()
 julia --project=docs -e 'using Pkg; Pkg.instantiate()'
 julia --project=docs --color=yes docs/make.jl
