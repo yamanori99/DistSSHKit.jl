@@ -133,7 +133,8 @@ julia --project=. -m DistSSHKit drive -y parent:4 \
 julia --project=. -m DistSSHKit progress DIR
 ```
 
-`DIR` is the result root (`--output-dir`, or `{script}/.distsshkit/drive`).
+`DIR` is the result root (`--output-dir`, a driver's `init_output_dir!`,
+or `{script}/.distsshkit/drive/<stem>_<UTC>/`).
 `--progress` is the TTY default.
 
 `progress:` lines end with `t=<unix>` ([API](@ref API)). Drive labels:
@@ -152,5 +153,7 @@ a `.kit.lock` file (this run's pid) is written under the result root, and a
 second run against the same directory raises immediately instead of
 interleaving collect output. A lock left behind by a crashed/killed run is
 detected as stale (dead pid) and reclaimed automatically — no manual cleanup
-needed. Use distinct `--output-dir` per concurrent job if you intend to run
-more than one at a time.
+needed. Concurrent runs of the same script get distinct default dirs.
+Use a shared `--output-dir` (or the same `init_output_dir!` path) only when
+you intend one result root — a second run against that directory raises
+until the first releases `.kit.lock`.

@@ -78,48 +78,60 @@ function run_drive_parsed!(
 
     activate_drive_project!(proj_dir)
 
-    if output_dir !== nothing
-        ENV["DISTRIBUTED_OUTPUT_DIR"] = DistSSHKit.canonical_local_path(String(output_dir))
-    end
-    # Drivers set `DISTRIBUTED_OUTPUT_DIR` in `init_output_dir!` (demos: `output/`).
-    # Lock after that so `.kit.lock` is not `{script}/.distsshkit/drive`
-    # when the driver chose `output/` (or `--output-dir`).
-    include(script_path)
-    if isdefined(Main, :init_output_dir!)
-        @invokelatest Main.init_output_dir!(script_args)
-    end
-    release_output_dir_lock = DistSSHKit.kit_output_dir_lock!(DistSSHKit.resolve_drive_output_dir(script_dir))
+    old_out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", nothing)
+    release_output_dir_lock = nothing
     code = Cint(1)
     hosts_acc = resolved_hosts === nothing ?
         Ref{Vector{DistSSHKit.HostRunResult}}(DistSSHKit.HostRunResult[]) :
         resolved_hosts
     try
-        code = _run_drive_parsed_locked!(
-            parsed, output_dir, script_path, script_dir, proj_dir, script_args,
-            enable_log, log_dir, original_args, host_names, hosts, parent_workers,
-            default_workers, julia_exe, skip_hash_check, explicit_package,
-            require_all_hosts, resolved_output_dir, resolved_log_dir, hosts_acc,
-        )
-        return code
+        if output_dir !== nothing
+            ENV["DISTRIBUTED_OUTPUT_DIR"] = DistSSHKit.canonical_local_path(String(output_dir))
+        end
+        # Drivers may set `DISTRIBUTED_OUTPUT_DIR` in `init_output_dir!` (demos: `output/`).
+        # If still unset, kit allocates `{script}/.distsshkit/drive/<stem>_<UTC>/`.
+        # Lock after that so `.kit.lock` is not the kind root when the driver
+        # chose `output/` (or `--output-dir` / a unique batch dir).
+        include(script_path)
+        if isdefined(Main, :init_output_dir!)
+            @invokelatest Main.init_output_dir!(script_args)
+        end
+        DistSSHKit._ensure_drive_output_env!(script_path; project=proj_dir)
+        release_output_dir_lock = DistSSHKit.kit_output_dir_lock!(DistSSHKit.resolve_drive_output_dir(script_dir))
+        try
+            code = _run_drive_parsed_locked!(
+                parsed, output_dir, script_path, script_dir, proj_dir, script_args,
+                enable_log, log_dir, original_args, host_names, hosts, parent_workers,
+                default_workers, julia_exe, skip_hash_check, explicit_package,
+                require_all_hosts, resolved_output_dir, resolved_log_dir, hosts_acc,
+            )
+            return code
+        finally
+            out = DistSSHKit.resolve_drive_output_dir(script_dir)
+            log = enable_log ? DistSSHKit.resolve_drive_log_dir(log_dir, script_dir) : nothing
+            DistSSHKit._write_kit_result_file(DistSSHKit.KitRunResult(
+                code == 0,
+                :drive,
+                out,
+                log,
+                code == 0 ? nothing : "drive",
+                Int(code),
+                hosts_acc[],
+                DistSSHKit.resolved_placement_tokens(parent_workers, hosts, default_workers),
+            ))
+            DistSSHKit._remove_kit_pid_file(
+                getpid(),
+                out,
+                log,
+            )
+            release_output_dir_lock()
+        end
     finally
-        out = DistSSHKit.resolve_drive_output_dir(script_dir)
-        log = enable_log ? DistSSHKit.resolve_drive_log_dir(log_dir, script_dir) : nothing
-        DistSSHKit._write_kit_result_file(DistSSHKit.KitRunResult(
-            code == 0,
-            :drive,
-            out,
-            log,
-            code == 0 ? nothing : "drive",
-            Int(code),
-            hosts_acc[],
-            DistSSHKit.resolved_placement_tokens(parent_workers, hosts, default_workers),
-        ))
-        DistSSHKit._remove_kit_pid_file(
-            getpid(),
-            out,
-            log,
-        )
-        release_output_dir_lock()
+        if old_out === nothing || (old_out isa AbstractString && isempty(strip(String(old_out))))
+            delete!(ENV, "DISTRIBUTED_OUTPUT_DIR")
+        else
+            ENV["DISTRIBUTED_OUTPUT_DIR"] = String(old_out)
+        end
     end
 end
 

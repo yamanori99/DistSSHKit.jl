@@ -440,10 +440,8 @@ function _execute_detached!(
 
     proj = canonical_local_path(project)
     script_path = canonical_local_path(script)
-    script_dir = dirname(script_path)
     resolved_output, resolved_log = _execute_detached_dirs(
         kind,
-        script_dir,
         proj,
         script_path,
         output_dir,
@@ -1060,11 +1058,10 @@ Layout is `{script dir}/.distsshkit/<kind>/<script-stem>_<UTC-stamp>/`. When
 suffix is added so two allocations in the same second do not share a
 directory.
 
-This matches omitted in-process defaults: go and ride use
-`{script}/.distsshkit/<kind>/<stem>_<UTC>/`; drive uses the shared
-`{script}/.distsshkit/drive` unless `output_dir` / `init_output_dir!` set
-`DISTRIBUTED_OUTPUT_DIR`. Queue should allocate instead of reusing drive's
-shared folder.
+This matches omitted in-process defaults for go, ride, and drive:
+`{script}/.distsshkit/<kind>/<stem>_<UTC>/`. Drive still honors
+`output_dir` / `--output-dir` and a driver's `init_output_dir!`
+(`DISTRIBUTED_OUTPUT_DIR`) when those are set.
 """
 function allocate_output_dir(
     kind::Symbol,
@@ -1093,9 +1090,30 @@ function allocate_output_dir(
     return dir
 end
 
+"""Set `DISTRIBUTED_OUTPUT_DIR` for a drive run and return it.
+
+If the env is already non-blank (`--output-dir`, `output_dir=`, or
+`init_output_dir!`), canonicalize and keep it. Otherwise allocate a unique
+`{script}/.distsshkit/drive/<stem>_<UTC>/` leaf.
+"""
+function _ensure_drive_output_env!(
+    script_path::AbstractString;
+    project::AbstractString=pwd(),
+)::String
+    existing = strip(get(ENV, "DISTRIBUTED_OUTPUT_DIR", ""))
+    if !isempty(existing)
+        dir = canonical_local_path(existing)
+        mkpath(dir)
+        ENV["DISTRIBUTED_OUTPUT_DIR"] = dir
+        return dir
+    end
+    dir = allocate_output_dir(:drive, script_path; project=project)
+    ENV["DISTRIBUTED_OUTPUT_DIR"] = dir
+    return dir
+end
+
 function _execute_detached_dirs(
     kind::Symbol,
-    script_dir::AbstractString,
     project::AbstractString,
     script_path::AbstractString,
     output_dir::Union{Nothing,AbstractString},
@@ -1109,16 +1127,14 @@ function _execute_detached_dirs(
     elseif kind === :ride
         _ride_batch_dir(script_path, nothing; project=project)
     else
-        resolve_drive_output_dir(script_dir)
+        allocate_output_dir(:drive, script_path; project=project)
     end
     resolved_log = if kind === :go || kind === :ride || enable_log === false
         nothing
     elseif log_dir !== nothing
         canonical_local_path(String(log_dir))
-    elseif output_dir !== nothing
-        resolved_output
     else
-        canonical_local_path(resolve_drive_log_dir(nothing, script_dir))
+        resolved_output
     end
     return resolved_output, resolved_log
 end

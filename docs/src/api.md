@@ -305,9 +305,9 @@ Without `job_id`, only the child pid is signaled.
 
 - [`allocate_output_dir`](@ref): create a unique directory under
   `{script}/.distsshkit/<kind>/` for a later `output_dir=`. Omitted `go` /
-  `ride` default is `{script}/.distsshkit/<kind>/<stem>_<UTC>/`; drive's omitted
-  default is the shared `{script}/.distsshkit/drive`. Allocate a unique dir
-  instead of sharing the drive folder.
+  `ride` / `drive` default is `{script}/.distsshkit/<kind>/<stem>_<UTC>/`.
+  Drive still keeps `--output-dir` / `init_output_dir!` when those set
+  `DISTRIBUTED_OUTPUT_DIR`.
 - [`execute_kwargs_from_parsed`](@ref): map `parse_go_args` /
   `parse_drive_args` / `parse_ride_args` onto detached `execute!` keywords. Hosts stay in
   [`host_tokens`](@ref); `:workers` is drive `--workers` when set.

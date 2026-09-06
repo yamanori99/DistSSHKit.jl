@@ -144,6 +144,54 @@ using Test
         end
     end
 
+    @testset "_ensure_drive_output_env!" begin
+        _with_tempdir() do project
+            script = joinpath(project, "job.jl")
+            write(script, "")
+            withenv("DISTRIBUTED_OUTPUT_DIR" => nothing) do
+                d = DistSSHKit._ensure_drive_output_env!(script; project=project)
+                @test isdir(d)
+                @test startswith(basename(d), "job_")
+                @test occursin(joinpath(".distsshkit", "drive"), d)
+                @test ENV["DISTRIBUTED_OUTPUT_DIR"] == d
+                @test DistSSHKit._ensure_drive_output_env!(script; project=project) == d
+            end
+            explicit = joinpath(project, "out")
+            withenv("DISTRIBUTED_OUTPUT_DIR" => explicit) do
+                got = DistSSHKit._ensure_drive_output_env!(script; project=project)
+                @test got == DistSSHKit.canonical_local_path(explicit)
+            end
+        end
+    end
+
+    @testset "_execute_detached_dirs drive unique" begin
+        _with_tempdir() do project
+            script = joinpath(project, "job.jl")
+            write(script, "")
+            a, la = DistSSHKit._execute_detached_dirs(
+                :drive, project, script, nothing, nothing, true,
+            )
+            b, lb = DistSSHKit._execute_detached_dirs(
+                :drive, project, script, nothing, nothing, true,
+            )
+            @test a != b
+            @test la == a
+            @test lb == b
+            @test startswith(basename(a), "job_")
+            _, nolog = DistSSHKit._execute_detached_dirs(
+                :drive, project, script, nothing, nothing, false,
+            )
+            @test nolog === nothing
+            custom = joinpath(project, "fixed")
+            mkpath(custom)
+            c, lc = DistSSHKit._execute_detached_dirs(
+                :drive, project, script, custom, nothing, true,
+            )
+            @test c == DistSSHKit.canonical_local_path(custom)
+            @test lc == c
+        end
+    end
+
     @testset "execute_detached_accepts" begin
         @test DistSSHKit.execute_detached_accepts(:quiet; kind=:go)
         @test DistSSHKit.execute_detached_accepts(:quiet; kind=:drive)
