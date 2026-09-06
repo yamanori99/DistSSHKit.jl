@@ -754,6 +754,35 @@ using Test
         end
     end
 
+    @testset "terminate! detached ride" begin
+        _with_tempdir() do proj
+            write(joinpath(proj, "Project.toml"), "name = \"TerminateRide\"\n")
+            script = joinpath(proj, "job.jl")
+            write(script, """
+                sleep(60)
+                """)
+            mktemp() do _, out_io
+                mktemp() do _, err_io
+                    kp = DistSSHKit.execute!(
+                        :ride,
+                        script,
+                        ["parent:1"];
+                        detached=true,
+                        project=proj,
+                        verbosity=:progress,
+                        job_id="t-ride",
+                        stdout=out_io,
+                        stderr=err_io,
+                    )
+                    result = DistSSHKit.terminate!(kp; grace=2)
+                    @test result isa DistSSHKit.KitRunResult
+                    @test !process_running(kp.process)
+                    @test result.kind === :ride
+                end
+            end
+        end
+    end
+
     @testset "terminate_run! missing pid" begin
         _with_tempdir() do d
             r = DistSSHKit.terminate_run!(d; grace=0)

@@ -1008,10 +1008,11 @@ end
     drive_host_status(output_dir) -> Vector{DriveHostStatus}
     drive_host_status(kp::KitProcess) -> Vector{DriveHostStatus}
 
-Live per-host membership for a running (or recently collecting) `drive`.
-Reads `kit.hosts.status`. Empty when the file is missing (too early, a `go`
-run, or a hard death before join). This is not [`DriveResult.hosts`](@ref)
-(post-run collect); that vector is stored in `kit.result` as `hosts`.
+Live per-host membership for a running (or recently collecting) `drive`
+or `ride`. Reads `kit.hosts.status`. Empty when the file is missing (too
+early, a `go` run, or a hard death before join). This is not
+[`DriveResult.hosts`](@ref) (post-run collect); that vector is stored in
+`kit.result` as `hosts`.
 """
 function drive_host_status(output_dir::AbstractString)::Vector{DriveHostStatus}
     path = joinpath(canonical_local_path(output_dir), "kit.hosts.status")

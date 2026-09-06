@@ -77,6 +77,8 @@ using Test
         @test read(out, String) == "2,3,4,5"
         @test r.output_dir !== nothing
         @test !isfile(joinpath(something(r.output_dir, ""), "kit.hosts"))
+        st = DistSSHKit.drive_host_status(something(r.output_dir, ""))
+        @test any(row -> row.host == DistSSHKit.PARENT_HOST_NAME, st)
 
         _with_tempdir() do hosts_tmp
             DistSSHKit._write_kit_hosts_file(["alice@h1", "bob@h2"], hosts_tmp, nothing)
