@@ -173,20 +173,22 @@ using Test
         _with_tempdir() do project
             script = joinpath(project, "job.jl")
             write(script, "")
-            a, la = DistSSHKit._execute_detached_dirs(
-                :drive, project, script, nothing, nothing, true,
-            )
-            b, lb = DistSSHKit._execute_detached_dirs(
-                :drive, project, script, nothing, nothing, true,
-            )
-            @test a != b
-            @test la == a
-            @test lb == b
-            @test startswith(basename(a), "job_")
-            _, nolog = DistSSHKit._execute_detached_dirs(
-                :drive, project, script, nothing, nothing, false,
-            )
-            @test nolog === nothing
+            withenv("DISTRIBUTED_OUTPUT_DIR" => nothing) do
+                a, la = DistSSHKit._execute_detached_dirs(
+                    :drive, project, script, nothing, nothing, true,
+                )
+                b, lb = DistSSHKit._execute_detached_dirs(
+                    :drive, project, script, nothing, nothing, true,
+                )
+                @test a != b
+                @test la == a
+                @test lb == b
+                @test startswith(basename(a), "job_")
+                _, nolog = DistSSHKit._execute_detached_dirs(
+                    :drive, project, script, nothing, nothing, false,
+                )
+                @test nolog === nothing
+            end
             custom = joinpath(project, "fixed")
             mkpath(custom)
             c, lc = DistSSHKit._execute_detached_dirs(
