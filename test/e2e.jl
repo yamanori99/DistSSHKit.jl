@@ -885,11 +885,14 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
                 sleep(0.5)
             end
             listed = hosts_ready ? DistSSHKit._read_kit_hosts(String(out)) : String[]
+            err_snip = let p = joinpath(String(out), "kit.out")
+                isfile(p) ? strip(read(p, String))[max(1, end - 800):end] : ""
+            end
             _assert_ssh_e2e_api_ok(
                 suite,
                 "ride_kit_hosts",
                 hosts_ready && host in listed,
-                "ready=$(hosts_ready) listed=$(listed) path=$(hosts_path)",
+                "ready=$(hosts_ready) listed=$(listed) path=$(hosts_path) out=$(repr(err_snip))",
             )
             @test hosts_ready
             @test host in listed
