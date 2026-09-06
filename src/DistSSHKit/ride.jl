@@ -602,38 +602,41 @@ function _ride_run!(
         )
         return outcome
     finally
-        if progress_started
-            footer = if progress_ok
-                display_path(batch_dir, canonical_local_path(project))
-            else
-                nothing
+        try
+            if progress_started
+                footer = if progress_ok
+                    display_path(batch_dir, canonical_local_path(project))
+                else
+                    nothing
+                end
+                kit_progress_done!(; ok=progress_ok, footer=footer)
+                _print_job_stdout_after_progress!()
+                progress_ok && _ride_print_spi_progress!(_RIDE_SPI_OK[])
+                _maybe_print_kit_progress_phases(batch_dir)
+                _set_kit_progress_sidecar!(nothing)
             end
-            kit_progress_done!(; ok=progress_ok, footer=footer)
-            _print_job_stdout_after_progress!()
-            progress_ok && _ride_print_spi_progress!(_RIDE_SPI_OK[])
-            _maybe_print_kit_progress_phases(batch_dir)
-            _set_kit_progress_sidecar!(nothing)
+            isdir(batch_dir) && _write_kit_result_file(kit_run_result(outcome))
+            _remove_kit_pid_file(getpid(), batch_dir, nothing)
+            release_lock()
+            empty!(ARGS)
+            append!(ARGS, old_args)
+            if old_out === nothing
+                delete!(ENV, "DISTRIBUTED_OUTPUT_DIR")
+            else
+                ENV["DISTRIBUTED_OUTPUT_DIR"] = old_out
+            end
+            if old_remote === nothing
+                delete!(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT")
+            else
+                ENV["DISTRIBUTED_REMOTE_PROJECT_ROOT"] = old_remote
+            end
+            _stop_drive_host_status_monitor!()
+            !isempty(added) && rmprocs(added; waitfor=30)
+            _clear_drive_host_worker_ids!()
+            _RIDE_DEPTH[] = 0
+        finally
+            _ride_restore_project!(old_proj)
         end
-        isdir(batch_dir) && _write_kit_result_file(kit_run_result(outcome))
-        _remove_kit_pid_file(getpid(), batch_dir, nothing)
-        release_lock()
-        empty!(ARGS)
-        append!(ARGS, old_args)
-        if old_out === nothing
-            delete!(ENV, "DISTRIBUTED_OUTPUT_DIR")
-        else
-            ENV["DISTRIBUTED_OUTPUT_DIR"] = old_out
-        end
-        if old_remote === nothing
-            delete!(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT")
-        else
-            ENV["DISTRIBUTED_REMOTE_PROJECT_ROOT"] = old_remote
-        end
-        _stop_drive_host_status_monitor!()
-        !isempty(added) && rmprocs(added; waitfor=30)
-        _clear_drive_host_worker_ids!()
-        _RIDE_DEPTH[] = 0
-        _ride_restore_project!(old_proj)
     end
 end
 
