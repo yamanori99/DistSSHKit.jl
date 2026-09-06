@@ -68,6 +68,13 @@ function run_drive_parsed!(
 
     script_dir = dirname(script_path)
     proj_dir = resolve_pkg_project_dir(script_dir)
+    shown = DistSSHKit.display_path(script_path, _PATH_ANCHOR)
+    hint = DistSSHKit._drive_plain_script_hint(script_path, proj_dir; shown=shown)
+    if hint !== nothing
+        print_warn("WARNING: "; bold=true)
+        println_fatal(hint)
+        println_fatal()
+    end
 
     activate_drive_project!(proj_dir)
 
@@ -288,12 +295,13 @@ function _run_drive_parsed_locked!(
             end
         end
         kit_progress_step!("wait")
-        wait_for_worker_connections!()
+        wait_for_worker_connections!(; ssh=!isempty(hosts))
 
         kit_progress_step!("init")
         init_drive_workers!(proj_dir, explicit_package, _PATH_ANCHOR)
         DistSSHKit._start_drive_host_status_monitor!(kit_out, kit_log)
-        sync_driver_to_workers!(script_path)
+        sync_script = get(parsed, :sync_script, false)
+        sync_driver_to_workers!(script_path; sync_script=sync_script)
         run_prepare_workers!()
 
         empty!(ARGS)

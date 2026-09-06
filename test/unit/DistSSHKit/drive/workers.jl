@@ -232,4 +232,33 @@ end
         @test istaskdone(hb.prober)
         @test istaskdone(hb.watchdog)
     end
+
+    @testset "publish defs skip top-level work on workers" begin
+        _with_tempdir() do tmp
+            p = joinpath(tmp, "plain.jl")
+            write(p, """
+                function work(x)
+                    return x * x
+                end
+                xs = 1:8
+                println("SHOULD_NOT_PUBLISH")
+                """)
+            src = DistSSHKit._drive_publish_source(p)
+            @test occursin("function work", src)
+            @test !occursin("SHOULD_NOT_PUBLISH", src)
+            addprocs(1; topology=:master_worker)
+            w = workers()[end]
+            try
+                remotecall_fetch(w, src) do code
+                    include_string(Main, code)
+                    return nothing
+                end
+                @test remotecall_fetch(w) do
+                    isdefined(Main, :work) && Base.invokelatest(getfield(Main, :work), 3) == 9
+                end
+            finally
+                w in workers() && rmprocs(w; waitfor=2.0)
+            end
+        end
+    end
 end

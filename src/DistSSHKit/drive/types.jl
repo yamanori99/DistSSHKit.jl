@@ -248,7 +248,7 @@ HostRunResult(host::AbstractString, ok::Bool, error=nothing) =
 """
 Shared run outcome (`ok`, `kind`, dirs, `failed_step`, `exit_code`, `hosts`).
 
-`kind` is `:go`, `:drive`, or `:pipeline`. Convert with [`kit_run_result`](@ref).
+`kind` is `:go`, `:drive`, `:ride`, or `:pipeline`. Convert with [`kit_run_result`](@ref).
 `hosts` is post-run collect ([`HostRunResult`](@ref)); empty for `go`, hung
 `wait`, or a `drive` that never collected.
 """
@@ -508,7 +508,7 @@ function PipelineResult(
     return PipelineResult(ok, sync, plan, drive, collect, driver, failed_step, od, ld, code)
 end
 
-"""Build [`KitRunResult`](@ref) from a kit outcome (`:go` / `:drive` / `:pipeline`)."""
+"""Build [`KitRunResult`](@ref) from a kit outcome (`:go` / `:ride` / `:drive` / `:pipeline`)."""
 function kit_run_result(result::DriveResult)::KitRunResult
     return KitRunResult(
         result.ok,
@@ -561,7 +561,7 @@ end
     report_run_errors(result; io=stderr)
 
 Print a short summary when a kit run failed. Accepts [`KitRunResult`](@ref)
-or a typed outcome (`GoResult` / `DriveResult` / `PipelineResult`).
+or a typed outcome (`GoResult` / `RideResult` / `DriveResult` / `PipelineResult`).
 Returns `result.ok`.
 """
 function report_run_errors(result::KitRunResult; io::IO=stderr)::Bool

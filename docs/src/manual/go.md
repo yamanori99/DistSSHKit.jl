@@ -13,6 +13,12 @@ Also: [First Steps · Demo](@ref Tutorial-Demo), [drive](@ref Manual-drive),
 `go --help`. Flag vocabulary and a short **go vs drive** table:
 [User Guide](@ref Manual).
 
+`parent:N` / `child:NAME:N` stay explicit counts. Omitting `:N` on a listed
+host (not `--repeat`) fills the count via [`size!`](@ref), like drive.
+`go SCRIPT.jl` with no host tokens is still one parent slot.
+A bare `julia -m DistSSHKit SCRIPT.jl` is not `go`; name the command.
+`--repeat N` still spreads N runs; omitted `:N` is a cap, not size!.
+
 **vs drive:** each `child:NAME:N` is N full script runs (not Distributed
 workers). There is no `--require-git`; for commit parity use
 [`drive --require-git`](@ref Manual-drive).
@@ -32,6 +38,10 @@ if needed). Later git updates (`setup --sync` / `go --sync`) need a
 - `--julia PATH`: Julia on remotes (default: auto / `JULIA_DISTRIBUTED_EXE`)
 - `--output-dir PATH`: **batch root**; slots write under `PATH/{slot}/`
   (not `drive --output-dir`)
+- `--gb-per-worker N`: when a listed host omits `:N`, assume N GB per slot
+  ([`size!`](@ref); same as [`plan`](@ref) / [`size`](@ref Manual-size))
+- `--probe PATH`: size! warm-up script (peak RSS)
+- `--mem-headroom N` / `--parent-gb N`: same RAM budget as `size`
 - `--hosts CSV`: comma-separated slot specs (same form as CLI tokens /
   `DISTSSHKIT_HOSTS`)
 - `-q` / `--quiet`: hide terminal detail; `go_*.log` and per-slot logs

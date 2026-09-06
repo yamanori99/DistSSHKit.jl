@@ -6,7 +6,7 @@ Estimate worker counts from host memory and CPU.
 julia --project=. -m DistSSHKit size [options] [parent] [child:NAME...]
 ```
 
-Also: [drive](@ref Manual-drive), `size --help`.
+Also: [drive](@ref Manual-drive), [pool](@ref Manual-pool), `size --help`.
 Flag vocabulary: [User Guide](@ref Manual).
 
 ## Flags

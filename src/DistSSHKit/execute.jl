@@ -1,7 +1,7 @@
-# execute! — one seam over `go!` / `drive!` for callers that pick the kind at runtime
+# execute! — one seam over `go!` / `ride!` / `drive!` for callers that pick the kind at runtime
 # (see https://github.com/yamanori99/DistSSHKit.jl/issues/129).
-# Thin wrapper only: `go!` / `drive!` / `src/cli/*` are untouched.
-# `detached=true` spawns `julia -m DistSSHKit go|drive` and returns [`KitProcess`](@ref).
+# Thin wrapper only: `go!` / `ride!` / `drive!` / `src/cli/*` are untouched.
+# `detached=true` spawns `julia -m DistSSHKit go|ride|drive` and returns [`KitProcess`](@ref).
 
 const _EXECUTE_DETACHED_KW = Set{Symbol}((
     :quiet,
@@ -21,6 +21,10 @@ const _EXECUTE_DETACHED_KW = Set{Symbol}((
     :stdout,
     :stderr,
     :job_id,
+    :sync_script,
+    :spi_check,
+    :gb_per_worker,
+    :probe,
 ))
 const _EXECUTE_DETACHED_DRIVE_ONLY = (
     :log_dir,
@@ -31,6 +35,7 @@ const _EXECUTE_DETACHED_DRIVE_ONLY = (
     :mem_headroom,
     :parent_gb,
     :workers,
+    :sync_script,
 )
 const _EXECUTE_DETACHED_ENV_SKIP = Set((
     "JULIA_LOAD_PATH",
@@ -47,6 +52,15 @@ const _EXECUTE_DETACHED_NAMED = (
     :detached,
 )
 
+const _KIT_EXECUTE_KINDS = (:go, :drive, :ride)
+
+function _require_execute_kind!(kind::Symbol)
+    kind in _KIT_EXECUTE_KINDS || throw(ArgumentError(
+        "execute! kind must be :go, :drive, or :ride, got $(repr(kind))",
+    ))
+    return nothing
+end
+
 """
     execute_detached_accepts(kw; kind) -> Bool
 
@@ -55,20 +69,22 @@ Uses the same tables as the detached throw path, plus the named parameters
 (`output_dir`, `args`, `project`, `sync`, `julia`, `detached`).
 """
 function execute_detached_accepts(kw::Symbol; kind::Symbol)::Bool
-    kind in (:go, :drive) || throw(ArgumentError(
-        "execute! kind must be :go or :drive, got $(repr(kind))",
-    ))
+    _require_execute_kind!(kind)
     kw in _EXECUTE_DETACHED_NAMED && return true
     kw in _EXECUTE_DETACHED_KW || return false
-    kind === :go && return !(kw in _EXECUTE_DETACHED_DRIVE_ONLY)
-    return kw !== :repeat
+    kind === :go && return !(kw in _EXECUTE_DETACHED_DRIVE_ONLY) && kw !== :spi_check
+    kind === :ride && return !(kw in (
+        :repeat, :sync_script, :package, :log_dir, :enable_log, :skip_hash_check,
+        :workers, :require_all_hosts,
+    ))
+    return !(kw in (:repeat, :spi_check, :gb_per_worker, :probe))
 end
 
 """
     execute_kwargs_from_parsed(parsed; kind) -> Dict{Symbol,Any}
 
 Keywords for [`execute!`](@ref) (`detached=true`) from `parse_go_args` /
-`parse_drive_args`. Keys are a subset of [`execute_detached_accepts`](@ref).
+`parse_drive_args` / `parse_ride_args`. Keys are a subset of [`execute_detached_accepts`](@ref).
 
 Does not include `hosts_file` / `--hosts`: those tokens belong in
 [`host_tokens`](@ref) (`kind` required). Does not set `project`, `detached`,
@@ -76,9 +92,7 @@ Does not include `hosts_file` / `--hosts`: those tokens belong in
 when the parser set `default_workers`.
 """
 function execute_kwargs_from_parsed(parsed; kind::Symbol)::Dict{Symbol,Any}
-    kind in (:go, :drive) || throw(ArgumentError(
-        "execute! kind must be :go or :drive, got $(repr(kind))",
-    ))
+    _require_execute_kind!(kind)
     session = parsed.cli_session
     args = String[String(a) for a in parsed.script_args]
     kw = Dict{Symbol,Any}(
@@ -91,6 +105,18 @@ function execute_kwargs_from_parsed(parsed; kind::Symbol)::Dict{Symbol,Any}
     if kind === :go
         kw[:sync] = parsed.sync
         parsed.repeat === nothing || (kw[:repeat] = parsed.repeat)
+        kw[:gb_per_worker] = parsed.gb_per_worker
+        kw[:probe] = parsed.probe
+        kw[:mem_headroom] = parsed.mem_headroom
+        kw[:parent_gb] = parsed.parent_gb
+        return kw
+    end
+    if kind === :ride
+        kw[:spi_check] = parsed.spi_check
+        kw[:gb_per_worker] = parsed.gb_per_worker
+        kw[:probe] = parsed.probe
+        kw[:mem_headroom] = parsed.mem_headroom
+        kw[:parent_gb] = parsed.parent_gb
         return kw
     end
     kw[:sync] = parsed.sync_mode
@@ -101,6 +127,7 @@ function execute_kwargs_from_parsed(parsed; kind::Symbol)::Dict{Symbol,Any}
     kw[:skip_hash_check] = parsed.skip_hash_check
     kw[:mem_headroom] = parsed.mem_headroom
     kw[:parent_gb] = parsed.parent_gb
+    get(parsed, :sync_script, false) && (kw[:sync_script] = true)
     dw = parsed.default_workers
     dw === nothing || (kw[:workers] = Int(dw))
     return kw
@@ -109,7 +136,7 @@ end
 """
 Handle to a detached [`execute!`](@ref) child (`detached=true`).
 
-`process` is the `julia -m DistSSHKit go|drive` subprocess.
+`process` is the `julia -m DistSSHKit go|drive|ride` subprocess.
 `output_dir` / `log_dir` are resolved in the parent before spawn so they match
 the child (`log_dir` is `nothing` for `:go`, matching [`kit_run_result`](@ref)
 on [`GoResult`](@ref)). Convert with `wait`.
@@ -131,7 +158,7 @@ function KitProcess(
     stdout_owned::Union{Nothing,IO}=nothing,
     stderr_owned::Union{Nothing,IO}=nothing,
 )
-    kind in (:go, :drive) || throw(ArgumentError("KitProcess kind must be :go or :drive, got $(repr(kind))"))
+    _require_execute_kind!(kind)
     return KitProcess(
         process, kind, _optional_path(output_dir), _optional_path(log_dir),
         stdout_owned, stderr_owned,
@@ -160,7 +187,8 @@ left running: `failed_step` is `"hung"`, `exit_code` is `124`, and owned
 stdio stays open. Call [`terminate!`](@ref) if the hang is fatal.
 
 If the child wrote `kit.result`, that file is the source of truth (including
-`failed_step` from `go!`). Otherwise `failed_step` is `"go"` / `"drive"` on a
+`failed_step` from `go!` / `ride!`). Otherwise `failed_step` is
+`"go"` / `"ride"` / `"drive"` on a
 non-zero exit — the parent cannot recover a more specific in-process step name.
 
 Best-effort: remove `kit.pid` if it still names this child (pid captured
@@ -211,28 +239,28 @@ end
 """
     execute!(kind, script, tokens=String[]; output_dir=nothing, args=String[], project=pwd(), sync=nothing, julia=nothing, detached=false, kwargs...) -> KitRunResult or KitProcess
 
-One seam over [`go!`](@ref) / [`drive!`](@ref) for callers that pick the kind
-at runtime (`kind ∈ (:go, :drive)`), returning the shared [`KitRunResult`](@ref)
-instead of `GoResult` / `DriveResult`.
+One seam over [`go!`](@ref) / [`ride!`](@ref) / [`drive!`](@ref) for callers
+that pick the kind at runtime (`kind ∈ (:go, :ride, :drive)`), returning the
+shared [`KitRunResult`](@ref) instead of `GoResult` / `RideResult` / `DriveResult`.
 
 ```julia
 execute!(:go, "job.jl", ["parent:2"]; args=["8"])
+execute!(:ride, "job.jl", ["parent:2"])
 execute!(:drive, "job.jl", ["parent:2"]; args=["8"])
 wait(execute!(:go, "job.jl", ["parent:1"]; detached=true, args=["8"]))
 ```
 
 `output_dir`, `args`, `project`, `sync`, `julia` are the keywords [`go!`](@ref)
-and [`drive!`](@ref) already share. With `detached=false` (default), any other
-keyword (`remote`, `hosts_file`, `quiet`, `verbosity`, `yes`, `collect_spec`,
-`path_anchor`, `skip_hash_check`, `require_all_hosts`, `plan`, …) is forwarded
-verbatim to the chosen function.
+and [`drive!`](@ref) already share (`ride!` ignores `sync`). With `detached=false`
+(default), any other keyword is forwarded to the chosen function.
 
-`detached=true` spawns `julia -m DistSSHKit go|drive` and returns a
+`detached=true` spawns `julia -m DistSSHKit go|ride|drive` and returns a
 [`KitProcess`](@ref). Keywords are then an allow-list (unknown names throw):
 `output_dir`, `args`, `project`, `sync`, `julia`, `quiet`, `verbosity`, `yes`,
 `remote`, `hosts_file`, `job_id`, and drive-only `log_dir`, `enable_log`,
 `package`, `require_all_hosts`, `skip_hash_check`, `mem_headroom`, `parent_gb`,
-`workers`. Go-only `repeat`. `yes` must be `true` (the
+`workers`, `sync_script`. Go-only `repeat`. Ride: `spi_check`, `gb_per_worker`,
+`probe`, `mem_headroom`, `parent_gb`. `yes` must be `true` (the
 default): an unattended child cannot answer a prompt. `remote` that starts
 with `~` is stored in `DISTRIBUTED_REMOTE_PROJECT_ROOT` as a layout path
 (not `expanduser` on the kit parent). Child stdio defaults to
@@ -258,7 +286,7 @@ function execute!(
     detached::Bool=false,
     kwargs...,
 )
-    kind in (:go, :drive) || throw(ArgumentError("execute! kind must be :go or :drive, got $(repr(kind))"))
+    _require_execute_kind!(kind)
     if detached
         return _execute_detached!(
             kind,
@@ -280,6 +308,19 @@ function execute!(
             args=args,
             project=project,
             sync=sync,
+            julia=julia,
+            kwargs...,
+        )
+    elseif kind === :ride
+        (sync === nothing || sync === false) || throw(ArgumentError(
+            "execute!(:ride, ...) does not accept sync=$(repr(sync))",
+        ))
+        ride!(
+            script,
+            tokens;
+            output_dir=output_dir,
+            args=args,
+            project=project,
             julia=julia,
             kwargs...,
         )
@@ -320,6 +361,24 @@ function _execute_detached!(
                 "execute!(:go, ...; detached=true) does not accept keyword $(repr(k))",
             ))
         end
+        haskey(kwargs, :spi_check) && throw(ArgumentError(
+            "execute!(:go, ...; detached=true) does not accept keyword :spi_check",
+        ))
+    elseif kind === :ride
+        haskey(kwargs, :repeat) && throw(ArgumentError(
+            "execute!(:ride, ...; detached=true) does not accept keyword :repeat",
+        ))
+        for k in (
+            :sync_script, :package, :log_dir, :enable_log, :skip_hash_check,
+            :workers, :require_all_hosts,
+        )
+            haskey(kwargs, k) && throw(ArgumentError(
+                "execute!(:ride, ...; detached=true) does not accept keyword $(repr(k))",
+            ))
+        end
+        (sync === nothing || sync === false) || throw(ArgumentError(
+            "execute!(:ride, ...; detached=true) does not accept sync=$(repr(sync))",
+        ))
     elseif haskey(kwargs, :repeat)
         throw(ArgumentError(
             "execute!(:drive, ...; detached=true) does not accept keyword :repeat",
@@ -349,6 +408,16 @@ function _execute_detached!(
     parent_gb = get(kwargs, :parent_gb, nothing)
     workers = get(kwargs, :workers, nothing)
     repeat = get(kwargs, :repeat, nothing)
+    sync_script = get(kwargs, :sync_script, false)
+    spi_check = get(kwargs, :spi_check, true)
+    gb_per_worker = get(kwargs, :gb_per_worker, nothing)
+    probe = get(kwargs, :probe, nothing)
+    sync_script isa Bool || throw(ArgumentError(
+        "sync_script must be a Bool, got $(repr(sync_script))",
+    ))
+    spi_check isa Bool || throw(ArgumentError(
+        "spi_check must be a Bool, got $(repr(spi_check))",
+    ))
     if workers !== nothing
         (workers isa Integer && !(workers isa Bool)) || throw(ArgumentError(
             "workers must be an integer, got $(repr(workers))",
@@ -398,6 +467,10 @@ function _execute_detached!(
         parent_gb=parent_gb,
         workers=workers,
         repeat=repeat,
+        sync_script=sync_script,
+        spi_check=spi_check,
+        gb_per_worker=gb_per_worker,
+        probe=probe,
     )
     extra = Dict{String,String}("DISTRIBUTED_PROJECT_ROOT" => proj)
     if remote !== nothing && !isempty(strip(String(remote)))
@@ -564,6 +637,14 @@ end
 function _drive_parent_worker_count()::Int
     ids = get(DRIVE_HOST_WORKER_IDS, PARENT_HOST_NAME, Int[])
     return length(ids)
+end
+
+"""SSH workers sleep `DISTRIBUTED_INIT_DELAY_SEC` (default 5). Local-only is 0."""
+function _drive_init_delay_sec(; ssh::Bool)::Float64
+    ssh || return 0.0
+    d = tryparse(Float64, get(ENV, "DISTRIBUTED_INIT_DELAY_SEC", "5"))
+    d === nothing && return 0.0
+    return d > 0 ? d : 0.0
 end
 
 """Hosts whose registered workers are no longer alive (`:left`)."""
@@ -869,7 +950,7 @@ end
 """
     kit_result_from_dir(output_dir) -> Union{Nothing,KitRunResult}
 
-Read `output_dir/kit.result` written by a finished `go` / `drive` child.
+Read `output_dir/kit.result` written by a finished `go` / `ride` / `drive` child.
 `nothing` when the file is missing or unreadable (still running, or a hard death).
 """
 function kit_result_from_dir(output_dir::AbstractString)::Union{Nothing,KitRunResult}
@@ -882,7 +963,7 @@ function kit_result_from_dir(output_dir::AbstractString)::Union{Nothing,KitRunRe
         kind_s = raw["kind"]
         kind_s isa AbstractString || return nothing
         ks = String(kind_s)
-        (ks == "go" || ks == "drive" || ks == "pipeline") || return nothing
+        (ks == "go" || ks == "ride" || ks == "drive" || ks == "pipeline") || return nothing
         kind = Symbol(ks)
         code = raw["exit_code"]
         code isa Integer || return nothing
@@ -967,7 +1048,7 @@ end
     allocate_output_dir(kind, script; project=pwd(), job_id=nothing) -> String
 
 Create a unique output directory for a later detached [`execute!`](@ref)
-and return its path. `kind` is `:go` or `:drive` (the same values as
+and return its path. `kind` is `:go`, `:drive`, or `:ride` (the same values as
 `execute!`). The directory is created; pass it as `output_dir=`.
 
 Layout is `{script dir}/.distsshkit/<kind>/<script-stem>_<UTC-stamp>/`. When
@@ -976,8 +1057,8 @@ Layout is `{script dir}/.distsshkit/<kind>/<script-stem>_<UTC-stamp>/`. When
 suffix is added so two allocations in the same second do not share a
 directory.
 
-This matches omitted in-process defaults: go uses
-`{script}/.distsshkit/go/<stem>_<UTC>/`; drive uses the shared
+This matches omitted in-process defaults: go and ride use
+`{script}/.distsshkit/<kind>/<stem>_<UTC>/`; drive uses the shared
 `{script}/.distsshkit/drive` unless `output_dir` / `init_output_dir!` set
 `DISTRIBUTED_OUTPUT_DIR`. Queue should allocate instead of reusing drive's
 shared folder.
@@ -988,9 +1069,7 @@ function allocate_output_dir(
     project::AbstractString=pwd(),
     job_id::Union{Nothing,AbstractString}=nothing,
 )::String
-    kind in (:go, :drive) || throw(
-        ArgumentError("allocate_output_dir: kind must be :go or :drive, got $(repr(kind))"),
-    )
+    _require_execute_kind!(kind)
     proj = canonical_local_path(project)
     isdir(proj) || throw(ArgumentError("allocate_output_dir: project is not a directory: $proj"))
     stem = splitext(basename(String(script)))[1]
@@ -1024,10 +1103,12 @@ function _execute_detached_dirs(
         canonical_local_path(output_dir)
     elseif kind === :go
         _go_batch_output_dir(project, script_path)
+    elseif kind === :ride
+        _ride_batch_dir(script_path, nothing)
     else
         resolve_drive_output_dir(script_dir)
     end
-    resolved_log = if kind === :go || enable_log === false
+    resolved_log = if kind === :go || kind === :ride || enable_log === false
         nothing
     elseif log_dir !== nothing
         canonical_local_path(String(log_dir))
@@ -1059,6 +1140,10 @@ function _execute_detached_argv(
     parent_gb=nothing,
     workers=nothing,
     repeat=nothing,
+    sync_script::Bool=false,
+    spi_check::Bool=true,
+    gb_per_worker=nothing,
+    probe=nothing,
 )::Vector{String}
     argv = String[String(kind)]
     push!(argv, "-y")
@@ -1114,6 +1199,21 @@ function _execute_detached_argv(
         end
         if workers !== nothing
             push!(argv, "--workers", string(Int(workers)))
+        end
+        sync_script && push!(argv, "--sync-script")
+    elseif kind === :ride
+        spi_check || push!(argv, "--no-spi-check")
+        if mem_headroom !== nothing
+            push!(argv, "--mem-headroom", string(Float64(mem_headroom)))
+        end
+        if parent_gb !== nothing
+            push!(argv, "--parent-gb", string(Float64(parent_gb)))
+        end
+        if gb_per_worker !== nothing
+            push!(argv, "--gb-per-worker", string(Float64(gb_per_worker)))
+        end
+        if probe !== nothing && !isempty(strip(String(probe)))
+            push!(argv, "--probe", String(probe))
         end
     elseif repeat !== nothing
         push!(argv, "--repeat", string(Int(repeat)))
@@ -1186,9 +1286,7 @@ function terminate_run!(
     kind::Symbol=:go,
 )::KitRunResult
     grace >= 0 || throw(ArgumentError("grace must be ≥ 0, got $grace"))
-    kind in (:go, :drive) || throw(ArgumentError(
-        "execute! kind must be :go or :drive, got $(repr(kind))",
-    ))
+    _require_execute_kind!(kind)
     d = canonical_local_path(output_dir)
     rec = _read_kit_pid_record(d)
     if rec !== nothing && kit_pid_file_running(d)

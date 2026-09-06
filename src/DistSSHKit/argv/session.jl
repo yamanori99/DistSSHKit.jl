@@ -323,9 +323,9 @@ end
 
 Rebuild CLI host tokens for [`execute!`](@ref).
 
-Go tokens are the parser strings. Drive tuples plus `parent_workers` emit
-`parent:N` then `child:NAME[:N]`; omitted counts stay omitted (no invented `:1`).
-`kind` must be `:go` or `:drive`.
+Go tokens are the parser strings. Ride uses the same shape. Drive tuples plus
+`parent_workers` emit `parent:N` then `child:NAME[:N]`; omitted counts stay
+omitted (no invented `:1`). `kind` must be `:go`, `:drive`, or `:ride`.
 """
 function host_tokens(hosts::AbstractVector{<:AbstractString})::Vector{String}
     return String[String(h) for h in hosts]
@@ -347,7 +347,7 @@ function host_tokens(
 end
 
 function host_tokens(parsed; kind::Symbol)::Vector{String}
-    if kind === :go
+    if kind === :go || kind === :ride
         return host_tokens(parsed.hosts::AbstractVector{<:AbstractString})
     elseif kind === :drive
         return host_tokens(
@@ -355,7 +355,7 @@ function host_tokens(parsed; kind::Symbol)::Vector{String}
             parent_workers=parsed.parent_workers,
         )
     end
-    throw(ArgumentError("host_tokens: kind must be :go or :drive, got $(repr(kind))"))
+    throw(ArgumentError("host_tokens: kind must be :go, :drive, or :ride, got $(repr(kind))"))
 end
 
 """Non-comment host entries from a hosts file (may include `host:N` for drive/go)."""

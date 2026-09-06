@@ -109,7 +109,26 @@ instantiate!
 HostResult
 SyncResult
 size!
+pool!
+ResourcePool
+HostInventory
+print_pool
+worker_plan_from_pool
 WorkerPlan
+plan
+KitPlan
+PlanFinding
+print_plan
+ride!
+RideResult
+print_ride
+ns_path
+file_sha256
+cache_file
+cache_path
+cache_relpath
+push_cache!
+cache_remote_dir
 drive!
 DriveResult
 HostRunResult
@@ -159,14 +178,15 @@ one result type, instead of branching on `kind` yourself.
 
 ```julia
 execute!(:go, "job.jl", ["parent:2"]; args=["8"])
+execute!(:ride, "job.jl", ["parent:2"])
 execute!(:drive, "job.jl", ["parent:2"]; args=["8"])
 wait(execute!(:go, "job.jl", ["parent:1"]; detached=true, args=["8"]))
 ```
 
 `detached=true`:
 
-- Spawns a child `julia -m DistSSHKit go|drive` (not in-process `go!` /
-  `drive!`)
+- Spawns a child `julia -m DistSSHKit go|ride|drive` (not in-process `go!` /
+  `ride!` / `drive!`)
 - Keywords are an allow-list; `yes` must stay `true`
 - Child stdio defaults to `kit.out` / `kit.err` in `output_dir`. Pass
   `stdout` / `stderr` to override (`stdout=stdout` inherits the parent).
@@ -175,7 +195,7 @@ wait(execute!(:go, "job.jl", ["parent:1"]; detached=true, args=["8"]))
   spawn
 - `wait` converts it to [`KitRunResult`](@ref). If the child wrote `kit.result`,
   that file wins (including `go!` `failed_step`). Otherwise a non-zero child
-  exit yields `failed_step` `"go"` / `"drive"` only. `wait(kp; timeout=N)`
+  exit yields `failed_step` `"go"` / `"ride"` / `"drive"` only. `wait(kp; timeout=N)`
   returns `failed_step="hung"` / `exit_code=124` without killing the child
 
 ```@docs
@@ -210,7 +230,7 @@ Each line is space-separated `key=value` fields after the event name.
   (`pending` / `running` / `ok` / `fail`), `done`, `total`, `t`
 - `done`: `kind`, optional `job`, `ok`, `done`, `total`, `t`
 
-`kind` is `go` or `drive`. `job=` is present only when `job_id` /
+`kind` is `go`, `ride`, or `drive`. `job=` is present only when `job_id` /
 `DISTSSHKIT_JOB_ID` is set. Fields are not quoted; labels are kit-chosen
 (phase names or slot labels) and do not contain spaces.
 
@@ -284,15 +304,16 @@ Without `job_id`, only the child pid is signaled.
 #### Before spawn
 
 - [`allocate_output_dir`](@ref): create a unique directory under
-  `{script}/.distsshkit/<kind>/` for a later `output_dir=`. Omitted `go`
-  default is `{script}/.distsshkit/go/<stem>_<UTC>/`; drive's omitted
+  `{script}/.distsshkit/<kind>/` for a later `output_dir=`. Omitted `go` /
+  `ride` default is `{script}/.distsshkit/<kind>/<stem>_<UTC>/`; drive's omitted
   default is the shared `{script}/.distsshkit/drive`. Allocate a unique dir
   instead of sharing the drive folder.
 - [`execute_kwargs_from_parsed`](@ref): map `parse_go_args` /
-  `parse_drive_args` onto detached `execute!` keywords. Hosts stay in
+  `parse_drive_args` / `parse_ride_args` onto detached `execute!` keywords. Hosts stay in
   [`host_tokens`](@ref); `:workers` is drive `--workers` when set.
-  `:log_dir` / `:mem_headroom` / `:parent_gb` / `:workers` are drive-only;
-  `:plan` is never accepted.
+  `:log_dir` / `:mem_headroom` / `:parent_gb` / `:workers` are drive-only
+  except ride also takes `:mem_headroom` / `:parent_gb` / `:spi_check` /
+  `:gb_per_worker` / `:probe`; `:plan` is never accepted.
 - `job_id` (`execute!` keyword, or `ENV["DISTSSHKIT_JOB_ID"]` for in-process
   `go!` / `drive!`): `job=<id>` on every `progress:` line. Drive workers get a
   comment-only `--eval=#distsshkit-job:<id>`; go slots `-L` a no-op file of

@@ -59,6 +59,10 @@ function go_main()::Cint
         hosts_file=nothing,
         julia=kw[:julia],
         repeat=get(kw, :repeat, nothing),
+        gb_per_worker=get(kw, :gb_per_worker, nothing),
+        probe=get(kw, :probe, nothing),
+        mem_headroom=get(kw, :mem_headroom, DistSSHKit.DEFAULT_MEM_HEADROOM),
+        parent_gb=get(kw, :parent_gb, DistSSHKit.DEFAULT_PARENT_GB),
         hint_surface=:cli,
         original_args=original_args,
     )

@@ -49,6 +49,8 @@
           - "src/DistSSHKit/distributed.*"
           - "src/DistSSHKit/execute.*"
           - "src/DistSSHKit/hosts.*"
+          - "src/DistSSHKit/namespace.*"
+          - "src/DistSSHKit/namespace_sync.*"
           - "src/DistSSHKit/remote.*"
           - "src/DistSSHKit/argv/args.jl"
           - "src/DistSSHKit/argv/session.jl"
@@ -59,6 +61,7 @@
           - "test/unit/DistSSHKit/hosts.jl"
           - "test/unit/DistSSHKit/main_dispatch.jl"
           - "test/unit/DistSSHKit/module.jl"
+          - "test/unit/DistSSHKit/namespace.jl"
           - "test/unit/DistSSHKit/remote.jl"
           - "test/unit/DistSSHKit/setup_api.jl"
           - "test/unit/DistSSHKit/argv/args.jl"
@@ -115,6 +118,48 @@
           - "test/**/go/**"
           - "test/**/go.*"
           - "test/fixtures/go*"
+          - "test/e2e.jl"
+          - "test/support/ssh_e2e.jl"
+
+"area:plan":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/DistSSHKit/plan/**"
+          - "src/DistSSHKit/plan.*"
+          - "src/DistSSHKit/argv/plan*"
+          - "src/cli/plan/**"
+          - "src/cli/plan.*"
+          - "test/**/plan/**"
+          - "test/**/plan.*"
+          - "test/fixtures/plan*"
+          - "test/e2e.jl"
+          - "test/support/ssh_e2e.jl"
+
+"area:pool":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/DistSSHKit/pool/**"
+          - "src/DistSSHKit/pool.*"
+          - "src/DistSSHKit/argv/pool*"
+          - "src/cli/pool/**"
+          - "src/cli/pool.*"
+          - "test/**/pool/**"
+          - "test/**/pool.*"
+          - "test/fixtures/pool*"
+          - "test/e2e.jl"
+          - "test/support/ssh_e2e.jl"
+
+"area:ride":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/DistSSHKit/ride/**"
+          - "src/DistSSHKit/ride.*"
+          - "src/DistSSHKit/argv/ride*"
+          - "src/cli/ride/**"
+          - "src/cli/ride.*"
+          - "test/**/ride/**"
+          - "test/**/ride.*"
+          - "test/fixtures/ride*"
           - "test/e2e.jl"
           - "test/support/ssh_e2e.jl"
 

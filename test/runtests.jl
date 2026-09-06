@@ -22,7 +22,7 @@ DistSSHKit.set_kit_verbosity!(:progress)
 
 # Keep `include(joinpath(@__DIR__, …))` at this top level (JETLS). Only the
 # banner is counted. Update `_RUNTEST_N` when adding a file below.
-const _RUNTEST_N = 43
+const _RUNTEST_N = 50
 const _RUNTEST_I = Ref(0)
 function _runtest_announce(rel::AbstractString)
     _RUNTEST_I[] += 1
@@ -51,6 +51,14 @@ end
         include(joinpath(@__DIR__, "unit", "DistSSHKit", "size.jl"))
         _runtest_announce("unit/DistSSHKit/go.jl")
         include(joinpath(@__DIR__, "unit", "DistSSHKit", "go.jl"))
+        _runtest_announce("unit/DistSSHKit/plan.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "plan.jl"))
+        _runtest_announce("unit/DistSSHKit/ride.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "ride.jl"))
+        _runtest_announce("unit/DistSSHKit/namespace.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "namespace.jl"))
+        _runtest_announce("unit/DistSSHKit/pool.jl")
+        include(joinpath(@__DIR__, "unit", "DistSSHKit", "pool.jl"))
         _runtest_announce("unit/DistSSHKit/module.jl")
         include(joinpath(@__DIR__, "unit", "DistSSHKit", "module.jl"))
         _runtest_announce("unit/DistSSHKit/execute.jl")
@@ -81,6 +89,8 @@ end
         include(joinpath(@__DIR__, "unit", "cli", "drive", "args.jl"))
         _runtest_announce("unit/cli/go/args.jl")
         include(joinpath(@__DIR__, "unit", "cli", "go", "args.jl"))
+        _runtest_announce("unit/cli/plan/args.jl")
+        include(joinpath(@__DIR__, "unit", "cli", "plan", "args.jl"))
         _runtest_announce("unit/cli/setup/args.jl")
         include(joinpath(@__DIR__, "unit", "cli", "setup", "args.jl"))
         _runtest_announce("unit/cli/setup/using_guard.jl")
@@ -89,6 +99,10 @@ end
         include(joinpath(@__DIR__, "unit", "cli", "setup", "main.jl"))
         _runtest_announce("unit/cli/size/args.jl")
         include(joinpath(@__DIR__, "unit", "cli", "size", "args.jl"))
+        _runtest_announce("unit/cli/pool/args.jl")
+        include(joinpath(@__DIR__, "unit", "cli", "pool", "args.jl"))
+        _runtest_announce("unit/cli/ride/args.jl")
+        include(joinpath(@__DIR__, "unit", "cli", "ride", "args.jl"))
     end
 
     @testset "integration" verbose=true begin

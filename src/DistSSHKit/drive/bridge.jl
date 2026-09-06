@@ -48,6 +48,7 @@ function drive_parsed_from_session(
     require_all_hosts::Bool=true,
     mem_headroom::Real=DEFAULT_MEM_HEADROOM,
     parent_gb::Real=DEFAULT_PARENT_GB,
+    sync_script::Bool=false,
 )
     parent_workers = 0
     hosts = Tuple{String,Union{Int,Nothing}}[]
@@ -95,6 +96,7 @@ function drive_parsed_from_session(
         collect_hosts=nothing,
         collect_overwrite=nothing,
         sync_mode=sync_mode,
+        sync_script=sync_script,
         require_all_hosts=require_all_hosts,
         help=false,
         show_version=false,

@@ -1,6 +1,6 @@
 """
-DistSSHKit — local + SSH Julia runs (`go` / `drive` / `setup`) and a small API
-(`go!`, `drive!`, `pipeline!`, …).
+DistSSHKit — local + SSH Julia runs (`go` / `plan` / `ride` / `drive` / `setup`) and a small API
+(`go!`, `plan`, `ride!`, `pool!`, `drive!`, `pipeline!`, …).
 
 Package entry: exports, version, `include`s, `main` (`@main` on Julia 1.12+).
 CLI entries live under `src/cli/`; argv parsers under `src/DistSSHKit/argv/`.
@@ -10,14 +10,15 @@ module DistSSHKit
 using Dates
 using Distributed
 using Pkg
+using SHA
 using TOML
 
 # Public surface for application / driver authors.
 # Prefer `julia -m DistSSHKit …` for day-to-day CLI.
-#   go! / drive! / sync! / instantiate! / collect! / size! — steps
+#   go! / drive! / plan / sync! / instantiate! / collect! / size! — steps
 #   setup! — Julian mirror of `setup --delete|--rsync|…`
 #   pipeline! — optional sugar (sync → size! → drive → collect)
-#   execute! — one seam over go!/drive!; detached=true returns KitProcess
+#   execute! — go / ride / drive at runtime (`detached=true` for DistSSHQueue)
 #   worker tokens — parse/classify host:N grammar and build WorkerPlan
 #   go / drive — argv wrappers (not exported; tests / `main`)
 #   queue CLI surface — parsers, SSH resolve, paths, help chrome
@@ -48,6 +49,26 @@ export sync!
 export instantiate!
 export setup!
 export size!
+export pool!
+export ResourcePool
+export HostInventory
+export print_pool
+export worker_plan_from_pool
+export parse_pool_args
+export show_pool_usage
+export plan
+export KitPlan
+export PlanFinding
+export print_plan
+export parse_plan_args
+export show_plan_usage
+export ns_path
+export file_sha256
+export cache_file
+export cache_path
+export cache_relpath
+export push_cache!
+export cache_remote_dir
 export drive!
 export collect!
 export pipeline!
@@ -57,6 +78,11 @@ export report_run_errors
 export go!
 export GoResult
 export report_go_errors
+export ride!
+export RideResult
+export print_ride
+export parse_ride_args
+export show_ride_usage
 export execute!
 export allocate_output_dir
 export execute_detached_accepts
@@ -97,6 +123,7 @@ export SPINNER_FRAMES
 # Implementation
 
 include("DistSSHKit/display.jl")
+include("DistSSHKit/namespace.jl")
 include("DistSSHKit/explain.jl")
 include("DistSSHKit/argv/args.jl")
 include("DistSSHKit/argv/session.jl")
@@ -109,12 +136,19 @@ include("DistSSHKit/size/measure.jl")
 include("DistSSHKit/setup.jl")
 include("DistSSHKit/argv/drive_args.jl")
 include("DistSSHKit/argv/go_args.jl")
+include("DistSSHKit/argv/plan_args.jl")
 include("DistSSHKit/argv/setup_args.jl")
 include("DistSSHKit/argv/size_args.jl")
+include("DistSSHKit/argv/pool_args.jl")
+include("DistSSHKit/argv/ride_args.jl")
 include("DistSSHKit/drive.jl")
+include("DistSSHKit/namespace_sync.jl")
+include("DistSSHKit/pool.jl")
 include("DistSSHKit/drive/runtime/heartbeat.jl")
 include("DistSSHKit/argv/size_report.jl")
+include("DistSSHKit/plan.jl")
 include("DistSSHKit/go.jl")
+include("DistSSHKit/ride.jl")
 include("DistSSHKit/execute.jl")
 
 const _KIT_ROOT = dirname(@__DIR__)
@@ -149,11 +183,14 @@ dist_ssh_kit_version()::VersionNumber = DIST_SSH_KIT_VERSION
 #   julia --project=. -m DistSSHKit drive parent:2 script.jl
 
 const _KIT_CLI_LOADED = Set{String}()
-const _KIT_CLI_SCRIPTS = ("drive.jl", "go.jl", "setup.jl", "size.jl")
+const _KIT_CLI_SCRIPTS = ("drive.jl", "go.jl", "plan.jl", "pool.jl", "ride.jl", "setup.jl", "size.jl")
 
 const _KIT_CLI_MAIN = Dict(
     "drive.jl" => :drive_main,
     "go.jl" => :go_main,
+    "plan.jl" => :plan_main,
+    "pool.jl" => :pool_main,
+    "ride.jl" => :ride_main,
     "setup.jl" => :setup_main,
     "size.jl" => :size_main,
 )
@@ -260,35 +297,55 @@ shadow `Base.size`. Prefer `julia -m DistSSHKit size …` day-to-day.
 run_size(args::Vector{String}=copy(ARGS))::Cint = _run_kit_cli_script("size.jl", args)
 
 """
+    run_pool(args::Vector{String}=copy(ARGS))
+
+Run the `pool` CLI (`pool.jl`) with `args`. Prefer `julia -m DistSSHKit pool …`.
+"""
+run_pool(args::Vector{String}=copy(ARGS))::Cint = _run_kit_cli_script("pool.jl", args)
+
+"""
+    run_ride(args::Vector{String}=copy(ARGS))
+
+Run the `ride` CLI (`ride.jl`) with `args`. Prefer `julia -m DistSSHKit ride …`.
+"""
+run_ride(args::Vector{String}=copy(ARGS))::Cint = _run_kit_cli_script("ride.jl", args)
+
+"""
+    run_plan(args::Vector{String}=copy(ARGS))
+
+Run the `plan` CLI (`plan.jl`) with `args`. Prefer `julia -m DistSSHKit plan …`.
+"""
+run_plan(args::Vector{String}=copy(ARGS))::Cint = _run_kit_cli_script("plan.jl", args)
+
+"""
     main(args::Vector{String}=copy(ARGS))
 
 CLI entry. Prefer Julia 1.12+ and `julia -m DistSSHKit SUBCOMMAND …`:
 
-    julia --project=. -m DistSSHKit go SCRIPT.jl
-    julia --project=. -m DistSSHKit drive parent:2 script.jl
     julia --project=. -m DistSSHKit setup --clone child:host1 child:host2
+    julia --project=. -m DistSSHKit go SCRIPT.jl
+    julia --project=. -m DistSSHKit ride parent:2 SCRIPT.jl
+    julia --project=. -m DistSSHKit drive parent:2 script.jl
+    julia --project=. -m DistSSHKit plan SCRIPT.jl
     julia --project=. -m DistSSHKit size parent child:host1
+    julia --project=. -m DistSSHKit pool parent child:host1
     julia --project=. -m DistSSHKit progress DIR
 
 `main` remains for wrappers and tests; prefer `-m` day-to-day.
+A `.jl` path with no command is not implicit `go`.
 """
 function main(args::Vector{String}=copy(ARGS))::Cint
     known_subcommands = (
-        "drive",
-        "go",
-        "demo",
         "setup",
+        "go",
+        "ride",
+        "drive",
+        "plan",
         "size",
+        "pool",
+        "demo",
         "progress",
     )
-    # Shorthand: hosts… SCRIPT.jl → go (as-is complete job)
-    if length(args) >= 1 &&
-       !(args[1] in known_subcommands) &&
-       !(args[1] in ("--version", "-v", "-V", "-h", "--help", "help")) &&
-       any(endswith(String(a), ".jl") for a in args)
-        _mark_kit_cli_subcommand_done!()
-        return go(collect(String, args))
-    end
     if _consume_kit_cli_subcommand_done!()
         return 0
     end
@@ -317,13 +374,29 @@ function main(args::Vector{String}=copy(ARGS))::Cint
         return demo(rest)
     elseif subcommand == "setup"
         return setup(rest)
+    elseif subcommand == "plan"
+        return run_plan(rest)
+    elseif subcommand == "ride"
+        return run_ride(rest)
     elseif subcommand == "size"
         return run_size(rest)
+    elseif subcommand == "pool"
+        return run_pool(rest)
     elseif subcommand == "progress"
         return progress(rest)
     else
-        print_cli_error("Unknown subcommand: $subcommand")
-        println(stderr, "Expected: go | drive | setup | size | demo | progress")
+        if any(endswith(String(a), ".jl") for a in args)
+            print_cli_error(
+                "No command (got $(repr(subcommand))). Kit does not infer go / ride / drive.",
+            )
+            println(stderr, "  go SCRIPT.jl      as-is complete job (timing without rewrite)")
+            println(stderr, "  ride … SCRIPT.jl  experimental map / filter")
+            println(stderr, "  drive … SCRIPT.jl Distributed")
+            println(stderr, "  plan SCRIPT.jl    inspect; do not run")
+        else
+            print_cli_error("Unknown subcommand: $subcommand")
+            println(stderr, "Expected: setup | go | ride | drive | plan | size | pool | demo | progress")
+        end
         println(stderr)
         print_kit_root_usage()
         return 1

@@ -24,29 +24,50 @@ function activate_drive_project!(proj_dir::String)
 end
 
 """
-    sync_driver_to_workers!(script_path)
+    sync_driver_to_workers!(script_path; sync_script=false)
 
-Re-`include` the driver on every process after the project package has been
-loaded. This is the kit's named "get code onto workers" step: top-level helper
-functions in the driver are available on workers for `pmap`, and definitions on
-the master are compiled in the post-package-load world (Julia 1.12+ world age).
+Publish driver code onto workers after the project package has been loaded.
+Default: definitions / `using` / `import` / `include` (not top-level work).
+`sync_script=true` re-`include`s the full file (opt-in side effects on every
+process). Definitions on the master are compiled in the post-package-load
+world (Julia 1.12+ world age).
 
-Drivers must not run side effects at top level (only function definitions).
 `init_output_dir!` is invoked separately on the master before workers start.
 """
-function sync_driver_to_workers!(script_path::String)
+function sync_driver_to_workers!(script_path::String; sync_script::Bool=false)
     sp = abspath(String(script_path))
     write_both("  Syncing driver to workers... ")
     flush(stdout)
     try
-        for w in workers()
-            worker_script = get(RUNNER_WORKER_SCRIPT_PATHS, w, sp)
-            remotecall_fetch(w, worker_script) do path
-                Base.invokelatest(_drive_worker_include!, path)
+        DistSSHKit._with_progress_job_stdio_capture!() do
+            if sync_script
+                for w in workers()
+                    worker_script = get(RUNNER_WORKER_SCRIPT_PATHS, w, sp)
+                    remotecall_fetch(w, worker_script) do path
+                        Base.invokelatest(_drive_worker_include!, path)
+                    end
+                end
+            else
+                src = DistSSHKit._drive_publish_source(sp)
+                if !isempty(src)
+                    for w in workers()
+                        remotecall_fetch(w, src) do code
+                            Base.invokelatest(_drive_worker_publish!, code)
+                        end
+                    end
+                end
             end
+            for w in workers()
+                remotecall_fetch(() -> (flush(stdout); flush(stderr); true), w)
+            end
+            yield()
+            sleep(0.05)
+            yield()
+            return nothing
         end
         print_ok("✓")
         writeln_both("")
+        DistSSHKit._print_job_stdout_if_detail!()
     catch
         print_progress_err("✗")
         writeln_both("")
@@ -136,6 +157,11 @@ function init_drive_workers!(proj_dir::String, explicit_package, path_anchor::St
             end
             function _drive_worker_include!(path::String)
                 Base.include(Main, path)
+                return nothing
+            end
+            function _drive_worker_publish!(src::String)
+                isempty(src) && return nothing
+                include_string(Main, src)
                 return nothing
             end
         end

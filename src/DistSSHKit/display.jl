@@ -366,11 +366,70 @@ function _append_job_stdout_capture!(data)
     return nothing
 end
 
+function _drain_job_stdio_pipe!(rd, wr)
+    return @async begin
+        try
+            while true
+                data = readavailable(rd)
+                isempty(data) || _append_job_stdout_capture!(data)
+                isempty(data) && (eof(rd) || !isopen(wr)) && break
+            end
+        catch e
+            isa(e, Base.IOError) || rethrow()
+        end
+    end
+end
+
+function _finish_job_stdio_pipe!(rd, wr, reader)
+    close(wr)
+    wait_ok = @async wait(reader)
+    for _ in 1:4
+        istaskdone(wait_ok) && break
+        sleep(0.05)
+    end
+    if !istaskdone(wait_ok)
+        close(rd)
+        wait(reader)
+    end
+    return nothing
+end
+
+"""Capture stdout/stderr into the job buffer. The live bar stays on `KIT_PROGRESS_IO`."""
+function _with_progress_job_stdio_capture!(f)
+    orig_out = stdout
+    orig_err = stderr
+    rd_o, wr_o = redirect_stdout()
+    rd_e, wr_e = redirect_stderr()
+    ro = _drain_job_stdio_pipe!(rd_o, wr_o)
+    re = _drain_job_stdio_pipe!(rd_e, wr_e)
+    try
+        return f()
+    finally
+        flush(stdout)
+        flush(stderr)
+        _finish_job_stdio_pipe!(rd_o, wr_o, ro)
+        _finish_job_stdio_pipe!(rd_e, wr_e, re)
+        redirect_stdout(orig_out)
+        redirect_stderr(orig_err)
+    end
+end
+
 """Replay job stdout after the live bar (`:progress` only). Always drains the buffer."""
 function _print_job_stdout_after_progress!()
     s = String(take!(KIT_JOB_STDOUT[]))
     KIT_JOB_STDOUT[] = IOBuffer()
     kit_output_progress() || return nothing
+    isempty(strip(s)) && return nothing
+    print(stdout, s)
+    endswith(s, '\n') || println(stdout)
+    return nothing
+end
+
+"""`:verbose`: print captured worker stdout now (not into the live bar)."""
+function _print_job_stdout_if_detail!()
+    kit_output_detail() || return nothing
+    s = String(take!(KIT_JOB_STDOUT[]))
+    KIT_JOB_STDOUT[] = IOBuffer()
     isempty(strip(s)) && return nothing
     print(stdout, s)
     endswith(s, '\n') || println(stdout)
@@ -770,6 +829,13 @@ end
 
 const KIT_PROGRESS = Ref{Union{Nothing,KitProgressState}}(nothing)
 const KIT_PROGRESS_LOCK = ReentrantLock()
+# Live bar stays on this IO when job stdout/stderr are redirected (Distributed
+# `From worker` uses `println` → stdout). Do not use this Ref for
+# [`kit_stdout_is_live`](@ref) (CLI TTY default): a precompiled Ref can hold
+# a stale non-TTY.
+const KIT_PROGRESS_IO = Ref{IO}(stdout)
+
+_progress_io()::IO = KIT_PROGRESS_IO[]
 
 function _progress_is_current(state::KitProgressState)::Bool
     cur = KIT_PROGRESS[]
@@ -919,30 +985,31 @@ function _progress_draw_items!(
     ok::Bool=true,
 )
     n = 1 + length(state.items)
+    io = _progress_io()
     if state.drawn > 0
-        print(stdout, "\e[$(state.drawn)A")
+        print(io, "\e[$(state.drawn)A")
     elseif !state.cursor_hidden
-        print(stdout, "\e[?25l")
+        print(io, "\e[?25l")
         state.cursor_hidden = true
     end
-    _progress_print_header!(stdout, state; finished=finished, ok=ok)
-    print(stdout, "\e[K\n")
+    _progress_print_header!(io, state; finished=finished, ok=ok)
+    print(io, "\e[K\n")
     for it in state.items
         g = _progress_item_glyph(it)
-        print(stdout, "     ")
+        print(io, "     ")
         if use_colors()
             if it.status === :running
-                _print_progress_accent(stdout, g)
+                _print_progress_accent(io, g)
             else
-                printstyled(stdout, g; color=_progress_item_color(it))
+                printstyled(io, g; color=_progress_item_color(it))
             end
         else
-            print(stdout, g)
+            print(io, g)
         end
-        print(stdout, "  ", it.label, "\e[K\n")
+        print(io, "  ", it.label, "\e[K\n")
     end
     state.drawn = n
-    flush(stdout)
+    flush(io)
     return nothing
 end
 
@@ -957,18 +1024,20 @@ function _progress_draw!(
         _progress_draw_items!(state; finished=finished, ok=ok)
         return nothing
     end
-    print(stdout, '\r')
-    _progress_print_header!(stdout, state; finished=finished, ok=ok)
-    print(stdout, "\e[K")
-    newline && println(stdout)
-    flush(stdout)
+    io = _progress_io()
+    print(io, '\r')
+    _progress_print_header!(io, state; finished=finished, ok=ok)
+    print(io, "\e[K")
+    newline && println(io)
+    flush(io)
     return nothing
 end
 
 """Whether stdout can host a live bar (TTY and color allowed)."""
 kit_stdout_is_live()::Bool = stdout isa Base.TTY && !haskey(ENV, "NO_COLOR")
 
-_progress_can_draw()::Bool = kit_output_progress() && kit_stdout_is_live()
+_progress_can_draw()::Bool =
+    kit_output_progress() && _progress_io() isa Base.TTY && !haskey(ENV, "NO_COLOR")
 
 function _progress_stop_spinner!(state::KitProgressState)
     state.spinning || return nothing
@@ -1420,10 +1489,12 @@ function _kit_progress_phase_hint(
     label == "git" && return "require-git / working tree"
     label == "cleanup" && return "stale Distributed workers"
     label == "workers" && return "addprocs + Julia detect"
-    label == "wait" && return "connection grace (default 5s)"
-    label == "delay" && return "connection grace (default 5s)"
+    label == "wait" && return "SSH connection grace (default 5s)"
+    label == "delay" && return "SSH connection grace (default 5s)"
+    label == "init" && kind === :ride && return "defs on workers"
     label == "init" && return "using, driver sync, prepare"
-    label == "run" && kind === :go && return "script"
+    label == "run" && (kind === :go || kind === :ride) && return "script"
+    label == "spi" && return "sequential compare"
     label == "run" && return "driver script"
     label == "collect" && return "gather results"
     label == "rsync" && return "push tree"
@@ -1669,7 +1740,7 @@ slots (header + one live line each). Items start `:pending` until
 [`kit_progress_item!`](@ref) sets `:running`. Outside `:progress`, updates state
 only.
 
-`kind` is `:go` or `:drive` (written as `kind=` on every `progress:` log
+`kind` is `:go`, `:drive`, or `:ride` (written as `kind=` on every `progress:` log
 line). `job_id` (default: `ENV["DISTSSHKIT_JOB_ID"]` if set, else `nothing`)
 is written as `job=<id>` on those lines, omitted when unset.
 """
@@ -1696,6 +1767,7 @@ function kit_progress_begin!(
         push!(state.items, KitProgressItem(String(name), :pending, 0))
     end
     lock(KIT_PROGRESS_LOCK) do
+        KIT_PROGRESS_IO[] = stdout
         KIT_PROGRESS[] = state
         _progress_log_begin!(state)
         if kit_output_progress()
@@ -1818,12 +1890,13 @@ function _kit_progress_done!(
         if kit_output_progress()
             _progress_draw!(state; newline=true, finished=true, ok=ok)
             if state.cursor_hidden
-                print(stdout, "\e[?25h")
+                print(_progress_io(), "\e[?25h")
                 state.cursor_hidden = false
             end
             _progress_print_footer(footer)
         end
         KIT_PROGRESS[] = nothing
+        KIT_PROGRESS_IO[] = stdout
     end
     return nothing
 end
@@ -1928,19 +2001,24 @@ function print_kit_root_usage(io::IO=stderr)
     print_help_blank(io)
     print_help_section("Commands"; io=io)
     print_help_lines(io,
-        "  go                 Run an as-is complete job",
-        "  drive              Distributed workers + collect",
         "  setup              Clone / sync / check remotes",
+        "  go                 Run an as-is complete job",
+        "  ride               Experimental auto-split of map / filter",
+        "  drive              Distributed workers + collect",
+        "  plan               Inspect a script; do not run",
         "  size               Estimate worker counts",
+        "  pool               Cluster cores / health (no job)",
         "  demo               Install or list example scripts",
         "  progress           Phase seconds from kit.progress",
     )
     print_help_blank(io)
     print_help_section("Examples"; io=io)
     print_help_lines(io,
-        "  julia --project=. -m DistSSHKit go SCRIPT.jl",
-        "  julia --project=. -m DistSSHKit drive parent:2 SCRIPT.jl",
         "  julia --project=. -m DistSSHKit setup --check child:host1",
+        "  julia --project=. -m DistSSHKit go SCRIPT.jl",
+        "  julia --project=. -m DistSSHKit ride parent:2 SCRIPT.jl",
+        "  julia --project=. -m DistSSHKit drive parent:2 SCRIPT.jl",
+        "  julia --project=. -m DistSSHKit plan SCRIPT.jl",
     )
     print_help_blank(io)
     println(io, "Run `julia -m DistSSHKit <command> -h` for flags.")
