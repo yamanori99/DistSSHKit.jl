@@ -105,7 +105,8 @@ corrupted output.
 Writes `output_dir/.kit.lock` (this process's pid, plain text). An existing
 lock naming a still-alive **other** pid throws `ArgumentError` immediately. A lock
 naming a dead pid is stale and gets overwritten. Same-pid re-lock does not throw;
-overlapping in-process `go!` / `drive!` / `ride!` (and size / pool / setup) throw.
+overlapping in-process `go!` / `drive!` / `ride!` (and size / pool / setup /
+sync / collect / pipeline) throw.
 
 Returns a zero-arg closure that releases the lock; call it in a `finally`.
 Removal only happens if the file still names this process's pid (avoids

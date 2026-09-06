@@ -32,13 +32,15 @@ function run_drive_parsed!(
     end
 
     if parsed.collect_root !== nothing && parsed.collect_hosts !== nothing
-        ok = drive_collect_tree(
-            parsed.collect_root::String,
-            parsed.collect_hosts::Vector{String};
-            merge=something(parsed.collect_overwrite, false),
-            strict=parsed.require_all_hosts,
-        )
-        return ok ? 0 : 1
+        return DistSSHKit._with_kit_inproc_run!(:collect) do
+            ok = drive_collect_tree(
+                parsed.collect_root::String,
+                parsed.collect_hosts::Vector{String};
+                merge=something(parsed.collect_overwrite, false),
+                strict=parsed.require_all_hosts,
+            )
+            return ok ? 0 : 1
+        end
     end
 
     if parsed.script_path === nothing

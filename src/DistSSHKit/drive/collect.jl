@@ -23,18 +23,20 @@ function collect!(
     merge::Bool=false,
     hosts::Union{Nothing,AbstractVector{<:AbstractString}}=nothing,
 )::CollectResult
-    apply_session_env!(session)
     host_list = hosts === nothing ? session.hosts : collect(String, hosts)
     isempty(host_list) && throw(ArgumentError(
         explain_no_hosts(; surface=hint_surface(session), kind=:collect),
     ))
-    _ensure_drive_fragments!(session.project)
-    collect_fn = Main.eval(:(drive_collect_tree))
-    ok = Base.invokelatest(
-        collect_fn,
-        String(local_root),
-        host_list;
-        merge=merge,
-    )
-    return CollectResult(ok, ok ? 0 : 1)
+    return _with_kit_inproc_run!(:collect) do
+        apply_session_env!(session)
+        _ensure_drive_fragments!(session.project)
+        collect_fn = Main.eval(:(drive_collect_tree))
+        ok = Base.invokelatest(
+            collect_fn,
+            String(local_root),
+            host_list;
+            merge=merge,
+        )
+        return CollectResult(ok, ok ? 0 : 1)
+    end
 end
