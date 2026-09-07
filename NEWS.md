@@ -6,84 +6,53 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
-- Breaking: unexport CLI/token internals that Queue does not import:
-  `parse_ride_args`, `show_ride_usage`, `parse_plan_args`, `show_plan_usage`,
-  `parse_pool_args`, `show_pool_usage`, `parse_worker_tokens`,
-  `ParsedWorkerTokens`, `worker_tokens_fully_specified`,
-  `child_hosts_from_tokens`, `worker_plan_from_tokens`, `split_worker_token`,
-  `parse_progress_line`, `kit_progress_latest`, `kit_progress_phases`,
-  `kit_pid_alive`, `resolve_remote_julia`, `worker_plan_from_pool`.
-  Call `DistSSHKit.foo` or `using DistSSHKit: foo` if you still need them.
-  Plain `using DistSSHKit` no longer brings these names into scope. Queue contract (`execute!` detached, `host_tokens`,
-  `parse_go_args` / `parse_drive_args`, help chrome, `ns_path` / `push_cache!`)
-  stays exported. `plan!` is not added.
-- `ride` / `ride!`: independent indexed `for` (`dest[i] = expr` with no
-  `dest` in `expr`, loop-var indices only) is rewritten like `map`.
-  Unsafe fills do not collect the iterator first. Overlapping views
-  (`dest` / `src` sharing storage, including arrays nested in a captured
-  struct) stay interleaved. An incomplete capture walk also stays sequential.
-  A `const` global RHS array that aliases `dest` stays sequential too.
-  A rewritten indexed `for` still evaluates to `nothing`. Nested rewritten
-  fills inside a `pmap` worker stay sequential. Accumulating / stencil loops
-  stay sequential; `plan` still marks those out of scope.
-- `drive` / `ride` no longer `pkill -f julia.*--worker` on SSH hosts. Leftover
-  remote workers are `pkill`d only when `job_id` / `DISTSSHKIT_JOB_ID` is set
-  (`pkill -f distsshkit-job:<id>`, same as [`terminate!`](@ref)). Untagged machine-wide sweep stays `setup --cleanup`.
-- `ride` / `ride!`: `Pkg.activate` the job `project` on the parent before
-  SSH worker init. Drive already did this; without it `@everywhere using`
-  the app package failed (`SshE2EApp not found`) and `kit.hosts` was never
-  written.
-- `ride` SSH `child:`: call drive runtime (`add_drive_workers!` and friends)
-  with `invokelatest`. Julia 1.12+ world age otherwise fails after the
-  lazy `include` into `Main`, so `kit.hosts` never appeared.
-- In-process `go!` / `drive!` / `ride!` / `size!` / `pool!` / `setup!` /
-  `sync!` / `instantiate!` / `collect!` / `push_cache!` / `pipeline!` reject a
-  second overlapping call from another task (`ArgumentError`). Same-task nesting
-  (go autosize → `size!`, `pipeline!` → `drive!`) is allowed. Detached `execute!` is a separate process
-  and is unchanged. Remote `pkill` of untagged workers is still host-scoped.
-- `drive` / `drive!`: omitted `--output-dir` (and no `init_output_dir!`
-  / `DISTRIBUTED_OUTPUT_DIR`) now uses a unique
-  `{script}/.distsshkit/drive/<stem>_<UTC>/`, like go / ride. Drivers that
-  call `init_output_dir!` still keep that path. No per-slot dirs.
-- CLI: a `.jl` path with no subcommand is no longer implicit `go`.
-  Name `go` (as-is timing), `plan`, `ride`, or `drive`. Kit does not
-  pick the runner from the file.
-- `pool` / `pool!(session)`: cluster cores, RAM, and a slot hint plus
-  per-host health. Fail-closed (unreachable listed hosts stay listed;
-  `ok=false`). Does not start a job and does not change `--best-effort`.
-  RSS probes stay on `size` / `size!`.
-- `ride` / `ride!(script, "parent:N")`: experimental. Rewrites `map` /
-  `filter` / simple comprehensions and runs on Distributed workers
-  (parent and SSH `child:`). Worker add for children matches drive.
-  Rejects Distributed vocabulary (use `drive`). `--spi-check` is on by
-  default (printed on `--progress` success). Analysis stays on `plan`.
-  Queue callers use [`execute!`](@ref) `:ride` (in-process or `detached=true`);
-  `kit.result` / `kit.pid` land in the ride batch dir; SSH `child:` also
-  writes `kit.hosts` for [`terminate!`](@ref). Parent workers and SSH
-  children write `kit.hosts.status` ([`drive_host_status`](@ref)).
-  Overlapping in-process `drive!` / `ride!` is rejected.
-  The scheduler stays in DistSSHQueue, not Kit.
-- `go`: default batch dirs use exclusive `mkdir` (same-second collisions
-  get a nanosecond suffix), matching `allocate_output_dir`.
-- `drive` / `drive!`: Load (master `include`), Publish (defs / `using` /
-  `import` / `include` on workers), Run (`main()` if defined). Warns when this
-  file has no Distributed vocabulary and still runs. `--sync-script` /
-  `sync_script=true` re-includes the full file on workers. Local-only runs skip
-  the 5s SSH connection grace.
-- `plan` / `plan(script)` inspect a `.jl` file without starting a job.
-  Suggests `go`, `ride`, or `drive` from syntax. Optional slot estimate
-  (`workers` / `--gb-per-worker` / `--probe`) calls `size!`; default is
-  syntax only. `ride` is experimental (`ride!` / CLI `ride`).
-  `size` is unchanged.
-- `go`: omitting `:N` on a listed host (without `--repeat`) now fills
-  slot counts via `size!`, like drive. `go SCRIPT.jl` with no tokens is
-  still one parent slot. `--repeat` still treats omitted `:N` as an
-  uncapped host. New flags: `--gb-per-worker`, `--probe`, `--mem-headroom`,
-  `--parent-gb`. This is a behavior change for `go child:NAME` (was 1 slot).
-- `ns_path` / `file_sha256` / `cache_file`: shared path namespace and a
-  content-hash cache under `.distsshkit/cache/sha256/`. Same bytes are
-  stored once. Project sync still excludes `.distsshkit/`;
-  `push_cache!(session)` rsyncs blobs to SSH hosts (no `--delete`).
+## 0.6.0
+
+Breaking cut after `0.5.4`. DistSSHQueue still pins Kit **0.5.x** until
+a Queue compat patch.
+
+### Breaking
+
+- Name the runner: `go`, `plan`, `ride`, or `drive`. A bare `.jl` is
+  no longer implicit `go`.
+- `go child:NAME` without `:N` now autosizes (`size!`). It used to be
+  1 slot. No tokens still means one parent slot. `--repeat` is unchanged.
+- Two in-process kit jobs from different tasks raise `ArgumentError`.
+  Nested calls in the same task (autosize, `pipeline!`) are fine.
+  Detached `execute!` is a separate process.
+- Low-level CLI / token / progress helpers are unexported. Use
+  `DistSSHKit.foo` or `using DistSSHKit: foo`. Bare `using DistSSHKit`
+  only sees the export list. Queue `execute!` detached and `ns_path` /
+  `push_cache!` stay exported. There is no `plan!`.
+
+### Run
+
+- **go** — as-is script on each slot. Default batch dirs use exclusive
+  `mkdir` (same-second collisions get a suffix).
+- **ride** (experimental) — independent `map` / `filter` / comprehension
+  / indexed `for` on Distributed workers (parent or SSH). Use **drive**
+  if the file already talks Distributed. Indexed `for` that aliases
+  `dest`, or accumulates, stays sequential. SSH `child:` now writes
+  `kit.hosts` like drive.
+- **drive** — master farms workers. Default output dir is unique per
+  run (`…/drive/<stem>_<UTC>/`), like go / ride, unless the driver
+  already set `init_output_dir!`.
+- Leftover SSH workers: `pkill` only with `job_id`. Untagged sweep is
+  `setup --cleanup`. Machine-wide `julia.*--worker` pkill is gone.
+
+### See
+
+- **plan** — read the file, suggest go / ride / drive. No SSH.
+- **pool!** — cores and RAM on listed hosts (SSH). No RSS.
+- **size!** — RSS occupancy. Used when `:N` is omitted, and by CLI
+  `size`.
+
+### Also
+
+- Shared cache: `ns_path` / `file_sha256` / `push_cache!` under
+  `.distsshkit/cache/sha256/` (rsync blobs; no `--delete`).
+- Drive phases: Load / Publish / Run. `--sync-script` re-includes the
+  file on workers. Local-only drive skips the 5s SSH grace.
 
 ## 0.5.4
 
