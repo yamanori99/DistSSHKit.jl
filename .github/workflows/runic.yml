@@ -1,0 +1,67 @@
+name: Runic
+
+# Light `--check`. Not a substitute for Pkg.test / Aqua / JETLS.
+# `version: '1'`: a Runic minor can fail this job. Monthly schedule
+# opens Issue `Runic monthly failed` (same idea as CI weekly).
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+  # 1st of the month 10:00 JST (UTC 01:00). Misses CI weekly (Sundays).
+  schedule:
+    - cron: "0 1 1 * *"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+permissions:
+  contents: read
+
+jobs:
+  runic:
+    name: Runic
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/julia-slot
+        with:
+          slot: min
+      - uses: fredrikekre/runic-action@v1
+        with:
+          version: '1'
+
+  notify:
+    name: notify
+    needs: runic
+    if: always() && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open or close tracking issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FAILED: ${{ needs.runic.result == 'failure' }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title='Runic monthly failed'
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label ci --search "in:title $title" --json number --jq '.[0].number // empty')"
+          if [ "$FAILED" = "true" ]; then
+            body="Latest run: $RUN_URL
+
+          Not a PR check. \`runic --inplace src test\` (and \`demos/\` / \`docs/*.jl\` if needed), then push. Runic \`version: '1'\` can move."
+            if [ -n "$existing" ]; then
+              gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+            else
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label ci --body "$body"
+            fi
+          elif [ -n "$existing" ]; then
+            gh issue close "$existing" --repo "$GITHUB_REPOSITORY" --reason completed --comment "Latest run succeeded: $RUN_URL"
+          fi
