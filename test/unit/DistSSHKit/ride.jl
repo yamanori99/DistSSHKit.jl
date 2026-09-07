@@ -240,10 +240,27 @@ using Test
             end
             write(ARGS[1], join(string.(dest), ","))
             """
-        for (spi, stem) in ((false, "overlap_nospi"), (true, "overlap_spi"))
+        holder_src = """
+            struct _RideViewHolder
+                src::AbstractArray
+            end
+            data = [1, 2, 3, 4]
+            dest = @view data[2:4]
+            holder = _RideViewHolder(@view data[1:3])
+            for i in eachindex(dest)
+                dest[i] = holder.src[i]
+            end
+            write(ARGS[1], join(string.(dest), ","))
+            """
+        for (body, spi, stem) in (
+            (overlap_src, false, "overlap_nospi"),
+            (overlap_src, true, "overlap_spi"),
+            (holder_src, false, "holder_nospi"),
+            (holder_src, true, "holder_spi"),
+        )
             opath = joinpath(tmp, stem * ".jl")
             oout = joinpath(tmp, stem * ".txt")
-            write(opath, replace(overlap_src, "ARGS[1]" => repr(oout)))
+            write(opath, replace(body, "ARGS[1]" => repr(oout)))
             rr = DistSSHKit.ride!(opath, "parent:1"; spi_check=spi)
             @test rr.ok
             @test read(oout, String) == "1,1,1"

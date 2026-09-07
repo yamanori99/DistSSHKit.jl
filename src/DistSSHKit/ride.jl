@@ -106,7 +106,8 @@ function _ride_collect_arrays!(out::Vector{AbstractArray}, x, depth::Int)
             _ride_collect_arrays!(out, getfield(x, :contents), depth + 1)
         return
     end
-    x isa Function || return
+    x isa Union{Module, Type, Symbol, AbstractString, Number, Nothing} && return
+    isbits(x) && return
     n = nfields(x)
     for i in 1:n
         isdefined(x, i) || continue
