@@ -112,7 +112,7 @@ diagram_path(name::AbstractString) = joinpath(DIAGRAM_DIR, name)
 """PNG IHDR width/height, or `nothing` if the file is not a PNG."""
 function png_ihdr_size(path::AbstractString)
     isfile(path) || return nothing
-    open(path, "r") do io
+    return open(path, "r") do io
         sig = read(io, 8)
         sig == UInt8[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] || return nothing
         ntoh(read(io, UInt32)) == 13 || return nothing
@@ -124,11 +124,11 @@ function png_ihdr_size(path::AbstractString)
 end
 
 function png_matches_size(path::AbstractString, w::Int, h::Int)
-    png_ihdr_size(path) == (w, h)
+    return png_ihdr_size(path) == (w, h)
 end
 
 function be32(data::Vector{UInt8}, i::Int)
-    (UInt32(data[i]) << 24) | (UInt32(data[i + 1]) << 16) | (UInt32(data[i + 2]) << 8) | UInt32(data[i + 3])
+    return (UInt32(data[i]) << 24) | (UInt32(data[i + 1]) << 16) | (UInt32(data[i + 2]) << 8) | UInt32(data[i + 3])
 end
 
 function zlib_uncompress(src::Vector{UInt8})
@@ -146,7 +146,7 @@ function zlib_uncompress(src::Vector{UInt8})
         ret == -5 || die("zlib uncompress failed: $ret")
         dest_cap *= 2
     end
-    die("zlib uncompress too large")
+    return die("zlib uncompress too large")
 end
 
 function png_paeth(a::UInt8, b::UInt8, c::UInt8)
@@ -165,8 +165,8 @@ function png_rgba8(path::AbstractString)
     idat = UInt8[]
     while i + 8 <= length(data)
         n = Int(be32(data, i))
-        typ = String(data[i + 4:i + 7])
-        chunk = data[i + 8:i + 7 + n]
+        typ = String(data[(i + 4):(i + 7)])
+        chunk = data[(i + 8):(i + 7 + n)]
         if typ == "IHDR"
             w = Int(be32(chunk, 1))
             h = Int(be32(chunk, 5))
@@ -190,7 +190,7 @@ function png_rgba8(path::AbstractString)
     o = 1
     for row in 1:h
         ft = raw[(row - 1) * (1 + stride) + 1]
-        cur = raw[(row - 1) * (1 + stride) + 2:(row - 1) * (1 + stride) + 1 + stride]
+        cur = raw[((row - 1) * (1 + stride) + 2):((row - 1) * (1 + stride) + 1 + stride)]
         recon = Vector{UInt8}(undef, stride)
         for x in 1:stride
             a = x > ch ? recon[x - ch] : 0x00
@@ -303,7 +303,7 @@ function writefile(rel::AbstractString, text::AbstractString)
     p = joinpath(ROOT, rel)
     mkpath(dirname(p))
     write(p, text)
-    println("wrote $rel ($(sizeof(text)) bytes)")
+    return println("wrote $rel ($(sizeof(text)) bytes)")
 end
 
 """Prefix `id=` / `href="#…"` / `url(#…)` so light+dark SVGs can share a DOM."""
@@ -313,7 +313,7 @@ function prefix_svg_ids(svg::AbstractString, prefix::AbstractString)
         push!(ids, String(m.captures[1]))
     end
     unique!(ids)
-    sort!(ids; by=length, rev=true)
+    sort!(ids; by = length, rev = true)
     out = svg
     for id in ids
         out = replace(out, "id=\"$(id)\"" => "id=\"$(prefix)$(id)\"")
@@ -326,10 +326,14 @@ end
 function to_dark(svg::AbstractString)
     dark = replace(svg, "stroke: #1a1d21;" => "stroke: #ffffff;")
     dark = replace(dark, "fill: #1a1d21;" => "fill: #ffffff;")
-    dark = replace(dark, "stroke-width: 3.5;\n        stroke-linecap: round;\n        stroke-linejoin: round;" =>
-        "stroke-width: 4;\n        stroke-linecap: round;\n        stroke-linejoin: round;")
-    dark = replace(dark, ".link {\n        stroke: #ffffff;\n        stroke-width: 1.4;" =>
-        ".link {\n        stroke: #ffffff;\n        stroke-width: 2;")
+    dark = replace(
+        dark, "stroke-width: 3.5;\n        stroke-linecap: round;\n        stroke-linejoin: round;" =>
+            "stroke-width: 4;\n        stroke-linecap: round;\n        stroke-linejoin: round;"
+    )
+    dark = replace(
+        dark, ".link {\n        stroke: #ffffff;\n        stroke-width: 1.4;" =>
+            ".link {\n        stroke: #ffffff;\n        stroke-width: 2;"
+    )
     dark = replace(dark, "#a0a5ab" => "#94a3b8")  # idle remote ring (legacy)
     return prefix_svg_ids(dark, "dark-")
 end
@@ -338,7 +342,7 @@ function strip_xml_decl(svg::AbstractString)
     startswith(svg, "<?xml") || return svg
     i = findfirst("?>", svg)
     i === nothing && return svg
-    return lstrip(svg[last(i)+1:end])
+    return lstrip(svg[(last(i) + 1):end])
 end
 
 function svg_inner(svg::AbstractString)
@@ -348,45 +352,45 @@ function svg_inner(svg::AbstractString)
     return m.captures[1]
 end
 
-function build_favicon(_logo_svg::AbstractString=""; dark::Bool=false)
+function build_favicon(_logo_svg::AbstractString = ""; dark::Bool = false)
     # Parent `#master-body` + `#juliadot-lg` about (0,-6). Stroke 3.5 on a
     # 64-wide bezel — same ratio as logo-static. No tile fill.
     s = FAVICON_DOT_SCALE
-    r = round(4.65 * s; digits=4)
-    red_y = round(-6 + s * (-6.2); digits=4)
-    side_x = round(5.369 * s; digits=4)
-    side_y = round(-6 + s * 3.1; digits=4)
+    r = round(4.65 * s; digits = 4)
+    red_y = round(-6 + s * (-6.2); digits = 4)
+    side_x = round(5.369 * s; digits = 4)
+    side_y = round(-6 + s * 3.1; digits = 4)
     ink = dark ? "#ffffff" : "#1a1d21"
     sw = 3.5
     ox, oy = 34.0, 34.5
-    fmt(x) = string(round(x; digits=4))
+    fmt(x) = string(round(x; digits = 4))
     return """<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 68 68" width="68" height="68">
-  <rect x="$(fmt(-32 + ox))" y="$(fmt(-25 + oy))" width="64" height="36" rx="4" fill="none" stroke="$(ink)" stroke-width="$(sw)" stroke-linecap="round" stroke-linejoin="round"/>
-  <line x1="$(fmt(ox))" y1="$(fmt(12 + oy))" x2="$(fmt(ox))" y2="$(fmt(22 + oy))" fill="none" stroke="$(ink)" stroke-width="$(sw)" stroke-linecap="round"/>
-  <line x1="$(fmt(-21 + ox))" y1="$(fmt(24 + oy))" x2="$(fmt(21 + ox))" y2="$(fmt(24 + oy))" fill="none" stroke="$(ink)" stroke-width="$(sw)" stroke-linecap="round"/>
-  <circle cx="$(fmt(ox))" cy="$(fmt(red_y + oy))" r="$r" fill="#cb3c33"/>
-  <circle cx="$(fmt(-side_x + ox))" cy="$(fmt(side_y + oy))" r="$r" fill="#389826"/>
-  <circle cx="$(fmt(side_x + ox))" cy="$(fmt(side_y + oy))" r="$r" fill="#9558b2"/>
-</svg>
-"""
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 68 68" width="68" height="68">
+      <rect x="$(fmt(-32 + ox))" y="$(fmt(-25 + oy))" width="64" height="36" rx="4" fill="none" stroke="$(ink)" stroke-width="$(sw)" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="$(fmt(ox))" y1="$(fmt(12 + oy))" x2="$(fmt(ox))" y2="$(fmt(22 + oy))" fill="none" stroke="$(ink)" stroke-width="$(sw)" stroke-linecap="round"/>
+      <line x1="$(fmt(-21 + ox))" y1="$(fmt(24 + oy))" x2="$(fmt(21 + ox))" y2="$(fmt(24 + oy))" fill="none" stroke="$(ink)" stroke-width="$(sw)" stroke-linecap="round"/>
+      <circle cx="$(fmt(ox))" cy="$(fmt(red_y + oy))" r="$r" fill="#cb3c33"/>
+      <circle cx="$(fmt(-side_x + ox))" cy="$(fmt(side_y + oy))" r="$r" fill="#389826"/>
+      <circle cx="$(fmt(side_x + ox))" cy="$(fmt(side_y + oy))" r="$r" fill="#9558b2"/>
+    </svg>
+    """
 end
 
 function build_social(logo_svg::AbstractString, kind::AbstractString)
     inner = svg_inner(logo_svg)
     src = kind == "static" ? logo_path("logo-static.svg") : logo_path("logo-dynamic.svg")
     return """<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="$(SOCIAL_W)" height="$(SOCIAL_H)" viewBox="0 0 $(SOCIAL_W) $(SOCIAL_H)">
-  <!-- social-preview-$(kind): 1280×640; safe $(SAFE_X)×$(SAFE_Y); mark | title lockup; from $(src) -->
-  <rect width="$(SOCIAL_W)" height="$(SOCIAL_H)" fill="#ffffff"/>
-  <svg x="$(MARK_X)" y="$(MARK_Y)" width="$(MARK_SIZE)" height="$(MARK_SIZE)" viewBox="$(LOGO_VIEWBOX)">
-$(inner)
-  </svg>
-  <text x="$(TEXT_X)" y="$(TITLE_Y)" dominant-baseline="middle" fill="#0f172a" font-family="$(FONT)" font-size="$(TITLE_SIZE)" font-weight="800">$(TITLE)</text>
-  <text x="$(TEXT_X)" y="$(TAGLINE_Y1)" dominant-baseline="middle" fill="#475569" font-family="$(FONT)" font-size="$(TAGLINE_SIZE)" font-weight="500">$(TAGLINE_1)</text>
-  <text x="$(TEXT_X)" y="$(TAGLINE_Y2)" dominant-baseline="middle" fill="#475569" font-family="$(FONT)" font-size="$(TAGLINE_SIZE)" font-weight="500">$(TAGLINE_2)</text>
-</svg>
-"""
+    <svg xmlns="http://www.w3.org/2000/svg" width="$(SOCIAL_W)" height="$(SOCIAL_H)" viewBox="0 0 $(SOCIAL_W) $(SOCIAL_H)">
+      <!-- social-preview-$(kind): 1280×640; safe $(SAFE_X)×$(SAFE_Y); mark | title lockup; from $(src) -->
+      <rect width="$(SOCIAL_W)" height="$(SOCIAL_H)" fill="#ffffff"/>
+      <svg x="$(MARK_X)" y="$(MARK_Y)" width="$(MARK_SIZE)" height="$(MARK_SIZE)" viewBox="$(LOGO_VIEWBOX)">
+    $(inner)
+      </svg>
+      <text x="$(TEXT_X)" y="$(TITLE_Y)" dominant-baseline="middle" fill="#0f172a" font-family="$(FONT)" font-size="$(TITLE_SIZE)" font-weight="800">$(TITLE)</text>
+      <text x="$(TEXT_X)" y="$(TAGLINE_Y1)" dominant-baseline="middle" fill="#475569" font-family="$(FONT)" font-size="$(TAGLINE_SIZE)" font-weight="500">$(TAGLINE_1)</text>
+      <text x="$(TEXT_X)" y="$(TAGLINE_Y2)" dominant-baseline="middle" fill="#475569" font-family="$(FONT)" font-size="$(TAGLINE_SIZE)" font-weight="500">$(TAGLINE_2)</text>
+    </svg>
+    """
 end
 
 html_wrap(body, w, h) = """<!DOCTYPE html><html><head><meta charset="utf-8"/>
@@ -431,29 +435,30 @@ end
 function remove_legacy!()
     # Old flat layout leftovers at assets/ root.
     for name in (
-        "logo.png",
-        "logo.gif",
-        "logo-dynamic.svg",
-        "logo-static.svg",
-        "logo-dark-dynamic.svg",
-        "logo-dark-static.svg",
-        "logo-static.png",
-        "logo-dynamic.gif",
-        "social-preview.svg",
-        "social-preview.png",
-        "social-preview.gif",
-        "social-preview-static.svg",
-        "social-preview-dynamic.svg",
-        "social-preview-static.png",
-        "social-preview-dynamic.gif",
-        ".raster-stamp",
-    )
+            "logo.png",
+            "logo.gif",
+            "logo-dynamic.svg",
+            "logo-static.svg",
+            "logo-dark-dynamic.svg",
+            "logo-dark-static.svg",
+            "logo-static.png",
+            "logo-dynamic.gif",
+            "social-preview.svg",
+            "social-preview.png",
+            "social-preview.gif",
+            "social-preview-static.svg",
+            "social-preview-dynamic.svg",
+            "social-preview-static.png",
+            "social-preview-dynamic.gif",
+            ".raster-stamp",
+        )
         p = joinpath(ROOT, name)
         if isfile(p) || islink(p)
             rm(p)
             println("removed legacy $name")
         end
     end
+    return
 end
 
 """Relative symlink under ROOT; replaces an existing file or link."""
@@ -467,7 +472,7 @@ function ensure_symlink!(link_name::AbstractString, target_name::AbstractString)
     cd(ROOT) do
         symlink(target_name, link_name)
     end
-    println("linked $link_name → $target_name")
+    return println("linked $link_name → $target_name")
 end
 
 """`docs/src/favicon.*` so Firefox can fetch `./favicon.ico` next to `index.html`."""
@@ -482,7 +487,7 @@ function ensure_docroot_link!(name::AbstractString)
     cd(srcroot) do
         symlink(target, name)
     end
-    println("linked ../$name → $target")
+    return println("linked ../$name → $target")
 end
 
 function bake_svgs!()
@@ -509,7 +514,7 @@ function bake_svgs!()
     topology_dark_svg = topology_dark(topology)
     writefile(diagram_path("topology-dark.svg"), topology_dark_svg)
     writefile(FAVICON_SVG, build_favicon(logo_static))
-    writefile(FAVICON_DARK_SVG, build_favicon(logo_static; dark=true))
+    writefile(FAVICON_DARK_SVG, build_favicon(logo_static; dark = true))
     ensure_docroot_link!(FAVICON_SVG)
     ensure_docroot_link!(FAVICON_DARK_SVG)
 
@@ -524,13 +529,13 @@ function bake_svgs!()
 end
 
 function rsvg_png(
-    svg_path::AbstractString,
-    out_path::AbstractString;
-    width::Int,
-    height::Int,
-    scale::Int=1,
-    exact_size::Bool=false,
-)
+        svg_path::AbstractString,
+        out_path::AbstractString;
+        width::Int,
+        height::Int,
+        scale::Int = 1,
+        exact_size::Bool = false,
+    )
     candidates = String[]
     w = which_bin(("rsvg-convert",))
     w !== nothing && push!(candidates, w)
@@ -548,7 +553,7 @@ function rsvg_png(
         end
         isfile(out_path) || return false
         if exact_size && !png_matches_size(out_path, width, height)
-            rm(out_path; force=true)
+            rm(out_path; force = true)
             println(stderr, "error: rsvg-convert wrote wrong size for $(relpath(out_path, ROOT)) (want $(width)×$(height))")
             return false
         end
@@ -562,9 +567,9 @@ function rsvg_png(
         return false
     end
     (isfile(hi) && filesize(hi) > 0) || return false
-    if downscale_png!(hi, out_path; w=width, h=height)
+    if downscale_png!(hi, out_path; w = width, h = height)
         if exact_size && !png_matches_size(out_path, width, height)
-            rm(out_path; force=true)
+            rm(out_path; force = true)
             println(stderr, "error: downscale wrote wrong size for $(relpath(out_path, ROOT)) (want $(width)×$(height))")
             return false
         end
@@ -575,7 +580,7 @@ function rsvg_png(
         println(stderr, "error: need sips or ffmpeg to downscale $(relpath(out_path, ROOT)) to $(width)×$(height)")
         return false
     end
-    cp(hi, out_path; force=true)
+    cp(hi, out_path; force = true)
     println(stderr, "warn: kept $(scale)× PNG for $(relpath(out_path, ROOT)) (no sips/ffmpeg downscale)")
     println("wrote $(relpath(out_path, ROOT)) ($(filesize(out_path)) bytes) [rsvg-convert $(scale)×]")
     return true
@@ -595,7 +600,7 @@ function kill_chrome_session!(proc, udir::AbstractString)
     marker = abspath(udir)
     if !isempty(marker) && isdir(marker) && Sys.isunix()
         try
-            run(pipeline(`pkill -9 -f $marker`; stdout=devnull, stderr=devnull); wait=true)
+            run(pipeline(`pkill -9 -f $marker`; stdout = devnull, stderr = devnull); wait = true)
         catch
         end
         sleep(0.05)
@@ -604,13 +609,13 @@ function kill_chrome_session!(proc, udir::AbstractString)
 end
 
 function chrome_screenshot(
-    html_path::AbstractString,
-    out_png::AbstractString;
-    w::Int,
-    h::Int,
-    t_s::Float64=0.0,
-    scale::Int=1,
-)
+        html_path::AbstractString,
+        out_png::AbstractString;
+        w::Int,
+        h::Int,
+        t_s::Float64 = 0.0,
+        scale::Int = 1,
+    )
     chrome = find_chrome()
     chrome === nothing && return false
     out_abs = abspath(out_png)
@@ -618,7 +623,7 @@ function chrome_screenshot(
 
     for attempt in 1:3
         isfile(out_abs) && rm(out_abs)
-        udir = mktempdir(prefix="distsshkit-chrome-")
+        udir = mktempdir(prefix = "distsshkit-chrome-")
         args = String[
             chrome,
             "--headless=new",
@@ -635,7 +640,7 @@ function chrome_screenshot(
         ]
         proc = nothing
         try
-            proc = run(pipeline(Cmd(args); stdout=devnull, stderr=devnull); wait=false)
+            proc = run(pipeline(Cmd(args); stdout = devnull, stderr = devnull); wait = false)
             # Headless Chrome often writes the PNG then never exits; succeed on file, then kill.
             deadline = time() + 12.0
             while time() < deadline
@@ -650,7 +655,7 @@ function chrome_screenshot(
         finally
             kill_chrome_session!(proc, udir)
             try
-                rm(udir; recursive=true, force=true)
+                rm(udir; recursive = true, force = true)
             catch
             end
         end
@@ -666,7 +671,7 @@ function downscale_png!(src::AbstractString, dest::AbstractString; w::Int, h::In
     sips = which_bin(("sips",))
     if sips !== nothing
         try
-            run(pipeline(`$sips -z $h $w $src --out $dest`; stdout=devnull, stderr=devnull))
+            run(pipeline(`$sips -z $h $w $src --out $dest`; stdout = devnull, stderr = devnull))
             return isfile(dest) && filesize(dest) > 0
         catch
         end
@@ -679,11 +684,13 @@ function downscale_png!(src::AbstractString, dest::AbstractString; w::Int, h::In
     end
     if ffmpeg !== nothing
         try
-            run(pipeline(
-                `$ffmpeg -y -i $src -vf scale=$(w):$(h):flags=lanczos $dest`;
-                stdout=devnull,
-                stderr=devnull,
-            ))
+            run(
+                pipeline(
+                    `$ffmpeg -y -i $src -vf scale=$(w):$(h):flags=lanczos $dest`;
+                    stdout = devnull,
+                    stderr = devnull,
+                )
+            )
             return isfile(dest) && filesize(dest) > 0
         catch
         end
@@ -693,17 +700,17 @@ end
 
 """Rasterize static SVG to PNG: prefer rsvg; else Chrome. Both can supersample via `scale`."""
 function bake_static_png!(
-    svg_rel::AbstractString,
-    out_rel::AbstractString,
-    html_body::AbstractString;
-    w::Int,
-    h::Int,
-    scale::Int=PNG_SCALE,
-    exact_size::Bool=false,
-)
+        svg_rel::AbstractString,
+        out_rel::AbstractString,
+        html_body::AbstractString;
+        w::Int,
+        h::Int,
+        scale::Int = PNG_SCALE,
+        exact_size::Bool = false,
+    )
     out_path = joinpath(ROOT, out_rel)
     svg_path = joinpath(ROOT, svg_rel)
-    if rsvg_png(svg_path, out_path; width=w, height=h, scale=scale, exact_size=exact_size)
+    if rsvg_png(svg_path, out_path; width = w, height = h, scale = scale, exact_size = exact_size)
         return true
     end
 
@@ -711,9 +718,9 @@ function bake_static_png!(
     html_path = joinpath(tempdir(), "distsshkit-$(replace(out_rel, "/" => "-")).html")
     write(html_path, html)
     if scale <= 1
-        if chrome_screenshot(html_path, out_path; w=w, h=h, scale=1)
+        if chrome_screenshot(html_path, out_path; w = w, h = h, scale = 1)
             if exact_size && !png_matches_size(out_path, w, h)
-                rm(out_path; force=true)
+                rm(out_path; force = true)
                 println(stderr, "error: chromium wrote wrong size for $out_rel (want $(w)×$(h))")
                 return false
             end
@@ -724,12 +731,12 @@ function bake_static_png!(
     end
 
     hi = joinpath(tempdir(), "distsshkit-$(replace(out_rel, "/" => "-"))-$(scale)x.png")
-    if !chrome_screenshot(html_path, hi; w=w, h=h, scale=scale)
+    if !chrome_screenshot(html_path, hi; w = w, h = h, scale = scale)
         return false
     end
-    if downscale_png!(hi, out_path; w=w, h=h)
+    if downscale_png!(hi, out_path; w = w, h = h)
         if exact_size && !png_matches_size(out_path, w, h)
-            rm(out_path; force=true)
+            rm(out_path; force = true)
             println(stderr, "error: downscale wrote wrong size for $out_rel (want $(w)×$(h))")
             return false
         end
@@ -741,7 +748,7 @@ function bake_static_png!(
         return false
     end
     # Fallback: keep the hi-res shot if downscale tools are missing.
-    cp(hi, out_path; force=true)
+    cp(hi, out_path; force = true)
     println(stderr, "warn: kept $(scale)× PNG for $out_rel (no sips/ffmpeg downscale)")
     println("wrote $out_rel ($(filesize(out_path)) bytes) [chromium $(scale)×]")
     return true
@@ -750,7 +757,7 @@ end
 function write_raster_stamp!(name::AbstractString)
     path = joinpath(ROOT, name)
     write(path, string(Dates.now(Dates.UTC), "Z\n"))
-    println("wrote $name")
+    return println("wrote $name")
 end
 
 function bake_pngs!(arts)
@@ -759,9 +766,9 @@ function bake_pngs!(arts)
     logo_html_body = replace(
         strip_xml_decl(arts.logo_static),
         "width=\"240\" height=\"240\"" => "width=\"$(LOGO_PNG)\" height=\"$(LOGO_PNG)\"",
-        count=1,
+        count = 1,
     )
-    bake_static_png!(logo_svg, logo_png, logo_html_body; w=LOGO_PNG, h=LOGO_PNG, scale=PNG_SCALE) ||
+    bake_static_png!(logo_svg, logo_png, logo_html_body; w = LOGO_PNG, h = LOGO_PNG, scale = PNG_SCALE) ||
         die("logo-static.png (need rsvg-convert or Chromium)")
 
     social_svg = social_path("social-preview-static.svg")
@@ -771,30 +778,30 @@ function bake_pngs!(arts)
         social_svg,
         social_png,
         social_html;
-        w=SOCIAL_PNG_W,
-        h=SOCIAL_PNG_H,
-        scale=PNG_SCALE,
-        exact_size=true,
+        w = SOCIAL_PNG_W,
+        h = SOCIAL_PNG_H,
+        scale = PNG_SCALE,
+        exact_size = true,
     ) || die("social-preview-static.png (need rsvg-convert or Chromium, plus sips/ffmpeg to keep 1280×640)")
 
     bake_favicon!(arts) || die("$FAVICON (need rsvg-convert or Chromium)")
 
     for (svg_rel, png_rel, svg_text) in (
-        (diagram_path("topology.svg"), diagram_path("topology.png"), arts.topology),
-    )
+            (diagram_path("topology.svg"), diagram_path("topology.png"), arts.topology),
+        )
         html_body = replace(
             strip_xml_decl(svg_text),
             "width=\"$(DIAGRAM_W)\" height=\"$(DIAGRAM_H)\"" =>
                 "width=\"$(DIAGRAM_PNG_W)\" height=\"$(DIAGRAM_PNG_H)\"",
-            count=1,
+            count = 1,
         )
         bake_static_png!(
             svg_rel,
             png_rel,
             html_body;
-            w=DIAGRAM_PNG_W,
-            h=DIAGRAM_PNG_H,
-            scale=1,
+            w = DIAGRAM_PNG_W,
+            h = DIAGRAM_PNG_H,
+            scale = 1,
         ) || die("$png_rel (need rsvg-convert or Chromium)")
     end
     return nothing
@@ -803,26 +810,26 @@ end
 function bake_favicon!(arts)
     ico_path = joinpath(ROOT, FAVICON)
     writefile(FAVICON_SVG, build_favicon(arts.logo_static))
-    writefile(FAVICON_DARK_SVG, build_favicon(arts.logo_static; dark=true))
+    writefile(FAVICON_DARK_SVG, build_favicon(arts.logo_static; dark = true))
     ensure_docroot_link!(FAVICON_SVG)
     ensure_docroot_link!(FAVICON_DARK_SVG)
-    d = mktempdir(ROOT; prefix=".favicon-")
+    d = mktempdir(ROOT; prefix = ".favicon-")
     try
         function raster_variant(svg_rel::AbstractString)
             html_body = strip_xml_decl(readfile(svg_rel))
             pngs = Pair{Int, String}[]
             for px in FAVICON_PX
                 src = joinpath(d, "$(first(splitext(svg_rel)))-$(px).png")
-                body = replace(html_body, r"width=\"[^\"]+\" height=\"[^\"]+\"" => "width=\"$(px)\" height=\"$(px)\"", count=1)
+                body = replace(html_body, r"width=\"[^\"]+\" height=\"[^\"]+\"" => "width=\"$(px)\" height=\"$(px)\"", count = 1)
                 if !bake_static_png!(
-                    svg_rel,
-                    relpath(src, ROOT),
-                    body;
-                    w=px,
-                    h=px,
-                    scale=PNG_SCALE,
-                    exact_size=true,
-                )
+                        svg_rel,
+                        relpath(src, ROOT),
+                        body;
+                        w = px,
+                        h = px,
+                        scale = PNG_SCALE,
+                        exact_size = true,
+                    )
                     return nothing
                 end
                 push!(pngs, px => src)
@@ -836,8 +843,8 @@ function bake_favicon!(arts)
         write_bmp_ico!(ico_path, light)
         png32 = joinpath(ROOT, "favicon.png")
         png32d = joinpath(ROOT, "favicon-dark.png")
-        cp(first(p for p in light if p[1] == 32)[2], png32; force=true)
-        cp(first(p for p in dark if p[1] == 32)[2], png32d; force=true)
+        cp(first(p for p in light if p[1] == 32)[2], png32; force = true)
+        cp(first(p for p in dark if p[1] == 32)[2], png32d; force = true)
         println("wrote $FAVICON ($(filesize(ico_path)) bytes)")
         println("wrote favicon.png ($(filesize(png32)) bytes)")
         println("wrote favicon-dark.png ($(filesize(png32d)) bytes)")
@@ -846,7 +853,7 @@ function bake_favicon!(arts)
         ensure_docroot_link!("favicon-dark.png")
         return true
     finally
-        rm(d; recursive=true, force=true)
+        rm(d; recursive = true, force = true)
     end
 end
 
@@ -861,13 +868,15 @@ function ffmpeg_gif!(seq_dir::AbstractString, out_gif::AbstractString)
     ffmpeg = first(candidates)
     palette = joinpath(tempdir(), "distsshkit-$(basename(out_gif))-pal.png")
     pattern = joinpath(seq_dir, "f%04d.png")
-    run(pipeline(`$ffmpeg -y -framerate 25 -i $pattern -vf palettegen=max_colors=128:stats_mode=diff $palette`; stdout=devnull, stderr=devnull))
-    run(pipeline(
-        `$ffmpeg -y -framerate 25 -i $pattern -i $palette -lavfi paletteuse=dither=bayer:bayer_scale=3 -loop -1 $out_gif`;
-        stdout=devnull,
-        stderr=devnull,
-    ))
-    println("wrote $(relpath(out_gif, ROOT)) ($(filesize(out_gif)) bytes)")
+    run(pipeline(`$ffmpeg -y -framerate 25 -i $pattern -vf palettegen=max_colors=128:stats_mode=diff $palette`; stdout = devnull, stderr = devnull))
+    run(
+        pipeline(
+            `$ffmpeg -y -framerate 25 -i $pattern -i $palette -lavfi paletteuse=dither=bayer:bayer_scale=3 -loop -1 $out_gif`;
+            stdout = devnull,
+            stderr = devnull,
+        )
+    )
+    return println("wrote $(relpath(out_gif, ROOT)) ($(filesize(out_gif)) bytes)")
 end
 
 function bake_gif_from_html!(html::AbstractString, out_gif::AbstractString; w::Int, h::Int)
@@ -877,17 +886,17 @@ function bake_gif_from_html!(html::AbstractString, out_gif::AbstractString; w::I
     ffmpeg_ok || die("ffmpeg not found (required for --gif)")
 
     n = round(Int, STORY_S * 1000 / DELAY_MS)
-    seq = mktempdir(prefix="distsshkit-gif-")
+    seq = mktempdir(prefix = "distsshkit-gif-")
     html_path = joinpath(seq, "page.html")
     write(html_path, html)
 
     println("  capturing $n frames × $(GIF_WORKERS) Chrome workers…")
     t0 = time()
     done = Threads.Atomic{Int}(0)
-    asyncmap(0:(n - 1); ntasks=GIF_WORKERS) do i
+    asyncmap(0:(n - 1); ntasks = GIF_WORKERS) do i
         t_s = i * DELAY_MS / 1000.0
         frame = joinpath(seq, @sprintf("f%04d.png", i))
-        chrome_screenshot(html_path, frame; w=w, h=h, t_s=t_s) ||
+        chrome_screenshot(html_path, frame; w = w, h = h, t_s = t_s) ||
             error("chromium screenshot failed at t=$(t_s)s")
         k = Threads.atomic_add!(done, 1) + 1
         if k == 1 || k % 25 == 0 || k == n
@@ -895,12 +904,12 @@ function bake_gif_from_html!(html::AbstractString, out_gif::AbstractString; w::I
         end
         return nothing
     end
-    println("  captured $n frames in $(round(time() - t0; digits=1))s")
+    println("  captured $n frames in $(round(time() - t0; digits = 1))s")
     ffmpeg_gif!(seq, out_gif)
     # Last-resort sweep if a worker crashed before finally ran.
-    if Sys.isunix()
+    return if Sys.isunix()
         try
-            run(pipeline(`pkill -9 -f distsshkit-chrome-`; stdout=devnull, stderr=devnull); wait=true)
+            run(pipeline(`pkill -9 -f distsshkit-chrome-`; stdout = devnull, stderr = devnull); wait = true)
         catch
         end
     end
@@ -908,14 +917,14 @@ end
 
 function bake_gifs!(arts)
     logo_html = html_wrap(
-        replace(strip_xml_decl(arts.logo), "width=\"240\" height=\"240\"" => "width=\"480\" height=\"480\"", count=1),
+        replace(strip_xml_decl(arts.logo), "width=\"240\" height=\"240\"" => "width=\"480\" height=\"480\"", count = 1),
         480,
         480,
     )
-    bake_gif_from_html!(logo_html, joinpath(ROOT, logo_path("logo-dynamic.gif")); w=480, h=480)
+    bake_gif_from_html!(logo_html, joinpath(ROOT, logo_path("logo-dynamic.gif")); w = 480, h = 480)
 
     social_html = html_wrap(arts.social_dynamic, SOCIAL_W, SOCIAL_H)
-    bake_gif_from_html!(social_html, joinpath(ROOT, social_path("social-preview-dynamic.gif")); w=SOCIAL_W, h=SOCIAL_H)
+    return bake_gif_from_html!(social_html, joinpath(ROOT, social_path("social-preview-dynamic.gif")); w = SOCIAL_W, h = SOCIAL_H)
 end
 
 function main(args)
@@ -937,7 +946,7 @@ function main(args)
     end
 
     remove_legacy!()
-    println("done")
+    return println("done")
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
