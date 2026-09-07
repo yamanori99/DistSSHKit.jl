@@ -42,6 +42,7 @@
           - "src/DistSSHKit.jl"
           - ".gitattributes"
           - ".gitignore"
+          - ".git-blame-ignore-revs"
           - ".vscode/**"
           - "LICENSE"
           - "Project.toml"

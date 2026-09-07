@@ -6,8 +6,8 @@
 #   - src/DistSSHKit/argv/<area>* → same area (drive_args.jl, size_report.jl, …)
 #   - kit modules explain / demos → area:explain, area:demos (path auto)
 #   - leftover DistSSHKit / argv / matching unit tests / shared CLI tests /
-#     package meta (LICENSE, Project.toml, …) → area:kit (every tracked path
-#     must match some area:*)
+#     package meta (LICENSE, Project.toml, .git-blame-ignore-revs, …) →
+#     area:kit (every tracked path must match some area:*)
 #   - test harness → area:test (`testenv/**` plus each `test/<name>` that is
 #     not a product-test tree). Do not emit `!` globs into
 #     any-glob-to-any-file: labeler ORs them as "not this path" and tags
@@ -130,6 +130,7 @@ EOF
           - "src/DistSSHKit.jl"
           - ".gitattributes"
           - ".gitignore"
+          - ".git-blame-ignore-revs"
           - ".vscode/**"
           - "LICENSE"
           - "Project.toml"

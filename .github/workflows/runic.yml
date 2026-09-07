@@ -1,0 +1,34 @@
+name: Runic
+
+# Light format check. Not a substitute for Pkg.test / Aqua / JETLS.
+# `version: '1'` follows Runic's major pin: a minor release may need a
+# follow-up `--inplace` commit (add it to `.git-blame-ignore-revs`).
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+permissions:
+  contents: read
+
+jobs:
+  runic:
+    name: Runic
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/julia-slot
+        with:
+          slot: min
+      - uses: fredrikekre/runic-action@v1
+        with:
+          version: '1'

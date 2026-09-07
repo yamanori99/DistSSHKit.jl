@@ -1,0 +1,6 @@
+# Format-only commits. GitHub blame honors this file.
+# Local: git config blame.ignoreRevsFile .git-blame-ignore-revs
+# After a squash-merge, replace the hash with the squash SHA on main.
+
+# Apply Runic formatting to tracked Julia sources (#352)
+66b461ce256533a1ab740fe2713a2f70e3ce9311
