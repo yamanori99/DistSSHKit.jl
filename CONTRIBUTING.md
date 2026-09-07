@@ -159,7 +159,9 @@ stay on **main**, **CI weekly**, and `cut`. Registry tree stays on
 
 [Runic](https://github.com/fredrikekre/Runic.jl) is a separate light
 workflow ([`.github/workflows/runic.yml`](.github/workflows/runic.yml)).
-It is not a substitute for `Pkg.test`.
+It is not a substitute for `Pkg.test`. Soft on PRs (not in the
+required-name list). Monthly cron on `main` opens Issue
+`Runic monthly failed` (`ci`) when `--check` is red.
 
 These files **alone** skip the heavy jobs (UI: skipping; Pkg.test /
 JETLS / Aqua do not start). Documenter still runs when `docs/**`, README,
@@ -192,7 +194,6 @@ allow-failure. A job skipped by the heavy / E2E gate shows as skipping
 - `Aqua - max - ubuntu-latest`
 - `Documenter - min - ubuntu-latest`
 - `Gitleaks`
-- `Runic`
 - `ubuntu-latest → ubuntu-24.04`
 - `PR label`
 
@@ -221,12 +222,11 @@ gitleaks detect --source .
 [Runic](https://github.com/fredrikekre/Runic.jl) CI
 (`fredrikekre/runic-action@v1`, `version: '1'`) runs `--check` on every
 tracked `.jl`. Format `demos/` and `docs/*.jl` too if you change them.
-Skip `test/artifacts/**` (no `.jl` there). A Runic minor may make CI
-red: re-run `runic --inplace src test` and push. Do not edit
-[`.git-blame-ignore-revs`](.git-blame-ignore-revs); a bulk `.jl` land
-on `main` is recorded by
-[`.github/workflows/blame-ignore-revs.yml`](.github/workflows/blame-ignore-revs.yml).
-Optional local blame:
+Skip `test/artifacts/**` (no `.jl` there). A Runic minor may make
+`--check` red: re-run `runic --inplace src test` and push. Optional:
+after a bulk format squash, add the landed SHA to
+[`.git-blame-ignore-revs`](.git-blame-ignore-revs) if blame is noisy.
+Local blame:
 
 ```bash
 git config blame.ignoreRevsFile .git-blame-ignore-revs
@@ -261,6 +261,11 @@ JETLS / Aqua slots as a PR (no coverage). Not a PR check. Catches max /
 Aqua / JETLS `@release` drift when nothing merged that week. Failure of
 min/max jobs opens Issue `CI weekly failed` (`ci`); tip is omitted from
 that notify.
+
+**Runic monthly** (1st 10:00 JST, or Run workflow): `runic --check` on
+tracked `.jl` (`version: '1'`). Not a required PR check. Catches Runic
+minor drift when nothing formatted that month. Failure opens Issue
+`Runic monthly failed` (`ci`).
 
 ## Pull requests
 
