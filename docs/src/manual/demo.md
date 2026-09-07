@@ -16,6 +16,8 @@ Examples: [First Steps · Demo](@ref Tutorial-Demo).
 - `demo list`: show demo ids and package paths
 - `demo install with_kit`: copy package `demos/with_kit/` into
   `./distsshkit_demos/`
+- `demo install without_kit`: copy package `demos/without_kit/` into
+  `./distsshkit_demos/`
 - `demo install ride`: copy package `demos/ride/` into
   `./distsshkit_demos/`
 - `--dest DIR`: install under `DIR/distsshkit_demos/` instead of
