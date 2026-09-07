@@ -12,9 +12,9 @@ GitHub Releases may copy these sections (`Release notes:` on
   (`dest` / `src` sharing storage, including arrays nested in a captured
   struct) stay interleaved. An incomplete capture walk also stays sequential.
   A `const` global RHS array that aliases `dest` stays sequential too.
-  A rewritten indexed `for` still evaluates to `nothing`.
-  Accumulating / stencil loops stay sequential; `plan` still marks those
-  out of scope.
+  A rewritten indexed `for` still evaluates to `nothing`. Nested rewritten
+  fills inside a `pmap` worker stay sequential. Accumulating / stencil loops
+  stay sequential; `plan` still marks those out of scope.
 - `drive` / `ride` no longer `pkill -f julia.*--worker` on SSH hosts. Leftover
   remote workers are `pkill`d only when `job_id` / `DISTSSHKIT_JOB_ID` is set
   (`pkill -f distsshkit-job:<id>`, same as [`terminate!`](@ref)). Untagged machine-wide sweep stays `setup --cleanup`.

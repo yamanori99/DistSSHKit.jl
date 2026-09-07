@@ -247,6 +247,52 @@ using Test
         @test rg.ok
         @test read(gout, String) == "1,2,3"
 
+        haslen_path = joinpath(tmp, "hasleniter.jl")
+        hout = joinpath(tmp, "hasleniter.txt")
+        write(haslen_path, """
+            dest = zeros(Int, 3)
+            n = Ref(0)
+            struct _RideHasLenIter
+                n::Ref{Int}
+            end
+            Base.IteratorSize(::Type{_RideHasLenIter}) = Base.HasLength()
+            Base.length(::_RideHasLenIter) = 3
+            function Base.iterate(it::_RideHasLenIter, st=1)
+                st > 3 && return nothing
+                it.n[] += 1
+                return (st, st + 1)
+            end
+            for i in _RideHasLenIter(n)
+                dest[i] = n[]
+            end
+            write($(repr(hout)), join(string.(dest), ","))
+            """)
+        rh = DistSSHKit.ride!(haslen_path, "parent:1"; spi_check=false)
+        @test rh.ok
+        @test read(hout, String) == "1,2,3"
+
+        pmapnest_path = joinpath(tmp, "pmapnest.jl")
+        pout = joinpath(tmp, "pmapnest.txt")
+        write(pmapnest_path, """
+            function inner_overlap()
+                data = [1, 2, 3, 4]
+                dest = @view data[2:4]
+                src = @view data[1:3]
+                for i in eachindex(dest)
+                    dest[i] = src[i]
+                end
+                return join(string.(dest), ",")
+            end
+            out = Vector{String}(undef, 4)
+            for i in eachindex(out)
+                out[i] = inner_overlap()
+            end
+            write($(repr(pout)), join(out, ";"))
+            """)
+        rp = DistSSHKit.ride!(pmapnest_path, "parent:2"; spi_check=false)
+        @test rp.ok
+        @test read(pout, String) == "1,1,1;1,1,1;1,1,1;1,1,1"
+
         overlap_src = """
             data = [1, 2, 3, 4]
             dest = @view data[2:4]

@@ -21,8 +21,9 @@ read `dest`, does not `return` / `break` / `continue`, and every index in
 `expr` is `i` (so `dest[i] = alias[i - 1]` stays sequential). If runtime
 effect analysis rejects distribution, or `dest` may alias an array the
 RHS captures (including nested in a struct), or a `Main` array aliases
-`dest` (including `const` globals the closure does not capture), the iterator
-is not collected first;
+`dest` (including `const` globals the closure does not capture), or
+`iterate` on the loop iterator is not effect-free, the iterator is not
+collected first;
 each `dest[i] = expr` runs in order. Distributed fills collect then map.
 SPI compares mapped RHS values before `dest` writes, so it does not catch
 that aliasing; the runtime overlap check does (including fail-closed if

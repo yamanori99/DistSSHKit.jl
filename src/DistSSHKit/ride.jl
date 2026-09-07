@@ -67,6 +67,32 @@ function _ride_index_free(xs)::Bool
     end
 end
 
+function _ride_iterate_free(xs)::Bool
+    T = typeof(xs)
+    try
+        e = Base.infer_effects(Base.iterate, Tuple{T})
+        Core.Compiler.is_effect_free(e) || return false
+    catch
+        return false
+    end
+    try
+        et = eltype(xs)
+        e = Base.infer_effects(Base.iterate, Tuple{T,Union{Nothing,et}})
+        return Core.Compiler.is_effect_free(e)
+    catch
+        return false
+    end
+end
+
+function _ride_pmap_worker(f, x)
+    _RIDE_DEPTH[] += 1
+    try
+        return _ride_callable(f)(x)
+    finally
+        _RIDE_DEPTH[] -= 1
+    end
+end
+
 function _ride_apply_named(name::Symbol, x)
     f = getglobal(Main, name)
     return Base.invokelatest(f, x)
@@ -93,7 +119,7 @@ function _can_distribute(f, xs)::Bool
     catch
         return false
     end
-    return _ride_effects_free(fn, T) && _ride_index_free(xs)
+    return _ride_effects_free(fn, T) && _ride_index_free(xs) && _ride_iterate_free(xs)
 end
 
 function _ride_collect_arrays!(out::Vector{AbstractArray}, x, depth::Int)::Bool
@@ -172,7 +198,7 @@ function _ride_map(f, xs)
         if !_can_distribute(f, xs)
             return map(_ride_callable(f), xs)
         end
-        dist = pmap(_ride_callable(f), xs)
+        dist = pmap(x -> _ride_pmap_worker(f, x), xs)
         if _RIDE_SPI[]
             seq = map(_ride_callable(f), xs)
             ok = _ride_compare(dist, seq)
@@ -193,7 +219,7 @@ function _ride_filter(f, xs)
         if !_can_distribute(f, xs)
             return filter(_ride_callable(f), xs)
         end
-        flags = pmap(_ride_callable(f), xs)
+        flags = pmap(x -> _ride_pmap_worker(f, x), xs)
         dist = xs[findall(identity, flags)]
         if _RIDE_SPI[]
             seq = filter(_ride_callable(f), xs)
