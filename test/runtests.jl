@@ -26,13 +26,13 @@ const _RUNTEST_N = 50
 const _RUNTEST_I = Ref(0)
 function _runtest_announce(rel::AbstractString)
     _RUNTEST_I[] += 1
-    println("[$( _RUNTEST_I[])/$_RUNTEST_N]  $rel")
+    println("[$(_RUNTEST_I[])/$_RUNTEST_N]  $rel")
     flush(stdout)
     return nothing
 end
 
-@testset "DistSSHKit" verbose=true begin
-    @testset "unit" verbose=true begin
+@testset "DistSSHKit" verbose = true begin
+    @testset "unit" verbose = true begin
         _runtest_announce("unit/DistSSHKit/display.jl")
         include(joinpath(@__DIR__, "unit", "DistSSHKit", "display.jl"))
         _runtest_announce("unit/DistSSHKit/explain.jl")
@@ -105,7 +105,7 @@ end
         include(joinpath(@__DIR__, "unit", "cli", "ride", "args.jl"))
     end
 
-    @testset "integration" verbose=true begin
+    @testset "integration" verbose = true begin
         _runtest_announce("integration/cli/help.jl")
         include(joinpath(@__DIR__, "integration", "cli", "help.jl"))
         _runtest_announce("integration/setup/exit.jl")

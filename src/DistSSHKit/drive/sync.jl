@@ -14,14 +14,18 @@ Also available as `setup!(session, :rsync)` / `setup!(session, :sync)`.
 
 Returns [`SyncResult`](@ref).
 """
-function sync!(session::KitSession; mode::Union{Symbol,Bool}=:sync)::SyncResult
+function sync!(session::KitSession; mode::Union{Symbol, Bool} = :sync)::SyncResult
     mode === false && throw(ArgumentError("sync!: mode=false means skip sync; do not call sync!"))
-    mode === :rsync || mode === :sync || throw(ArgumentError(
-        "sync! mode must be :rsync or :sync, got $(repr(mode))",
-    ))
-    isempty(session.hosts) && throw(ArgumentError(
-        explain_no_hosts(; surface=hint_surface(session), kind=:ssh),
-    ))
+    mode === :rsync || mode === :sync || throw(
+        ArgumentError(
+            "sync! mode must be :rsync or :sync, got $(repr(mode))",
+        )
+    )
+    isempty(session.hosts) && throw(
+        ArgumentError(
+            explain_no_hosts(; surface = hint_surface(session), kind = :ssh),
+        )
+    )
     return _with_kit_inproc_run!(:sync) do
         apply_session_env!(session)
         remote_path = session_remote_root(session)
@@ -31,27 +35,27 @@ function sync!(session::KitSession; mode::Union{Symbol,Bool}=:sync)::SyncResult
                 session.hosts,
                 session.project,
                 remote_path;
-                confirm=!session.yes,
-                path_anchor=session.project,
+                confirm = !session.yes,
+                path_anchor = session.project,
             )
             if raw.cancelled
-                return SyncResult(true, HostResult[]; ok=false)
+                return SyncResult(true, HostResult[]; ok = false)
             end
-            return SyncResult(false, raw.host_results; ok=raw.failed == 0)
+            return SyncResult(false, raw.host_results; ok = raw.failed == 0)
         else
             raw = git_sync_project_to_hosts!(
                 session.hosts,
                 session.project,
                 remote_path;
-                do_push=true,
-                do_pull=true,
-                do_local_pull=false,
-                confirm=!session.yes,
+                do_push = true,
+                do_pull = true,
+                do_local_pull = false,
+                confirm = !session.yes,
             )
             if raw.cancelled
-                return SyncResult(true, HostResult[]; ok=false)
+                return SyncResult(true, HostResult[]; ok = false)
             end
-            return SyncResult(false, raw.host_results; ok=raw.ok)
+            return SyncResult(false, raw.host_results; ok = raw.ok)
         end
     end
 end

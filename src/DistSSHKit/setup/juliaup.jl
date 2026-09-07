@@ -35,48 +35,48 @@ function _juliaup_candidate_sh_word(path::AbstractString)::String
 end
 
 """Channel string for juliaup from a Julia `VersionNumber` (`\"1.12\"`)."""
-juliaup_channel(v::VersionNumber=VERSION)::String = "$(v.major).$(v.minor)"
+juliaup_channel(v::VersionNumber = VERSION)::String = "$(v.major).$(v.minor)"
 
 """SSH body: add / update / default `channel` with remote juliaup."""
 function _juliaup_align_remote_sh(
-    channel::AbstractString;
-    candidates::Vector{String}=remote_juliaup_candidates(),
-)::String
+        channel::AbstractString;
+        candidates::Vector{String} = remote_juliaup_candidates(),
+    )::String
     ch = String(channel)
     cq = _remote_sh_quote(ch)
     words = join(_juliaup_candidate_sh_word.(candidates), " ")
     tried = join(candidates, ", ")
     return """
-JU=\"\"
-for c in $words; do
-  if [ -x \"\$c\" ]; then
-    JU=\"\$c\"
-    break
-  fi
-done
-if [ -z \"\$JU\" ]; then
-  echo \"juliaup not found (tried: $tried)\" >&2
-  exit 127
-fi
-if ! \"\$JU\" add $cq; then
-  if ! \"\$JU\" status 2>/dev/null | grep -F -q $cq; then
-    # `$cq` (not raw `$ch`): channel may come from the API; keep it shell-safe.
-    printf 'juliaup add %s failed\\n' $cq >&2
-    exit 1
-  fi
-fi
-\"\$JU\" update $cq || exit \$?
-\"\$JU\" default $cq || exit \$?
-echo ok
-"""
+    JU=\"\"
+    for c in $words; do
+      if [ -x \"\$c\" ]; then
+        JU=\"\$c\"
+        break
+      fi
+    done
+    if [ -z \"\$JU\" ]; then
+      echo \"juliaup not found (tried: $tried)\" >&2
+      exit 127
+    fi
+    if ! \"\$JU\" add $cq; then
+      if ! \"\$JU\" status 2>/dev/null | grep -F -q $cq; then
+        # `$cq` (not raw `$ch`): channel may come from the API; keep it shell-safe.
+        printf 'juliaup add %s failed\\n' $cq >&2
+        exit 1
+      fi
+    fi
+    \"\$JU\" update $cq || exit \$?
+    \"\$JU\" default $cq || exit \$?
+    echo ok
+    """
 end
 
 """Print Fix lines for missing / mismatched remote Julia (check output)."""
 function print_juliaup_align_fix!(
-    host::AbstractString;
-    kind::Symbol=:mismatch,
-    channel::AbstractString=juliaup_channel(),
-)
+        host::AbstractString;
+        kind::Symbol = :mismatch,
+        channel::AbstractString = juliaup_channel(),
+    )
     ch = String(channel)
     h = String(host)
     kit_println("    Fix: julia --project=. -m DistSSHKit setup --juliaup $(setup_cli_host_token(h))")
@@ -94,19 +94,19 @@ end
 
 """True when `remote` is same major.minor as `local` but a newer VersionNumber."""
 function juliaup_parent_behind_channel(
-    local_version::VersionNumber,
-    remote_version::VersionNumber,
-)::Bool
+        local_version::VersionNumber,
+        remote_version::VersionNumber,
+    )::Bool
     julia_version_mismatch_kind(local_version, remote_version) == :minor && return false
     return remote_version > local_version
 end
 
 """Note when remotes landed on a newer patch than the kit parent (channel latest)."""
 function print_juliaup_parent_patch_note!(
-    remote_version::VersionNumber;
-    local_version::VersionNumber=VERSION,
-    channel::AbstractString=juliaup_channel(local_version),
-)
+        remote_version::VersionNumber;
+        local_version::VersionNumber = VERSION,
+        channel::AbstractString = juliaup_channel(local_version),
+    )
     juliaup_parent_behind_channel(local_version, remote_version) || return false
     ch = String(channel)
     warn("kit parent Julia $local_version is behind channel $ch latest on remotes ($remote_version)")
@@ -128,8 +128,8 @@ end
 
 """First existing local juliaup path, or `nothing`."""
 function find_local_juliaup(
-    candidates::Vector{String}=local_juliaup_candidates(),
-)::Union{Nothing,String}
+        candidates::Vector{String} = local_juliaup_candidates(),
+    )::Union{Nothing, String}
     for c in candidates
         p = String(c)
         isfile(p) && return p
@@ -144,26 +144,26 @@ end
 
 """Run local `juliaup add` / `update` / `default` for `channel`."""
 function _juliaup_align_local!(
-    channel::AbstractString;
-    candidates::Vector{String}=local_juliaup_candidates(),
-)::VersionNumber
+        channel::AbstractString;
+        candidates::Vector{String} = local_juliaup_candidates(),
+    )::VersionNumber
     ch = String(channel)
     ju = find_local_juliaup(candidates)
     ju === nothing && error(
         "juliaup not found (tried: $(join(candidates, ", ")))",
     )
-    add = run(ignorestatus(Cmd([ju, "add", ch])); wait=true)
+    add = run(ignorestatus(Cmd([ju, "add", ch])); wait = true)
     if add.exitcode != 0
         st = sprint() do io
             try
-                run(pipeline(Cmd([ju, "status"]); stdout=io, stderr=devnull); wait=true)
+                run(pipeline(Cmd([ju, "status"]); stdout = io, stderr = devnull); wait = true)
             catch
             end
         end
         occursin(ch, st) || error("juliaup add $ch failed")
     end
-    run(Cmd([ju, "update", ch]); wait=true)
-    run(Cmd([ju, "default", ch]); wait=true)
+    run(Cmd([ju, "update", ch]); wait = true)
+    run(Cmd([ju, "default", ch]); wait = true)
     jl = _local_julia_beside_juliaup(ju)
     isfile(jl) || error("Julia not found after juliaup align ($jl)")
     out = read(`$jl --version`, String)
@@ -177,13 +177,13 @@ end
 
 """Parse remote Julia version via setup SSH transport (`DISTSSHKIT_TEST_SSH`)."""
 function _remote_julia_version_setup_ssh(
-    host::AbstractString,
-    julia_path::AbstractString,
-)::Union{Nothing,VersionNumber}
+        host::AbstractString,
+        julia_path::AbstractString,
+    )::Union{Nothing, VersionNumber}
     pq = _remote_shell_path_word(String(julia_path))
     try
         out = read(
-            pipeline(_host_sync_remote_shell_cmd(String(host), "$pq --version"); stderr=devnull),
+            pipeline(_host_sync_remote_shell_cmd(String(host), "$pq --version"); stderr = devnull),
             String,
         )
         return parse_julia_version(out)
@@ -202,10 +202,10 @@ juliaup. Runs `add` → `update` → `default`. Confirm unless `confirm=false`.
 Changing the default does not alter the Julia process already running this kit.
 """
 function juliaup_align_remotes(
-    hosts::Vector{String};
-    channel::AbstractString=juliaup_channel(),
-    confirm::Bool=true,
-)::NamedTuple
+        hosts::Vector{String};
+        channel::AbstractString = juliaup_channel(),
+        confirm::Bool = true,
+    )::NamedTuple
     ch = String(channel)
     if confirm && !kit_noninteractive()
         print_err("  This will run juliaup add/update/default $ch on each target.\n")
@@ -215,9 +215,9 @@ function juliaup_align_remotes(
         println_fatal("  (/opt/homebrew/bin/juliaup or /usr/local/bin/juliaup).")
         println_fatal("  The running kit process keeps its current Julia until restart.")
         println_fatal()
-        kit_confirm("Type 'juliaup' to confirm: "; keyword="juliaup") || begin
+        kit_confirm("Type 'juliaup' to confirm: "; keyword = "juliaup") || begin
             println_fatal("Cancelled.")
-            return (; cancelled=true, succeeded=0, failed=0, hosts=HostResult[])
+            return (; cancelled = true, succeeded = 0, failed = 0, hosts = HostResult[])
         end
         println_fatal()
     end
@@ -247,10 +247,10 @@ function juliaup_align_remotes(
                 proc = run(
                     pipeline(
                         ignorestatus(_host_sync_remote_shell_cmd(host, remote_sh));
-                        stdout=out_buf,
-                        stderr=err_buf,
+                        stdout = out_buf,
+                        stderr = err_buf,
                     );
-                    wait=true,
+                    wait = true,
                 )
                 if proc.exitcode != 0
                     msg = strip(String(take!(err_buf)))
@@ -270,13 +270,13 @@ function juliaup_align_remotes(
             end
             print_ok("✓ Julia $ver (channel $ch)")
             kit_println()
-            print_juliaup_parent_patch_note!(ver; channel=ch)
+            print_juliaup_parent_patch_note!(ver; channel = ch)
             succeeded += 1
             push!(host_results, HostResult(host, true, "juliaup $ch"))
             _setup_host_span!(host, :ok)
         catch e
             detail = strip(String(take!(err_buf)))
-            report_remote_failure(e; stderr=detail)
+            report_remote_failure(e; stderr = detail)
             combined = isempty(detail) ? sprint(showerror, e) : detail
             if occursin("juliaup not found", combined) || occursin("127", combined)
                 kit_println("    Install juliaup on $host first (see Requirements), then retry.")
@@ -286,5 +286,5 @@ function juliaup_align_remotes(
             _setup_host_span!(host, :fail)
         end
     end
-    return (; host_op_result(succeeded=succeeded, failed=failed)..., hosts=host_results)
+    return (; host_op_result(succeeded = succeeded, failed = failed)..., hosts = host_results)
 end

@@ -9,13 +9,13 @@ using Distributed
 # unpacked as `Char`). Load the same way `drive!` does, at top level, so
 # `Main.*` methods exist before this file's `@testset` is lowered (world age).
 
-const _EMPTY_DRIVE_HOSTS = Tuple{String,Union{Int,Nothing}}[]
+const _EMPTY_DRIVE_HOSTS = Tuple{String, Union{Int, Nothing}}[]
 
 let _frag_root = mktempdir()
     try
         DistSSHKit._ensure_drive_fragments!(_frag_root)
     finally
-        rm(_frag_root; recursive=true, force=true)
+        rm(_frag_root; recursive = true, force = true)
     end
 end
 
@@ -35,7 +35,7 @@ end
         end
 
         @testset "register_worker_cleanup! removes added workers" begin
-            addprocs(2; topology=:master_worker)
+            addprocs(2; topology = :master_worker)
             added = workers()
             @test length(added) == 2
             try
@@ -46,28 +46,28 @@ end
                 @test cleanup() === nothing
             finally
                 for w in added
-                    w in workers() && rmprocs(w; waitfor=2.0)
+                    w in workers() && rmprocs(w; waitfor = 2.0)
                 end
             end
         end
 
         @testset "register_worker_cleanup! guard trips before later workers" begin
-            addprocs(1; topology=:master_worker)
+            addprocs(1; topology = :master_worker)
             pre = workers()[end]
             try
                 cleanup = Main.register_worker_cleanup!(String[])
                 cleanup()
                 @test pre ∉ workers()
-                addprocs(1; topology=:master_worker)
+                addprocs(1; topology = :master_worker)
                 other = workers()[end]
                 try
                     cleanup()
                     @test other in workers()
                 finally
-                    other in workers() && rmprocs(other; waitfor=2.0)
+                    other in workers() && rmprocs(other; waitfor = 2.0)
                 end
             finally
-                pre in workers() && rmprocs(pre; waitfor=2.0)
+                pre in workers() && rmprocs(pre; waitfor = 2.0)
             end
         end
 
@@ -88,7 +88,7 @@ end
                 mktemp() do path, io
                     redirect_stdout(io) do
                         Main.cleanup_stale_workers!(
-                            Tuple{String,Union{Int,Nothing}}[("example.invalid", 1)],
+                            Tuple{String, Union{Int, Nothing}}[("example.invalid", 1)],
                         )
                     end
                     flush(io)
@@ -102,7 +102,7 @@ end
                 mktemp() do path, io
                     redirect_stdout(io) do
                         Main.cleanup_stale_workers!(
-                            Tuple{String,Union{Int,Nothing}}[("example.invalid", 1)],
+                            Tuple{String, Union{Int, Nothing}}[("example.invalid", 1)],
                         )
                     end
                     flush(io)
@@ -140,7 +140,7 @@ end
                 end
             finally
                 for w in added
-                    w in workers() && rmprocs(w; waitfor=2.0)
+                    w in workers() && rmprocs(w; waitfor = 2.0)
                 end
             end
         end
@@ -149,19 +149,23 @@ end
 
 @testset "drive heartbeat" begin
     @testset "_heartbeat_config" begin
-        cfg = DistSSHKit._heartbeat_config(Dict{String,String}())
+        cfg = DistSSHKit._heartbeat_config(Dict{String, String}())
         @test cfg.interval == 30.0
         @test cfg.deadline == 600.0
-        cfg = DistSSHKit._heartbeat_config(Dict(
-            "DISTRIBUTED_HEARTBEAT_INTERVAL_SEC" => "2",
-            "DISTRIBUTED_HEARTBEAT_DEADLINE_SEC" => "9",
-        ))
+        cfg = DistSSHKit._heartbeat_config(
+            Dict(
+                "DISTRIBUTED_HEARTBEAT_INTERVAL_SEC" => "2",
+                "DISTRIBUTED_HEARTBEAT_DEADLINE_SEC" => "9",
+            )
+        )
         @test cfg.interval == 2.0
         @test cfg.deadline == 9.0
-        cfg = DistSSHKit._heartbeat_config(Dict(
-            "DISTRIBUTED_HEARTBEAT_INTERVAL_SEC" => "nope",
-            "DISTRIBUTED_HEARTBEAT_DEADLINE_SEC" => "-1",
-        ))
+        cfg = DistSSHKit._heartbeat_config(
+            Dict(
+                "DISTRIBUTED_HEARTBEAT_INTERVAL_SEC" => "nope",
+                "DISTRIBUTED_HEARTBEAT_DEADLINE_SEC" => "-1",
+            )
+        )
         @test cfg.interval == 30.0
         @test cfg.deadline == 600.0
     end
@@ -172,7 +176,7 @@ end
         @test !DistSSHKit._master_alive(0.0, 10.0, 10.1)
     end
 
-    function _wait_flag(flag::Ref{Bool}; timeout::Float64=2.0)
+    function _wait_flag(flag::Ref{Bool}; timeout::Float64 = 2.0)
         t0 = time()
         while !flag[] && (time() - t0) < timeout
             sleep(0.02)
@@ -186,8 +190,8 @@ end
         ch = Channel{Nothing}(0)
         hb = DistSSHKit._run_heartbeat!(
             stop, 0.05, 0.12;
-            ping=() -> take!(ch),
-            on_dead=() -> (dead[] = true),
+            ping = () -> take!(ch),
+            on_dead = () -> (dead[] = true),
         )
         try
             @test _wait_flag(dead)
@@ -204,8 +208,8 @@ end
         dead = Ref(false)
         DistSSHKit._run_heartbeat!(
             stop, 0.05, 0.12;
-            ping=() -> true,
-            on_dead=() -> (dead[] = true),
+            ping = () -> true,
+            on_dead = () -> (dead[] = true),
         )
         try
             sleep(0.35)
@@ -221,8 +225,8 @@ end
         n = Ref(0)
         DistSSHKit._run_heartbeat!(
             stop, 0.04, 0.35;
-            ping=() -> (n[] += 1; n[] <= 2 && error("blip"); true),
-            on_dead=() -> (dead[] = true),
+            ping = () -> (n[] += 1; n[] <= 2 && error("blip"); true),
+            on_dead = () -> (dead[] = true),
         )
         try
             sleep(0.45)
@@ -237,8 +241,8 @@ end
         stop = Ref(false)
         hb = DistSSHKit._run_heartbeat!(
             stop, 0.03, 10.0;
-            ping=() -> true,
-            on_dead=() -> error("should not die"),
+            ping = () -> true,
+            on_dead = () -> error("should not die"),
         )
         stop[] = true
         wait(hb.prober)
@@ -250,17 +254,19 @@ end
     @testset "publish defs skip top-level work on workers" begin
         _with_tempdir() do tmp
             p = joinpath(tmp, "plain.jl")
-            write(p, """
+            write(
+                p, """
                 function work(x)
                     return x * x
                 end
                 xs = 1:8
                 println("SHOULD_NOT_PUBLISH")
-                """)
+                """
+            )
             src = DistSSHKit._drive_publish_source(p)
             @test occursin("function work", src)
             @test !occursin("SHOULD_NOT_PUBLISH", src)
-            addprocs(1; topology=:master_worker)
+            addprocs(1; topology = :master_worker)
             w = workers()[end]
             try
                 remotecall_fetch(w, src) do code
@@ -271,7 +277,7 @@ end
                     isdefined(Main, :work) && Base.invokelatest(getfield(Main, :work), 3) == 9
                 end
             finally
-                w in workers() && rmprocs(w; waitfor=2.0)
+                w in workers() && rmprocs(w; waitfor = 2.0)
             end
         end
     end

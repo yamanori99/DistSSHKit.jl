@@ -5,7 +5,7 @@ canonical_local_path(path::AbstractString)::String = String(abspath(expanduser(S
 
 """Shorten absolute paths by replacing the home directory prefix with `~`."""
 short_path(path::String) = let home = expanduser("~")
-    startswith(path, home) ? "~" * path[length(home)+1:end] : path
+    startswith(path, home) ? "~" * path[(length(home) + 1):end] : path
 end
 
 """
@@ -57,7 +57,7 @@ function kit_pid_alive(pid::Integer)::Bool
 end
 
 """Linux `/proc/<pid>/stat` starttime field (clock ticks since boot), or `nothing`."""
-function _linux_proc_start_key(pid::Integer)::Union{Nothing,String}
+function _linux_proc_start_key(pid::Integer)::Union{Nothing, String}
     path = string("/proc/", Int(pid), "/stat")
     isfile(path) || return nothing
     s = try
@@ -79,7 +79,7 @@ end
 Identity of this OS pid's start (Linux `/proc` starttime, else `ps -o lstart=`).
 `nothing` if the pid is gone, unreadable, or Windows.
 """
-function kit_process_start_key(pid::Integer)::Union{Nothing,String}
+function kit_process_start_key(pid::Integer)::Union{Nothing, String}
     pid <= 0 && return nothing
     Sys.iswindows() && return nothing
     if isfile(string("/proc/", Int(pid), "/stat"))
@@ -124,17 +124,19 @@ function kit_output_dir_lock!(output_dir::AbstractString)
         end
         existing_pid = tryparse(Int, existing)
         if existing_pid !== nothing && existing_pid != mypid && kit_pid_alive(existing_pid)
-            throw(ArgumentError(
-                "another DistSSHKit run (pid $(existing_pid)) already holds " *
-                "$(lock_path) — refusing to run concurrently against the same output_dir",
-            ))
+            throw(
+                ArgumentError(
+                    "another DistSSHKit run (pid $(existing_pid)) already holds " *
+                        "$(lock_path) — refusing to run concurrently against the same output_dir",
+                )
+            )
         end
     end
     write(lock_path, string(mypid))
     return () -> begin
         try
             if isfile(lock_path) && strip(read(lock_path, String)) == string(mypid)
-                rm(lock_path; force=true)
+                rm(lock_path; force = true)
             end
         catch
             # best-effort only
@@ -146,8 +148,8 @@ end
 # `.kit.lock` is per `output_dir` and pid; it does not serialize two runs in
 # this process. Nested calls on the same task (go autosize → `size!`) are ok.
 const _KIT_INPROC_GATE = ReentrantLock()
-const _KIT_INPROC_OWNER = Ref{Union{Nothing,Task}}(nothing)
-const _KIT_INPROC_KIND = Ref{Union{Nothing,Symbol}}(nothing)
+const _KIT_INPROC_OWNER = Ref{Union{Nothing, Task}}(nothing)
+const _KIT_INPROC_KIND = Ref{Union{Nothing, Symbol}}(nothing)
 const _KIT_INPROC_DEPTH = Ref(0)
 
 function _kit_inproc_run_kind()
@@ -159,9 +161,11 @@ function _acquire_kit_inproc_run!(kind::Symbol)
         owner = _KIT_INPROC_OWNER[]
         if owner !== nothing && owner !== current_task()
             running = something(_KIT_INPROC_KIND[], :unknown)
-            throw(ArgumentError(
-                "overlapping in-process DistSSHKit run is not supported (already running $(running))",
-            ))
+            throw(
+                ArgumentError(
+                    "overlapping in-process DistSSHKit run is not supported (already running $(running))",
+                )
+            )
         end
         if owner === nothing
             _KIT_INPROC_OWNER[] = current_task()
@@ -196,7 +200,7 @@ function _with_kit_inproc_run!(f, kind::Symbol)
 end
 
 """Read `name = "..."` from `proj_dir/Project.toml`; return `nothing` if missing or unreadable."""
-function project_package_name(proj_dir::AbstractString)::Union{Nothing,String}
+function project_package_name(proj_dir::AbstractString)::Union{Nothing, String}
     path = joinpath(proj_dir, "Project.toml")
     isfile(path) || return nothing
     try
@@ -241,9 +245,9 @@ end
 Short label for a project root in console output.
 """
 function cli_project_disp(
-    project_root::AbstractString,
-    path_anchor::AbstractString=canonical_local_path(project_root),
-)::String
+        project_root::AbstractString,
+        path_anchor::AbstractString = canonical_local_path(project_root),
+    )::String
     s = display_path(String(project_root), path_anchor)
     return s == "." ? basename(abspath(String(project_root))) : s
 end
@@ -305,7 +309,7 @@ end
 
 """Local project root for kit CLI scripts (`ENV[DISTRIBUTED_PROJECT_ROOT]` or cwd / [`kit_project_root`](@ref))."""
 function cli_project_root(kit_src_dir::AbstractString)
-    get(ENV, "DISTRIBUTED_PROJECT_ROOT") do
+    return get(ENV, "DISTRIBUTED_PROJECT_ROOT") do
         _cli_job_root(kit_project_root(kit_src_dir), pwd())
     end
 end
@@ -320,13 +324,13 @@ const HELP_RULE_MIN_WIDTH = 8
 const HELP_SECTION_MAX_LEN = 48
 
 """Horizontal rule used for section headers (UTF-8 box drawing)."""
-rule_line(width::Int=OUTPUT_WIDTH)::String = string(RULE_CHAR)^width
+rule_line(width::Int = OUTPUT_WIDTH)::String = string(RULE_CHAR)^width
 
 # Log file
 
-const LOG_FILE_HANDLE = Ref{Union{IO,Nothing}}(nothing)
+const LOG_FILE_HANDLE = Ref{Union{IO, Nothing}}(nothing)
 """`output_dir/kit.progress` path, or `nothing`. Written even when `--no-log`."""
-const KIT_PROGRESS_SIDECAR = Ref{Union{Nothing,String}}(nothing)
+const KIT_PROGRESS_SIDECAR = Ref{Union{Nothing, String}}(nothing)
 const KIT_OUTPUT_QUIET = Ref(false)
 const KIT_NONINTERACTIVE = Ref(false)
 """`:verbose` | `:progress` | `:quiet` — see [`kit_verbosity`](@ref)."""
@@ -364,7 +368,7 @@ function _kit_log_write(msg::AbstractString)
     return nothing
 end
 
-function _kit_log_writeln(msg::AbstractString="")
+function _kit_log_writeln(msg::AbstractString = "")
     h = LOG_FILE_HANDLE[]
     h === nothing && return
     println(h, msg)
@@ -373,7 +377,7 @@ function _kit_log_writeln(msg::AbstractString="")
 end
 
 """Point `progress:` sidecar writes at `dir/kit.progress` (`nothing` clears)."""
-function _set_kit_progress_sidecar!(dir::Union{Nothing,AbstractString})
+function _set_kit_progress_sidecar!(dir::Union{Nothing, AbstractString})
     if dir === nothing
         KIT_PROGRESS_SIDECAR[] = nothing
         return nothing
@@ -492,31 +496,31 @@ function _print_job_stdout_if_detail!()
 end
 
 """Kit text → terminal when `:verbose`, always to kit log when open."""
-function write_both(msg::String; color::Symbol=:normal, bold::Bool=false)
+function write_both(msg::String; color::Symbol = :normal, bold::Bool = false)
     if kit_output_detail()
         if color == :normal && !bold
             print(msg)
         else
-            printstyled(msg; color=color, bold=bold)
+            printstyled(msg; color = color, bold = bold)
         end
     end
     _kit_log_write(msg)
     return nothing
 end
 
-function writeln_both(msg::String=""; color::Symbol=:normal, bold::Bool=false)
+function writeln_both(msg::String = ""; color::Symbol = :normal, bold::Bool = false)
     if kit_output_detail()
         if color == :normal && !bold
             println(msg)
         else
-            printstyled(msg * "\n"; color=color, bold=bold)
+            printstyled(msg * "\n"; color = color, bold = bold)
         end
     end
     _kit_log_writeln(msg)
     return nothing
 end
 
-function init_log_file(output_dir::String; prefix::String="drive", path_anchor::Union{Nothing,String}=nothing)
+function init_log_file(output_dir::String; prefix::String = "drive", path_anchor::Union{Nothing, String} = nothing)
     isdir(output_dir) || mkpath(output_dir)
     timestamp = Dates.format(now(), dateformat"yyyy-mm-ddTHHMMSS")
     log_file = joinpath(output_dir, "$(prefix)_$(timestamp).log")
@@ -527,7 +531,7 @@ function init_log_file(output_dir::String; prefix::String="drive", path_anchor::
 end
 
 function close_log_file()
-    if LOG_FILE_HANDLE[] !== nothing
+    return if LOG_FILE_HANDLE[] !== nothing
         flush(LOG_FILE_HANDLE[])
         close(LOG_FILE_HANDLE[])
         LOG_FILE_HANDLE[] = nothing
@@ -537,14 +541,14 @@ end
 """IO that writes to both primary (e.g. stdout) and secondary (e.g. log file).
 For secondary: line-buffered — only complete lines are written. Progress bar
 updates (\\r overwrites) are not written to log, avoiding bloat."""
-mutable struct TeeIO{P<:IO,S<:Union{IO,Nothing}} <: IO
+mutable struct TeeIO{P <: IO, S <: Union{IO, Nothing}} <: IO
     primary::P
     secondary::S
     linebuf::Vector{UInt8}
 end
 
-function TeeIO(primary::IO, secondary::Union{IO,Nothing})
-    TeeIO{typeof(primary),typeof(secondary)}(primary, secondary, UInt8[])
+function TeeIO(primary::IO, secondary::Union{IO, Nothing})
+    return TeeIO{typeof(primary), typeof(secondary)}(primary, secondary, UInt8[])
 end
 
 function Base.write(io::TeeIO, b::UInt8)
@@ -602,7 +606,7 @@ end
 # Also ambiguous with Base's `write(::IO, ::Base.CodeUnits)` (e.g. `write(io, codeunits(str))`);
 # this narrower method disambiguates. `where S` (rather than the bare UnionAll
 # `Base.CodeUnits{UInt8}`) keeps `b`'s type concrete for the compiler/linter.
-function Base.write(io::TeeIO, b::Base.CodeUnits{UInt8,S}) where {S<:AbstractString}
+function Base.write(io::TeeIO, b::Base.CodeUnits{UInt8, S}) where {S <: AbstractString}
     return _teeio_write_vector!(io, Vector{UInt8}(b))
 end
 
@@ -613,7 +617,7 @@ function Base.flush(io::TeeIO)
         write(sec, io.linebuf)
         flush(sec)
     end
-    nothing
+    return nothing
 end
 
 """Shell-quoted record of this subcommand's ARGS (no `julia -m` prefix)."""
@@ -621,9 +625,9 @@ subcommand_args_record(subcommand::AbstractString, args::Vector{String})::String
     Base.shell_escape(String(subcommand), args...)
 
 """Julia binary / project / threads for the kit log (best-effort)."""
-function julia_env_record()::Vector{Pair{String,String}}
+function julia_env_record()::Vector{Pair{String, String}}
     opts = Base.JLOptions()
-    out = Pair{String,String}[]
+    out = Pair{String, String}[]
     bin = opts.julia_bin == C_NULL ? nothing : unsafe_string(opts.julia_bin)
     bin === nothing || push!(out, "Julia binary" => bin)
     proj = opts.project == C_NULL ? "" : unsafe_string(opts.project)
@@ -633,13 +637,13 @@ function julia_env_record()::Vector{Pair{String,String}}
     return out
 end
 
-print_separator(; width::Int=OUTPUT_WIDTH) =
-    writeln_both(rule_line(width); color=:light_black)
+print_separator(; width::Int = OUTPUT_WIDTH) =
+    writeln_both(rule_line(width); color = :light_black)
 
 """Title + dim rule (kit banner)."""
-function print_header(title::String; width::Int=OUTPUT_WIDTH)
-    writeln_both(title; color=:cyan, bold=true)
-    print_separator(; width=width)
+function print_header(title::String; width::Int = OUTPUT_WIDTH)
+    writeln_both(title; color = :cyan, bold = true)
+    print_separator(; width = width)
     return nothing
 end
 
@@ -649,7 +653,7 @@ function writeln_field(label::AbstractString, value)
     text = sprint(print, value)
     if kit_output_detail()
         if use_colors()
-            printstyled(prefix; color=:light_black)
+            printstyled(prefix; color = :light_black)
             println(text)
         else
             println(prefix, text)
@@ -665,12 +669,12 @@ end
 use_colors() = !haskey(ENV, "NO_COLOR") && stdout isa Base.TTY
 
 """Print `msg` with `color` when the kit would use ANSI (TTY, no `NO_COLOR`)."""
-function print_colored(io, msg, color, bold=false)
-    use_colors() ? printstyled(io, msg; color=color, bold=bold) : print(io, msg)
+function print_colored(io, msg, color, bold = false)
+    return use_colors() ? printstyled(io, msg; color = color, bold = bold) : print(io, msg)
 end
 const _print_colored = print_colored
 
-function print_ok(msg; io=stdout, bold=false)
+function print_ok(msg; io = stdout, bold = false)
     if kit_output_detail()
         _print_colored(io, msg, :green, bold)
     end
@@ -707,7 +711,7 @@ function kit_spin!(f, prefix::AbstractString)
         while !done[]
             print(stdout, '\r', prefix_s)
             if use_colors()
-                printstyled(stdout, SPINNER_FRAMES[i]; color=:light_black)
+                printstyled(stdout, SPINNER_FRAMES[i]; color = :light_black)
             else
                 print(stdout, SPINNER_FRAMES[i])
             end
@@ -728,13 +732,13 @@ function kit_spin!(f, prefix::AbstractString)
 end
 
 """Always-visible error text (terminal + kit log)."""
-function print_err(msg; io=stdout, bold=false)
+function print_err(msg; io = stdout, bold = false)
     _print_colored(io, msg, :red, bold)
     _kit_log_write(string(msg))
     return nothing
 end
 
-function print_info(msg; io=stdout, bold=false)
+function print_info(msg; io = stdout, bold = false)
     if kit_output_detail()
         _print_colored(io, msg, :cyan, bold)
     end
@@ -743,14 +747,14 @@ function print_info(msg; io=stdout, bold=false)
 end
 
 """Always-visible warning text (terminal + kit log)."""
-function print_warn(msg; io=stdout, bold=false)
+function print_warn(msg; io = stdout, bold = false)
     _print_colored(io, msg, :yellow, bold)
     _kit_log_write(string(msg))
     return nothing
 end
 
 """Always-visible fatal line (terminal + kit log)."""
-function println_fatal(msg::AbstractString=""; io::IO=stdout)
+function println_fatal(msg::AbstractString = ""; io::IO = stdout)
     println(io, msg)
     _kit_log_writeln(msg)
     return nothing
@@ -775,7 +779,7 @@ function print_progress_warn(msg; kwargs...)
 end
 
 """Help / requirements title text only (no newline). Prefer [`print_help_chrome`](@ref)."""
-print_help_title(msg; io=stdout) = _print_colored(io, msg, :cyan, true)
+print_help_title(msg; io = stdout) = _print_colored(io, msg, :cyan, true)
 
 # Live phase progress (`--progress`)
 #
@@ -828,7 +832,7 @@ function _print_progress_accent(io::IO, x)
         r, g, b = rgb
         print(io, "\e[1;38;2;$(r);$(g);$(b)m", x, "\e[0m")
     else
-        printstyled(io, x; color=idx, bold=true)
+        printstyled(io, x; color = idx, bold = true)
     end
     return nothing
 end
@@ -849,21 +853,21 @@ mutable struct KitProgressState
     t0::Float64
     tick::Int
     spinning::Bool
-    spinner_task::Union{Task,Nothing}
+    spinner_task::Union{Task, Nothing}
     items::Vector{KitProgressItem}
     drawn::Int
     cursor_hidden::Bool
-    job_id::Union{Nothing,String}
+    job_id::Union{Nothing, String}
 end
 
 function KitProgressState(
-    title::AbstractString,
-    steps::Int,
-    done::Int,
-    label::AbstractString;
-    kind::Symbol=:unknown,
-    job_id::Union{Nothing,AbstractString}=nothing,
-)
+        title::AbstractString,
+        steps::Int,
+        done::Int,
+        label::AbstractString;
+        kind::Symbol = :unknown,
+        job_id::Union{Nothing, AbstractString} = nothing,
+    )
     return KitProgressState(
         String(title),
         steps,
@@ -882,7 +886,7 @@ function KitProgressState(
     )
 end
 
-const KIT_PROGRESS = Ref{Union{Nothing,KitProgressState}}(nothing)
+const KIT_PROGRESS = Ref{Union{Nothing, KitProgressState}}(nothing)
 const KIT_PROGRESS_LOCK = ReentrantLock()
 # Live bar stays on this IO when job stdout/stderr are redirected (Distributed
 # `From worker` uses `println` → stdout). Do not use this Ref for
@@ -897,32 +901,32 @@ function _progress_is_current(state::KitProgressState)::Bool
     return cur isa KitProgressState && objectid(cur) === objectid(state)
 end
 
-function _progress_filled(done::Int, total::Int; width::Int=PROGRESS_BAR_WIDTH)::Int
+function _progress_filled(done::Int, total::Int; width::Int = PROGRESS_BAR_WIDTH)::Int
     t = max(total, 1)
     return round(Int, width * clamp(done, 0, t) / t)
 end
 
 """1-based index of the walking tip in the unfilled region, or `0` when full."""
 function _progress_head_index(
-    done::Int,
-    total::Int,
-    tick::Int;
-    width::Int=PROGRESS_BAR_WIDTH,
-)::Int
-    filled = _progress_filled(done, total; width=width)
+        done::Int,
+        total::Int,
+        tick::Int;
+        width::Int = PROGRESS_BAR_WIDTH,
+    )::Int
+    filled = _progress_filled(done, total; width = width)
     filled >= width && return 0
     remaining = width - filled
     return filled + 1 + mod(max(tick, 0), remaining)
 end
 
 function _progress_bar_string(
-    done::Int,
-    total::Int;
-    width::Int=PROGRESS_BAR_WIDTH,
-    tick::Int=0,
-)::String
+        done::Int,
+        total::Int;
+        width::Int = PROGRESS_BAR_WIDTH,
+        tick::Int = 0,
+    )::String
     chars = fill(PROGRESS_FILL_CHAR, width)
-    h = _progress_head_index(done, total, tick; width=width)
+    h = _progress_head_index(done, total, tick; width = width)
     h > 0 && (chars[h] = PROGRESS_HEAD_CHAR)
     return join(chars)
 end
@@ -940,7 +944,7 @@ function _progress_current(state::KitProgressState)::Int
     return state.done >= state.steps ? state.steps : state.done + 1
 end
 
-function _progress_fit_label(raw::String; width::Int=PROGRESS_LABEL_WIDTH)::String
+function _progress_fit_label(raw::String; width::Int = PROGRESS_LABEL_WIDTH)::String
     tw::Int = textwidth(raw)
     extra = width - tw
     extra == 0 && return raw
@@ -971,48 +975,48 @@ function _progress_item_color(item::KitProgressItem)::Symbol
     return :light_black
 end
 
-function _progress_header_label(state::KitProgressState; finished::Bool=false)::String
+function _progress_header_label(state::KitProgressState; finished::Bool = false)::String
     use_title = finished || !isempty(state.items)
     return _progress_fit_label(use_title ? state.title : state.label)
 end
 
-function _progress_glyph(state::KitProgressState; finished::Bool=false, ok::Bool=true)::String
+function _progress_glyph(state::KitProgressState; finished::Bool = false, ok::Bool = true)::String
     finished && return ok ? "✓" : "✗"
     return string(SPINNER_FRAMES[mod1(state.tick, length(SPINNER_FRAMES))])
 end
 
 function _progress_line(
-    state::KitProgressState;
-    finished::Bool=false,
-    ok::Bool=true,
-)::String
-    glyph = _progress_glyph(state; finished=finished, ok=ok)
-    label = _progress_header_label(state; finished=finished)
+        state::KitProgressState;
+        finished::Bool = false,
+        ok::Bool = true,
+    )::String
+    glyph = _progress_glyph(state; finished = finished, ok = ok)
+    label = _progress_header_label(state; finished = finished)
     cur = _progress_current(state)
     elapsed = _progress_elapsed(state.t0)
     counts = "$cur/$(state.steps)"
     if finished
         return "  $glyph  $label  $counts  $elapsed"
     end
-    bar = _progress_bar_string(state.done, state.steps; tick=state.tick)
+    bar = _progress_bar_string(state.done, state.steps; tick = state.tick)
     return "  $glyph  $label  $bar  $counts  $elapsed"
 end
 
 function _progress_print_header!(
-    io::IO,
-    state::KitProgressState;
-    finished::Bool=false,
-    ok::Bool=true,
-)
-    glyph = _progress_glyph(state; finished=finished, ok=ok)
-    label = _progress_header_label(state; finished=finished)
+        io::IO,
+        state::KitProgressState;
+        finished::Bool = false,
+        ok::Bool = true,
+    )
+    glyph = _progress_glyph(state; finished = finished, ok = ok)
+    label = _progress_header_label(state; finished = finished)
     cur = _progress_current(state)
     counts = "$cur/$(state.steps)"
     elapsed = _progress_elapsed(state.t0)
     print(io, "  ")
     if use_colors()
         if finished
-            printstyled(io, glyph; color=ok ? :green : :red)
+            printstyled(io, glyph; color = ok ? :green : :red)
         else
             _print_progress_accent(io, glyph)
         end
@@ -1021,13 +1025,13 @@ function _progress_print_header!(
             _progress_print_bar!(io, state.done, state.steps, state.tick)
             print(io, "  ")
         end
-        printstyled(io, counts; color=:light_black)
+        printstyled(io, counts; color = :light_black)
         print(io, "  ")
-        printstyled(io, elapsed; color=:light_black)
+        printstyled(io, elapsed; color = :light_black)
     else
         print(io, glyph, "  ", label, "  ")
         if !finished
-            print(io, _progress_bar_string(state.done, state.steps; tick=state.tick), "  ")
+            print(io, _progress_bar_string(state.done, state.steps; tick = state.tick), "  ")
         end
         print(io, counts, "  ", elapsed)
     end
@@ -1035,10 +1039,10 @@ function _progress_print_header!(
 end
 
 function _progress_draw_items!(
-    state::KitProgressState;
-    finished::Bool=false,
-    ok::Bool=true,
-)
+        state::KitProgressState;
+        finished::Bool = false,
+        ok::Bool = true,
+    )
     n = 1 + length(state.items)
     io = _progress_io()
     if state.drawn > 0
@@ -1047,7 +1051,7 @@ function _progress_draw_items!(
         print(io, "\e[?25l")
         state.cursor_hidden = true
     end
-    _progress_print_header!(io, state; finished=finished, ok=ok)
+    _progress_print_header!(io, state; finished = finished, ok = ok)
     print(io, "\e[K\n")
     for it in state.items
         g = _progress_item_glyph(it)
@@ -1056,7 +1060,7 @@ function _progress_draw_items!(
             if it.status === :running
                 _print_progress_accent(io, g)
             else
-                printstyled(io, g; color=_progress_item_color(it))
+                printstyled(io, g; color = _progress_item_color(it))
             end
         else
             print(io, g)
@@ -1069,19 +1073,19 @@ function _progress_draw_items!(
 end
 
 function _progress_draw!(
-    state::KitProgressState;
-    newline::Bool=false,
-    finished::Bool=false,
-    ok::Bool=true,
-)
+        state::KitProgressState;
+        newline::Bool = false,
+        finished::Bool = false,
+        ok::Bool = true,
+    )
     !_progress_can_draw() && return nothing
     if !isempty(state.items)
-        _progress_draw_items!(state; finished=finished, ok=ok)
+        _progress_draw_items!(state; finished = finished, ok = ok)
         return nothing
     end
     io = _progress_io()
     print(io, '\r')
-    _progress_print_header!(io, state; finished=finished, ok=ok)
+    _progress_print_header!(io, state; finished = finished, ok = ok)
     print(io, "\e[K")
     newline && println(io)
     flush(io)
@@ -1135,8 +1139,8 @@ end
 
 function _progress_print_bar!(io::IO, done::Int, total::Int, tick::Int)
     width = PROGRESS_BAR_WIDTH
-    filled = _progress_filled(done, total; width=width)
-    head = _progress_head_index(done, total, tick; width=width)
+    filled = _progress_filled(done, total; width = width)
+    head = _progress_head_index(done, total, tick; width = width)
     for i in 1:width
         if i == head
             _print_progress_accent(io, string(PROGRESS_HEAD_CHAR))
@@ -1144,7 +1148,7 @@ function _progress_print_bar!(io::IO, done::Int, total::Int, tick::Int)
             _print_progress_accent(io, string(PROGRESS_FILL_CHAR))
         else
             ch = string(PROGRESS_EMPTY_CHAR)
-            use_colors() ? printstyled(io, ch; color=:light_black) : print(io, ch)
+            use_colors() ? printstyled(io, ch; color = :light_black) : print(io, ch)
         end
     end
     return nothing
@@ -1158,16 +1162,16 @@ function _progress_log_line(state::KitProgressState, event::AbstractString, kvs:
     for (k, v) in kvs
         push!(parts, "$k=$v")
     end
-    push!(parts, "t=$(round(time(); digits=3))")
+    push!(parts, "t=$(round(time(); digits = 3))")
     return join(parts, " ")
 end
 
 function _progress_log_writeln(
-    state::KitProgressState,
-    event::AbstractString,
-    kvs::Pair...;
-    to_log::Bool=true,
-)
+        state::KitProgressState,
+        event::AbstractString,
+        kvs::Pair...;
+        to_log::Bool = true,
+    )
     line = _progress_log_line(state, event, kvs...)
     to_log && _kit_log_writeln(line)
     _kit_progress_sidecar_writeln(line)
@@ -1181,7 +1185,7 @@ function _progress_log_begin!(state::KitProgressState)
         "begin",
         "label" => state.label,
         "total" => state.steps;
-        to_log=kit_output_progress(),
+        to_log = kit_output_progress(),
     )
     return nothing
 end
@@ -1194,7 +1198,7 @@ function _progress_log_step!(state::KitProgressState)
         "done" => state.done,
         "total" => state.steps,
         "cur" => _progress_current(state);
-        to_log=kit_output_progress(),
+        to_log = kit_output_progress(),
     )
     return nothing
 end
@@ -1213,7 +1217,7 @@ function _kit_progress_mark!(label::AbstractString)
             "done" => raw.done,
             "total" => raw.steps,
             "cur" => _progress_current(raw);
-            to_log=kit_output_progress(),
+            to_log = kit_output_progress(),
         )
     end
     return nothing
@@ -1234,7 +1238,7 @@ function _kit_progress_span!(label::AbstractString, status::Symbol)
             "status" => status,
             "done" => raw.done,
             "total" => raw.steps;
-            to_log=kit_output_progress(),
+            to_log = kit_output_progress(),
         )
     end
     return nothing
@@ -1248,7 +1252,7 @@ function _progress_log_item!(state::KitProgressState, item::KitProgressItem)
         "status" => item.status,
         "done" => state.done,
         "total" => state.steps;
-        to_log=kit_output_progress(),
+        to_log = kit_output_progress(),
     )
     return nothing
 end
@@ -1279,7 +1283,7 @@ function parse_progress_line(line::AbstractString)
     startswith(s, "progress:") || return nothing
     rest = strip(SubString(s, ncodeunits("progress:") + 1))
     isempty(rest) && return nothing
-    tokens = split(rest; keepempty=false)
+    tokens = split(rest; keepempty = false)
     isempty(tokens) && return nothing
     event_s = String(tokens[1])
     event_s in ("begin", "step", "item", "done") || return nothing
@@ -1343,18 +1347,18 @@ function _kit_progress_files(log_dir_or_file::AbstractString)::Vector{String}
     elseif isdir(path)
         sidecar = joinpath(path, "kit.progress")
         isfile(sidecar) && push!(files, sidecar)
-        for f in readdir(path; join=true)
+        for f in readdir(path; join = true)
             isfile(f) && endswith(f, ".log") && push!(files, f)
         end
-        sort!(files; by=f -> (mtime(f), f))
+        sort!(files; by = f -> (mtime(f), f))
     end
     return files
 end
 
 function _kit_progress_records(
-    log_dir_or_file::AbstractString;
-    job_id::Union{Nothing,AbstractString}=nothing,
-)
+        log_dir_or_file::AbstractString;
+        job_id::Union{Nothing, AbstractString} = nothing,
+    )
     files = _kit_progress_files(log_dir_or_file)
     isempty(files) && return NamedTuple[]
     want = job_id === nothing || isempty(strip(String(job_id))) ? nothing : String(strip(String(job_id)))
@@ -1381,10 +1385,10 @@ or `*.log` under a directory (files in `mtime` order). `job_id` keeps only
 `job=<id>` lines.
 """
 function kit_progress_latest(
-    log_dir_or_file::AbstractString;
-    job_id::Union{Nothing,AbstractString}=nothing,
-)
-    recs = _kit_progress_records(log_dir_or_file; job_id=job_id)
+        log_dir_or_file::AbstractString;
+        job_id::Union{Nothing, AbstractString} = nothing,
+    )
+    recs = _kit_progress_records(log_dir_or_file; job_id = job_id)
     return isempty(recs) ? nothing : recs[end]
 end
 
@@ -1406,9 +1410,9 @@ pipeline intervals; concurrent `item` lines are per-slot spans (running→ok/fai
 CLI: `julia -m DistSSHKit progress DIR`.
 """
 function kit_progress_phases(
-    log_dir_or_file::AbstractString;
-    job_id::Union{Nothing,AbstractString}=nothing,
-)
+        log_dir_or_file::AbstractString;
+        job_id::Union{Nothing, AbstractString} = nothing,
+    )
     path = String(log_dir_or_file)
     src = if isdir(path)
         sidecar = joinpath(path, "kit.progress")
@@ -1416,7 +1420,7 @@ function kit_progress_phases(
     else
         path
     end
-    recs = _kit_progress_last_run(_kit_progress_records(src; job_id=job_id))
+    recs = _kit_progress_last_run(_kit_progress_records(src; job_id = job_id))
     return _kit_progress_phase_rows(recs)
 end
 
@@ -1428,9 +1432,9 @@ end
 
 function _kit_progress_item_spans(recs)
     begin_t = nothing
-    t0 = Dict{String,Float64}()
-    t1 = Dict{String,Float64}()
-    kinds = Dict{String,Symbol}()
+    t0 = Dict{String, Float64}()
+    t1 = Dict{String, Float64}()
+    kinds = Dict{String, Symbol}()
     order = String[]
     for r in recs
         if r.event === :begin && r.t !== nothing
@@ -1457,7 +1461,7 @@ function _kit_progress_item_spans(recs)
         b === nothing && continue
         dt = b - a
         dt < 0 && continue
-        push!(rows, (; label=lab, seconds=dt, event=:item, kind=get(kinds, lab, :unknown)))
+        push!(rows, (; label = lab, seconds = dt, event = :item, kind = get(kinds, lab, :unknown)))
     end
     return rows
 end
@@ -1491,7 +1495,7 @@ function _kit_progress_phase_rows(recs)
         else
             String(a.label)
         end
-        push!(rows, (; label=lab, seconds=dt, event=a.event, kind=a.kind))
+        push!(rows, (; label = lab, seconds = dt, event = a.event, kind = a.kind))
     end
     append!(rows, item_rows)
     return rows
@@ -1501,9 +1505,9 @@ function _format_phase_duration(sec::Float64)::String
     if sec < 0.995
         return string(max(0, round(Int, sec * 1000)), "ms")
     end
-    x = round(sec; digits=2)
+    x = round(sec; digits = 2)
     ip = trunc(Int, x)
-    frac = round(Int, (x - ip) * 100 + 1e-9)
+    frac = round(Int, (x - ip) * 100 + 1.0e-9)
     if frac >= 100
         ip += 1
         frac = 0
@@ -1526,11 +1530,11 @@ function _kit_progress_phase_leaf(label::AbstractString)
 end
 
 function _kit_progress_phase_hint(
-    label::AbstractString,
-    event::Symbol=:step;
-    indent::Int=0,
-    kind::Symbol=:unknown,
-)::String
+        label::AbstractString,
+        event::Symbol = :step;
+        indent::Int = 0,
+        kind::Symbol = :unknown,
+    )::String
     indent > 0 && label == "run" && return "script"
     indent > 0 && label == "collect" && return "pull results"
     indent > 0 && label == "workers" && return "addprocs + Julia detect"
@@ -1570,8 +1574,8 @@ end
 function _kit_progress_display_rows(rows)
     isempty(rows) && return NamedTuple[]
     has_kids = Set{String}()
-    parent_sec = Dict{String,Float64}()
-    kid_sum = Dict{String,Float64}()
+    parent_sec = Dict{String, Float64}()
+    kid_sum = Dict{String, Float64}()
     for r in rows
         g = _kit_progress_phase_group(r.label)
         if g === nothing
@@ -1590,53 +1594,53 @@ function _kit_progress_display_rows(rows)
             push!(
                 out,
                 (;
-                    indent=0,
-                    label=String(r.label),
-                    seconds=r.seconds,
-                    event=r.event,
-                    kind=_phase_row_kind(r),
+                    indent = 0,
+                    label = String(r.label),
+                    seconds = r.seconds,
+                    event = r.event,
+                    kind = _phase_row_kind(r),
                 ),
             )
             continue
         end
         if !(g in emitted)
             sec = get(parent_sec, g, get(kid_sum, g, 0.0))
-            push!(out, (; indent=0, label=g, seconds=sec, event=:item, kind=_phase_row_kind(r)))
+            push!(out, (; indent = 0, label = g, seconds = sec, event = :item, kind = _phase_row_kind(r)))
             push!(emitted, g)
         end
         push!(
             out,
             (;
-                indent=2,
-                label=_kit_progress_phase_leaf(r.label),
-                seconds=r.seconds,
-                event=r.event,
-                kind=_phase_row_kind(r),
+                indent = 2,
+                label = _kit_progress_phase_leaf(r.label),
+                seconds = r.seconds,
+                event = r.event,
+                kind = _phase_row_kind(r),
             ),
         )
     end
     return out
 end
 
-function _phase_share_filled(sec::Float64, peak::Float64; width::Int=PROGRESS_BAR_WIDTH)::Int
+function _phase_share_filled(sec::Float64, peak::Float64; width::Int = PROGRESS_BAR_WIDTH)::Int
     peak <= 0 && return 0
     n = round(Int, width * sec / peak)
     sec > 0 && n == 0 && (n = 1)
     return clamp(n, 0, width)
 end
 
-function _phase_share_bar(sec::Float64, peak::Float64; width::Int=PROGRESS_BAR_WIDTH)::String
-    n = _phase_share_filled(sec, peak; width=width)
+function _phase_share_bar(sec::Float64, peak::Float64; width::Int = PROGRESS_BAR_WIDTH)::String
+    n = _phase_share_filled(sec, peak; width = width)
     return rpad(repeat("█", n), width)
 end
 
-function _print_phase_share_bar!(io::IO, sec::Float64, peak::Float64; width::Int=PROGRESS_BAR_WIDTH)
-    n = _phase_share_filled(sec, peak; width=width)
+function _print_phase_share_bar!(io::IO, sec::Float64, peak::Float64; width::Int = PROGRESS_BAR_WIDTH)
+    n = _phase_share_filled(sec, peak; width = width)
     n > 0 && _print_progress_accent(io, repeat("█", n))
     rest = width - n
     rest == 0 && return nothing
     if use_colors()
-        printstyled(io, repeat("░", rest); color=:light_black)
+        printstyled(io, repeat("░", rest); color = :light_black)
     else
         print(io, " "^rest)
     end
@@ -1644,12 +1648,12 @@ function _print_phase_share_bar!(io::IO, sec::Float64, peak::Float64; width::Int
 end
 
 function _format_kit_progress_phases(
-    rows;
-    wall::Union{Nothing,Float64}=nothing,
-)::String
+        rows;
+        wall::Union{Nothing, Float64} = nothing,
+    )::String
     disp = _kit_progress_display_rows(rows)
     isempty(disp) && return ""
-    summed = sum(r -> r.seconds, rows; init=0.0)
+    summed = sum(r -> r.seconds, rows; init = 0.0)
     total_sec = wall === nothing || wall <= 0 ? summed : Float64(wall)
     peak = maximum(r -> r.seconds, disp)
     shown = String[" "^r.indent * r.label for r in disp]
@@ -1662,7 +1666,7 @@ function _format_kit_progress_phases(
     for (r, dur, shown_lab) in zip(disp, durs, shown)
         pct = total_sec > 0 ? round(Int, 100 * r.seconds / total_sec) : 0
         hint = _kit_progress_phase_hint(
-            r.label, r.event; indent=r.indent, kind=_phase_row_kind(r),
+            r.label, r.event; indent = r.indent, kind = _phase_row_kind(r),
         )
         print(
             buf,
@@ -1683,18 +1687,18 @@ function _format_kit_progress_phases(
 end
 
 function _print_kit_progress_phases(
-    io::IO,
-    rows;
-    wall::Union{Nothing,Float64}=nothing,
-)
+        io::IO,
+        rows;
+        wall::Union{Nothing, Float64} = nothing,
+    )
     isempty(rows) && return nothing
     if !(io isa Base.TTY && use_colors())
-        print(io, _format_kit_progress_phases(rows; wall=wall))
+        print(io, _format_kit_progress_phases(rows; wall = wall))
         return nothing
     end
     disp = _kit_progress_display_rows(rows)
     isempty(disp) && return nothing
-    summed = sum(r -> r.seconds, rows; init=0.0)
+    summed = sum(r -> r.seconds, rows; init = 0.0)
     total_sec = wall === nothing || wall <= 0 ? summed : Float64(wall)
     peak = maximum(r -> r.seconds, disp)
     shown = String[" "^r.indent * r.label for r in disp]
@@ -1703,18 +1707,18 @@ function _print_kit_progress_phases(
     dur_w = max(maximum(length, durs), length(_format_phase_duration(total_sec)))
     print(io, "  ")
     _print_progress_accent(io, "Time")
-    printstyled(io, "  ", _format_phase_duration(total_sec); color=:light_black)
+    printstyled(io, "  ", _format_phase_duration(total_sec); color = :light_black)
     println(io)
     println(io)
     for (r, dur, shown_lab) in zip(disp, durs, shown)
         pct = total_sec > 0 ? round(Int, 100 * r.seconds / total_sec) : 0
         hint = _kit_progress_phase_hint(
-            r.label, r.event; indent=r.indent, kind=_phase_row_kind(r),
+            r.label, r.event; indent = r.indent, kind = _phase_row_kind(r),
         )
         print(io, "    ", rpad(shown_lab, lab_w), "  ", lpad(dur, dur_w), "  ")
         _print_phase_share_bar!(io, r.seconds, peak)
-        printstyled(io, "  ", lpad(string(pct), 3), "%"; color=:light_black)
-        isempty(hint) || printstyled(io, "  ", hint; color=:light_black)
+        printstyled(io, "  ", lpad(string(pct), 3), "%"; color = :light_black)
+        isempty(hint) || printstyled(io, "  ", hint; color = :light_black)
         println(io)
     end
     return nothing
@@ -1727,11 +1731,11 @@ function _maybe_print_kit_progress_phases(dir::AbstractString)
     recs = _kit_progress_last_run(_kit_progress_records(dir))
     rows = _kit_progress_phase_rows(recs)
     wall = _kit_progress_wall(recs)
-    text = String(rstrip(_format_kit_progress_phases(rows; wall=wall)))
+    text = String(rstrip(_format_kit_progress_phases(rows; wall = wall)))
     isempty(text) && return nothing
     replay = "  progress  $(dir)"
     if kit_output_progress()
-        _print_kit_progress_phases(stdout, rows; wall=wall)
+        _print_kit_progress_phases(stdout, rows; wall = wall)
         println(stdout, replay)
         _kit_log_writeln(text)
         _kit_log_writeln(String(strip(replay)))
@@ -1742,15 +1746,17 @@ function _maybe_print_kit_progress_phases(dir::AbstractString)
     return nothing
 end
 
-function show_progress_usage(io::IO=stdout)
-    print_help_chrome("DistSSHKit progress"; io=io)
-    print_help_section("Usage"; io=io)
-    print_help_lines(io,
+function show_progress_usage(io::IO = stdout)
+    print_help_chrome("DistSSHKit progress"; io = io)
+    print_help_section("Usage"; io = io)
+    print_help_lines(
+        io,
         "  julia -m DistSSHKit progress [DIR]",
     )
     print_help_blank(io)
-    print_help_section("Args"; io=io)
-    print_help_lines(io,
+    print_help_section("Args"; io = io)
+    print_help_lines(
+        io,
         "  DIR   output_dir (reads kit.progress) or a kit.progress / *.log file",
         "        default: current directory",
     )
@@ -1764,7 +1770,7 @@ end
 
 CLI: print [`kit_progress_phases`](@ref) for `DIR` / `kit.progress`.
 """
-function progress(args::Vector{String}=copy(ARGS))::Cint
+function progress(args::Vector{String} = copy(ARGS))::Cint
     if !isempty(args) && args[1] in ("-h", "--help", "help")
         show_progress_usage()
         return 0
@@ -1781,9 +1787,9 @@ function progress(args::Vector{String}=copy(ARGS))::Cint
     end
     rows = _kit_progress_phase_rows(recs)
     wall = _kit_progress_wall(recs)
-    text = _format_kit_progress_phases(rows; wall=wall)
+    text = _format_kit_progress_phases(rows; wall = wall)
     isempty(text) && (print_cli_error("progress: no timed phases in $(target)"); return 1)
-    _print_kit_progress_phases(stdout, rows; wall=wall)
+    _print_kit_progress_phases(stdout, rows; wall = wall)
     return 0
 end
 
@@ -1800,12 +1806,12 @@ line). `job_id` (default: `ENV["DISTSSHKIT_JOB_ID"]` if set, else `nothing`)
 is written as `job=<id>` on those lines, omitted when unset.
 """
 function kit_progress_begin!(
-    title::AbstractString;
-    steps::Int,
-    items::AbstractVector{<:AbstractString}=String[],
-    kind::Symbol=:unknown,
-    job_id::Union{Nothing,AbstractString}=nothing,
-)
+        title::AbstractString;
+        steps::Int,
+        items::AbstractVector{<:AbstractString} = String[],
+        kind::Symbol = :unknown,
+        job_id::Union{Nothing, AbstractString} = nothing,
+    )
     steps < 1 && throw(ArgumentError("kit_progress_begin!: steps must be ≥ 1"))
     prev = KIT_PROGRESS[]
     prev isa KitProgressState && _progress_stop_spinner!(prev)
@@ -1816,7 +1822,7 @@ function kit_progress_begin!(
         isempty(env_job_id) || (resolved_job_id = env_job_id)
     end
     state = KitProgressState(
-        String(title), steps, 0, String(title); kind=kind, job_id=resolved_job_id,
+        String(title), steps, 0, String(title); kind = kind, job_id = resolved_job_id,
     )
     for name in items
         push!(state.items, KitProgressItem(String(name), :pending, 0))
@@ -1840,7 +1846,7 @@ The first call does not increment `done`. Later calls mark the previous phase
 complete (`done += 1`) then switch the label. Pass `done` to set completed
 count absolutely (in-progress is still `done + 1` until [`kit_progress_done!`](@ref)).
 """
-function kit_progress_step!(label::AbstractString; done::Union{Nothing,Int}=nothing)
+function kit_progress_step!(label::AbstractString; done::Union{Nothing, Int} = nothing)
     raw = KIT_PROGRESS[]
     raw isa KitProgressState || return nothing
     _kit_progress_step!(raw, label; done)
@@ -1848,10 +1854,10 @@ function kit_progress_step!(label::AbstractString; done::Union{Nothing,Int}=noth
 end
 
 function _kit_progress_step!(
-    state::KitProgressState,
-    label::AbstractString;
-    done::Union{Nothing,Int},
-)
+        state::KitProgressState,
+        label::AbstractString;
+        done::Union{Nothing, Int},
+    )
     lock(KIT_PROGRESS_LOCK) do
         _progress_is_current(state) || return nothing
         if done === nothing
@@ -1888,10 +1894,10 @@ function kit_progress_item!(label::AbstractString; status::Symbol)
 end
 
 function _kit_progress_apply_item!(
-    item::KitProgressItem,
-    state::KitProgressState,
-    status::Symbol,
-)
+        item::KitProgressItem,
+        state::KitProgressState,
+        status::Symbol,
+    )
     prev = item.status
     item.status = status
     if (status === :ok || status === :fail) && prev !== :ok && prev !== :fail
@@ -1924,26 +1930,26 @@ end
 Finish the status line (newline, ✓/✗, elapsed; no track). Optional `footer`
 prints under the line (`:progress` only; also kit log). Clears progress state.
 """
-function kit_progress_done!(; ok::Bool=true, footer::Union{Nothing,AbstractString}=nothing)
+function kit_progress_done!(; ok::Bool = true, footer::Union{Nothing, AbstractString} = nothing)
     raw = KIT_PROGRESS[]
     raw isa KitProgressState || return nothing
-    _kit_progress_done!(raw; ok=ok, footer=footer)
+    _kit_progress_done!(raw; ok = ok, footer = footer)
     return nothing
 end
 
 function _kit_progress_done!(
-    state::KitProgressState;
-    ok::Bool,
-    footer::Union{Nothing,AbstractString},
-)
+        state::KitProgressState;
+        ok::Bool,
+        footer::Union{Nothing, AbstractString},
+    )
     _progress_stop_spinner!(state)
     lock(KIT_PROGRESS_LOCK) do
         _progress_is_current(state) || return nothing
         state.done = state.steps
         state.label = state.title
-        _progress_log_done!(state; ok=ok)
+        _progress_log_done!(state; ok = ok)
         if kit_output_progress()
-            _progress_draw!(state; newline=true, finished=true, ok=ok)
+            _progress_draw!(state; newline = true, finished = true, ok = ok)
             if state.cursor_hidden
                 print(_progress_io(), "\e[?25h")
                 state.cursor_hidden = false
@@ -1975,9 +1981,9 @@ Kit help chrome — every overview / `--help` starts here:
 Exported for DistSSHQueue-style callers; signature is stable, exact
 glyphs / colors are not (see API · CLI parsers and helpers).
 """
-function print_help_chrome(title::AbstractString; io::IO=stdout)
+function print_help_chrome(title::AbstractString; io::IO = stdout)
     t = String(title)
-    print_help_title(t; io=io)
+    print_help_title(t; io = io)
     println(io)
     w = clamp(length(t), HELP_RULE_MIN_WIDTH, OUTPUT_WIDTH)
     _print_colored(io, rule_line(w) * "\n", :light_black)
@@ -1992,7 +1998,7 @@ Section heading (dim) with a trailing blank line so body lines follow immediatel
     <blank>
       body…
 """
-function print_help_section(msg; io=stdout)
+function print_help_section(msg; io = stdout)
     _print_colored(io, String(msg), :light_black, true)
     println(io)
     println(io)
@@ -2009,11 +2015,11 @@ end
 print_help_lines(lines::AbstractString...) = print_help_lines(stdout, lines...)
 
 """One blank line in kit `--help` output."""
-print_help_blank(io::IO=stdout) = (println(io); nothing)
+print_help_blank(io::IO = stdout) = (println(io); nothing)
 
 """CLI user error on stderr (no stacktrace)."""
-function print_cli_error(msg::AbstractString; io::IO=stderr)
-    print_err("Error: "; io=io, bold=true)
+function print_cli_error(msg::AbstractString; io::IO = stderr)
+    print_err("Error: "; io = io, bold = true)
     println(io, msg)
     return nothing
 end
@@ -2031,9 +2037,9 @@ end
 Render a plain-text `--help` body under [`print_help_chrome`](@ref).
 Non-indented `Heading:` lines are styled like [`print_help_section`](@ref).
 """
-function print_help_document(title::AbstractString, body::AbstractString; io::IO=stdout)
-    print_help_chrome(title; io=io)
-    for line in split(rstrip(String(body), '\n'), '\n'; keepempty=true)
+function print_help_document(title::AbstractString, body::AbstractString; io::IO = stdout)
+    print_help_chrome(title; io = io)
+    for line in split(rstrip(String(body), '\n'), '\n'; keepempty = true)
         if _help_section_line(line)
             heading = rstrip(String(line))
             endswith(heading, ':') && (heading = heading[1:prevind(heading, end)])
@@ -2047,15 +2053,17 @@ function print_help_document(title::AbstractString, body::AbstractString; io::IO
 end
 
 """Top-level `julia -m DistSSHKit` usage (no subcommand)."""
-function print_kit_root_usage(io::IO=stderr)
-    print_help_chrome("DistSSHKit"; io=io)
-    print_help_section("Usage"; io=io)
-    print_help_lines(io,
+function print_kit_root_usage(io::IO = stderr)
+    print_help_chrome("DistSSHKit"; io = io)
+    print_help_section("Usage"; io = io)
+    print_help_lines(
+        io,
         "  julia -m DistSSHKit <command> [args...]",
     )
     print_help_blank(io)
-    print_help_section("Commands"; io=io)
-    print_help_lines(io,
+    print_help_section("Commands"; io = io)
+    print_help_lines(
+        io,
         "  setup              Clone / sync / check remotes",
         "  go                 Run an as-is complete job",
         "  ride               Experimental auto-split of map / filter",
@@ -2067,8 +2075,9 @@ function print_kit_root_usage(io::IO=stderr)
         "  progress           Phase seconds from kit.progress",
     )
     print_help_blank(io)
-    print_help_section("Examples"; io=io)
-    print_help_lines(io,
+    print_help_section("Examples"; io = io)
+    print_help_lines(
+        io,
         "  julia --project=. -m DistSSHKit setup --check child:host1",
         "  julia --project=. -m DistSSHKit go SCRIPT.jl",
         "  julia --project=. -m DistSSHKit ride parent:2 SCRIPT.jl",

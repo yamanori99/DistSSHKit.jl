@@ -8,7 +8,7 @@ using Distributed
 using DistSSHKit
 
 function init_output_dir!(_)
-    DistSSHKit.resolve_distributed_output_dir!(ARGS, joinpath(@__DIR__, "output"))
+    return DistSSHKit.resolve_distributed_output_dir!(ARGS, joinpath(@__DIR__, "output"))
 end
 
 function main()
@@ -19,5 +19,5 @@ function main()
         n = parse(Int, ARGS[2])
     end
     results = pmap(p -> p^2, 1:n)
-    println("param^2: ", results)
+    return println("param^2: ", results)
 end

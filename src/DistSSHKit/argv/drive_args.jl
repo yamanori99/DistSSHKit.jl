@@ -6,9 +6,9 @@ end
 
 """Parse `--flag:N` / `-f:N` into `N`; return `nothing` if `arg` is not that form."""
 function _drive_flag_int_suffix(
-    arg::String,
-    prefixes::Union{Tuple{Vararg{String}}, AbstractVector{String}},
-)::Union{Nothing,Int}
+        arg::String,
+        prefixes::Union{Tuple{Vararg{String}}, AbstractVector{String}},
+    )::Union{Nothing, Int}
     for prefix in prefixes
         prefix_str = String(prefix)
         if !startswith(arg, prefix_str) || length(arg) <= length(prefix_str) || arg[length(prefix_str) + 1] != ':'
@@ -27,9 +27,11 @@ function _parse_drive_flag_count(flag::String, args::Vector, i::Int)::Int
         throw(ArgumentError("$flag requires a worker count (e.g. $flag 2 or $(flag):2)"))
     value = String(args[i + 1])
     if endswith(value, ".jl")
-        throw(ArgumentError(
-            "$flag requires a worker count before the script (e.g. $flag 2 script.jl)",
-        ))
+        throw(
+            ArgumentError(
+                "$flag requires a worker count before the script (e.g. $flag 2 script.jl)",
+            )
+        )
     end
     try
         return parse(Int, value)
@@ -39,25 +41,27 @@ function _parse_drive_flag_count(flag::String, args::Vector, i::Int)::Int
 end
 
 function _drive_set_parent_workers!(
-    parent_workers::Int,
-    count::Int,
-    source::String,
-)::Int
+        parent_workers::Int,
+        count::Int,
+        source::String,
+    )::Int
     parent_workers > 0 &&
-        throw(ArgumentError(
+        throw(
+        ArgumentError(
             "duplicate parent worker spec ($source); use one of $(PARENT_HOST_NAME):N",
-        ))
+        )
+    )
     count < 1 &&
         throw(ArgumentError("parent worker count must be >= 1, got $count"))
     return count
 end
 
 function _drive_push_host_token!(
-    hosts::Vector{Tuple{String,Union{Int,Nothing}}},
-    parent_workers::Int,
-    token::AbstractString,
-    default_workers,
-)::Int
+        hosts::Vector{Tuple{String, Union{Int, Nothing}}},
+        parent_workers::Int,
+        token::AbstractString,
+        default_workers,
+    )::Int
     p = parse_placement_token(String(token))
     if p.role === :parent
         n = p.n
@@ -94,7 +98,7 @@ function parse_drive_args(args::Vector{String})
     best_effort_cli = false
     mem_headroom = DEFAULT_MEM_HEADROOM
     parent_gb = DEFAULT_PARENT_GB
-    hosts = Tuple{String,Union{Int,Nothing}}[]
+    hosts = Tuple{String, Union{Int, Nothing}}[]
     script_path = nothing
     script_args = String[]
 
@@ -105,9 +109,11 @@ function parse_drive_args(args::Vector{String})
         if arg == "--parenthost" || startswith(arg, "--parenthost:") ||
                 arg == "--masterhost" || startswith(arg, "--masterhost:") ||
                 arg == "--parent" || startswith(arg, "--parent:")
-            throw(ArgumentError(
-                "drive: use `parent:N` (e.g. drive parent:4 script.jl), not a `--parent` flag",
-            ))
+            throw(
+                ArgumentError(
+                    "drive: use `parent:N` (e.g. drive parent:4 script.jl), not a `--parent` flag",
+                )
+            )
         elseif arg == "--local" || arg == "-l" ||
                 startswith(arg, "--local:") || startswith(arg, "-l:")
             throw_removed_local_flag(arg)
@@ -118,104 +124,132 @@ function parse_drive_args(args::Vector{String})
             default_workers = _drive_flag_int_suffix(arg, ("--workers", "-w"))
             i += 1
         elseif arg == "--julia" && i < length(args)
-            julia_exe = args[i+1]
+            julia_exe = args[i + 1]
             i += 2
         elseif arg == "--sync"
-            sync_mode = _kit_set_sync_mode!(sync_mode, :sync; source="drive")
+            sync_mode = _kit_set_sync_mode!(sync_mode, :sync; source = "drive")
             i += 1
         elseif arg == "--sync-script"
-            sync_script && throw(ArgumentError(
-                "drive: --sync-script specified more than once",
-            ))
+            sync_script && throw(
+                ArgumentError(
+                    "drive: --sync-script specified more than once",
+                )
+            )
             sync_script = true
             i += 1
         elseif arg == "--rsync"
-            require_git && throw(ArgumentError(
-                "drive: --require-git cannot be combined with --rsync",
-            ))
-            sync_mode = _kit_set_sync_mode!(sync_mode, :rsync; source="drive")
+            require_git && throw(
+                ArgumentError(
+                    "drive: --require-git cannot be combined with --rsync",
+                )
+            )
+            sync_mode = _kit_set_sync_mode!(sync_mode, :rsync; source = "drive")
             i += 1
         elseif arg == "--require-git"
-            sync_mode === :rsync && throw(ArgumentError(
-                "drive: --require-git cannot be combined with --rsync",
-            ))
-            skip_git_guard && throw(ArgumentError(
-                "drive: --require-git cannot be combined with --skip-git-guard",
-            ))
+            sync_mode === :rsync && throw(
+                ArgumentError(
+                    "drive: --require-git cannot be combined with --rsync",
+                )
+            )
+            skip_git_guard && throw(
+                ArgumentError(
+                    "drive: --require-git cannot be combined with --skip-git-guard",
+                )
+            )
             require_git && throw(ArgumentError("drive: --require-git specified more than once"))
             require_git = true
             skip_hash_check = false
             i += 1
         elseif arg == "--skip-git-guard"
             # Compat no-op for parity (already off). Independent of --sync / --rsync.
-            require_git && throw(ArgumentError(
-                "drive: --skip-git-guard cannot be combined with --require-git",
-            ))
+            require_git && throw(
+                ArgumentError(
+                    "drive: --skip-git-guard cannot be combined with --require-git",
+                )
+            )
             skip_git_guard = true
             skip_hash_check = true
             i += 1
         elseif arg == "--require-all-hosts"
-            require_all_hosts_cli && throw(ArgumentError(
-                "drive: --require-all-hosts specified more than once",
-            ))
-            best_effort_cli && throw(ArgumentError(
-                "drive: cannot combine --require-all-hosts and --best-effort",
-            ))
+            require_all_hosts_cli && throw(
+                ArgumentError(
+                    "drive: --require-all-hosts specified more than once",
+                )
+            )
+            best_effort_cli && throw(
+                ArgumentError(
+                    "drive: cannot combine --require-all-hosts and --best-effort",
+                )
+            )
             require_all_hosts_cli = true
             require_all_hosts = true
             i += 1
         elseif arg == "--best-effort"
-            best_effort_cli && throw(ArgumentError(
-                "drive: --best-effort specified more than once",
-            ))
-            require_all_hosts_cli && throw(ArgumentError(
-                "drive: cannot combine --require-all-hosts and --best-effort",
-            ))
+            best_effort_cli && throw(
+                ArgumentError(
+                    "drive: --best-effort specified more than once",
+                )
+            )
+            require_all_hosts_cli && throw(
+                ArgumentError(
+                    "drive: cannot combine --require-all-hosts and --best-effort",
+                )
+            )
             best_effort_cli = true
             require_all_hosts = false
             i += 1
         elseif arg == "--mem-headroom" && i < length(args)
-            mem_headroom = parse(Float64, args[i+1])
+            mem_headroom = parse(Float64, args[i + 1])
             i += 2
         elseif arg == "--master-gb" || startswith(arg, "--master-gb:")
             throw(ArgumentError("drive: use `--parent-gb N`, not `--master-gb`"))
         elseif arg == "--parent-gb" && i < length(args)
-            parent_gb = parse(Float64, args[i+1])
+            parent_gb = parse(Float64, args[i + 1])
             i += 2
         elseif arg == "--no-log"
             enable_log = false
             i += 1
         elseif arg == "--log-dir" && i < length(args)
-            log_dir = args[i+1]
+            log_dir = args[i + 1]
             i += 2
         elseif arg == "--output-dir" && i < length(args)
-            output_dir = args[i+1]
+            output_dir = args[i + 1]
             i += 2
         elseif arg == "--package" && i < length(args)
-            p = String(strip(args[i+1]))
+            p = String(strip(args[i + 1]))
             explicit_package = isempty(p) ? nothing : p
             i += 2
         elseif arg == "--collect" || arg == "--collect-sync"
-            throw(ArgumentError(
-                "$(arg) was removed; use --collect-missing ROOT HOST... or --collect-overwrite ROOT HOST...",
-            ))
+            throw(
+                ArgumentError(
+                    "$(arg) was removed; use --collect-missing ROOT HOST... or --collect-overwrite ROOT HOST...",
+                )
+            )
         elseif arg == "--collect-missing" ||
                 arg == "--collect-overwrite"
             flag = arg
             merge = flag == "--collect-overwrite"
             sync_mode !== nothing &&
-                throw(ArgumentError(
+                throw(
+                ArgumentError(
                     "$(flag) cannot be combined with --sync / --rsync",
-                ))
+                )
+            )
             !isempty(hosts) &&
-                throw(ArgumentError(
-                    "host specs before $(flag) are not supported; use $(flag) ROOT HOST..."))
-            tail = args[i+1:end]
+                throw(
+                ArgumentError(
+                    "host specs before $(flag) are not supported; use $(flag) ROOT HOST..."
+                )
+            )
+            tail = args[(i + 1):end]
             isempty(tail) && throw(ArgumentError("`$(flag)` requires ROOT HOST [HOST...]"))
             for a in tail
                 if startswith(a, '-') && length(a) > 1
-                    throw(ArgumentError(
-                        "`$(flag)` arguments cannot include options like $(repr(a)); put flags before $(flag)"))
+                    throw(
+                        ArgumentError(
+                            "`$(flag)` arguments cannot include options like $(repr(a)); put flags before $(flag)"
+                        )
+                    )
                 end
             end
             tree_root = canonical_local_path(tail[1])
@@ -228,64 +262,66 @@ function parse_drive_args(args::Vector{String})
                 julia_exe = nothing
             end
             return (
-                parent_workers=parent_workers,
-                default_workers=default_workers,
-                julia=julia_exe,
-                skip_hash_check=skip_hash_check,
-                enable_log=enable_log,
-                log_dir=log_dir,
-                output_dir=output_dir,
-                explicit_package=explicit_package,
-                hosts=Tuple{String,Union{Int,Nothing}}[],
-                script_path=nothing,
-                script_args=String[],
-                collect_root=tree_root,
-                collect_hosts=tree_hosts,
-                collect_overwrite=merge,
-                sync_mode=nothing,
-                sync_script=sync_script,
-                require_all_hosts=require_all_hosts,
-                help=false,
-                show_version=cli_session.show_version,
-                cli_session=cli_session,
-                hint_surface=:cli,
-                mem_headroom=mem_headroom,
-                parent_gb=parent_gb,
+                parent_workers = parent_workers,
+                default_workers = default_workers,
+                julia = julia_exe,
+                skip_hash_check = skip_hash_check,
+                enable_log = enable_log,
+                log_dir = log_dir,
+                output_dir = output_dir,
+                explicit_package = explicit_package,
+                hosts = Tuple{String, Union{Int, Nothing}}[],
+                script_path = nothing,
+                script_args = String[],
+                collect_root = tree_root,
+                collect_hosts = tree_hosts,
+                collect_overwrite = merge,
+                sync_mode = nothing,
+                sync_script = sync_script,
+                require_all_hosts = require_all_hosts,
+                help = false,
+                show_version = cli_session.show_version,
+                cli_session = cli_session,
+                hint_surface = :cli,
+                mem_headroom = mem_headroom,
+                parent_gb = parent_gb,
             )
         elseif arg == "--help" || arg == "-h"
             return (
-                parent_workers=0,
-                default_workers=nothing,
-                julia=nothing,
-                skip_hash_check=true,
-                enable_log=true,
-                log_dir=nothing,
-                output_dir=nothing,
-                explicit_package=nothing,
-                hosts=Tuple{String,Union{Int,Nothing}}[],
-                script_path=nothing,
-                script_args=String[],
-                collect_root=nothing,
-                collect_hosts=nothing,
-                collect_overwrite=nothing,
-                sync_mode=nothing,
-                sync_script=false,
-                require_all_hosts=false,
-                help=true,
-                show_version=cli_session.show_version,
-                cli_session=cli_session,
-                hint_surface=:cli,
-                mem_headroom=mem_headroom,
-                parent_gb=parent_gb,
+                parent_workers = 0,
+                default_workers = nothing,
+                julia = nothing,
+                skip_hash_check = true,
+                enable_log = true,
+                log_dir = nothing,
+                output_dir = nothing,
+                explicit_package = nothing,
+                hosts = Tuple{String, Union{Int, Nothing}}[],
+                script_path = nothing,
+                script_args = String[],
+                collect_root = nothing,
+                collect_hosts = nothing,
+                collect_overwrite = nothing,
+                sync_mode = nothing,
+                sync_script = false,
+                require_all_hosts = false,
+                help = true,
+                show_version = cli_session.show_version,
+                cli_session = cli_session,
+                hint_surface = :cli,
+                mem_headroom = mem_headroom,
+                parent_gb = parent_gb,
             )
         elseif endswith(arg, ".jl")
             script_path = arg
-            script_args = args[i+1:end]
+            script_args = args[(i + 1):end]
             break
         elseif startswith(arg, "-")
-            throw(ArgumentError(
-                "unknown or incomplete drive option: $arg (use parent:N / child:NAME:N, e.g. parent:2 child:host1:4)",
-            ))
+            throw(
+                ArgumentError(
+                    "unknown or incomplete drive option: $arg (use parent:N / child:NAME:N, e.g. parent:2 child:host1:4)",
+                )
+            )
         else
             parent_workers = _drive_push_host_token!(
                 hosts,
@@ -300,9 +336,11 @@ function parse_drive_args(args::Vector{String})
     if !require_all_hosts_cli && !best_effort_cli
         want_all = _env_flag("DISTSSHKIT_REQUIRE_ALL_HOSTS")
         want_best = _env_flag("DISTSSHKIT_BEST_EFFORT")
-        want_all && want_best && throw(ArgumentError(
-            "drive: cannot combine DISTSSHKIT_REQUIRE_ALL_HOSTS and DISTSSHKIT_BEST_EFFORT",
-        ))
+        want_all && want_best && throw(
+            ArgumentError(
+                "drive: cannot combine DISTSSHKIT_REQUIRE_ALL_HOSTS and DISTSSHKIT_BEST_EFFORT",
+            )
+        )
         want_best && (require_all_hosts = false)
     end
 
@@ -315,13 +353,15 @@ function parse_drive_args(args::Vector{String})
 
     # --rsync deploys without remote .git/; never run git parity.
     if sync_mode === :rsync
-        require_git && throw(ArgumentError(
-            "drive: --require-git cannot be combined with --rsync",
-        ))
+        require_git && throw(
+            ArgumentError(
+                "drive: --require-git cannot be combined with --rsync",
+            )
+        )
         skip_hash_check = true
     end
 
-    for tok in kit_host_source_tokens(cli_session; keep_counts=true)
+    for tok in kit_host_source_tokens(cli_session; keep_counts = true)
         parent_workers = _drive_push_host_token!(
             hosts,
             parent_workers,
@@ -333,58 +373,62 @@ function parse_drive_args(args::Vector{String})
     apply_kit_cli_session!(cli_session)
 
     return (
-        parent_workers=parent_workers,
-        default_workers=default_workers,
-        julia=julia_exe,
-        skip_hash_check=skip_hash_check,
-        enable_log=enable_log,
-        log_dir=log_dir,
-        output_dir=output_dir,
-        explicit_package=explicit_package,
-        hosts=hosts,
-        script_path=script_path,
-        script_args=script_args,
-        collect_root=nothing,
-        collect_hosts=nothing,
-        collect_overwrite=nothing,
-        sync_mode=(sync_mode isa Symbol ? sync_mode : nothing),
-        sync_script=sync_script,
-        require_all_hosts=require_all_hosts,
-        help=false,
-        show_version=cli_session.show_version,
-        cli_session=cli_session,
-        hint_surface=:cli,
-        mem_headroom=mem_headroom,
-        parent_gb=parent_gb,
+        parent_workers = parent_workers,
+        default_workers = default_workers,
+        julia = julia_exe,
+        skip_hash_check = skip_hash_check,
+        enable_log = enable_log,
+        log_dir = log_dir,
+        output_dir = output_dir,
+        explicit_package = explicit_package,
+        hosts = hosts,
+        script_path = script_path,
+        script_args = script_args,
+        collect_root = nothing,
+        collect_hosts = nothing,
+        collect_overwrite = nothing,
+        sync_mode = (sync_mode isa Symbol ? sync_mode : nothing),
+        sync_script = sync_script,
+        require_all_hosts = require_all_hosts,
+        help = false,
+        show_version = cli_session.show_version,
+        cli_session = cli_session,
+        hint_surface = :cli,
+        mem_headroom = mem_headroom,
+        parent_gb = parent_gb,
     )
 end
 
 """Print `drive --help` (same chrome as `julia -m DistSSHKit drive -h`)."""
-function show_drive_usage(; io::IO=stdout)
-    print_help_chrome("DistSSHKit drive"; io=io)
-    print_help_lines(io,
+function show_drive_usage(; io::IO = stdout)
+    print_help_chrome("DistSSHKit drive"; io = io)
+    print_help_lines(
+        io,
         "Driver + Distributed workers (pmap), then collect new files.",
         "Remotes: setup --rsync or --clone, then --instantiate.",
         "Or drive --rsync onto an empty path (instantiates missing deps).",
     )
     print_help_blank(io)
-    print_help_section("Usage"; io=io)
-    print_help_lines(io,
+    print_help_section("Usage"; io = io)
+    print_help_lines(
+        io,
         "  julia --project=. -m DistSSHKit drive [workers...] DRIVER.jl",
         "  drive parent:4 child:host1:8 jobs.jl",
         "  drive --collect-missing ROOT HOST...",
     )
     print_help_blank(io)
-    print_help_section("Workers"; io=io)
-    print_help_lines(io,
+    print_help_section("Workers"; io = io)
+    print_help_lines(
+        io,
         "  parent[:N]          Kit-side workers (omit N → --workers or 1)",
         "  child:NAME[:N]      SSH workers (same :N / --workers rule)",
         "  $(KIT_HOSTS_FLAG_HELP)",
         "  --hosts-file PATH   one token per line",
     )
     print_help_blank(io)
-    print_help_section("Options"; io=io)
-    print_help_lines(io,
+    print_help_section("Options"; io = io)
+    print_help_lines(
+        io,
         "  -w, --workers N     default when host has no :N",
         "  --sync / --rsync    optional pre-run; --rsync instantiates if needed",
         "  --sync-script       re-include the full driver on workers (default: defs only)",
@@ -405,15 +449,17 @@ function show_drive_usage(; io::IO=stdout)
         "  -h, --help          this help",
     )
     print_help_blank(io)
-    print_help_section("Collect"; io=io)
-    print_help_lines(io,
+    print_help_section("Collect"; io = io)
+    print_help_lines(
+        io,
         "  After main(): post-run-new (files newer than run start).",
         "  Later: --collect-missing / --collect-overwrite ROOT HOST...",
         "  Skip auto-collect: DISTRIBUTED_SKIP_COLLECT=1",
     )
     print_help_blank(io)
-    print_help_section("Environment"; io=io)
-    print_help_lines(io,
+    print_help_section("Environment"; io = io)
+    print_help_lines(
+        io,
         "  $(KIT_HOSTS_ENV_HELP)",
         "  JULIA_DISTRIBUTED_EXE        default remote Julia",
         "  DISTSSHKIT_QUIET / PROGRESS / VERBOSE / YES",
@@ -424,7 +470,8 @@ function show_drive_usage(; io::IO=stdout)
         "  DISTRIBUTED_SKIP_COLLECT=1 skip post-run collect",
     )
     print_help_blank(io)
-    print_help_lines(io,
+    return print_help_lines(
+        io,
         "Details: docs (manual/drive). See also: setup, size, go.",
     )
 end

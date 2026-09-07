@@ -13,14 +13,16 @@ end
 """Project-relative cache path for digest `hash` (64 hex chars)."""
 function cache_relpath(hash::AbstractString)::String
     h = lowercase(strip(String(hash)))
-    length(h) == 64 && all(isxdigit, h) || throw(ArgumentError(
-        "cache_relpath: expected 64 hex chars, got $(repr(hash))",
-    ))
+    length(h) == 64 && all(isxdigit, h) || throw(
+        ArgumentError(
+            "cache_relpath: expected 64 hex chars, got $(repr(hash))",
+        )
+    )
     return joinpath(_NS_CACHE_DIR, h)
 end
 
 """Absolute cache path under `project` for `hash`."""
-function cache_path(hash::AbstractString; project::AbstractString=pwd())::String
+function cache_path(hash::AbstractString; project::AbstractString = pwd())::String
     return joinpath(canonical_local_path(project), cache_relpath(hash))
 end
 
@@ -32,16 +34,16 @@ or stale. Same contents share one file (no second copy). Returns the cache
 path. Does not rsync by itself; `.distsshkit/` is excluded from project
 sync. Use [`push_cache!`](@ref) to copy blobs to SSH hosts.
 """
-function cache_file(src::AbstractString; project::AbstractString=pwd())::String
+function cache_file(src::AbstractString; project::AbstractString = pwd())::String
     srcp = canonical_local_path(src)
     isfile(srcp) || throw(ArgumentError("cache_file: not a file: $srcp"))
     h = file_sha256(srcp)
-    dest = cache_path(h; project=project)
+    dest = cache_path(h; project = project)
     if isfile(dest)
         file_sha256(dest) == h && return dest
     end
     mkpath(dirname(dest))
-    cp(srcp, dest; force=true)
+    cp(srcp, dest; force = true)
     return dest
 end
 
@@ -54,7 +56,7 @@ Otherwise, if `DISTRIBUTED_OUTPUT_DIR` is set and that join exists, use it.
 Else if the path exists under `project`, use that. Else if the output dir is
 set, join there (typical write). Else join `project`.
 """
-function ns_path(rel::AbstractString; project::AbstractString=pwd())::String
+function ns_path(rel::AbstractString; project::AbstractString = pwd())::String
     r = String(rel)
     startswith(r, "~") && (r = expanduser(r))
     isabspath(r) && return canonical_local_path(r)

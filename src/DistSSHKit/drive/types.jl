@@ -22,7 +22,7 @@ Convert RSS bytes to a per-worker GB estimate (safety factor + floor).
 function rss_bytes_to_worker_gb(rss_bytes::Integer)::Float64
     rss_bytes > 0 || return WORKER_MEMORY_GB_FALLBACK
     gb = rss_bytes / 1024^3 * WORKER_RSS_SAFETY_FACTOR
-    return round(max(gb, WORKER_MEMORY_GB_FLOOR), digits=2)
+    return round(max(gb, WORKER_MEMORY_GB_FLOOR), digits = 2)
 end
 
 """
@@ -32,13 +32,13 @@ Pure RAM/CPU cap for one host (shared by CLI and `compute_worker_plan`).
 `nproc === nothing` skips the CPU term (RAM budget only).
 """
 function size_worker_count(
-    total_gb::Real,
-    nproc::Union{Nothing,Integer},
-    per_worker_gb::Real;
-    mem_headroom::Real=DEFAULT_MEM_HEADROOM,
-    parent_gb::Real=DEFAULT_PARENT_GB,
-    is_parent::Bool=false,
-)::Int
+        total_gb::Real,
+        nproc::Union{Nothing, Integer},
+        per_worker_gb::Real;
+        mem_headroom::Real = DEFAULT_MEM_HEADROOM,
+        parent_gb::Real = DEFAULT_PARENT_GB,
+        is_parent::Bool = false,
+    )::Int
     pw = Float64(per_worker_gb)
     pw <= 0 && return 0
     avail = Float64(total_gb) * Float64(mem_headroom) - (is_parent ? Float64(parent_gb) : 0.0)
@@ -65,10 +65,10 @@ end
 """Sized worker counts per host (`parent_workers` + `child_workers`)."""
 struct WorkerPlan
     parent_workers::Int
-    child_workers::Dict{String,Int}
+    child_workers::Dict{String, Int}
 end
 
-WorkerPlan() = WorkerPlan(0, Dict{String,Int}())
+WorkerPlan() = WorkerPlan(0, Dict{String, Int}())
 
 """Resolved `parent:N` / `child:NAME:N` lines from a [`WorkerPlan`](@ref)."""
 function resolved_placement_tokens(plan::WorkerPlan)::Vector{String}
@@ -82,11 +82,11 @@ function resolved_placement_tokens(plan::WorkerPlan)::Vector{String}
 end
 
 function resolved_placement_tokens(
-    parent_workers::Integer,
-    hosts::AbstractVector{Tuple{String, Union{Int, Nothing}}},
-    default_workers,
-)::Vector{String}
-    remotes = Dict{String,Int}()
+        parent_workers::Integer,
+        hosts::AbstractVector{Tuple{String, Union{Int, Nothing}}},
+        default_workers,
+    )::Vector{String}
+    remotes = Dict{String, Int}()
     for pair in hosts
         remotes[pair[1]] = something(pair[2], default_workers, 1)
     end
@@ -106,24 +106,24 @@ Field name matches [`WorkerPlan`](@ref): a host with an explicit `:N` is
 struct ParsedWorkerTokens
     parent_workers::Int
     parent_autosize::Bool
-    child_workers::Dict{String,Int}
+    child_workers::Dict{String, Int}
     child_auto::Vector{String}
     child_hosts::Vector{String}
     tokens::Vector{String}
 end
 
 function ParsedWorkerTokens(;
-    parent_workers::Integer=0,
-    parent_autosize::Bool=false,
-    child_workers::AbstractDict{<:AbstractString,<:Integer}=Dict{String,Int}(),
-    child_auto::AbstractVector{<:AbstractString}=String[],
-    child_hosts::AbstractVector{<:AbstractString}=String[],
-    tokens::AbstractVector{<:AbstractString}=String[],
-)
+        parent_workers::Integer = 0,
+        parent_autosize::Bool = false,
+        child_workers::AbstractDict{<:AbstractString, <:Integer} = Dict{String, Int}(),
+        child_auto::AbstractVector{<:AbstractString} = String[],
+        child_hosts::AbstractVector{<:AbstractString} = String[],
+        tokens::AbstractVector{<:AbstractString} = String[],
+    )
     return ParsedWorkerTokens(
         Int(parent_workers),
         parent_autosize,
-        Dict{String,Int}(String(h) => Int(n) for (h, n) in child_workers),
+        Dict{String, Int}(String(h) => Int(n) for (h, n) in child_workers),
         String[String(h) for h in child_auto],
         String[String(h) for h in child_hosts],
         String[String(t) for t in tokens],
@@ -138,12 +138,12 @@ or filled by `-w`. `parent` / `parent:N` is the Kit side; SSH children are
 `child:NAME` / `child:NAME:N`.
 """
 function parse_worker_tokens(
-    tokens::AbstractVector{<:AbstractString},
-)::ParsedWorkerTokens
+        tokens::AbstractVector{<:AbstractString},
+    )::ParsedWorkerTokens
     parent_workers = 0
     local_seen = false
     parent_autosize = false
-    child_workers = Dict{String,Int}()
+    child_workers = Dict{String, Int}()
     child_auto = String[]
     child_hosts = String[]
     seen_remote = Set{String}()
@@ -152,9 +152,11 @@ function parse_worker_tokens(
     for raw in out_tokens
         p = parse_placement_token(raw)
         if p.role === :parent
-            local_seen && throw(ArgumentError(
-                "duplicate parent token; use one of $(PARENT_HOST_NAME):N",
-            ))
+            local_seen && throw(
+                ArgumentError(
+                    "duplicate parent token; use one of $(PARENT_HOST_NAME):N",
+                )
+            )
             local_seen = true
             if p.n === nothing
                 parent_autosize = true
@@ -211,12 +213,12 @@ end
 effective_worker_gb(s::WorkerMemorySample)::Float64 = max(s.baseline_gb, s.peak_gb)
 
 """Map host → effective GB for `compute_worker_plan`."""
-function per_worker_gb_dict(samples::Dict{String,WorkerMemorySample})::Dict{String,Float64}
-    return Dict{String,Float64}(h => effective_worker_gb(s) for (h, s) in samples)
+function per_worker_gb_dict(samples::Dict{String, WorkerMemorySample})::Dict{String, Float64}
+    return Dict{String, Float64}(h => effective_worker_gb(s) for (h, s) in samples)
 end
 
 """Optional path string (`nothing` when unset or empty)."""
-function _optional_path(path::Union{Nothing,AbstractString})::Union{Nothing,String}
+function _optional_path(path::Union{Nothing, AbstractString})::Union{Nothing, String}
     path === nothing && return nothing
     s = String(path)
     return isempty(s) ? nothing : s
@@ -233,16 +235,16 @@ so `kit.result` round-trips; other values use `sprint(showerror, error)`.
 struct HostRunResult
     host::String
     ok::Bool
-    error::Union{Nothing,String}
+    error::Union{Nothing, String}
 end
 
-function _host_run_error_text(error)::Union{Nothing,String}
+function _host_run_error_text(error)::Union{Nothing, String}
     error === nothing && return nothing
     error isa AbstractString && return String(error)
     return sprint(showerror, error)
 end
 
-HostRunResult(host::AbstractString, ok::Bool, error=nothing) =
+HostRunResult(host::AbstractString, ok::Bool, error = nothing) =
     HostRunResult(String(host), ok, _host_run_error_text(error))
 
 """
@@ -255,22 +257,22 @@ Shared run outcome (`ok`, `kind`, dirs, `failed_step`, `exit_code`, `hosts`).
 struct KitRunResult
     ok::Bool
     kind::Symbol
-    output_dir::Union{Nothing,String}
-    log_dir::Union{Nothing,String}
-    failed_step::Union{Nothing,String}
+    output_dir::Union{Nothing, String}
+    log_dir::Union{Nothing, String}
+    failed_step::Union{Nothing, String}
     exit_code::Int
     hosts::Vector{HostRunResult}
     tokens::Vector{String}
     function KitRunResult(
-        ok::Bool,
-        kind::Symbol,
-        output_dir::Union{Nothing,String},
-        log_dir::Union{Nothing,String},
-        failed_step::Union{Nothing,String},
-        exit_code::Integer,
-        hosts::AbstractVector{HostRunResult}=HostRunResult[],
-        tokens::AbstractVector{<:AbstractString}=String[],
-    )
+            ok::Bool,
+            kind::Symbol,
+            output_dir::Union{Nothing, String},
+            log_dir::Union{Nothing, String},
+            failed_step::Union{Nothing, String},
+            exit_code::Integer,
+            hosts::AbstractVector{HostRunResult} = HostRunResult[],
+            tokens::AbstractVector{<:AbstractString} = String[],
+        )
         return new(
             ok,
             kind,
@@ -294,7 +296,7 @@ or `nothing` if it has not been observed since join.
 struct DriveHostStatus
     host::String
     state::Symbol
-    last_seen::Union{Nothing,Float64}
+    last_seen::Union{Nothing, Float64}
 end
 
 """
@@ -318,20 +320,20 @@ the order results were collected. Empty when no host-collection step ran
 struct DriveResult
     ok::Bool
     exit_code::Int
-    output_dir::Union{Nothing,String}
-    log_dir::Union{Nothing,String}
-    failed_step::Union{Nothing,String}
+    output_dir::Union{Nothing, String}
+    log_dir::Union{Nothing, String}
+    failed_step::Union{Nothing, String}
     hosts::Vector{HostRunResult}
 end
 
 function DriveResult(
-    ok::Bool,
-    exit_code::Int;
-    output_dir::Union{Nothing,AbstractString}=nothing,
-    log_dir::Union{Nothing,AbstractString}=nothing,
-    failed_step::Union{Nothing,AbstractString}=nothing,
-    hosts::AbstractVector{HostRunResult}=HostRunResult[],
-)
+        ok::Bool,
+        exit_code::Int;
+        output_dir::Union{Nothing, AbstractString} = nothing,
+        log_dir::Union{Nothing, AbstractString} = nothing,
+        failed_step::Union{Nothing, AbstractString} = nothing,
+        hosts::AbstractVector{HostRunResult} = HostRunResult[],
+    )
     return DriveResult(
         ok,
         exit_code,
@@ -365,52 +367,52 @@ day-to-day use.
 mutable struct PipelineConfig
     project::String
     tokens::Vector{String}
-    remote::Union{Nothing,String}
-    hosts_file::Union{Nothing,String}
+    remote::Union{Nothing, String}
+    hosts_file::Union{Nothing, String}
     quiet::Bool
-    verbosity::Union{Nothing,Symbol}
+    verbosity::Union{Nothing, Symbol}
     yes::Bool
     driver::String
     args::Vector{String}
-    sync::Union{Symbol,Bool,Nothing}
-    gb_per_worker::Union{Nothing,Float64}
-    size_probe::Union{Nothing,String}
+    sync::Union{Symbol, Bool, Nothing}
+    gb_per_worker::Union{Nothing, Float64}
+    size_probe::Union{Nothing, String}
     mem_headroom::Float64
     parent_gb::Float64
-    skip_hash_check::Union{Nothing,Bool}
-    collect_spec::Union{Symbol,Bool,AbstractString,Nothing}
+    skip_hash_check::Union{Nothing, Bool}
+    collect_spec::Union{Symbol, Bool, AbstractString, Nothing}
     collect_merge::Bool
-    output_dir::Union{Nothing,String}
+    output_dir::Union{Nothing, String}
     enable_log::Bool
-    log_dir::Union{Nothing,String}
-    package::Union{Nothing,String}
-    julia::Union{Nothing,String}
+    log_dir::Union{Nothing, String}
+    package::Union{Nothing, String}
+    julia::Union{Nothing, String}
 end
 
 function PipelineConfig(;
-    project::AbstractString=pwd(),
-    workers::AbstractVector{<:AbstractString}=String[],
-    remote::Union{Nothing,AbstractString}=nothing,
-    hosts_file::Union{Nothing,AbstractString}=nothing,
-    quiet::Bool=false,
-    verbosity::Union{Nothing,Symbol}=nothing,
-    yes::Bool=true,
-    driver::AbstractString,
-    args::AbstractVector{<:AbstractString}=String[],
-    sync::Union{Symbol,Bool,Nothing}=nothing,
-    gb_per_worker::Union{Nothing,Real}=nothing,
-    size_probe::Union{Nothing,AbstractString}=nothing,
-    mem_headroom::Real=DEFAULT_MEM_HEADROOM,
-    parent_gb::Real=DEFAULT_PARENT_GB,
-    skip_hash_check::Union{Nothing,Bool}=nothing,
-    collect::Union{Symbol,Bool,AbstractString,Nothing}=nothing,
-    collect_merge::Bool=false,
-    output_dir::Union{Nothing,AbstractString}=nothing,
-    enable_log::Bool=true,
-    log_dir::Union{Nothing,AbstractString}=nothing,
-    package::Union{Nothing,AbstractString}=nothing,
-    julia::Union{Nothing,AbstractString}=nothing,
-)
+        project::AbstractString = pwd(),
+        workers::AbstractVector{<:AbstractString} = String[],
+        remote::Union{Nothing, AbstractString} = nothing,
+        hosts_file::Union{Nothing, AbstractString} = nothing,
+        quiet::Bool = false,
+        verbosity::Union{Nothing, Symbol} = nothing,
+        yes::Bool = true,
+        driver::AbstractString,
+        args::AbstractVector{<:AbstractString} = String[],
+        sync::Union{Symbol, Bool, Nothing} = nothing,
+        gb_per_worker::Union{Nothing, Real} = nothing,
+        size_probe::Union{Nothing, AbstractString} = nothing,
+        mem_headroom::Real = DEFAULT_MEM_HEADROOM,
+        parent_gb::Real = DEFAULT_PARENT_GB,
+        skip_hash_check::Union{Nothing, Bool} = nothing,
+        collect::Union{Symbol, Bool, AbstractString, Nothing} = nothing,
+        collect_merge::Bool = false,
+        output_dir::Union{Nothing, AbstractString} = nothing,
+        enable_log::Bool = true,
+        log_dir::Union{Nothing, AbstractString} = nothing,
+        package::Union{Nothing, AbstractString} = nothing,
+        julia::Union{Nothing, AbstractString} = nothing,
+    )
     rr = remote === nothing ? nothing : String(strip(String(remote)))
     rr !== nothing && isempty(rr) && (rr = nothing)
     hf = hosts_file === nothing ? nothing : String(strip(String(hosts_file)))
@@ -456,23 +458,23 @@ end
 """Combined outcome of [`pipeline!`](@ref). On failure, `failed_step` names the step that stopped."""
 struct PipelineResult
     ok::Bool
-    sync::Union{Nothing,SyncResult}
-    plan::Union{Nothing,WorkerPlan}
-    drive::Union{Nothing,DriveResult}
-    collect::Union{Nothing,CollectResult}
+    sync::Union{Nothing, SyncResult}
+    plan::Union{Nothing, WorkerPlan}
+    drive::Union{Nothing, DriveResult}
+    collect::Union{Nothing, CollectResult}
     driver::String
-    failed_step::Union{Nothing,String}
-    output_dir::Union{Nothing,String}
-    log_dir::Union{Nothing,String}
+    failed_step::Union{Nothing, String}
+    output_dir::Union{Nothing, String}
+    log_dir::Union{Nothing, String}
     exit_code::Int
 end
 
 function _result_exit_code(
-    ok::Bool,
-    drive::Union{Nothing,DriveResult},
-    collect::Union{Nothing,CollectResult},
-    failed_step::Union{Nothing,AbstractString}=nothing,
-)::Int
+        ok::Bool,
+        drive::Union{Nothing, DriveResult},
+        collect::Union{Nothing, CollectResult},
+        failed_step::Union{Nothing, AbstractString} = nothing,
+    )::Int
     ok && return 0
     step = failed_step === nothing ? nothing : String(failed_step)
     if step in ("run", "drive") && drive !== nothing
@@ -487,17 +489,17 @@ function _result_exit_code(
 end
 
 function PipelineResult(
-    ok::Bool,
-    sync::Union{Nothing,SyncResult},
-    plan::Union{Nothing,WorkerPlan},
-    drive::Union{Nothing,DriveResult},
-    collect::Union{Nothing,CollectResult},
-    driver::String;
-    failed_step::Union{Nothing,String}=nothing,
-    output_dir::Union{Nothing,AbstractString}=nothing,
-    log_dir::Union{Nothing,AbstractString}=nothing,
-    exit_code::Union{Nothing,Integer}=nothing,
-)
+        ok::Bool,
+        sync::Union{Nothing, SyncResult},
+        plan::Union{Nothing, WorkerPlan},
+        drive::Union{Nothing, DriveResult},
+        collect::Union{Nothing, CollectResult},
+        driver::String;
+        failed_step::Union{Nothing, String} = nothing,
+        output_dir::Union{Nothing, AbstractString} = nothing,
+        log_dir::Union{Nothing, AbstractString} = nothing,
+        exit_code::Union{Nothing, Integer} = nothing,
+    )
     od = _optional_path(output_dir)
     ld = _optional_path(log_dir)
     if drive !== nothing
@@ -548,7 +550,7 @@ function _report_run_header!(io::IO, result::KitRunResult)
     return nothing
 end
 
-function _report_sync_host_errors!(io::IO, sync::Union{Nothing,SyncResult})
+function _report_sync_host_errors!(io::IO, sync::Union{Nothing, SyncResult})
     sync === nothing && return
     sync.ok && return
     for hr in sync.hosts
@@ -564,7 +566,7 @@ Print a short summary when a kit run failed. Accepts [`KitRunResult`](@ref)
 or a typed outcome (`GoResult` / `RideResult` / `DriveResult` / `PipelineResult`).
 Returns `result.ok`.
 """
-function report_run_errors(result::KitRunResult; io::IO=stderr)::Bool
+function report_run_errors(result::KitRunResult; io::IO = stderr)::Bool
     result.ok && return true
     _report_run_header!(io, result)
     if result.exit_code != 0
@@ -573,8 +575,8 @@ function report_run_errors(result::KitRunResult; io::IO=stderr)::Bool
     return false
 end
 
-function report_run_errors(result::DriveResult; io::IO=stderr)::Bool
-    return report_run_errors(kit_run_result(result); io=io)
+function report_run_errors(result::DriveResult; io::IO = stderr)::Bool
+    return report_run_errors(kit_run_result(result); io = io)
 end
 
 """Build `drive` host specs from a [`WorkerPlan`](@ref)."""
@@ -590,10 +592,10 @@ function drive_host_specs(plan::WorkerPlan)::Vector{String}
 end
 
 function SyncResult(
-    cancelled::Bool,
-    host_results::Vector{HostResult};
-    ok::Union{Nothing,Bool}=nothing,
-)
+        cancelled::Bool,
+        host_results::Vector{HostResult};
+        ok::Union{Nothing, Bool} = nothing,
+    )
     if ok === nothing
         ok = !cancelled && all(hr.ok for hr in host_results)
     end

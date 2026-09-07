@@ -1,6 +1,7 @@
-function show_requirements(; io::IO=stdout)
-    print_help_chrome("DistSSHKit setup"; io=io)
-    print_help_lines(io,
+function show_requirements(; io::IO = stdout)
+    print_help_chrome("DistSSHKit setup"; io = io)
+    print_help_lines(
+        io,
         "Deploy and check the project on SSH hosts before go / drive.",
         "Recommended: --rsync, --instantiate, --check, then optional --runtest.",
         "Hosts: child:NAME[:N] (same as go / drive / size; :N ignored).",
@@ -9,8 +10,9 @@ function show_requirements(; io::IO=stdout)
         "Git parity is drive --require-git (off by default).",
     )
     print_help_blank(io)
-    print_help_section("Usage"; io=io)
-    print_help_lines(io,
+    print_help_section("Usage"; io = io)
+    print_help_lines(
+        io,
         "  julia --project=. -m DistSSHKit setup MODE child:host1 child:host2",
         "  setup --rsync child:host1 child:host2",
         "  setup --instantiate child:host1 child:host2",
@@ -20,8 +22,9 @@ function show_requirements(; io::IO=stdout)
         "  setup --runtest child:host1 child:host2",
     )
     print_help_blank(io)
-    print_help_section("Modes (one per run)"; io=io)
-    print_help_lines(io,
+    print_help_section("Modes (one per run)"; io = io)
+    print_help_lines(
+        io,
         "  --rsync / --clone    empty remote path only",
         "                       --delete first to replace",
         "  --sync / --pull      git update (confirm unless -y)",
@@ -34,8 +37,9 @@ function show_requirements(; io::IO=stdout)
         "  --prune              .distsshkit go/drive/setup leaves",
     )
     print_help_blank(io)
-    print_help_section("Options"; io=io)
-    print_help_lines(io,
+    print_help_section("Options"; io = io)
+    print_help_lines(
+        io,
         "  --repo URL           clone URL (default: origin)",
         "  --remote-path PATH   remote project root",
         "  --julia PATH         remote Julia",
@@ -52,13 +56,15 @@ function show_requirements(; io::IO=stdout)
         "  --id TOKEN           with --prune: go batch name contains TOKEN",
     )
     print_help_blank(io)
-    print_help_section("Environment"; io=io)
-    print_help_lines(io,
+    print_help_section("Environment"; io = io)
+    print_help_lines(
+        io,
         "  $(KIT_SKIP_PKILL_ENV_HELP)",
         "  $(KIT_JOBS_ENV_HELP)",
     )
     print_help_blank(io)
-    print_help_lines(io,
+    return print_help_lines(
+        io,
         "Details: docs (manual/setup). See also: go, drive, size.",
     )
 end
@@ -111,9 +117,11 @@ function parse_setup_args(args::Vector{String})
         elseif arg == "--older-than"
             raw = strip(cli_take_value!(c, arg))
             n = tryparse(Int, raw)
-            (n !== nothing && n >= 0) || throw(ArgumentError(
-                "--older-than needs a non-negative integer day count, got $(repr(raw))",
-            ))
+            (n !== nothing && n >= 0) || throw(
+                ArgumentError(
+                    "--older-than needs a non-negative integer day count, got $(repr(raw))",
+                )
+            )
             older_days = n
         elseif arg == "--id"
             prune_id = String(strip(cli_take_value!(c, arg)))
@@ -144,7 +152,7 @@ function parse_setup_args(args::Vector{String})
         end
     end
 
-    append_kit_host_sources!(hosts, cli_session; keep_counts=false, roles=true)
+    append_kit_host_sources!(hosts, cli_session; keep_counts = false, roles = true)
     apply_kit_cli_session!(cli_session)
 
     if (older_days !== nothing || prune_id !== nothing) && mode !== :prune
@@ -152,19 +160,19 @@ function parse_setup_args(args::Vector{String})
     end
 
     return (
-        mode=mode,
-        julia_path=julia_path,
-        repo_url=repo_url,
-        remote_path_override=remote_path_override,
-        hosts=hosts,
-        show_help=show_help,
-        ignore_julia_version=ignore_julia_version,
-        older_days=older_days,
-        prune_id=prune_id,
-        show_version=cli_session.show_version,
-        cli_session=cli_session,
+        mode = mode,
+        julia_path = julia_path,
+        repo_url = repo_url,
+        remote_path_override = remote_path_override,
+        hosts = hosts,
+        show_help = show_help,
+        ignore_julia_version = ignore_julia_version,
+        older_days = older_days,
+        prune_id = prune_id,
+        show_version = cli_session.show_version,
+        cli_session = cli_session,
     )
 end
 
-show_usage(; io::IO=stdout) = show_requirements(; io)
+show_usage(; io::IO = stdout) = show_requirements(; io)
 setup_help_text()::String = sprint(io -> show_requirements(; io))

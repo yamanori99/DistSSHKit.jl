@@ -52,10 +52,10 @@ using Test
             let r = parse_drive_args(["parent:3", "child:host1:2", "s.jl"])
                 @test r.parent_workers == 3
                 @test r.hosts == [("host1", 2)]
-                @test DistSSHKit.host_tokens(r; kind=:drive) == ["parent:3", "child:host1:2"]
+                @test DistSSHKit.host_tokens(r; kind = :drive) == ["parent:3", "child:host1:2"]
             end
             let r = parse_drive_args(["parent:4", "child:host1", "child:host2:2", "s.jl"])
-                @test DistSSHKit.host_tokens(r; kind=:drive) == ["parent:4", "child:host1", "child:host2:2"]
+                @test DistSSHKit.host_tokens(r; kind = :drive) == ["parent:4", "child:host1", "child:host2:2"]
             end
             @test_throws ArgumentError parse_drive_args(["--local", "4", "myscript.jl", "a", "b"])
             @test_throws ArgumentError parse_drive_args(["--local:5", "s.jl"])
@@ -64,7 +64,7 @@ using Test
             let r = parse_drive_args(["--workers:7", "child:host1", "s.jl"])
                 @test r.default_workers == 7
                 @test r.hosts == [("host1", nothing)]
-                @test DistSSHKit.host_tokens(r; kind=:drive) == ["child:host1"]
+                @test DistSSHKit.host_tokens(r; kind = :drive) == ["child:host1"]
             end
             let r = parse_drive_args(["-w:4", "child:host1", "s.jl"])
                 @test r.default_workers == 4
@@ -72,7 +72,7 @@ using Test
             let r = parse_drive_args(["child:local:3", "child:host1:2", "s.jl"])
                 @test r.parent_workers == 0
                 @test r.hosts == [("local", 3), ("host1", 2)]
-                @test DistSSHKit.host_tokens(r; kind=:drive) == ["child:local:3", "child:host1:2"]
+                @test DistSSHKit.host_tokens(r; kind = :drive) == ["child:local:3", "child:host1:2"]
             end
             let r = parse_drive_args(["child:localhost:4", "s.jl"])
                 @test r.parent_workers == 0

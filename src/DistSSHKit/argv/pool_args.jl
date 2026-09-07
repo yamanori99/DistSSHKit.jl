@@ -1,44 +1,47 @@
 # Argument parsing for `pool` (inventory + health; no RSS probe).
 
 function _pool_parsed(;
-    show_help::Bool,
-    show_version::Bool,
-    cli_session,
-    gb_per_worker,
-    mem_headroom::Float64,
-    parent_gb::Float64,
-    include_parent::Bool,
-    hosts::Vector{String},
-)
+        show_help::Bool,
+        show_version::Bool,
+        cli_session,
+        gb_per_worker,
+        mem_headroom::Float64,
+        parent_gb::Float64,
+        include_parent::Bool,
+        hosts::Vector{String},
+    )
     return (
-        show_help=show_help,
-        show_version=show_version,
-        cli_session=cli_session,
-        gb_per_worker=gb_per_worker,
-        mem_headroom=mem_headroom,
-        parent_gb=parent_gb,
-        include_parent=include_parent,
-        hosts=hosts,
+        show_help = show_help,
+        show_version = show_version,
+        cli_session = cli_session,
+        gb_per_worker = gb_per_worker,
+        mem_headroom = mem_headroom,
+        parent_gb = parent_gb,
+        include_parent = include_parent,
+        hosts = hosts,
     )
 end
 
-function show_pool_usage(; io::IO=stdout)
-    print_help_chrome("DistSSHKit pool"; io=io)
-    print_help_lines(io,
+function show_pool_usage(; io::IO = stdout)
+    print_help_chrome("DistSSHKit pool"; io = io)
+    print_help_lines(
+        io,
         "Show cluster cores, RAM, and a slot hint. Does not start a job.",
         "Fail-closed: unreachable listed hosts make the command fail.",
         "RSS measurement stays on size / size!.",
     )
     print_help_blank(io)
-    print_help_section("Usage"; io=io)
-    print_help_lines(io,
+    print_help_section("Usage"; io = io)
+    print_help_lines(
+        io,
         "  julia --project=. -m DistSSHKit pool [parent] [child:NAME...]",
         "  pool parent child:host1 child:host2",
         "  pool --gb-per-worker 1.5 child:host1",
     )
     print_help_blank(io)
-    print_help_section("Options"; io=io)
-    print_help_lines(io,
+    print_help_section("Options"; io = io)
+    print_help_lines(
+        io,
         "  --gb-per-worker N   slot hint; default $(WORKER_MEMORY_GB_FALLBACK) GB (no RSS)",
         "  --mem-headroom N    RAM fraction (default $(DEFAULT_MEM_HEADROOM))",
         "  --parent-gb N       parent process reserve (default $(DEFAULT_PARENT_GB))",
@@ -51,7 +54,8 @@ function show_pool_usage(; io::IO=stdout)
         "  -h, --help          this help",
     )
     print_help_blank(io)
-    print_help_lines(io,
+    print_help_lines(
+        io,
         "Details: docs (manual/pool). See also: size, setup.",
         "API: pool!(session) -> ResourcePool.",
     )
@@ -72,21 +76,23 @@ function parse_pool_args(args::Vector{String})
         if cli_match(c, ["-h", "--help"])
             cli_consume!(c)
             return _pool_parsed(;
-                show_help=true,
-                show_version=cli_session.show_version,
-                cli_session=cli_session,
-                gb_per_worker=gb_per_worker,
-                mem_headroom=mem_headroom,
-                parent_gb=parent_gb,
-                include_parent=include_parent,
-                hosts=hosts,
+                show_help = true,
+                show_version = cli_session.show_version,
+                cli_session = cli_session,
+                gb_per_worker = gb_per_worker,
+                mem_headroom = mem_headroom,
+                parent_gb = parent_gb,
+                include_parent = include_parent,
+                hosts = hosts,
             )
         elseif cli_match(c, ["--local", "-l"]) || startswith(arg, "--local:") || startswith(arg, "-l:")
             throw_removed_local_flag(arg)
         elseif arg == "--parenthost" || arg == "--masterhost" || arg == "--parent"
-            throw(ArgumentError(
-                "pool: pass the token `parent` (e.g. pool parent child:host1), not `--parenthost`.",
-            ))
+            throw(
+                ArgumentError(
+                    "pool: pass the token `parent` (e.g. pool parent child:host1), not `--parenthost`.",
+                )
+            )
         elseif arg == "--gb-per-worker"
             gb_per_worker = parse(Float64, cli_take_value!(c, arg))
         elseif arg == "--probe"
@@ -108,18 +114,18 @@ function parse_pool_args(args::Vector{String})
         end
     end
 
-    append_kit_host_sources!(hosts, cli_session; keep_counts=false, roles=true)
+    append_kit_host_sources!(hosts, cli_session; keep_counts = false, roles = true)
     include_parent = _size_absorb_parent_hosts!(hosts, include_parent)
     apply_kit_cli_session!(cli_session)
 
     return _pool_parsed(;
-        show_help=false,
-        show_version=cli_session.show_version,
-        cli_session=cli_session,
-        gb_per_worker=gb_per_worker,
-        mem_headroom=mem_headroom,
-        parent_gb=parent_gb,
-        include_parent=include_parent,
-        hosts=hosts,
+        show_help = false,
+        show_version = cli_session.show_version,
+        cli_session = cli_session,
+        gb_per_worker = gb_per_worker,
+        mem_headroom = mem_headroom,
+        parent_gb = parent_gb,
+        include_parent = include_parent,
+        hosts = hosts,
     )
 end

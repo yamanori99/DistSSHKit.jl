@@ -14,9 +14,9 @@ Priority (first match wins):
 Creates the directory when missing. Drivers should call this from `init_output_dir!`.
 """
 function resolve_distributed_output_dir!(
-    script_args::Vector{String},
-    default_dir::AbstractString,
-)::String
+        script_args::Vector{String},
+        default_dir::AbstractString,
+    )::String
     existing = strip(get(ENV, "DISTRIBUTED_OUTPUT_DIR", ""))
     if !isempty(existing)
         dir = canonical_local_path(existing)
@@ -24,7 +24,7 @@ function resolve_distributed_output_dir!(
         ENV["DISTRIBUTED_OUTPUT_DIR"] = dir
         return dir
     end
-    for j in 1:length(script_args) - 1
+    for j in 1:(length(script_args) - 1)
         if script_args[j] == "--output-dir"
             dir = canonical_local_path(script_args[j + 1])
             mkpath(dir)
@@ -70,9 +70,9 @@ else `ENV["DISTRIBUTED_OUTPUT_DIR"]`, else `{script_dir}/.distsshkit/drive`
 (kind root; live runs set ENV first).
 """
 function resolve_drive_log_dir(
-    log_dir::Union{Nothing,AbstractString},
-    script_dir::AbstractString,
-)::String
+        log_dir::Union{Nothing, AbstractString},
+        script_dir::AbstractString,
+    )::String
     resolved = log_dir
     if resolved === nothing
         resolved = get(ENV, "DISTRIBUTED_OUTPUT_DIR", nothing)

@@ -45,29 +45,29 @@ using Dates
             @test s[1].label == "parent-1"
             @test s[2].label == "parent-2"
         end
-        let s = DistSSHKit._go_plan_slots(String[]; total=4)
+        let s = DistSSHKit._go_plan_slots(String[]; total = 4)
             @test length(s) == 4
             @test all(x -> x.kind === :parent, s)
             @test s[1].label == "parent-1"
             @test s[4].label == "parent-4"
         end
-        let s = DistSSHKit._go_plan_slots(["parent:10"]; total=3)
+        let s = DistSSHKit._go_plan_slots(["parent:10"]; total = 3)
             @test length(s) == 3
         end
-        @test_throws ArgumentError DistSSHKit._go_plan_slots(["parent:2"]; total=3)
-        let s = DistSSHKit._go_plan_slots(["child:h1"]; total=2)
+        @test_throws ArgumentError DistSSHKit._go_plan_slots(["parent:2"]; total = 3)
+        let s = DistSSHKit._go_plan_slots(["child:h1"]; total = 2)
             @test length(s) == 2
             @test all(x -> x.kind === :child && x.host == "h1", s)
         end
-        let s = DistSSHKit._go_plan_slots(["child:a", "child:b"]; total=4)
+        let s = DistSSHKit._go_plan_slots(["child:a", "child:b"]; total = 4)
             @test count(x -> x.host == "a", s) == 2
             @test count(x -> x.host == "b", s) == 2
         end
-        let s = DistSSHKit._go_plan_slots(["child:a", "child:b"]; total=3)
+        let s = DistSSHKit._go_plan_slots(["child:a", "child:b"]; total = 3)
             @test count(x -> x.host == "a", s) == 2
             @test count(x -> x.host == "b", s) == 1
         end
-        let s = DistSSHKit._go_plan_slots(["parent:1", "child:h1"]; total=4)
+        let s = DistSSHKit._go_plan_slots(["parent:1", "child:h1"]; total = 4)
             @test count(x -> x.kind === :parent, s) == 1
             @test count(x -> x.host == "h1", s) == 3
         end
@@ -77,11 +77,11 @@ using Dates
             @test pool[2].role === :child && pool[2].name == "h1"
         end
         @test_throws ArgumentError DistSSHKit._go_plan_slots(
-            ["parent:1", "child:parent:1"]; total=2,
+            ["parent:1", "child:parent:1"]; total = 2,
         )
-        @test_throws ArgumentError DistSSHKit._go_plan_slots(["child:h1:1"]; total=2)
-        @test_throws ArgumentError DistSSHKit._go_plan_slots(String[]; total=0)
-        @test_throws ArgumentError DistSSHKit._go_plan_slots(String[]; total=true)
+        @test_throws ArgumentError DistSSHKit._go_plan_slots(["child:h1:1"]; total = 2)
+        @test_throws ArgumentError DistSSHKit._go_plan_slots(String[]; total = 0)
+        @test_throws ArgumentError DistSSHKit._go_plan_slots(String[]; total = true)
         @test occursin("root@", DistSSHKit._go_host_ssh_hint("192.0.2.11"))
         @test isempty(DistSSHKit._go_host_ssh_hint("root@192.0.2.11"))
     end
@@ -89,29 +89,29 @@ using Dates
     @testset "_go_autosize_tokens" begin
         _with_tempdir() do tmp
             session = DistSSHKit.KitSession(
-                project=tmp,
-                workers=["parent"],
-                include_parent_for_size=true,
-                quiet=true,
+                project = tmp,
+                workers = ["parent"],
+                include_parent_for_size = true,
+                quiet = true,
             )
             filled = with_kit_verbosity(:progress) do
                 DistSSHKit._go_autosize_tokens(
                     ["parent"];
-                    session=session,
-                    gb_per_worker=2.0,
+                    session = session,
+                    gb_per_worker = 2.0,
                 )
             end
             wp = with_kit_verbosity(:progress) do
                 DistSSHKit.worker_plan_from_tokens(
                     ["parent"];
-                    session=session,
-                    gb_per_worker=2.0,
+                    session = session,
+                    gb_per_worker = 2.0,
                 )
             end
             @test filled == DistSSHKit.resolved_placement_tokens(wp)
             @test DistSSHKit._go_autosize_tokens(
                 ["parent:2"];
-                session=session,
+                session = session,
             ) == ["parent:2"]
         end
     end
@@ -132,19 +132,19 @@ using Dates
             mkpath(dirname(script))
             touch(script)
             t = DateTime(2026, 8, 3, 13, 44, 28)
-            batch = DistSSHKit._go_batch_output_dir(proj, script; now=t)
+            batch = DistSSHKit._go_batch_output_dir(proj, script; now = t)
             @test batch == joinpath(proj, "demos", ".distsshkit", "go", "demo_20260803T134428Z")
             nested = joinpath(proj, "demos", "without_kit", "job.jl")
             mkpath(dirname(nested))
             touch(nested)
-            nested_batch = DistSSHKit._go_batch_output_dir(proj, nested; now=t)
+            nested_batch = DistSSHKit._go_batch_output_dir(proj, nested; now = t)
             @test nested_batch == joinpath(proj, "demos", "without_kit", ".distsshkit", "go", "job_20260803T134428Z")
             outside = joinpath(tempdir(), "outside-job.jl")
             write(outside, "nothing\n")
-            other = DistSSHKit._go_batch_output_dir(proj, outside; now=t)
+            other = DistSSHKit._go_batch_output_dir(proj, outside; now = t)
             @test other == joinpath(proj, ".distsshkit", "go", "outside-job_20260803T134428Z")
             @test isdir(batch)
-            again = DistSSHKit._go_batch_output_dir(proj, script; now=t)
+            again = DistSSHKit._go_batch_output_dir(proj, script; now = t)
             @test again != batch
             @test isdir(again)
             @test startswith(basename(again), "demo_20260803T134428Z")
@@ -155,15 +155,15 @@ using Dates
         _with_tempdir() do d
             ssh0 = 0
             missing = joinpath(d, "no-such")
-            @test DistSSHKit._go_slot_exitcode(ssh0, missing; scp_failed=false) == 0
-            @test DistSSHKit._go_slot_exitcode(ssh0, missing; scp_failed=true) == 1
-            @test DistSSHKit._go_slot_exitcode(7, missing; scp_failed=false) == 7
+            @test DistSSHKit._go_slot_exitcode(ssh0, missing; scp_failed = false) == 0
+            @test DistSSHKit._go_slot_exitcode(ssh0, missing; scp_failed = true) == 1
+            @test DistSSHKit._go_slot_exitcode(7, missing; scp_failed = false) == 7
             ec = joinpath(d, "go.exitcode")
             write(ec, "3\n")
-            @test DistSSHKit._go_slot_exitcode(ssh0, ec; scp_failed=true) == 1
-            @test DistSSHKit._go_slot_exitcode(ssh0, ec; scp_failed=false) == 3
+            @test DistSSHKit._go_slot_exitcode(ssh0, ec; scp_failed = true) == 1
+            @test DistSSHKit._go_slot_exitcode(ssh0, ec; scp_failed = false) == 3
             write(ec, "0\n")
-            @test DistSSHKit._go_slot_exitcode(ssh0, ec; scp_failed=true) == 1
+            @test DistSSHKit._go_slot_exitcode(ssh0, ec; scp_failed = true) == 1
         end
     end
 
@@ -175,10 +175,10 @@ using Dates
                 DistSSHKit.go!(
                     script,
                     ["parent:1"];
-                    project=proj,
-                    output_dir=joinpath(proj, "a"),
-                    collect_spec=joinpath(proj, "b"),
-                    quiet=true,
+                    project = proj,
+                    output_dir = joinpath(proj, "a"),
+                    collect_spec = joinpath(proj, "b"),
+                    quiet = true,
                 )
                 nothing
             catch e
@@ -195,14 +195,14 @@ using Dates
         @test DistSSHKit._go_resolve_julia("auto") == real
         @test DistSSHKit._go_resolve_julia(real) == real
         @test_throws ArgumentError DistSSHKit._go_resolve_julia("/no/such/julia-bin")
-        @test_throws ArgumentError DistSSHKit._go_resolve_julia("auto"; host="no-such-host.invalid")
+        @test_throws ArgumentError DistSSHKit._go_resolve_julia("auto"; host = "no-such-host.invalid")
     end
 
     @testset "script not found surfaces" begin
         _with_tempdir() do tmp
             missing = joinpath(tmp, "demos", "with_kit", "rho_sweep.jl")
             err_api = try
-                DistSSHKit.go!(missing, String[]; project=tmp)
+                DistSSHKit.go!(missing, String[]; project = tmp)
                 nothing
             catch e
                 e
@@ -211,7 +211,7 @@ using Dates
             @test occursin("DistSSHKit.install_demos(; family=", sprint(showerror, err_api))
 
             err_cli = try
-                DistSSHKit.go!(missing, String[]; project=tmp, hint_surface=:cli)
+                DistSSHKit.go!(missing, String[]; project = tmp, hint_surface = :cli)
                 nothing
             catch e
                 e
@@ -277,21 +277,23 @@ using Dates
             envf = joinpath(d, "ENVJOB")
             progf = joinpath(d, "PROGRAM")
             script = joinpath(d, "mark.jl")
-            write(script, """
+            write(
+                script, """
                 write($(repr(mark)), "yes")
                 write($(repr(argsf)), join(ARGS, '\\n'))
                 write($(repr(envf)), get(ENV, "DISTSSHKIT_JOB_ID", ""))
                 write($(repr(progf)), PROGRAM_FILE)
-                """)
+                """
+            )
             slot = joinpath(d, "slot")
             withenv("DISTSSHKIT_JOB_ID" => "repro-1") do
                 r = DistSSHKit._go_run_local_slot!(
-                    d, script, ["a", "b c"], slot; quiet=true,
+                    d, script, ["a", "b c"], slot; quiet = true,
                 )
                 @test r.ok
             end
             @test isfile(mark)
-            @test split(read(argsf, String), '\n'; keepempty=false) == ["a", "b c"]
+            @test split(read(argsf, String), '\n'; keepempty = false) == ["a", "b c"]
             @test strip(read(envf, String)) == "repro-1"
             @test abspath(strip(read(progf, String))) == abspath(script)
             @test isfile(joinpath(slot, DistSSHKit.kit_job_pkill_pattern("repro-1")))
@@ -308,10 +310,10 @@ using Dates
             DistSSHKit.CollectResult(false, 1),
             "job.jl",
             "/tmp/go-out";
-            failed_step="run",
+            failed_step = "run",
         )
         buf = IOBuffer()
-        @test !DistSSHKit.report_go_errors(bad; io=buf)
+        @test !DistSSHKit.report_go_errors(bad; io = buf)
         txt = String(take!(buf))
         @test occursin("go failed at step: run", txt)
         @test occursin("output: /tmp/go-out", txt)
@@ -322,7 +324,7 @@ using Dates
         @test kr.kind === :go
         @test kr.output_dir == "/tmp/go-out"
         @test kr.exit_code == 2
-        @test !DistSSHKit.report_run_errors(bad; io=IOBuffer())
+        @test !DistSSHKit.report_run_errors(bad; io = IOBuffer())
     end
 
     @testset "quiet suppresses Log file on stdout" begin
@@ -334,7 +336,7 @@ using Dates
                 out, _ = _capture_stdio() do _, _
                     DistSSHKit.go!(
                         script, ["parent:1"];
-                        project=proj, quiet=true, yes=true,
+                        project = proj, quiet = true, yes = true,
                     )
                 end
                 @test !occursin("Log file:", out)
@@ -342,8 +344,8 @@ using Dates
             r = redirect_stdout(devnull) do
                 DistSSHKit.go!(
                     script, ["parent:1"];
-                    project=proj, quiet=true, yes=true,
-                    original_args=["parent:1", "job.jl"],
+                    project = proj, quiet = true, yes = true,
+                    original_args = ["parent:1", "job.jl"],
                 )
             end
             @test r.ok
@@ -380,7 +382,7 @@ using Dates
                 redirect_stdout(devnull) do
                     r = DistSSHKit.go!(
                         script, ["parent:1"];
-                        project=proj, quiet=true, yes=true,
+                        project = proj, quiet = true, yes = true,
                     )
                     @test r.ok
                 end

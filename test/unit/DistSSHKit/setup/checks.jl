@@ -28,22 +28,22 @@ using Pkg
     sh_meta = DistSSHKit._juliaup_align_remote_sh("1.12\$(id)")
     @test occursin("'1.12\$(id)'", sh_meta)
     @test !occursin("juliaup add 1.12\$(id) failed", sh_meta)
-    DistSSHKit.print_juliaup_align_fix!("user@host"; kind=:missing, channel="1.12")
-    DistSSHKit.print_juliaup_align_fix!("user@host"; kind=:mismatch, channel="1.12")
+    DistSSHKit.print_juliaup_align_fix!("user@host"; kind = :missing, channel = "1.12")
+    DistSSHKit.print_juliaup_align_fix!("user@host"; kind = :mismatch, channel = "1.12")
     @test DistSSHKit.juliaup_parent_behind_channel(v"1.12.6", v"1.12.9")
     @test !DistSSHKit.juliaup_parent_behind_channel(v"1.12.9", v"1.12.6")
     @test !DistSSHKit.juliaup_parent_behind_channel(v"1.12.6", v"1.12.6")
     @test !DistSSHKit.juliaup_parent_behind_channel(v"1.12.6", v"1.11.9")
     @test DistSSHKit.print_juliaup_parent_patch_note!(
-        v"1.12.9"; local_version=v"1.12.6", channel="1.12",
+        v"1.12.9"; local_version = v"1.12.6", channel = "1.12",
     )
     @test !DistSSHKit.print_juliaup_parent_patch_note!(
-        v"1.12.6"; local_version=v"1.12.6", channel="1.12",
+        v"1.12.6"; local_version = v"1.12.6", channel = "1.12",
     )
     tip_out, _ = with_kit_verbosity(:verbose) do
         _capture_stdio() do _, _
             DistSSHKit.print_juliaup_parent_patch_note!(
-                v"1.12.9"; local_version=v"1.12.6", channel="1.12",
+                v"1.12.9"; local_version = v"1.12.6", channel = "1.12",
             )
         end
     end
@@ -53,18 +53,22 @@ using Pkg
     mktempdir() do d
         ju = joinpath(d, "juliaup")
         jl = joinpath(d, "julia")
-        write(ju, """
+        write(
+            ju, """
             #!/bin/sh
             case "\$1" in
               add|update|default) exit 0 ;;
               status) echo "1.12"; exit 0 ;;
               *) exit 1 ;;
             esac
-            """)
-        write(jl, """
+            """
+        )
+        write(
+            jl, """
             #!/bin/sh
             echo "julia version $(VERSION.major).$(VERSION.minor).$(VERSION.patch)"
-            """)
+            """
+        )
         chmod(ju, 0o755)
         chmod(jl, 0o755)
         withenv("DISTSSHKIT_TEST_LOCAL_JULIAUP" => ju) do
@@ -98,7 +102,7 @@ using Pkg
     _with_tempdir() do dir
         write(joinpath(dir, "Project.toml"), "[deps]\n")
         Pkg.activate(dir) do
-            Pkg.instantiate(; io=devnull)
+            Pkg.instantiate(; io = devnull)
         end
         @test DistSSHKit.probe_project_deps(dir) === nothing
     end

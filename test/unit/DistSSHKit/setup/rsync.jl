@@ -6,7 +6,7 @@ using Test
     remote_path = "~/App.jl"
     project = _kit_root()
 
-    function _with_fake_remotes(f::Function; extra_env=Dict{String,String}())
+    function _with_fake_remotes(f::Function; extra_env = Dict{String, String}())
         _with_tempdir() do state_dir
             withenv(merge(_fake_setup_remote_env(state_dir), extra_env)...) do
                 _apply_quiet_setup_session!()
@@ -35,7 +35,7 @@ using Test
             @test DistSSHKit.ensure_remote_dir(host, remote_path) == true
             @test DistSSHKit.remote_dest_status(host, remote_path) === :empty
         end
-        _with_fake_remotes(extra_env=Dict("DISTSSHKIT_TEST_MKDIR_FAIL" => "1")) do _
+        _with_fake_remotes(extra_env = Dict("DISTSSHKIT_TEST_MKDIR_FAIL" => "1")) do _
             @test DistSSHKit.ensure_remote_dir("user@host.test", remote_path) == false
         end
     end
@@ -53,7 +53,7 @@ using Test
                             seekstart(stdin_io)
                             DistSSHKit.rsync_push_to_remotes(["host1"], remote_path, project)
                         end
-                        @test result == (cancelled=true, succeeded=0, failed=0)
+                        @test result == (cancelled = true, succeeded = 0, failed = 0)
                         @test occursin("Cancelled.", out)
                         @test occursin("bypasses git", out)
                         @test occursin("Type 'rsync'", out)
@@ -64,16 +64,16 @@ using Test
             end
         end
 
-        _with_fake_remotes(extra_env=Dict("DISTSSHKIT_TEST_MKDIR_FAIL" => "1")) do _
+        _with_fake_remotes(extra_env = Dict("DISTSSHKIT_TEST_MKDIR_FAIL" => "1")) do _
             raw = DistSSHKit.rsync_project_to_hosts!(
-                ["host1"], project, remote_path; confirm=false, report=false,
+                ["host1"], project, remote_path; confirm = false, report = false,
             )
             @test raw.succeeded == 0 && raw.failed == 1
         end
 
         _with_fake_remotes() do _
             raw = DistSSHKit.rsync_project_to_hosts!(
-                ["host1"], project, remote_path; confirm=false, report=false,
+                ["host1"], project, remote_path; confirm = false, report = false,
             )
             @test raw.succeeded == 1 && raw.failed == 0
         end
@@ -81,7 +81,7 @@ using Test
         _with_fake_remotes() do _
             withenv("DISTSSHKIT_JOBS" => "2") do
                 raw = DistSSHKit.rsync_project_to_hosts!(
-                    ["host1", "host2"], project, remote_path; confirm=false, report=false,
+                    ["host1", "host2"], project, remote_path; confirm = false, report = false,
                 )
                 @test raw.succeeded == 2 && raw.failed == 0
                 @test [hr.host for hr in raw.host_results] == ["host1", "host2"]
@@ -91,17 +91,17 @@ using Test
         _with_fake_remotes() do state_dir
             host = "user@host.test"
             _mark_nonempty!(state_dir, host)
-            DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(quiet=false, yes=true))
+            DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(quiet = false, yes = true))
             out, result = _capture_stdio() do _, _
                 DistSSHKit.rsync_push_to_remotes([host], remote_path, project)
             end
-            @test result == (cancelled=false, succeeded=0, failed=1)
+            @test result == (cancelled = false, succeeded = 0, failed = 1)
             @test occursin("refusing to overwrite", out)
         end
 
-        _with_fake_remotes(extra_env=Dict("DISTSSHKIT_TEST_RSYNC_FAIL" => "1")) do _
+        _with_fake_remotes(extra_env = Dict("DISTSSHKIT_TEST_RSYNC_FAIL" => "1")) do _
             raw = DistSSHKit.rsync_project_to_hosts!(
-                ["host1"], project, remote_path; confirm=false, report=false,
+                ["host1"], project, remote_path; confirm = false, report = false,
             )
             @test raw.succeeded == 0 && raw.failed == 1
         end
@@ -113,7 +113,7 @@ end
 
     _with_tempdir() do state_dir
         withenv(_fake_setup_remote_env(state_dir)...) do
-            DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(quiet=false, yes=true))
+            DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(quiet = false, yes = true))
             host = "host1"
             slot = replace(host, r"[@:/]" => "_")
             tree = joinpath(state_dir, slot, "tree")

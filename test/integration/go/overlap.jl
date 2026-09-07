@@ -8,19 +8,21 @@ using Test
     _with_tempdir() do proj
         write(joinpath(proj, "Project.toml"), "name = \"GoOverlap\"\n")
         script = joinpath(proj, "sleep_mark.jl")
-        write(script, """
+        write(
+            script, """
             out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", ".")
             mkpath(out)
             write(joinpath(out, "t0.txt"), string(time()))
             sleep(0.6)
-            """)
+            """
+        )
         t0 = time()
         result = DistSSHKit.go!(
             script,
             "parent:2";
-            project=proj,
-            quiet=true,
-            yes=true,
+            project = proj,
+            quiet = true,
+            yes = true,
         )
         wall = time() - t0
         @test result.ok
@@ -35,19 +37,21 @@ end
     _with_tempdir() do proj
         write(joinpath(proj, "Project.toml"), "name = \"GoRepeatOverlap\"\n")
         script = joinpath(proj, "sleep_mark.jl")
-        write(script, """
+        write(
+            script, """
             out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", ".")
             mkpath(out)
             write(joinpath(out, "t0.txt"), string(time()))
             sleep(0.6)
-            """)
+            """
+        )
         t0 = time()
         result = DistSSHKit.go!(
             script;
-            repeat=2,
-            project=proj,
-            quiet=true,
-            yes=true,
+            repeat = 2,
+            project = proj,
+            quiet = true,
+            yes = true,
         )
         wall = time() - t0
         @test result.ok
@@ -62,19 +66,21 @@ end
     _with_tempdir() do proj
         write(joinpath(proj, "Project.toml"), "name = \"GoOutputDir\"\n")
         script = joinpath(proj, "job.jl")
-        write(script, """
+        write(
+            script, """
             out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", ".")
             mkpath(out)
             write(joinpath(out, "marker.txt"), "ok")
-            """)
+            """
+        )
         custom = joinpath(proj, "runs", "custom")
         result = DistSSHKit.go!(
             script,
             "parent:1";
-            project=proj,
-            output_dir=custom,
-            quiet=true,
-            yes=true,
+            project = proj,
+            output_dir = custom,
+            quiet = true,
+            yes = true,
         )
         @test result.ok
         @test result.output_dir == DistSSHKit.canonical_local_path(custom)
@@ -87,20 +93,22 @@ end
     _with_tempdir() do proj
         write(joinpath(proj, "Project.toml"), "name = \"GoOutputDirSkip\"\n")
         script = joinpath(proj, "job.jl")
-        write(script, """
+        write(
+            script, """
             out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", ".")
             mkpath(out)
             write(joinpath(out, "marker.txt"), "ok")
-            """)
+            """
+        )
         custom = joinpath(proj, "runs", "skip_collect")
         result = DistSSHKit.go!(
             script,
             "parent:1";
-            project=proj,
-            output_dir=custom,
-            collect_spec=false,
-            quiet=true,
-            yes=true,
+            project = proj,
+            output_dir = custom,
+            collect_spec = false,
+            quiet = true,
+            yes = true,
         )
         @test result.ok
         @test result.output_dir == DistSSHKit.canonical_local_path(custom)

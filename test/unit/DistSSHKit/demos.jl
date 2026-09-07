@@ -19,29 +19,31 @@ using Test
         @test diag !== nothing
         diag === nothing && error("diagnose_missing_script returned nothing")
         @test diag.kind === :install_bundled
-        @test occursin("demo install", DistSSHKit.explain_missing_script_hint(diag; surface=:cli))
-        @test occursin("distsshkit_demos/", DistSSHKit.explain_missing_script_hint(diag; surface=:cli))
+        @test occursin("demo install", DistSSHKit.explain_missing_script_hint(diag; surface = :cli))
+        @test occursin("distsshkit_demos/", DistSSHKit.explain_missing_script_hint(diag; surface = :cli))
         @test occursin(
             "DistSSHKit.install_demos(; family=",
-            DistSSHKit.explain_missing_script_hint(diag; surface=:api),
+            DistSSHKit.explain_missing_script_hint(diag; surface = :api),
         )
 
         @test occursin(
             "demo install",
-            something(DistSSHKit.missing_script_demo_hint(missing_kit, tmp; surface=:cli), ""),
+            something(DistSSHKit.missing_script_demo_hint(missing_kit, tmp; surface = :cli), ""),
         )
         @test occursin(
             "./demos/ is missing",
-            something(DistSSHKit.missing_script_demo_hint(
-                joinpath(tmp, "demos", "with_kit", "rho_sweep.jl"),
-                tmp,
-            ), ""),
+            something(
+                DistSSHKit.missing_script_demo_hint(
+                    joinpath(tmp, "demos", "with_kit", "rho_sweep.jl"),
+                    tmp,
+                ), ""
+            ),
         )
         @test DistSSHKit.missing_script_demo_hint(joinpath(tmp, "jobs", "x.jl"), tmp) === nothing
     end
 
     _with_tempdir() do tmp
-        result = DistSSHKit.install_demos(tmp; family="with_kit")
+        result = DistSSHKit.install_demos(tmp; family = "with_kit")
         @test length(result.installed) == count(s -> startswith(s, "with_kit/"), DistSSHKit.list_demos())
         @test isempty(result.skipped)
         @test isfile(joinpath(tmp, DistSSHKit.DEMO_INSTALL_DIR, "with_kit", "square_file.jl"))
@@ -55,17 +57,17 @@ using Test
 
         edited_path = joinpath(tmp, DistSSHKit.DEMO_INSTALL_DIR, "with_kit", "square_file.jl")
         write(edited_path, "# edited by user\n")
-        result2 = DistSSHKit.install_demos(tmp; family="with_kit")
+        result2 = DistSSHKit.install_demos(tmp; family = "with_kit")
         @test isempty(result2.installed)
         # Existing demo scripts + demos/.gitignore are left untouched without --force.
         @test length(result2.skipped) == length(result.installed) + 1
         @test read(edited_path, String) == "# edited by user\n"
 
-        result3 = DistSSHKit.install_demos(tmp; family="with_kit", force=true)
+        result3 = DistSSHKit.install_demos(tmp; family = "with_kit", force = true)
         @test isempty(result3.skipped)
         @test occursin("init_output_dir!", read(edited_path, String))
 
-        result_wo = DistSSHKit.install_demos(tmp; family="without_kit")
+        result_wo = DistSSHKit.install_demos(tmp; family = "without_kit")
         @test isfile(joinpath(tmp, DistSSHKit.DEMO_INSTALL_DIR, "without_kit", "pipeline_pi.jl"))
         @test !isempty(result_wo.installed)
     end
@@ -88,7 +90,7 @@ using Test
     @test occursin(
         "family=",
         try
-            DistSSHKit.install_demos(_kit_root(); surface=:api)
+            DistSSHKit.install_demos(_kit_root(); surface = :api)
             ""
         catch e
             @test e isa ArgumentError
@@ -96,7 +98,7 @@ using Test
         end,
     )
     let msg = try
-            DistSSHKit.install_demos(_kit_root(); family="with_kit", surface=:api)
+            DistSSHKit.install_demos(_kit_root(); family = "with_kit", surface = :api)
             ""
         catch e
             @test e isa ArgumentError
@@ -106,7 +108,7 @@ using Test
         @test occursin("list_demos()", msg)
     end
     let msg = try
-            DistSSHKit.install_demos(_kit_root(); family="with_kit", surface=:cli)
+            DistSSHKit.install_demos(_kit_root(); family = "with_kit", surface = :cli)
             ""
         catch e
             @test e isa ArgumentError
@@ -122,10 +124,10 @@ using Test
         link = joinpath(tmp, "kit_root")
         symlink(realpath(kit_root), link)
         @test_throws ArgumentError DistSSHKit.install_demos(
-            kit_demos; family="with_kit", surface=:api,
+            kit_demos; family = "with_kit", surface = :api,
         )
         @test_throws ArgumentError DistSSHKit.install_demos(
-            link; family="with_kit", surface=:api,
+            link; family = "with_kit", surface = :api,
         )
     end
 

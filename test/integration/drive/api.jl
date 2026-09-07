@@ -12,7 +12,7 @@ using Test
     _mktemp_host() do proj
         _write_host_project!(proj, "DriveApiSmoke")
         script = joinpath(proj, "job.jl")
-        cp(fixture, script; force=true)
+        cp(fixture, script; force = true)
         # `:quiet` sends driver stdout to the kit log only. Use `:verbose` so
         # SMOKE_OK is on the captured stream (same string as CLI `local.jl`).
         prev_v = DistSSHKit.kit_verbosity()
@@ -24,9 +24,9 @@ using Test
                             DistSSHKit.drive!(
                                 script,
                                 "parent:2";
-                                project=proj,
-                                verbosity=:verbose,
-                                yes=true,
+                                project = proj,
+                                verbosity = :verbose,
+                                yes = true,
                             )
                         end
                     end

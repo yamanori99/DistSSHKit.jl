@@ -1,16 +1,18 @@
 # Argument parsing for `go` (as-is complete jobs).
 
 """Print `go --help` (same chrome as `julia -m DistSSHKit go -h`)."""
-function show_go_usage(; io::IO=stdout)
-    print_help_chrome("DistSSHKit go"; io=io)
-    print_help_lines(io,
+function show_go_usage(; io::IO = stdout)
+    print_help_chrome("DistSSHKit go"; io = io)
+    print_help_lines(
+        io,
         "Standalone script. One full run per slot; slots start together.",
         "Remotes: setup --rsync or --clone, then --instantiate.",
         "Or go --rsync onto an empty path (instantiates missing deps).",
     )
     print_help_blank(io)
-    print_help_section("Usage"; io=io)
-    print_help_lines(io,
+    print_help_section("Usage"; io = io)
+    print_help_lines(
+        io,
         "  julia --project=. -m DistSSHKit go [slots...] SCRIPT.jl",
         "  go parent:2 SCRIPT.jl",
         "  go --repeat 100 SCRIPT.jl",
@@ -18,8 +20,9 @@ function show_go_usage(; io::IO=stdout)
         "  go parent:1 child:host1:2 child:host2:2 SCRIPT.jl",
     )
     print_help_blank(io)
-    print_help_section("Slots"; io=io)
-    print_help_lines(io,
+    print_help_section("Slots"; io = io)
+    print_help_lines(
+        io,
         "  parent[:N] / child:NAME[:N]  N full-script runs (not drive workers)",
         "  omit :N             size! that host (like drive); explicit :N wins",
         "  parent:0                     skip parent when children are listed",
@@ -29,8 +32,9 @@ function show_go_usage(; io::IO=stdout)
         "  --hosts-file PATH   one token per line",
     )
     print_help_blank(io)
-    print_help_section("Options"; io=io)
-    print_help_lines(io,
+    print_help_section("Options"; io = io)
+    print_help_lines(
+        io,
         "  --sync / --rsync    optional pre-run; --rsync instantiates if needed",
         "  --julia PATH        remote Julia (ENV or auto)",
         "  --output-dir PATH   batch root; slots are PATH/<slot>/",
@@ -47,71 +51,76 @@ function show_go_usage(; io::IO=stdout)
         "  -h, --help          this help",
     )
     print_help_blank(io)
-    print_help_section("Output"; io=io)
-    print_help_lines(io,
+    print_help_section("Output"; io = io)
+    print_help_lines(
+        io,
         "  {script}/.distsshkit/go/<stem>_<UTC>/<slot>/",
         "  DISTRIBUTED_OUTPUT_DIR → that slot dir",
         "  --output-dir is the batch root (not drive's result root)",
     )
     print_help_blank(io)
-    print_help_section("Environment"; io=io)
-    print_help_lines(io,
+    print_help_section("Environment"; io = io)
+    print_help_lines(
+        io,
         "  $(KIT_HOSTS_ENV_HELP)",
         "  JULIA_DISTRIBUTED_EXE        default remote Julia",
         "  DISTSSHKIT_QUIET / PROGRESS / VERBOSE / YES",
     )
     print_help_blank(io)
-    print_help_lines(io,
+    return print_help_lines(
+        io,
         "Details: docs (manual/go). See also: setup, drive.",
     )
 end
 
 function _go_set_sync!(
-    current::Union{Nothing,Symbol,Bool},
-    next::Union{Symbol,Bool},
-)
-    return _kit_set_sync_mode!(current, next; source="go")
+        current::Union{Nothing, Symbol, Bool},
+        next::Union{Symbol, Bool},
+    )
+    return _kit_set_sync_mode!(current, next; source = "go")
 end
 
 function _go_parse_repeat(raw::AbstractString)::Int
     n = tryparse(Int, strip(String(raw)))
-    (n === nothing || n < 1) && throw(ArgumentError(
-        "go --repeat must be an integer >= 1, got $(repr(raw))",
-    ))
+    (n === nothing || n < 1) && throw(
+        ArgumentError(
+            "go --repeat must be an integer >= 1, got $(repr(raw))",
+        )
+    )
     return n
 end
 
 function _go_parsed(;
-    help::Bool,
-    show_version,
-    cli_session,
-    script_path,
-    script_args,
-    hosts,
-    sync,
-    output_dir,
-    julia,
-    repeat,
-    gb_per_worker=nothing,
-    probe=nothing,
-    mem_headroom=DEFAULT_MEM_HEADROOM,
-    parent_gb=DEFAULT_PARENT_GB,
-)
+        help::Bool,
+        show_version,
+        cli_session,
+        script_path,
+        script_args,
+        hosts,
+        sync,
+        output_dir,
+        julia,
+        repeat,
+        gb_per_worker = nothing,
+        probe = nothing,
+        mem_headroom = DEFAULT_MEM_HEADROOM,
+        parent_gb = DEFAULT_PARENT_GB,
+    )
     return (
-        help=help,
-        show_version=show_version,
-        cli_session=cli_session,
-        script_path=script_path,
-        script_args=script_args,
-        hosts=hosts,
-        sync=sync,
-        output_dir=output_dir,
-        julia=julia,
-        repeat=repeat,
-        gb_per_worker=gb_per_worker,
-        probe=probe,
-        mem_headroom=mem_headroom,
-        parent_gb=parent_gb,
+        help = help,
+        show_version = show_version,
+        cli_session = cli_session,
+        script_path = script_path,
+        script_args = script_args,
+        hosts = hosts,
+        sync = sync,
+        output_dir = output_dir,
+        julia = julia,
+        repeat = repeat,
+        gb_per_worker = gb_per_worker,
+        probe = probe,
+        mem_headroom = mem_headroom,
+        parent_gb = parent_gb,
     )
 end
 
@@ -125,8 +134,8 @@ function parse_go_args(args::AbstractVector{<:AbstractString})
     output_dir = nothing
     julia_exe = nothing
     # nothing → go! default (false); :sync / :rsync / false (= skip)
-    sync::Union{Nothing,Symbol,Bool} = nothing
-    repeat_n::Union{Nothing,Int} = nothing
+    sync::Union{Nothing, Symbol, Bool} = nothing
+    repeat_n::Union{Nothing, Int} = nothing
     gb_per_worker = nothing
     probe = nothing
     mem_headroom = DEFAULT_MEM_HEADROOM
@@ -161,7 +170,7 @@ function parse_go_args(args::AbstractVector{<:AbstractString})
         elseif arg == "--help" || arg == "-h"
             cli_consume!(c)
             append!(hosts, host_tokens)
-            append_kit_host_sources!(hosts, cli_session; keep_counts=true)
+            append_kit_host_sources!(hosts, cli_session; keep_counts = true)
             if julia_exe === nothing
                 env_val = get(ENV, "JULIA_DISTRIBUTED_EXE", "auto")
                 julia_exe = env_val == "auto" ? nothing : env_val
@@ -169,20 +178,20 @@ function parse_go_args(args::AbstractVector{<:AbstractString})
                 julia_exe = nothing
             end
             return _go_parsed(;
-                help=true,
-                show_version=cli_session.show_version,
-                cli_session=cli_session,
-                script_path=script_path,
-                script_args=script_args,
-                hosts=hosts,
-                sync=sync,
-                output_dir=output_dir,
-                julia=julia_exe,
-                repeat=repeat_n,
-                gb_per_worker=gb_per_worker,
-                probe=probe,
-                mem_headroom=mem_headroom,
-                parent_gb=parent_gb,
+                help = true,
+                show_version = cli_session.show_version,
+                cli_session = cli_session,
+                script_path = script_path,
+                script_args = script_args,
+                hosts = hosts,
+                sync = sync,
+                output_dir = output_dir,
+                julia = julia_exe,
+                repeat = repeat_n,
+                gb_per_worker = gb_per_worker,
+                probe = probe,
+                mem_headroom = mem_headroom,
+                parent_gb = parent_gb,
             )
         elseif endswith(arg, ".jl")
             script_path = arg
@@ -200,7 +209,7 @@ function parse_go_args(args::AbstractVector{<:AbstractString})
         end
     end
     append!(hosts, host_tokens)
-    append_kit_host_sources!(hosts, cli_session; keep_counts=true)
+    append_kit_host_sources!(hosts, cli_session; keep_counts = true)
     for h in hosts
         parse_placement_token(h)
     end
@@ -212,19 +221,19 @@ function parse_go_args(args::AbstractVector{<:AbstractString})
     end
     apply_kit_cli_session!(cli_session)
     return _go_parsed(;
-        help=false,
-        show_version=cli_session.show_version,
-        cli_session=cli_session,
-        script_path=script_path,
-        script_args=script_args,
-        hosts=hosts,
-        sync=sync,
-        output_dir=output_dir,
-        julia=julia_exe,
-        repeat=repeat_n,
-        gb_per_worker=gb_per_worker,
-        probe=probe,
-        mem_headroom=mem_headroom,
-        parent_gb=parent_gb,
+        help = false,
+        show_version = cli_session.show_version,
+        cli_session = cli_session,
+        script_path = script_path,
+        script_args = script_args,
+        hosts = hosts,
+        sync = sync,
+        output_dir = output_dir,
+        julia = julia_exe,
+        repeat = repeat_n,
+        gb_per_worker = gb_per_worker,
+        probe = probe,
+        mem_headroom = mem_headroom,
+        parent_gb = parent_gb,
     )
 end

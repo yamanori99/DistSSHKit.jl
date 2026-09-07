@@ -28,19 +28,19 @@ Used by drive (CLI / `drive!`), go (CLI / `go!`), and [`pipeline!`](@ref).
 Demo tip formatting: `missing_script_demo_hint` in `demos.jl`.
 """
 function explain_script_not_found(
-    script_path::AbstractString,
-    project_root::AbstractString;
-    surface::Symbol=:cli,
-    headline::Union{Nothing,AbstractString}=nothing,
-)::String
+        script_path::AbstractString,
+        project_root::AbstractString;
+        surface::Symbol = :cli,
+        headline::Union{Nothing, AbstractString} = nothing,
+    )::String
     path = String(script_path)
     head = headline === nothing ? "Script not found: $path" : String(headline)
-    hint = missing_script_demo_hint(path, project_root; surface=surface)
+    hint = missing_script_demo_hint(path, project_root; surface = surface)
     return join_explained_message(head, hint)
 end
 
 """Missing `DRIVER=` / `driver=` for [`pipeline_config_from_env`](@ref)."""
-function explain_pipeline_driver_missing(; surface::Symbol=:api)::String
+function explain_pipeline_driver_missing(; surface::Symbol = :api)::String
     surface = _normalize_hint_surface(surface)
     if surface === :cli
         return "set DRIVER=path/to/driver.jl (or pass a driver path to the pipeline entry)"
@@ -51,9 +51,9 @@ end
 # --- hosts file / SSH hosts --------------------------------------------------
 
 function explain_hosts_file_not_found(
-    path::AbstractString;
-    surface::Symbol=:cli,
-)::String
+        path::AbstractString;
+        surface::Symbol = :cli,
+    )::String
     surface = _normalize_hint_surface(surface)
     p = String(path)
     head = "hosts file not found: $p"
@@ -66,9 +66,9 @@ function explain_hosts_file_not_found(
 end
 
 function explain_hosts_file_empty(
-    path::AbstractString;
-    surface::Symbol=:cli,
-)::String
+        path::AbstractString;
+        surface::Symbol = :cli,
+    )::String
     surface = _normalize_hint_surface(surface)
     p = String(path)
     head = "hosts file has no hosts: $p"
@@ -86,9 +86,9 @@ No SSH / size hosts on a session.
 `kind` is `:ssh` (sync/setup/instantiate), `:collect`, `:size`, or `:pool`.
 """
 function explain_no_hosts(;
-    surface::Symbol=:api,
-    kind::Symbol=:ssh,
-)::String
+        surface::Symbol = :api,
+        kind::Symbol = :ssh,
+    )::String
     surface = _normalize_hint_surface(surface)
     kind in (:ssh, :collect, :size, :pool) ||
         throw(ArgumentError("explain_no_hosts kind must be :ssh, :collect, :size, or :pool"))
@@ -138,7 +138,7 @@ function _normalize_host_tool(name::AbstractString)::String
 end
 
 """Hint line when `ssh` / `rsync` / `git` is absent from `PATH`."""
-function explain_host_tool_hint(tool::AbstractString; surface::Symbol=:api)::String
+function explain_host_tool_hint(tool::AbstractString; surface::Symbol = :api)::String
     _normalize_hint_surface(surface)
     t = _normalize_host_tool(tool)
     t == "ssh" && return "Hint: DistSSHKit does not install OpenSSH; see Requirements"
@@ -149,24 +149,24 @@ function explain_host_tool_hint(tool::AbstractString; surface::Symbol=:api)::Str
 end
 
 """Full message when a required host tool is not on `PATH`."""
-function explain_host_tool_missing(tool::AbstractString; surface::Symbol=:api)::String
+function explain_host_tool_missing(tool::AbstractString; surface::Symbol = :api)::String
     t = _normalize_host_tool(tool)
-    return join_explained_message("$t not found in PATH", explain_host_tool_hint(t; surface=surface))
+    return join_explained_message("$t not found in PATH", explain_host_tool_hint(t; surface = surface))
 end
 
 # --- setup / clone -----------------------------------------------------------
 
-function explain_clone_repo_required(; surface::Symbol=:api)::String
+function explain_clone_repo_required(; surface::Symbol = :api)::String
     surface = _normalize_hint_surface(surface)
     if surface === :api
         return "setup!(session, :clone) requires repo=\"git-url\" " *
-               "(no silent origin lookup; clone runs on the remote)"
+            "(no silent origin lookup; clone runs on the remote)"
     end
     return "setup --clone requires --repo URL " *
-           "(no silent origin lookup; clone runs on the remote)"
+        "(no silent origin lookup; clone runs on the remote)"
 end
 
-function explain_clone_origin_missing(; surface::Symbol=:cli)::String
+function explain_clone_origin_missing(; surface::Symbol = :cli)::String
     surface = _normalize_hint_surface(surface)
     if surface === :api
         return "Could not read git remote `origin`; pass repo=\"git-url\" to setup!(…, :clone)"
@@ -177,9 +177,9 @@ end
 # --- size probe --------------------------------------------------------------
 
 function explain_size_probe_not_found(
-    path::AbstractString;
-    surface::Symbol=:api,
-)::String
+        path::AbstractString;
+        surface::Symbol = :api,
+    )::String
     surface = _normalize_hint_surface(surface)
     p = String(path)
     head = "size probe not found: $p"

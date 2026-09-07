@@ -6,7 +6,7 @@ using Test
         @test p !== nothing
         if p !== nothing
             @test p.nproc == 4
-            @test p.total_gb ≈ 16.0 atol=0.1
+            @test p.total_gb ≈ 16.0 atol = 0.1
         end
         @test DistSSHKit._pool_parse_probe("nope") === nothing
         @test DistSSHKit._pool_parse_probe("DISTSSHKIT_POOL\n1\n") === nothing
@@ -14,11 +14,11 @@ using Test
 
     _with_tempdir() do proj
         write(joinpath(proj, "Project.toml"), "name = \"PoolHost\"\n")
-        empty = DistSSHKit.KitSession(project=proj, workers=String[])
+        empty = DistSSHKit.KitSession(project = proj, workers = String[])
         @test_throws ArgumentError DistSSHKit.pool!(empty)
 
-        parent = DistSSHKit.KitSession(project=proj, workers=["parent:1"])
-        pool = DistSSHKit.pool!(parent; gb_per_worker=2.0)
+        parent = DistSSHKit.KitSession(project = proj, workers = ["parent:1"])
+        pool = DistSSHKit.pool!(parent; gb_per_worker = 2.0)
         @test pool.ok
         @test length(pool.hosts) == 1
         @test pool.hosts[1].ok
@@ -28,7 +28,7 @@ using Test
         wp = DistSSHKit.worker_plan_from_pool(pool)
         @test wp.parent_workers == pool.slots
         buf = IOBuffer()
-        DistSSHKit.print_pool(pool; io=buf)
+        DistSSHKit.print_pool(pool; io = buf)
         @test occursin("Pool:", String(take!(buf)))
         @test occursin("cores", sprint(show, pool))
     end
@@ -45,13 +45,13 @@ using Test
                 ),
             )
             withenv(env...) do
-                DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(quiet=true, yes=true))
+                DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(quiet = true, yes = true))
                 sess = DistSSHKit.KitSession(
-                    project=proj,
-                    workers=["child:host1"],
-                    remote="/fake/remote/PoolHost",
+                    project = proj,
+                    workers = ["child:host1"],
+                    remote = "/fake/remote/PoolHost",
                 )
-                okp = DistSSHKit.pool!(sess; gb_per_worker=1.5)
+                okp = DistSSHKit.pool!(sess; gb_per_worker = 1.5)
                 @test okp.ok
                 @test length(okp.hosts) == 1
                 @test okp.hosts[1].nproc == 8
@@ -59,13 +59,13 @@ using Test
             end
             fail_env = merge(env, Dict("DISTSSHKIT_TEST_SSH_FAIL" => "1"))
             withenv(fail_env...) do
-                DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(quiet=true, yes=true))
+                DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(quiet = true, yes = true))
                 sess = DistSSHKit.KitSession(
-                    project=proj,
-                    workers=["child:host1"],
-                    remote="/fake/remote/PoolHost",
+                    project = proj,
+                    workers = ["child:host1"],
+                    remote = "/fake/remote/PoolHost",
                 )
-                bad = DistSSHKit.pool!(sess; gb_per_worker=1.5)
+                bad = DistSSHKit.pool!(sess; gb_per_worker = 1.5)
                 @test !bad.ok
                 @test length(bad.hosts) == 1
                 @test !bad.hosts[1].ok

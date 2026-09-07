@@ -17,25 +17,43 @@ using Test
         @test occursin("DistSSHKit $(DistSSHKit.dist_ssh_kit_version())", out)
     end
 
-    proc, out = _run_subprocess(setenv(_kit_cli_cmd([
-        "drive", "--mem-headroom", "0.5", "--parent-gb", "0.2", "--help",
-    ]), env))
+    proc, out = _run_subprocess(
+        setenv(
+            _kit_cli_cmd(
+                [
+                    "drive", "--mem-headroom", "0.5", "--parent-gb", "0.2", "--help",
+                ]
+            ), env
+        )
+    )
     @test proc.exitcode == 0
     @test occursin("Usage", out)
     @test occursin("--mem-headroom", out)
     @test occursin("--parent-gb", out)
 
-    proc, out = _run_subprocess(setenv(_kit_cli_cmd([
-        "plan", "--gb-per-worker", "1.5", "--help",
-    ]), env))
+    proc, out = _run_subprocess(
+        setenv(
+            _kit_cli_cmd(
+                [
+                    "plan", "--gb-per-worker", "1.5", "--help",
+                ]
+            ), env
+        )
+    )
     @test proc.exitcode == 0
     @test occursin("Usage", out)
     @test occursin("--gb-per-worker", out)
     @test occursin("--probe", out)
 
-    proc, out = _run_subprocess(setenv(_kit_cli_cmd([
-        "go", "--julia", "/opt/julia/bin/julia", "--output-dir", "my_runs", "--help",
-    ]), env))
+    proc, out = _run_subprocess(
+        setenv(
+            _kit_cli_cmd(
+                [
+                    "go", "--julia", "/opt/julia/bin/julia", "--output-dir", "my_runs", "--help",
+                ]
+            ), env
+        )
+    )
     @test proc.exitcode == 0
     @test occursin("Usage", out)
     @test occursin("--julia", out)

@@ -21,9 +21,9 @@ using Test
             "/Volumes/shared/MyApp.jl"
     end
     @test DistSSHKit.resolve_remote_project_root(
-            "/Users/z/GitHub/MyApp.jl";
-            cli_override="~/work/MyApp.jl",
-        ) == "~/work/MyApp.jl"
+        "/Users/z/GitHub/MyApp.jl";
+        cli_override = "~/work/MyApp.jl",
+    ) == "~/work/MyApp.jl"
     @test DistSSHKit.remote_env_project_root("~/jobs/abc") == "~/jobs/abc"
     @test DistSSHKit.remote_env_project_root("~/.distsshkitqueue/jobs/x") ==
         "~/.distsshkitqueue/jobs/x"
@@ -31,16 +31,16 @@ using Test
         DistSSHKit.canonical_local_path("/remote/App.jl")
     withenv("DISTRIBUTED_REMOTE_PROJECT_ROOT" => "/Volumes/shared/MyApp.jl") do
         @test DistSSHKit.resolve_remote_project_root(
-                "/Users/z/GitHub/MyApp.jl";
-                cli_override="~/work/MyApp.jl",
-            ) == "~/work/MyApp.jl"
+            "/Users/z/GitHub/MyApp.jl";
+            cli_override = "~/work/MyApp.jl",
+        ) == "~/work/MyApp.jl"
     end
 
     @test DistSSHKit.local_dir_from_remote_mirror(
-            "/Volumes/r/MyRepo/data/sweep/slug/20260101_120000",
-            "/Volumes/r/MyRepo",
-            "/Users/z/MyRepo",
-        ) == joinpath("/Users/z/MyRepo", "data", "sweep", "slug", "20260101_120000") |> abspath
+        "/Volumes/r/MyRepo/data/sweep/slug/20260101_120000",
+        "/Volumes/r/MyRepo",
+        "/Users/z/MyRepo",
+    ) == joinpath("/Users/z/MyRepo", "data", "sweep", "slug", "20260101_120000") |> abspath
     @test_throws ArgumentError DistSSHKit.local_dir_from_remote_mirror(
         "~/r/MyRepo/data",
         "~/r/MyRepo",
@@ -72,20 +72,20 @@ using Test
     end
 
     @test DistSSHKit.remote_path_for_ssh_collect(
-            "/Users/z/MyRepo/data/out",
-            "/Users/z/MyRepo",
-        ) == joinpath("~", "z", "MyRepo", "data", "out")
+        "/Users/z/MyRepo/data/out",
+        "/Users/z/MyRepo",
+    ) == joinpath("~", "z", "MyRepo", "data", "out")
     withenv("DISTRIBUTED_REMOTE_PROJECT_ROOT" => "/Volumes/z/clone/MyRepo") do
         @test DistSSHKit.remote_path_for_ssh_collect(
-                "/Users/z/MyRepo/data/sweep/x/ts",
-                "/Users/z/MyRepo",
-            ) == joinpath("/Volumes/z/clone/MyRepo", "data", "sweep", "x", "ts") |> abspath
+            "/Users/z/MyRepo/data/sweep/x/ts",
+            "/Users/z/MyRepo",
+        ) == joinpath("/Volumes/z/clone/MyRepo", "data", "sweep", "x", "ts") |> abspath
     end
     withenv("DISTRIBUTED_REMOTE_PROJECT_ROOT" => "~/work/MyRepo") do
         @test DistSSHKit.remote_path_for_ssh_collect(
-                "/Users/z/MyRepo/demos/with_kit",
-                "/Users/z/MyRepo",
-            ) == joinpath("~/work/MyRepo", "demos", "with_kit")
+            "/Users/z/MyRepo/demos/with_kit",
+            "/Users/z/MyRepo",
+        ) == joinpath("~/work/MyRepo", "demos", "with_kit")
     end
 
     @testset "ensure_remote_abs_path" begin
@@ -110,20 +110,20 @@ using Test
         @test "BatchMode=yes" in opts
         @test "RequestTTY=no" in opts
         @test DistSSHKit.ssh_opts() == String.(opts)
-        tty = DistSSHKit.ssh_opts(; request_tty=true)
+        tty = DistSSHKit.ssh_opts(; request_tty = true)
         @test !("RequestTTY=no" in tty)
         @test "BatchMode=yes" in tty
-        @test DistSSHKit.build_ssh_opts(; request_tty=true) == tty
-        @test DistSSHKit.ssh_opts(; request_tty=false) == DistSSHKit.ssh_opts()
+        @test DistSSHKit.build_ssh_opts(; request_tty = true) == tty
+        @test DistSSHKit.ssh_opts(; request_tty = false) == DistSSHKit.ssh_opts()
     end
     withenv("DISTRIBUTED_SSH_OPTS" => "-o Foo=bar -o Baz=qux") do
         @test DistSSHKit.build_ssh_opts() == ["-o", "Foo=bar", "-o", "Baz=qux"]
         @test DistSSHKit.ssh_opts() == ["-o", "Foo=bar", "-o", "Baz=qux"]
-        @test DistSSHKit.ssh_opts(; request_tty=true) == ["-o", "Foo=bar", "-o", "Baz=qux"]
+        @test DistSSHKit.ssh_opts(; request_tty = true) == ["-o", "Foo=bar", "-o", "Baz=qux"]
     end
     withenv("DISTRIBUTED_SSH_OPTS" => "-F /tmp/ssh_config") do
         @test DistSSHKit.ssh_opts() == ["-F", "/tmp/ssh_config"]
-        @test DistSSHKit.ssh_opts(; request_tty=true) == ["-F", "/tmp/ssh_config"]
+        @test DistSSHKit.ssh_opts(; request_tty = true) == ["-F", "/tmp/ssh_config"]
     end
 
     let r = DistSSHKit.get_local_resources()
@@ -172,7 +172,7 @@ using Test
         @test full isa String
         full isa String || error("expected full git hash")
         @test length(full) == 40
-        short = DistSSHKit.get_local_git_hash(d; short=8)
+        short = DistSSHKit.get_local_git_hash(d; short = 8)
         @test short isa String
         short isa String || error("expected short git hash")
         @test length(short) == 8
@@ -228,7 +228,7 @@ using Test
         @test DistSSHKit._git_pull_remote_inner(abs) == "cd $pq_abs && git pull"
         @test DistSSHKit._remote_git_hash_inner(tilde) == "cd ~/App.jl && git rev-parse HEAD"
         @test DistSSHKit._remote_git_hash_inner(abs) == "git -C $pq_abs rev-parse HEAD"
-        @test DistSSHKit._remote_git_hash_inner(abs; short=8) == "git -C $pq_abs rev-parse --short=8 HEAD"
+        @test DistSSHKit._remote_git_hash_inner(abs; short = 8) == "git -C $pq_abs rev-parse --short=8 HEAD"
         @test pq_abs == abs
     end
 
@@ -283,7 +283,7 @@ using Test
     @test DistSSHKit.resolve_remote_julia("no-such-host.invalid", "auto") === nothing
 
     @testset "run_on_host remote sh" begin
-        sh = DistSSHKit._run_on_host_remote_sh(["-e", "1"]; detect=true)
+        sh = DistSSHKit._run_on_host_remote_sh(["-e", "1"]; detect = true)
         @test occursin("uname -s", sh)
         @test occursin("exec", sh)
         @test occursin(raw"$HOME/.juliaup/bin/julia", sh)
@@ -291,12 +291,12 @@ using Test
         @test occursin("-e", sh)
         @test DistSSHKit._remote_argv_sh(["-e", "exit(3)"]) == "'-e' 'exit(3)'"
         @test DistSSHKit._remote_sh_quote("a'b") == raw"'a'\''b'"
-        expl = DistSSHKit._run_on_host_remote_sh(["--version"]; julia="/opt/julia", detect=false)
+        expl = DistSSHKit._run_on_host_remote_sh(["--version"]; julia = "/opt/julia", detect = false)
         @test occursin("/opt/julia", expl)
         @test occursin("exec", expl)
         @test !occursin("uname", expl)
         @test_throws ArgumentError DistSSHKit._run_on_host_remote_sh(
-            String[]; detect=false, julia=nothing,
+            String[]; detect = false, julia = nothing,
         )
         @test_throws ArgumentError DistSSHKit.run_on_host("", ["--version"])
         withenv("PATH" => "/nonexistent-distsshkit-path") do
@@ -310,32 +310,48 @@ using Test
                     sprint(showerror, e)
                 end,
             )
-            @test occursin("OpenSSH", sprint(showerror, try
-                DistSSHKit._host_tool_exe("ssh")
-                error("expected")
-            catch e
-                e
-            end))
-            @test occursin("rsync not found", sprint(showerror, try
-                DistSSHKit._host_tool_exe("rsync")
-                error("expected")
-            catch e
-                e
-            end))
-            @test occursin("git not found", sprint(showerror, try
-                DistSSHKit._host_tool_exe("git")
-                error("expected")
-            catch e
-                e
-            end))
+            @test occursin(
+                "OpenSSH", sprint(
+                    showerror, try
+                        DistSSHKit._host_tool_exe("ssh")
+                        error("expected")
+                    catch e
+                        e
+                    end
+                )
+            )
+            @test occursin(
+                "rsync not found", sprint(
+                    showerror, try
+                        DistSSHKit._host_tool_exe("rsync")
+                        error("expected")
+                    catch e
+                        e
+                    end
+                )
+            )
+            @test occursin(
+                "git not found", sprint(
+                    showerror, try
+                        DistSSHKit._host_tool_exe("git")
+                        error("expected")
+                    catch e
+                        e
+                    end
+                )
+            )
             @test_throws ArgumentError DistSSHKit._remote_ssh_ok("no-such-host.invalid")
             @test_throws ArgumentError DistSSHKit.git_pull_remote_host!("x", ".")
-            @test occursin("scp not found", sprint(showerror, try
-                DistSSHKit._host_tool_exe("scp")
-                error("expected")
-            catch e
-                e
-            end))
+            @test occursin(
+                "scp not found", sprint(
+                    showerror, try
+                        DistSSHKit._host_tool_exe("scp")
+                        error("expected")
+                    catch e
+                        e
+                    end
+                )
+            )
         end
         if Sys.which("ssh") !== nothing
             let p = redirect_stderr(devnull) do

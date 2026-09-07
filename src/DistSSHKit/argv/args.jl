@@ -10,7 +10,7 @@ CliCursor(args::AbstractVector{<:AbstractString}) = CliCursor(collect(String, ar
 
 cli_at_end(c::CliCursor)::Bool = c.i > length(c.args)
 
-function cli_current(c::CliCursor)::Union{Nothing,String}
+function cli_current(c::CliCursor)::Union{Nothing, String}
     cli_at_end(c) && return nothing
     return String(c.args[c.i])
 end

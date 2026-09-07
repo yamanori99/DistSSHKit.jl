@@ -6,12 +6,14 @@ using Test
     @testset "help flags" begin
         @test parse_go_args(["--help"]).help
         @test parse_go_args(["-h"]).help
-        let r = parse_go_args([
-                "--julia", "/opt/julia/bin/julia",
-                "--output-dir", "my_runs",
-                "--sync", "child:h1",
-                "--help",
-            ])
+        let r = parse_go_args(
+                [
+                    "--julia", "/opt/julia/bin/julia",
+                    "--output-dir", "my_runs",
+                    "--sync", "child:h1",
+                    "--help",
+                ]
+            )
             @test r.help
             @test r.julia == "/opt/julia/bin/julia"
             @test r.output_dir == "my_runs"
@@ -36,13 +38,13 @@ using Test
         end
         @test_throws ArgumentError parse_go_args(["user@lab", "job.jl"])
         let r = parse_go_args(["parent:4", "child:host1", "child:host2:2", "job.jl"])
-            @test DistSSHKit.host_tokens(r; kind=:go) == ["parent:4", "child:host1", "child:host2:2"]
+            @test DistSSHKit.host_tokens(r; kind = :go) == ["parent:4", "child:host1", "child:host2:2"]
         end
         let r = parse_go_args(["child:local:2", "child:h1", "job.jl", "4"])
             @test r.hosts == ["child:local:2", "child:h1"]
-            @test DistSSHKit.host_tokens(r; kind=:go) == ["child:local:2", "child:h1"]
+            @test DistSSHKit.host_tokens(r; kind = :go) == ["child:local:2", "child:h1"]
             @test DistSSHKit.host_tokens(r.hosts) == ["child:local:2", "child:h1"]
-            @test_throws ArgumentError DistSSHKit.host_tokens(r; kind=:pipeline)
+            @test_throws ArgumentError DistSSHKit.host_tokens(r; kind = :pipeline)
             @test r.script_path == "job.jl"
             @test r.script_args == ["4"]
         end
@@ -104,11 +106,13 @@ using Test
                 @test r.hosts == ["child:env-a:2", "child:env-b"]
             end
         end
-        let r = parse_go_args([
-                "--gb-per-worker", "1.5", "--mem-headroom", "0.5",
-                "--parent-gb", "0.2", "--probe", "warm.jl",
-                "parent", "job.jl",
-            ])
+        let r = parse_go_args(
+                [
+                    "--gb-per-worker", "1.5", "--mem-headroom", "0.5",
+                    "--parent-gb", "0.2", "--probe", "warm.jl",
+                    "parent", "job.jl",
+                ]
+            )
             @test r.gb_per_worker == 1.5
             @test r.mem_headroom == 0.5
             @test r.parent_gb == 0.2
@@ -130,7 +134,7 @@ using Test
     end
 
     @testset "help smoke" begin
-        txt = sprint(io -> DistSSHKit.show_go_usage(; io=io))
+        txt = sprint(io -> DistSSHKit.show_go_usage(; io = io))
         @test occursin("Usage", txt)
         @test occursin("--output-dir", txt)
         @test occursin("--sync", txt)

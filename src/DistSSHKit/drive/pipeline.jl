@@ -1,6 +1,6 @@
 # pipeline! — sync → size! → drive → collect.
 
-function _parse_env_sync_mode(raw::AbstractString)::Union{Symbol,Bool,Nothing}
+function _parse_env_sync_mode(raw::AbstractString)::Union{Symbol, Bool, Nothing}
     s = lowercase(strip(String(raw)))
     isempty(s) && return nothing
     s in ("off", "false", "0", "skip", "no") && return false
@@ -9,20 +9,20 @@ function _parse_env_sync_mode(raw::AbstractString)::Union{Symbol,Bool,Nothing}
     throw(ArgumentError("invalid SYNC_MODE=$(repr(raw)); use rsync, sync, or off"))
 end
 
-function _optional_env_float(name::AbstractString)::Union{Nothing,Float64}
+function _optional_env_float(name::AbstractString)::Union{Nothing, Float64}
     raw = strip(get(ENV, String(name), ""))
     isempty(raw) && return nothing
     return parse(Float64, raw)
 end
 
-function _pipeline_config_driver_path(driver::Union{Nothing,AbstractString})::String
+function _pipeline_config_driver_path(driver::Union{Nothing, AbstractString})::String
     if driver !== nothing
         d = String(strip(driver::AbstractString))
         !isempty(d) && return d
     end
     env_driver = String(strip(get(ENV, "DRIVER", "")))
     !isempty(env_driver) && return env_driver
-    throw(ArgumentError(explain_pipeline_driver_missing(; surface=:api)))
+    throw(ArgumentError(explain_pipeline_driver_missing(; surface = :api)))
 end
 
 """
@@ -44,8 +44,8 @@ Build [`PipelineConfig`](@ref) from environment variables.
 | `DISTSSHKIT_YES` / `DISTSSHKIT_QUIET` / `DISTSSHKIT_PROGRESS` / `DISTSSHKIT_VERBOSE` | Same as CLI `-y` / `-q` / `--progress` / `--verbose` |
 """
 function pipeline_config_from_env(;
-    driver::Union{Nothing,AbstractString}=nothing,
-)::PipelineConfig
+        driver::Union{Nothing, AbstractString} = nothing,
+    )::PipelineConfig
     driver_path = _pipeline_config_driver_path(driver)
     remote_raw = strip(get(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT", ""))
     sync_raw = strip(get(ENV, "SYNC_MODE", ""))
@@ -54,20 +54,20 @@ function pipeline_config_from_env(;
     cli.hint_surface = :api
     env_v = _env_verbosity()
     return PipelineConfig(
-        project=isempty(project_root) ? pwd() : String(project_root),
-        workers=kit_host_source_tokens(cli; keep_counts=true),
-        remote=isempty(remote_raw) ? nothing : String(remote_raw),
-        hosts_file=nothing,
-        yes=true,
-        quiet=env_v === :quiet,
-        verbosity=env_v,
-        driver=String(driver_path),
-        gb_per_worker=_optional_env_float("GB_PER_WORKER"),
-        size_probe=let p = strip(get(ENV, "DISTSSHKIT_SIZE_PROBE", ""))
+        project = isempty(project_root) ? pwd() : String(project_root),
+        workers = kit_host_source_tokens(cli; keep_counts = true),
+        remote = isempty(remote_raw) ? nothing : String(remote_raw),
+        hosts_file = nothing,
+        yes = true,
+        quiet = env_v === :quiet,
+        verbosity = env_v,
+        driver = String(driver_path),
+        gb_per_worker = _optional_env_float("GB_PER_WORKER"),
+        size_probe = let p = strip(get(ENV, "DISTSSHKIT_SIZE_PROBE", ""))
             isempty(p) ? nothing : String(p)
         end,
-        sync=_parse_env_sync_mode(sync_raw),
-        julia=let j = strip(get(ENV, "JULIA_DISTRIBUTED_EXE", ""))
+        sync = _parse_env_sync_mode(sync_raw),
+        julia = let j = strip(get(ENV, "JULIA_DISTRIBUTED_EXE", ""))
             isempty(j) || lowercase(j) == "auto" ? nothing : String(j)
         end,
     )
@@ -76,21 +76,21 @@ end
 """Build [`KitSession`](@ref) from a pipeline config."""
 function kit_session_from_config(config::PipelineConfig)::KitSession
     return KitSession(
-        project=config.project,
-        workers=config.tokens,
-        remote=config.remote,
-        hosts_file=config.hosts_file,
-        quiet=config.quiet,
-        verbosity=config.verbosity,
-        yes=config.yes,
+        project = config.project,
+        workers = config.tokens,
+        remote = config.remote,
+        hosts_file = config.hosts_file,
+        quiet = config.quiet,
+        verbosity = config.verbosity,
+        yes = config.yes,
     )
 end
 
 """Resolve sync mode for [`pipeline!`](@ref): `false`, `:rsync`, or `:sync`."""
 function resolve_pipeline_sync(
-    config::PipelineConfig,
-    session::KitSession,
-)::Union{Symbol,Bool}
+        config::PipelineConfig,
+        session::KitSession,
+    )::Union{Symbol, Bool}
     config.sync === false && return false
     isempty(session.hosts) && return false
     return something(config.sync, false)
@@ -135,7 +135,7 @@ end
 
 Print a short summary when [`pipeline!`](@ref) failed. Returns `result.ok`.
 """
-function report_pipeline_errors(result::PipelineResult; io::IO=stderr)::Bool
+function report_pipeline_errors(result::PipelineResult; io::IO = stderr)::Bool
     result.ok && return true
     _report_run_header!(io, kit_run_result(result))
     _report_sync_host_errors!(io, result.sync)
@@ -148,8 +148,8 @@ function report_pipeline_errors(result::PipelineResult; io::IO=stderr)::Bool
     return false
 end
 
-function report_run_errors(result::PipelineResult; io::IO=stderr)::Bool
-    return report_pipeline_errors(result; io=io)
+function report_run_errors(result::PipelineResult; io::IO = stderr)::Bool
+    return report_pipeline_errors(result; io = io)
 end
 
 """
@@ -182,12 +182,16 @@ function pipeline!(config::PipelineConfig)::PipelineResult
     session = kit_session_from_config(config)
     driver = abspath(config.driver)
     if !isfile(driver)
-        throw(ArgumentError(explain_script_not_found(
-            driver,
-            session.project;
-            surface=hint_surface(session),
-            headline="driver not found: $driver",
-        )))
+        throw(
+            ArgumentError(
+                explain_script_not_found(
+                    driver,
+                    session.project;
+                    surface = hint_surface(session),
+                    headline = "driver not found: $driver",
+                )
+            )
+        )
     end
 
     return _with_kit_inproc_run!(:pipeline) do
@@ -199,7 +203,7 @@ function _pipeline_run!(config::PipelineConfig, session::KitSession, driver::Str
     sync_mode = resolve_pipeline_sync(config, session)
     sync_result = nothing
     if sync_mode !== false
-        sync_result = sync!(session; mode=sync_mode)
+        sync_result = sync!(session; mode = sync_mode)
         if !sync_result.ok
             return PipelineResult(
                 false,
@@ -208,9 +212,9 @@ function _pipeline_run!(config::PipelineConfig, session::KitSession, driver::Str
                 nothing,
                 nothing,
                 driver;
-                failed_step="sync",
-                output_dir=config.output_dir,
-                log_dir=config.log_dir,
+                failed_step = "sync",
+                output_dir = config.output_dir,
+                log_dir = config.log_dir,
             )
         end
     end
@@ -220,11 +224,11 @@ function _pipeline_run!(config::PipelineConfig, session::KitSession, driver::Str
     else
         worker_plan_from_tokens(
             session.tokens;
-            session=session,
-            gb_per_worker=config.gb_per_worker,
-            probe=config.size_probe,
-            mem_headroom=config.mem_headroom,
-            parent_gb=config.parent_gb,
+            session = session,
+            gb_per_worker = config.gb_per_worker,
+            probe = config.size_probe,
+            mem_headroom = config.mem_headroom,
+            parent_gb = config.parent_gb,
         )
     end
 
@@ -237,16 +241,16 @@ function _pipeline_run!(config::PipelineConfig, session::KitSession, driver::Str
         drive!(
             session,
             driver;
-            plan=plan,
-            args=config.args,
-            skip_hash_check=pipeline_skip_hash_check(config),
-            output_dir=config.output_dir,
-            enable_log=config.enable_log,
-            log_dir=config.log_dir,
-            package=config.package,
-            julia=config.julia,
-            mem_headroom=config.mem_headroom,
-            parent_gb=config.parent_gb,
+            plan = plan,
+            args = config.args,
+            skip_hash_check = pipeline_skip_hash_check(config),
+            output_dir = config.output_dir,
+            enable_log = config.enable_log,
+            log_dir = config.log_dir,
+            package = config.package,
+            julia = config.julia,
+            mem_headroom = config.mem_headroom,
+            parent_gb = config.parent_gb,
         )
     finally
         if do_collect
@@ -265,7 +269,7 @@ function _pipeline_run!(config::PipelineConfig, session::KitSession, driver::Str
             drive_result,
             nothing,
             driver;
-            failed_step="drive",
+            failed_step = "drive",
         )
     end
 
@@ -274,7 +278,7 @@ function _pipeline_run!(config::PipelineConfig, session::KitSession, driver::Str
         collect_result = collect!(
             session,
             pipeline_collect_root(config);
-            merge=config.collect_merge,
+            merge = config.collect_merge,
         )
         if !collect_result.ok
             return PipelineResult(
@@ -284,7 +288,7 @@ function _pipeline_run!(config::PipelineConfig, session::KitSession, driver::Str
                 drive_result,
                 collect_result,
                 driver;
-                failed_step="collect",
+                failed_step = "collect",
             )
         end
     end
@@ -300,11 +304,11 @@ function _pipeline_run!(config::PipelineConfig, session::KitSession, driver::Str
 end
 
 function pipeline!(
-    driver::AbstractString,
-    workers::AbstractVector{<:AbstractString};
-    kwargs...,
-)::PipelineResult
-    return pipeline!(PipelineConfig(; driver=driver, workers=workers, kwargs...))
+        driver::AbstractString,
+        workers::AbstractVector{<:AbstractString};
+        kwargs...,
+    )::PipelineResult
+    return pipeline!(PipelineConfig(; driver = driver, workers = workers, kwargs...))
 end
 
 function pipeline!(driver::AbstractString; kwargs...)::PipelineResult
@@ -312,10 +316,10 @@ function pipeline!(driver::AbstractString; kwargs...)::PipelineResult
 end
 
 function pipeline!(
-    driver::AbstractString,
-    w1::AbstractString,
-    rest::AbstractString...;
-    kwargs...,
-)::PipelineResult
+        driver::AbstractString,
+        w1::AbstractString,
+        rest::AbstractString...;
+        kwargs...,
+    )::PipelineResult
     return pipeline!(driver, String[w1, rest...]; kwargs...)
 end

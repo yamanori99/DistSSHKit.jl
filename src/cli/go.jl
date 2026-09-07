@@ -43,34 +43,34 @@ function go_main()::Cint
         return 0
     end
     yes = parsed.cli_session.yes || kit_noninteractive()
-    kw = execute_kwargs_from_parsed(parsed; kind=:go)
+    kw = execute_kwargs_from_parsed(parsed; kind = :go)
     result = go!(
         parsed.script_path,
-        host_tokens(parsed; kind=:go);
-        project=PROJECT_ROOT,
-        quiet=kw[:quiet],
-        verbosity=kw[:verbosity],
-        yes=yes,
-        sync=kw[:sync],
-        args=kw[:args],
-        path_anchor=_PATH_ANCHOR,
-        output_dir=kw[:output_dir],
-        hosts_file=nothing,
-        julia=kw[:julia],
-        repeat=get(kw, :repeat, nothing),
-        gb_per_worker=get(kw, :gb_per_worker, nothing),
-        probe=get(kw, :probe, nothing),
-        mem_headroom=get(kw, :mem_headroom, DistSSHKit.DEFAULT_MEM_HEADROOM),
-        parent_gb=get(kw, :parent_gb, DistSSHKit.DEFAULT_PARENT_GB),
-        hint_surface=:cli,
-        original_args=original_args,
+        host_tokens(parsed; kind = :go);
+        project = PROJECT_ROOT,
+        quiet = kw[:quiet],
+        verbosity = kw[:verbosity],
+        yes = yes,
+        sync = kw[:sync],
+        args = kw[:args],
+        path_anchor = _PATH_ANCHOR,
+        output_dir = kw[:output_dir],
+        hosts_file = nothing,
+        julia = kw[:julia],
+        repeat = get(kw, :repeat, nothing),
+        gb_per_worker = get(kw, :gb_per_worker, nothing),
+        probe = get(kw, :probe, nothing),
+        mem_headroom = get(kw, :mem_headroom, DistSSHKit.DEFAULT_MEM_HEADROOM),
+        parent_gb = get(kw, :parent_gb, DistSSHKit.DEFAULT_PARENT_GB),
+        hint_surface = :cli,
+        original_args = original_args,
     )
     report_go_errors(result)
     return result.ok ? 0 : 1
 end
 
 if get(ENV, "DIST_SSH_KIT_CLI_INCLUDE", "") != "1" &&
-   !isempty(PROGRAM_FILE) &&
-   abspath(PROGRAM_FILE) == abspath(@__FILE__)
+        !isempty(PROGRAM_FILE) &&
+        abspath(PROGRAM_FILE) == abspath(@__FILE__)
     exit(go_main())
 end

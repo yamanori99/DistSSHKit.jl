@@ -67,10 +67,10 @@ using Test
             @test r.show_help
             @test parse_size_args(["-h"]).show_help
             open(path, "w") do io
-                DistSSHKit.show_size_usage(; io=io)
+                DistSSHKit.show_size_usage(; io = io)
             end
             help = read(path, String)
-            rm(path; force=true)
+            rm(path; force = true)
             @test occursin("DistSSHKit size", help)
             @test occursin("parent", help)
             @test !occursin("--local", help)
@@ -86,19 +86,19 @@ using Test
         pw = 2.0
         plan = DistSSHKit.compute_worker_plan(
             ["parent"], String[], Dict("parent" => pw);
-            mem_headroom=DistSSHKit.DEFAULT_MEM_HEADROOM,
-            parent_gb=DistSSHKit.DEFAULT_PARENT_GB,
+            mem_headroom = DistSSHKit.DEFAULT_MEM_HEADROOM,
+            parent_gb = DistSSHKit.DEFAULT_PARENT_GB,
         )
         opts = (
-            show_help=false,
-            show_version=false,
-            cli_session=nothing,
-            gb_per_worker=pw,
-            probe=nothing,
-            mem_headroom=DistSSHKit.DEFAULT_MEM_HEADROOM,
-            parent_gb=DistSSHKit.DEFAULT_PARENT_GB,
-            include_parent=true,
-            hosts=String[],
+            show_help = false,
+            show_version = false,
+            cli_session = nothing,
+            gb_per_worker = pw,
+            probe = nothing,
+            mem_headroom = DistSSHKit.DEFAULT_MEM_HEADROOM,
+            parent_gb = DistSSHKit.DEFAULT_PARENT_GB,
+            include_parent = true,
+            hosts = String[],
         )
         samples = Dict(
             "parent" => DistSSHKit.WorkerMemorySample(pw, pw),
@@ -110,7 +110,7 @@ using Test
             end
         end
         out = read(path, String)
-        rm(path; force=true)
+        rm(path; force = true)
         @test occursin("Workers", out)
         @test occursin("parent", out)
         @test occursin("parent:$(plan.parent_workers)", out)
@@ -120,15 +120,15 @@ using Test
 
     @testset "print_size_report show_peak columns" begin
         opts = (
-            show_help=false,
-            show_version=false,
-            cli_session=nothing,
-            gb_per_worker=nothing,
-            probe="warmup.jl",
-            mem_headroom=DistSSHKit.DEFAULT_MEM_HEADROOM,
-            parent_gb=DistSSHKit.DEFAULT_PARENT_GB,
-            include_parent=true,
-            hosts=String[],
+            show_help = false,
+            show_version = false,
+            cli_session = nothing,
+            gb_per_worker = nothing,
+            probe = "warmup.jl",
+            mem_headroom = DistSSHKit.DEFAULT_MEM_HEADROOM,
+            parent_gb = DistSSHKit.DEFAULT_PARENT_GB,
+            include_parent = true,
+            hosts = String[],
         )
         samples = Dict(
             "parent" => DistSSHKit.WorkerMemorySample(0.5, 1.5),
@@ -136,11 +136,11 @@ using Test
         path = tempname()
         open(path, "w") do io
             redirect_stdout(io) do
-                DistSSHKit.print_size_report(["parent"], String[], samples, opts; show_peak=true)
+                DistSSHKit.print_size_report(["parent"], String[], samples, opts; show_peak = true)
             end
         end
         out = read(path, String)
-        rm(path; force=true)
+        rm(path; force = true)
         @test occursin("Baseline", out)
         @test occursin("Peak", out)
         @test occursin("0.5 GB", out)
@@ -148,8 +148,8 @@ using Test
         # Counts use effective = max(0.5, 1.5) = 1.5
         plan = DistSSHKit.compute_worker_plan(
             ["parent"], String[], Dict("parent" => 1.5);
-            mem_headroom=DistSSHKit.DEFAULT_MEM_HEADROOM,
-            parent_gb=DistSSHKit.DEFAULT_PARENT_GB,
+            mem_headroom = DistSSHKit.DEFAULT_MEM_HEADROOM,
+            parent_gb = DistSSHKit.DEFAULT_PARENT_GB,
         )
         @test occursin("parent:$(plan.parent_workers)", out)
     end
@@ -168,7 +168,7 @@ using Test
             out = read(path, String)
             local_total, local_nproc = DistSSHKit.get_local_resources()
             expected = DistSSHKit.size_worker_count(
-                local_total, local_nproc, 2.0; is_parent=true,
+                local_total, local_nproc, 2.0; is_parent = true,
             )
             @test code == 0
             @test occursin("parent:$(expected)", out)

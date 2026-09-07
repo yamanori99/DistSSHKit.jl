@@ -3,29 +3,31 @@
 # Thin wrapper only: `go!` / `ride!` / `drive!` / `src/cli/*` are untouched.
 # `detached=true` spawns `julia -m DistSSHKit go|ride|drive` and returns [`KitProcess`](@ref).
 
-const _EXECUTE_DETACHED_KW = Set{Symbol}((
-    :quiet,
-    :verbosity,
-    :yes,
-    :remote,
-    :hosts_file,
-    :log_dir,
-    :enable_log,
-    :package,
-    :require_all_hosts,
-    :skip_hash_check,
-    :mem_headroom,
-    :parent_gb,
-    :workers,
-    :repeat,
-    :stdout,
-    :stderr,
-    :job_id,
-    :sync_script,
-    :spi_check,
-    :gb_per_worker,
-    :probe,
-))
+const _EXECUTE_DETACHED_KW = Set{Symbol}(
+    (
+        :quiet,
+        :verbosity,
+        :yes,
+        :remote,
+        :hosts_file,
+        :log_dir,
+        :enable_log,
+        :package,
+        :require_all_hosts,
+        :skip_hash_check,
+        :mem_headroom,
+        :parent_gb,
+        :workers,
+        :repeat,
+        :stdout,
+        :stderr,
+        :job_id,
+        :sync_script,
+        :spi_check,
+        :gb_per_worker,
+        :probe,
+    )
+)
 const _EXECUTE_DETACHED_DRIVE_ONLY = (
     :log_dir,
     :enable_log,
@@ -35,11 +37,13 @@ const _EXECUTE_DETACHED_DRIVE_ONLY = (
     :workers,
     :sync_script,
 )
-const _EXECUTE_DETACHED_ENV_SKIP = Set((
-    "JULIA_LOAD_PATH",
-    "DISTSSHKIT_CLI_SUBCOMMAND_DONE",
-    "DIST_SSH_KIT_CLI_INCLUDE",
-))
+const _EXECUTE_DETACHED_ENV_SKIP = Set(
+    (
+        "JULIA_LOAD_PATH",
+        "DISTSSHKIT_CLI_SUBCOMMAND_DONE",
+        "DIST_SSH_KIT_CLI_INCLUDE",
+    )
+)
 # Named `execute!` kwargs (not in `_EXECUTE_DETACHED_KW`; they are not `kwargs...`).
 const _EXECUTE_DETACHED_NAMED = (
     :output_dir,
@@ -53,9 +57,11 @@ const _EXECUTE_DETACHED_NAMED = (
 const _KIT_EXECUTE_KINDS = (:go, :drive, :ride)
 
 function _require_execute_kind!(kind::Symbol)
-    kind in _KIT_EXECUTE_KINDS || throw(ArgumentError(
-        "execute! kind must be :go, :drive, or :ride, got $(repr(kind))",
-    ))
+    kind in _KIT_EXECUTE_KINDS || throw(
+        ArgumentError(
+            "execute! kind must be :go, :drive, or :ride, got $(repr(kind))",
+        )
+    )
     return nothing
 end
 
@@ -71,10 +77,12 @@ function execute_detached_accepts(kw::Symbol; kind::Symbol)::Bool
     kw in _EXECUTE_DETACHED_NAMED && return true
     kw in _EXECUTE_DETACHED_KW || return false
     kind === :go && return !(kw in _EXECUTE_DETACHED_DRIVE_ONLY) && kw !== :spi_check
-    kind === :ride && return !(kw in (
-        :repeat, :sync_script, :package, :log_dir, :enable_log, :skip_hash_check,
-        :workers, :require_all_hosts,
-    ))
+    kind === :ride && return !(
+        kw in (
+            :repeat, :sync_script, :package, :log_dir, :enable_log, :skip_hash_check,
+            :workers, :require_all_hosts,
+        )
+    )
     return !(kw in (:repeat, :spi_check, :gb_per_worker, :probe))
 end
 
@@ -89,11 +97,11 @@ Does not include `hosts_file` / `--hosts`: those tokens belong in
 `yes`, `job_id`, `remote`, or stdio. Drive `--workers` is `:workers` only
 when the parser set `default_workers`.
 """
-function execute_kwargs_from_parsed(parsed; kind::Symbol)::Dict{Symbol,Any}
+function execute_kwargs_from_parsed(parsed; kind::Symbol)::Dict{Symbol, Any}
     _require_execute_kind!(kind)
     session = parsed.cli_session
     args = String[String(a) for a in parsed.script_args]
-    kw = Dict{Symbol,Any}(
+    kw = Dict{Symbol, Any}(
         :output_dir => parsed.output_dir,
         :args => args,
         :julia => parsed.julia,
@@ -142,20 +150,20 @@ on [`GoResult`](@ref)). Convert with `wait`.
 struct KitProcess
     process::Base.Process
     kind::Symbol
-    output_dir::Union{Nothing,String}
-    log_dir::Union{Nothing,String}
-    stdout_owned::Union{Nothing,IO}
-    stderr_owned::Union{Nothing,IO}
+    output_dir::Union{Nothing, String}
+    log_dir::Union{Nothing, String}
+    stdout_owned::Union{Nothing, IO}
+    stderr_owned::Union{Nothing, IO}
 end
 
 function KitProcess(
-    process::Base.Process;
-    kind::Symbol,
-    output_dir::Union{Nothing,AbstractString}=nothing,
-    log_dir::Union{Nothing,AbstractString}=nothing,
-    stdout_owned::Union{Nothing,IO}=nothing,
-    stderr_owned::Union{Nothing,IO}=nothing,
-)
+        process::Base.Process;
+        kind::Symbol,
+        output_dir::Union{Nothing, AbstractString} = nothing,
+        log_dir::Union{Nothing, AbstractString} = nothing,
+        stdout_owned::Union{Nothing, IO} = nothing,
+        stderr_owned::Union{Nothing, IO} = nothing,
+    )
     _require_execute_kind!(kind)
     return KitProcess(
         process, kind, _optional_path(output_dir), _optional_path(log_dir),
@@ -194,12 +202,14 @@ before `wait` on the OS process; after reap `getpid` can throw ESRCH).
 Not on a hung timeout.
 """
 function Base.wait(
-    kp::KitProcess;
-    timeout::Union{Nothing,Real}=nothing,
-)::KitRunResult
-    timeout !== nothing && timeout < 0 && throw(ArgumentError(
-        "wait timeout must be ≥ 0, got $timeout",
-    ))
+        kp::KitProcess;
+        timeout::Union{Nothing, Real} = nothing,
+    )::KitRunResult
+    timeout !== nothing && timeout < 0 && throw(
+        ArgumentError(
+            "wait timeout must be ≥ 0, got $timeout",
+        )
+    )
     child_pid = try
         Int(getpid(kp.process))
     catch
@@ -273,28 +283,28 @@ adds `job=<id>` to every `progress:` log line. `DISTSSHKIT_PROGRESS=1` is
 Omitted entirely when unset.
 """
 function execute!(
-    kind::Symbol,
-    script::AbstractString,
-    tokens::AbstractVector{<:AbstractString}=String[];
-    output_dir::Union{Nothing,AbstractString}=nothing,
-    args::AbstractVector{<:AbstractString}=String[],
-    project::AbstractString=pwd(),
-    sync::Union{Symbol,Bool,Nothing}=nothing,
-    julia::Union{Nothing,AbstractString}=nothing,
-    detached::Bool=false,
-    kwargs...,
-)
+        kind::Symbol,
+        script::AbstractString,
+        tokens::AbstractVector{<:AbstractString} = String[];
+        output_dir::Union{Nothing, AbstractString} = nothing,
+        args::AbstractVector{<:AbstractString} = String[],
+        project::AbstractString = pwd(),
+        sync::Union{Symbol, Bool, Nothing} = nothing,
+        julia::Union{Nothing, AbstractString} = nothing,
+        detached::Bool = false,
+        kwargs...,
+    )
     _require_execute_kind!(kind)
     if detached
         return _execute_detached!(
             kind,
             script,
             tokens;
-            output_dir=output_dir,
-            args=args,
-            project=project,
-            sync=sync,
-            julia=julia,
+            output_dir = output_dir,
+            args = args,
+            project = project,
+            sync = sync,
+            julia = julia,
             kwargs...,
         )
     end
@@ -302,35 +312,37 @@ function execute!(
         go!(
             script,
             tokens;
-            output_dir=output_dir,
-            args=args,
-            project=project,
-            sync=sync,
-            julia=julia,
+            output_dir = output_dir,
+            args = args,
+            project = project,
+            sync = sync,
+            julia = julia,
             kwargs...,
         )
     elseif kind === :ride
-        (sync === nothing || sync === false) || throw(ArgumentError(
-            "execute!(:ride, ...) does not accept sync=$(repr(sync))",
-        ))
+        (sync === nothing || sync === false) || throw(
+            ArgumentError(
+                "execute!(:ride, ...) does not accept sync=$(repr(sync))",
+            )
+        )
         ride!(
             script,
             tokens;
-            output_dir=output_dir,
-            args=args,
-            project=project,
-            julia=julia,
+            output_dir = output_dir,
+            args = args,
+            project = project,
+            julia = julia,
             kwargs...,
         )
     else
         drive!(
             script,
             tokens;
-            output_dir=output_dir,
-            args=args,
-            project=project,
-            sync=sync,
-            julia=julia,
+            output_dir = output_dir,
+            args = args,
+            project = project,
+            sync = sync,
+            julia = julia,
             kwargs...,
         )
     end
@@ -338,53 +350,69 @@ function execute!(
 end
 
 function _execute_detached!(
-    kind::Symbol,
-    script::AbstractString,
-    tokens::AbstractVector{<:AbstractString};
-    output_dir::Union{Nothing,AbstractString},
-    args::AbstractVector{<:AbstractString},
-    project::AbstractString,
-    sync::Union{Symbol,Bool,Nothing},
-    julia::Union{Nothing,AbstractString},
-    kwargs...,
-)::KitProcess
+        kind::Symbol,
+        script::AbstractString,
+        tokens::AbstractVector{<:AbstractString};
+        output_dir::Union{Nothing, AbstractString},
+        args::AbstractVector{<:AbstractString},
+        project::AbstractString,
+        sync::Union{Symbol, Bool, Nothing},
+        julia::Union{Nothing, AbstractString},
+        kwargs...,
+    )::KitProcess
     for k in keys(kwargs)
-        k in _EXECUTE_DETACHED_KW || throw(ArgumentError(
-            "execute!(...; detached=true) does not accept keyword $(repr(k))",
-        ))
+        k in _EXECUTE_DETACHED_KW || throw(
+            ArgumentError(
+                "execute!(...; detached=true) does not accept keyword $(repr(k))",
+            )
+        )
     end
     if kind === :go
         for k in _EXECUTE_DETACHED_DRIVE_ONLY
-            haskey(kwargs, k) && throw(ArgumentError(
-                "execute!(:go, ...; detached=true) does not accept keyword $(repr(k))",
-            ))
+            haskey(kwargs, k) && throw(
+                ArgumentError(
+                    "execute!(:go, ...; detached=true) does not accept keyword $(repr(k))",
+                )
+            )
         end
-        haskey(kwargs, :spi_check) && throw(ArgumentError(
-            "execute!(:go, ...; detached=true) does not accept keyword :spi_check",
-        ))
-    elseif kind === :ride
-        haskey(kwargs, :repeat) && throw(ArgumentError(
-            "execute!(:ride, ...; detached=true) does not accept keyword :repeat",
-        ))
-        for k in (
-            :sync_script, :package, :log_dir, :enable_log, :skip_hash_check,
-            :workers, :require_all_hosts,
+        haskey(kwargs, :spi_check) && throw(
+            ArgumentError(
+                "execute!(:go, ...; detached=true) does not accept keyword :spi_check",
+            )
         )
-            haskey(kwargs, k) && throw(ArgumentError(
-                "execute!(:ride, ...; detached=true) does not accept keyword $(repr(k))",
-            ))
+    elseif kind === :ride
+        haskey(kwargs, :repeat) && throw(
+            ArgumentError(
+                "execute!(:ride, ...; detached=true) does not accept keyword :repeat",
+            )
+        )
+        for k in (
+                :sync_script, :package, :log_dir, :enable_log, :skip_hash_check,
+                :workers, :require_all_hosts,
+            )
+            haskey(kwargs, k) && throw(
+                ArgumentError(
+                    "execute!(:ride, ...; detached=true) does not accept keyword $(repr(k))",
+                )
+            )
         end
-        (sync === nothing || sync === false) || throw(ArgumentError(
-            "execute!(:ride, ...; detached=true) does not accept sync=$(repr(sync))",
-        ))
+        (sync === nothing || sync === false) || throw(
+            ArgumentError(
+                "execute!(:ride, ...; detached=true) does not accept sync=$(repr(sync))",
+            )
+        )
     elseif kind === :drive
-        haskey(kwargs, :repeat) && throw(ArgumentError(
-            "execute!(:drive, ...; detached=true) does not accept keyword :repeat",
-        ))
+        haskey(kwargs, :repeat) && throw(
+            ArgumentError(
+                "execute!(:drive, ...; detached=true) does not accept keyword :repeat",
+            )
+        )
         for k in (:spi_check, :gb_per_worker, :probe)
-            haskey(kwargs, k) && throw(ArgumentError(
-                "execute!(:drive, ...; detached=true) does not accept keyword $(repr(k))",
-            ))
+            haskey(kwargs, k) && throw(
+                ArgumentError(
+                    "execute!(:drive, ...; detached=true) does not accept keyword $(repr(k))",
+                )
+            )
         end
     end
     yes = get(kwargs, :yes, true)
@@ -402,9 +430,11 @@ function _execute_detached!(
     package = get(kwargs, :package, nothing)
     require_all_hosts = get(kwargs, :require_all_hosts, true)
     if kind === :drive
-        require_all_hosts isa Bool || throw(ArgumentError(
-            "require_all_hosts must be a Bool, got $(repr(require_all_hosts))",
-        ))
+        require_all_hosts isa Bool || throw(
+            ArgumentError(
+                "require_all_hosts must be a Bool, got $(repr(require_all_hosts))",
+            )
+        )
     end
     skip_hash_check = get(kwargs, :skip_hash_check, true)
     mem_headroom = get(kwargs, :mem_headroom, nothing)
@@ -415,24 +445,32 @@ function _execute_detached!(
     spi_check = get(kwargs, :spi_check, true)
     gb_per_worker = get(kwargs, :gb_per_worker, nothing)
     probe = get(kwargs, :probe, nothing)
-    sync_script isa Bool || throw(ArgumentError(
-        "sync_script must be a Bool, got $(repr(sync_script))",
-    ))
-    spi_check isa Bool || throw(ArgumentError(
-        "spi_check must be a Bool, got $(repr(spi_check))",
-    ))
+    sync_script isa Bool || throw(
+        ArgumentError(
+            "sync_script must be a Bool, got $(repr(sync_script))",
+        )
+    )
+    spi_check isa Bool || throw(
+        ArgumentError(
+            "spi_check must be a Bool, got $(repr(spi_check))",
+        )
+    )
     if workers !== nothing
-        (workers isa Integer && !(workers isa Bool)) || throw(ArgumentError(
-            "workers must be an integer, got $(repr(workers))",
-        ))
+        (workers isa Integer && !(workers isa Bool)) || throw(
+            ArgumentError(
+                "workers must be an integer, got $(repr(workers))",
+            )
+        )
         w = Int(workers)
         w < 1 && throw(ArgumentError("workers must be >= 1, got $w"))
         workers = w
     end
     if repeat !== nothing
-        (repeat isa Integer && !(repeat isa Bool)) || throw(ArgumentError(
-            "repeat must be an integer, got $(repr(repeat))",
-        ))
+        (repeat isa Integer && !(repeat isa Bool)) || throw(
+            ArgumentError(
+                "repeat must be an integer, got $(repr(repeat))",
+            )
+        )
         r = Int(repeat)
         r < 1 && throw(ArgumentError("repeat must be >= 1, got $r"))
         repeat = r
@@ -453,27 +491,27 @@ function _execute_detached!(
         script_path,
         tokens,
         args;
-        output_dir=resolved_output,
-        log_dir=resolved_log,
-        sync=sync,
-        julia=julia,
-        quiet=quiet,
-        verbosity=verbosity,
-        hosts_file=hosts_file,
-        enable_log=enable_log,
-        package=package,
-        require_all_hosts=require_all_hosts,
-        skip_hash_check=skip_hash_check,
-        mem_headroom=mem_headroom,
-        parent_gb=parent_gb,
-        workers=workers,
-        repeat=repeat,
-        sync_script=sync_script,
-        spi_check=spi_check,
-        gb_per_worker=gb_per_worker,
-        probe=probe,
+        output_dir = resolved_output,
+        log_dir = resolved_log,
+        sync = sync,
+        julia = julia,
+        quiet = quiet,
+        verbosity = verbosity,
+        hosts_file = hosts_file,
+        enable_log = enable_log,
+        package = package,
+        require_all_hosts = require_all_hosts,
+        skip_hash_check = skip_hash_check,
+        mem_headroom = mem_headroom,
+        parent_gb = parent_gb,
+        workers = workers,
+        repeat = repeat,
+        sync_script = sync_script,
+        spi_check = spi_check,
+        gb_per_worker = gb_per_worker,
+        probe = probe,
     )
-    extra = Dict{String,String}("DISTRIBUTED_PROJECT_ROOT" => proj)
+    extra = Dict{String, String}("DISTRIBUTED_PROJECT_ROOT" => proj)
     if remote !== nothing && !isempty(strip(String(remote)))
         extra["DISTRIBUTED_REMOTE_PROJECT_ROOT"] = remote_env_project_root(String(remote))
     end
@@ -485,18 +523,20 @@ function _execute_detached!(
     julia_bin = resolve_controller_julia(julia)
     kit_proj = pkgdir(DistSSHKit)
     kit_proj === nothing && throw(ArgumentError("pkgdir(DistSSHKit) is nothing; cannot spawn -m DistSSHKit"))
-    cmd = Cmd(String[
-        julia_bin,
-        "--startup-file=no",
-        "--project=$(kit_proj)",
-        "-m",
-        "DistSSHKit",
-        argv...,
-    ])
+    cmd = Cmd(
+        String[
+            julia_bin,
+            "--startup-file=no",
+            "--project=$(kit_proj)",
+            "-m",
+            "DistSSHKit",
+            argv...,
+        ]
+    )
     child = ignorestatus(setenv(cmd, env))
     stdio_out, stdio_err, owned_out, owned_err = _execute_detached_stdio(kwargs, resolved_output)
     proc = try
-        run(pipeline(child; stdout=stdio_out, stderr=stdio_err); wait=false)
+        run(pipeline(child; stdout = stdio_out, stderr = stdio_err); wait = false)
     catch
         for io in (owned_out, owned_err)
             io === nothing || close(io)
@@ -505,15 +545,15 @@ function _execute_detached!(
     end
     _write_kit_pid_file(
         getpid(proc), resolved_output, resolved_log;
-        job_id=get(extra, "DISTSSHKIT_JOB_ID", nothing),
+        job_id = get(extra, "DISTSSHKIT_JOB_ID", nothing),
     )
     return KitProcess(
         proc;
-        kind=kind,
-        output_dir=resolved_output,
-        log_dir=resolved_log,
-        stdout_owned=owned_out,
-        stderr_owned=owned_err,
+        kind = kind,
+        output_dir = resolved_output,
+        log_dir = resolved_log,
+        stdout_owned = owned_out,
+        stderr_owned = owned_err,
     )
 end
 
@@ -551,18 +591,18 @@ when the caller still has a [`KitProcess`](@ref). SIGKILL / crash can leave
 the file; a reused pid can then look alive.
 """
 function _kit_sidecar_dirs(
-    output_dir::AbstractString,
-    log_dir::Union{Nothing,AbstractString},
-)
-    log_dir === nothing || log_dir == output_dir ? (output_dir,) : (output_dir, log_dir)
+        output_dir::AbstractString,
+        log_dir::Union{Nothing, AbstractString},
+    )
+    return log_dir === nothing || log_dir == output_dir ? (output_dir,) : (output_dir, log_dir)
 end
 
 function _write_kit_pid_file(
-    pid::Integer,
-    output_dir::AbstractString,
-    log_dir::Union{Nothing,AbstractString};
-    job_id::Union{Nothing,AbstractString}=nothing,
-)
+        pid::Integer,
+        output_dir::AbstractString,
+        log_dir::Union{Nothing, AbstractString};
+        job_id::Union{Nothing, AbstractString} = nothing,
+    )
     dirs = _kit_sidecar_dirs(output_dir, log_dir)
     for d in dirs
         try
@@ -587,11 +627,11 @@ function _write_kit_pid_file(
 end
 
 function _write_kit_text_file!(
-    name::AbstractString,
-    body::AbstractString,
-    output_dir::AbstractString,
-    log_dir::Union{Nothing,AbstractString},
-)
+        name::AbstractString,
+        body::AbstractString,
+        output_dir::AbstractString,
+        log_dir::Union{Nothing, AbstractString},
+    )
     for d in _kit_sidecar_dirs(output_dir, log_dir)
         try
             mkpath(d)
@@ -604,10 +644,10 @@ end
 
 """Best-effort host list for [`terminate_run!`](@ref) (SSH names, one per line)."""
 function _write_kit_hosts_file(
-    hosts::AbstractVector{<:AbstractString},
-    output_dir::AbstractString,
-    log_dir::Union{Nothing,AbstractString},
-)
+        hosts::AbstractVector{<:AbstractString},
+        output_dir::AbstractString,
+        log_dir::Union{Nothing, AbstractString},
+    )
     isempty(hosts) && return nothing
     names = unique!(String[String(h) for h in hosts])
     body = sprint() do io
@@ -619,10 +659,10 @@ function _write_kit_hosts_file(
     return nothing
 end
 
-const DRIVE_HOST_WORKER_IDS = Dict{String,Vector{Int}}()
-const DRIVE_HOST_LAST_SEEN = Dict{String,Float64}()
+const DRIVE_HOST_WORKER_IDS = Dict{String, Vector{Int}}()
+const DRIVE_HOST_LAST_SEEN = Dict{String, Float64}()
 const DRIVE_HOST_STATUS_STOP = Ref(true)
-const DRIVE_HOST_STATUS_TASK = Ref{Union{Nothing,Task}}(nothing)
+const DRIVE_HOST_STATUS_TASK = Ref{Union{Nothing, Task}}(nothing)
 
 function _clear_drive_host_worker_ids!()
     empty!(DRIVE_HOST_WORKER_IDS)
@@ -637,9 +677,11 @@ end
 
 function _require_drive_host_status_idle!()
     if _drive_host_status_monitor_active()
-        throw(ArgumentError(
-            "overlapping in-process drive!/ride! is not supported (host-status monitor already running)",
-        ))
+        throw(
+            ArgumentError(
+                "overlapping in-process drive!/ride! is not supported (host-status monitor already running)",
+            )
+        )
     end
     return nothing
 end
@@ -678,7 +720,7 @@ function _drive_host_span!(host::AbstractString, leaf::AbstractString, status::S
     return nothing
 end
 
-function _last_seen_for(host::AbstractString)::Union{Nothing,Float64}
+function _last_seen_for(host::AbstractString)::Union{Nothing, Float64}
     h = String(host)
     return haskey(DRIVE_HOST_LAST_SEEN, h) ? DRIVE_HOST_LAST_SEEN[h] : nothing
 end
@@ -696,17 +738,17 @@ function _probe_drive_host(ids::AbstractVector{<:Integer})::Symbol
 end
 
 function _write_kit_hosts_status_file(
-    rows::AbstractVector{DriveHostStatus},
-    output_dir::AbstractString,
-    log_dir::Union{Nothing,AbstractString},
-)
-    tables = Vector{Dict{String,Any}}()
+        rows::AbstractVector{DriveHostStatus},
+        output_dir::AbstractString,
+        log_dir::Union{Nothing, AbstractString},
+    )
+    tables = Vector{Dict{String, Any}}()
     for r in rows
-        d = Dict{String,Any}("host" => r.host, "state" => String(r.state))
+        d = Dict{String, Any}("host" => r.host, "state" => String(r.state))
         r.last_seen !== nothing && (d["last_seen"] = r.last_seen)
         push!(tables, d)
     end
-    data = Dict{String,Any}("hosts" => tables)
+    data = Dict{String, Any}("hosts" => tables)
     for d in _kit_sidecar_dirs(output_dir, log_dir)
         try
             mkpath(d)
@@ -715,7 +757,7 @@ function _write_kit_hosts_status_file(
             open(tmp, "w") do io
                 TOML.print(io, data)
             end
-            mv(tmp, dest; force=true)
+            mv(tmp, dest; force = true)
         catch
         end
     end
@@ -723,10 +765,10 @@ function _write_kit_hosts_status_file(
 end
 
 function _write_joined_drive_host_status!(
-    hosts::AbstractVector{<:AbstractString},
-    output_dir::AbstractString,
-    log_dir::Union{Nothing,AbstractString},
-)
+        hosts::AbstractVector{<:AbstractString},
+        output_dir::AbstractString,
+        log_dir::Union{Nothing, AbstractString},
+    )
     rows = DriveHostStatus[DriveHostStatus(String(h), :joined, nothing) for h in unique(hosts)]
     isempty(rows) && return nothing
     _write_kit_hosts_status_file(rows, output_dir, log_dir)
@@ -734,10 +776,10 @@ function _write_joined_drive_host_status!(
 end
 
 function _refresh_drive_host_status_file!(
-    output_dir::AbstractString,
-    log_dir::Union{Nothing,AbstractString};
-    now::Float64=time(),
-)
+        output_dir::AbstractString,
+        log_dir::Union{Nothing, AbstractString};
+        now::Float64 = time(),
+    )
     rows = DriveHostStatus[]
     for host in sort!(collect(keys(DRIVE_HOST_WORKER_IDS)))
         probe = _probe_drive_host(DRIVE_HOST_WORKER_IDS[host])
@@ -753,10 +795,10 @@ function _refresh_drive_host_status_file!(
 end
 
 function _mark_drive_hosts_collect_pending!(
-    output_dir::AbstractString,
-    log_dir::Union{Nothing,AbstractString};
-    now::Float64=time(),
-)
+        output_dir::AbstractString,
+        log_dir::Union{Nothing, AbstractString};
+        now::Float64 = time(),
+    )
     rows = DriveHostStatus[]
     for host in sort!(collect(keys(DRIVE_HOST_WORKER_IDS)))
         probe = _probe_drive_host(DRIVE_HOST_WORKER_IDS[host])
@@ -782,9 +824,9 @@ function _stop_drive_host_status_monitor!()
 end
 
 function _start_drive_host_status_monitor!(
-    output_dir::AbstractString,
-    log_dir::Union{Nothing,AbstractString},
-)
+        output_dir::AbstractString,
+        log_dir::Union{Nothing, AbstractString},
+    )
     isempty(DRIVE_HOST_WORKER_IDS) && return nothing
     _require_drive_host_status_idle!()
     _stop_drive_host_status_monitor!()
@@ -807,7 +849,7 @@ function _start_drive_host_status_monitor!(
     return nothing
 end
 
-function _read_kit_text_file(output_dir::AbstractString, name::AbstractString)::Union{Nothing,String}
+function _read_kit_text_file(output_dir::AbstractString, name::AbstractString)::Union{Nothing, String}
     path = joinpath(String(output_dir), name)
     isfile(path) || return nothing
     s = try
@@ -829,7 +871,7 @@ function _parse_kit_pid_text(raw::AbstractString)
         st = strip(String(lines[2]))
         !isempty(st) && (start = st)
     end
-    return (pid=Int(pid), start=start)
+    return (pid = Int(pid), start = start)
 end
 
 function _read_kit_pid_record(output_dir::AbstractString)
@@ -862,7 +904,7 @@ function _read_kit_hosts(output_dir::AbstractString)::Vector{String}
     return String[strip(line) for line in split(raw, '\n') if !isempty(strip(line))]
 end
 
-function _reap_tagged_workers!(job_id::Union{Nothing,AbstractString}, hosts::AbstractVector{<:AbstractString})
+function _reap_tagged_workers!(job_id::Union{Nothing, AbstractString}, hosts::AbstractVector{<:AbstractString})
     job_id === nothing && return nothing
     id = String(job_id)
     _pkill_local_tagged_workers!(id)
@@ -899,10 +941,10 @@ end
 
 """Remove `kit.pid` in the same dirs as [`_write_kit_pid_file`](@ref), only if it still names `pid`."""
 function _remove_kit_pid_file(
-    pid::Integer,
-    output_dir::Union{Nothing,AbstractString},
-    log_dir::Union{Nothing,AbstractString},
-)
+        pid::Integer,
+        output_dir::Union{Nothing, AbstractString},
+        log_dir::Union{Nothing, AbstractString},
+    )
     output_dir === nothing && return nothing
     dirs = log_dir === nothing || log_dir == output_dir ? (output_dir,) : (output_dir, log_dir)
     want = Int(pid)
@@ -911,7 +953,7 @@ function _remove_kit_pid_file(
         try
             rec = _parse_kit_pid_text(read(path, String))
             if rec !== nothing && rec.pid == want
-                rm(path; force=true)
+                rm(path; force = true)
             end
         catch
             # best-effort only
@@ -926,7 +968,7 @@ function _write_kit_result_file(result::KitRunResult)
     output_dir === nothing && return nothing
     dirs = result.log_dir === nothing || result.log_dir == output_dir ?
         (output_dir,) : (output_dir, result.log_dir)
-    data = Dict{String,Any}(
+    data = Dict{String, Any}(
         "ok" => result.ok,
         "kind" => String(result.kind),
         "exit_code" => result.exit_code,
@@ -935,10 +977,10 @@ function _write_kit_result_file(result::KitRunResult)
     result.failed_step !== nothing && (data["failed_step"] = result.failed_step)
     result.log_dir !== nothing && (data["log_dir"] = result.log_dir)
     if !isempty(result.hosts)
-        rows = Vector{Dict{String,Any}}(undef, length(result.hosts))
+        rows = Vector{Dict{String, Any}}(undef, length(result.hosts))
         for i in eachindex(result.hosts)
             h = result.hosts[i]
-            row = Dict{String,Any}("host" => h.host, "ok" => h.ok)
+            row = Dict{String, Any}("host" => h.host, "ok" => h.ok)
             h.error !== nothing && (row["error"] = h.error)
             rows[i] = row
         end
@@ -955,7 +997,7 @@ function _write_kit_result_file(result::KitRunResult)
             open(tmp, "w") do io
                 TOML.print(io, data)
             end
-            mv(tmp, dest; force=true)
+            mv(tmp, dest; force = true)
         catch
             # best-effort only
         end
@@ -969,7 +1011,7 @@ end
 Read `output_dir/kit.result` written by a finished `go` / `ride` / `drive` child.
 `nothing` when the file is missing or unreadable (still running, or a hard death).
 """
-function kit_result_from_dir(output_dir::AbstractString)::Union{Nothing,KitRunResult}
+function kit_result_from_dir(output_dir::AbstractString)::Union{Nothing, KitRunResult}
     path = joinpath(canonical_local_path(output_dir), "kit.result")
     isfile(path) || return nothing
     try
@@ -1044,8 +1086,10 @@ function drive_host_status(output_dir::AbstractString)::Vector{DriveHostStatus}
             st = get(item, "state", nothing)
             st isa AbstractString || continue
             state = Symbol(String(st))
-            (state === :joined || state === :alive || state === :left ||
-                state === :collect_pending) || continue
+            (
+                state === :joined || state === :alive || state === :left ||
+                    state === :collect_pending
+            ) || continue
             ls = get(item, "last_seen", nothing)
             last = ls isa Real ? Float64(ls) : nothing
             push!(out, DriveHostStatus(String(host), state, last))
@@ -1083,11 +1127,11 @@ it does not wait for `init_output_dir!`. A non-blank inherited
 `DISTRIBUTED_OUTPUT_DIR` is used when `output_dir` is omitted.
 """
 function allocate_output_dir(
-    kind::Symbol,
-    script::AbstractString;
-    project::AbstractString=pwd(),
-    job_id::Union{Nothing,AbstractString}=nothing,
-)::String
+        kind::Symbol,
+        script::AbstractString;
+        project::AbstractString = pwd(),
+        job_id::Union{Nothing, AbstractString} = nothing,
+    )::String
     _require_execute_kind!(kind)
     proj = canonical_local_path(project)
     isdir(proj) || throw(ArgumentError("allocate_output_dir: project is not a directory: $proj"))
@@ -1119,6 +1163,7 @@ function _mkdir_unique!(dir::AbstractString)::String
             base = String(dir) * "-" * string(time_ns())
         end
     end
+    return
 end
 
 """Set `DISTRIBUTED_OUTPUT_DIR` for a drive run and return it.
@@ -1128,9 +1173,9 @@ If the env is already non-blank (`--output-dir`, `output_dir=`, or
 `{script}/.distsshkit/drive/<stem>_<UTC>/` leaf.
 """
 function _ensure_drive_output_env!(
-    script_path::AbstractString;
-    project::AbstractString=pwd(),
-)::String
+        script_path::AbstractString;
+        project::AbstractString = pwd(),
+    )::String
     existing = strip(get(ENV, "DISTRIBUTED_OUTPUT_DIR", ""))
     if !isempty(existing)
         dir = canonical_local_path(existing)
@@ -1138,25 +1183,25 @@ function _ensure_drive_output_env!(
         ENV["DISTRIBUTED_OUTPUT_DIR"] = dir
         return dir
     end
-    dir = allocate_output_dir(:drive, script_path; project=project)
+    dir = allocate_output_dir(:drive, script_path; project = project)
     ENV["DISTRIBUTED_OUTPUT_DIR"] = dir
     return dir
 end
 
 function _execute_detached_dirs(
-    kind::Symbol,
-    project::AbstractString,
-    script_path::AbstractString,
-    output_dir::Union{Nothing,AbstractString},
-    log_dir::Union{Nothing,AbstractString},
-    enable_log,
-)::Tuple{String,Union{Nothing,String}}
+        kind::Symbol,
+        project::AbstractString,
+        script_path::AbstractString,
+        output_dir::Union{Nothing, AbstractString},
+        log_dir::Union{Nothing, AbstractString},
+        enable_log,
+    )::Tuple{String, Union{Nothing, String}}
     resolved_output = if output_dir !== nothing
         canonical_local_path(output_dir)
     elseif kind === :go
         _go_batch_output_dir(project, script_path)
     elseif kind === :ride
-        _ride_batch_dir(script_path, nothing; project=project)
+        _ride_batch_dir(script_path, nothing; project = project)
     else
         inherited = strip(get(ENV, "DISTRIBUTED_OUTPUT_DIR", ""))
         if !isempty(inherited)
@@ -1164,7 +1209,7 @@ function _execute_detached_dirs(
             mkpath(d)
             d
         else
-            allocate_output_dir(:drive, script_path; project=project)
+            allocate_output_dir(:drive, script_path; project = project)
         end
     end
     resolved_log = if kind === :go || kind === :ride || enable_log === false
@@ -1178,30 +1223,30 @@ function _execute_detached_dirs(
 end
 
 function _execute_detached_argv(
-    kind::Symbol,
-    script_path::AbstractString,
-    tokens::AbstractVector{<:AbstractString},
-    args::AbstractVector{<:AbstractString};
-    output_dir::AbstractString,
-    log_dir::Union{Nothing,AbstractString},
-    sync::Union{Symbol,Bool,Nothing},
-    julia::Union{Nothing,AbstractString},
-    quiet::Bool,
-    verbosity,
-    hosts_file,
-    enable_log,
-    package,
-    require_all_hosts,
-    skip_hash_check,
-    mem_headroom=nothing,
-    parent_gb=nothing,
-    workers=nothing,
-    repeat=nothing,
-    sync_script::Bool=false,
-    spi_check::Bool=true,
-    gb_per_worker=nothing,
-    probe=nothing,
-)::Vector{String}
+        kind::Symbol,
+        script_path::AbstractString,
+        tokens::AbstractVector{<:AbstractString},
+        args::AbstractVector{<:AbstractString};
+        output_dir::AbstractString,
+        log_dir::Union{Nothing, AbstractString},
+        sync::Union{Symbol, Bool, Nothing},
+        julia::Union{Nothing, AbstractString},
+        quiet::Bool,
+        verbosity,
+        hosts_file,
+        enable_log,
+        package,
+        require_all_hosts,
+        skip_hash_check,
+        mem_headroom = nothing,
+        parent_gb = nothing,
+        workers = nothing,
+        repeat = nothing,
+        sync_script::Bool = false,
+        spi_check::Bool = true,
+        gb_per_worker = nothing,
+        probe = nothing,
+    )::Vector{String}
     argv = String[String(kind)]
     push!(argv, "-y")
     if verbosity === nothing
@@ -1239,9 +1284,11 @@ function _execute_detached_argv(
         if package !== nothing && !isempty(strip(String(package)))
             push!(argv, "--package", String(package))
         end
-        require_all_hosts isa Bool || throw(ArgumentError(
-            "require_all_hosts must be a Bool, got $(repr(require_all_hosts))",
-        ))
+        require_all_hosts isa Bool || throw(
+            ArgumentError(
+                "require_all_hosts must be a Bool, got $(repr(require_all_hosts))",
+            )
+        )
         if require_all_hosts
             push!(argv, "--require-all-hosts")
         else
@@ -1299,8 +1346,8 @@ function _execute_detached_argv(
     return argv
 end
 
-function _execute_detached_env(extra::AbstractDict{<:AbstractString,<:AbstractString})::Dict{String,String}
-    env = Dict{String,String}(
+function _execute_detached_env(extra::AbstractDict{<:AbstractString, <:AbstractString})::Dict{String, String}
+    env = Dict{String, String}(
         String(k) => String(v) for (k, v) in ENV if !isempty(v) && !(String(k) in _EXECUTE_DETACHED_ENV_SKIP)
     )
     env["DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL"] = "1"
@@ -1318,7 +1365,7 @@ own `rmprocs` path, then SIGKILL if needed. Then `pkill` only processes
 tagged with this run's `job_id` (from `kit.job`), never `julia.*--worker`.
 Without `job_id`, only the child is signaled.
 """
-function terminate!(kp::KitProcess; grace::Real=10)::KitRunResult
+function terminate!(kp::KitProcess; grace::Real = 10)::KitRunResult
     grace >= 0 || throw(ArgumentError("grace must be ≥ 0, got $grace"))
     if process_running(kp.process)
         try
@@ -1351,11 +1398,11 @@ Like [`terminate!`](@ref) after losing [`KitProcess`](@ref): read `kit.pid` /
 `kit.result` is missing.
 """
 function terminate_run!(
-    output_dir::AbstractString;
-    grace::Real=10,
-    log_dir::Union{Nothing,AbstractString}=nothing,
-    kind::Symbol=:go,
-)::KitRunResult
+        output_dir::AbstractString;
+        grace::Real = 10,
+        log_dir::Union{Nothing, AbstractString} = nothing,
+        kind::Symbol = :go,
+    )::KitRunResult
     grace >= 0 || throw(ArgumentError("grace must be ≥ 0, got $grace"))
     _require_execute_kind!(kind)
     d = canonical_local_path(output_dir)

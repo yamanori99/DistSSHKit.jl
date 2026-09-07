@@ -3,35 +3,35 @@
 """One execution slot for [`go!`](@ref) (parent or child)."""
 struct GoSlot
     kind::Symbol # :parent | :child
-    host::Union{Nothing,String}
+    host::Union{Nothing, String}
     label::String
 end
 
 """Outcome of [`go!`](@ref). On failure, `failed_step` is `"sync"`, `"run"`, or `"collect"`."""
 struct GoResult
     ok::Bool
-    sync::Union{Nothing,SyncResult}
-    run::Union{Nothing,DriveResult}
-    collect::Union{Nothing,CollectResult}
+    sync::Union{Nothing, SyncResult}
+    run::Union{Nothing, DriveResult}
+    collect::Union{Nothing, CollectResult}
     script::String
     output_dir::String
-    failed_step::Union{Nothing,String}
+    failed_step::Union{Nothing, String}
 end
 
 GoResult(
     ok::Bool,
-    sync::Union{Nothing,SyncResult},
-    run::Union{Nothing,DriveResult},
-    collect::Union{Nothing,CollectResult},
+    sync::Union{Nothing, SyncResult},
+    run::Union{Nothing, DriveResult},
+    collect::Union{Nothing, CollectResult},
     script::String,
     output_dir::String;
-    failed_step::Union{Nothing,String}=nothing,
+    failed_step::Union{Nothing, String} = nothing,
 ) = GoResult(ok, sync, run, collect, script, output_dir, failed_step)
 
 function kit_run_result(
-    result::GoResult,
-    tokens::AbstractVector{<:AbstractString}=String[],
-)::KitRunResult
+        result::GoResult,
+        tokens::AbstractVector{<:AbstractString} = String[],
+    )::KitRunResult
     return KitRunResult(
         result.ok,
         :go,
@@ -55,7 +55,7 @@ function _go_sanitize_label(raw::AbstractString)::String
 end
 
 """True when a go token looks like a misspelling of `parent`."""
-function _go_local_host_typo_hint(host_name::AbstractString)::Union{Nothing,String}
+function _go_local_host_typo_hint(host_name::AbstractString)::Union{Nothing, String}
     h = lowercase(String(host_name))
     h in (
         "lacal", "loacl", "locahost", "locl",
@@ -79,9 +79,9 @@ Build execution slots from host tokens.
   `parent:N` / `child:NAME:N` are per-host caps.
 """
 function _go_merge_repeat_cap(
-    a::Union{Nothing,Int},
-    b::Union{Nothing,Int},
-)::Union{Nothing,Int}
+        a::Union{Nothing, Int},
+        b::Union{Nothing, Int},
+    )::Union{Nothing, Int}
     a === nothing && return nothing
     b === nothing && return nothing
     return a + b
@@ -91,25 +91,27 @@ end
 struct GoRepeatHost
     role::Symbol
     name::String
-    cap::Union{Nothing,Int}
+    cap::Union{Nothing, Int}
 end
 
 function _go_repeat_pool(
-    host_tokens::AbstractVector{<:AbstractString},
-)::Vector{GoRepeatHost}
+        host_tokens::AbstractVector{<:AbstractString},
+    )::Vector{GoRepeatHost}
     if isempty(host_tokens)
         return [GoRepeatHost(:parent, PARENT_HOST_NAME, nothing)]
     end
-    order = Tuple{Symbol,String}[]
-    caps = Dict{Tuple{Symbol,String},Union{Nothing,Int}}()
+    order = Tuple{Symbol, String}[]
+    caps = Dict{Tuple{Symbol, String}, Union{Nothing, Int}}()
     for raw in host_tokens
         p = parse_placement_token(String(raw))
         key = (p.role, p.name)
         cap = p.n
         if p.role === :parent
-            cap === nothing || cap >= 0 || throw(ArgumentError(
-                "parent slot count must be >= 0, got $cap in $(repr(raw))",
-            ))
+            cap === nothing || cap >= 0 || throw(
+                ArgumentError(
+                    "parent slot count must be >= 0, got $cap in $(repr(raw))",
+                )
+            )
         elseif something(cap, 1) < 1
             throw(ArgumentError("slot count must be >= 1, got $(something(cap, 1)) in $(repr(raw))"))
         end
@@ -130,13 +132,15 @@ function _go_repeat_pool(
 end
 
 function _go_tokens_for_repeat(
-    host_tokens::AbstractVector{<:AbstractString},
-    n::Int,
-)::Vector{String}
+        host_tokens::AbstractVector{<:AbstractString},
+        n::Int,
+    )::Vector{String}
     pool = _go_repeat_pool(host_tokens)
-    isempty(pool) && throw(ArgumentError(
-        "no execution slots: list children after parent:0, or omit parent to run on the Kit side",
-    ))
+    isempty(pool) && throw(
+        ArgumentError(
+            "no execution slots: list children after parent:0, or omit parent to run on the Kit side",
+        )
+    )
     assigned = zeros(Int, length(pool))
     start = 1
     nh = length(pool)
@@ -152,9 +156,11 @@ function _go_tokens_for_repeat(
                 break
             end
         end
-        placed || throw(ArgumentError(
-            "repeat $n exceeds per-host caps (`parent:N` / `child:NAME:N`)",
-        ))
+        placed || throw(
+            ArgumentError(
+                "repeat $n exceeds per-host caps (`parent:N` / `child:NAME:N`)",
+            )
+        )
     end
     tokens = String[]
     for (h, k) in zip(pool, assigned)
@@ -170,36 +176,38 @@ end
 
 """Fill omitted `:N` via [`worker_plan_from_tokens`](@ref). `--repeat` skips this."""
 function _go_autosize_tokens(
-    host_tokens::AbstractVector{<:AbstractString};
-    session::KitSession,
-    gb_per_worker::Union{Nothing,Real}=nothing,
-    probe::Union{Nothing,AbstractString}=nothing,
-    mem_headroom::Real=DEFAULT_MEM_HEADROOM,
-    parent_gb::Real=DEFAULT_PARENT_GB,
-)::Vector{String}
+        host_tokens::AbstractVector{<:AbstractString};
+        session::KitSession,
+        gb_per_worker::Union{Nothing, Real} = nothing,
+        probe::Union{Nothing, AbstractString} = nothing,
+        mem_headroom::Real = DEFAULT_MEM_HEADROOM,
+        parent_gb::Real = DEFAULT_PARENT_GB,
+    )::Vector{String}
     isempty(host_tokens) && return String[String(t) for t in host_tokens]
     parsed = parse_worker_tokens(host_tokens)
     worker_tokens_fully_specified(parsed) &&
         return String[String(t) for t in host_tokens]
     wp = worker_plan_from_tokens(
         host_tokens;
-        session=session,
-        gb_per_worker=gb_per_worker,
-        probe=probe,
-        mem_headroom=mem_headroom,
-        parent_gb=parent_gb,
+        session = session,
+        gb_per_worker = gb_per_worker,
+        probe = probe,
+        mem_headroom = mem_headroom,
+        parent_gb = parent_gb,
     )
     filled = resolved_placement_tokens(wp)
-    isempty(filled) && throw(ArgumentError(
-        "no execution slots: size! suggested 0 workers for $(join(host_tokens, ' '))",
-    ))
+    isempty(filled) && throw(
+        ArgumentError(
+            "no execution slots: size! suggested 0 workers for $(join(host_tokens, ' '))",
+        )
+    )
     return filled
 end
 
 function _go_plan_slots(
-    host_tokens::AbstractVector{<:AbstractString};
-    total::Union{Nothing,Integer}=nothing,
-)::Vector{GoSlot}
+        host_tokens::AbstractVector{<:AbstractString};
+        total::Union{Nothing, Integer} = nothing,
+    )::Vector{GoSlot}
     if total !== nothing
         n = Int(total)
         (total isa Bool || n < 1) && throw(ArgumentError("go repeat must be >= 1, got $total"))
@@ -227,9 +235,11 @@ function _go_plan_slots(
     end
 
     parent_count == 0 && isempty(remote_runs) &&
-        throw(ArgumentError(
+        throw(
+        ArgumentError(
             "no execution slots: list children after parent:0, or omit parent to run on the Kit side",
-        ))
+        )
+    )
 
     slots = GoSlot[]
     if parent_count == 1 && isempty(remote_runs)
@@ -242,8 +252,8 @@ function _go_plan_slots(
     end
 
     # Count runs per host for labels
-    counts = Dict{String,Int}()
-    totals = Dict{String,Int}()
+    counts = Dict{String, Int}()
+    totals = Dict{String, Int}()
     for h in remote_runs
         totals[h] = get(totals, h, 0) + 1
     end
@@ -261,7 +271,7 @@ end
 function placement_tokens_from_go_slots(slots::Vector{GoSlot})::Vector{String}
     parent_n = count(s -> s.kind === :parent, slots)
     order = String[]
-    counts = Dict{String,Int}()
+    counts = Dict{String, Int}()
     for s in slots
         s.kind === :child || continue
         h = s.host
@@ -293,9 +303,9 @@ end
 
 """`{script}/.distsshkit/go` when the script is in `project`, else `{project}/.distsshkit/go`."""
 function _go_kit_parent(
-    project::AbstractString,
-    script::AbstractString,
-)::String
+        project::AbstractString,
+        script::AbstractString,
+    )::String
     proj = canonical_local_path(project)
     script_path = canonical_local_path(script)
     proj_prefix = joinpath(proj, "")
@@ -313,10 +323,10 @@ Creates the leaf with exclusive `mkdir`. Same-second collisions get a
 nanosecond suffix (`_mkdir_unique!`).
 """
 function _go_batch_output_dir(
-    project::AbstractString,
-    script::AbstractString;
-    now::DateTime=Dates.now(Dates.UTC),
-)::String
+        project::AbstractString,
+        script::AbstractString;
+        now::DateTime = Dates.now(Dates.UTC),
+    )::String
     stem = splitext(basename(canonical_local_path(script)))[1]
     stamp = Dates.format(now, dateformat"yyyymmddTHHMMSS") * "Z"
     dir = joinpath(_go_kit_parent(project, script), "$(stem)_$(stamp)")
@@ -337,7 +347,7 @@ function _go_assert_remote_ready!(host::AbstractString, remote_root::AbstractStr
     cmd = _ssh_cmd([ssh_opts()..., String(host), inner])
     out = IOBuffer()
     err = IOBuffer()
-    proc = run(pipeline(ignorestatus(cmd), stdout=out, stderr=err), wait=true)
+    proc = run(pipeline(ignorestatus(cmd), stdout = out, stderr = err), wait = true)
     if proc.exitcode != 0
         err_text = strip(String(take!(err)))
         ssh_hint = _go_host_ssh_hint(host)
@@ -370,11 +380,13 @@ function _go_assert_remote_ready!(host::AbstractString, remote_root::AbstractStr
 
     deps_err = probe_remote_project_deps(host, remote_root)
     if deps_err !== nothing
-        throw(ArgumentError(
-            "remote project deps not ready on $host ($remote_root): $deps_err\n" *
-            "Fix: julia --project=. -m DistSSHKit setup --instantiate $(setup_cli_host_token(host))\n" *
-            "  (or setup!(session, :instantiate) after :rsync / :clone)",
-        ))
+        throw(
+            ArgumentError(
+                "remote project deps not ready on $host ($remote_root): $deps_err\n" *
+                    "Fix: julia --project=. -m DistSSHKit setup --instantiate $(setup_cli_host_token(host))\n" *
+                    "  (or setup!(session, :instantiate) after :rsync / :clone)",
+            )
+        )
     end
     return nothing
 end
@@ -401,38 +413,42 @@ end
 Remote auto-detect failures throw (no bare `"julia"` PATH fallback).
 """
 function _go_resolve_julia(
-    ::Nothing=nothing;
-    host::Union{Nothing,AbstractString}=nothing,
-)::String
+        ::Nothing = nothing;
+        host::Union{Nothing, AbstractString} = nothing,
+    )::String
     host isa AbstractString || return _go_julia_exe()
     found = resolve_remote_julia(String(host), "auto")
-    found === nothing && throw(ArgumentError(
-        "Julia not found on remote host $(host) (auto-detect failed)",
-    ))
+    found === nothing && throw(
+        ArgumentError(
+            "Julia not found on remote host $(host) (auto-detect failed)",
+        )
+    )
     return found
 end
 
 function _go_resolve_julia(
-    julia::AbstractString;
-    host::Union{Nothing,AbstractString}=nothing,
-)::String
+        julia::AbstractString;
+        host::Union{Nothing, AbstractString} = nothing,
+    )::String
     s = strip(String(julia))
-    (isempty(s) || lowercase(s) == "auto") && return _go_resolve_julia(nothing; host=host)
+    (isempty(s) || lowercase(s) == "auto") && return _go_resolve_julia(nothing; host = host)
     if host isa AbstractString
         found = resolve_remote_julia(String(host), s)
-        found === nothing && throw(ArgumentError(
-            "Julia not usable on remote host $(host) at $(s)",
-        ))
+        found === nothing && throw(
+            ArgumentError(
+                "Julia not usable on remote host $(host) at $(s)",
+            )
+        )
         return found
     end
     return resolve_controller_julia(s)
 end
 
 function _go_write_batch_manifest!(
-    batch_dir::AbstractString,
-    script::AbstractString,
-    slots::Vector{GoSlot},
-)
+        batch_dir::AbstractString,
+        script::AbstractString,
+        slots::Vector{GoSlot},
+    )
     path = joinpath(batch_dir, "go_manifest.txt")
     open(path, "w") do io
         println(io, "script=", script)
@@ -477,13 +493,13 @@ function _print_go_slot_stdout_after_progress!(batch_dir::AbstractString)
 end
 
 function _go_run_local_slot!(
-    project::AbstractString,
-    script::AbstractString,
-    script_args::AbstractVector{<:AbstractString},
-    slot_dir::AbstractString;
-    quiet::Bool=false,
-    julia::Union{Nothing,AbstractString}=nothing,
-)::DriveResult
+        project::AbstractString,
+        script::AbstractString,
+        script_args::AbstractVector{<:AbstractString},
+        slot_dir::AbstractString;
+        quiet::Bool = false,
+        julia::Union{Nothing, AbstractString} = nothing,
+    )::DriveResult
     mkpath(slot_dir)
     log_path = joinpath(slot_dir, "julia.stdout.log")
     julia_bin = _go_resolve_julia(julia)
@@ -498,7 +514,7 @@ function _go_run_local_slot!(
     job_id !== nothing && push!(env_pairs, "DISTSSHKIT_JOB_ID" => job_id)
     cmd = addenv(ignorestatus(Cmd(argv)), env_pairs...)
     proc = open(log_path, "w") do log
-        return run(pipeline(cmd; stdout=log, stderr=log); wait=true)
+        return run(pipeline(cmd; stdout = log, stderr = log); wait = true)
     end
     # Mirror script stdout in `:verbose` only (quiet/progress own the TTY).
     if !quiet && kit_output_detail() && isfile(log_path)
@@ -508,17 +524,17 @@ function _go_run_local_slot!(
         end
     end
     code = proc.exitcode isa Integer ? Int(proc.exitcode) : 1
-    return DriveResult(code == 0, code; output_dir=slot_dir)
+    return DriveResult(code == 0, code; output_dir = slot_dir)
 end
 
 """Remote SSH shell snippet for one `go` slot (cd project root before mkdir/log paths)."""
 function _go_remote_slot_shell_inner(
-    remote_root::AbstractString,
-    slot_rel::AbstractString,
-    script_rel::AbstractString,
-    script_args::AbstractVector{<:AbstractString},
-    julia_bin::AbstractString,
-)::String
+        remote_root::AbstractString,
+        slot_rel::AbstractString,
+        script_rel::AbstractString,
+        script_args::AbstractVector{<:AbstractString},
+        julia_bin::AbstractString,
+    )::String
     rr = _remote_shell_path_word(remote_root)
     rel_q = _remote_shell_path_word(script_rel)
     slot_q = _remote_shell_path_word(slot_rel)
@@ -555,24 +571,24 @@ function _go_remote_slot_shell_inner(
 end
 
 function _go_run_remote_slot!(
-    host::AbstractString,
-    project::AbstractString,
-    remote_root::AbstractString,
-    script::AbstractString,
-    script_args::AbstractVector{<:AbstractString},
-    slot_rel::AbstractString,
-    slot_dir::AbstractString;
-    quiet::Bool=false,
-    julia::Union{Nothing,AbstractString}=nothing,
-)::DriveResult
+        host::AbstractString,
+        project::AbstractString,
+        remote_root::AbstractString,
+        script::AbstractString,
+        script_args::AbstractVector{<:AbstractString},
+        slot_rel::AbstractString,
+        slot_dir::AbstractString;
+        quiet::Bool = false,
+        julia::Union{Nothing, AbstractString} = nothing,
+    )::DriveResult
     mkpath(slot_dir)
     rel = _go_script_relpath(project, script)
-    julia_bin = _go_resolve_julia(julia; host=String(host))
+    julia_bin = _go_resolve_julia(julia; host = String(host))
     inner = _go_remote_slot_shell_inner(remote_root, slot_rel, rel, script_args, julia_bin)
     cmd = ignorestatus(_ssh_cmd([ssh_opts()..., String(host), inner]))
     # Capture streams ourselves: piping to the parent's stdout can drop ssh exit codes.
     buf = IOBuffer()
-    proc = run(pipeline(cmd; stdout=buf, stderr=buf); wait=true)
+    proc = run(pipeline(cmd; stdout = buf, stderr = buf); wait = true)
     out = String(take!(buf))
     # `:verbose` only: quiet/progress suppress script echo (still in slot logs).
     if !quiet && kit_output_detail() && !isempty(out)
@@ -589,25 +605,25 @@ function _go_run_remote_slot!(
         run(
             pipeline(
                 _scp_cmd([ssh_opts()..., string(host, ":", remote_ec), ec_path]);
-                stdout=devnull,
-                stderr=devnull,
+                stdout = devnull,
+                stderr = devnull,
             );
-            wait=true,
+            wait = true,
         )
     catch e
         _rethrow_missing_host_tool(e)
         scp_failed = true
     end
     code = _go_slot_exitcode(ssh_code, ec_path; scp_failed)
-    return DriveResult(code == 0, code; output_dir=slot_dir)
+    return DriveResult(code == 0, code; output_dir = slot_dir)
 end
 
 """Prefer `go.exitcode` when present. If scp failed, ignore a local file (may be stale)."""
 function _go_slot_exitcode(
-    ssh_code::Int,
-    ec_path::AbstractString;
-    scp_failed::Bool,
-)::Int
+        ssh_code::Int,
+        ec_path::AbstractString;
+        scp_failed::Bool,
+    )::Int
     if !scp_failed && isfile(ec_path)
         parsed = tryparse(Int, strip(read(ec_path, String)))
         parsed !== nothing && return parsed
@@ -617,11 +633,11 @@ end
 
 """Rsync one remote slot directory into the local slot directory (slot-overwrite collect)."""
 function _go_pull_slot!(
-    host::AbstractString,
-    remote_root::AbstractString,
-    slot_rel::AbstractString,
-    slot_dir::AbstractString,
-)::Bool
+        host::AbstractString,
+        remote_root::AbstractString,
+        slot_rel::AbstractString,
+        slot_dir::AbstractString,
+    )::Bool
     mkpath(slot_dir)
     remote_slot = joinpath(remote_root, slot_rel)
     # Ensure trailing slash semantics: copy contents into slot_dir
@@ -638,7 +654,7 @@ function _go_pull_slot!(
         ),
     )
     try
-        proc = run(pipeline(cmd; stdout=devnull, stderr=devnull); wait=true)
+        proc = run(pipeline(cmd; stdout = devnull, stderr = devnull); wait = true)
         return proc.exitcode == 0
     catch e
         _rethrow_missing_host_tool(e)
@@ -648,22 +664,22 @@ end
 
 """Run one slot (local process or remote SSH). Isolated env per slot. Pull is `_go_collect_slot!`."""
 function _go_exec_slot!(
-    slot::GoSlot,
-    proj::AbstractString,
-    script_path::AbstractString,
-    args::AbstractVector{<:AbstractString},
-    batch_dir::AbstractString,
-    sess_rr::AbstractString;
-    quiet::Bool=false,
-    julia::Union{Nothing,AbstractString}=nothing,
-)
+        slot::GoSlot,
+        proj::AbstractString,
+        script_path::AbstractString,
+        args::AbstractVector{<:AbstractString},
+        batch_dir::AbstractString,
+        sess_rr::AbstractString;
+        quiet::Bool = false,
+        julia::Union{Nothing, AbstractString} = nothing,
+    )
     slot_dir = joinpath(batch_dir, slot.label)
     mkpath(slot_dir)
     run_lab = string(slot.label, "/run")
     _kit_progress_span!(run_lab, :running)
     if slot.kind === :parent
         run_res = _go_run_local_slot!(
-            proj, script_path, args, slot_dir; quiet=quiet, julia=julia,
+            proj, script_path, args, slot_dir; quiet = quiet, julia = julia,
         )
     else
         host = slot.host::String
@@ -676,22 +692,22 @@ function _go_exec_slot!(
             args,
             slot_rel,
             slot_dir;
-            quiet=quiet,
-            julia=julia,
+            quiet = quiet,
+            julia = julia,
         )
     end
     _kit_progress_span!(run_lab, run_res.ok ? :ok : :fail)
-    return (run=run_res, collect=nothing, collect_fail=false)
+    return (run = run_res, collect = nothing, collect_fail = false)
 end
 
 """Rsync one successful remote slot after every script has finished."""
 function _go_collect_slot!(
-    slot::GoSlot,
-    proj::AbstractString,
-    batch_dir::AbstractString,
-    sess_rr::AbstractString,
-)
-    slot.kind === :child || return (collect=nothing, collect_fail=false)
+        slot::GoSlot,
+        proj::AbstractString,
+        batch_dir::AbstractString,
+        sess_rr::AbstractString,
+    )
+    slot.kind === :child || return (collect = nothing, collect_fail = false)
     host = slot.host::String
     slot_dir = joinpath(batch_dir, slot.label)
     slot_rel = relpath(slot_dir, proj)
@@ -699,21 +715,21 @@ function _go_collect_slot!(
     _kit_progress_span!(col_lab, :running)
     if _go_pull_slot!(host, sess_rr, slot_rel, slot_dir)
         _kit_progress_span!(col_lab, :ok)
-        return (collect=CollectResult(true, 0), collect_fail=false)
+        return (collect = CollectResult(true, 0), collect_fail = false)
     end
     _kit_progress_span!(col_lab, :fail)
-    return (collect=CollectResult(false, 1), collect_fail=true)
+    return (collect = CollectResult(false, 1), collect_fail = true)
 end
 
 """Log header matching drive: subcommand args, Julia env, then the go banner."""
 function _go_print_run_header!(
-    original_args::Vector{String},
-    script_path::AbstractString,
-    script_args::AbstractVector{<:AbstractString},
-    slots::Vector{GoSlot},
-    proj::AbstractString,
-    anchor::AbstractString,
-)
+        original_args::Vector{String},
+        script_path::AbstractString,
+        script_args::AbstractVector{<:AbstractString},
+        slots::Vector{GoSlot},
+        proj::AbstractString,
+        anchor::AbstractString,
+    )
     writeln_field("Subcommand args", subcommand_args_record("go", original_args))
     for (label, value) in julia_env_record()
         writeln_field(label, value)
@@ -725,27 +741,27 @@ function _go_print_run_header!(
     writeln_field("Args", isempty(script_args) ? "—" : join(script_args, " "))
     writeln_field("Project", cli_project_disp(proj, anchor))
     writeln_field("DistSSHKit", dist_ssh_kit_version())
-    app_git = get_local_git_hash(proj; short=8)
+    app_git = get_local_git_hash(proj; short = 8)
     writeln_field("App git", app_git === nothing ? "unavailable" : app_git)
     writeln_field("Slots", string(length(slots)))
     for s in slots
         where = s.kind === :parent ? PARENT_HOST_NAME : String(something(s.host, s.label))
-        writeln_both("  · $(s.label)  ($where)"; color=:light_black)
+        writeln_both("  · $(s.label)  ($where)"; color = :light_black)
     end
     writeln_both("")
     return nothing
 end
 
 function _go_complete!(
-    result::GoResult,
-    batch_dir::AbstractString,
-    release_lock,
-    progress_ok::Bool,
-    anchor,
-    tokens::Vector{String},
-)::GoResult
+        result::GoResult,
+        batch_dir::AbstractString,
+        release_lock,
+        progress_ok::Bool,
+        anchor,
+        tokens::Vector{String},
+    )::GoResult
     footer = progress_ok ? display_path(batch_dir, anchor) : nothing
-    kit_progress_done!(; ok=progress_ok, footer=footer)
+    kit_progress_done!(; ok = progress_ok, footer = footer)
     _print_go_slot_stdout_after_progress!(batch_dir)
     _maybe_print_kit_progress_phases(batch_dir)
     close_log_file()
@@ -800,37 +816,41 @@ host uncapped. Without `repeat`, omitted `:N` is filled by [`size!`](@ref)
 `path_anchor` shortens displayed paths (CLI passes kit project root).
 """
 function go!(
-    script::AbstractString,
-    workers::AbstractVector{<:AbstractString};
-    project::AbstractString=pwd(),
-    remote::Union{Nothing,AbstractString}=nothing,
-    hosts_file::Union{Nothing,AbstractString}=nothing,
-    quiet::Bool=false,
-    verbosity::Union{Nothing,Symbol}=nothing,
-    yes::Bool=true,
-    sync::Union{Symbol,Bool,Nothing}=nothing,
-    output_dir::Union{Nothing,AbstractString}=nothing,
-    collect_spec::Union{Bool,AbstractString,Nothing}=nothing,
-    args::AbstractVector{<:AbstractString}=String[],
-    path_anchor::Union{Nothing,AbstractString}=nothing,
-    julia::Union{Nothing,AbstractString}=nothing,
-    hint_surface::Symbol=:api,
-    original_args::Vector{String}=String[],
-    repeat::Union{Nothing,Integer}=nothing,
-    gb_per_worker::Union{Nothing,Real}=nothing,
-    probe::Union{Nothing,AbstractString}=nothing,
-    mem_headroom::Real=DEFAULT_MEM_HEADROOM,
-    parent_gb::Real=DEFAULT_PARENT_GB,
-)::GoResult
+        script::AbstractString,
+        workers::AbstractVector{<:AbstractString};
+        project::AbstractString = pwd(),
+        remote::Union{Nothing, AbstractString} = nothing,
+        hosts_file::Union{Nothing, AbstractString} = nothing,
+        quiet::Bool = false,
+        verbosity::Union{Nothing, Symbol} = nothing,
+        yes::Bool = true,
+        sync::Union{Symbol, Bool, Nothing} = nothing,
+        output_dir::Union{Nothing, AbstractString} = nothing,
+        collect_spec::Union{Bool, AbstractString, Nothing} = nothing,
+        args::AbstractVector{<:AbstractString} = String[],
+        path_anchor::Union{Nothing, AbstractString} = nothing,
+        julia::Union{Nothing, AbstractString} = nothing,
+        hint_surface::Symbol = :api,
+        original_args::Vector{String} = String[],
+        repeat::Union{Nothing, Integer} = nothing,
+        gb_per_worker::Union{Nothing, Real} = nothing,
+        probe::Union{Nothing, AbstractString} = nothing,
+        mem_headroom::Real = DEFAULT_MEM_HEADROOM,
+        parent_gb::Real = DEFAULT_PARENT_GB,
+    )::GoResult
     script_path = canonical_local_path(script)
     proj = canonical_local_path(project)
     if !isfile(script_path)
-        throw(ArgumentError(explain_script_not_found(
-            script_path,
-            proj;
-            surface=hint_surface,
-            headline="script not found: $script_path",
-        )))
+        throw(
+            ArgumentError(
+                explain_script_not_found(
+                    script_path,
+                    proj;
+                    surface = hint_surface,
+                    headline = "script not found: $script_path",
+                )
+            )
+        )
     end
     _acquire_kit_inproc_run!(:go)
     try
@@ -863,28 +883,28 @@ function go!(
 end
 
 function _go_run!(
-    script_path::String,
-    proj::String,
-    workers,
-    remote,
-    hosts_file,
-    quiet,
-    verbosity,
-    yes,
-    sync,
-    output_dir,
-    collect_spec,
-    args,
-    path_anchor,
-    julia,
-    hint_surface,
-    original_args,
-    repeat,
-    gb_per_worker,
-    probe,
-    mem_headroom,
-    parent_gb,
-)
+        script_path::String,
+        proj::String,
+        workers,
+        remote,
+        hosts_file,
+        quiet,
+        verbosity,
+        yes,
+        sync,
+        output_dir,
+        collect_spec,
+        args,
+        path_anchor,
+        julia,
+        hint_surface,
+        original_args,
+        repeat,
+        gb_per_worker,
+        probe,
+        mem_headroom,
+        parent_gb,
+    )
     anchor = something(path_anchor, proj)
 
     tokens = String[String(h) for h in workers]
@@ -897,35 +917,37 @@ function _go_run!(
         !isempty(env_hf) && (hf = env_hf)
     end
     if hf !== nothing && !isempty(strip(String(hf)))
-        for line in read_hosts_file_lines(hf; surface=hint_surface)
+        for line in read_hosts_file_lines(hf; surface = hint_surface)
             push!(tokens, line)
         end
     end
     if repeat === nothing && !isempty(tokens) &&
-       !worker_tokens_fully_specified(parse_worker_tokens(tokens))
+            !worker_tokens_fully_specified(parse_worker_tokens(tokens))
         size_session = KitSession(
-            project=proj,
-            workers=tokens,
-            remote=remote,
-            quiet=quiet,
-            verbosity=verbosity,
-            yes=yes,
+            project = proj,
+            workers = tokens,
+            remote = remote,
+            quiet = quiet,
+            verbosity = verbosity,
+            yes = yes,
         )
         tokens = _go_autosize_tokens(
             tokens;
-            session=size_session,
-            gb_per_worker=gb_per_worker,
-            probe=probe,
-            mem_headroom=mem_headroom,
-            parent_gb=parent_gb,
+            session = size_session,
+            gb_per_worker = gb_per_worker,
+            probe = probe,
+            mem_headroom = mem_headroom,
+            parent_gb = parent_gb,
         )
     end
-    slots = _go_plan_slots(tokens; total=repeat)
+    slots = _go_plan_slots(tokens; total = repeat)
     place = placement_tokens_from_go_slots(slots)
     if output_dir !== nothing && collect_spec isa AbstractString
-        throw(ArgumentError(
-            "go!: set the batch root via output_dir OR collect_spec::String, not both",
-        ))
+        throw(
+            ArgumentError(
+                "go!: set the batch root via output_dir OR collect_spec::String, not both",
+            )
+        )
     end
     batch_dir = if output_dir !== nothing
         canonical_local_path(output_dir)
@@ -940,27 +962,27 @@ function _go_run!(
     _set_kit_progress_sidecar!(batch_dir)
     apply_session_env!(
         KitSession(
-            project=proj,
-            workers=String[],
-            remote=remote,
-            quiet=quiet,
-            verbosity=verbosity,
-            yes=yes,
+            project = proj,
+            workers = String[],
+            remote = remote,
+            quiet = quiet,
+            verbosity = verbosity,
+            yes = yes,
         ),
     )
-    init_log_file(batch_dir; prefix="go", path_anchor=anchor)
+    init_log_file(batch_dir; prefix = "go", path_anchor = anchor)
 
     progress_ok = false
     completed = false
     try
         sess_rr = session_remote_root(
             KitSession(
-                project=proj,
-                workers=String[],
-                remote=remote,
-                quiet=quiet,
-                verbosity=verbosity,
-                yes=yes,
+                project = proj,
+                workers = String[],
+                remote = remote,
+                quiet = quiet,
+                verbosity = verbosity,
+                yes = yes,
             ),
         )
 
@@ -971,7 +993,7 @@ function _go_run!(
         any_run_fail = Ref(false)
         any_collect_fail = Ref(false)
         last_run = Ref(DriveResult(true, 0))
-        last_collect = Ref{Union{Nothing,CollectResult}}(nothing)
+        last_collect = Ref{Union{Nothing, CollectResult}}(nothing)
 
         _go_print_run_header!(original_args, script_path, args, slots, proj, anchor)
 
@@ -979,9 +1001,9 @@ function _go_run!(
         if n_slots > 0
             kit_progress_begin!(
                 "go";
-                steps=n_slots,
-                items=String[s.label for s in slots],
-                kind=:go,
+                steps = n_slots,
+                items = String[s.label for s in slots],
+                kind = :go,
             )
             _kit_progress_mark!("ready")
         end
@@ -994,14 +1016,14 @@ function _go_run!(
             _go_assert_remotes_ready!(child_hosts, sess_rr)
         elseif !isempty(child_hosts)
             sync_session = KitSession(
-                project=proj,
-                workers=[format_placement_token(:child, h) for h in child_hosts],
-                remote=remote,
-                quiet=quiet,
-                verbosity=verbosity,
-                yes=yes,
+                project = proj,
+                workers = [format_placement_token(:child, h) for h in child_hosts],
+                remote = remote,
+                quiet = quiet,
+                verbosity = verbosity,
+                yes = yes,
             )
-            sync_result = sync!(sync_session; mode=sync_mode)
+            sync_result = sync!(sync_session; mode = sync_mode)
             if !sync_result.ok
                 completed = true
                 return _go_complete!(
@@ -1012,7 +1034,7 @@ function _go_run!(
                         nothing,
                         script_path,
                         batch_dir;
-                        failed_step="sync",
+                        failed_step = "sync",
                     ),
                     batch_dir,
                     release_lock,
@@ -1024,7 +1046,7 @@ function _go_run!(
             if sync_mode === :rsync
                 inst_julia = julia === nothing || strip(String(julia)) == "auto" ?
                     "auto" : String(julia)
-                inst = instantiate_after_rsync!(sync_session; julia=inst_julia)
+                inst = instantiate_after_rsync!(sync_session; julia = inst_julia)
                 if inst !== nothing && !inst.ok
                     completed = true
                     return _go_complete!(
@@ -1035,7 +1057,7 @@ function _go_run!(
                             nothing,
                             script_path,
                             batch_dir;
-                            failed_step="instantiate",
+                            failed_step = "instantiate",
                         ),
                         batch_dir,
                         release_lock,
@@ -1052,7 +1074,7 @@ function _go_run!(
         slot_run_ok = fill(false, n_slots)
         @sync for (i, slot) in enumerate(slots)
             @async begin
-                kit_progress_item!(slot.label; status=:running)
+                kit_progress_item!(slot.label; status = :running)
                 err = nothing
                 outcome = try
                     _go_exec_slot!(
@@ -1062,15 +1084,15 @@ function _go_run!(
                         args,
                         batch_dir,
                         sess_rr;
-                        quiet=quiet,
-                        julia=julia,
+                        quiet = quiet,
+                        julia = julia,
                     )
                 catch e
                     err = e
                     (
-                        run=DriveResult(false, 1),
-                        collect=nothing,
-                        collect_fail=false,
+                        run = DriveResult(false, 1),
+                        collect = nothing,
+                        collect_fail = false,
                     )
                 end
                 slot_run_ok[i] = outcome.run.ok
@@ -1078,18 +1100,18 @@ function _go_run!(
                     last_run[] = outcome.run
                     if err !== nothing
                         any_run_fail[] = true
-                        kit_progress_item!(slot.label; status=:fail)
+                        kit_progress_item!(slot.label; status = :fail)
                         write(stderr, "  ")
-                        print_err("✗ $(slot.label): $(sprint(showerror, err))"; io=stderr)
+                        print_err("✗ $(slot.label): $(sprint(showerror, err))"; io = stderr)
                         println(stderr)
                     elseif !outcome.run.ok
                         any_run_fail[] = true
-                        kit_progress_item!(slot.label; status=:fail)
+                        kit_progress_item!(slot.label; status = :fail)
                         write(stderr, "  ")
-                        print_err("✗ $(slot.label) (exit $(outcome.run.exit_code))"; io=stderr)
+                        print_err("✗ $(slot.label) (exit $(outcome.run.exit_code))"; io = stderr)
                         println(stderr)
                     else
-                        kit_progress_item!(slot.label; status=:ok)
+                        kit_progress_item!(slot.label; status = :ok)
                         ok(slot.label)
                     end
                 end
@@ -1107,7 +1129,7 @@ function _go_run!(
                         _go_collect_slot!(slot, proj, batch_dir, sess_rr)
                     catch e
                         err = e
-                        (collect=CollectResult(false, 1), collect_fail=true)
+                        (collect = CollectResult(false, 1), collect_fail = true)
                     end
                     lock(_GO_IO_LOCK) do
                         if outcome.collect !== nothing
@@ -1120,7 +1142,7 @@ function _go_run!(
                             write(stderr, "  ")
                             print_err(
                                 "✗ $(slot.label): $(sprint(showerror, err))";
-                                io=stderr,
+                                io = stderr,
                             )
                             println(stderr)
                         end
@@ -1138,7 +1160,7 @@ function _go_run!(
                     last_collect[],
                     script_path,
                     batch_dir;
-                    failed_step="run",
+                    failed_step = "run",
                 ),
                 batch_dir,
                 release_lock,
@@ -1157,7 +1179,7 @@ function _go_run!(
                     last_collect[],
                     script_path,
                     batch_dir;
-                    failed_step="collect",
+                    failed_step = "collect",
                 ),
                 batch_dir,
                 release_lock,
@@ -1182,7 +1204,7 @@ function _go_run!(
     finally
         if !completed
             footer = progress_ok ? display_path(batch_dir, anchor) : nothing
-            kit_progress_done!(; ok=progress_ok, footer=footer)
+            kit_progress_done!(; ok = progress_ok, footer = footer)
             _print_go_slot_stdout_after_progress!(batch_dir)
             _maybe_print_kit_progress_phases(batch_dir)
             close_log_file()
@@ -1198,11 +1220,11 @@ function go!(script::AbstractString; kwargs...)::GoResult
 end
 
 function go!(
-    script::AbstractString,
-    w1::AbstractString,
-    rest::AbstractString...;
-    kwargs...,
-)::GoResult
+        script::AbstractString,
+        w1::AbstractString,
+        rest::AbstractString...;
+        kwargs...,
+    )::GoResult
     return go!(script, String[w1, rest...]; kwargs...)
 end
 
@@ -1211,7 +1233,7 @@ end
 
 Print a short summary when [`go!`](@ref) failed. Returns `result.ok`.
 """
-function report_go_errors(result::GoResult; io::IO=stderr)::Bool
+function report_go_errors(result::GoResult; io::IO = stderr)::Bool
     result.ok && return true
     _report_run_header!(io, kit_run_result(result))
     _report_sync_host_errors!(io, result.sync)
@@ -1224,6 +1246,6 @@ function report_go_errors(result::GoResult; io::IO=stderr)::Bool
     return false
 end
 
-function report_run_errors(result::GoResult; io::IO=stderr)::Bool
-    return report_go_errors(result; io=io)
+function report_run_errors(result::GoResult; io::IO = stderr)::Bool
+    return report_go_errors(result; io = io)
 end

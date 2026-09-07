@@ -9,23 +9,23 @@
 Pure worker-count math (same rules as `size` CLI). Returns [`WorkerPlan`](@ref).
 """
 function compute_worker_plan(
-    all_hosts::Vector{String},
-    child_hosts::Vector{String},
-    per_worker_gb::Dict{String,Float64};
-    mem_headroom::Real=DEFAULT_MEM_HEADROOM,
-    parent_gb::Real=DEFAULT_PARENT_GB,
-)::WorkerPlan
+        all_hosts::Vector{String},
+        child_hosts::Vector{String},
+        per_worker_gb::Dict{String, Float64};
+        mem_headroom::Real = DEFAULT_MEM_HEADROOM,
+        parent_gb::Real = DEFAULT_PARENT_GB,
+    )::WorkerPlan
     parent_workers = 0
-    child_workers = Dict{String,Int}()
+    child_workers = Dict{String, Int}()
     local_total, local_nproc = get_local_resources()
 
     for host in all_hosts
         if is_parent_host_name(host)
-            res = (total_gb=local_total, nproc=local_nproc)
+            res = (total_gb = local_total, nproc = local_nproc)
         else
             res = (
-                total_gb=something(get_remote_total_gb(host), 0.0),
-                nproc=something(get_remote_nproc(host), 1),
+                total_gb = something(get_remote_total_gb(host), 0.0),
+                nproc = something(get_remote_nproc(host), 1),
             )
         end
         pw = get(per_worker_gb, host, WORKER_MEMORY_GB_FALLBACK)
@@ -33,9 +33,9 @@ function compute_worker_plan(
             res.total_gb,
             res.nproc,
             pw;
-            mem_headroom=mem_headroom,
-            parent_gb=parent_gb,
-            is_parent=is_parent_host_name(host),
+            mem_headroom = mem_headroom,
+            parent_gb = parent_gb,
+            is_parent = is_parent_host_name(host),
         )
         if is_parent_host_name(host)
             parent_workers = n
@@ -60,20 +60,22 @@ warm-up `probe` script for peak RSS). Counts use `effective_worker_gb`.
 Returns [`WorkerPlan`](@ref).
 """
 function size!(
-    session::KitSession;
-    gb_per_worker::Union{Nothing,Real}=nothing,
-    probe::Union{Nothing,AbstractString}=nothing,
-    mem_headroom::Real=DEFAULT_MEM_HEADROOM,
-    parent_gb::Real=DEFAULT_PARENT_GB,
-)::WorkerPlan
+        session::KitSession;
+        gb_per_worker::Union{Nothing, Real} = nothing,
+        probe::Union{Nothing, AbstractString} = nothing,
+        mem_headroom::Real = DEFAULT_MEM_HEADROOM,
+        parent_gb::Real = DEFAULT_PARENT_GB,
+    )::WorkerPlan
     all_hosts, child_hosts = session_size_hosts(session)
-    isempty(all_hosts) && throw(ArgumentError(
-        explain_no_hosts(; surface=hint_surface(session), kind=:size),
-    ))
+    isempty(all_hosts) && throw(
+        ArgumentError(
+            explain_no_hosts(; surface = hint_surface(session), kind = :size),
+        )
+    )
 
     return _with_kit_inproc_run!(:size) do
         apply_session_env!(session)
-        per_worker_gb = Dict{String,Float64}()
+        per_worker_gb = Dict{String, Float64}()
         if gb_per_worker !== nothing
             g = Float64(gb_per_worker)
             for h in all_hosts
@@ -83,9 +85,9 @@ function size!(
             measured = measure_rss(
                 session.project,
                 child_hosts;
-                include_parent=session.include_parent_for_size,
-                probe=probe,
-                hint_surface=hint_surface(session),
+                include_parent = session.include_parent_for_size,
+                probe = probe,
+                hint_surface = hint_surface(session),
             )
             isempty(measured) && throw(
                 ErrorException("per-worker memory measurement failed; pass gb_per_worker=..."),
@@ -103,8 +105,8 @@ function size!(
             all_hosts,
             child_hosts,
             per_worker_gb;
-            mem_headroom=mem_headroom,
-            parent_gb=parent_gb,
+            mem_headroom = mem_headroom,
+            parent_gb = parent_gb,
         )
     end
 end

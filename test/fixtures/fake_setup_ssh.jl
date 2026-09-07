@@ -67,7 +67,7 @@ function main()
 
     # setup --juliaup remote body (home install and/or Homebrew candidates)
     if (occursin(".juliaup/bin/juliaup", script) || occursin("/opt/homebrew/bin/juliaup", script)) &&
-       (occursin(" add ", script) || occursin("default", script))
+            (occursin(" add ", script) || occursin("default", script))
         if get(ENV, "DISTSSHKIT_TEST_NO_JULIAUP", "") == "1"
             println(stderr, "juliaup not found (tried: \$HOME/.juliaup/bin/juliaup, /opt/homebrew/bin/juliaup)")
             exit(127)
@@ -161,13 +161,13 @@ function main()
                 basename(dir) == ".distsshkit" || continue
                 go = joinpath(dir, "go")
                 if isdir(go)
-                    for child in readdir(go; join=true)
+                    for child in readdir(go; join = true)
                         isdir(child) || continue
                         (id === nothing || occursin(id, basename(child))) || continue
                         if older !== nothing && (time() - mtime(child)) < older * 86400
                             continue
                         end
-                        rm(child; recursive=true, force=true)
+                        rm(child; recursive = true, force = true)
                     end
                 end
                 if id === nothing
@@ -177,7 +177,7 @@ function main()
                         if older !== nothing && (time() - mtime(p)) < older * 86400
                             continue
                         end
-                        rm(p; recursive=true, force=true)
+                        rm(p; recursive = true, force = true)
                     end
                 end
             end
@@ -187,7 +187,7 @@ function main()
 
     if occursin("rm -rf", script)
         if isdir(dir)
-            rm(dir; recursive=true, force=true)
+            rm(dir; recursive = true, force = true)
         end
         exit(0)
     end
@@ -221,7 +221,7 @@ function main()
         exit(0)
     end
 
-    exit(0)
+    return exit(0)
 end
 
 main()

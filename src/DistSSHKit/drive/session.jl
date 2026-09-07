@@ -5,7 +5,7 @@ mutable struct KitSession
     project::String
     hosts::Vector{String}
     tokens::Vector{String}
-    remote::Union{Nothing,String}
+    remote::Union{Nothing, String}
     quiet::Bool
     verbosity::Symbol
     yes::Bool
@@ -33,15 +33,15 @@ only when `hosts_file` is omitted **and** `workers` is empty (same as
 API default `yes=true` skips confirm prompts.
 """
 function KitSession(;
-    project::AbstractString=pwd(),
-    workers::AbstractVector{<:AbstractString}=String[],
-    remote::Union{Nothing,AbstractString}=nothing,
-    hosts_file::Union{Nothing,AbstractString}=nothing,
-    quiet::Bool=false,
-    verbosity::Union{Nothing,Symbol}=nothing,
-    yes::Bool=true,
-    include_parent_for_size::Bool=false,
-)
+        project::AbstractString = pwd(),
+        workers::AbstractVector{<:AbstractString} = String[],
+        remote::Union{Nothing, AbstractString} = nothing,
+        hosts_file::Union{Nothing, AbstractString} = nothing,
+        quiet::Bool = false,
+        verbosity::Union{Nothing, Symbol} = nothing,
+        yes::Bool = true,
+        include_parent_for_size::Bool = false,
+    )
     tokens = String[String(h) for h in workers]
     hf = if hosts_file !== nothing
         String(strip(hosts_file))
@@ -52,15 +52,15 @@ function KitSession(;
     end
     hf_path = isempty(hf) ? nothing : hf
     cli = KitCliSession(
-        quiet=quiet,
-        verbosity=verbosity,
-        yes=yes,
-        hosts_file=hf_path,
-        hint_surface=:api,
+        quiet = quiet,
+        verbosity = verbosity,
+        yes = yes,
+        hosts_file = hf_path,
+        hint_surface = :api,
     )
     tokens = String[String(h) for h in workers]
     if hf_path !== nothing
-        for line in read_hosts_file_lines(hf_path; surface=:api)
+        for line in read_hosts_file_lines(hf_path; surface = :api)
             push!(tokens, line)
         end
     end
@@ -109,14 +109,14 @@ end
 
 """Resolved remote repository root for this session."""
 function session_remote_root(session::KitSession)::String
-    return resolve_remote_project_root(session.project; cli_override=session.remote)
+    return resolve_remote_project_root(session.project; cli_override = session.remote)
 end
 
 """Explain surface for this session (`:cli` or `:api`)."""
 hint_surface(session::KitSession)::Symbol = session.cli_session.hint_surface
 
 """SSH host names used for [`size!`](@ref) (`parent` first when `include_parent_for_size`)."""
-function session_size_hosts(session::KitSession)::Tuple{Vector{String},Vector{String}}
+function session_size_hosts(session::KitSession)::Tuple{Vector{String}, Vector{String}}
     child_hosts = copy(session.hosts)
     if session.include_parent_for_size
         return [PARENT_HOST_NAME; child_hosts], child_hosts
