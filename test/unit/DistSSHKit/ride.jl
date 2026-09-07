@@ -1,6 +1,35 @@
 using Test
 
 @testset "ride" begin
+    @testset "world age" begin
+        let name = :_ride_world_age_probe_
+            Core.eval(Main, :($name(x; k=0) = 2x + k))
+            @test DistSSHKit._ride_main_call(name, 21) == 42
+            @test DistSSHKit._ride_main_call(name, 10; k=3) == 23
+        end
+    end
+
+    @testset "activate project" begin
+        prev = Base.active_project()
+        _with_tempdir() do tmp
+            write(
+                joinpath(tmp, "Project.toml"),
+                """
+                name = "RideAct"
+                uuid = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+                version = "0.1.0"
+                """,
+            )
+            try
+                DistSSHKit._ride_activate_project!(tmp)
+                @test startswith(Base.active_project(), tmp)
+            finally
+                DistSSHKit._ride_restore_project!(prev)
+            end
+        end
+        @test Base.active_project() == prev
+    end
+
     @testset "rewrite" begin
         ex = Meta.parse("map(f, xs)")
         rw = DistSSHKit._ride_rewrite(ex)

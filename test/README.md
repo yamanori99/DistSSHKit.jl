@@ -225,6 +225,7 @@ only return numbers. Collect tests use files workers write.
   leak (#144)
 - detached drive SIGKILL: wait until heartbeat monitors start, then
   remote `--worker` gone (#148)
+- detached SSH ride `terminate!`: `kit.hosts` then remote `--worker` gone
 - `go pi_echo`: π on both hosts
 - `go --rsync` empty dedicated root: no prior `--instantiate`; π on
   both; remote `Project.toml` appears

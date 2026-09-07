@@ -277,15 +277,38 @@ function _ride_resolve_plan(
     )
 end
 
+function _ride_activate_project!(project::AbstractString)
+    proj = canonical_local_path(project)
+    isdir(proj) || return
+    isfile(joinpath(proj, "Project.toml")) || return
+    Pkg.activate(proj; io=devnull)
+    return nothing
+end
+
+function _ride_restore_project!(prev)
+    if prev === nothing
+        Base.set_active_project(nothing)
+    else
+        Pkg.activate(String(prev); io=devnull)
+    end
+    return nothing
+end
+
+function _ride_main_call(name::Symbol, args...; kwargs...)
+    Base.invokelatest(isdefined, Main, name) ||
+        error("ride: drive runtime not loaded ($name)")
+    f = Base.invokelatest(getfield, Main, name)
+    return Base.invokelatest(f, args...; kwargs...)
+end
+
 function _ride_init_drive_workers!(proj_dir::AbstractString)
     isdefined(Main, :init_drive_workers!) || return
-    init = getfield(Main, :init_drive_workers!)
     anchor = if isdefined(Main, :_PATH_ANCHOR)
         String(getfield(Main, :_PATH_ANCHOR))
     else
         String(proj_dir)
     end
-    init(String(proj_dir), nothing, anchor)
+    _ride_main_call(:init_drive_workers!, String(proj_dir), nothing, anchor)
     return nothing
 end
 
@@ -312,15 +335,14 @@ function _ride_add_workers!(
             )
         else
             _ensure_drive_fragments!(project)
-            isdefined(Main, :add_drive_workers!) || error("ride: drive runtime not loaded")
             julia_exe = if julia === nothing || strip(String(julia)) == "" ||
                     lowercase(strip(String(julia))) == "auto"
                 nothing
             else
                 String(julia)
             end
-            addw = getfield(Main, :add_drive_workers!)
-            successful = addw(
+            successful = _ride_main_call(
+                :add_drive_workers!,
                 child_hosts,
                 plan.parent_workers,
                 1,
@@ -343,7 +365,10 @@ function _ride_add_workers!(
                 end
             end
             if isdefined(Main, :wait_for_worker_connections!)
-                getfield(Main, :wait_for_worker_connections!)(; ssh=!isempty(child_hosts))
+                _ride_main_call(
+                    :wait_for_worker_connections!;
+                    ssh=!isempty(child_hosts),
+                )
             end
             _ride_init_drive_workers!(project)
         end
@@ -368,8 +393,10 @@ script on Distributed workers (parent and optional SSH `child:`). Rejects
 Distributed vocabulary (use [`drive!`](@ref)).
 
 Worker add for SSH children is the same `add_drive_workers!` path as drive.
-The script still runs on the parent (no driver `include` on workers). Named
-functions used by `map` / `filter` are sent to workers as a prelude.
+The job `project` is `Pkg.activate`d on the parent first (drive does this
+before `using` the app package on every process). The script still runs on
+the parent (no driver `include` on workers). Named functions used by `map` /
+`filter` are sent to workers as a prelude.
 
 `--spi-check` (default on) compares the distributed result to a sequential
 `map` / `filter`. Unknown syntax stays sequential. Inspect first with
@@ -523,6 +550,7 @@ function _ride_run!(
     old_args = copy(ARGS)
     old_out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", nothing)
     old_remote = get(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT", nothing)
+    old_proj = Base.active_project()
     batch_dir = _ride_batch_dir(path, output_dir; project=project)
     release_lock = () -> nothing
     progress_started = false
@@ -552,6 +580,7 @@ function _ride_run!(
         kit_progress_begin!("ride"; steps=3, kind=:ride)
         progress_started = true
         kit_progress_step!("workers")
+        _ride_activate_project!(project)
         added, ssh_hosts = _ride_add_workers!(wp, project, path, julia, require_all_hosts)
         _write_kit_hosts_file(ssh_hosts, batch_dir, nothing)
         _write_joined_drive_host_status!(
@@ -573,37 +602,41 @@ function _ride_run!(
         )
         return outcome
     finally
-        if progress_started
-            footer = if progress_ok
-                display_path(batch_dir, canonical_local_path(project))
-            else
-                nothing
+        try
+            if progress_started
+                footer = if progress_ok
+                    display_path(batch_dir, canonical_local_path(project))
+                else
+                    nothing
+                end
+                kit_progress_done!(; ok=progress_ok, footer=footer)
+                _print_job_stdout_after_progress!()
+                progress_ok && _ride_print_spi_progress!(_RIDE_SPI_OK[])
+                _maybe_print_kit_progress_phases(batch_dir)
+                _set_kit_progress_sidecar!(nothing)
             end
-            kit_progress_done!(; ok=progress_ok, footer=footer)
-            _print_job_stdout_after_progress!()
-            progress_ok && _ride_print_spi_progress!(_RIDE_SPI_OK[])
-            _maybe_print_kit_progress_phases(batch_dir)
-            _set_kit_progress_sidecar!(nothing)
+            isdir(batch_dir) && _write_kit_result_file(kit_run_result(outcome))
+            _remove_kit_pid_file(getpid(), batch_dir, nothing)
+            release_lock()
+            empty!(ARGS)
+            append!(ARGS, old_args)
+            if old_out === nothing
+                delete!(ENV, "DISTRIBUTED_OUTPUT_DIR")
+            else
+                ENV["DISTRIBUTED_OUTPUT_DIR"] = old_out
+            end
+            if old_remote === nothing
+                delete!(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT")
+            else
+                ENV["DISTRIBUTED_REMOTE_PROJECT_ROOT"] = old_remote
+            end
+            _stop_drive_host_status_monitor!()
+            !isempty(added) && rmprocs(added; waitfor=30)
+            _clear_drive_host_worker_ids!()
+            _RIDE_DEPTH[] = 0
+        finally
+            _ride_restore_project!(old_proj)
         end
-        isdir(batch_dir) && _write_kit_result_file(kit_run_result(outcome))
-        _remove_kit_pid_file(getpid(), batch_dir, nothing)
-        release_lock()
-        empty!(ARGS)
-        append!(ARGS, old_args)
-        if old_out === nothing
-            delete!(ENV, "DISTRIBUTED_OUTPUT_DIR")
-        else
-            ENV["DISTRIBUTED_OUTPUT_DIR"] = old_out
-        end
-        if old_remote === nothing
-            delete!(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT")
-        else
-            ENV["DISTRIBUTED_REMOTE_PROJECT_ROOT"] = old_remote
-        end
-        _stop_drive_host_status_monitor!()
-        !isempty(added) && rmprocs(added; waitfor=30)
-        _clear_drive_host_worker_ids!()
-        _RIDE_DEPTH[] = 0
     end
 end
 
