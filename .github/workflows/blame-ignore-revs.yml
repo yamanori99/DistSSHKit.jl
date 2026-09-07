@@ -1,0 +1,52 @@
+name: Blame ignore-revs
+
+# After a bulk `.jl` squash lands on main, record that SHA so git blame
+# skips it. Humans do not edit `.git-blame-ignore-revs`.
+# `GITHUB_TOKEN` push does not re-trigger workflows.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "**/*.jl"
+
+concurrency:
+  group: blame-ignore-revs-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  record:
+    name: record bulk format SHA
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - name: Append this commit if it rewrites many Julia files
+        env:
+          LANDED: ${{ github.sha }}
+          MIN_JL: "40"
+        run: |
+          set -euo pipefail
+          n="$(git diff-tree --no-commit-id --name-only -r HEAD | grep -c '\.jl$' || true)"
+          echo "jl files in this commit: $n (threshold $MIN_JL)"
+          if [ "$n" -lt "$MIN_JL" ]; then
+            echo "not a bulk format"
+            exit 0
+          fi
+          file=".git-blame-ignore-revs"
+          if grep -qx "$LANDED" "$file" 2>/dev/null; then
+            echo "already recorded"
+            exit 0
+          fi
+          printf '\n# Runic bulk format\n%s\n' "$LANDED" >> "$file"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$file"
+          git commit -m "Record bulk format SHA in .git-blame-ignore-revs."
+          git pull --rebase origin main
+          git push

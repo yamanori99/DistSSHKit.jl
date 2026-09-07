@@ -221,9 +221,12 @@ gitleaks detect --source .
 [Runic](https://github.com/fredrikekre/Runic.jl) CI
 (`fredrikekre/runic-action@v1`, `version: '1'`) runs `--check` on every
 tracked `.jl`. Format `demos/` and `docs/*.jl` too if you change them.
-Skip `test/artifacts/**` (no `.jl` there). A Runic minor may require a
-follow-up `--inplace` commit; add that SHA to
-[`.git-blame-ignore-revs`](.git-blame-ignore-revs). Local blame:
+Skip `test/artifacts/**` (no `.jl` there). A Runic minor may make CI
+red: re-run `runic --inplace src test` and push. Do not edit
+[`.git-blame-ignore-revs`](.git-blame-ignore-revs); a bulk `.jl` land
+on `main` is recorded by
+[`.github/workflows/blame-ignore-revs.yml`](.github/workflows/blame-ignore-revs.yml).
+Optional local blame:
 
 ```bash
 git config blame.ignoreRevsFile .git-blame-ignore-revs
