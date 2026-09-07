@@ -13,8 +13,8 @@ GitHub Releases may copy these sections (`Release notes:` on
   `child_hosts_from_tokens`, `worker_plan_from_tokens`, `split_worker_token`,
   `parse_progress_line`, `kit_progress_latest`, `kit_progress_phases`,
   `kit_pid_alive`, `resolve_remote_julia`, `worker_plan_from_pool`.
-  Call `DistSSHKit.foo` if you still need them. `using DistSSHKit: foo` for
-  those names fails. Queue contract (`execute!` detached, `host_tokens`,
+  Call `DistSSHKit.foo` or `using DistSSHKit: foo` if you still need them.
+  Plain `using DistSSHKit` no longer brings these names into scope. Queue contract (`execute!` detached, `host_tokens`,
   `parse_go_args` / `parse_drive_args`, help chrome, `ns_path` / `push_cache!`)
   stays exported. `plan!` is not added.
 - `ride` / `ride!`: independent indexed `for` (`dest[i] = expr` with no
