@@ -112,7 +112,7 @@ Details:
 > running. `tmux` can keep a job that is already running. It will not look
 > after jobs that come later.
 
-### go, ride, and drive
+### Run: go, ride, drive
 
 Three ways to run a script:
 
@@ -121,7 +121,17 @@ Three ways to run a script:
   indexed `for` work (experimental; parent or SSH workers)
 - **drive** — one master farms work to workers (built on Distributed.jl)
 
-`plan` inspects a script and suggests one of these; it does not run.
+### See: plan (file) and pool (hosts)
+
+- **plan** — inspect a `.jl` and suggest go / ride / drive. Disk + parse
+  only (no bang, no SSH). Optional slot estimate can call `size!`
+- **pool** / **pool!** — cores and RAM on listed hosts (SSH, so bang).
+  No RSS. Unreachable hosts stay listed with `ok=false`
+
+**size** / **size!** is occupancy (RSS `WorkerPlan`).
+`go` / `drive` use it when a token has no `:N`. CLI `size` prints the same
+plan. It is not a dashboard.
+
 `go` alone is plenty useful. A common path is to first check a standalone run
 with `go`, then move to `drive` / Distributed.jl when you need it.
 `plan` may already suggest `ride`.

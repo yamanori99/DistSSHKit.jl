@@ -98,7 +98,7 @@ using Pkg
     _with_tempdir() do dir
         write(joinpath(dir, "Project.toml"), "[deps]\n")
         Pkg.activate(dir) do
-            Pkg.instantiate()
+            Pkg.instantiate(; io=devnull)
         end
         @test DistSSHKit.probe_project_deps(dir) === nothing
     end

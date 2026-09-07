@@ -3,10 +3,11 @@ using .DistSSHKit:
     KitSession,
     cli_project_root,
     kit_output_progress,
-    parse_ride_args,
-    parse_worker_tokens,
     print_ride,
     println_kit_version,
-    ride!,
+    ride!
+import .DistSSHKit:
+    parse_ride_args,
+    parse_worker_tokens,
     show_ride_usage,
     worker_tokens_fully_specified

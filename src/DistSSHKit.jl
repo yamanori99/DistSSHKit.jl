@@ -13,27 +13,16 @@ using Pkg
 using SHA
 using TOML
 
-# Public surface for application / driver authors.
-# Prefer `julia -m DistSSHKit …` for day-to-day CLI.
-#   go! / drive! / plan / sync! / instantiate! / collect! / size! — steps
-#   setup! — Julian mirror of `setup --delete|--rsync|…`
-#   pipeline! — optional sugar (sync → size! → drive → collect)
-#   execute! — go / ride / drive at runtime (`detached=true` for DistSSHQueue)
-#   worker tokens — parse/classify host:N grammar and build WorkerPlan
-#   go / drive — argv wrappers (not exported; tests / `main`)
-#   queue CLI surface — parsers, SSH resolve, paths, help chrome
-#   worker_pmap — world-age escape hatch inside drivers
+# Public surface. Prefer `julia -m DistSSHKit …` for day-to-day CLI.
+#   user — go! / ride! / drive! / plan / pool! / size! / setup! / pipeline!
+#   occupancy — size! (RSS WorkerPlan; also behind go/drive autosize)
+#   queue — execute!(; detached=true), parsers, paths, help chrome
+#   argv wrappers `go` / `drive` stay unexported (`main` / tests)
 export worker_pmap
 export KitSession
 export HostResult
 export SyncResult
 export WorkerPlan
-export parse_worker_tokens
-export ParsedWorkerTokens
-export worker_tokens_fully_specified
-export child_hosts_from_tokens
-export worker_plan_from_tokens
-export split_worker_token
 export host_tokens
 export is_parent_host_name
 export DriveResult
@@ -53,15 +42,10 @@ export pool!
 export ResourcePool
 export HostInventory
 export print_pool
-export worker_plan_from_pool
-export parse_pool_args
-export show_pool_usage
 export plan
 export KitPlan
 export PlanFinding
 export print_plan
-export parse_plan_args
-export show_plan_usage
 export ns_path
 export file_sha256
 export cache_file
@@ -81,28 +65,21 @@ export report_go_errors
 export ride!
 export RideResult
 export print_ride
-export parse_ride_args
-export show_ride_usage
 export execute!
 export allocate_output_dir
 export execute_detached_accepts
 export execute_kwargs_from_parsed
-export kit_pid_alive
 export kit_pid_file_running
 export terminate!
 export terminate_run!
 export kit_result_from_dir
 export drive_host_status
-export parse_progress_line
-export kit_progress_latest
-export kit_progress_phases
 export parse_go_args
 export parse_drive_args
 export show_go_usage
 export show_drive_usage
 export println_kit_version
 export ssh_opts
-export resolve_remote_julia
 export run_on_host
 export resolve_controller_julia
 export canonical_local_path
@@ -116,7 +93,6 @@ export print_help_lines
 export print_help_blank
 export print_colored
 export SPINNER_FRAMES
-# `go` / `drive` argv wrappers stay unexported (`main` and tests).
 # `_print_colored` remains an alias of `print_colored`.
 
 

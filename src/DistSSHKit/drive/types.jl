@@ -96,7 +96,7 @@ end
 """
 Parsed drive/go worker tokens (counts may still need [`size!`](@ref)).
 
-Build with [`parse_worker_tokens`](@ref); the keyword constructor here only
+Build with `DistSSHKit.parse_worker_tokens`; the keyword constructor here only
 coerces types (same convenience shape as [`DriveResult`](@ref) /
 [`PipelineResult`](@ref)), it does not re-validate cross-field consistency.
 

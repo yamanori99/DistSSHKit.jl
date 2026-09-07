@@ -2,8 +2,7 @@
 using .DistSSHKit:
     cli_project_disp,
     cli_project_root,
-    parse_pool_args,
     pool!,
     print_header,
-    print_pool,
-    show_pool_usage
+    print_pool
+import .DistSSHKit: parse_pool_args, show_pool_usage

@@ -100,15 +100,21 @@ SSH 先の台数に上限はない。台数を増やすほど SSH 接続や配�
 > 接続が切れても実行は止まらない。実行そのものは DistSSHKit が用いられる。
 > `tmux` でも、走っているジョブは残せる。あとから来るジョブまでは見てくれない。
 
-### go、ride、drive
+### 実行: go、ride、drive
 
 実行は3種類である。
 
 - **go** — 各ホストが、そのままの `.jl` を最初から最後まで実行する
-- **ride** — kit が独立な `map` / filter / 内包を分割する (実験的。parent または SSH)
+- **ride** — kit が独立な `map` / filter / 内包 / 添字 `for` を分割する (実験的。parent または SSH)
 - **drive** — 1つのマスターがワーカーに仕事を振る (Distributed.jl ベース)
 
-`plan` はスクリプトを見てこのどれかを提案するだけで、実行しない。
+### 見る: plan (ファイル) と pool (ホスト)
+
+- **plan** — `.jl` を検査して go / ride / drive を提案する。ディスク読みと parse のみ (bang なし、SSH なし)。任意のスロット見積は `size!` を呼ぶ
+- **pool** / **pool!** — 列挙ホストのコアと RAM (SSH するので bang)。RSS なし。届かないホストは `ok=false` のまま残る
+
+**size** / **size!** は occupancy (RSS の WorkerPlan)。`go` / `drive` はトークンに `:N` が無いときに使う。CLI `size` も同じ計画を出す。ダッシュボードではない。
+
 go 単体も十分有用だが、まず go で単独実行を確認してから、
 drive / Distributed.jl 対応へ進む段階的な開発ができる。
 `plan` はすでに `ride` を提案することがある。

@@ -108,17 +108,11 @@ sync!
 instantiate!
 HostResult
 SyncResult
-size!
-pool!
-ResourcePool
-HostInventory
-print_pool
-worker_plan_from_pool
-WorkerPlan
-plan
-KitPlan
-PlanFinding
-print_plan
+drive!
+DriveResult
+HostRunResult
+collect!
+CollectResult
 ride!
 RideResult
 print_ride
@@ -129,11 +123,35 @@ cache_path
 cache_relpath
 push_cache!
 cache_remote_dir
-drive!
-DriveResult
-HostRunResult
-collect!
-CollectResult
+```
+
+### Inspect a file — `plan`
+
+No bang. Disk read + `Meta.parseall` only (no SSH, no exclusive gate).
+Suggests `go` / `ride` / `drive`. Does not start a job. Optional slot
+estimate calls [`size!`](@ref); that probe is opt-in, so there is no `plan!`.
+
+### Inventory hosts — `pool!`
+
+Cores and RAM on listed hosts, plus a slot hint. SSH, so bang. No RSS
+probe. Unreachable hosts stay listed with `ok=false`.
+
+### Occupancy — `size!`
+
+RSS-based [`WorkerPlan`](@ref) used by `go` / `drive` when `:N` is omitted,
+and by CLI `size`. Occupancy math behind autosize, not a cluster dashboard.
+
+```@docs
+plan
+KitPlan
+PlanFinding
+print_plan
+pool!
+ResourcePool
+HostInventory
+print_pool
+size!
+WorkerPlan
 ```
 
 ```@docs
@@ -146,27 +164,12 @@ report_pipeline_errors
 
 ## Worker tokens — `parent:N` / `child:NAME:N`
 
-Use this surface when callers need to classify tokens or decide whether
-`size!` is needed before building workers (occupancy math), instead of
-re-parsing the grammar or reaching into private internals.
-
-`parse_worker_tokens` validates and classifies the grammar.
-`worker_tokens_fully_specified` says whether every token has an explicit `:N`.
-`child_hosts_from_tokens` extracts only SSH host names.
-`worker_plan_from_tokens` resolves to a concrete [`WorkerPlan`](@ref).
-`split_worker_token` and `is_parent_host_name` are the low-level primitives
-(`is_parent_host_name` is `parent` only).
-`host_tokens(parsed; kind=:go|:drive)` rebuilds `execute!` token strings from
+[`host_tokens`](@ref) rebuilds `execute!` token strings from
 `parse_go_args` / `parse_drive_args`. Go keeps parser strings; drive emits
 `parent:N` from `parent_workers` and `child:NAME[:N]` for SSH.
+[`is_parent_host_name`](@ref) is the `parent` token (not a hostname).
 
 ```@docs
-parse_worker_tokens
-ParsedWorkerTokens
-worker_tokens_fully_specified
-child_hosts_from_tokens
-worker_plan_from_tokens
-split_worker_token
 is_parent_host_name
 host_tokens
 ```
@@ -204,7 +207,6 @@ allocate_output_dir
 execute_detached_accepts
 execute_kwargs_from_parsed
 KitProcess
-kit_pid_alive
 kit_pid_file_running
 terminate!
 terminate_run!
@@ -235,17 +237,12 @@ Each line is space-separated `key=value` fields after the event name.
 (phase names or slot labels) and do not contain spaces.
 
 Watchers can tail `kit.progress` (or the kit log) and use
-[`parse_progress_line`](@ref) / [`kit_progress_latest`](@ref) /
-[`kit_progress_phases`](@ref), or `julia -m DistSSHKit progress DIR`.
+`julia -m DistSSHKit progress DIR`.
 `DISTSSHKIT_PROGRESS=1` is `--progress` verbosity on the child, not a watcher.
 Slot-level `go` artifacts (`go_manifest.txt`, `{slot}/go.exitcode`) remain
 the source of truth for per-slot exit codes.
-
-```@docs
-parse_progress_line
-kit_progress_latest
-kit_progress_phases
-```
+`parse_progress_line` / `kit_progress_latest` / `kit_progress_phases` stay
+on `DistSSHKit` for scripts that parse those lines; they are not exported.
 
 ### Helpers for detached runs
 
@@ -273,7 +270,7 @@ stay in `output_dir`. Kit logs (`go_*.log` / `drive_*.log`) are not this list.
   `instantiate!` / `collect!` / `push_cache!` / `pipeline!` (same-task nesting is ok).
 - `kit.pid`: child OS pid, optional start key on the second line.
   Running is [`kit_pid_file_running`](@ref) (pid plus start).
-  [`kit_pid_alive`](@ref) is the pid-only probe. Removed on a normal
+  Removed on a normal
   finish. A leftover is SIGKILL / crash.
 - `kit.job`: `job_id` when set. [`terminate_run!`](@ref) uses it for
   tagged `pkill` after a restart.
@@ -313,7 +310,8 @@ Without `job_id`, only the child pid is signaled.
   Drive still keeps `--output-dir` / `init_output_dir!` when those set
   `DISTRIBUTED_OUTPUT_DIR`.
 - [`execute_kwargs_from_parsed`](@ref): map `parse_go_args` /
-  `parse_drive_args` / `parse_ride_args` onto detached `execute!` keywords. Hosts stay in
+  `parse_drive_args` onto detached `execute!` keywords. Ride argv maps the same
+  way for `:ride`. Hosts stay in
   [`host_tokens`](@ref); `:workers` is drive `--workers` when set.
   `:log_dir` / `:mem_headroom` / `:parent_gb` / `:workers` are drive-only
   except ride also takes `:mem_headroom` / `:parent_gb` / `:spi_check` /
@@ -348,7 +346,6 @@ show_go_usage
 show_drive_usage
 println_kit_version
 ssh_opts
-resolve_remote_julia
 run_on_host
 resolve_controller_julia
 canonical_local_path

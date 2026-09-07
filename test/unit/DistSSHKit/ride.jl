@@ -302,34 +302,39 @@ using Test
             end
             write(ARGS[1], join(string.(dest), ","))
             """
-        holder_src = """
-            struct _RideViewHolder
+        holder_src(struct_name) = """
+            struct $(struct_name)
                 src::AbstractArray
             end
             data = [1, 2, 3, 4]
             dest = @view data[2:4]
-            holder = _RideViewHolder(@view data[1:3])
+            holder = $(struct_name)(@view data[1:3])
             for i in eachindex(dest)
                 dest[i] = holder.src[i]
             end
             write(ARGS[1], join(string.(dest), ","))
             """
         nest_n = DistSSHKit._RIDE_CAPTURE_DEPTH + 3
-        nest_wraps = join(["w = _RideNest(w)" for _ in 1:(nest_n - 1)], "\n            ")
-        nest_get = "w" * repeat(".inner", nest_n)
-        nested_src = """
-            struct _RideNest
+        nested_src(struct_name) = begin
+            nest_wraps = join(
+                ["w = $(struct_name)(w)" for _ in 1:(nest_n - 1)],
+                "\n            ",
+            )
+            nest_get = "w" * repeat(".inner", nest_n)
+            """
+            struct $(struct_name)
                 inner
             end
             data = [1, 2, 3, 4]
             dest = @view data[2:4]
-            w = _RideNest(@view data[1:3])
+            w = $(struct_name)(@view data[1:3])
             $(nest_wraps)
             for i in eachindex(dest)
                 dest[i] = $(nest_get)[i]
             end
             write(ARGS[1], join(string.(dest), ","))
             """
+        end
         const_nospi_src = """
             const _RideConstData_nospi = [1, 2, 3, 4]
             dest = @view _RideConstData_nospi[2:4]
@@ -351,10 +356,10 @@ using Test
         for (body, spi, stem) in (
             (overlap_src, false, "overlap_nospi"),
             (overlap_src, true, "overlap_spi"),
-            (holder_src, false, "holder_nospi"),
-            (holder_src, true, "holder_spi"),
-            (nested_src, false, "nested_nospi"),
-            (nested_src, true, "nested_spi"),
+            (holder_src("_RideViewHolder_nospi"), false, "holder_nospi"),
+            (holder_src("_RideViewHolder_spi"), true, "holder_spi"),
+            (nested_src("_RideNest_nospi"), false, "nested_nospi"),
+            (nested_src("_RideNest_spi"), true, "nested_spi"),
             (const_nospi_src, false, "const_nospi"),
             (const_spi_src, true, "const_spi"),
         )
