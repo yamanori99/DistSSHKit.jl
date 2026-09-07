@@ -214,14 +214,14 @@ function _ride_index_fill!(dest, f, xs)
         for i in xs
             dest[i] = fn(i)
         end
-        return dest
+        return nothing
     end
     it = collect(xs)
     vals = _ride_map(f, it)
     for (i, v) in zip(it, vals)
         dest[i] = v
     end
-    return dest
+    return nothing
 end
 
 function _ride_map_fn_arg(fex)

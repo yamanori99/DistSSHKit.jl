@@ -57,6 +57,9 @@ using Test
         @test fr.args[1] === GlobalRef(DistSSHKit, :_ride_index_fill!)
         @test !(fr.args[4] isa Expr && fr.args[4].head === :call &&
                 fr.args[4].args[1] === :collect)
+        ys = zeros(Int, 3)
+        @test DistSSHKit._ride_index_fill!(ys, i -> i * i, 1:3) === nothing
+        @test ys == [1, 4, 9]
 
         acc = Meta.parse("for x in xs; s += x; end")
         @test DistSSHKit._ride_rewrite(acc).head === :for
@@ -164,6 +167,19 @@ using Test
         @test rl.ok
         @test rl.spi_ok !== false
         @test read(lout, String) == "1,4,9,16"
+
+        val_path = joinpath(tmp, "forval.jl")
+        vout = joinpath(tmp, "forval.txt")
+        write(val_path, """
+            ys = zeros(Int, 3)
+            x = (for i in eachindex(ys)
+                ys[i] = i * i
+            end)
+            write($(repr(vout)), string(x === nothing) * ";" * join(string.(ys), ","))
+            """)
+        rv = DistSSHKit.ride!(val_path, "parent:1"; spi_check=true)
+        @test rv.ok
+        @test read(vout, String) == "true;1,4,9"
 
         st_path = joinpath(tmp, "stateful.jl")
         stout = joinpath(tmp, "stateful.txt")
