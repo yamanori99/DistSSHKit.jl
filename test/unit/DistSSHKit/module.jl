@@ -19,11 +19,12 @@ using Test
     ns = names(DistSSHKit)
     @test :size! in ns && :go! in ns && :drive! in ns && :plan in ns
     @test :pool! in ns && :ResourcePool in ns && :HostInventory in ns
-    @test :print_pool in ns && :worker_plan_from_pool in ns
+    @test :print_pool in ns && :worker_plan_from_pool ∉ ns
     @test :ride! in ns && :RideResult in ns && :print_ride in ns
-    @test :parse_ride_args in ns && :show_ride_usage in ns
+    @test :parse_ride_args ∉ ns && :show_ride_usage ∉ ns
     @test :plan! ∉ ns && :KitPlan in ns && :PlanFinding in ns
-    @test :print_plan in ns && :parse_plan_args in ns && :show_plan_usage in ns
+    @test :print_plan in ns && :parse_plan_args ∉ ns && :show_plan_usage ∉ ns
+    @test :parse_pool_args ∉ ns && :show_pool_usage ∉ ns
     @test :ns_path in ns && :file_sha256 in ns && :cache_file in ns
     @test :cache_path in ns && :cache_relpath in ns
     @test :push_cache! in ns && :cache_remote_dir in ns
@@ -31,16 +32,16 @@ using Test
     @test :execute! in ns && :KitProcess in ns && :kit_result_from_dir in ns
     @test :drive_host_status in ns && :DriveHostStatus in ns
     @test :allocate_output_dir in ns
-    @test :parse_progress_line in ns && :kit_progress_latest in ns
-    @test :kit_progress_phases in ns
-    @test :execute_detached_accepts in ns && :kit_pid_alive in ns
+    @test :parse_progress_line ∉ ns && :kit_progress_latest ∉ ns
+    @test :kit_progress_phases ∉ ns
+    @test :execute_detached_accepts in ns && :kit_pid_alive ∉ ns
     @test :kit_pid_file_running in ns
     @test :terminate! in ns && :terminate_run! in ns
     @test :parse_go_args in ns && :parse_drive_args in ns
     @test :execute_kwargs_from_parsed in ns
     @test :show_go_usage in ns && :show_drive_usage in ns
     @test :println_kit_version in ns && :ssh_opts in ns
-    @test :resolve_remote_julia in ns && :resolve_controller_julia in ns
+    @test :resolve_remote_julia ∉ ns && :resolve_controller_julia in ns
     @test :run_on_host in ns
     @test :canonical_local_path in ns && :short_path in ns
     @test :resolve_pkg_project_dir in ns && :explain_script_not_found in ns
@@ -50,12 +51,13 @@ using Test
     @test :SPINNER_FRAMES in ns
     @test :_print_colored ∉ ns
     @test DistSSHKit._print_colored === DistSSHKit.print_colored
-    @test :parse_worker_tokens in ns && :ParsedWorkerTokens in ns
-    @test :worker_tokens_fully_specified in ns && :child_hosts_from_tokens in ns
-    @test :worker_plan_from_tokens in ns
-    @test :split_worker_token in ns && :is_parent_host_name in ns && :host_tokens in ns
+    @test :parse_worker_tokens ∉ ns && :ParsedWorkerTokens ∉ ns
+    @test :worker_tokens_fully_specified ∉ ns && :child_hosts_from_tokens ∉ ns
+    @test :worker_plan_from_tokens ∉ ns
+    @test :split_worker_token ∉ ns && :is_parent_host_name in ns && :host_tokens in ns
     @test :size_plan ∉ ns && :go ∉ ns && :drive ∉ ns
     @test isdefined(DistSSHKit, :go) && isdefined(DistSSHKit, :drive)
+    @test isdefined(DistSSHKit, :parse_ride_args) && isdefined(DistSSHKit, :kit_pid_alive)
     @test !isdefined(DistSSHKit, :size_plan)
 
     let fixture = _fixture("cli_echo_args.jl")

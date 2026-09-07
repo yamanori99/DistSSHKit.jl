@@ -82,7 +82,7 @@ end
     execute_kwargs_from_parsed(parsed; kind) -> Dict{Symbol,Any}
 
 Keywords for [`execute!`](@ref) (`detached=true`) from `parse_go_args` /
-`parse_drive_args` / `parse_ride_args`. Keys are a subset of [`execute_detached_accepts`](@ref).
+`parse_drive_args` / `DistSSHKit.parse_ride_args`. Keys are a subset of [`execute_detached_accepts`](@ref).
 
 Does not include `hosts_file` / `--hosts`: those tokens belong in
 [`host_tokens`](@ref) (`kind` required). Does not set `project`, `detached`,
@@ -269,7 +269,7 @@ not apply to the subprocess.
 `job_id`, if given, is passed to the child as `DISTSSHKIT_JOB_ID`, which
 adds `job=<id>` to every `progress:` log line. `DISTSSHKIT_PROGRESS=1` is
 `--progress` verbosity, not a watcher; read lines with
-[`parse_progress_line`](@ref) / [`kit_progress_latest`](@ref).
+`DistSSHKit.parse_progress_line` / `DistSSHKit.kit_progress_latest`.
 Omitted entirely when unset.
 """
 function execute!(
@@ -842,7 +842,7 @@ end
     kit_pid_file_running(output_dir) -> Bool
 
 Whether `kit.pid` names a still-running child of this run. Requires
-[`kit_pid_alive`](@ref) and, when a start key is in the file, a match with
+`DistSSHKit.kit_pid_alive` and, when a start key is in the file, a match with
 `kit_process_start_key`. A leftover after SIGKILL whose pid was reused
 is false. One-line (pid-only) files keep the old probe. Missing file is false.
 """

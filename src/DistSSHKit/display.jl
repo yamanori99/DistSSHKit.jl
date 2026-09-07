@@ -1376,7 +1376,7 @@ end
 """
     kit_progress_latest(log_dir_or_file; job_id=nothing) -> Union{Nothing,NamedTuple}
 
-Last [`parse_progress_line`](@ref) hit in a kit log file, `kit.progress`,
+Last `parse_progress_line` hit in a kit log file, `kit.progress`,
 or `*.log` under a directory (files in `mtime` order). `job_id` keeps only
 `job=<id>` lines.
 """
