@@ -29,6 +29,8 @@ Bare `demo install` (both families) is refused. Layout under
   `pipeline!`
 - `without_kit/`: standalone Julia. `julia …`, [`go`](@ref Manual-go), or
   `go!`
+- `ride/`: plain scripts for [`plan`](@ref Manual-plan) /
+  [`ride`](@ref Manual-ride) (or `go`)
 
 The package tree stays `demos/with_kit/` and `demos/without_kit/`. Install
 does not use `.distsshkit/` (rsync excludes it).
