@@ -1,14 +1,14 @@
-# Driver for drive l:N smoke tests that call into an external package (JSON3).
+# Driver for drive l:N smoke tests that call into an external package (JSON).
 using Distributed
 using DistSSHKit
-using JSON3
+using JSON
 
 function init_output_dir!(_script_args::Vector{String})
     return DistSSHKit.resolve_distributed_output_dir!(_script_args, mktempdir())
 end
 
 function roundtrip_value(x::Int)
-    return JSON3.read(JSON3.write(x), Int)
+    return JSON.parse(JSON.json(x), Int)
 end
 
 function main()
