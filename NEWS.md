@@ -6,6 +6,8 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+## 0.6.0
+
 - Breaking: unexport CLI/token internals that Queue does not import:
   `parse_ride_args`, `show_ride_usage`, `parse_plan_args`, `show_plan_usage`,
   `parse_pool_args`, `show_pool_usage`, `parse_worker_tokens`,
