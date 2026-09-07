@@ -16,5 +16,5 @@ function main()
     for (i, v) in enumerate(vals)
         v == i || error("unexpected pmap result at ", i, ": ", v)
     end
-    println("PKG_DRIVER_SMOKE_OK nw=", nworkers())
+    return println("PKG_DRIVER_SMOKE_OK nw=", nworkers())
 end

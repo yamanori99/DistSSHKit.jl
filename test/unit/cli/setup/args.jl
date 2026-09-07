@@ -24,16 +24,16 @@ using Test
     end
 
     for (flag, mode) in (
-        "--clone" => :clone,
-        "--sync" => :sync,
-        "--pull" => :pull,
-        "--instantiate" => :instantiate,
-        "--juliaup" => :juliaup,
-        "--cleanup" => :cleanup,
-        "--prune" => :prune,
-        "--delete" => :delete,
-        "--requirements" => :requirements,
-    )
+            "--clone" => :clone,
+            "--sync" => :sync,
+            "--pull" => :pull,
+            "--instantiate" => :instantiate,
+            "--juliaup" => :juliaup,
+            "--cleanup" => :cleanup,
+            "--prune" => :prune,
+            "--delete" => :delete,
+            "--requirements" => :requirements,
+        )
         let r = parse_setup_args([flag, "child:host1"])
             @test r.mode == mode
             @test r.hosts == ["host1"]

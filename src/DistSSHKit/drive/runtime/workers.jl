@@ -1,13 +1,13 @@
 """Per-worker project directory for `Pkg.activate` (`myid` → path on that process)."""
-const RUNNER_WORKER_PROJECT_DIRS = Dict{Int,String}()
+const RUNNER_WORKER_PROJECT_DIRS = Dict{Int, String}()
 """Per-worker driver script path for `include` (`myid` → path on that process)."""
-const RUNNER_WORKER_SCRIPT_PATHS = Dict{Int,String}()
+const RUNNER_WORKER_SCRIPT_PATHS = Dict{Int, String}()
 
 function _register_drive_workers!(
-    before::Set{Int},
-    proj_path::String,
-    script_path::String,
-)
+        before::Set{Int},
+        proj_path::String,
+        script_path::String,
+    )
     for w in workers()
         if w ∉ before
             RUNNER_WORKER_PROJECT_DIRS[w] = proj_path
@@ -28,13 +28,13 @@ end
 # `pkill`s argv containing `distsshkit-job:<id>` when `DISTSSHKIT_JOB_ID` is set.
 # Machine-wide sweep remains `setup --cleanup`. Skip leftover tagged pkill with
 # DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1.
-function cleanup_stale_workers!(hosts::Vector{Tuple{String,Union{Int,Nothing}}})
+function cleanup_stale_workers!(hosts::Vector{Tuple{String, Union{Int, Nothing}}})
     if _skip_global_worker_pkill() || isempty(hosts)
         return
     end
     job_id = DistSSHKit.resolved_kit_job_id()
     job_id === nothing && return
-    writeln_both("Cleaning up stale workers..."; color=:light_black)
+    writeln_both("Cleaning up stale workers..."; color = :light_black)
 
     for (host_name, _) in hosts
         DistSSHKit._drive_host_span!(host_name, "cleanup", :running)
@@ -48,23 +48,23 @@ function cleanup_stale_workers!(hosts::Vector{Tuple{String,Union{Int,Nothing}}})
         end
         writeln_both("")
     end
-    writeln_both("")
+    return writeln_both("")
 end
 
 function add_drive_workers!(
-    hosts::Vector{Tuple{String,Union{Int,Nothing}}},
-    parent_workers::Int,
-    default_workers,
-    julia_exe,
-    proj_dir::String,
-    script_path::String,
-)::Vector{String}
+        hosts::Vector{Tuple{String, Union{Int, Nothing}}},
+        parent_workers::Int,
+        default_workers,
+        julia_exe,
+        proj_dir::String,
+        script_path::String,
+    )::Vector{String}
     empty!(RUNNER_WORKER_PROJECT_DIRS)
     empty!(RUNNER_WORKER_SCRIPT_PATHS)
     DistSSHKit._require_drive_host_status_idle!()
     DistSSHKit._clear_drive_host_worker_ids!()
     script_path = abspath(String(script_path))
-    writeln_both("Adding workers..."; color=:light_black)
+    writeln_both("Adding workers..."; color = :light_black)
 
     successful_hosts = String[]
 
@@ -73,10 +73,12 @@ function add_drive_workers!(
         DistSSHKit._drive_host_span!(DistSSHKit.PARENT_HOST_NAME, "workers", :running)
         try
             before = Set(workers())
-            addprocs(parent_workers;
-                exeflags=DistSSHKit._drive_worker_exeflags(proj_dir),
-                env=DistSSHKit._drive_worker_env(),
-                topology=:master_worker)
+            addprocs(
+                parent_workers;
+                exeflags = DistSSHKit._drive_worker_exeflags(proj_dir),
+                env = DistSSHKit._drive_worker_env(),
+                topology = :master_worker
+            )
             _register_drive_workers!(before, proj_dir, script_path)
             DistSSHKit._register_drive_host_worker_ids!(
                 DistSSHKit.PARENT_HOST_NAME,
@@ -100,98 +102,100 @@ function add_drive_workers!(
         DistSSHKit._drive_host_span!(host_name, "workers", :running)
         host_ok = false
         try
-        host_julia = julia_exe
-        if host_julia === nothing
-            write_both("  $host_name: detecting Julia... ")
-            host_julia = detect_julia_path(host_name)
+            host_julia = julia_exe
             if host_julia === nothing
-                print_progress_err("✗ (Julia not found)")
-                writeln_both("")
-                continue
-            end
-            print_info("found at $host_julia")
-            writeln_both("")
-            write_both("  ")
-        end
-
-        host_workers = something(host_workers_spec, default_workers, 1)
-
-        repo_ra = DistSSHKit.canonical_local_path(PROJECT_ROOT)
-        script_dir = dirname(script_path)
-        remote_dir = resolve_host_path_abs(host_name, script_dir, repo_ra)
-        remote_proj = resolve_host_path_abs(host_name, proj_dir, repo_ra)
-        remote_script = resolve_host_path_abs(host_name, script_path, repo_ra)
-        if remote_dir === nothing || remote_proj === nothing || remote_script === nothing
-            write_both("$host_name ($host_workers workers): ")
-            missing = remote_dir === nothing ? remote_path_for_ssh_collect(script_dir, repo_ra) :
-                      remote_proj === nothing ? remote_path_for_ssh_collect(proj_dir, repo_ra) :
-                      remote_path_for_ssh_collect(script_path, repo_ra)
-            print_progress_err("✗ (remote path not found: $missing)")
-            writeln_both("")
-            writeln_both("    hint: julia --project=. -m DistSSHKit setup --rsync $(setup_cli_host_token(host_name))")
-            writeln_both("          julia --project=. -m DistSSHKit setup --instantiate $(setup_cli_host_token(host_name))")
-            writeln_both("          or drive --rsync onto an empty path (instantiates missing deps)")
-            writeln_both("           or export DISTRIBUTED_REMOTE_PROJECT_ROOT=<abs path on host>")
-            continue
-        end
-
-        deps_err = DistSSHKit.probe_remote_project_deps(
-            host_name, remote_proj; julia_path=String(host_julia),
-        )
-        if deps_err !== nothing
-            write_both("$host_name ($host_workers workers): ")
-            print_progress_err("✗ ($deps_err)")
-            writeln_both("")
-            writeln_both("    hint: julia --project=. -m DistSSHKit setup --instantiate $(setup_cli_host_token(host_name))")
-            continue
-        end
-
-        write_both("$host_name ($host_workers workers): ")
-        try
-            before = Set(workers())
-            # Default tunnel=true. Set DISTSSHKIT_SSH_TUNNEL=0 to disable.
-            # Machine must be user@host: Distributed prefixes \$USER otherwise and
-            # overrides SSH config User (Host aliases then look like "No free port?").
-            use_tunnel = get(ENV, "DISTSSHKIT_SSH_TUNNEL", "1") != "0"
-            machine = DistSSHKit.ssh_addprocs_machine(host_name)
-            addprocs([(machine, host_workers)];
-                     exename=`$host_julia`,
-                     sshflags=sshflags_cmd,
-                     dir=remote_dir,
-                     tunnel=use_tunnel,
-                     topology=:master_worker,
-                     env=DistSSHKit._drive_worker_env(),
-                     exeflags=DistSSHKit._drive_worker_exeflags(remote_proj))
-            added = sort!(Int[w for w in workers() if w ∉ before])
-            # `SSHManager.launch` can swallow a failed machine; `addprocs` then
-            # returns with fewer (or zero) workers and no throw.
-            if length(added) < host_workers
-                isempty(added) || rmprocs(added; waitfor=2.0)
-                print_progress_err("✗ (wanted $host_workers workers, got $(length(added)))")
-                writeln_both("")
-                continue
-            end
-            _register_drive_workers!(before, remote_proj, remote_script)
-            DistSSHKit._register_drive_host_worker_ids!(host_name, added)
-            print_ok("✓")
-            writeln_both("")
-            push!(successful_hosts, host_name)
-            host_ok = true
-        catch e
-            print_progress_err("✗")
-            writeln_both("")
-            if e isa CompositeException
-                for (i, ex) in enumerate(e.exceptions)
-                    actual_ex = ex isa TaskFailedException ? ex.task.result : ex
-                    writeln_both("    Error $i: $(typeof(actual_ex))")
-                    msg = sprint(showerror, actual_ex)
-                    first_line = first(split(msg, '\n'))
-                    writeln_both("    $first_line")
+                write_both("  $host_name: detecting Julia... ")
+                host_julia = detect_julia_path(host_name)
+                if host_julia === nothing
+                    print_progress_err("✗ (Julia not found)")
+                    writeln_both("")
+                    continue
                 end
-            else
-                writeln_both("    $(sprint(showerror, e))")
+                print_info("found at $host_julia")
+                writeln_both("")
+                write_both("  ")
             end
-        end
+
+            host_workers = something(host_workers_spec, default_workers, 1)
+
+            repo_ra = DistSSHKit.canonical_local_path(PROJECT_ROOT)
+            script_dir = dirname(script_path)
+            remote_dir = resolve_host_path_abs(host_name, script_dir, repo_ra)
+            remote_proj = resolve_host_path_abs(host_name, proj_dir, repo_ra)
+            remote_script = resolve_host_path_abs(host_name, script_path, repo_ra)
+            if remote_dir === nothing || remote_proj === nothing || remote_script === nothing
+                write_both("$host_name ($host_workers workers): ")
+                missing = remote_dir === nothing ? remote_path_for_ssh_collect(script_dir, repo_ra) :
+                    remote_proj === nothing ? remote_path_for_ssh_collect(proj_dir, repo_ra) :
+                    remote_path_for_ssh_collect(script_path, repo_ra)
+                print_progress_err("✗ (remote path not found: $missing)")
+                writeln_both("")
+                writeln_both("    hint: julia --project=. -m DistSSHKit setup --rsync $(setup_cli_host_token(host_name))")
+                writeln_both("          julia --project=. -m DistSSHKit setup --instantiate $(setup_cli_host_token(host_name))")
+                writeln_both("          or drive --rsync onto an empty path (instantiates missing deps)")
+                writeln_both("           or export DISTRIBUTED_REMOTE_PROJECT_ROOT=<abs path on host>")
+                continue
+            end
+
+            deps_err = DistSSHKit.probe_remote_project_deps(
+                host_name, remote_proj; julia_path = String(host_julia),
+            )
+            if deps_err !== nothing
+                write_both("$host_name ($host_workers workers): ")
+                print_progress_err("✗ ($deps_err)")
+                writeln_both("")
+                writeln_both("    hint: julia --project=. -m DistSSHKit setup --instantiate $(setup_cli_host_token(host_name))")
+                continue
+            end
+
+            write_both("$host_name ($host_workers workers): ")
+            try
+                before = Set(workers())
+                # Default tunnel=true. Set DISTSSHKIT_SSH_TUNNEL=0 to disable.
+                # Machine must be user@host: Distributed prefixes \$USER otherwise and
+                # overrides SSH config User (Host aliases then look like "No free port?").
+                use_tunnel = get(ENV, "DISTSSHKIT_SSH_TUNNEL", "1") != "0"
+                machine = DistSSHKit.ssh_addprocs_machine(host_name)
+                addprocs(
+                    [(machine, host_workers)];
+                    exename = `$host_julia`,
+                    sshflags = sshflags_cmd,
+                    dir = remote_dir,
+                    tunnel = use_tunnel,
+                    topology = :master_worker,
+                    env = DistSSHKit._drive_worker_env(),
+                    exeflags = DistSSHKit._drive_worker_exeflags(remote_proj)
+                )
+                added = sort!(Int[w for w in workers() if w ∉ before])
+                # `SSHManager.launch` can swallow a failed machine; `addprocs` then
+                # returns with fewer (or zero) workers and no throw.
+                if length(added) < host_workers
+                    isempty(added) || rmprocs(added; waitfor = 2.0)
+                    print_progress_err("✗ (wanted $host_workers workers, got $(length(added)))")
+                    writeln_both("")
+                    continue
+                end
+                _register_drive_workers!(before, remote_proj, remote_script)
+                DistSSHKit._register_drive_host_worker_ids!(host_name, added)
+                print_ok("✓")
+                writeln_both("")
+                push!(successful_hosts, host_name)
+                host_ok = true
+            catch e
+                print_progress_err("✗")
+                writeln_both("")
+                if e isa CompositeException
+                    for (i, ex) in enumerate(e.exceptions)
+                        actual_ex = ex isa TaskFailedException ? ex.task.result : ex
+                        writeln_both("    Error $i: $(typeof(actual_ex))")
+                        msg = sprint(showerror, actual_ex)
+                        first_line = first(split(msg, '\n'))
+                        writeln_both("    $first_line")
+                    end
+                else
+                    writeln_both("    $(sprint(showerror, e))")
+                end
+            end
         finally
             DistSSHKit._drive_host_span!(host_name, "workers", host_ok ? :ok : :fail)
         end
@@ -207,10 +211,10 @@ function add_drive_workers!(
     return successful_hosts
 end
 
-function wait_for_worker_connections!(; ssh::Bool=true)
-    _init_delay = DistSSHKit._drive_init_delay_sec(; ssh=ssh)
-    if _init_delay > 0
-        label = "Waiting for worker connections ($(round(_init_delay, digits=1))s)... "
+function wait_for_worker_connections!(; ssh::Bool = true)
+    _init_delay = DistSSHKit._drive_init_delay_sec(; ssh = ssh)
+    return if _init_delay > 0
+        label = "Waiting for worker connections ($(round(_init_delay, digits = 1))s)... "
         DistSSHKit.kit_spin!(label) do
             sleep(_init_delay)
             return nothing
@@ -238,7 +242,7 @@ function register_worker_cleanup!(successful_hosts::Vector{String})
 
         if nprocs() > 1
             try
-                rmprocs(workers(); waitfor=5.0)
+                rmprocs(workers(); waitfor = 5.0)
             catch
             end
         end
@@ -248,6 +252,7 @@ function register_worker_cleanup!(successful_hosts::Vector{String})
             job_id === nothing && continue
             DistSSHKit._pkill_remote_tagged_workers!(host, job_id)
         end
+        return
     end
     atexit(drive_atexit_cleanup)
     return drive_atexit_cleanup

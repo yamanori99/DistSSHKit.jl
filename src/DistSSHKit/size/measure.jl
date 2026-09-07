@@ -3,9 +3,9 @@
 
 """Resolve a size `--probe` script path under `project` (absolute paths unchanged)."""
 function resolve_size_probe_path(
-    project::AbstractString,
-    probe::AbstractString,
-)::String
+        project::AbstractString,
+        probe::AbstractString,
+    )::String
     p = strip(String(probe))
     isempty(p) && throw(ArgumentError("size probe path is empty"))
     return isabspath(p) ? canonical_local_path(p) : canonical_local_path(joinpath(project, p))
@@ -13,10 +13,10 @@ end
 
 """Quoted probe: activate, optional package load, baseline RSS, optional include, peak RSS."""
 function _size_probe_rss_expr(
-    path::String,
-    pkg_name::Union{Nothing,String},
-    probe_path::Union{Nothing,String},
-)
+        path::String,
+        pkg_name::Union{Nothing, String},
+        probe_path::Union{Nothing, String},
+    )
     load_pkg = if pkg_name === nothing
         :(nothing)
     else
@@ -38,7 +38,7 @@ function _size_probe_rss_expr(
     return quote
         ENV["JULIA_PKG_PRECOMPILE_AUTO"] = "0"
         using Pkg
-        Pkg.activate($path; io=devnull)
+        Pkg.activate($path; io = devnull)
         $load_pkg
         baseline = Sys.maxrss()
         $run_probe
@@ -61,22 +61,22 @@ Uses the same remote path resolution as drive `addprocs`. Suggestions should use
 `effective_worker_gb` / `per_worker_gb_dict`.
 """
 function measure_rss(
-    project::AbstractString,
-    hosts::Vector{String};
-    include_parent::Bool=false,
-    probe::Union{Nothing,AbstractString}=nothing,
-    hint_surface::Symbol=:api,
-)::Dict{String,WorkerMemorySample}
+        project::AbstractString,
+        hosts::Vector{String};
+        include_parent::Bool = false,
+        probe::Union{Nothing, AbstractString} = nothing,
+        hint_surface::Symbol = :api,
+    )::Dict{String, WorkerMemorySample}
     proj = canonical_local_path(project)
     probe_local = probe === nothing ? nothing : resolve_size_probe_path(proj, probe)
     if probe_local !== nothing && !isfile(probe_local)
-        throw(ArgumentError(explain_size_probe_not_found(probe_local; surface=hint_surface)))
+        throw(ArgumentError(explain_size_probe_not_found(probe_local; surface = hint_surface)))
     end
 
     return _with_kit_inproc_run!(:size) do
-        worker_to_host = Dict{Int,String}()
-        worker_project = Dict{Int,String}()
-        worker_probe = Dict{Int,Union{Nothing,String}}()
+        worker_to_host = Dict{Int, String}()
+        worker_project = Dict{Int, String}()
+        worker_probe = Dict{Int, Union{Nothing, String}}()
 
         try
             return _measure_rss!(
@@ -90,30 +90,30 @@ function measure_rss(
 end
 
 """Remove only probe pids this `measure_rss` added. Never `rmprocs(workers())`."""
-function _rmprocs_measure_probes!(worker_to_host::Dict{Int,String})
+function _rmprocs_measure_probes!(worker_to_host::Dict{Int, String})
     ids = Int[w for w in keys(worker_to_host) if w != 1 && w in workers()]
     isempty(ids) && return
     try
-        rmprocs(ids; waitfor=2.0)
+        rmprocs(ids; waitfor = 2.0)
     catch
     end
     return nothing
 end
 
 function _measure_rss!(
-    proj::String,
-    hosts::Vector{String},
-    include_parent::Bool,
-    probe_local::Union{Nothing,String},
-    worker_to_host::Dict{Int,String},
-    worker_project::Dict{Int,String},
-    worker_probe::Dict{Int,Union{Nothing,String}},
-)::Dict{String,WorkerMemorySample}
+        proj::String,
+        hosts::Vector{String},
+        include_parent::Bool,
+        probe_local::Union{Nothing, String},
+        worker_to_host::Dict{Int, String},
+        worker_project::Dict{Int, String},
+        worker_probe::Dict{Int, Union{Nothing, String}},
+    )::Dict{String, WorkerMemorySample}
     if include_parent
         try
             local_proj = something(resolve_host_project_abs(PARENT_HOST_NAME, proj), proj)
             before = Set(workers())
-            addprocs(1; exeflags=`--project=$local_proj`, topology=:master_worker)
+            addprocs(1; exeflags = `--project=$local_proj`, topology = :master_worker)
             added = setdiff(Set(workers()), before)
             if !isempty(added)
                 wid = first(added)
@@ -129,7 +129,7 @@ function _measure_rss!(
     if !isempty(hosts)
         sshflags_cmd = Cmd(ssh_opts())
         n_hosts = length(hosts)
-        detected = Vector{Union{Nothing,String}}(undef, n_hosts)
+        detected = Vector{Union{Nothing, String}}(undef, n_hosts)
         map_host_jobs(hosts) do i, host
             detected[i] = detect_julia_path(host)
         end
@@ -142,14 +142,14 @@ function _measure_rss!(
             end
             remote_proj = resolve_host_project_abs(host, proj)
             if remote_proj === nothing
-                @warn "Worker on $host failed: remote project path not found" proj=proj
+                @warn "Worker on $host failed: remote project path not found" proj = proj
                 continue
             end
             remote_probe = nothing
             if probe_local !== nothing
                 remote_probe = resolve_host_path_abs(host, probe_local, proj)
                 if remote_probe === nothing
-                    @warn "Worker on $host failed: size probe path not found on host" probe=probe_local
+                    @warn "Worker on $host failed: size probe path not found on host" probe = probe_local
                     continue
                 end
             end
@@ -157,13 +157,15 @@ function _measure_rss!(
                 use_tunnel = get(ENV, "DISTSSHKIT_SSH_TUNNEL", "1") != "0"
                 machine = ssh_addprocs_machine(host)
                 before = Set(workers())
-                addprocs([(machine, 1)];
-                         exename=`$julia_exe`,
-                         sshflags=sshflags_cmd,
-                         dir=remote_proj,
-                         tunnel=use_tunnel,
-                         topology=:master_worker,
-                         exeflags=`--project=$remote_proj`)
+                addprocs(
+                    [(machine, 1)];
+                    exename = `$julia_exe`,
+                    sshflags = sshflags_cmd,
+                    dir = remote_proj,
+                    tunnel = use_tunnel,
+                    topology = :master_worker,
+                    exeflags = `--project=$remote_proj`
+                )
                 added = setdiff(Set(workers()), before)
                 isempty(added) && continue
                 wid = first(added)
@@ -176,13 +178,13 @@ function _measure_rss!(
         end
     end
 
-    isempty(worker_to_host) && return Dict{String,WorkerMemorySample}()
+    isempty(worker_to_host) && return Dict{String, WorkerMemorySample}()
 
     pkg_name = project_package_name(proj)
-    samples = Dict{String,WorkerMemorySample}()
+    samples = Dict{String, WorkerMemorySample}()
 
     # One precompile per host (first worker) to avoid races.
-    host_first = Dict{String,Int}()
+    host_first = Dict{String, Int}()
     for (w, h) in worker_to_host
         haskey(host_first, h) || (host_first[h] = w)
     end
@@ -190,13 +192,15 @@ function _measure_rss!(
     for (_, wid) in host_first
         path = worker_project[wid]
         try
-            remotecall_fetch(Core.eval, wid, Main, quote
-                ENV["JULIA_PKG_PRECOMPILE_AUTO"] = "0"
-                using Pkg
-                Pkg.activate($path; io=devnull)
-                Pkg.precompile(; io=devnull)
-                nothing
-            end)
+            remotecall_fetch(
+                Core.eval, wid, Main, quote
+                    ENV["JULIA_PKG_PRECOMPILE_AUTO"] = "0"
+                    using Pkg
+                    Pkg.activate($path; io = devnull)
+                    Pkg.precompile(; io = devnull)
+                    nothing
+                end
+            )
         catch
         end
     end

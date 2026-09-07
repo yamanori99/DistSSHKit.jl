@@ -1,20 +1,22 @@
 # SSH configuration
 
 """Build SSH options. `request_tty=false` (default) adds `RequestTTY=no`."""
-function build_ssh_opts(; request_tty::Bool=false)
+function build_ssh_opts(; request_tty::Bool = false)
     custom = strip(get(ENV, "DISTRIBUTED_SSH_OPTS", ""))
     if isempty(custom)
         opts = String["-o", "BatchMode=yes"]
         if !request_tty
             push!(opts, "-o", "RequestTTY=no")
         end
-        append!(opts, (
-            "-o", "ConnectTimeout=10",
-            "-o", "StrictHostKeyChecking=accept-new",
-            "-o", "ServerAliveInterval=60",
-            "-o", "ServerAliveCountMax=10",
-            "-o", "TCPKeepAlive=yes",
-        ))
+        append!(
+            opts, (
+                "-o", "ConnectTimeout=10",
+                "-o", "StrictHostKeyChecking=accept-new",
+                "-o", "ServerAliveInterval=60",
+                "-o", "ServerAliveCountMax=10",
+                "-o", "TCPKeepAlive=yes",
+            )
+        )
         return opts
     end
     return split(custom)
@@ -36,8 +38,8 @@ after these flags. The ENV replacement is unchanged (if it contains
 not `ssh -T`: these flags are also passed to `scp` (`scp -T` is unrelated).
 Does not insert `-t` (that flag is `ssh`-only).
 """
-function ssh_opts(; request_tty::Bool=false)::Vector{String}
-    return String[String(x) for x in build_ssh_opts(; request_tty=request_tty)]
+function ssh_opts(; request_tty::Bool = false)::Vector{String}
+    return String[String(x) for x in build_ssh_opts(; request_tty = request_tty)]
 end
 
 """`ssh` / `rsync` / `git` on `PATH`, or throw `ArgumentError`."""
@@ -70,13 +72,13 @@ Returns `nothing` when the query fails. Used so [`ssh_addprocs_machine`](@ref)
 can pass `user@host` into `Distributed.addprocs` (which otherwise prefixes the
 local `\$USER` and overrides SSH config `User`).
 """
-function ssh_config_user(host::AbstractString)::Union{Nothing,String}
+function ssh_config_user(host::AbstractString)::Union{Nothing, String}
     h = String(strip(host))
     isempty(h) && return nothing
     try
         # -n: no stdin; -G dumps effective config (User, HostName, …).
         out = read(_ssh_cmd(["-n", ssh_opts()..., "-G", h]), String)
-        for line in eachsplit(out, '\n'; keepempty=false)
+        for line in eachsplit(out, '\n'; keepempty = false)
             if startswith(line, "user ")
                 u = strip(SubString(line, 6))
                 return isempty(u) ? nothing : String(u)
@@ -125,7 +127,7 @@ argv (patterns contain `--worker` / `--bind-to`); exit status is ignored.
 function _pkill_local_julia_workers!()
     for pattern in JULIA_WORKER_PKILL_PATTERNS
         try
-            run(pipeline(Cmd(["pkill", "-9", "-f", pattern]); stdout=devnull, stderr=devnull))
+            run(pipeline(Cmd(["pkill", "-9", "-f", pattern]); stdout = devnull, stderr = devnull))
         catch
         end
     end
@@ -135,7 +137,7 @@ end
 """Return whether a trivial `ssh YourHost true` succeeds."""
 function _remote_ssh_ok(host::String)::Bool
     try
-        run(pipeline(_host_sync_remote_shell_cmd(host, "true"); stdout=devnull, stderr=devnull))
+        run(pipeline(_host_sync_remote_shell_cmd(host, "true"); stdout = devnull, stderr = devnull))
         return true
     catch e
         _rethrow_missing_host_tool(e)
@@ -161,7 +163,7 @@ function _pkill_remote_julia_workers!(host::String)::Bool
     for pattern in JULIA_WORKER_PKILL_PATTERNS
         inner = "pkill -9 -f $(Base.shell_escape(pattern))"
         try
-            run(pipeline(_host_sync_remote_shell_cmd(host, inner); stdout=devnull, stderr=devnull))
+            run(pipeline(_host_sync_remote_shell_cmd(host, inner); stdout = devnull, stderr = devnull))
         catch e
             _rethrow_missing_host_tool(e)
         end
@@ -176,13 +178,15 @@ const KIT_JOB_CMDLINE_MARK::String = "distsshkit-job:"
 function _parse_kit_job_id(raw::AbstractString)::String
     s = strip(String(raw))
     isempty(s) && throw(ArgumentError("job_id must be non-empty"))
-    occursin(r"^[A-Za-z0-9._:@+-]+$", s) || throw(ArgumentError(
-        "job_id / DISTSSHKIT_JOB_ID must match [A-Za-z0-9._:@+-]+, got $(repr(raw))",
-    ))
+    occursin(r"^[A-Za-z0-9._:@+-]+$", s) || throw(
+        ArgumentError(
+            "job_id / DISTSSHKIT_JOB_ID must match [A-Za-z0-9._:@+-]+, got $(repr(raw))",
+        )
+    )
     return s
 end
 
-function resolved_kit_job_id()::Union{Nothing,String}
+function resolved_kit_job_id()::Union{Nothing, String}
     raw = strip(get(ENV, "DISTSSHKIT_JOB_ID", ""))
     isempty(raw) && return nothing
     return _parse_kit_job_id(raw)
@@ -222,7 +226,7 @@ end
 
 function _drive_worker_env()
     id = resolved_kit_job_id()
-    id === nothing && return Pair{String,String}[]
+    id === nothing && return Pair{String, String}[]
     return ["DISTSSHKIT_JOB_ID" => id]
 end
 
@@ -235,7 +239,7 @@ end
 function _pkill_pattern!(pattern::AbstractString)
     Sys.isunix() || return nothing
     try
-        run(pipeline(Cmd(["pkill", "-9", "-f", String(pattern)]); stdout=devnull, stderr=devnull))
+        run(pipeline(Cmd(["pkill", "-9", "-f", String(pattern)]); stdout = devnull, stderr = devnull))
     catch
     end
     return nothing
@@ -254,7 +258,7 @@ function _pkill_remote_tagged_workers!(host::String, job_id::AbstractString)::Bo
     end
     inner = "pkill -9 -f $(Base.shell_escape(kit_job_pkill_pattern(job_id)))"
     try
-        run(pipeline(_host_sync_remote_shell_cmd(host, inner); stdout=devnull, stderr=devnull))
+        run(pipeline(_host_sync_remote_shell_cmd(host, inner); stdout = devnull, stderr = devnull))
     catch e
         _rethrow_missing_host_tool(e)
     end
@@ -275,7 +279,7 @@ julia> DistSSHKit.parse_julia_version("not julia") === nothing
 true
 ```
 """
-function parse_julia_version(version_output::AbstractString)::Union{Nothing,VersionNumber}
+function parse_julia_version(version_output::AbstractString)::Union{Nothing, VersionNumber}
     m = match(r"julia version (\d+\.\d+\.\d+)", String(version_output))
     m === nothing && return nothing
     cap = m.captures[1]
@@ -289,9 +293,9 @@ end
 
 """Get the Julia version on a remote host by running `julia_path --version` over SSH.
 Returns `nothing` on any failure (SSH, missing binary, unparseable output)."""
-function get_remote_julia_version(host::String, julia_path::AbstractString)::Union{Nothing,VersionNumber}
+function get_remote_julia_version(host::String, julia_path::AbstractString)::Union{Nothing, VersionNumber}
     try
-        result = read(pipeline(_ssh_cmd([ssh_opts()..., host, String(julia_path), "--version"]); stderr=devnull), String)
+        result = read(pipeline(_ssh_cmd([ssh_opts()..., host, String(julia_path), "--version"]); stderr = devnull), String)
         return parse_julia_version(result)
     catch
         return nothing
@@ -327,7 +331,7 @@ the running process). Explicit paths are kept as given after usability check.
 
 Throws `ArgumentError` when the binary is missing or `--version` does not parse.
 """
-function resolve_controller_julia(spec::Union{Nothing,AbstractString}=nothing)::String
+function resolve_controller_julia(spec::Union{Nothing, AbstractString} = nothing)::String
     path = if _julia_spec_is_auto(spec)
         String(something(Base.julia_cmd().exec[1], ""))
     else
@@ -336,10 +340,12 @@ function resolve_controller_julia(spec::Union{Nothing,AbstractString}=nothing)::
     isempty(path) && throw(ArgumentError("Julia binary not resolved on the kit parent"))
     abs = isabspath(path) ? path : abspath(path)
     try
-        out = read(pipeline(Cmd([abs, "--version"]); stderr=devnull), String)
-        parse_julia_version(out) === nothing && throw(ArgumentError(
-            "kit parent Julia at $(abs) did not report a parseable --version",
-        ))
+        out = read(pipeline(Cmd([abs, "--version"]); stderr = devnull), String)
+        parse_julia_version(out) === nothing && throw(
+            ArgumentError(
+                "kit parent Julia at $(abs) did not report a parseable --version",
+            )
+        )
     catch e
         e isa ArgumentError && rethrow()
         throw(ArgumentError("kit parent Julia not usable at $(abs): $(sprint(showerror, e))"))
@@ -355,9 +361,9 @@ pass remote `--version`. Returns `nothing` when auto-detect fails (no bare
 `"julia"` fallback).
 """
 function resolve_remote_julia(
-    host::AbstractString,
-    spec::Union{Nothing,AbstractString}=nothing,
-)::Union{Nothing,String}
+        host::AbstractString,
+        spec::Union{Nothing, AbstractString} = nothing,
+    )::Union{Nothing, String}
     h = String(host)
     if _julia_spec_is_auto(spec)
         return detect_julia_path(h)
@@ -415,10 +421,10 @@ end
 
 """Remote `sh -c` body: find Julia (same candidates as detect) then `exec` it with `argv`."""
 function _run_on_host_remote_sh(
-    argv::AbstractVector{<:AbstractString};
-    julia::Union{Nothing,AbstractString}=nothing,
-    detect::Bool=true,
-)::String
+        argv::AbstractVector{<:AbstractString};
+        julia::Union{Nothing, AbstractString} = nothing,
+        detect::Bool = true,
+    )::String
     extra = _remote_argv_sh(argv)
     spec = julia
     use_detect = detect && _julia_spec_is_auto(spec)
@@ -443,9 +449,11 @@ function _run_on_host_remote_sh(
         end
     end
     path = spec === nothing ? "" : String(strip(String(spec)))
-    isempty(path) && throw(ArgumentError(
-        "run_on_host: detect=false requires julia= to a remote path (not auto)",
-    ))
+    isempty(path) && throw(
+        ArgumentError(
+            "run_on_host: detect=false requires julia= to a remote path (not auto)",
+        )
+    )
     q = Base.shell_escape(path)
     return sprint() do io
         print(io, "JULIA="); print(io, q)
@@ -471,28 +479,28 @@ SSH is `ignorestatus`: a non-zero remote or ssh exit returns the `Process`
 `PATH` throws `ArgumentError`.
 """
 function run_on_host(
-    host::AbstractString,
-    argv::AbstractVector{<:AbstractString}=String[];
-    julia::Union{Nothing,AbstractString}=nothing,
-    detect::Bool=true,
-    tty::Bool=false,
-    wait::Bool=true,
-)::Base.Process
+        host::AbstractString,
+        argv::AbstractVector{<:AbstractString} = String[];
+        julia::Union{Nothing, AbstractString} = nothing,
+        detect::Bool = true,
+        tty::Bool = false,
+        wait::Bool = true,
+    )::Base.Process
     h = String(strip(host))
     isempty(h) && throw(ArgumentError("run_on_host: host must be non-empty"))
-    inner = _run_on_host_remote_sh(argv; julia=julia, detect=detect)
-    args = String[ssh_opts(; request_tty=tty)...]
+    inner = _run_on_host_remote_sh(argv; julia = julia, detect = detect)
+    args = String[ssh_opts(; request_tty = tty)...]
     tty && push!(args, "-t")
     push!(args, h, inner)
-    return run(ignorestatus(_ssh_cmd(args)); wait=wait)
+    return run(ignorestatus(_ssh_cmd(args)); wait = wait)
 end
 
 # Process-local auto-detect results (`nothing` included). Same host in
 # `size!` then `drive!` / `--check` then `--instantiate` skips repeat SSH.
-const _DETECT_JULIA_PATH_CACHE = Dict{String,Union{Nothing,String}}()
+const _DETECT_JULIA_PATH_CACHE = Dict{String, Union{Nothing, String}}()
 
 """Drop cached `detect_julia_path` results (`host=nothing` → all hosts)."""
-function clear_detect_julia_path_cache!(host::Union{Nothing,AbstractString}=nothing)
+function clear_detect_julia_path_cache!(host::Union{Nothing, AbstractString} = nothing)
     if host === nothing
         empty!(_DETECT_JULIA_PATH_CACHE)
     else
@@ -502,7 +510,7 @@ function clear_detect_julia_path_cache!(host::Union{Nothing,AbstractString}=noth
 end
 
 """Detect Julia path on remote host via SSH (executable + parseable `--version`)."""
-function detect_julia_path(host::String)::Union{Nothing,String}
+function detect_julia_path(host::String)::Union{Nothing, String}
     h = String(strip(host))
     isempty(h) && return nothing
     if haskey(_DETECT_JULIA_PATH_CACHE, h)
@@ -518,7 +526,7 @@ function _remote_julia_reports_version(host::String, path::AbstractString)::Bool
     pq = _remote_shell_path_word(String(path))
     try
         out = read(
-            pipeline(_host_sync_remote_shell_cmd(host, "$pq --version"); stderr=devnull),
+            pipeline(_host_sync_remote_shell_cmd(host, "$pq --version"); stderr = devnull),
             String,
         )
         return parse_julia_version(out) !== nothing
@@ -527,12 +535,14 @@ function _remote_julia_reports_version(host::String, path::AbstractString)::Bool
     end
 end
 
-function _detect_julia_path_uncached(host::String)::Union{Nothing,String}
+function _detect_julia_path_uncached(host::String)::Union{Nothing, String}
     uname_s = try
-        strip(read(
-            pipeline(_host_sync_remote_shell_cmd(host, "uname -s"); stderr=devnull),
-            String,
-        ))
+        strip(
+            read(
+                pipeline(_host_sync_remote_shell_cmd(host, "uname -s"); stderr = devnull),
+                String,
+            )
+        )
     catch
         ""
     end
@@ -540,10 +550,12 @@ function _detect_julia_path_uncached(host::String)::Union{Nothing,String}
     if !isempty(uname_s)
         for path in remote_julia_candidates(uname_s)
             try
-                result = read(pipeline(
-                    _host_sync_remote_shell_cmd(host, "test -x $path && echo $path");
-                    stderr=devnull,
-                ), String)
+                result = read(
+                    pipeline(
+                        _host_sync_remote_shell_cmd(host, "test -x $path && echo $path");
+                        stderr = devnull,
+                    ), String
+                )
                 found = strip(result)
                 isempty(found) && continue
                 _remote_julia_reports_version(host, found) || continue
@@ -554,10 +566,12 @@ function _detect_julia_path_uncached(host::String)::Union{Nothing,String}
         end
     end
     try
-        result = read(pipeline(
-            _host_sync_remote_shell_cmd(host, "command -v julia || which julia");
-            stderr=devnull,
-        ), String)
+        result = read(
+            pipeline(
+                _host_sync_remote_shell_cmd(host, "command -v julia || which julia");
+                stderr = devnull,
+            ), String
+        )
         p = strip(result)
         isempty(p) && return nothing
         _remote_julia_reports_version(host, p) || return nothing
@@ -570,7 +584,7 @@ end
 # Git utilities
 
 """Get local git commit hash (`short=nothing` → full hash, else `git rev-parse --short`)."""
-function get_local_git_hash(proj_dir::AbstractString; short::Union{Nothing,Int}=nothing)::Union{Nothing,String}
+function get_local_git_hash(proj_dir::AbstractString; short::Union{Nothing, Int} = nothing)::Union{Nothing, String}
     _host_tool_present("git") || return nothing
     resolved = canonical_local_path(proj_dir)
     try
@@ -579,7 +593,7 @@ function get_local_git_hash(proj_dir::AbstractString; short::Union{Nothing,Int}=
         else
             _git_cmd(["-C", resolved, "rev-parse", "--short=$(short)", "HEAD"])
         end
-        s = strip(read(pipeline(cmd; stderr=devnull), String))
+        s = strip(read(pipeline(cmd; stderr = devnull), String))
         return isempty(s) ? nothing : s
     catch
         return nothing
@@ -595,16 +609,20 @@ function local_git_clean(proj_dir::AbstractString)::Bool
     _host_tool_present("git") || return true
     resolved = canonical_local_path(proj_dir)
     inside = try
-        strip(read(pipeline(
-            _git_cmd(["-C", resolved, "rev-parse", "--is-inside-work-tree"]);
-            stderr=devnull,
-        ), String))
+        strip(
+            read(
+                pipeline(
+                    _git_cmd(["-C", resolved, "rev-parse", "--is-inside-work-tree"]);
+                    stderr = devnull,
+                ), String
+            )
+        )
     catch
         return true
     end
     inside == "true" || return true
     try
-        result = read(pipeline(_git_cmd(["-C", resolved, "status", "--porcelain"]); stderr=devnull), String)
+        result = read(pipeline(_git_cmd(["-C", resolved, "status", "--porcelain"]); stderr = devnull), String)
         return isempty(strip(result))
     catch
         return false
@@ -626,8 +644,8 @@ function _remote_shell_path_word(path::AbstractString)::String
         occursin(r"[\s'\"\\]", p) && return Base.shell_escape(p)
         return p
     end
-    prefix = p[1:slash-1]
-    rest = p[slash+1:end]
+    prefix = p[1:(slash - 1)]
+    rest = p[(slash + 1):end]
     occursin(r"[\s'\"\\]", prefix) && return Base.shell_escape(p)
     isempty(rest) && return prefix * "/"
     return prefix * "/" * Base.shell_escape(rest)
@@ -656,10 +674,10 @@ For `parent`, returns the canonical local path. For SSH hosts, uses
 Returns `nothing` when the remote path cannot be resolved.
 """
 function resolve_host_path_abs(
-    host::AbstractString,
-    local_abs::AbstractString,
-    local_repo_root::AbstractString,
-)::Union{Nothing,String}
+        host::AbstractString,
+        local_abs::AbstractString,
+        local_repo_root::AbstractString,
+    )::Union{Nothing, String}
     path_local = canonical_local_path(local_abs)
     h = String(strip(host))
     is_parent_host_name(h) && return path_local
@@ -673,9 +691,9 @@ Absolute project root for `addprocs` / size probe on `host`.
 Equivalent to [`resolve_host_path_abs`](@ref)`(host, local_project, local_project)`.
 """
 function resolve_host_project_abs(
-    host::AbstractString,
-    local_project::AbstractString,
-)::Union{Nothing,String}
+        host::AbstractString,
+        local_project::AbstractString,
+    )::Union{Nothing, String}
     return resolve_host_path_abs(host, local_project, local_project)
 end
 
@@ -686,13 +704,13 @@ Returns `remote_path` unchanged when it is already absolute (`/` prefix).
 A `~/…` layout is expanded on the host even if the tree is not created yet.
 Returns `nothing` when SSH fails, or when a non-tilde path does not exist.
 """
-function resolve_remote_abs_path_on_host(host::String, remote_path::AbstractString)::Union{Nothing,String}
+function resolve_remote_abs_path_on_host(host::String, remote_path::AbstractString)::Union{Nothing, String}
     path = strip(String(remote_path))
     isempty(path) && return nothing
     startswith(path, "/") && return path
     try
         inner = _remote_abs_path_resolve_shell(path)
-        s = strip(read(pipeline(_ssh_cmd([ssh_opts()..., host, inner]); stderr=devnull), String))
+        s = strip(read(pipeline(_ssh_cmd([ssh_opts()..., host, inner]); stderr = devnull), String))
         isempty(s) && return nothing
         return String(s)
     catch
@@ -702,9 +720,9 @@ end
 
 """Remote login-shell snippet for [`get_remote_git_hash`](@ref)."""
 function _remote_git_hash_inner(
-    remote_repo_dir::AbstractString;
-    short::Union{Nothing,Int}=nothing,
-)::String
+        remote_repo_dir::AbstractString;
+        short::Union{Nothing, Int} = nothing,
+    )::String
     dir = strip(String(remote_repo_dir))
     pq = _remote_shell_path_word(dir)
     rev = short === nothing ? "HEAD" : "--short=$(short) HEAD"
@@ -721,10 +739,10 @@ Get remote git commit hash via SSH.
 `remote_repo_dir` starting with `~` uses `cd DIR && git rev-parse …` (shell expands `~`);
 otherwise uses `git -C DIR rev-parse …` (absolute path on the remote, same layout as local).
 """
-function get_remote_git_hash(host::String, remote_repo_dir::AbstractString; short::Union{Nothing,Int}=nothing)::Union{Nothing,String}
+function get_remote_git_hash(host::String, remote_repo_dir::AbstractString; short::Union{Nothing, Int} = nothing)::Union{Nothing, String}
     try
-        inner = _remote_git_hash_inner(remote_repo_dir; short=short)
-        s = strip(read(pipeline(_ssh_cmd([ssh_opts()..., host, inner]); stderr=devnull), String))
+        inner = _remote_git_hash_inner(remote_repo_dir; short = short)
+        s = strip(read(pipeline(_ssh_cmd([ssh_opts()..., host, inner]); stderr = devnull), String))
         return isempty(s) ? nothing : s
     catch
         return nothing
@@ -736,9 +754,19 @@ end
 """Get total memory (GB) for a remote host via SSH."""
 function get_remote_total_gb(host::String)
     try
-        s = strip(read(pipeline(_ssh_cmd([ssh_opts()..., host,
-            "sysctl -n hw.memsize 2>/dev/null || awk '/MemTotal/{print \$2*1024}' /proc/meminfo 2>/dev/null"]);
-            stderr=devnull), String))
+        s = strip(
+            read(
+                pipeline(
+                    _ssh_cmd(
+                        [
+                            ssh_opts()..., host,
+                            "sysctl -n hw.memsize 2>/dev/null || awk '/MemTotal/{print \$2*1024}' /proc/meminfo 2>/dev/null",
+                        ]
+                    );
+                    stderr = devnull
+                ), String
+            )
+        )
         isempty(s) && return nothing
         return parse(Float64, s) / 1024^3
     catch end
@@ -748,8 +776,18 @@ end
 """Get CPU core count for a remote host via SSH."""
 function get_remote_nproc(host::String)
     try
-        s = strip(read(pipeline(_ssh_cmd([ssh_opts()..., host,
-            "sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null"]); stderr=devnull), String))
+        s = strip(
+            read(
+                pipeline(
+                    _ssh_cmd(
+                        [
+                            ssh_opts()..., host,
+                            "sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null",
+                        ]
+                    ); stderr = devnull
+                ), String
+            )
+        )
         isempty(s) && return nothing
         return parse(Int, s)
     catch end
@@ -760,12 +798,12 @@ end
 function get_local_resources()
     total_gb = Sys.total_memory() / 1024^3
     nproc = try
-        s = strip(read(pipeline(`sysctl -n hw.ncpu`, stderr=devnull), String))
+        s = strip(read(pipeline(`sysctl -n hw.ncpu`, stderr = devnull), String))
         isempty(s) ? Sys.CPU_THREADS : parse(Int, s)
     catch
         Sys.CPU_THREADS
     end
-    return (total_gb=total_gb, nproc=nproc)
+    return (total_gb = total_gb, nproc = nproc)
 end
 
 # Remote path resolution & result collection
@@ -778,25 +816,25 @@ Tilde roots (`~/…`) are expanded **on the remote** before `find`. Matching mus
 not use local `relpath`/`abspath` against a tilde base (that expands `~` to the
 kit parent home and yields bogus `../…` relatives).
 """
-function collect_tree_remote_files_ssh(host::AbstractString, remote_root::AbstractString)::Vector{Tuple{String,String}}
+function collect_tree_remote_files_ssh(host::AbstractString, remote_root::AbstractString)::Vector{Tuple{String, String}}
     hp = String(host)
     rr = ensure_remote_abs_path(hp, remote_root)
-    rr === nothing && return Tuple{String,String}[]
+    rr === nothing && return Tuple{String, String}[]
     rr = rr::String
     pq = _remote_shell_path_word(rr)
     out = read(
         pipeline(
             _host_sync_remote_shell_cmd(hp, "find $pq -type f -print");
-            stderr=devnull,
+            stderr = devnull,
         ),
         String,
     )
     sep = endswith(rr, "/") ? rr : (rr * "/")
-    pairs = Tuple{String,String}[]
+    pairs = Tuple{String, String}[]
     for line in split(out, '\n')
         p = String(strip(line))
         isempty(p) && continue
-        rel = startswith(p, sep) ? p[length(sep)+1:end] : String(relpath(p, rr))
+        rel = startswith(p, sep) ? p[(length(sep) + 1):end] : String(relpath(p, rr))
         isempty(rel) && continue
         startswith(rel, "..") && continue
         push!(pairs, (p, rel))
@@ -816,9 +854,9 @@ unchanged. Paths starting with `~` are resolved **on the remote** via
 do not feed tilde strings into Julia's `expanduser` / `relpath` / `abspath`.
 """
 function ensure_remote_abs_path(
-    host::AbstractString,
-    remote_path::AbstractString,
-)::Union{Nothing,String}
+        host::AbstractString,
+        remote_path::AbstractString,
+    )::Union{Nothing, String}
     path = strip(String(remote_path))
     isempty(path) && return nothing
     startswith(path, "/") && return path
@@ -833,16 +871,18 @@ Map remote absolute path under `remote_repo` to the same repo-relative path unde
 expand tilde to the **local** home).
 """
 function local_dir_from_remote_mirror(
-    remote_abs::AbstractString,
-    remote_repo::AbstractString,
-    local_repo::AbstractString,
-)::String
+        remote_abs::AbstractString,
+        remote_repo::AbstractString,
+        local_repo::AbstractString,
+    )::String
     ra = String(strip(String(remote_abs)))
     rr = String(strip(String(remote_repo)))
     if !(startswith(ra, "/") && startswith(rr, "/"))
-        throw(ArgumentError(
-            "local_dir_from_remote_mirror requires absolute remote paths; got $(repr(ra)) under $(repr(rr)). Expand ~ via ensure_remote_abs_path first.",
-        ))
+        throw(
+            ArgumentError(
+                "local_dir_from_remote_mirror requires absolute remote paths; got $(repr(ra)) under $(repr(rr)). Expand ~ via ensure_remote_abs_path first.",
+            )
+        )
     end
     ra = String(abspath(ra))
     rr = String(abspath(rr))
@@ -875,9 +915,9 @@ Priority:
 Does not force `abspath` on tilde paths so remote shells can expand `~` per host.
 """
 function resolve_remote_project_root(
-    local_project_root::AbstractString;
-    cli_override::Union{Nothing,AbstractString}=nothing,
-)::String
+        local_project_root::AbstractString;
+        cli_override::Union{Nothing, AbstractString} = nothing,
+    )::String
     if cli_override !== nothing
         s = strip(String(cli_override))
         !isempty(s) && return s
@@ -920,12 +960,18 @@ function normalize_git_clone_url(url::AbstractString)::String
 end
 
 """Read `origin` from `proj_dir` and return a clone URL (HTTPS GitHub → SSH). `nothing` on failure."""
-function clone_url_from_local_origin(proj_dir::AbstractString)::Union{Nothing,String}
+function clone_url_from_local_origin(proj_dir::AbstractString)::Union{Nothing, String}
     _host_tool_present("git") || return nothing
     resolved = canonical_local_path(proj_dir)
     try
-        origin_url = strip(read(pipeline(_git_cmd(["-C", resolved, "remote", "get-url", "origin"]);
-                                          stderr=devnull), String))
+        origin_url = strip(
+            read(
+                pipeline(
+                    _git_cmd(["-C", resolved, "remote", "get-url", "origin"]);
+                    stderr = devnull
+                ), String
+            )
+        )
         isempty(origin_url) && return nothing
         return normalize_git_clone_url(origin_url)
     catch
@@ -958,9 +1004,9 @@ rsync URIs, or `relpath` on the kit parent must pass the result through
 `DISTRIBUTED_REMOTE_PROJECT_ROOT` when possible; `~` is sugar for remote shells.
 """
 function remote_path_for_ssh_collect(
-    local_abs_dir::AbstractString,
-    local_application_repo_root::AbstractString,
-)::String
+        local_abs_dir::AbstractString,
+        local_application_repo_root::AbstractString,
+    )::String
     ld = canonical_local_path(local_abs_dir)
     root = canonical_local_path(local_application_repo_root)
     rroot = resolve_remote_project_root(root)
@@ -990,9 +1036,9 @@ Scripts should set `DISTRIBUTED_COLLECT_DIRS` to every tree that may receive new
 should not be rsync'd.
 """
 function distributed_collect_root_dirs(
-    script_dir::AbstractString,
-    project_root::AbstractString,
-)::Vector{String}
+        script_dir::AbstractString,
+        project_root::AbstractString,
+    )::Vector{String}
     spec = String(strip(get(ENV, "DISTRIBUTED_COLLECT_DIRS", "")))
     repo = canonical_local_path(project_root)
     if !isempty(spec)

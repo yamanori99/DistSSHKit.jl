@@ -18,15 +18,17 @@ Distinct from drive's automatic **post-run-new** (sentinel / newer-than-run) and
 **slot-overwrite**. Returns [`CollectResult`](@ref).
 """
 function collect!(
-    session::KitSession,
-    local_root::AbstractString;
-    merge::Bool=false,
-    hosts::Union{Nothing,AbstractVector{<:AbstractString}}=nothing,
-)::CollectResult
+        session::KitSession,
+        local_root::AbstractString;
+        merge::Bool = false,
+        hosts::Union{Nothing, AbstractVector{<:AbstractString}} = nothing,
+    )::CollectResult
     host_list = hosts === nothing ? session.hosts : collect(String, hosts)
-    isempty(host_list) && throw(ArgumentError(
-        explain_no_hosts(; surface=hint_surface(session), kind=:collect),
-    ))
+    isempty(host_list) && throw(
+        ArgumentError(
+            explain_no_hosts(; surface = hint_surface(session), kind = :collect),
+        )
+    )
     return _with_kit_inproc_run!(:collect) do
         apply_session_env!(session)
         _ensure_drive_fragments!(session.project)
@@ -35,7 +37,7 @@ function collect!(
             collect_fn,
             String(local_root),
             host_list;
-            merge=merge,
+            merge = merge,
         )
         return CollectResult(ok, ok ? 0 : 1)
     end

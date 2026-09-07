@@ -52,13 +52,13 @@ function size_main()::Cint
 
     print_size_report(
         all_hosts, hosts, samples, opts;
-        show_peak=(opts.probe !== nothing && opts.gb_per_worker === nothing),
+        show_peak = (opts.probe !== nothing && opts.gb_per_worker === nothing),
     )
     return 0
 end
 
 if get(ENV, "DIST_SSH_KIT_CLI_INCLUDE", "") != "1" &&
-   !isempty(PROGRAM_FILE) &&
-   abspath(PROGRAM_FILE) == abspath(@__FILE__)
+        !isempty(PROGRAM_FILE) &&
+        abspath(PROGRAM_FILE) == abspath(@__FILE__)
     size_main()
 end

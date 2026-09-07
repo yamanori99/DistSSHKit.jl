@@ -47,16 +47,16 @@ setup!(session, :check; ignore_julia_version=true)
 deploy steps. Prefer `setup!` when you want the full CLI vocabulary in one place.
 """
 function setup!(
-    session::KitSession,
-    mode::Symbol;
-    repo::Union{Nothing,AbstractString}=nothing,
-    julia::AbstractString="auto",
-    ignore_julia_version::Bool=false,
-    check_code_sync::Bool=true,
-    older_days::Union{Nothing,Integer}=nothing,
-    id::Union{Nothing,AbstractString}=nothing,
-)::SyncResult
-    _setup_bang_preflight!(session, mode; repo=repo)
+        session::KitSession,
+        mode::Symbol;
+        repo::Union{Nothing, AbstractString} = nothing,
+        julia::AbstractString = "auto",
+        ignore_julia_version::Bool = false,
+        check_code_sync::Bool = true,
+        older_days::Union{Nothing, Integer} = nothing,
+        id::Union{Nothing, AbstractString} = nothing,
+    )::SyncResult
+    _setup_bang_preflight!(session, mode; repo = repo)
     log_dir = joinpath(session.project, ".distsshkit", "setup")
     step = setup_progress_step_name(mode)
     return _with_kit_inproc_run!(:setup) do
@@ -64,17 +64,17 @@ function setup!(
         with_kit_setup_progress(
             log_dir,
             step;
-            path_anchor=session.project,
+            path_anchor = session.project,
         ) do
             _setup_one!(
                 session,
                 mode;
-                repo=repo,
-                julia=julia,
-                ignore_julia_version=ignore_julia_version,
-                check_code_sync=check_code_sync,
-                older_days=older_days,
-                id=id,
+                repo = repo,
+                julia = julia,
+                ignore_julia_version = ignore_julia_version,
+                check_code_sync = check_code_sync,
+                older_days = older_days,
+                id = id,
             )
         end
     end
@@ -83,10 +83,12 @@ end
 function setup!(session::KitSession, mode::Symbol, more::Symbol...; kwargs...)
     modes = (mode, more...)
     if !isempty(kwargs) && length(modes) > 1
-        throw(ArgumentError(
-            "setup! with multiple modes does not take keyword arguments; " *
-            "call setup!(session, mode; …) per step, or pass modes that need no kwargs",
-        ))
+        throw(
+            ArgumentError(
+                "setup! with multiple modes does not take keyword arguments; " *
+                    "call setup!(session, mode; …) per step, or pass modes that need no kwargs",
+            )
+        )
     end
     return _with_kit_inproc_run!(:setup) do
         _setup_bang_run_modes!(session, modes; kwargs...)
@@ -94,7 +96,7 @@ function setup!(session::KitSession, mode::Symbol, more::Symbol...; kwargs...)
 end
 
 function _setup_bang_run_modes!(session::KitSession, modes; kwargs...)
-    result = SyncResult(false, HostResult[]; ok=true)
+    result = SyncResult(false, HostResult[]; ok = true)
     for m in modes
         result = setup!(session, m; kwargs...)
         result.ok || return result
@@ -104,88 +106,92 @@ end
 
 """Non-empty clone URL, or throw."""
 function _setup_clone_url(
-    repo::Union{Nothing,AbstractString};
-    surface::Symbol=:api,
-)::String
-    repo === nothing && throw(ArgumentError(
-        explain_clone_repo_required(; surface=surface),
-    ))
+        repo::Union{Nothing, AbstractString};
+        surface::Symbol = :api,
+    )::String
+    repo === nothing && throw(
+        ArgumentError(
+            explain_clone_repo_required(; surface = surface),
+        )
+    )
     url = strip(String(repo))
     isempty(url) && throw(ArgumentError("setup! :clone repo= must be a non-empty git URL"))
     return url
 end
 
 function _setup_bang_preflight!(
-    session::KitSession,
-    mode::Symbol;
-    repo::Union{Nothing,AbstractString}=nothing,
-)
-    mode in _SETUP_BANG_MODES || throw(ArgumentError(
-        "setup! mode must be one of $(_SETUP_BANG_MODES), got $(repr(mode))",
-    ))
+        session::KitSession,
+        mode::Symbol;
+        repo::Union{Nothing, AbstractString} = nothing,
+    )
+    mode in _SETUP_BANG_MODES || throw(
+        ArgumentError(
+            "setup! mode must be one of $(_SETUP_BANG_MODES), got $(repr(mode))",
+        )
+    )
     if mode === :clone
-        _setup_clone_url(repo; surface=hint_surface(session))
+        _setup_clone_url(repo; surface = hint_surface(session))
     end
     return nothing
 end
 
 function _setup_one!(
-    session::KitSession,
-    mode::Symbol;
-    repo::Union{Nothing,AbstractString}=nothing,
-    julia::AbstractString="auto",
-    ignore_julia_version::Bool=false,
-    check_code_sync::Bool=true,
-    older_days::Union{Nothing,Integer}=nothing,
-    id::Union{Nothing,AbstractString}=nothing,
-)::SyncResult
-    _setup_bang_preflight!(session, mode; repo=repo)
-    hosts = _setup_bang_hosts!(session; allow_parent=mode === :juliaup)
+        session::KitSession,
+        mode::Symbol;
+        repo::Union{Nothing, AbstractString} = nothing,
+        julia::AbstractString = "auto",
+        ignore_julia_version::Bool = false,
+        check_code_sync::Bool = true,
+        older_days::Union{Nothing, Integer} = nothing,
+        id::Union{Nothing, AbstractString} = nothing,
+    )::SyncResult
+    _setup_bang_preflight!(session, mode; repo = repo)
+    hosts = _setup_bang_hosts!(session; allow_parent = mode === :juliaup)
     remote_path = session_remote_root(session)
     julia_path = isempty(strip(String(julia))) ? "auto" : String(julia)
 
     if mode === :delete
-        preflight_setup_ssh(hosts) || return SyncResult(true, HostResult[]; ok=false)
-        raw = delete_remotes(hosts, remote_path; confirm=!session.yes)
+        preflight_setup_ssh(hosts) || return SyncResult(true, HostResult[]; ok = false)
+        raw = delete_remotes(hosts, remote_path; confirm = !session.yes)
         return _sync_result_from_host_op(raw)
     elseif mode === :rsync
-        return sync!(session; mode=:rsync)
+        return sync!(session; mode = :rsync)
     elseif mode === :clone
-        url = normalize_git_clone_url(_setup_clone_url(repo; surface=hint_surface(session)))
-        preflight_setup_ssh(hosts) || return SyncResult(true, HostResult[]; ok=false)
-        raw = clone_to_remotes(hosts, remote_path, url; confirm=!session.yes)
+        url = normalize_git_clone_url(_setup_clone_url(repo; surface = hint_surface(session)))
+        preflight_setup_ssh(hosts) || return SyncResult(true, HostResult[]; ok = false)
+        raw = clone_to_remotes(hosts, remote_path, url; confirm = !session.yes)
         return _sync_result_from_host_op(raw)
     elseif mode === :sync
-        return sync!(session; mode=:sync)
+        return sync!(session; mode = :sync)
     elseif mode === :pull
         apply_session_env!(session)
         raw = git_sync_project_to_hosts!(
             hosts,
             session.project,
             remote_path;
-            do_push=false,
-            do_pull=true,
-            do_local_pull=true,
-            confirm=!session.yes,
+            do_push = false,
+            do_pull = true,
+            do_local_pull = true,
+            confirm = !session.yes,
         )
         if raw.cancelled
-            return SyncResult(true, HostResult[]; ok=false)
+            return SyncResult(true, HostResult[]; ok = false)
         end
-        return SyncResult(false, raw.host_results; ok=raw.ok)
+        return SyncResult(false, raw.host_results; ok = raw.ok)
     elseif mode === :instantiate
-        return instantiate!(session; julia=julia_path)
+        return instantiate!(session; julia = julia_path)
     elseif mode === :juliaup
         ssh_hosts = setup_juliaup_ssh_hosts(hosts)
         if !isempty(ssh_hosts)
-            preflight_setup_ssh(ssh_hosts) || return SyncResult(true, HostResult[]; ok=false)
+            preflight_setup_ssh(ssh_hosts) || return SyncResult(true, HostResult[]; ok = false)
         end
-        raw = juliaup_align_remotes(hosts; confirm=!session.yes)
+        raw = juliaup_align_remotes(hosts; confirm = !session.yes)
         return _sync_result_from_host_op(raw)
     elseif mode === :runtest
-        preflight_setup_ssh(hosts) || return SyncResult(true, HostResult[]; ok=false)
+        preflight_setup_ssh(hosts) || return SyncResult(true, HostResult[]; ok = false)
         raw = runtest_remotes(
             hosts, julia_path, remote_path, session.project;
-            path_anchor=session.project,
+            path_anchor = session.project,
         )
         return _sync_result_from_host_op(raw)
     elseif mode === :check
@@ -194,10 +200,10 @@ function _setup_one!(
             julia_path,
             remote_path,
             session.project;
-            path_anchor=session.project,
-            require_clean_git=false,
-            check_code_sync=check_code_sync,
-            ignore_julia_version=ignore_julia_version,
+            path_anchor = session.project,
+            require_clean_git = false,
+            check_code_sync = check_code_sync,
+            ignore_julia_version = ignore_julia_version,
         )
         if result.ok
             print_ok("All prerequisites met.")
@@ -206,21 +212,21 @@ function _setup_one!(
             print_err("Prerequisites not met. Fix issues above and retry.")
             kit_println()
         end
-        return SyncResult(false, HostResult[]; ok=result.ok)
+        return SyncResult(false, HostResult[]; ok = result.ok)
     elseif mode === :cleanup
         raw = cleanup_remote_workers(hosts)
         return _sync_result_from_host_op(raw)
     elseif mode === :prune
-        preflight_setup_ssh(hosts) || return SyncResult(true, HostResult[]; ok=false)
+        preflight_setup_ssh(hosts) || return SyncResult(true, HostResult[]; ok = false)
         log_dir = joinpath(session.project, ".distsshkit", "setup")
         raw = prune_kit_leaves(
             hosts,
             remote_path,
             session.project;
-            confirm=!session.yes,
-            older_days=older_days,
-            id=id,
-            skip_setup=log_dir,
+            confirm = !session.yes,
+            older_days = older_days,
+            id = id,
+            skip_setup = log_dir,
         )
         return _sync_result_from_host_op(raw)
     end
@@ -228,7 +234,7 @@ function _setup_one!(
     throw(ArgumentError("setup! mode $(repr(mode)) is not implemented"))
 end
 
-function _setup_bang_hosts!(session::KitSession; allow_parent::Bool=false)
+function _setup_bang_hosts!(session::KitSession; allow_parent::Bool = false)
     apply_session_env!(session)
     hosts = copy(session.hosts)
     # `session.hosts` is SSH children only; parent lives on `tokens`.
@@ -246,10 +252,12 @@ function _setup_bang_hosts!(session::KitSession; allow_parent::Bool=false)
             break
         end
     end
-    isempty(hosts) && throw(ArgumentError(
-        explain_no_hosts(; surface=hint_surface(session), kind=:ssh),
-    ))
-    validate_setup_hosts(hosts; allow_parent=allow_parent)
+    isempty(hosts) && throw(
+        ArgumentError(
+            explain_no_hosts(; surface = hint_surface(session), kind = :ssh),
+        )
+    )
+    validate_setup_hosts(hosts; allow_parent = allow_parent)
     return hosts
 end
 
@@ -258,6 +266,6 @@ function _sync_result_from_host_op(raw)::SyncResult
     return SyncResult(
         raw.cancelled,
         hrs;
-        ok=!raw.cancelled && raw.failed == 0,
+        ok = !raw.cancelled && raw.failed == 0,
     )
 end

@@ -44,23 +44,23 @@ If `KIT_PROGRESS` is already set (nested `setup!`, or drive/go), just `f()`.
 Opens the kit log when none is open (API path); CLI already opened it.
 """
 function with_kit_setup_progress(
-    f,
-    log_dir::AbstractString,
-    step::AbstractString;
-    path_anchor::Union{Nothing,AbstractString}=nothing,
-)
+        f,
+        log_dir::AbstractString,
+        step::AbstractString;
+        path_anchor::Union{Nothing, AbstractString} = nothing,
+    )
     KIT_PROGRESS[] isa KitProgressState && return f()
     dir = String(log_dir)
     opened_log = LOG_FILE_HANDLE[] === nothing
     if opened_log
         init_log_file(
             dir;
-            prefix="setup",
-            path_anchor=path_anchor === nothing ? nothing : String(path_anchor),
+            prefix = "setup",
+            path_anchor = path_anchor === nothing ? nothing : String(path_anchor),
         )
     end
     _set_kit_progress_sidecar!(dir)
-    kit_progress_begin!("setup"; steps=1, kind=:setup)
+    kit_progress_begin!("setup"; steps = 1, kind = :setup)
     kit_progress_step!(String(step))
     ok_ref = Ref(true)
     threw = false
@@ -78,7 +78,7 @@ function with_kit_setup_progress(
         threw = true
         rethrow()
     finally
-        kit_progress_done!(; ok=ok_ref[])
+        kit_progress_done!(; ok = ok_ref[])
         threw || _maybe_print_kit_progress_phases(dir)
         _set_kit_progress_sidecar!(nothing)
         opened_log && close_log_file()

@@ -16,10 +16,18 @@ function place_drive_sentinels!(successful_hosts::Vector{String}, script_dir::St
                 remote_early_abs = remote_early_abs::String
                 pq = DistSSHKit._remote_shell_path_word(remote_early_abs)
                 sn = DistSSHKit._remote_shell_path_word(joinpath(remote_early_abs, sentinel_name))
-                run(pipeline(DistSSHKit._host_sync_remote_shell_cmd(host, "mkdir -p $pq"),
-                    stdout=devnull, stderr=devnull))
-                run(pipeline(DistSSHKit._host_sync_remote_shell_cmd(host, "touch $sn"),
-                    stdout=devnull, stderr=devnull))
+                run(
+                    pipeline(
+                        DistSSHKit._host_sync_remote_shell_cmd(host, "mkdir -p $pq"),
+                        stdout = devnull, stderr = devnull
+                    )
+                )
+                run(
+                    pipeline(
+                        DistSSHKit._host_sync_remote_shell_cmd(host, "touch $sn"),
+                        stdout = devnull, stderr = devnull
+                    )
+                )
             catch e
                 DistSSHKit._rethrow_missing_host_tool(e)
                 print_warn("sentinel on $host: $(sprint(showerror, e))")
@@ -30,7 +38,7 @@ function place_drive_sentinels!(successful_hosts::Vector{String}, script_dir::St
 end
 
 function run_driver_script!(enable_log::Bool, drive_atexit_cleanup)
-    writeln_both("Running script..."; color=:light_black)
+    writeln_both("Running script..."; color = :light_black)
     writeln_both("")
     call_main = () -> begin
         Base.invokelatest() do
@@ -42,7 +50,7 @@ function run_driver_script!(enable_log::Bool, drive_atexit_cleanup)
             end
         end
     end
-    try
+    return try
         if enable_log && LOG_FILE_HANDLE[] !== nothing
             orig_stdout = stdout
             log_io = LOG_FILE_HANDLE[]
@@ -122,12 +130,12 @@ function run_driver_script!(enable_log::Bool, drive_atexit_cleanup)
 end
 
 function collect_drive_results!(
-    successful_hosts::Vector{String},
-    script_dir::String,
-    sentinel_name::String,
-    skip_collect::Bool,
-    path_anchor::String,
-)
+        successful_hosts::Vector{String},
+        script_dir::String,
+        sentinel_name::String,
+        skip_collect::Bool,
+        path_anchor::String,
+    )
     results_dir = DistSSHKit.resolve_drive_output_dir(script_dir)
 
     if isempty(successful_hosts)
@@ -147,7 +155,7 @@ function collect_drive_results!(
     for local_rd in collect_roots
         mkpath(local_rd)
     end
-    writeln_both("Collecting results from remote hosts..."; color=:light_black)
+    writeln_both("Collecting results from remote hosts..."; color = :light_black)
     repo_ra = DistSSHKit.canonical_local_path(PROJECT_ROOT)
     hosts_u = unique(successful_hosts)
     n_hosts = length(hosts_u)
@@ -167,9 +175,11 @@ function collect_drive_results!(
                 remote_rd_collect = remote_path_for_ssh_collect(local_abs, repo_ra)
                 remote_rd_abs = ensure_remote_abs_path(host, remote_rd_collect)
                 if remote_rd_abs === nothing
-                    host_err === nothing && (host_err = ErrorException(
-                        "cannot resolve remote collect root on $host",
-                    ))
+                    host_err === nothing && (
+                        host_err = ErrorException(
+                            "cannot resolve remote collect root on $host",
+                        )
+                    )
                     continue
                 end
                 remote_rd_abs = remote_rd_abs::String
@@ -186,16 +196,18 @@ function collect_drive_results!(
                                         host,
                                         "find $pq -type f -newer $sq ! -name $nq -print",
                                     );
-                                    stderr=devnull,
+                                    stderr = devnull,
                                 ),
                                 String,
                             ),
                         )
                     catch e
                         DistSSHKit._rethrow_missing_host_tool(e)
-                        throw(ErrorException(
-                            "collect find -newer on $host: $(sprint(showerror, e))",
-                        ))
+                        throw(
+                            ErrorException(
+                                "collect find -newer on $host: $(sprint(showerror, e))",
+                            )
+                        )
                     end
                     rroot = String(rstrip(String(remote_rd_abs), '/'))
                     rel_lines = String[]
@@ -228,10 +240,12 @@ function collect_drive_results!(
                 finally
                     try
                         rq = DistSSHKit._remote_shell_path_word(remote_sentinel)
-                        run(pipeline(
-                            DistSSHKit._host_sync_remote_shell_cmd(host, "rm -f $rq"),
-                            stdout=devnull, stderr=devnull,
-                        ))
+                        run(
+                            pipeline(
+                                DistSSHKit._host_sync_remote_shell_cmd(host, "rm -f $rq"),
+                                stdout = devnull, stderr = devnull,
+                            )
+                        )
                     catch e
                         DistSSHKit._rethrow_missing_host_tool(e)
                     end

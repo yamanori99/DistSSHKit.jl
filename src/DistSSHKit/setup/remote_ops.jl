@@ -23,23 +23,23 @@ Returns `(cancelled, succeeded, failed)`:
 - otherwise per-host rsync outcomes (`succeeded` / `failed` counts)
 """
 function rsync_push_to_remotes(
-    hosts::Vector{String},
-    remote_path::String,
-    project::AbstractString;
-    path_anchor::AbstractString=project,
-)::NamedTuple
+        hosts::Vector{String},
+        remote_path::String,
+        project::AbstractString;
+        path_anchor::AbstractString = project,
+    )::NamedTuple
     raw = rsync_project_to_hosts!(
         hosts,
         project,
         remote_path;
-        confirm=true,
-        report=true,
-        path_anchor=path_anchor,
+        confirm = true,
+        report = true,
+        path_anchor = path_anchor,
     )
     return host_op_result(
-        cancelled=raw.cancelled,
-        succeeded=raw.succeeded,
-        failed=raw.failed,
+        cancelled = raw.cancelled,
+        succeeded = raw.succeeded,
+        failed = raw.failed,
     )
 end
 
@@ -51,19 +51,19 @@ Returns `(cancelled, succeeded, failed, hosts)`. Caller should use
 Pass `confirm=false` to skip the typed `delete` prompt (CLI `-y` / API `session.yes`).
 """
 function delete_remotes(
-    hosts::Vector{String},
-    remote_path::String;
-    confirm::Bool=true,
-)::NamedTuple
+        hosts::Vector{String},
+        remote_path::String;
+        confirm::Bool = true,
+    )::NamedTuple
     if confirm && !kit_noninteractive()
         print_err("  This will DELETE repositories on all hosts via SSH.\n")
         println_fatal("  Remote path: $remote_path")
         println_fatal("  Hosts: $(join(hosts, ", "))")
         println_fatal("  Note: pass `child:NAME` for SSH hosts; `parent` only with --juliaup.")
         println_fatal()
-        kit_confirm("Type 'delete' to confirm: "; keyword="delete") || begin
+        kit_confirm("Type 'delete' to confirm: "; keyword = "delete") || begin
             println_fatal("Cancelled.")
-            return (; cancelled=true, succeeded=0, failed=0, hosts=HostResult[])
+            return (; cancelled = true, succeeded = 0, failed = 0, hosts = HostResult[])
         end
         println_fatal()
     end
@@ -85,7 +85,7 @@ function delete_remotes(
                       rm -rf $pq
                     fi
                 """
-                read(pipeline(_host_sync_remote_shell_cmd(host, cmd); stderr=err_buf), String)
+                read(pipeline(_host_sync_remote_shell_cmd(host, cmd); stderr = err_buf), String)
                 return nothing
             end
             print_ok("✓")
@@ -95,14 +95,14 @@ function delete_remotes(
             _setup_host_span!(host, :ok)
         catch e
             detail = strip(String(take!(err_buf)))
-            report_remote_failure(e; stderr=detail)
+            report_remote_failure(e; stderr = detail)
             failed += 1
             msg = isempty(detail) ? sprint(showerror, e) : detail
             push!(host_results, HostResult(host, false, msg))
             _setup_host_span!(host, :fail)
         end
     end
-    return (; host_op_result(succeeded=succeeded, failed=failed)..., hosts=host_results)
+    return (; host_op_result(succeeded = succeeded, failed = failed)..., hosts = host_results)
 end
 
 """
@@ -115,11 +115,11 @@ Runs `git clone` **on each remote**. Private URLs need credentials **on that hos
 (deploy key, HTTPS token, or agent forward) — not the kit parent's agent alone.
 """
 function clone_to_remotes(
-    hosts::Vector{String},
-    remote_path::String,
-    clone_url::String;
-    confirm::Bool=true,
-)::NamedTuple
+        hosts::Vector{String},
+        remote_path::String,
+        clone_url::String;
+        confirm::Bool = true,
+    )::NamedTuple
     if confirm && !kit_noninteractive()
         println_fatal("  Repository: $clone_url")
         println_fatal("  Remote path: $remote_path")
@@ -130,7 +130,7 @@ function clone_to_remotes(
         println_fatal()
         kit_confirm("Proceed? [y/N]: ") || begin
             println_fatal("Cancelled.")
-            return (; cancelled=true, succeeded=0, failed=0, hosts=HostResult[])
+            return (; cancelled = true, succeeded = 0, failed = 0, hosts = HostResult[])
         end
         println_fatal()
     end
@@ -152,7 +152,7 @@ function clone_to_remotes(
                 read(
                     pipeline(
                         _host_sync_remote_shell_cmd(host, "git clone $uq $pq 2>&1");
-                        stderr=err_buf,
+                        stderr = err_buf,
                     ),
                     String,
                 )
@@ -173,14 +173,14 @@ function clone_to_remotes(
             _setup_host_span!(host, :ok)
         catch e
             detail = strip(String(take!(err_buf)))
-            report_remote_failure(e; stderr=detail)
+            report_remote_failure(e; stderr = detail)
             failed += 1
             msg = isempty(detail) ? sprint(showerror, e) : detail
             push!(host_results, HostResult(host, false, msg))
             _setup_host_span!(host, :fail)
         end
     end
-    return (; host_op_result(succeeded=succeeded, failed=failed)..., hosts=host_results)
+    return (; host_op_result(succeeded = succeeded, failed = failed)..., hosts = host_results)
 end
 
 """
@@ -197,7 +197,7 @@ function cleanup_remote_workers(hosts::Vector{String})::NamedTuple
     print_ok("✓")
     kit_println()
 
-    results = Dict{String,Bool}()
+    results = Dict{String, Bool}()
     kit_spin!("  Cleaning remotes ($(length(hosts))) ") do
         @sync for host in hosts
             @async begin
@@ -225,7 +225,7 @@ function cleanup_remote_workers(hosts::Vector{String})::NamedTuple
             push!(host_results, HostResult(host, false, "SSH unreachable"))
         end
     end
-    return (; host_op_result(succeeded=succeeded, failed=failed)..., hosts=host_results)
+    return (; host_op_result(succeeded = succeeded, failed = failed)..., hosts = host_results)
 end
 
 """
@@ -236,14 +236,14 @@ Private git deps need working SSH on the remote (or agent forwarding). Uses
 `JULIA_PKG_USE_CLI_GIT=true` so Pkg prefers the `git` CLI over LibGit2.
 """
 function _pkg_e_on_remotes(
-    hosts::Vector{String},
-    julia_path::String,
-    remote_path::String,
-    project::AbstractString;
-    path_anchor::AbstractString=project,
-    pkg_e::AbstractString,
-    spin_label::AbstractString,
-)::NamedTuple
+        hosts::Vector{String},
+        julia_path::String,
+        remote_path::String,
+        project::AbstractString;
+        path_anchor::AbstractString = project,
+        pkg_e::AbstractString,
+        spin_label::AbstractString,
+    )::NamedTuple
     kit_println("  Local project: $(cli_project_disp(project, path_anchor))")
     kit_println("  Remote --project: $remote_path")
     kit_println()
@@ -253,8 +253,8 @@ function _pkg_e_on_remotes(
     end
 
     pq = _remote_shell_path_word(remote_path)
-    results = Dict{String,Bool}()
-    fail_msgs = Dict{String,String}()
+    results = Dict{String, Bool}()
+    fail_msgs = Dict{String, String}()
     kit_spin!("  $spin_label ($(length(hosts)) hosts) ") do
         @sync for host in hosts
             @async begin
@@ -274,10 +274,10 @@ function _pkg_e_on_remotes(
                         proc = run(
                             pipeline(
                                 ignorestatus(_host_sync_remote_shell_cmd(host, cmd));
-                                stdout=out,
-                                stderr=err,
+                                stdout = out,
+                                stderr = err,
                             );
-                            wait=true,
+                            wait = true,
                         )
                         if proc.exitcode == 0
                             results[host] = true
@@ -312,7 +312,7 @@ function _pkg_e_on_remotes(
             msg = get(fail_msgs, host, "")
             !isempty(msg) && kit_println("    $msg")
             if occursin("credential", lowercase(msg)) || occursin("Permission denied", msg) ||
-               occursin("failed to clone", lowercase(msg))
+                    occursin("failed to clone", lowercase(msg))
                 kit_println("    Hint: remote needs git SSH access to private deps (deploy key),")
                 kit_println("          or agent forward: DISTRIBUTED_SSH_OPTS=\"-A \$(…)\"")
                 kit_println("          (JULIA_PKG_USE_CLI_GIT is already set for this step)")
@@ -321,46 +321,46 @@ function _pkg_e_on_remotes(
             push!(host_results, HostResult(host, false, isempty(msg) ? "failed" : msg))
         end
     end
-    return (; cancelled=false, succeeded, failed, hosts=host_results)
+    return (; cancelled = false, succeeded, failed, hosts = host_results)
 end
 
 function instantiate_remotes(
-    hosts::Vector{String},
-    julia_path::String,
-    remote_path::String,
-    project::AbstractString;
-    path_anchor::AbstractString=project,
-)::NamedTuple
+        hosts::Vector{String},
+        julia_path::String,
+        remote_path::String,
+        project::AbstractString;
+        path_anchor::AbstractString = project,
+    )::NamedTuple
     return _pkg_e_on_remotes(
         hosts, julia_path, remote_path, project;
-        path_anchor=path_anchor,
-        pkg_e="Pkg.instantiate()",
-        spin_label="Instantiating",
+        path_anchor = path_anchor,
+        pkg_e = "Pkg.instantiate()",
+        spin_label = "Instantiating",
     )
 end
 
 """Run `Pkg.test()` of the **job** project on remote hosts (not DistSSHKit's tests)."""
 function runtest_remotes(
-    hosts::Vector{String},
-    julia_path::String,
-    remote_path::String,
-    project::AbstractString;
-    path_anchor::AbstractString=project,
-)::NamedTuple
+        hosts::Vector{String},
+        julia_path::String,
+        remote_path::String,
+        project::AbstractString;
+        path_anchor::AbstractString = project,
+    )::NamedTuple
     return _pkg_e_on_remotes(
         hosts, julia_path, remote_path, project;
-        path_anchor=path_anchor,
-        pkg_e="Pkg.test()",
-        spin_label="Pkg.test",
+        path_anchor = path_anchor,
+        pkg_e = "Pkg.test()",
+        spin_label = "Pkg.test",
     )
 end
 
 """Resolve clone URL: `--repo` / `repo=` wins, else local `origin` (HTTPS GitHub → SSH)."""
 function resolve_clone_url(
-    repo_override::Union{Nothing,String},
-    project::AbstractString;
-    surface::Symbol=:cli,
-)
+        repo_override::Union{Nothing, String},
+        project::AbstractString;
+        surface::Symbol = :cli,
+    )
     if repo_override isa String
         repo = repo_override::String
         url = strip(repo)
@@ -369,6 +369,6 @@ function resolve_clone_url(
         end
     end
     url = clone_url_from_local_origin(project)
-    url === nothing && error(explain_clone_origin_missing(; surface=surface))
+    url === nothing && error(explain_clone_origin_missing(; surface = surface))
     return url
 end

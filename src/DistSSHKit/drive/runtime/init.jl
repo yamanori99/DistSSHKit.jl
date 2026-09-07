@@ -1,7 +1,7 @@
 using Pkg
 
 function _drive_worker_activate!(path::String)
-    Pkg.activate(path; io=devnull)
+    Pkg.activate(path; io = devnull)
     return nothing
 end
 
@@ -19,7 +19,7 @@ script is first `include`d. Workers are activated separately during init.
 function activate_drive_project!(proj_dir::String)
     isdir(proj_dir) || return
     isfile(joinpath(proj_dir, "Project.toml")) || return
-    Pkg.activate(proj_dir; io=devnull)
+    Pkg.activate(proj_dir; io = devnull)
     return
 end
 
@@ -34,11 +34,11 @@ world (Julia 1.12+ world age).
 
 `init_output_dir!` is invoked separately on the master before workers start.
 """
-function sync_driver_to_workers!(script_path::String; sync_script::Bool=false)
+function sync_driver_to_workers!(script_path::String; sync_script::Bool = false)
     sp = abspath(String(script_path))
     write_both("  Syncing driver to workers... ")
     flush(stdout)
-    try
+    return try
         DistSSHKit._with_progress_job_stdio_capture!() do
             if sync_script
                 for w in workers()
@@ -88,7 +88,7 @@ function run_prepare_workers!()
     isdefined(Main, :prepare_workers!) || return
     write_both("  Running prepare_workers!... ")
     flush(stdout)
-    try
+    return try
         @eval @everywhere Base.invokelatest(Main.prepare_workers!)
         print_ok("✓")
         writeln_both("")
@@ -126,7 +126,7 @@ function init_drive_workers!(proj_dir::String, explicit_package, path_anchor::St
                 push!(responses, r_ok)
             else
                 push!(failed_workers, w)
-                @warn "Worker $w not responding" exception=something(last_ex, ErrorException("unknown"))
+                @warn "Worker $w not responding" exception = something(last_ex, ErrorException("unknown"))
             end
         end
 
@@ -153,7 +153,7 @@ function init_drive_workers!(proj_dir::String, explicit_package, path_anchor::St
         # `workers()` would warn-overwrite pid 1 on every drive.
         @eval @everywhere workers() begin
             function _drive_worker_activate!(path::String)
-                Pkg.activate(path; io=devnull)
+                Pkg.activate(path; io = devnull)
                 return nothing
             end
             function _drive_worker_include!(path::String)
@@ -215,9 +215,11 @@ function init_drive_workers!(proj_dir::String, explicit_package, path_anchor::St
                     end
                 end
 
-                precompile_futures = [remotecall(w) do
-                    Pkg.precompile(; io=devnull)
-                end for (_, w) in host_workers]
+                precompile_futures = [
+                    remotecall(w) do
+                        Pkg.precompile(; io = devnull)
+                    end for (_, w) in host_workers
+                ]
                 for f in precompile_futures
                     fetch(f)
                 end
@@ -283,8 +285,8 @@ function init_drive_workers!(proj_dir::String, explicit_package, path_anchor::St
     catch e
         print_progress_err("✗")
         writeln_both("")
-        @warn "Worker initialization failed" exception=e
+        @warn "Worker initialization failed" exception = e
         rethrow()
     end
-    writeln_both("")
+    return writeln_both("")
 end

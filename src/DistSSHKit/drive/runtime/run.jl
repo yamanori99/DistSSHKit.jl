@@ -15,12 +15,12 @@ Callers (`drive!`) use these to report an accurate `DriveResult.output_dir` /
 `.log_dir` even when the caller did not pass `output_dir=` / `log_dir=` explicitly.
 """
 function run_drive_parsed!(
-    parsed;
-    original_args::Vector{String}=String[],
-    resolved_output_dir::Union{Nothing,Base.RefValue{Union{Nothing,String}}}=nothing,
-    resolved_log_dir::Union{Nothing,Base.RefValue{Union{Nothing,String}}}=nothing,
-    resolved_hosts::Union{Nothing,Base.RefValue{Vector{DistSSHKit.HostRunResult}}}=nothing,
-)::Cint
+        parsed;
+        original_args::Vector{String} = String[],
+        resolved_output_dir::Union{Nothing, Base.RefValue{Union{Nothing, String}}} = nothing,
+        resolved_log_dir::Union{Nothing, Base.RefValue{Union{Nothing, String}}} = nothing,
+        resolved_hosts::Union{Nothing, Base.RefValue{Vector{DistSSHKit.HostRunResult}}} = nothing,
+    )::Cint
     if parsed.help
         show_drive_usage()
         return 0
@@ -36,8 +36,8 @@ function run_drive_parsed!(
             ok = drive_collect_tree(
                 parsed.collect_root::String,
                 parsed.collect_hosts::Vector{String};
-                merge=something(parsed.collect_overwrite, false),
-                strict=parsed.require_all_hosts,
+                merge = something(parsed.collect_overwrite, false),
+                strict = parsed.require_all_hosts,
             )
             return ok ? 0 : 1
         end
@@ -65,91 +65,93 @@ function run_drive_parsed!(
 
     if !isfile(script_path)
         surface = hasproperty(parsed, :hint_surface) ? parsed.hint_surface::Symbol : :cli
-        error(drive_script_not_found_message(script_path, _PATH_ANCHOR; surface=surface))
+        error(drive_script_not_found_message(script_path, _PATH_ANCHOR; surface = surface))
     end
 
     script_dir = dirname(script_path)
     proj_dir = resolve_pkg_project_dir(script_dir)
     shown = DistSSHKit.display_path(script_path, _PATH_ANCHOR)
-    hint = DistSSHKit._drive_plain_script_hint(script_path, proj_dir; shown=shown)
+    hint = DistSSHKit._drive_plain_script_hint(script_path, proj_dir; shown = shown)
     if hint !== nothing
-        print_warn("WARNING: "; bold=true)
+        print_warn("WARNING: "; bold = true)
         println_fatal(hint)
         println_fatal()
     end
 
     DistSSHKit._acquire_kit_inproc_run!(:drive)
-    try
+    return try
         activate_drive_project!(proj_dir)
 
         old_out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", nothing)
-    release_output_dir_lock = nothing
-    code = Cint(1)
-    hosts_acc = resolved_hosts === nothing ?
-        Ref{Vector{DistSSHKit.HostRunResult}}(DistSSHKit.HostRunResult[]) :
-        resolved_hosts
-    try
-        if output_dir !== nothing
-            ENV["DISTRIBUTED_OUTPUT_DIR"] = DistSSHKit.canonical_local_path(String(output_dir))
-        end
-        # Drivers may set `DISTRIBUTED_OUTPUT_DIR` in `init_output_dir!` (demos: `output/`).
-        # If still unset, kit allocates `{script}/.distsshkit/drive/<stem>_<UTC>/`.
-        # Lock after that so `.kit.lock` is not the kind root when the driver
-        # chose `output/` (or `--output-dir` / a unique batch dir).
-        include(script_path)
-        if isdefined(Main, :init_output_dir!)
-            @invokelatest Main.init_output_dir!(script_args)
-        end
-        DistSSHKit._ensure_drive_output_env!(script_path; project=proj_dir)
-        release_output_dir_lock = DistSSHKit.kit_output_dir_lock!(DistSSHKit.resolve_drive_output_dir(script_dir))
+        release_output_dir_lock = nothing
+        code = Cint(1)
+        hosts_acc = resolved_hosts === nothing ?
+            Ref{Vector{DistSSHKit.HostRunResult}}(DistSSHKit.HostRunResult[]) :
+            resolved_hosts
         try
-            code = _run_drive_parsed_locked!(
-                parsed, output_dir, script_path, script_dir, proj_dir, script_args,
-                enable_log, log_dir, original_args, host_names, hosts, parent_workers,
-                default_workers, julia_exe, skip_hash_check, explicit_package,
-                require_all_hosts, resolved_output_dir, resolved_log_dir, hosts_acc,
-            )
-            return code
+            if output_dir !== nothing
+                ENV["DISTRIBUTED_OUTPUT_DIR"] = DistSSHKit.canonical_local_path(String(output_dir))
+            end
+            # Drivers may set `DISTRIBUTED_OUTPUT_DIR` in `init_output_dir!` (demos: `output/`).
+            # If still unset, kit allocates `{script}/.distsshkit/drive/<stem>_<UTC>/`.
+            # Lock after that so `.kit.lock` is not the kind root when the driver
+            # chose `output/` (or `--output-dir` / a unique batch dir).
+            include(script_path)
+            if isdefined(Main, :init_output_dir!)
+                @invokelatest Main.init_output_dir!(script_args)
+            end
+            DistSSHKit._ensure_drive_output_env!(script_path; project = proj_dir)
+            release_output_dir_lock = DistSSHKit.kit_output_dir_lock!(DistSSHKit.resolve_drive_output_dir(script_dir))
+            try
+                code = _run_drive_parsed_locked!(
+                    parsed, output_dir, script_path, script_dir, proj_dir, script_args,
+                    enable_log, log_dir, original_args, host_names, hosts, parent_workers,
+                    default_workers, julia_exe, skip_hash_check, explicit_package,
+                    require_all_hosts, resolved_output_dir, resolved_log_dir, hosts_acc,
+                )
+                return code
+            finally
+                out = DistSSHKit.resolve_drive_output_dir(script_dir)
+                log = enable_log ? DistSSHKit.resolve_drive_log_dir(log_dir, script_dir) : nothing
+                DistSSHKit._write_kit_result_file(
+                    DistSSHKit.KitRunResult(
+                        code == 0,
+                        :drive,
+                        out,
+                        log,
+                        code == 0 ? nothing : "drive",
+                        Int(code),
+                        hosts_acc[],
+                        DistSSHKit.resolved_placement_tokens(parent_workers, hosts, default_workers),
+                    )
+                )
+                DistSSHKit._remove_kit_pid_file(
+                    getpid(),
+                    out,
+                    log,
+                )
+                release_output_dir_lock()
+            end
         finally
-            out = DistSSHKit.resolve_drive_output_dir(script_dir)
-            log = enable_log ? DistSSHKit.resolve_drive_log_dir(log_dir, script_dir) : nothing
-            DistSSHKit._write_kit_result_file(DistSSHKit.KitRunResult(
-                code == 0,
-                :drive,
-                out,
-                log,
-                code == 0 ? nothing : "drive",
-                Int(code),
-                hosts_acc[],
-                DistSSHKit.resolved_placement_tokens(parent_workers, hosts, default_workers),
-            ))
-            DistSSHKit._remove_kit_pid_file(
-                getpid(),
-                out,
-                log,
-            )
-            release_output_dir_lock()
+            if old_out === nothing || (old_out isa AbstractString && isempty(strip(String(old_out))))
+                delete!(ENV, "DISTRIBUTED_OUTPUT_DIR")
+            else
+                ENV["DISTRIBUTED_OUTPUT_DIR"] = String(old_out)
+            end
         end
-    finally
-        if old_out === nothing || (old_out isa AbstractString && isempty(strip(String(old_out))))
-            delete!(ENV, "DISTRIBUTED_OUTPUT_DIR")
-        else
-            ENV["DISTRIBUTED_OUTPUT_DIR"] = String(old_out)
-        end
-    end
     finally
         DistSSHKit._release_kit_inproc_run!()
     end
 end
 
 function _run_drive_parsed_locked!(
-    parsed, output_dir, script_path, script_dir, proj_dir, script_args,
-    enable_log, log_dir, original_args, host_names, hosts, parent_workers,
-    default_workers, julia_exe, skip_hash_check, explicit_package,
-    require_all_hosts, resolved_output_dir, resolved_log_dir, resolved_hosts,
-)::Cint
+        parsed, output_dir, script_path, script_dir, proj_dir, script_args,
+        enable_log, log_dir, original_args, host_names, hosts, parent_workers,
+        default_workers, julia_exe, skip_hash_check, explicit_package,
+        require_all_hosts, resolved_output_dir, resolved_log_dir, resolved_hosts,
+    )::Cint
     if enable_log
-        init_log_file(DistSSHKit.resolve_drive_log_dir(log_dir, script_dir); prefix="drive", path_anchor=_PATH_ANCHOR)
+        init_log_file(DistSSHKit.resolve_drive_log_dir(log_dir, script_dir); prefix = "drive", path_anchor = _PATH_ANCHOR)
         atexit(close_log_file)
     end
 
@@ -165,7 +167,7 @@ function _run_drive_parsed_locked!(
     writeln_field("Args", isempty(script_args) ? "—" : join(script_args, " "))
     writeln_field("Project", cli_project_disp(proj_dir, _PATH_ANCHOR))
     writeln_field("DistSSHKit", dist_ssh_kit_version())
-    app_git = get_local_git_hash(proj_dir; short=8)
+    app_git = get_local_git_hash(proj_dir; short = 8)
     writeln_field("App git", app_git === nothing ? "unavailable" : app_git)
     writeln_both("")
 
@@ -183,21 +185,21 @@ function _run_drive_parsed_locked!(
     kit_out = DistSSHKit.resolve_drive_output_dir(script_dir)
     kit_log = enable_log ? DistSSHKit.resolve_drive_log_dir(log_dir, script_dir) : nothing
     DistSSHKit._set_kit_progress_sidecar!(kit_out)
-    kit_progress_begin!("drive"; steps=progress_steps, kind=:drive)
+    kit_progress_begin!("drive"; steps = progress_steps, kind = :drive)
     try
         if do_sync
             kit_progress_step!("sync")
             writeln_both("Syncing to remotes ($(sync_mode))...")
             sync_session = DistSSHKit.KitSession(
-                project=proj_dir,
-                workers=host_names,
-                quiet=parsed.cli_session.quiet,
-                verbosity=parsed.cli_session.verbosity,
-                yes=parsed.cli_session.yes || DistSSHKit.kit_noninteractive(),
+                project = proj_dir,
+                workers = host_names,
+                quiet = parsed.cli_session.quiet,
+                verbosity = parsed.cli_session.verbosity,
+                yes = parsed.cli_session.yes || DistSSHKit.kit_noninteractive(),
             )
-            sync_result = DistSSHKit.sync!(sync_session; mode=sync_mode)
+            sync_result = DistSSHKit.sync!(sync_session; mode = sync_mode)
             if !sync_result.ok
-                print_err("ERROR: "; bold=true)
+                print_err("ERROR: "; bold = true)
                 println_fatal("pre-run sync failed")
                 for hr in sync_result.hosts
                     !hr.ok && println_fatal("  $(hr.host): $(hr.message)")
@@ -209,10 +211,10 @@ function _run_drive_parsed_locked!(
                 inst_julia = julia_exe === nothing ? "auto" : String(julia_exe)
                 inst = DistSSHKit.instantiate_after_rsync!(
                     sync_session;
-                    julia=inst_julia,
+                    julia = inst_julia,
                 )
                 if inst !== nothing && !inst.ok
-                    print_err("ERROR: "; bold=true)
+                    print_err("ERROR: "; bold = true)
                     println_fatal("pre-run instantiate failed")
                     for hr in inst.hosts
                         !hr.ok && println_fatal("  $(hr.host): $(hr.message)")
@@ -237,12 +239,12 @@ function _run_drive_parsed_locked!(
             end
 
             if !isempty(host_names)
-                writeln_both("Checking git hashes (--require-git)..."; color=:light_black)
+                writeln_both("Checking git hashes (--require-git)..."; color = :light_black)
                 ok, mismatches, unverifiable = check_git_hashes(host_names, PROJECT_ROOT)
                 writeln_both("")
                 if !ok
                     # Fatal: always visible on the terminal (and kit log when open).
-                    print_err("ERROR: "; bold=true)
+                    print_err("ERROR: "; bold = true)
                     if !isempty(mismatches)
                         println_fatal("Git hash mismatch on $(join(mismatches, ", "))")
                         println_fatal()
@@ -277,10 +279,10 @@ function _run_drive_parsed_locked!(
         kit_progress_step!("workers")
         if (parent_workers > 0 || !isempty(hosts)) &&
                 !check_memory_capacity(
-                    parent_workers, hosts, default_workers;
-                    mem_headroom=parsed.mem_headroom,
-                    parent_gb=parsed.parent_gb,
-                )
+                parent_workers, hosts, default_workers;
+                mem_headroom = parsed.mem_headroom,
+                parent_gb = parsed.parent_gb,
+            )
             return 1
         end
 
@@ -296,7 +298,7 @@ function _run_drive_parsed_locked!(
         if require_all_hosts
             missing = unique(String[h[1] for h in hosts if !(h[1] in successful_hosts)])
             if !isempty(missing)
-                print_err("ERROR: "; bold=true)
+                print_err("ERROR: "; bold = true)
                 println_fatal("required hosts did not join: $(join(missing, ", "))")
                 println_fatal("Pass --best-effort for a partial run.")
                 return 1
@@ -304,7 +306,7 @@ function _run_drive_parsed_locked!(
             if parent_workers > 0
                 n = DistSSHKit._drive_parent_worker_count()
                 if n < parent_workers
-                    print_err("ERROR: "; bold=true)
+                    print_err("ERROR: "; bold = true)
                     println_fatal(
                         "required parent workers did not join: wanted $parent_workers, got $n",
                     )
@@ -314,13 +316,13 @@ function _run_drive_parsed_locked!(
             end
         end
         kit_progress_step!("wait")
-        wait_for_worker_connections!(; ssh=!isempty(hosts))
+        wait_for_worker_connections!(; ssh = !isempty(hosts))
 
         kit_progress_step!("init")
         init_drive_workers!(proj_dir, explicit_package, _PATH_ANCHOR)
         DistSSHKit._start_drive_host_status_monitor!(kit_out, kit_log)
         sync_script = get(parsed, :sync_script, false)
-        sync_driver_to_workers!(script_path; sync_script=sync_script)
+        sync_driver_to_workers!(script_path; sync_script = sync_script)
         run_prepare_workers!()
 
         empty!(ARGS)
@@ -336,7 +338,7 @@ function _run_drive_parsed_locked!(
             DistSSHKit._refresh_drive_host_status_file!(kit_out, kit_log)
             left = DistSSHKit._drive_hosts_that_left()
             if !isempty(left)
-                print_err("ERROR: "; bold=true)
+                print_err("ERROR: "; bold = true)
                 println_fatal("required hosts left during the run: $(join(left, ", "))")
                 println_fatal("Pass --best-effort for a partial run.")
                 progress_ok = false
@@ -362,7 +364,7 @@ function _run_drive_parsed_locked!(
         if resolved_log_dir !== nothing
             resolved_log_dir[] = enable_log ? DistSSHKit.resolve_drive_log_dir(log_dir, script_dir) : nothing
         end
-        kit_progress_done!(; ok=progress_ok)
+        kit_progress_done!(; ok = progress_ok)
         DistSSHKit._maybe_print_kit_progress_phases(kit_out)
         DistSSHKit._set_kit_progress_sidecar!(nothing)
         DistSSHKit._stop_drive_host_status_monitor!()

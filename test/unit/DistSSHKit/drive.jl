@@ -34,12 +34,12 @@ using Test
         @test DistSSHKit.child_hosts_from_tokens(["parent:2", "child:h1", "child:h2:4"]) == ["h1", "h2"]
 
         let kw = DistSSHKit.ParsedWorkerTokens(;
-                parent_workers=2,
-                child_workers=Dict("h1" => 0x03),
-                child_hosts=["h1"],
-                tokens=["parent:2", "child:h1:3"],
+                parent_workers = 2,
+                child_workers = Dict("h1" => 0x03),
+                child_hosts = ["h1"],
+                tokens = ["parent:2", "child:h1:3"],
             )
-            @test kw.child_workers isa Dict{String,Int}
+            @test kw.child_workers isa Dict{String, Int}
             @test kw.child_workers == Dict("h1" => 3)
             @test kw.child_auto == String[]
             @test !kw.parent_autosize
@@ -47,18 +47,18 @@ using Test
 
         _with_tempdir() do tmp
             session = DistSSHKit.KitSession(
-                project=tmp,
-                workers=["parent"],
-                include_parent_for_size=true,
+                project = tmp,
+                workers = ["parent"],
+                include_parent_for_size = true,
             )
             plan = DistSSHKit.worker_plan_from_tokens(
                 ["parent"];
-                session=session,
-                gb_per_worker=2.0,
+                session = session,
+                gb_per_worker = 2.0,
             )
             local_total, local_nproc = DistSSHKit.get_local_resources()
             @test plan.parent_workers == DistSSHKit.size_worker_count(
-                local_total, local_nproc, 2.0; is_parent=true,
+                local_total, local_nproc, 2.0; is_parent = true,
             )
             @test isempty(plan.child_workers)
         end
@@ -67,7 +67,7 @@ using Test
     @testset "KitSession" begin
         _with_tempdir() do tmp
             withenv("DISTSSHKIT_HOSTS_FILE" => "") do
-                session = DistSSHKit.KitSession(project=tmp, workers=["child:host-a", "child:host-b:4"])
+                session = DistSSHKit.KitSession(project = tmp, workers = ["child:host-a", "child:host-b:4"])
                 @test session.project == abspath(tmp)
                 @test session.hosts == ["host-a", "host-b"]
                 @test session.tokens == ["child:host-a", "child:host-b:4"]
@@ -85,11 +85,11 @@ using Test
     @testset "apply_session_env!" begin
         _with_tempdir() do tmp
             session = DistSSHKit.KitSession(
-                project=tmp,
-                workers=["child:host-a"],
-                remote="/remote/App.jl",
-                quiet=true,
-                yes=true,
+                project = tmp,
+                workers = ["child:host-a"],
+                remote = "/remote/App.jl",
+                quiet = true,
+                yes = true,
             )
             DistSSHKit.apply_session_env!(session)
             @test ENV["DISTRIBUTED_PROJECT_ROOT"] == abspath(tmp)
@@ -99,20 +99,20 @@ using Test
         end
         _with_tempdir() do tmp
             tilde = DistSSHKit.KitSession(
-                project=tmp,
-                workers=["child:host-a"],
-                remote="~/jobs/abc",
-                quiet=true,
-                yes=true,
+                project = tmp,
+                workers = ["child:host-a"],
+                remote = "~/jobs/abc",
+                quiet = true,
+                yes = true,
             )
             DistSSHKit.apply_session_env!(tilde)
             @test ENV["DISTRIBUTED_REMOTE_PROJECT_ROOT"] == "~/jobs/abc"
         end
         _with_tempdir() do tmp
             ambient = DistSSHKit.KitSession(
-                project=tmp,
-                workers=["child:host-a"],
-                yes=true,
+                project = tmp,
+                workers = ["child:host-a"],
+                yes = true,
             )
             with_kit_verbosity(:progress) do
                 DistSSHKit.apply_session_env!(ambient)
@@ -129,16 +129,16 @@ using Test
     @testset "session_remote_root / session_size_hosts" begin
         _with_tempdir() do tmp
             session = DistSSHKit.KitSession(
-                project=tmp,
-                workers=["child:h1:1"],
-                remote="/remote/App.jl",
-                include_parent_for_size=true,
+                project = tmp,
+                workers = ["child:h1:1"],
+                remote = "/remote/App.jl",
+                include_parent_for_size = true,
             )
             @test DistSSHKit.session_remote_root(session) == "/remote/App.jl"
             all_h, remotes = DistSSHKit.session_size_hosts(session)
             @test all_h == ["parent", "h1"]
             @test remotes == ["h1"]
-            remote_only = DistSSHKit.KitSession(project=tmp, workers=["child:h1:1"])
+            remote_only = DistSSHKit.KitSession(project = tmp, workers = ["child:h1:1"])
             a2, r2 = DistSSHKit.session_size_hosts(remote_only)
             @test a2 == ["h1"]
             @test r2 == ["h1"]
@@ -147,37 +147,37 @@ using Test
 
     @testset "pipeline helpers" begin
         cfg = DistSSHKit.PipelineConfig(
-            driver="job.jl",
-            workers=["child:host-a"],
-            sync=:rsync,
+            driver = "job.jl",
+            workers = ["child:host-a"],
+            sync = :rsync,
         )
         session = DistSSHKit.kit_session_from_config(cfg)
         @test DistSSHKit.resolve_pipeline_sync(cfg, session) === :rsync
         @test DistSSHKit.resolve_pipeline_collect(cfg, session)
 
         # Git parity off by default; sync mode does not flip it.
-        default_cfg = DistSSHKit.PipelineConfig(driver="job.jl", workers=["child:host-a"])
+        default_cfg = DistSSHKit.PipelineConfig(driver = "job.jl", workers = ["child:host-a"])
         default_session = DistSSHKit.kit_session_from_config(default_cfg)
         @test DistSSHKit.resolve_pipeline_sync(default_cfg, default_session) === false
         @test DistSSHKit.pipeline_skip_hash_check(default_cfg)
         @test default_cfg.yes == true
         @test DistSSHKit.kit_session_from_config(default_cfg).yes == true
         @test DistSSHKit.pipeline_skip_hash_check(
-            DistSSHKit.PipelineConfig(driver="job.jl", workers=["child:host-a"], sync=:sync),
+            DistSSHKit.PipelineConfig(driver = "job.jl", workers = ["child:host-a"], sync = :sync),
         )
         @test !DistSSHKit.pipeline_skip_hash_check(
             DistSSHKit.PipelineConfig(
-                driver="job.jl",
-                workers=["child:host-a"],
-                skip_hash_check=false,
+                driver = "job.jl",
+                workers = ["child:host-a"],
+                skip_hash_check = false,
             ),
         )
 
         local_cfg = DistSSHKit.PipelineConfig(
-            driver="job.jl",
-            workers=["parent:2"],
-            sync=false,
-            collect=false,
+            driver = "job.jl",
+            workers = ["parent:2"],
+            sync = false,
+            collect = false,
         )
         local_session = DistSSHKit.kit_session_from_config(local_cfg)
         @test DistSSHKit.resolve_pipeline_sync(local_cfg, local_session) === false
@@ -187,18 +187,18 @@ using Test
             driver = joinpath(tmp, "job.jl")
             write(driver, "")
             od = joinpath(tmp, "my_out")
-            cfg_od = DistSSHKit.PipelineConfig(driver=driver, output_dir=od)
+            cfg_od = DistSSHKit.PipelineConfig(driver = driver, output_dir = od)
             @test DistSSHKit.pipeline_collect_root(cfg_od) == abspath(od)
             dest = joinpath(tmp, "collect_here")
-            cfg_path = DistSSHKit.PipelineConfig(driver=driver, collect=dest)
+            cfg_path = DistSSHKit.PipelineConfig(driver = driver, collect = dest)
             @test DistSSHKit.pipeline_collect_root(cfg_path) == abspath(dest)
             withenv("DISTRIBUTED_OUTPUT_DIR" => joinpath(tmp, "env_out")) do
-                cfg_env = DistSSHKit.PipelineConfig(driver=driver)
+                cfg_env = DistSSHKit.PipelineConfig(driver = driver)
                 @test DistSSHKit.pipeline_collect_root(cfg_env) ==
                     abspath(joinpath(tmp, "env_out"))
             end
             delete!(ENV, "DISTRIBUTED_OUTPUT_DIR")
-            cfg_fallback = DistSSHKit.PipelineConfig(driver=driver)
+            cfg_fallback = DistSSHKit.PipelineConfig(driver = driver)
             @test DistSSHKit.pipeline_collect_root(cfg_fallback) ==
                 joinpath(dirname(abspath(driver)), "output")
         end
@@ -232,27 +232,27 @@ using Test
         end
 
         cfg_jl = DistSSHKit.PipelineConfig(
-            driver="job.jl",
-            workers=["child:host-a"],
-            julia="/opt/julia/bin/julia",
+            driver = "job.jl",
+            workers = ["child:host-a"],
+            julia = "/opt/julia/bin/julia",
         )
         @test cfg_jl.julia == "/opt/julia/bin/julia"
-        @test DistSSHKit.PipelineConfig(driver="job.jl", julia="auto").julia === nothing
-        @test DistSSHKit.PipelineConfig(driver="job.jl", julia="").julia === nothing
+        @test DistSSHKit.PipelineConfig(driver = "job.jl", julia = "auto").julia === nothing
+        @test DistSSHKit.PipelineConfig(driver = "job.jl", julia = "").julia === nothing
     end
 
     @testset "drive_parsed_from_session sync / parity" begin
         _with_tempdir() do tmp
             script = joinpath(tmp, "job.jl")
             write(script, "")
-            session = DistSSHKit.KitSession(project=tmp, workers=["child:host-a"])
+            session = DistSSHKit.KitSession(project = tmp, workers = ["child:host-a"])
             DistSSHKit._ensure_drive_fragments!(tmp)
 
             parsed = DistSSHKit.drive_parsed_from_session(session, script)
             @test parsed.sync_mode === nothing
             @test parsed.sync_script == false
             @test DistSSHKit.drive_parsed_from_session(
-                session, script; sync_script=true,
+                session, script; sync_script = true,
             ).sync_script == true
             @test parsed.skip_hash_check == true
             @test parsed.hint_surface === :api
@@ -261,36 +261,36 @@ using Test
             @test parsed.parent_gb == DistSSHKit.DEFAULT_PARENT_GB
             @test parsed.require_all_hosts
             @test DistSSHKit.drive_parsed_from_session(
-                session, script; require_all_hosts=false,
+                session, script; require_all_hosts = false,
             ).require_all_hosts == false
             @test DistSSHKit.drive_parsed_from_session(
-                session, script; mem_headroom=0.5, parent_gb=0.2,
+                session, script; mem_headroom = 0.5, parent_gb = 0.2,
             ).mem_headroom == 0.5
             @test DistSSHKit.drive_parsed_from_session(
-                session, script; mem_headroom=0.5, parent_gb=0.2,
+                session, script; mem_headroom = 0.5, parent_gb = 0.2,
             ).parent_gb == 0.2
 
             parsed_jl = DistSSHKit.drive_parsed_from_session(
                 session,
                 script;
-                julia="/opt/julia/bin/julia",
+                julia = "/opt/julia/bin/julia",
             )
             @test parsed_jl.julia == "/opt/julia/bin/julia"
             @test DistSSHKit.drive_parsed_from_session(
                 session,
                 script;
-                julia="auto",
+                julia = "auto",
             ).julia === nothing
 
-            parsed_sync = DistSSHKit.drive_parsed_from_session(session, script; sync=:sync)
+            parsed_sync = DistSSHKit.drive_parsed_from_session(session, script; sync = :sync)
             @test parsed_sync.sync_mode === :sync
             @test parsed_sync.skip_hash_check == true
 
             parsed_require = DistSSHKit.drive_parsed_from_session(
                 session,
                 script;
-                sync=:sync,
-                skip_hash_check=false,
+                sync = :sync,
+                skip_hash_check = false,
             )
             @test parsed_require.skip_hash_check == false
 
@@ -298,8 +298,8 @@ using Test
             parsed_rsync = DistSSHKit.drive_parsed_from_session(
                 session,
                 script;
-                sync=:rsync,
-                skip_hash_check=false,
+                sync = :rsync,
+                skip_hash_check = false,
             )
             @test parsed_rsync.sync_mode === :rsync
             @test parsed_rsync.skip_hash_check == true
@@ -309,13 +309,13 @@ using Test
     @testset "sync! refusals" begin
         _with_tempdir() do tmp
             local_only = DistSSHKit.KitSession(
-                project=tmp, workers=["parent:2"], quiet=true,
+                project = tmp, workers = ["parent:2"], quiet = true,
             )
-            remote = DistSSHKit.KitSession(project=tmp, workers=["child:h1"], quiet=true)
+            remote = DistSSHKit.KitSession(project = tmp, workers = ["child:h1"], quiet = true)
             with_kit_verbosity(:progress) do
                 @test_throws ArgumentError DistSSHKit.sync!(local_only)
-                @test_throws ArgumentError DistSSHKit.sync!(local_only; mode=false)
-                @test_throws ArgumentError DistSSHKit.sync!(remote; mode=:nope)
+                @test_throws ArgumentError DistSSHKit.sync!(local_only; mode = false)
+                @test_throws ArgumentError DistSSHKit.sync!(remote; mode = :nope)
             end
         end
     end
@@ -330,11 +330,11 @@ using Test
             @test avail > 0
             with_kit_verbosity(:progress) do
                 DistSSHKit.apply_kit_cli_session!(
-                    DistSSHKit.KitCliSession(quiet=true, yes=true),
+                    DistSSHKit.KitCliSession(quiet = true, yes = true),
                 )
                 redirect_stdout(devnull) do
                     redirect_stderr(devnull) do
-                        @test Main.check_memory_capacity(1, Tuple{String,Union{Int,Nothing}}[], nothing)
+                        @test Main.check_memory_capacity(1, Tuple{String, Union{Int, Nothing}}[], nothing)
                         ok, mm, uv = Main.check_git_hashes(String[], tmp)
                         @test ok
                         @test isempty(mm)
@@ -342,13 +342,13 @@ using Test
                         @test !Main._skip_global_worker_pkill()
                         withenv("DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL" => "1") do
                             @test Main._skip_global_worker_pkill()
-                            Main.cleanup_stale_workers!(Tuple{String,Union{Int,Nothing}}[])
+                            Main.cleanup_stale_workers!(Tuple{String, Union{Int, Nothing}}[])
                         end
                     end
                 end
             end
             missing = joinpath(tmp, "no_such_driver.jl")
-            msg = Main.drive_script_not_found_message(missing, tmp; surface=:api)
+            msg = Main.drive_script_not_found_message(missing, tmp; surface = :api)
             @test occursin("not found", lowercase(msg))
         end
     end
@@ -356,7 +356,7 @@ using Test
     @testset "instantiate! requires SSH hosts" begin
         _with_tempdir() do tmp
             session = DistSSHKit.KitSession(
-                project=tmp, workers=["parent:2"], quiet=true,
+                project = tmp, workers = ["parent:2"], quiet = true,
             )
             with_kit_verbosity(:progress) do
                 @test_throws ArgumentError DistSSHKit.instantiate!(session)
@@ -368,7 +368,7 @@ using Test
     @testset "collect! requires hosts" begin
         _with_tempdir() do tmp
             session = DistSSHKit.KitSession(
-                project=tmp, workers=["parent:2"], quiet=true,
+                project = tmp, workers = ["parent:2"], quiet = true,
             )
             err = try
                 with_kit_verbosity(:progress) do
@@ -389,7 +389,7 @@ using Test
         )
         @test DistSSHKit.report_pipeline_errors(ok)
         @test DistSSHKit.kit_run_result(ok).exit_code == 0
-        dr = DistSSHKit.DriveResult(false, 7; output_dir="/out", failed_step="drive")
+        dr = DistSSHKit.DriveResult(false, 7; output_dir = "/out", failed_step = "drive")
         @test dr.output_dir == "/out"
         @test isempty(dr.hosts)
         @test DistSSHKit.kit_run_result(dr).kind === :drive
@@ -399,7 +399,7 @@ using Test
             DistSSHKit.HostRunResult("h1", true),
             DistSSHKit.HostRunResult("h2", false, ErrorException("boom")),
         ]
-        dr_hosts = DistSSHKit.DriveResult(false, 1; failed_step="drive", hosts=hosts)
+        dr_hosts = DistSSHKit.DriveResult(false, 1; failed_step = "drive", hosts = hosts)
         @test length(dr_hosts.hosts) == 2
         @test dr_hosts.hosts[1] == DistSSHKit.HostRunResult("h1", true, nothing)
         @test dr_hosts.hosts[2].host == "h2"
@@ -413,10 +413,10 @@ using Test
             DistSSHKit.DriveResult(false, 1),
             DistSSHKit.CollectResult(false, 1),
             "job.jl";
-            failed_step="drive",
+            failed_step = "drive",
         )
         buf = IOBuffer()
-        @test !DistSSHKit.report_pipeline_errors(bad; io=buf)
+        @test !DistSSHKit.report_pipeline_errors(bad; io = buf)
         txt = String(take!(buf))
         @test occursin("pipeline! failed at step: drive", txt)
         @test occursin("sync h1: rsync refuse", txt)
@@ -426,13 +426,13 @@ using Test
         @test kr.kind === :pipeline
         @test kr.exit_code == 1
         @test kr.failed_step == "drive"
-        @test !DistSSHKit.report_run_errors(bad; io=IOBuffer())
+        @test !DistSSHKit.report_run_errors(bad; io = IOBuffer())
     end
 
     @testset "pipeline! missing driver surfaces" begin
         _with_tempdir() do tmp
             missing = joinpath(tmp, "demos", "with_kit", "rho_sweep.jl")
-            cfg = DistSSHKit.PipelineConfig(project=tmp, driver=missing, workers=String[])
+            cfg = DistSSHKit.PipelineConfig(project = tmp, driver = missing, workers = String[])
             err = try
                 DistSSHKit.pipeline!(cfg)
                 nothing
@@ -486,9 +486,9 @@ using Test
         end
         let hosts_file = _sample_hosts_file()
             withenv("DISTSSHKIT_HOSTS_FILE" => hosts_file) do
-                s = DistSSHKit.KitSession(workers=["parent:1"])
+                s = DistSSHKit.KitSession(workers = ["parent:1"])
                 @test s.tokens == ["parent:1"]
-                empty = DistSSHKit.KitSession(workers=String[])
+                empty = DistSSHKit.KitSession(workers = String[])
                 @test empty.tokens == ["child:host-a", "child:host-b:4"]
             end
         end
@@ -498,7 +498,7 @@ using Test
         _with_tempdir() do tmp
             p = joinpath(tmp, "plain.jl")
             write(p, "ys = map(x -> x * x, 1:3)\nprintln(join(ys, \",\"))\n")
-            msg = DistSSHKit._drive_plain_script_hint(p, tmp; shown="plain.jl")
+            msg = DistSSHKit._drive_plain_script_hint(p, tmp; shown = "plain.jl")
             @test msg isa String
             @test occursin("no Distributed vocabulary", msg)
             @test occursin("Load is this include", msg)
@@ -509,7 +509,7 @@ using Test
 
             g = joinpath(tmp, "loop.jl")
             write(g, "for i in 1:2\nend\n")
-            gmsg = DistSSHKit._drive_plain_script_hint(g, tmp; shown="loop.jl")
+            gmsg = DistSSHKit._drive_plain_script_hint(g, tmp; shown = "loop.jl")
             @test gmsg isa String
             @test occursin("go", gmsg)
 
@@ -522,7 +522,8 @@ using Test
     @testset "publish source" begin
         _with_tempdir() do tmp
             p = joinpath(tmp, "plain.jl")
-            write(p, """
+            write(
+                p, """
                 function work(x)
                     return x * x
                 end
@@ -530,7 +531,8 @@ using Test
                 xs = 1:8
                 ys = map(work, xs)
                 println(join(ys, ","))
-                """)
+                """
+            )
             src = DistSSHKit._drive_publish_source(p)
             @test occursin("function work", src)
             @test !occursin("println", src)
@@ -539,14 +541,16 @@ using Test
             lib = joinpath(tmp, "lib.jl")
             write(lib, "f() = 1\n")
             d = joinpath(tmp, "driver.jl")
-            write(d, """
+            write(
+                d, """
                 using Distributed
                 include("lib.jl")
                 function main()
                     pmap(identity, 1:2)
                 end
                 println("no")
-                """)
+                """
+            )
             dsrc = DistSSHKit._drive_publish_source(d)
             @test occursin("using Distributed", dsrc)
             @test occursin("include", dsrc)
@@ -557,12 +561,12 @@ using Test
     end
 
     @testset "init delay" begin
-        @test DistSSHKit._drive_init_delay_sec(; ssh=false) == 0.0
+        @test DistSSHKit._drive_init_delay_sec(; ssh = false) == 0.0
         withenv("DISTRIBUTED_INIT_DELAY_SEC" => nothing) do
-            @test DistSSHKit._drive_init_delay_sec(; ssh=true) == 5.0
+            @test DistSSHKit._drive_init_delay_sec(; ssh = true) == 5.0
         end
         withenv("DISTRIBUTED_INIT_DELAY_SEC" => "0") do
-            @test DistSSHKit._drive_init_delay_sec(; ssh=true) == 0.0
+            @test DistSSHKit._drive_init_delay_sec(; ssh = true) == 0.0
         end
     end
 end

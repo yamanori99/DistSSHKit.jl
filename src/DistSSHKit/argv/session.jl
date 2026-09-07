@@ -47,18 +47,20 @@ const KIT_BEST_EFFORT_ENV_HELP =
     "DISTSSHKIT_BEST_EFFORT            Same as --best-effort"
 
 """CLI default when no verbosity flag/env is set: live bar on a TTY, else verbose."""
-kit_cli_auto_verbosity(; live::Union{Nothing,Bool}=nothing)::Symbol =
+kit_cli_auto_verbosity(; live::Union{Nothing, Bool} = nothing)::Symbol =
     something(live, kit_stdout_is_live()) ? :progress : :verbose
 
 """Read exclusive verbosity from env (`DISTSSHKIT_QUIET` / `_PROGRESS` / `_VERBOSE`)."""
-function _env_verbosity()::Union{Nothing,Symbol}
+function _env_verbosity()::Union{Nothing, Symbol}
     want_quiet = _env_flag("DISTSSHKIT_QUIET")
     want_progress = _env_flag("DISTSSHKIT_PROGRESS")
     want_verbose = _env_flag("DISTSSHKIT_VERBOSE")
     n = count(identity, (want_quiet, want_progress, want_verbose))
-    n > 1 && throw(ArgumentError(
-        "cannot combine DISTSSHKIT_QUIET, DISTSSHKIT_PROGRESS, and DISTSSHKIT_VERBOSE",
-    ))
+    n > 1 && throw(
+        ArgumentError(
+            "cannot combine DISTSSHKIT_QUIET, DISTSSHKIT_PROGRESS, and DISTSSHKIT_VERBOSE",
+        )
+    )
     want_quiet && return :quiet
     want_progress && return :progress
     want_verbose && return :verbose
@@ -67,10 +69,10 @@ end
 
 """Set exclusive sync mode (`:sync` / `:rsync` / `false`); throw if conflicting."""
 function _kit_set_sync_mode!(
-    current::Union{Nothing,Symbol,Bool},
-    next::Union{Symbol,Bool};
-    source::AbstractString="kit",
-)
+        current::Union{Nothing, Symbol, Bool},
+        next::Union{Symbol, Bool};
+        source::AbstractString = "kit",
+    )
     if current !== nothing && current !== next
         msg = if source == "go"
             "$source: use only one of --sync / --rsync / --skip-sync / --skip-git-guard"
@@ -84,9 +86,9 @@ end
 
 """Resolve verbosity; `quiet=true` maps to `:quiet`. Rejects quiet+progress/verbose."""
 function _resolve_kit_verbosity(;
-    quiet::Bool=false,
-    verbosity::Union{Nothing,Symbol}=nothing,
-)::Symbol
+        quiet::Bool = false,
+        verbosity::Union{Nothing, Symbol} = nothing,
+    )::Symbol
     if verbosity !== nothing
         verbosity in (:verbose, :progress, :quiet) ||
             throw(ArgumentError("verbosity must be :verbose, :progress, or :quiet"))
@@ -106,7 +108,7 @@ mutable struct KitCliSession
     quiet::Bool
     verbosity::Symbol
     yes::Bool
-    hosts_file::Union{Nothing,String}
+    hosts_file::Union{Nothing, String}
     show_version::Bool
     hint_surface::Symbol
     verbosity_explicit::Bool
@@ -114,16 +116,16 @@ mutable struct KitCliSession
 end
 
 function KitCliSession(;
-    quiet::Bool=false,
-    verbosity::Union{Nothing,Symbol}=nothing,
-    yes::Bool=false,
-    hosts_file::Union{Nothing,AbstractString}=nothing,
-    show_version::Bool=false,
-    hint_surface::Symbol=:cli,
-    verbosity_explicit::Bool=false,
-    hosts_flag::AbstractVector{<:AbstractString}=String[],
-)
-    v = _resolve_kit_verbosity(; quiet=quiet, verbosity=verbosity)
+        quiet::Bool = false,
+        verbosity::Union{Nothing, Symbol} = nothing,
+        yes::Bool = false,
+        hosts_file::Union{Nothing, AbstractString} = nothing,
+        show_version::Bool = false,
+        hint_surface::Symbol = :cli,
+        verbosity_explicit::Bool = false,
+        hosts_flag::AbstractVector{<:AbstractString} = String[],
+    )
+    v = _resolve_kit_verbosity(; quiet = quiet, verbosity = verbosity)
     hf = hosts_file === nothing ? nothing : String(hosts_file)
     surface = _normalize_hint_surface(hint_surface)
     explicit = verbosity_explicit || quiet || verbosity !== nothing
@@ -184,15 +186,15 @@ function default_kit_cli_session()::KitCliSession
     end
     env_v = _env_verbosity()
     hosts_kw = (;
-        yes=_env_flag("DISTSSHKIT_YES"),
-        hosts_file=hosts_file,
-        show_version=false,
+        yes = _env_flag("DISTSSHKIT_YES"),
+        hosts_file = hosts_file,
+        show_version = false,
     )
     env_v === nothing && return KitCliSession(; hosts_kw...)
     return KitCliSession(;
-        quiet=env_v === :quiet,
-        verbosity=env_v,
-        verbosity_explicit=true,
+        quiet = env_v === :quiet,
+        verbosity = env_v,
+        verbosity_explicit = true,
         hosts_kw...,
     )
 end
@@ -204,7 +206,7 @@ function apply_kit_cli_session!(session::KitCliSession)
 end
 
 """Print `DistSSHKit <version>` (same as `julia -m DistSSHKit --version`)."""
-function println_kit_version(io::IO=stdout)
+function println_kit_version(io::IO = stdout)
     println(io, "DistSSHKit $(dist_ssh_kit_version())")
     return nothing
 end
@@ -277,7 +279,7 @@ Split leading shared flags from `args`.
 Returns `(session, rest)` where `rest` is every non-flag token (and tokens
 following flags that take values other than `--hosts-file` / `--hosts`).
 """
-function peel_kit_cli_flags(args::AbstractVector{<:AbstractString})::Tuple{KitCliSession,Vector{String}}
+function peel_kit_cli_flags(args::AbstractVector{<:AbstractString})::Tuple{KitCliSession, Vector{String}}
     session = default_kit_cli_session()
     rest = String[]
     c = CliCursor(collect(String, args))
@@ -307,10 +309,10 @@ Parse `host` or `host:N` into `(hostname, workers)`.
 `N` is a worker/slot count for `drive` / `go`. `setup` / `size` keep
 the hostname only (`split_worker_token(…)[1]`).
 """
-function split_worker_token(spec::AbstractString)::Tuple{String,Union{Nothing,Int}}
+function split_worker_token(spec::AbstractString)::Tuple{String, Union{Nothing, Int}}
     s = strip(String(spec))
     if contains(s, ':')
-        parts = split(s, ':', limit=2)
+        parts = split(s, ':', limit = 2)
         return String(parts[1]), parse(Int, parts[2])
     end
     return s, nothing
@@ -332,9 +334,9 @@ function host_tokens(hosts::AbstractVector{<:AbstractString})::Vector{String}
 end
 
 function host_tokens(
-    hosts::AbstractVector{Tuple{String,Union{Int,Nothing}}};
-    parent_workers::Integer=0,
-)::Vector{String}
+        hosts::AbstractVector{Tuple{String, Union{Int, Nothing}}};
+        parent_workers::Integer = 0,
+    )::Vector{String}
     specs = String[]
     lw = Int(parent_workers)
     lw > 0 && push!(specs, format_placement_token(:parent, PARENT_HOST_NAME, lw))
@@ -351,8 +353,8 @@ function host_tokens(parsed; kind::Symbol)::Vector{String}
         return host_tokens(parsed.hosts::AbstractVector{<:AbstractString})
     elseif kind === :drive
         return host_tokens(
-            parsed.hosts::AbstractVector{Tuple{String,Union{Int,Nothing}}};
-            parent_workers=parsed.parent_workers,
+            parsed.hosts::AbstractVector{Tuple{String, Union{Int, Nothing}}};
+            parent_workers = parsed.parent_workers,
         )
     end
     throw(ArgumentError("host_tokens: kind must be :go, :drive, or :ride, got $(repr(kind))"))
@@ -360,34 +362,34 @@ end
 
 """Non-comment host entries from a hosts file (may include `host:N` for drive/go)."""
 function read_hosts_file_lines(
-    path::AbstractString;
-    surface::Symbol=:cli,
-)::Vector{String}
+        path::AbstractString;
+        surface::Symbol = :cli,
+    )::Vector{String}
     p = canonical_local_path(path)
-    isfile(p) || throw(ArgumentError(explain_hosts_file_not_found(p; surface=surface)))
+    isfile(p) || throw(ArgumentError(explain_hosts_file_not_found(p; surface = surface)))
     hosts = String[]
     for line in readlines(p)
         s = strip(line)
         (isempty(s) || startswith(s, '#')) && continue
         push!(hosts, s)
     end
-    isempty(hosts) && throw(ArgumentError(explain_hosts_file_empty(p; surface=surface)))
+    isempty(hosts) && throw(ArgumentError(explain_hosts_file_empty(p; surface = surface)))
     return hosts
 end
 
 """SSH host names from a hosts file (`host:N` → `host` only; for setup / KitSession)."""
 function read_hosts_file(
-    path::AbstractString;
-    surface::Symbol=:cli,
-)::Vector{String}
-    return [split_worker_token(line)[1] for line in read_hosts_file_lines(path; surface=surface)]
+        path::AbstractString;
+        surface::Symbol = :cli,
+    )::Vector{String}
+    return [split_worker_token(line)[1] for line in read_hosts_file_lines(path; surface = surface)]
 end
 
 function _kit_host_token(
-    tok::AbstractString,
-    keep_counts::Bool;
-    roles::Bool=false,
-)::String
+        tok::AbstractString,
+        keep_counts::Bool;
+        roles::Bool = false,
+    )::String
     keep_counts && return String(tok)
     if roles
         p = parse_placement_token(tok)
@@ -403,48 +405,48 @@ strips `:N`. Size and setup pass `roles=true` so `child:NAME[:N]` becomes
 `NAME` and `parent` stays `parent`.
 """
 function kit_host_source_tokens(
-    session::KitCliSession;
-    keep_counts::Bool=true,
-    roles::Bool=false,
-)::Vector{String}
-    out = String[_kit_host_token(t, keep_counts; roles=roles) for t in session.hosts_flag]
+        session::KitCliSession;
+        keep_counts::Bool = true,
+        roles::Bool = false,
+    )::Vector{String}
+    out = String[_kit_host_token(t, keep_counts; roles = roles) for t in session.hosts_flag]
     for t in split_hosts_csv(get(ENV, "DISTSSHKIT_HOSTS", ""))
-        push!(out, _kit_host_token(t, keep_counts; roles=roles))
+        push!(out, _kit_host_token(t, keep_counts; roles = roles))
     end
     hosts_file = session.hosts_file
     if hosts_file !== nothing
         if keep_counts
-            append!(out, read_hosts_file_lines(hosts_file; surface=session.hint_surface))
+            append!(out, read_hosts_file_lines(hosts_file; surface = session.hint_surface))
         elseif roles
-            for line in read_hosts_file_lines(hosts_file; surface=session.hint_surface)
-                push!(out, _kit_host_token(line, false; roles=true))
+            for line in read_hosts_file_lines(hosts_file; surface = session.hint_surface)
+                push!(out, _kit_host_token(line, false; roles = true))
             end
         else
-            append!(out, read_hosts_file(hosts_file; surface=session.hint_surface))
+            append!(out, read_hosts_file(hosts_file; surface = session.hint_surface))
         end
     end
     return out
 end
 
 function append_kit_host_sources!(
-    hosts::Vector{String},
-    session::KitCliSession;
-    keep_counts::Bool=true,
-    roles::Bool=false,
-)
-    append!(hosts, kit_host_source_tokens(session; keep_counts=keep_counts, roles=roles))
+        hosts::Vector{String},
+        session::KitCliSession;
+        keep_counts::Bool = true,
+        roles::Bool = false,
+    )
+    append!(hosts, kit_host_source_tokens(session; keep_counts = keep_counts, roles = roles))
     return hosts
 end
 
 function append_hosts_file!(hosts::Vector{String}, session::KitCliSession)
     hosts_file = session.hosts_file
     hosts_file === nothing && return hosts
-    append!(hosts, read_hosts_file(hosts_file; surface=session.hint_surface))
+    append!(hosts, read_hosts_file(hosts_file; surface = session.hint_surface))
     return hosts
 end
 
 """`println` with the same terminal gate as `writeln_both` (setup / size)."""
-function kit_println(args...; io::IO=stdout)
+function kit_println(args...; io::IO = stdout)
     if kit_output_detail()
         println(io, args...)
     end
@@ -456,7 +458,7 @@ function kit_println(args...; io::IO=stdout)
 end
 
 """`print` with the same terminal gate as `writeln_both`."""
-function kit_print(args...; io::IO=stdout)
+function kit_print(args...; io::IO = stdout)
     if kit_output_detail()
         print(io, args...)
     end
@@ -477,7 +479,7 @@ With `--yes` / `DISTSSHKIT_YES`, always returns `true` without prompting.
 `keyword=nothing` → accept `y` / `yes` (case-insensitive).
 Otherwise the answer must match `keyword` exactly.
 """
-function kit_confirm(prompt::AbstractString; keyword::Union{Nothing,String}=nothing)::Bool
+function kit_confirm(prompt::AbstractString; keyword::Union{Nothing, String} = nothing)::Bool
     kit_noninteractive() && return true
     print(stdout, prompt)
     flush(stdout)
@@ -492,7 +494,7 @@ function kit_confirm(prompt::AbstractString; keyword::Union{Nothing,String}=noth
     return answer == keyword
 end
 
-function kit_confirm!(prompt::AbstractString; keyword::Union{Nothing,String}=nothing)::Bool
-    kit_confirm(prompt; keyword=keyword) || return false
+function kit_confirm!(prompt::AbstractString; keyword::Union{Nothing, String} = nothing)::Bool
+    kit_confirm(prompt; keyword = keyword) || return false
     return true
 end

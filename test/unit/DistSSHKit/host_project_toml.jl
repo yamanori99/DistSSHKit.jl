@@ -6,7 +6,7 @@ using TOML
     kit_toml = joinpath(kit_root, "Project.toml")
     @test isfile(kit_toml)
     kit = TOML.parsefile(kit_toml)
-    kit_deps = Dict{String,String}()
+    kit_deps = Dict{String, String}()
     for (k, v) in kit["deps"]
         kit_deps[String(k)] = String(v)
     end
@@ -17,7 +17,7 @@ using TOML
     # Standalone kit repo: parent has no nested `DistSSHKit/Project.toml`; only assert kit deps exist.
     skip_merge_check = ["Distributed"]
     if isfile(parent_proj) && isfile(nested_kit) && abspath(kit_root) == abspath(joinpath(parent, "DistSSHKit"))
-        root_deps = Dict{String,String}()
+        root_deps = Dict{String, String}()
         for (k, v) in TOML.parsefile(parent_proj)["deps"]
             root_deps[String(k)] = String(v)
         end

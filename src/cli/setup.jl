@@ -37,7 +37,7 @@ if !isdefined(@__MODULE__, :setup_main)
             parse_setup_args(ARGS)
         catch e
             e isa ArgumentError || rethrow()
-            print_err("Error: "; bold=true)
+            print_err("Error: "; bold = true)
             println_fatal(e.msg)
             println_fatal()
             show_usage()
@@ -60,11 +60,11 @@ if !isdefined(@__MODULE__, :setup_main)
         end
 
         try
-            validate_setup_hosts(opts.hosts; allow_parent=opts.mode === :juliaup)
+            validate_setup_hosts(opts.hosts; allow_parent = opts.mode === :juliaup)
         catch e
             e isa ArgumentError || rethrow()
             # Fatal: always on terminal.
-            print_err("Error: "; bold=true)
+            print_err("Error: "; bold = true)
             println_fatal(e.msg)
             println_fatal()
             show_usage()
@@ -75,7 +75,7 @@ if !isdefined(@__MODULE__, :setup_main)
         path_anchor = DistSSHKit.canonical_local_path(project)
         remote_path = resolve_remote_project_root(
             project;
-            cli_override=opts.remote_path_override,
+            cli_override = opts.remote_path_override,
         )
 
         function setup_job!(mode::Symbol)::Cint
@@ -99,7 +99,7 @@ if !isdefined(@__MODULE__, :setup_main)
 
             # Mutating / multi-host SSH ops: fail fast before confirmations.
             if mode === :delete || mode === :clone || mode === :rsync_push ||
-               mode === :instantiate || mode === :runtest || mode === :prune
+                    mode === :instantiate || mode === :runtest || mode === :prune
                 if !preflight_setup_ssh(opts.hosts)
                     print_err("SSH preflight failed. Fix connectivity, then retry.")
                     kit_println()
@@ -123,8 +123,10 @@ if !isdefined(@__MODULE__, :setup_main)
                 result = clone_to_remotes(opts.hosts, remote_path, clone_url)
                 ok = finish_host_op!("Clone", result)
                 if ok && !result.cancelled && result.failed == 0 &&
-                   (opts.remote_path_override !== nothing ||
-                    !isempty(strip(get(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT", ""))))
+                        (
+                        opts.remote_path_override !== nothing ||
+                            !isempty(strip(get(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT", "")))
+                    )
                     kit_println("  Tip: export DISTRIBUTED_REMOTE_PROJECT_ROOT=$remote_path")
                     kit_println("       so drive.jl uses the same remote root for workers / collect.")
                     kit_println()
@@ -133,37 +135,45 @@ if !isdefined(@__MODULE__, :setup_main)
             end
 
             if mode === :rsync_push
-                return Cint(finish_host_op!(
-                    "rsync",
-                    rsync_push_to_remotes(opts.hosts, remote_path, project; path_anchor=path_anchor),
-                ) ? 0 : 1)
+                return Cint(
+                    finish_host_op!(
+                            "rsync",
+                            rsync_push_to_remotes(opts.hosts, remote_path, project; path_anchor = path_anchor),
+                        ) ? 0 : 1
+                )
             end
 
             if mode === :instantiate
-                return Cint(finish_host_op!(
-                    "Instantiate",
-                    instantiate_remotes(
-                        opts.hosts, opts.julia_path, remote_path, project;
-                        path_anchor=path_anchor,
-                    ),
-                ) ? 0 : 1)
+                return Cint(
+                    finish_host_op!(
+                            "Instantiate",
+                            instantiate_remotes(
+                                opts.hosts, opts.julia_path, remote_path, project;
+                                path_anchor = path_anchor,
+                            ),
+                        ) ? 0 : 1
+                )
             end
 
             if mode === :juliaup
-                return Cint(finish_host_op!(
-                    "juliaup",
-                    juliaup_align_remotes(opts.hosts),
-                ) ? 0 : 1)
+                return Cint(
+                    finish_host_op!(
+                            "juliaup",
+                            juliaup_align_remotes(opts.hosts),
+                        ) ? 0 : 1
+                )
             end
 
             if mode === :runtest
-                return Cint(finish_host_op!(
-                    "Pkg.test",
-                    runtest_remotes(
-                        opts.hosts, opts.julia_path, remote_path, project;
-                        path_anchor=path_anchor,
-                    ),
-                ) ? 0 : 1)
+                return Cint(
+                    finish_host_op!(
+                            "Pkg.test",
+                            runtest_remotes(
+                                opts.hosts, opts.julia_path, remote_path, project;
+                                path_anchor = path_anchor,
+                            ),
+                        ) ? 0 : 1
+                )
             end
 
             if mode === :cleanup
@@ -171,17 +181,19 @@ if !isdefined(@__MODULE__, :setup_main)
             end
 
             if mode === :prune
-                return Cint(finish_host_op!(
-                    "Prune",
-                    prune_kit_leaves(
-                        opts.hosts,
-                        remote_path,
-                        project;
-                        older_days=opts.older_days,
-                        id=opts.prune_id,
-                        skip_setup=joinpath(project, ".distsshkit", "setup"),
-                    ),
-                ) ? 0 : 1)
+                return Cint(
+                    finish_host_op!(
+                            "Prune",
+                            prune_kit_leaves(
+                                opts.hosts,
+                                remote_path,
+                                project;
+                                older_days = opts.older_days,
+                                id = opts.prune_id,
+                                skip_setup = joinpath(project, ".distsshkit", "setup"),
+                            ),
+                        ) ? 0 : 1
+                )
             end
 
             # --pull/--sync: allow commit mismatch (fixed by the op). --check: require sync.
@@ -190,10 +202,10 @@ if !isdefined(@__MODULE__, :setup_main)
             check_code_sync = (mode === :check)
             result = check_prerequisites(
                 opts.hosts, opts.julia_path, remote_path, project;
-                path_anchor=path_anchor,
-                require_clean_git=require_clean,
-                check_code_sync=check_code_sync,
-                ignore_julia_version=opts.ignore_julia_version,
+                path_anchor = path_anchor,
+                require_clean_git = require_clean,
+                check_code_sync = check_code_sync,
+                ignore_julia_version = opts.ignore_julia_version,
             )
 
             if !result.ok
@@ -226,9 +238,9 @@ if !isdefined(@__MODULE__, :setup_main)
                 opts.hosts,
                 project,
                 remote_path;
-                do_push=do_push,
-                do_pull=true,
-                do_local_pull=do_local_pull,
+                do_push = do_push,
+                do_pull = true,
+                do_local_pull = do_local_pull,
             )
             raw.cancelled && return Cint(0)
             if !raw.ok
@@ -245,14 +257,14 @@ if !isdefined(@__MODULE__, :setup_main)
         log_dir = joinpath(project, ".distsshkit", "setup")
         init_log_file(
             log_dir;
-            prefix="setup",
-            path_anchor=path_anchor,
+            prefix = "setup",
+            path_anchor = path_anchor,
         )
         try
             return DistSSHKit.with_kit_setup_progress(
                 log_dir,
                 DistSSHKit.setup_progress_step_name(opts.mode::Symbol);
-                path_anchor=path_anchor,
+                path_anchor = path_anchor,
             ) do
                 setup_job!(opts.mode::Symbol)
             end
@@ -263,7 +275,7 @@ if !isdefined(@__MODULE__, :setup_main)
 end # setup_main guard
 
 if get(ENV, "DIST_SSH_KIT_CLI_INCLUDE", "") != "1" &&
-   !isempty(PROGRAM_FILE) &&
-   abspath(PROGRAM_FILE) == abspath(@__FILE__)
+        !isempty(PROGRAM_FILE) &&
+        abspath(PROGRAM_FILE) == abspath(@__FILE__)
     exit(setup_main())
 end

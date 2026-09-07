@@ -35,11 +35,11 @@ using Test
                 touch(joinpath(tree, "keepme.txt"))
                 write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\n")
                 session = DistSSHKit.KitSession(
-                    project=proj,
-                    workers=["child:$host"],
-                    remote="~/App.jl",
-                    yes=true,
-                    quiet=true,
+                    project = proj,
+                    workers = ["child:$host"],
+                    remote = "~/App.jl",
+                    yes = true,
+                    quiet = true,
                 )
                 del = DistSSHKit.setup!(session, :delete)
                 @test del.ok && !del.cancelled
@@ -54,10 +54,10 @@ using Test
                 # Fresh empty remote then rsync+instantiate path (fake rsync creates tree).
                 chained = DistSSHKit.setup!(session, :rsync)
                 @test chained isa DistSSHKit.SyncResult
-                tested = DistSSHKit.setup!(session, :runtest; julia="/bin/echo")
+                tested = DistSSHKit.setup!(session, :runtest; julia = "/bin/echo")
                 @test tested.ok && !tested.cancelled
 
-                inst = DistSSHKit.setup!(session, :instantiate; julia="/bin/echo")
+                inst = DistSSHKit.setup!(session, :instantiate; julia = "/bin/echo")
                 @test inst.ok && !inst.cancelled
             end
         end
@@ -72,7 +72,7 @@ using Test
             mkpath(go_keep)
             mkpath(drive)
             write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\n")
-            n = DistSSHKit.prune_kit_leaf_dirs!(proj; id="keep_id")
+            n = DistSSHKit.prune_kit_leaf_dirs!(proj; id = "keep_id")
             @test n == 1
             @test isdir(go_old)
             @test !isdir(go_keep)
@@ -94,11 +94,11 @@ using Test
                 write(joinpath(tree, "keep", "Project.toml"), "name = \"Tmp\"\n")
                 write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\n")
                 session = DistSSHKit.KitSession(
-                    project=proj,
-                    workers=["child:$host"],
-                    remote="~/App.jl",
-                    yes=true,
-                    quiet=true,
+                    project = proj,
+                    workers = ["child:$host"],
+                    remote = "~/App.jl",
+                    yes = true,
+                    quiet = true,
                 )
                 pr = DistSSHKit.setup!(session, :prune)
                 @test pr.ok && !pr.cancelled
@@ -114,11 +114,11 @@ using Test
                 write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\n")
                 host = "host1"
                 session = DistSSHKit.KitSession(
-                    project=proj,
-                    workers=["child:$host"],
-                    remote="~/App.jl",
-                    yes=true,
-                    quiet=true,
+                    project = proj,
+                    workers = ["child:$host"],
+                    remote = "~/App.jl",
+                    yes = true,
+                    quiet = true,
                 )
                 empty!(DistSSHKit._DETECT_JULIA_PATH_CACHE)
                 ver_env = Dict(
@@ -142,26 +142,30 @@ using Test
             mktempdir() do d
                 ju = joinpath(d, "juliaup")
                 jl = joinpath(d, "julia")
-                write(ju, """
+                write(
+                    ju, """
                     #!/bin/sh
                     case "\$1" in
                       add|update|default) exit 0 ;;
                       status) echo ok; exit 0 ;;
                       *) exit 1 ;;
                     esac
-                    """)
-                write(jl, """
+                    """
+                )
+                write(
+                    jl, """
                     #!/bin/sh
                     echo "julia version $(VERSION.major).$(VERSION.minor).$(VERSION.patch)"
-                    """)
+                    """
+                )
                 chmod(ju, 0o755)
                 chmod(jl, 0o755)
                 session = DistSSHKit.KitSession(
-                    project=proj,
-                    workers=["parent"],
-                    remote="~/App.jl",
-                    yes=true,
-                    quiet=true,
+                    project = proj,
+                    workers = ["parent"],
+                    remote = "~/App.jl",
+                    yes = true,
+                    quiet = true,
                 )
                 withenv("DISTSSHKIT_TEST_LOCAL_JULIAUP" => ju) do
                     up = DistSSHKit.setup!(session, :juliaup)
@@ -174,11 +178,11 @@ using Test
         _with_tempdir() do proj
             write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\n")
             session = DistSSHKit.KitSession(
-                project=proj,
-                workers=["parent", "child:host1"],
-                remote="~/App.jl",
-                yes=true,
-                quiet=true,
+                project = proj,
+                workers = ["parent", "child:host1"],
+                remote = "~/App.jl",
+                yes = true,
+                quiet = true,
             )
             @test_throws ArgumentError DistSSHKit.setup!(session, :check)
             @test_throws ArgumentError DistSSHKit.setup!(session, :delete)
@@ -195,11 +199,11 @@ using Test
                 touch(joinpath(tree, "keepme.txt"))
                 write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\n")
                 session = DistSSHKit.KitSession(
-                    project=proj,
-                    workers=["child:$host"],
-                    remote="~/App.jl",
-                    yes=true,
-                    quiet=true,
+                    project = proj,
+                    workers = ["child:$host"],
+                    remote = "~/App.jl",
+                    yes = true,
+                    quiet = true,
                 )
                 with_kit_verbosity(:verbose) do
                     out, del = _capture_stdio() do _, _
@@ -219,10 +223,10 @@ using Test
                 write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\n")
                 # No quiet=: auto session would resolve to :verbose under a pipe.
                 session = DistSSHKit.KitSession(
-                    project=proj,
-                    workers=["child:host1"],
-                    remote="~/App.jl",
-                    yes=true,
+                    project = proj,
+                    workers = ["child:host1"],
+                    remote = "~/App.jl",
+                    yes = true,
                 )
                 with_kit_verbosity(:progress) do
                     out, _ = _capture_stdio() do _, _
@@ -245,11 +249,11 @@ using Test
                 mkpath(tree)
                 touch(joinpath(tree, "keepme.txt"))
                 session = DistSSHKit.KitSession(
-                    project=proj,
-                    workers=["child:$host"],
-                    remote="~/App.jl",
-                    yes=true,
-                    quiet=true,
+                    project = proj,
+                    workers = ["child:$host"],
+                    remote = "~/App.jl",
+                    yes = true,
+                    quiet = true,
                 )
                 _, res = _capture_stdio() do _, _
                     DistSSHKit.setup!(session, :rsync, :instantiate)
@@ -265,14 +269,14 @@ using Test
         _with_fake_remotes() do _
             _with_tempdir() do proj
                 session = DistSSHKit.KitSession(
-                    project=proj,
-                    workers=["child:host1"],
-                    remote="~/App.jl",
-                    yes=true,
-                    quiet=true,
+                    project = proj,
+                    workers = ["child:host1"],
+                    remote = "~/App.jl",
+                    yes = true,
+                    quiet = true,
                 )
                 withenv("DISTSSHKIT_TEST_SSH_FAIL" => "1") do
-                    res = DistSSHKit.setup!(session, :instantiate; julia="/bin/echo")
+                    res = DistSSHKit.setup!(session, :instantiate; julia = "/bin/echo")
                     @test !res.ok
                 end
             end
@@ -282,14 +286,14 @@ using Test
     @testset "clone requires repo=" begin
         _with_tempdir() do proj
             session = DistSSHKit.KitSession(
-                project=proj,
-                workers=["child:host1"],
-                remote="~/App.jl",
-                yes=true,
+                project = proj,
+                workers = ["child:host1"],
+                remote = "~/App.jl",
+                yes = true,
             )
             out, _ = _capture_stdio() do _, _
                 @test_throws ArgumentError DistSSHKit.setup!(session, :clone)
-                @test_throws ArgumentError DistSSHKit.setup!(session, :clone; repo="")
+                @test_throws ArgumentError DistSSHKit.setup!(session, :clone; repo = "")
             end
             @test !occursin("Log file:", out)
             @test !isdir(joinpath(proj, ".distsshkit", "setup"))
@@ -298,13 +302,13 @@ using Test
         _with_fake_remotes() do _
             _with_tempdir() do proj
                 session = DistSSHKit.KitSession(
-                    project=proj,
-                    workers=["child:host1"],
-                    remote="~/App.jl",
-                    yes=true,
-                    quiet=true,
+                    project = proj,
+                    workers = ["child:host1"],
+                    remote = "~/App.jl",
+                    yes = true,
+                    quiet = true,
                 )
-                res = DistSSHKit.setup!(session, :clone; repo="https://github.com/example/App.jl.git")
+                res = DistSSHKit.setup!(session, :clone; repo = "https://github.com/example/App.jl.git")
                 @test res.ok && !res.cancelled
                 @test length(res.hosts) == 1 && res.hosts[1].ok
             end
@@ -316,14 +320,14 @@ using Test
             _with_tempdir() do proj
                 write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\nuuid = \"00000000-0000-0000-0000-000000000001\"\n")
                 session = DistSSHKit.KitSession(
-                    project=proj,
-                    workers=["child:host1"],
-                    remote="~/App.jl",
-                    yes=true,
-                    quiet=true,
+                    project = proj,
+                    workers = ["child:host1"],
+                    remote = "~/App.jl",
+                    yes = true,
+                    quiet = true,
                 )
                 out, res = _capture_stdio() do _, _
-                    DistSSHKit.setup!(session, :check; check_code_sync=false, ignore_julia_version=true)
+                    DistSSHKit.setup!(session, :check; check_code_sync = false, ignore_julia_version = true)
                 end
                 @test res isa DistSSHKit.SyncResult
                 @test !res.cancelled
@@ -332,18 +336,18 @@ using Test
                 @test !occursin("Log file:", out)
 
                 @test_throws ArgumentError DistSSHKit.setup!(session, :nope)
-                @test_throws ArgumentError DistSSHKit.setup!(session, :delete, :check; ignore_julia_version=true)
+                @test_throws ArgumentError DistSSHKit.setup!(session, :delete, :check; ignore_julia_version = true)
             end
         end
 
         _with_fake_remotes() do _
             _with_tempdir() do proj
                 session = DistSSHKit.KitSession(
-                    project=proj,
-                    workers=["child:host1"],
-                    remote="~/App.jl",
-                    yes=true,
-                    quiet=true,
+                    project = proj,
+                    workers = ["child:host1"],
+                    remote = "~/App.jl",
+                    yes = true,
+                    quiet = true,
                 )
                 withenv("DISTSSHKIT_TEST_SSH_FAIL" => "1") do
                     clean = DistSSHKit.setup!(session, :cleanup)

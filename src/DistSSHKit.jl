@@ -133,7 +133,7 @@ const _KIT_ROOT = dirname(@__DIR__)
 # `@__DIR__` is `src/` — keep path resolution here, not in included files.
 
 """Read `version` from `path` (`Project.toml`); return `nothing` if missing or invalid."""
-function _project_toml_version(path::AbstractString)::Union{Nothing,VersionNumber}
+function _project_toml_version(path::AbstractString)::Union{Nothing, VersionNumber}
     p = String(path)
     isfile(p) || return nothing
     try
@@ -188,6 +188,7 @@ function _append_script_arg_prelude!(args::Vector{String})
         s = strip(String(line))
         !isempty(s) && push!(args, s)
     end
+    return
 end
 
 function _merge_script_arg_prelude(rest::Vector{String})::Vector{String}
@@ -197,7 +198,7 @@ function _merge_script_arg_prelude(rest::Vector{String})::Vector{String}
 end
 
 function _mark_kit_cli_subcommand_done!()
-    ENV["DISTSSHKIT_CLI_SUBCOMMAND_DONE"] = "1"
+    return ENV["DISTSSHKIT_CLI_SUBCOMMAND_DONE"] = "1"
 end
 
 function _consume_kit_cli_subcommand_done!()::Bool
@@ -248,21 +249,21 @@ end
 
 Run `drive.jl` with `args` (same as `julia -m DistSSHKit drive …`).
 """
-drive(args::Vector{String}=copy(ARGS))::Cint = _run_kit_cli_script("drive.jl", args)
+drive(args::Vector{String} = copy(ARGS))::Cint = _run_kit_cli_script("drive.jl", args)
 
 """
     go(args::Vector{String}=copy(ARGS))
 
 Run `go.jl` with `args` (same as `julia -m DistSSHKit go …`).
 """
-go(args::Vector{String}=copy(ARGS))::Cint = _run_kit_cli_script("go.jl", args)
+go(args::Vector{String} = copy(ARGS))::Cint = _run_kit_cli_script("go.jl", args)
 
 """
     setup(args::Vector{String}=copy(ARGS))
 
 Run `setup.jl` (clone / sync / cleanup) with `args` (same as `julia -m DistSSHKit setup …`).
 """
-setup(args::Vector{String}=copy(ARGS))::Cint = _run_kit_cli_script("setup.jl", args)
+setup(args::Vector{String} = copy(ARGS))::Cint = _run_kit_cli_script("setup.jl", args)
 
 """
     run_size(args::Vector{String}=copy(ARGS))
@@ -270,28 +271,28 @@ setup(args::Vector{String}=copy(ARGS))::Cint = _run_kit_cli_script("setup.jl", a
 Run the `size` CLI (`size.jl`) with `args`. Named `run_size` so it does not
 shadow `Base.size`. Prefer `julia -m DistSSHKit size …` day-to-day.
 """
-run_size(args::Vector{String}=copy(ARGS))::Cint = _run_kit_cli_script("size.jl", args)
+run_size(args::Vector{String} = copy(ARGS))::Cint = _run_kit_cli_script("size.jl", args)
 
 """
     run_pool(args::Vector{String}=copy(ARGS))
 
 Run the `pool` CLI (`pool.jl`) with `args`. Prefer `julia -m DistSSHKit pool …`.
 """
-run_pool(args::Vector{String}=copy(ARGS))::Cint = _run_kit_cli_script("pool.jl", args)
+run_pool(args::Vector{String} = copy(ARGS))::Cint = _run_kit_cli_script("pool.jl", args)
 
 """
     run_ride(args::Vector{String}=copy(ARGS))
 
 Run the `ride` CLI (`ride.jl`) with `args`. Prefer `julia -m DistSSHKit ride …`.
 """
-run_ride(args::Vector{String}=copy(ARGS))::Cint = _run_kit_cli_script("ride.jl", args)
+run_ride(args::Vector{String} = copy(ARGS))::Cint = _run_kit_cli_script("ride.jl", args)
 
 """
     run_plan(args::Vector{String}=copy(ARGS))
 
 Run the `plan` CLI (`plan.jl`) with `args`. Prefer `julia -m DistSSHKit plan …`.
 """
-run_plan(args::Vector{String}=copy(ARGS))::Cint = _run_kit_cli_script("plan.jl", args)
+run_plan(args::Vector{String} = copy(ARGS))::Cint = _run_kit_cli_script("plan.jl", args)
 
 """
     main(args::Vector{String}=copy(ARGS))
@@ -310,7 +311,7 @@ CLI entry. Prefer Julia 1.12+ and `julia -m DistSSHKit SUBCOMMAND …`:
 `main` remains for wrappers and tests; prefer `-m` day-to-day.
 A `.jl` path with no command is not implicit `go`.
 """
-function main(args::Vector{String}=copy(ARGS))::Cint
+function main(args::Vector{String} = copy(ARGS))::Cint
     if _consume_kit_cli_subcommand_done!()
         return 0
     end
@@ -328,7 +329,7 @@ function main(args::Vector{String}=copy(ARGS))::Cint
     end
     subcommand, rest = args[1], args[2:end]
     if subcommand in ("drive", "go") &&
-       any(endswith(String(a), ".jl") for a in rest)
+            any(endswith(String(a), ".jl") for a in rest)
         _mark_kit_cli_subcommand_done!()
     end
     if subcommand == "drive"

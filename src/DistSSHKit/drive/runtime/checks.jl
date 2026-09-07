@@ -38,27 +38,27 @@ function estimate_available_gb()
 end
 
 function check_memory_capacity(
-    parent_workers::Int,
-    hosts::Vector{Tuple{String,Union{Int,Nothing}}},
-    default_workers::Union{Int,Nothing};
-    mem_headroom::Real=DEFAULT_MEM_HEADROOM,
-    parent_gb::Real=DEFAULT_PARENT_GB,
-)::Bool
+        parent_workers::Int,
+        hosts::Vector{Tuple{String, Union{Int, Nothing}}},
+        default_workers::Union{Int, Nothing};
+        mem_headroom::Real = DEFAULT_MEM_HEADROOM,
+        parent_gb::Real = DEFAULT_PARENT_GB,
+    )::Bool
     frac = Float64(mem_headroom)
     mgb = Float64(parent_gb)
     per_worker = estimate_worker_memory_gb()
-    r(x) = round(x, digits=1)
+    r(x) = round(x, digits = 1)
     writeln_both("Checking memory capacity...")
-    writeln_both("  Per-worker estimate: $(round(per_worker, digits=2))GB")
+    writeln_both("  Per-worker estimate: $(round(per_worker, digits = 2))GB")
     warnings = String[]
 
     function check_host(
-        label::String,
-        n_workers::Int,
-        total_gb,
-        nproc;
-        is_parent::Bool=false,
-    )
+            label::String,
+            n_workers::Int,
+            total_gb,
+            nproc;
+            is_parent::Bool = false,
+        )
         if total_gb === nothing
             writeln_both("  $label: (memory check failed)")
             return
@@ -67,12 +67,12 @@ function check_memory_capacity(
             total_gb,
             nproc,
             per_worker;
-            mem_headroom=frac,
-            parent_gb=mgb,
-            is_parent=is_parent,
+            mem_headroom = frac,
+            parent_gb = mgb,
+            is_parent = is_parent,
         )
         pct = round(Int, frac * 100)
-        if n_workers > cap
+        return if n_workers > cap
             push!(warnings, "  $label: $(n_workers) workers > size cap $(cap) ($(r(per_worker))GB each, $(pct)% of $(r(total_gb))GB)")
             write_both("  $label: $(r(total_gb))GB, $(n_workers) workers → ")
             print_progress_warn("⚠ (max ~$(cap))")
@@ -86,10 +86,10 @@ function check_memory_capacity(
 
     if parent_workers > 0
         res = get_local_resources()
-        check_host(PARENT_HOST_NAME, parent_workers, res.total_gb, res.nproc; is_parent=true)
+        check_host(PARENT_HOST_NAME, parent_workers, res.total_gb, res.nproc; is_parent = true)
     end
 
-    host_totals = Dict{String,Int}()
+    host_totals = Dict{String, Int}()
     for (host_name, host_workers_spec) in hosts
         n = something(host_workers_spec, default_workers, 1)
         host_totals[host_name] = get(host_totals, host_name, 0) + n
@@ -101,13 +101,13 @@ function check_memory_capacity(
             host_workers,
             get_remote_total_gb(host_name),
             get_remote_nproc(host_name);
-            is_parent=false,
+            is_parent = false,
         )
     end
     writeln_both("")
 
     if !isempty(warnings)
-        print_warn("WARNING: "; bold=true)
+        print_warn("WARNING: "; bold = true)
         println_fatal("Memory pressure detected!")
         println_fatal()
         for w in warnings
@@ -134,7 +134,7 @@ function check_git_hashes(hosts::Vector{String}, proj_dir::String)
         write_both("  ")
         if !_host_tool_present("git")
             missing = explain_host_tool_missing("git")
-            head, rest... = split(missing, '\n'; keepempty=false)
+            head, rest... = split(missing, '\n'; keepempty = false)
             print_progress_warn("⚠ $head")
             writeln_both("")
             for line in rest

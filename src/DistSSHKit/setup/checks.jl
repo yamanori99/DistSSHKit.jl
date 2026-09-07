@@ -41,9 +41,9 @@ Returns a NamedTuple `(found, version, mismatch_kind)`:
 function check_julia(host::String, julia_path::String)
     remote_version = get_remote_julia_version(host, julia_path)
     if remote_version === nothing
-        return (found=false, version=nothing, mismatch_kind=:none)
+        return (found = false, version = nothing, mismatch_kind = :none)
     end
-    return (found=true, version=remote_version, mismatch_kind=julia_version_mismatch_kind(VERSION, remote_version))
+    return (found = true, version = remote_version, mismatch_kind = julia_version_mismatch_kind(VERSION, remote_version))
 end
 
 function check_project(host::String, remote_path::String)
@@ -53,7 +53,7 @@ function check_project(host::String, remote_path::String)
         result = read(
             pipeline(
                 _host_sync_remote_shell_cmd(host, "test -f $pq && echo ok");
-                stderr=devnull,
+                stderr = devnull,
             ),
             String,
         )
@@ -89,9 +89,9 @@ Return `nothing` when project deps resolve, else a short error string.
 Runs `julia --project=… -e …` (local).
 """
 function probe_project_deps(
-    project::AbstractString;
-    julia_bin::AbstractString=joinpath(Sys.BINDIR, Base.julia_exename()),
-)::Union{Nothing,String}
+        project::AbstractString;
+        julia_bin::AbstractString = joinpath(Sys.BINDIR, Base.julia_exename()),
+    )::Union{Nothing, String}
     proj = canonical_local_path(project)
     isfile(joinpath(proj, "Project.toml")) || return "Project.toml not found"
     has_manifest =
@@ -99,17 +99,19 @@ function probe_project_deps(
         isfile(joinpath(proj, "Manifest-v$(VERSION.major).$(VERSION.minor).toml"))
     has_manifest || return "Manifest.toml not found (run Pkg.resolve / Pkg.instantiate locally first)"
     cmd = ignorestatus(
-        Cmd([
-            String(julia_bin),
-            "--project=$proj",
-            "--startup-file=no",
-            "-e",
-            _project_deps_probe_expr(),
-        ]),
+        Cmd(
+            [
+                String(julia_bin),
+                "--project=$proj",
+                "--startup-file=no",
+                "-e",
+                _project_deps_probe_expr(),
+            ]
+        ),
     )
     err = IOBuffer()
     out = IOBuffer()
-    proc = run(pipeline(cmd; stdout=out, stderr=err); wait=true)
+    proc = run(pipeline(cmd; stdout = out, stderr = err); wait = true)
     proc.exitcode == 0 && occursin("ok", String(take!(out))) && return nothing
     msg = strip(String(take!(err)))
     isempty(msg) && (msg = strip(String(take!(out))))
@@ -122,10 +124,10 @@ end
 Return `nothing` when remote project deps resolve, else a short error string.
 """
 function probe_remote_project_deps(
-    host::AbstractString,
-    remote_path::AbstractString;
-    julia_path::AbstractString="auto",
-)::Union{Nothing,String}
+        host::AbstractString,
+        remote_path::AbstractString;
+        julia_path::AbstractString = "auto",
+    )::Union{Nothing, String}
     host_julia = julia_path == "auto" ? detect_julia_path(String(host)) : String(julia_path)
     host_julia === nothing && return "Julia not found"
     pq = _remote_shell_path_word(remote_path)
@@ -140,10 +142,10 @@ function probe_remote_project_deps(
         proc = run(
             pipeline(
                 ignorestatus(_host_sync_remote_shell_cmd(String(host), remote_cmd));
-                stdout=out,
-                stderr=err,
+                stdout = out,
+                stderr = err,
             );
-            wait=true,
+            wait = true,
         )
         proc.exitcode == 0 && occursin("ok", String(take!(out))) && return nothing
         msg = strip(String(take!(err)))
@@ -159,15 +161,15 @@ end
 check_git_clean(project::AbstractString) = local_git_clean(project)
 
 function check_prerequisites(
-    hosts::Vector{String},
-    julia_path::String,
-    remote_path::String,
-    project::AbstractString;
-    path_anchor::AbstractString=project,
-    require_clean_git::Bool=false,
-    check_code_sync::Bool=true,
-    ignore_julia_version::Bool=false,
-)
+        hosts::Vector{String},
+        julia_path::String,
+        remote_path::String,
+        project::AbstractString;
+        path_anchor::AbstractString = project,
+        require_clean_git::Bool = false,
+        check_code_sync::Bool = true,
+        ignore_julia_version::Bool = false,
+    )
     kit_println("Checking prerequisites...")
     kit_println()
 
@@ -201,7 +203,7 @@ function check_prerequisites(
             warn("Git has uncommitted changes")
             kit_println("    Fix: git add -A && git commit -m 'your message'")
         end
-        local_hash = get_local_git_hash(proj; short=12)
+        local_hash = get_local_git_hash(proj; short = 12)
         if local_hash === nothing
             fail("Could not get local git commit")
             all_ok = false
@@ -212,7 +214,7 @@ function check_prerequisites(
     kit_println()
 
     # Remote checks
-    local_tools.ssh || return (ok=false, needs_sync=needs_sync)
+    local_tools.ssh || return (ok = false, needs_sync = needs_sync)
     for host in hosts
         host_ok = Ref(true)
         _setup_host_span!(host, :running)
@@ -238,16 +240,16 @@ function check_prerequisites(
         end
 
         julia_check = host_julia === nothing ?
-            (found=false, version=nothing, mismatch_kind=:none) :
+            (found = false, version = nothing, mismatch_kind = :none) :
             check_julia(host, String(host_julia))
         if !julia_check.found
             fail("Julia not found (checked: $(host_julia === nothing ? "auto-detect" : host_julia))")
-            print_juliaup_align_fix!(host; kind=:missing)
+            print_juliaup_align_fix!(host; kind = :missing)
             all_ok = false
             host_ok[] = false
         elseif julia_check.mismatch_kind == :minor && !ignore_julia_version
             fail("Julia version mismatch: local $(VERSION), $host has $(julia_check.version) (at $host_julia)")
-            print_juliaup_align_fix!(host; kind=:mismatch)
+            print_juliaup_align_fix!(host; kind = :mismatch)
             all_ok = false
             host_ok[] = false
         elseif julia_check.mismatch_kind == :minor
@@ -276,7 +278,7 @@ function check_prerequisites(
             host_ok[] = false
         else
             deps_err = probe_remote_project_deps(
-                host, remote_path; julia_path=String(host_julia),
+                host, remote_path; julia_path = String(host_julia),
             )
             if deps_err === nothing
                 ok("Project dependencies resolvable")
@@ -289,7 +291,7 @@ function check_prerequisites(
         end
 
         if local_tools.git
-            remote_hash = get_remote_git_hash(host, remote_path; short=12)
+            remote_hash = get_remote_git_hash(host, remote_path; short = 12)
             if remote_hash === nothing
                 warn("Could not get remote git commit")
                 needs_sync = true
@@ -313,5 +315,5 @@ function check_prerequisites(
         _setup_host_span!(host, host_ok[] ? :ok : :fail)
     end
 
-    return (ok=all_ok, needs_sync=needs_sync)
+    return (ok = all_ok, needs_sync = needs_sync)
 end

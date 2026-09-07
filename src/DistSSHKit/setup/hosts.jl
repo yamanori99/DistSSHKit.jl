@@ -1,7 +1,7 @@
 # Setup host validation, SSH preflight, and multi-host result reporting.
 
 """Outcome of a multi-host setup op (`delete` / `clone` / `instantiate` / …)."""
-host_op_result(; cancelled::Bool=false, succeeded::Int=0, failed::Int=0) =
+host_op_result(; cancelled::Bool = false, succeeded::Int = 0, failed::Int = 0) =
     (; cancelled, succeeded, failed)
 
 """
@@ -13,26 +13,30 @@ names. `setup --juliaup` also accepts [`PARENT_HOST_NAME`](@ref) when
 `allow_parent=true`.
 """
 function validate_setup_hosts(
-    hosts::AbstractVector{<:AbstractString};
-    allow_parent::Bool=false,
-)
+        hosts::AbstractVector{<:AbstractString};
+        allow_parent::Bool = false,
+    )
     isempty(hosts) && throw(ArgumentError("No hosts specified"))
     for raw in hosts
         host = String(raw)
         throw_legacy_placement_token(host)
         if is_parent_host_name(host)
-            allow_parent || throw(ArgumentError(
-                "setup: $(repr(host)) is only for --juliaup (kit parent machine). " *
-                "SSH targets use `child:NAME` (or `child:NAME:N`; `:N` ignored).",
-            ))
+            allow_parent || throw(
+                ArgumentError(
+                    "setup: $(repr(host)) is only for --juliaup (kit parent machine). " *
+                        "SSH targets use `child:NAME` (or `child:NAME:N`; `:N` ignored).",
+                )
+            )
             continue
         end
         if looks_like_path_host(host)
-            throw(ArgumentError(
-                "refusing path-like host $(repr(host)); setup expects `child:NAME` " *
-                "(SSH host or config alias), not a local script/path. " *
-                "Put SCRIPT.jl after hosts for drive/go, not for setup.",
-            ))
+            throw(
+                ArgumentError(
+                    "refusing path-like host $(repr(host)); setup expects `child:NAME` " *
+                        "(SSH host or config alias), not a local script/path. " *
+                        "Put SCRIPT.jl after hosts for drive/go, not for setup.",
+                )
+            )
         end
         isempty(strip(host)) && throw(ArgumentError("empty host name"))
     end
@@ -56,11 +60,11 @@ Probe one host via the setup SSH transport (honors `DISTSSHKIT_TEST_SSH`).
 
 Returns `nothing` on success, or a short error summary string on failure.
 """
-function probe_setup_ssh(host::String)::Union{Nothing,String}
+function probe_setup_ssh(host::String)::Union{Nothing, String}
     err_buf = IOBuffer()
     try
         out = read(
-            pipeline(_host_sync_remote_shell_cmd(host, "echo ok"); stderr=err_buf),
+            pipeline(_host_sync_remote_shell_cmd(host, "echo ok"); stderr = err_buf),
             String,
         )
         strip(out) == "ok" && return nothing
@@ -69,7 +73,7 @@ function probe_setup_ssh(host::String)::Union{Nothing,String}
         return _truncate_ssh_message(note)
     catch e
         e isa ArgumentError && return sprint(showerror, e)
-        return summarize_ssh_error(e; stderr=String(take!(err_buf)))
+        return summarize_ssh_error(e; stderr = String(take!(err_buf)))
     end
 end
 
@@ -127,9 +131,9 @@ function finish_host_op!(label::AbstractString, result)::Bool
 end
 
 """Print a remote-op failure line using [`summarize_ssh_error`](@ref)."""
-function report_remote_failure(err; stderr::AbstractString="")
+function report_remote_failure(err; stderr::AbstractString = "")
     print_progress_err("✗")
     kit_println()
-    kit_println("    $(summarize_ssh_error(err; stderr=stderr))")
+    kit_println("    $(summarize_ssh_error(err; stderr = stderr))")
     return nothing
 end

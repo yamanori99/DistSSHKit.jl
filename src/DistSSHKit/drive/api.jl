@@ -43,66 +43,67 @@ workers. The default publishes definitions / `using` / `import` / `include`
 only, so top-level work on Load is not repeated on workers.
 """
 function drive!(
-    session::KitSession,
-    script::AbstractString;
-    plan::Union{Nothing,WorkerPlan}=nothing,
-    args::AbstractVector{<:AbstractString}=String[],
-    skip_hash_check::Bool=true,
-    output_dir::Union{Nothing,AbstractString}=nothing,
-    enable_log::Bool=true,
-    log_dir::Union{Nothing,AbstractString}=nothing,
-    package::Union{Nothing,AbstractString}=nothing,
-    sync::Union{Nothing,Symbol,Bool}=nothing,
-    julia::Union{Nothing,AbstractString}=nothing,
-    require_all_hosts::Bool=true,
-    mem_headroom::Real=DEFAULT_MEM_HEADROOM,
-    parent_gb::Real=DEFAULT_PARENT_GB,
-    sync_script::Bool=false,
-)::DriveResult
+        session::KitSession,
+        script::AbstractString;
+        plan::Union{Nothing, WorkerPlan} = nothing,
+        args::AbstractVector{<:AbstractString} = String[],
+        skip_hash_check::Bool = true,
+        output_dir::Union{Nothing, AbstractString} = nothing,
+        enable_log::Bool = true,
+        log_dir::Union{Nothing, AbstractString} = nothing,
+        package::Union{Nothing, AbstractString} = nothing,
+        sync::Union{Nothing, Symbol, Bool} = nothing,
+        julia::Union{Nothing, AbstractString} = nothing,
+        require_all_hosts::Bool = true,
+        mem_headroom::Real = DEFAULT_MEM_HEADROOM,
+        parent_gb::Real = DEFAULT_PARENT_GB,
+        sync_script::Bool = false,
+    )::DriveResult
     return _with_kit_inproc_run!(:drive) do
         apply_session_env!(session)
         _ensure_drive_fragments!(session.project)
         resolved = plan
         if resolved === nothing && !isempty(session.tokens)
-            resolved = worker_plan_from_tokens(session.tokens; session=session)
+            resolved = worker_plan_from_tokens(session.tokens; session = session)
         end
         parsed = drive_parsed_from_session(
             session,
             script;
-            workers=resolved,
-            script_args=args,
-            skip_hash_check=skip_hash_check,
-            output_dir=output_dir,
-            enable_log=enable_log,
-            log_dir=log_dir,
-            package=package,
-            sync=sync,
-            julia=julia,
-            require_all_hosts=require_all_hosts,
-            mem_headroom=mem_headroom,
-            parent_gb=parent_gb,
-            sync_script=sync_script,
+            workers = resolved,
+            script_args = args,
+            skip_hash_check = skip_hash_check,
+            output_dir = output_dir,
+            enable_log = enable_log,
+            log_dir = log_dir,
+            package = package,
+            sync = sync,
+            julia = julia,
+            require_all_hosts = require_all_hosts,
+            mem_headroom = mem_headroom,
+            parent_gb = parent_gb,
+            sync_script = sync_script,
         )
         apply_kit_cli_session!(parsed.cli_session)
         original_args = copy(ARGS)
-        resolved_output_dir = Ref{Union{Nothing,String}}(nothing)
-        resolved_log_dir = Ref{Union{Nothing,String}}(nothing)
+        resolved_output_dir = Ref{Union{Nothing, String}}(nothing)
+        resolved_log_dir = Ref{Union{Nothing, String}}(nothing)
         resolved_hosts = Ref{Vector{HostRunResult}}(HostRunResult[])
         try
             run_fn = Main.eval(:(run_drive_parsed!))
             code = Base.invokelatest(
                 run_fn,
                 parsed;
-                original_args=original_args,
-                resolved_output_dir=resolved_output_dir,
-                resolved_log_dir=resolved_log_dir,
-                resolved_hosts=resolved_hosts,
+                original_args = original_args,
+                resolved_output_dir = resolved_output_dir,
+                resolved_log_dir = resolved_log_dir,
+                resolved_hosts = resolved_hosts,
             )
-            return DriveResult(code == 0, Int(code);
-                output_dir=resolved_output_dir[],
-                log_dir=resolved_log_dir[],
-                failed_step=code == 0 ? nothing : "drive",
-                hosts=resolved_hosts[],
+            return DriveResult(
+                code == 0, Int(code);
+                output_dir = resolved_output_dir[],
+                log_dir = resolved_log_dir[],
+                failed_step = code == 0 ? nothing : "drive",
+                hosts = resolved_hosts[],
             )
         finally
             empty!(ARGS)
@@ -112,24 +113,24 @@ function drive!(
 end
 
 function drive!(
-    script::AbstractString,
-    workers::AbstractVector{<:AbstractString};
-    project::AbstractString=pwd(),
-    remote::Union{Nothing,AbstractString}=nothing,
-    hosts_file::Union{Nothing,AbstractString}=nothing,
-    quiet::Bool=false,
-    verbosity::Union{Nothing,Symbol}=nothing,
-    yes::Bool=true,
-    kwargs...,
-)::DriveResult
+        script::AbstractString,
+        workers::AbstractVector{<:AbstractString};
+        project::AbstractString = pwd(),
+        remote::Union{Nothing, AbstractString} = nothing,
+        hosts_file::Union{Nothing, AbstractString} = nothing,
+        quiet::Bool = false,
+        verbosity::Union{Nothing, Symbol} = nothing,
+        yes::Bool = true,
+        kwargs...,
+    )::DriveResult
     session = KitSession(
-        project=project,
-        workers=workers,
-        remote=remote,
-        hosts_file=hosts_file,
-        quiet=quiet,
-        verbosity=verbosity,
-        yes=yes,
+        project = project,
+        workers = workers,
+        remote = remote,
+        hosts_file = hosts_file,
+        quiet = quiet,
+        verbosity = verbosity,
+        yes = yes,
     )
     return drive!(session, script; kwargs...)
 end
@@ -139,10 +140,10 @@ function drive!(script::AbstractString; kwargs...)::DriveResult
 end
 
 function drive!(
-    script::AbstractString,
-    w1::AbstractString,
-    rest::AbstractString...;
-    kwargs...,
-)::DriveResult
+        script::AbstractString,
+        w1::AbstractString,
+        rest::AbstractString...;
+        kwargs...,
+    )::DriveResult
     return drive!(script, String[w1, rest...]; kwargs...)
 end

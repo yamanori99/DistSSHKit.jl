@@ -16,7 +16,7 @@ that wait in line are
 (`execute!(:go|:ride|:drive, ...; detached=true)`).
 
 Happy-path bugs (ordinary `~/` roots, default `drive` / `go` / `setup`);
-CI / Julia slots / Aqua / JETLS drift. Enhancement Issue first, then a PR.
+CI / Julia slots / Aqua / JETLS / Runic drift. Enhancement Issue first, then a PR.
 
 **Does not land here:** a job queue, or `schedule`, inside Kit.
 Windows and GPU-package help stay on the horizon
@@ -157,6 +157,12 @@ trees, `Project.toml`, `.github/workflows/CI.yml`). It also runs on
 stay on **main**, **CI weekly**, and `cut`. Registry tree stays on
 **main** and `cut` (ci-cut), not ordinary PRs.
 
+[Runic](https://github.com/fredrikekre/Runic.jl) is a separate light
+workflow ([`.github/workflows/runic.yml`](.github/workflows/runic.yml)).
+It is not a substitute for `Pkg.test`. Soft on PRs (not in the
+required-name list). Monthly cron on `main` opens Issue
+`Runic monthly failed` (`ci`) when `--check` is red.
+
 These files **alone** skip the heavy jobs (UI: skipping; Pkg.test /
 JETLS / Aqua do not start). Documenter still runs when `docs/**`, README,
 `src/**`, or `Project.toml` changed; otherwise it is skipped too.
@@ -165,7 +171,8 @@ skipping UI):
 
 - `README.md`, `README.ja.md`, `CONTRIBUTING.md`, `NEWS.md`,
   `SECURITY.md`, `LICENSE`
-- `.gitignore`, `.github/pull_request_template.md`, `.coderabbit.yaml`
+- `.gitignore`, `.git-blame-ignore-revs`,
+  `.github/pull_request_template.md`, `.coderabbit.yaml`
 - `docs/**`, and markdown under `test/` / `demos/` / `testenv/`
 
 A new root markdown file stays heavy until listed in
@@ -202,12 +209,27 @@ required to merge.
 ### Local checks
 
 ```bash
+julia -e 'using Pkg; Pkg.Apps.add("Runic")'   # once
+runic --inplace src test   # before push; not `.` (markdown out of scope)
 ./.github/jetls-check.sh    # hint+; same files as CI (no `--threads=auto`)
 ./.github/aqua-check.sh     # latest registry Aqua; not part of Pkg.test()
 julia --project=docs -e 'using Pkg; Pkg.instantiate()'
 julia --project=docs --color=yes docs/make.jl
 julia docs/src/assets/bake.jl          # optional --png / --gif
 gitleaks detect --source .
+```
+
+[Runic](https://github.com/fredrikekre/Runic.jl) CI
+(`fredrikekre/runic-action@v1`, `version: '1'`) runs `--check` on every
+tracked `.jl`. Format `demos/` and `docs/*.jl` too if you change them.
+Skip `test/artifacts/**` (no `.jl` there). A Runic minor may make
+`--check` red: re-run `runic --inplace src test` and push. Optional:
+after a bulk format squash, add the landed SHA to
+[`.git-blame-ignore-revs`](.git-blame-ignore-revs) if blame is noisy.
+Local blame:
+
+```bash
+git config blame.ignoreRevsFile .git-blame-ignore-revs
 ```
 
 JETLS CI uses
@@ -239,6 +261,11 @@ JETLS / Aqua slots as a PR (no coverage). Not a PR check. Catches max /
 Aqua / JETLS `@release` drift when nothing merged that week. Failure of
 min/max jobs opens Issue `CI weekly failed` (`ci`); tip is omitted from
 that notify.
+
+**Runic monthly** (1st 10:00 JST, or Run workflow): `runic --check` on
+tracked `.jl` (`version: '1'`). Not a required PR check. Catches Runic
+minor drift when nothing formatted that month. Failure opens Issue
+`Runic monthly failed` (`ci`).
 
 ## Pull requests
 

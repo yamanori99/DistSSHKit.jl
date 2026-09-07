@@ -11,9 +11,9 @@ function cache_remote_dir(remote_root::AbstractString)::String
 end
 
 function _cache_blob_names(
-    local_dir::AbstractString,
-    hashes::Union{Nothing,AbstractVector{<:AbstractString}},
-)::Vector{String}
+        local_dir::AbstractString,
+        hashes::Union{Nothing, AbstractVector{<:AbstractString}},
+    )::Vector{String}
     names = if hashes === nothing
         isdir(local_dir) || return String[]
         String[n for n in readdir(local_dir) if length(n) == 64 && all(isxdigit, n)]
@@ -22,19 +22,21 @@ function _cache_blob_names(
     end
     for n in names
         cache_relpath(n)
-        isfile(joinpath(local_dir, n)) || throw(ArgumentError(
-            "push_cache!: missing local blob $(joinpath(local_dir, n))",
-        ))
+        isfile(joinpath(local_dir, n)) || throw(
+            ArgumentError(
+                "push_cache!: missing local blob $(joinpath(local_dir, n))",
+            )
+        )
     end
     return names
 end
 
 function _rsync_cache_one_host!(
-    host::AbstractString,
-    local_dir::AbstractString,
-    remote_dir::AbstractString,
-    files::Vector{String},
-)::HostResult
+        host::AbstractString,
+        local_dir::AbstractString,
+        remote_dir::AbstractString,
+        files::Vector{String},
+    )::HostResult
     h = String(host)
     if !_ensure_remote_dir(h, remote_dir)
         return HostResult(h, false, "could not create remote cache directory")
@@ -45,7 +47,7 @@ function _rsync_cache_one_host!(
     dest = string(h, ":", rstrip(remote_dir, '/'), "/")
     opts = String["-az", "-e", transport]
     try
-        _run_rsync_files_from(rsync, opts, src, dest, files; stderr=stderr)
+        _run_rsync_files_from(rsync, opts, src, dest, files; stderr = stderr)
         return HostResult(h, true, "cache rsync ok")
     catch e
         _rethrow_missing_host_tool(e)
@@ -65,22 +67,24 @@ dedicated transfer.
 No SSH hosts → error. Empty cache → success with no host rows.
 """
 function push_cache!(
-    session::KitSession;
-    hashes::Union{Nothing,AbstractVector{<:AbstractString}}=nothing,
-)::SyncResult
-    isempty(session.hosts) && throw(ArgumentError(
-        explain_no_hosts(; surface=hint_surface(session), kind=:ssh),
-    ))
+        session::KitSession;
+        hashes::Union{Nothing, AbstractVector{<:AbstractString}} = nothing,
+    )::SyncResult
+    isempty(session.hosts) && throw(
+        ArgumentError(
+            explain_no_hosts(; surface = hint_surface(session), kind = :ssh),
+        )
+    )
     return _with_kit_inproc_run!(:sync) do
         apply_session_env!(session)
         local_dir = joinpath(session.project, _NS_CACHE_DIR)
         files = _cache_blob_names(local_dir, hashes)
-        isempty(files) && return SyncResult(false, HostResult[]; ok=true)
+        isempty(files) && return SyncResult(false, HostResult[]; ok = true)
         remote_dir = cache_remote_dir(session_remote_root(session))
         results = HostResult[]
         for host in session.hosts
             push!(results, _rsync_cache_one_host!(host, local_dir, remote_dir, files))
         end
-        return SyncResult(false, results; ok=all(r -> r.ok, results))
+        return SyncResult(false, results; ok = all(r -> r.ok, results))
     end
 end

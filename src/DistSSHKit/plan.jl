@@ -37,11 +37,11 @@ struct KitPlan
     findings::Vector{PlanFinding}
     julia::String
     ok::Bool
-    error::Union{Nothing,String}
-    slots::Union{Nothing,WorkerPlan}
+    error::Union{Nothing, String}
+    slots::Union{Nothing, WorkerPlan}
 end
 
-function _plan_call_name(f)::Union{Nothing,Symbol}
+function _plan_call_name(f)::Union{Nothing, Symbol}
     f isa Symbol && return f
     f isa GlobalRef && return f.name
     if f isa Expr && f.head === :. && length(f.args) == 2
@@ -51,7 +51,7 @@ function _plan_call_name(f)::Union{Nothing,Symbol}
     return nothing
 end
 
-function _plan_excerpt(ex; max::Int=72)::String
+function _plan_excerpt(ex; max::Int = 72)::String
     s = replace(sprint(show, ex), r"\s+" => " ")
     n = ncodeunits(s)
     n <= max && return s
@@ -60,12 +60,12 @@ function _plan_excerpt(ex; max::Int=72)::String
 end
 
 function _plan_push!(
-    acc::Vector{PlanFinding},
-    line::Int,
-    kind::Symbol,
-    status::Symbol,
-    ex,
-)
+        acc::Vector{PlanFinding},
+        line::Int,
+        kind::Symbol,
+        status::Symbol,
+        ex,
+    )
     push!(acc, PlanFinding(line, kind, status, _plan_excerpt(ex)))
     return nothing
 end
@@ -141,7 +141,7 @@ function _plan_index_fill_for(ex::Expr)
     _plan_expr_mentions_symbol(rhs, dest) && return nothing
     _plan_expr_has_escape(rhs) && return nothing
     _plan_rhs_index_is_loop_var(rhs, var) || return nothing
-    return (var=var, iter=iter, dest=dest, rhs=rhs)
+    return (var = var, iter = iter, dest = dest, rhs = rhs)
 end
 
 function _plan_walk!(acc::Vector{PlanFinding}, ex, line::Int)::Int
@@ -210,15 +210,15 @@ when `workers` / `gb_per_worker` / `probe` request sizing. That path calls
 [`size!`](@ref) internally. Default is syntax only (no SSH probe).
 """
 function plan(
-    script::AbstractString;
-    session::Union{Nothing,KitSession}=nothing,
-    workers::AbstractVector{<:AbstractString}=String[],
-    project::AbstractString=pwd(),
-    gb_per_worker::Union{Nothing,Real}=nothing,
-    probe::Union{Nothing,AbstractString}=nothing,
-    mem_headroom::Real=DEFAULT_MEM_HEADROOM,
-    parent_gb::Real=DEFAULT_PARENT_GB,
-)::KitPlan
+        script::AbstractString;
+        session::Union{Nothing, KitSession} = nothing,
+        workers::AbstractVector{<:AbstractString} = String[],
+        project::AbstractString = pwd(),
+        gb_per_worker::Union{Nothing, Real} = nothing,
+        probe::Union{Nothing, AbstractString} = nothing,
+        mem_headroom::Real = DEFAULT_MEM_HEADROOM,
+        parent_gb::Real = DEFAULT_PARENT_GB,
+    )::KitPlan
     path = String(script)
     julia = string(VERSION)
     empty = KitPlan(
@@ -227,7 +227,7 @@ function plan(
     isfile(path) || return empty
     src = read(path, String)
     expr = try
-        Meta.parseall(src; filename=path)
+        Meta.parseall(src; filename = path)
     catch e
         return KitPlan(
             path, :go, PlanFinding[], julia, false, sprint(showerror, e), nothing,
@@ -246,19 +246,19 @@ function plan(
             session
         else
             KitSession(;
-                project=project,
-                workers=workers,
-                yes=true,
-                quiet=true,
+                project = project,
+                workers = workers,
+                yes = true,
+                quiet = true,
             )
         end
         try
             slots = size!(
                 sess;
-                gb_per_worker=gb_per_worker,
-                probe=probe,
-                mem_headroom=mem_headroom,
-                parent_gb=parent_gb,
+                gb_per_worker = gb_per_worker,
+                probe = probe,
+                mem_headroom = mem_headroom,
+                parent_gb = parent_gb,
             )
         catch e
             ok = false
@@ -276,7 +276,7 @@ function _plan_status_label(st::Symbol)::String
 end
 
 """Print a [`KitPlan`](@ref) (CLI and tests)."""
-function print_plan(kp::KitPlan; io::IO=stdout)
+function print_plan(kp::KitPlan; io::IO = stdout)
     println(io, "Planning ", kp.script, "...")
     println(io)
     if !kp.ok
@@ -289,8 +289,10 @@ function print_plan(kp::KitPlan; io::IO=stdout)
     else
         for f in kp.findings
             loc = "$(basename(kp.script)):$(f.line)"
-            println(io, "  ", rpad(loc, 28), " ", rpad(String(f.kind), 14), " ",
-                _plan_status_label(f.status))
+            println(
+                io, "  ", rpad(loc, 28), " ", rpad(String(f.kind), 14), " ",
+                _plan_status_label(f.status)
+            )
         end
         println(io)
     end
@@ -305,8 +307,10 @@ function print_plan(kp::KitPlan; io::IO=stdout)
         end
     end
     println(io, "  julia:    ", kp.julia, " / syntax")
-    kp.suggest === :ride && println(io,
-        "  note:     effect_free is not proven here; ride decides at run time")
+    kp.suggest === :ride && println(
+        io,
+        "  note:     effect_free is not proven here; ride decides at run time"
+    )
     kp.suggest === :go && any(f -> f.status === :out_of_scope, kp.findings) &&
         println(io, "  note:     rewrite independent loops as map or a comprehension")
     return nothing
@@ -354,7 +358,7 @@ end
 function _drive_publish_source(script_path::AbstractString)::String
     path = String(script_path)
     src = read(path, String)
-    expr = Meta.parseall(src; filename=path)
+    expr = Meta.parseall(src; filename = path)
     pieces = Any[]
     _drive_collect_publish!(pieces, expr)
     isempty(pieces) && return ""
@@ -362,9 +366,9 @@ function _drive_publish_source(script_path::AbstractString)::String
 end
 
 function _drive_plain_script_hint(
-    kp::KitPlan;
-    shown::AbstractString=kp.script,
-)::String
+        kp::KitPlan;
+        shown::AbstractString = kp.script,
+    )::String
     cmd = String(kp.suggest)
     shown_s = String(shown)
     return string(
@@ -379,12 +383,12 @@ end
 
 """`nothing` if this file has Distributed vocabulary; otherwise a warning body."""
 function _drive_plain_script_hint(
-    script_path::AbstractString,
-    project::AbstractString;
-    shown::AbstractString=script_path,
-)::Union{Nothing,String}
-    kp = plan(script_path; project=project)
+        script_path::AbstractString,
+        project::AbstractString;
+        shown::AbstractString = script_path,
+    )::Union{Nothing, String}
+    kp = plan(script_path; project = project)
     kp.ok || return nothing
     any(f -> f.status === :drive_vocab, kp.findings) && return nothing
-    return _drive_plain_script_hint(kp; shown=shown)
+    return _drive_plain_script_hint(kp; shown = shown)
 end

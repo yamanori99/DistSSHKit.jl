@@ -11,17 +11,17 @@ using Test
         @test_throws ArgumentError DistSSHKit.git_pull_remote_host!("x", ".")
     end
     function _git_ident!(dir)
-        run(pipeline(`git -C $dir config user.email "test@example.com"`; stdout=devnull, stderr=devnull))
-        run(pipeline(`git -C $dir config user.name "Test"`; stdout=devnull, stderr=devnull))
+        run(pipeline(`git -C $dir config user.email "test@example.com"`; stdout = devnull, stderr = devnull))
+        run(pipeline(`git -C $dir config user.name "Test"`; stdout = devnull, stderr = devnull))
         return nothing
     end
 
     function _init_commit!(dir)
-        run(pipeline(`git -C $dir init -q`; stdout=devnull, stderr=devnull))
+        run(pipeline(`git -C $dir init -q`; stdout = devnull, stderr = devnull))
         _git_ident!(dir)
         write(joinpath(dir, "f.txt"), "hi\n")
-        run(pipeline(`git -C $dir add f.txt`; stdout=devnull, stderr=devnull))
-        run(pipeline(`git -C $dir commit -q -m init`; stdout=devnull, stderr=devnull))
+        run(pipeline(`git -C $dir add f.txt`; stdout = devnull, stderr = devnull))
+        run(pipeline(`git -C $dir commit -q -m init`; stdout = devnull, stderr = devnull))
         return nothing
     end
 
@@ -31,8 +31,8 @@ using Test
             "/unused",
         ) == "git@github.com:org/App.jl.git"
         _with_tempdir() do tmp
-            @test_throws ErrorException DistSSHKit.resolve_clone_url(nothing, tmp; surface=:cli)
-            @test_throws ErrorException DistSSHKit.resolve_clone_url("", tmp; surface=:api)
+            @test_throws ErrorException DistSSHKit.resolve_clone_url(nothing, tmp; surface = :cli)
+            @test_throws ErrorException DistSSHKit.resolve_clone_url("", tmp; surface = :api)
         end
     end
 
@@ -48,12 +48,12 @@ using Test
             @test !DistSSHKit.git_pull_local_project!(work)
 
             bare = joinpath(tmp, "origin.git")
-            run(pipeline(`git init -q --bare $bare`; stdout=devnull, stderr=devnull))
-            run(pipeline(`git -C $work remote add origin $bare`; stdout=devnull, stderr=devnull))
+            run(pipeline(`git init -q --bare $bare`; stdout = devnull, stderr = devnull))
+            run(pipeline(`git -C $work remote add origin $bare`; stdout = devnull, stderr = devnull))
             @test DistSSHKit._git_remote_url(work) == bare
             # `git push` with no upstream tracking fails.
             @test !DistSSHKit.git_push_project!(work)
-            run(pipeline(`git -C $work push -q -u origin HEAD`; stdout=devnull, stderr=devnull))
+            run(pipeline(`git -C $work push -q -u origin HEAD`; stdout = devnull, stderr = devnull))
             @test DistSSHKit.git_push_project!(work)
             @test DistSSHKit.git_pull_local_project!(work)
         end
@@ -68,7 +68,7 @@ using Test
             out, raw = _capture_stdio() do _, _
                 DistSSHKit.git_sync_project_to_hosts!(
                     ["192.0.2.1"], work, "~/App.jl";
-                    do_push=true, do_pull=true, do_local_pull=false,
+                    do_push = true, do_pull = true, do_local_pull = false,
                 )
             end
             @test !raw.ok
@@ -77,7 +77,7 @@ using Test
 
             raw_pull = DistSSHKit.git_sync_project_to_hosts!(
                 ["192.0.2.1"], work, "~/App.jl";
-                do_push=false, do_pull=true, do_local_pull=true,
+                do_push = false, do_pull = true, do_local_pull = true,
             )
             @test !raw_pull.ok
             @test isempty(raw_pull.host_results)
@@ -101,7 +101,7 @@ using Test
                                 seekstart(stdin_io)
                                 DistSSHKit.git_sync_project_to_hosts!(
                                     ["host1"], work, "~/App.jl";
-                                    do_push=true, do_pull=true, do_local_pull=false,
+                                    do_push = true, do_pull = true, do_local_pull = false,
                                 )
                             end
                             @test !raw.ok
@@ -115,7 +115,7 @@ using Test
                     _, raw_skip = _capture_stdio() do _, _
                         DistSSHKit.git_sync_project_to_hosts!(
                             ["192.0.2.1"], work, "~/App.jl";
-                            do_push=true, do_pull=false, do_local_pull=false, confirm=false,
+                            do_push = true, do_pull = false, do_local_pull = false, confirm = false,
                         )
                     end
                     @test !raw_skip.ok
@@ -138,7 +138,7 @@ using Test
                 _init_commit!(work)
                 raw = DistSSHKit.git_sync_project_to_hosts!(
                     ["192.0.2.1", "192.0.2.2"], work, "~/App.jl";
-                    do_push=false, do_pull=true, do_local_pull=false,
+                    do_push = false, do_pull = true, do_local_pull = false,
                 )
                 @test !raw.ok
                 @test length(raw.host_results) == 1

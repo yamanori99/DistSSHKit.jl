@@ -19,7 +19,7 @@ isempty(ARGS) || (length(ARGS) == 2 && ARGS[1] == "--n") ||
 driver = joinpath(@__DIR__, "square_file.jl")
 
 # Local-only: two Distributed workers on this machine (collect off — outputs stay local).
-result = pipeline!(driver, "parent:2"; args=ARGS, collect=false, enable_log=false)
+result = pipeline!(driver, "parent:2"; args = ARGS, collect = false, enable_log = false)
 
 # First-time remotes: setup!, then pipeline! (or drive!).
 #

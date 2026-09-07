@@ -3,7 +3,7 @@
 
 const _RIDE_DEPTH = Ref(0)
 const _RIDE_SPI = Ref(true)
-const _RIDE_SPI_OK = Ref{Union{Nothing,Bool}}(nothing)
+const _RIDE_SPI_OK = Ref{Union{Nothing, Bool}}(nothing)
 const _RIDE_CAPTURE_DEPTH = 4
 
 """Outcome of [`ride!`](@ref). Experimental."""
@@ -11,25 +11,25 @@ struct RideResult
     ok::Bool
     script::String
     workers::Int
-    spi_ok::Union{Nothing,Bool}
-    error::Union{Nothing,String}
+    spi_ok::Union{Nothing, Bool}
+    error::Union{Nothing, String}
     julia::String
-    output_dir::Union{Nothing,String}
+    output_dir::Union{Nothing, String}
 end
 
 RideResult(
     ok::Bool,
     script::AbstractString,
     workers::Integer,
-    spi_ok::Union{Nothing,Bool},
-    error::Union{Nothing,String},
+    spi_ok::Union{Nothing, Bool},
+    error::Union{Nothing, String},
     julia::AbstractString,
 ) = RideResult(ok, String(script), Int(workers), spi_ok, error, String(julia), nothing)
 
 function kit_run_result(
-    result::RideResult,
-    tokens::AbstractVector{<:AbstractString}=String[],
-)::KitRunResult
+        result::RideResult,
+        tokens::AbstractVector{<:AbstractString} = String[],
+    )::KitRunResult
     return KitRunResult(
         result.ok,
         :ride,
@@ -60,7 +60,7 @@ end
 
 function _ride_index_free(xs)::Bool
     try
-        e = Base.infer_effects(Base.getindex, Tuple{typeof(xs),Int})
+        e = Base.infer_effects(Base.getindex, Tuple{typeof(xs), Int})
         return Core.Compiler.is_effect_free(e)
     catch
         return false
@@ -77,7 +77,7 @@ function _ride_iterate_free(xs)::Bool
     end
     try
         et = eltype(xs)
-        e = Base.infer_effects(Base.iterate, Tuple{T,Union{Nothing,et}})
+        e = Base.infer_effects(Base.iterate, Tuple{T, Union{Nothing, et}})
         return Core.Compiler.is_effect_free(e)
     catch
         return false
@@ -376,21 +376,21 @@ function _ride_push_prelude!(ex)
 end
 
 function _ride_resolve_plan(
-    tokens::Vector{String};
-    session::Union{Nothing,KitSession},
-    gb_per_worker,
-    probe,
-    mem_headroom,
-    parent_gb,
-)::WorkerPlan
-    isempty(tokens) && return WorkerPlan(1, Dict{String,Int}())
+        tokens::Vector{String};
+        session::Union{Nothing, KitSession},
+        gb_per_worker,
+        probe,
+        mem_headroom,
+        parent_gb,
+    )::WorkerPlan
+    isempty(tokens) && return WorkerPlan(1, Dict{String, Int}())
     return worker_plan_from_tokens(
         tokens;
-        session=session,
-        gb_per_worker=gb_per_worker,
-        probe=probe,
-        mem_headroom=mem_headroom,
-        parent_gb=parent_gb,
+        session = session,
+        gb_per_worker = gb_per_worker,
+        probe = probe,
+        mem_headroom = mem_headroom,
+        parent_gb = parent_gb,
     )
 end
 
@@ -398,7 +398,7 @@ function _ride_activate_project!(project::AbstractString)
     proj = canonical_local_path(project)
     isdir(proj) || return
     isfile(joinpath(proj, "Project.toml")) || return
-    Pkg.activate(proj; io=devnull)
+    Pkg.activate(proj; io = devnull)
     return nothing
 end
 
@@ -406,7 +406,7 @@ function _ride_restore_project!(prev)
     if prev === nothing
         Base.set_active_project(nothing)
     else
-        Pkg.activate(String(prev); io=devnull)
+        Pkg.activate(String(prev); io = devnull)
     end
     return nothing
 end
@@ -430,25 +430,25 @@ function _ride_init_drive_workers!(proj_dir::AbstractString)
 end
 
 function _ride_add_workers!(
-    plan::WorkerPlan,
-    project::AbstractString,
-    script_path::AbstractString,
-    julia,
-    require_all_hosts::Bool,
-)::Tuple{Vector{Int},Vector{String}}
+        plan::WorkerPlan,
+        project::AbstractString,
+        script_path::AbstractString,
+        julia,
+        require_all_hosts::Bool,
+    )::Tuple{Vector{Int}, Vector{String}}
     before = Set(workers())
     ssh_hosts = String[]
     try
         _require_drive_host_status_idle!()
-        child_hosts = Tuple{String,Union{Int,Nothing}}[
+        child_hosts = Tuple{String, Union{Int, Nothing}}[
             (String(h), Int(n)) for (h, n) in plan.child_workers if n > 0
         ]
         if isempty(child_hosts)
             n = plan.parent_workers
             n > 0 && addprocs(
                 n;
-                topology=:master_worker,
-                exeflags=_drive_worker_exeflags(project),
+                topology = :master_worker,
+                exeflags = _drive_worker_exeflags(project),
             )
         else
             _ensure_drive_fragments!(project)
@@ -484,7 +484,7 @@ function _ride_add_workers!(
             if isdefined(Main, :wait_for_worker_connections!)
                 _ride_main_call(
                     :wait_for_worker_connections!;
-                    ssh=!isempty(child_hosts),
+                    ssh = !isempty(child_hosts),
                 )
             end
             _ride_init_drive_workers!(project)
@@ -497,7 +497,7 @@ function _ride_add_workers!(
         return added, ssh_hosts
     catch
         leftover = Int[w for w in workers() if w ∉ before]
-        isempty(leftover) || rmprocs(leftover; waitfor=30)
+        isempty(leftover) || rmprocs(leftover; waitfor = 30)
         rethrow()
     end
 end
@@ -523,22 +523,22 @@ Queue: [`execute!`](@ref) `:ride` (`detached=true` writes `kit.result` like go;
 SSH `child:` also writes `kit.hosts` for [`terminate!`](@ref)).
 """
 function ride!(
-    script::AbstractString,
-    tokens::AbstractString...;
-    kwargs...,
-)
+        script::AbstractString,
+        tokens::AbstractString...;
+        kwargs...,
+    )
     return ride!(script, String[String(t) for t in tokens]; kwargs...)
 end
 
 function _ride_batch_dir(
-    script::AbstractString,
-    output_dir::Union{Nothing,AbstractString};
-    project::AbstractString=pwd(),
-)::String
+        script::AbstractString,
+        output_dir::Union{Nothing, AbstractString};
+        project::AbstractString = pwd(),
+    )::String
     if output_dir !== nothing
         return canonical_local_path(String(output_dir))
     end
-    return allocate_output_dir(:ride, script; project=project)
+    return allocate_output_dir(:ride, script; project = project)
 end
 
 function _ride_run_script!(rewritten)
@@ -578,7 +578,7 @@ function _ride_run_script!(rewritten)
     return nothing
 end
 
-function _ride_print_spi_progress!(spi::Union{Nothing,Bool})
+function _ride_print_spi_progress!(spi::Union{Nothing, Bool})
     kit_output_progress() || return nothing
     msg = if spi === nothing
         "skipped (sequential or off)"
@@ -590,24 +590,24 @@ function _ride_print_spi_progress!(spi::Union{Nothing,Bool})
 end
 
 function ride!(
-    script::AbstractString,
-    tokens::AbstractVector{<:AbstractString};
-    args::AbstractVector{<:AbstractString}=String[],
-    spi_check::Bool=true,
-    output_dir::Union{Nothing,AbstractString}=nothing,
-    project::AbstractString=pwd(),
-    julia::Union{Nothing,AbstractString}=nothing,
-    remote::Union{Nothing,AbstractString}=nothing,
-    session::Union{Nothing,KitSession}=nothing,
-    gb_per_worker::Union{Nothing,Real}=nothing,
-    probe::Union{Nothing,AbstractString}=nothing,
-    mem_headroom::Real=DEFAULT_MEM_HEADROOM,
-    parent_gb::Real=DEFAULT_PARENT_GB,
-    require_all_hosts::Bool=true,
-)::RideResult
+        script::AbstractString,
+        tokens::AbstractVector{<:AbstractString};
+        args::AbstractVector{<:AbstractString} = String[],
+        spi_check::Bool = true,
+        output_dir::Union{Nothing, AbstractString} = nothing,
+        project::AbstractString = pwd(),
+        julia::Union{Nothing, AbstractString} = nothing,
+        remote::Union{Nothing, AbstractString} = nothing,
+        session::Union{Nothing, KitSession} = nothing,
+        gb_per_worker::Union{Nothing, Real} = nothing,
+        probe::Union{Nothing, AbstractString} = nothing,
+        mem_headroom::Real = DEFAULT_MEM_HEADROOM,
+        parent_gb::Real = DEFAULT_PARENT_GB,
+        require_all_hosts::Bool = true,
+    )::RideResult
     path = canonical_local_path(script)
     julia_s = string(VERSION)
-    kp = plan(path; project=project)
+    kp = plan(path; project = project)
     !kp.ok && return RideResult(false, path, 0, nothing, something(kp.error, "plan failed"), julia_s)
     any(f -> f.status === :drive_vocab, kp.findings) &&
         return RideResult(false, path, 0, nothing, _ride_drive_vocab_error(kp), julia_s)
@@ -624,31 +624,31 @@ function ride!(
 end
 
 function _ride_run!(
-    path::String,
-    julia_s::String,
-    tokens,
-    args,
-    spi_check,
-    output_dir,
-    project,
-    julia,
-    remote,
-    session,
-    gb_per_worker,
-    probe,
-    mem_headroom,
-    parent_gb,
-    require_all_hosts,
-)
+        path::String,
+        julia_s::String,
+        tokens,
+        args,
+        spi_check,
+        output_dir,
+        project,
+        julia,
+        remote,
+        session,
+        gb_per_worker,
+        probe,
+        mem_headroom,
+        parent_gb,
+        require_all_hosts,
+    )
     tok = String[String(t) for t in tokens]
     wp = try
         _ride_resolve_plan(
             tok;
-            session=session,
-            gb_per_worker=gb_per_worker,
-            probe=probe,
-            mem_headroom=mem_headroom,
-            parent_gb=parent_gb,
+            session = session,
+            gb_per_worker = gb_per_worker,
+            probe = probe,
+            mem_headroom = mem_headroom,
+            parent_gb = parent_gb,
         )
     catch e
         e isa ArgumentError && return RideResult(
@@ -658,18 +658,18 @@ function _ride_run!(
     end
     src = read(path, String)
     expr = try
-        Meta.parseall(src; filename=path)
+        Meta.parseall(src; filename = path)
     catch e
         return RideResult(false, path, 0, nothing, sprint(showerror, e), julia_s)
     end
     rewritten = _ride_rewrite(expr)
-    _ride_reset_runtime!(; spi_check=spi_check)
+    _ride_reset_runtime!(; spi_check = spi_check)
     added = Int[]
     old_args = copy(ARGS)
     old_out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", nothing)
     old_remote = get(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT", nothing)
     old_proj = Base.active_project()
-    batch_dir = _ride_batch_dir(path, output_dir; project=project)
+    batch_dir = _ride_batch_dir(path, output_dir; project = project)
     release_lock = () -> nothing
     progress_started = false
     progress_ok = false
@@ -691,11 +691,11 @@ function _ride_run!(
             getpid(),
             batch_dir,
             nothing;
-            job_id=isempty(job_raw) ? nothing : job_raw,
+            job_id = isempty(job_raw) ? nothing : job_raw,
         )
         release_lock = kit_output_dir_lock!(batch_dir)
         _set_kit_progress_sidecar!(batch_dir)
-        kit_progress_begin!("ride"; steps=3, kind=:ride)
+        kit_progress_begin!("ride"; steps = 3, kind = :ride)
         progress_started = true
         kit_progress_step!("workers")
         _ride_activate_project!(project)
@@ -727,7 +727,7 @@ function _ride_run!(
                 else
                     nothing
                 end
-                kit_progress_done!(; ok=progress_ok, footer=footer)
+                kit_progress_done!(; ok = progress_ok, footer = footer)
                 _print_job_stdout_after_progress!()
                 progress_ok && _ride_print_spi_progress!(_RIDE_SPI_OK[])
                 _maybe_print_kit_progress_phases(batch_dir)
@@ -749,7 +749,7 @@ function _ride_run!(
                 ENV["DISTRIBUTED_REMOTE_PROJECT_ROOT"] = old_remote
             end
             _stop_drive_host_status_monitor!()
-            !isempty(added) && rmprocs(added; waitfor=30)
+            !isempty(added) && rmprocs(added; waitfor = 30)
             _clear_drive_host_worker_ids!()
             _RIDE_DEPTH[] = 0
         finally
@@ -759,7 +759,7 @@ function _ride_run!(
 end
 
 """Print a [`RideResult`](@ref). Field names match go / drive (`Script:`, `Workers:`)."""
-function print_ride(result::RideResult; io::IO=stdout)
+function print_ride(result::RideResult; io::IO = stdout)
     println(io, "DistSSHKit ride")
     println(io, "Script: ", result.script)
     println(io, "Workers: ", result.workers)
@@ -776,6 +776,6 @@ function print_ride(result::RideResult; io::IO=stdout)
     return nothing
 end
 
-function report_run_errors(result::RideResult; io::IO=stderr)::Bool
-    return report_run_errors(kit_run_result(result); io=io)
+function report_run_errors(result::RideResult; io::IO = stderr)::Bool
+    return report_run_errors(kit_run_result(result); io = io)
 end

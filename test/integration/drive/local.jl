@@ -12,10 +12,10 @@ using Test
     _mktemp_host() do proj
         _write_host_project!(proj, "SmokeApp")
         script = joinpath(proj, "job.jl")
-        cp(fixture, script; force=true)
+        cp(fixture, script; force = true)
 
-        proc, combined = _run_host_drive(; script=script, host_project=proj)
-        _assert_proc_ok(proc, combined; label="drive l:N smoke")
+        proc, combined = _run_host_drive(; script = script, host_project = proj)
+        _assert_proc_ok(proc, combined; label = "drive l:N smoke")
         @test occursin("DISTSSHKIT_RUNNER_SMOKE_OK nw=2", combined)
     end
 end

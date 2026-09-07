@@ -33,7 +33,7 @@ Absolute path to a bundled demo. `name` may be `with_kit/square_file`,
 `square_file`, or `square_file.jl`. Bare names search `with_kit/` then `without_kit/`.
 Returns `nothing` when no such demo exists.
 """
-function demo_script(name::AbstractString)::Union{Nothing,String}
+function demo_script(name::AbstractString)::Union{Nothing, String}
     s = String(name)
     endswith(s, ".jl") && (s = s[1:(end - 3)])
     if occursin('/', s)
@@ -50,17 +50,17 @@ end
 
 """`(rel, tree)` under `distsshkit_demos/` or `demos/`, or `nothing`."""
 function _relpath_under_demo_trees(
-    script_path::AbstractString,
-    project_root::AbstractString,
-)::Union{Nothing,@NamedTuple{rel::String, tree::String}}
+        script_path::AbstractString,
+        project_root::AbstractString,
+    )::Union{Nothing, @NamedTuple{rel::String, tree::String}}
     root = abspath(String(project_root))
     path = abspath(String(script_path))
     for tree in (DEMO_INSTALL_DIR, "demos")
         base = joinpath(root, tree)
-        path == base && return (rel=".", tree=tree)
+        path == base && return (rel = ".", tree = tree)
         prefix = base * Base.Filesystem.path_separator
         startswith(path, prefix) || continue
-        return (rel=relpath(path, base), tree=tree)
+        return (rel = relpath(path, base), tree = tree)
     end
     return nothing
 end
@@ -68,9 +68,9 @@ end
 # Demo-domain diagnose/explain (shared surface helpers: `explain.jl`).
 
 function _demo_install_phrase(
-    surface::Symbol;
-    family::Union{Nothing,AbstractString}=nothing,
-)::String
+        surface::Symbol;
+        family::Union{Nothing, AbstractString} = nothing,
+    )::String
     fam = family === nothing ? nothing : String(family)
     if _normalize_hint_surface(surface) === :api
         fam === nothing && return "`DistSSHKit.install_demos(; family=\"with_kit\")`"
@@ -97,9 +97,9 @@ Returns `nothing`, or a NamedTuple with `kind`:
 Keep diagnosis free of CLI/API wording; [`explain_missing_script_hint`](@ref) formats.
 """
 function diagnose_missing_script(
-    script_path::AbstractString,
-    project_root::AbstractString,
-)::Union{Nothing,@NamedTuple{kind::Symbol, group::Union{Nothing,String}, name::Union{Nothing,String}, tree::Union{Nothing,String}}}
+        script_path::AbstractString,
+        project_root::AbstractString,
+    )::Union{Nothing, @NamedTuple{kind::Symbol, group::Union{Nothing, String}, name::Union{Nothing, String}, tree::Union{Nothing, String}}}
     path = String(script_path)
     root = String(project_root)
     base = basename(path)
@@ -108,14 +108,14 @@ function diagnose_missing_script(
             for tree in (DEMO_INSTALL_DIR, "demos")
                 installed = joinpath(root, tree, group, base)
                 if isfile(installed)
-                    return (kind=:use_path, group=String(group), name=base, tree=tree)
+                    return (kind = :use_path, group = String(group), name = base, tree = tree)
                 end
             end
         end
         bundled = demo_script(base)
         if bundled !== nothing
             group = basename(dirname(bundled))
-            return (kind=:install_bundled, group=group, name=base, tree=DEMO_INSTALL_DIR)
+            return (kind = :install_bundled, group = group, name = base, tree = DEMO_INSTALL_DIR)
         end
     end
     under = _relpath_under_demo_trees(path, root)
@@ -123,19 +123,19 @@ function diagnose_missing_script(
     tree_dir = joinpath(abspath(root), under.tree)
     name = endswith(base, ".jl") ? base : nothing
     if !isdir(tree_dir)
-        return (kind=:demos_tree_missing, group=nothing, name=name, tree=under.tree)
+        return (kind = :demos_tree_missing, group = nothing, name = name, tree = under.tree)
     end
-    return (kind=:demos_file_missing, group=nothing, name=name, tree=under.tree)
+    return (kind = :demos_file_missing, group = nothing, name = name, tree = under.tree)
 end
 
 """Render a [`diagnose_missing_script`](@ref) result for `:cli` or `:api`."""
 function explain_missing_script_hint(
-    diag::NamedTuple;
-    surface::Symbol=:cli,
-)::String
+        diag::NamedTuple;
+        surface::Symbol = :cli,
+    )::String
     surface = _normalize_hint_surface(surface)
     fam = diag.group
-    install = _demo_install_phrase(surface; family=fam)
+    install = _demo_install_phrase(surface; family = fam)
     list = _demo_list_phrase(surface)
     kind = diag.kind
     tree = something(diag.tree, DEMO_INSTALL_DIR)
@@ -158,27 +158,31 @@ wrong `demos/` layout, etc.). Returns `nothing` when no demo-related tip applies
 `surface` is `:cli` (default) or `:api` — only the suggested next command changes.
 """
 function missing_script_demo_hint(
-    script_path::AbstractString,
-    project_root::AbstractString;
-    surface::Symbol=:cli,
-)::Union{Nothing,String}
+        script_path::AbstractString,
+        project_root::AbstractString;
+        surface::Symbol = :cli,
+    )::Union{Nothing, String}
     diag = diagnose_missing_script(script_path, project_root)
     diag === nothing && return nothing
-    return explain_missing_script_hint(diag; surface=surface)
+    return explain_missing_script_hint(diag; surface = surface)
 end
 
-function _require_demo_family(family::Union{Nothing,AbstractString}; surface::Symbol=:api)::String
+function _require_demo_family(family::Union{Nothing, AbstractString}; surface::Symbol = :api)::String
     fam = family === nothing ? "" : String(family)
     fam in _DEMO_GROUPS && return fam
     names = join(_DEMO_GROUPS, " or ")
     if _normalize_hint_surface(surface) === :api
-        throw(ArgumentError(
-            "install_demos requires family=$names; got $(repr(family))",
-        ))
+        throw(
+            ArgumentError(
+                "install_demos requires family=$names; got $(repr(family))",
+            )
+        )
     end
-    throw(ArgumentError(
-        "demo install requires $names (got $(family === nothing ? "none" : repr(fam)))",
-    ))
+    throw(
+        ArgumentError(
+            "demo install requires $names (got $(family === nothing ? "none" : repr(fam)))",
+        )
+    )
 end
 
 """Copy file contents; destination is created with default write mode."""
@@ -202,14 +206,14 @@ Refuses `dest` equal to this package root or its bundled `demos/` tree.
 Use [`list_demos`](@ref) / `demo list`, or `--dest` / `dest=`.
 """
 function install_demos(
-    dest::AbstractString=pwd();
-    family::Union{Nothing,AbstractString}=nothing,
-    force::Bool=false,
-    surface::Symbol=:api,
-)
-    group = _require_demo_family(family; surface=surface)
+        dest::AbstractString = pwd();
+        family::Union{Nothing, AbstractString} = nothing,
+        force::Bool = false,
+        surface::Symbol = :api,
+    )
+    group = _require_demo_family(family; surface = surface)
     src_root::String = demos_root()
-    isdir(src_root) || return (installed=String[], skipped=String[])
+    isdir(src_root) || return (installed = String[], skipped = String[])
     dest_root = canonical_local_path(dest)
     dest_demos = joinpath(dest_root, DEMO_INSTALL_DIR)
     kit_root = realpath(_KIT_ROOT)
@@ -224,10 +228,12 @@ function install_demos(
         else
             "`julia --project=. -m DistSSHKit demo install $group --dest DIR`"
         end
-        throw(ArgumentError(
-            "destination would be the DistSSHKit package tree ($kit_root); " *
-            "use $list to see paths, or $install to copy elsewhere",
-        ))
+        throw(
+            ArgumentError(
+                "destination would be the DistSSHKit package tree ($kit_root); " *
+                    "use $list to see paths, or $install to copy elsewhere",
+            )
+        )
     end
     mkpath(dest_demos)
     installed = String[]
@@ -257,12 +263,12 @@ function install_demos(
             _copy_user_writable(gitignore, gitignore_out)
         end
     end
-    return (installed=installed, skipped=skipped)
+    return (installed = installed, skipped = skipped)
 end
 
 function _demo_install_args(
-    args::Vector{String},
-)::@NamedTuple{dest::String, force::Bool, family::String}
+        args::Vector{String},
+    )::@NamedTuple{dest::String, force::Bool, family::String}
     dest = canonical_local_path(get(ENV, "DISTRIBUTED_PROJECT_ROOT", pwd()))
     force = false
     families = String[]
@@ -281,51 +287,58 @@ function _demo_install_args(
             cli_consume!(c)
         end
     end
-    length(families) > 1 && throw(ArgumentError(
-        "demo install takes one family (with_kit, without_kit, or ride); got extra $(repr(families[2]))",
-    ))
-    fam = _require_demo_family(isempty(families) ? nothing : families[1]; surface=:cli)
-    return (dest=dest, force=force, family=fam)
+    length(families) > 1 && throw(
+        ArgumentError(
+            "demo install takes one family (with_kit, without_kit, or ride); got extra $(repr(families[2]))",
+        )
+    )
+    fam = _require_demo_family(isempty(families) ? nothing : families[1]; surface = :cli)
+    return (dest = dest, force = force, family = fam)
 end
 
-function show_demo_usage(io::IO=stdout)
-    print_help_chrome("DistSSHKit demo"; io=io)
-    print_help_section("Usage"; io=io)
-    print_help_lines(io,
+function show_demo_usage(io::IO = stdout)
+    print_help_chrome("DistSSHKit demo"; io = io)
+    print_help_section("Usage"; io = io)
+    print_help_lines(
+        io,
         "  julia --project=. -m DistSSHKit demo install with_kit [--dest DIR] [--force]",
         "  julia --project=. -m DistSSHKit demo install without_kit [--dest DIR] [--force]",
         "  julia --project=. -m DistSSHKit demo install ride [--dest DIR] [--force]",
         "  julia --project=. -m DistSSHKit demo list",
     )
     print_help_blank(io)
-    print_help_section("Commands"; io=io)
-    print_help_lines(io,
+    print_help_section("Commands"; io = io)
+    print_help_lines(
+        io,
         "  install FAMILY  Copy package demos/FAMILY/ into ./$DEMO_INSTALL_DIR/.",
         "                  Existing files left alone; --force overwrites. One family.",
         "  list            Show demo ids and package paths.",
     )
     print_help_blank(io)
-    print_help_section("Layout"; io=io)
-    print_help_lines(io,
+    print_help_section("Layout"; io = io)
+    print_help_lines(
+        io,
         "  with_kit/     DistSSHKit drivers (drive / pipeline!)",
         "  without_kit/  Kit-independent scripts (julia / go / go!)",
         "  ride/         Plain scripts for plan / go / ride (map, filter, for)",
     )
     print_help_blank(io)
-    print_help_section("Demos (demo install)"; io=io)
+    print_help_section("Demos (demo install)"; io = io)
     for name in list_demos()
         println(io, "  $name")
     end
     print_help_blank(io)
-    print_help_section("Options"; io=io)
-    print_help_lines(io,
+    print_help_section("Options"; io = io)
+    print_help_lines(
+        io,
         "  --dest DIR   Install under DIR/$DEMO_INSTALL_DIR/ (default: ./$DEMO_INSTALL_DIR/)",
         "  --force      Overwrite existing demo files",
         "  -h, --help   Show this help",
     )
     print_help_blank(io)
-    print_help_section("After install"; io=io)
-    print_help_lines(io,
+    print_help_section("After install"; io = io)
+    print_help_lines(
+        io,
         "  julia --project=. -m DistSSHKit drive parent:2 $DEMO_INSTALL_DIR/with_kit/square_file.jl",
         "  julia --project=. $DEMO_INSTALL_DIR/with_kit/pipeline_square.jl",
         "  julia --project=. $DEMO_INSTALL_DIR/without_kit/pipeline_pi.jl",
@@ -344,7 +357,7 @@ Install or list bundled demos. See [`(@main)`](@ref).
     julia --project=. distsshkit_demos/with_kit/pipeline_square.jl
     julia --project=. distsshkit_demos/without_kit/pipeline_pi.jl
 """
-function demo(args::Vector{String}=copy(ARGS))::Cint
+function demo(args::Vector{String} = copy(ARGS))::Cint
     if isempty(args) || args[1] in ("-h", "--help", "help")
         show_demo_usage()
         return 0
@@ -364,7 +377,7 @@ function demo(args::Vector{String}=copy(ARGS))::Cint
                 print_cli_error("No demo scripts found in package ($(demos_dir()))")
                 return 1
             end
-            result = install_demos(dest; family=family, force=force, surface=:cli)
+            result = install_demos(dest; family = family, force = force, surface = :cli)
             for path in result.installed
                 println("wrote ", path)
             end

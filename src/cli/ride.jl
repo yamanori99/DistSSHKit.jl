@@ -44,25 +44,25 @@ function ride_main()::Cint
         pt = parse_worker_tokens(tok)
         if !worker_tokens_fully_specified(pt)
             sess = KitSession(;
-                project=PROJECT_ROOT,
-                workers=tok,
-                include_parent_for_size=pt.parent_autosize,
+                project = PROJECT_ROOT,
+                workers = tok,
+                include_parent_for_size = pt.parent_autosize,
             )
         end
     end
     result = ride!(
         parsed.script_path,
         tok;
-        args=parsed.script_args,
-        spi_check=parsed.spi_check,
-        output_dir=parsed.output_dir,
-        project=PROJECT_ROOT,
-        julia=parsed.julia,
-        session=sess,
-        gb_per_worker=parsed.gb_per_worker,
-        probe=parsed.probe,
-        mem_headroom=parsed.mem_headroom,
-        parent_gb=parsed.parent_gb,
+        args = parsed.script_args,
+        spi_check = parsed.spi_check,
+        output_dir = parsed.output_dir,
+        project = PROJECT_ROOT,
+        julia = parsed.julia,
+        session = sess,
+        gb_per_worker = parsed.gb_per_worker,
+        probe = parsed.probe,
+        mem_headroom = parsed.mem_headroom,
+        parent_gb = parsed.parent_gb,
     )
     if !(kit_output_progress() && result.ok)
         print_ride(result)
@@ -71,7 +71,7 @@ function ride_main()::Cint
 end
 
 if get(ENV, "DIST_SSH_KIT_CLI_INCLUDE", "") != "1" &&
-   !isempty(PROGRAM_FILE) &&
-   abspath(PROGRAM_FILE) == abspath(@__FILE__)
+        !isempty(PROGRAM_FILE) &&
+        abspath(PROGRAM_FILE) == abspath(@__FILE__)
     exit(ride_main())
 end
