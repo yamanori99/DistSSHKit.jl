@@ -59,6 +59,9 @@ using Test
         acc = Meta.parse("for x in xs; s += x; end")
         @test DistSSHKit._ride_rewrite(acc).head === :for
 
+        stencil = Meta.parse("for i in 2:length(dest); dest[i] = alias[i - 1]; end")
+        @test DistSSHKit._ride_rewrite(stencil).head === :for
+
         pre = DistSSHKit._ride_worker_prelude(Meta.parseall("""
             function work(x)
                 x + 1
@@ -159,6 +162,34 @@ using Test
         @test rl.ok
         @test rl.spi_ok !== false
         @test read(lout, String) == "1,4,9,16"
+
+        st_path = joinpath(tmp, "stateful.jl")
+        stout = joinpath(tmp, "stateful.txt")
+        write(st_path, """
+            xs = [1, 2, 3, 4]
+            ys = similar(xs)
+            for i in Iterators.Stateful(eachindex(xs))
+                ys[i] = xs[i] * xs[i]
+            end
+            write($(repr(stout)), join(string.(ys), ","))
+            """)
+        rs = DistSSHKit.ride!(st_path, "parent:1"; spi_check=false)
+        @test rs.ok
+        @test read(stout, String) == "1,4,9,16"
+
+        alias_path = joinpath(tmp, "alias.jl")
+        aout = joinpath(tmp, "alias.txt")
+        write(alias_path, """
+            dest = [1, 2, 3]
+            alias = dest
+            for i in 2:length(dest)
+                dest[i] = alias[i - 1]
+            end
+            write($(repr(aout)), join(string.(dest), ","))
+            """)
+        ra = DistSSHKit.ride!(alias_path, "parent:1"; spi_check=false)
+        @test ra.ok
+        @test read(aout, String) == "1,1,1"
 
         child = DistSSHKit.ride!(map_path, "child:host1")
         @test !child.ok

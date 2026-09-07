@@ -17,8 +17,10 @@ vocabulary (`pmap`, `@everywhere`, …) is an error; that script belongs on
 `drive`. Listed `child:` hosts are fail-closed.
 
 `for i in iter; dest[i] = expr; end` is rewritten when `expr` does not
-read `dest` (workers compute `expr`; the parent writes `dest`).
-Broadcast, `reduce`, and accumulating `for` stay out of scope.
+read `dest`, does not `return` / `break` / `continue`, and every index in
+`expr` is `i` (so `dest[i] = alias[i - 1]` stays sequential). The iterator
+is `collect`ed before map. Broadcast, `reduce`, and accumulating `for`
+stay out of scope.
 
 `--spi-check` is **on** by default: each rewritten `map` / `filter` (including
 values from indexed `for`) is also run sequentially and compared. `--no-spi-check` skips that. Under

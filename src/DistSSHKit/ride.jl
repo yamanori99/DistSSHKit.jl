@@ -204,7 +204,7 @@ function _ride_rewrite(ex)
                 :let,
                 Expr(
                     :block,
-                    Expr(:(=), it, _ride_rewrite(fill.iter)),
+                    Expr(:(=), it, Expr(:call, :collect, _ride_rewrite(fill.iter))),
                     Expr(
                         :(=),
                         vals,

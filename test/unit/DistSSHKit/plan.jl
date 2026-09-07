@@ -50,6 +50,18 @@ using Test
         @test ka.suggest === :go
         @test any(f -> f.kind === :for && f.status === :out_of_scope, ka.findings)
 
+        stenc_path = joinpath(tmp, "stenc.jl")
+        write(stenc_path, """
+            dest = [1, 2, 3]
+            alias = dest
+            for i in 2:length(dest)
+                dest[i] = alias[i - 1]
+            end
+            """)
+        ks = DistSSHKit.plan(stenc_path)
+        @test ks.suggest === :go
+        @test any(f -> f.kind === :for && f.status === :out_of_scope, ks.findings)
+
         drive_path = joinpath(tmp, "driver.jl")
         write(drive_path, """
             using Distributed

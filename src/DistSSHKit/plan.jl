@@ -105,6 +105,22 @@ end
 Indexed fill `for i in iter; dest[i] = rhs; end` with no `dest` in `rhs`.
 Workers can compute `rhs`; the parent writes `dest` afterward.
 """
+function _plan_rhs_index_is_loop_var(ex, var::Symbol)::Bool
+    ex isa Expr || return true
+    if ex.head === :ref
+        length(ex.args) == 2 || return false
+        ex.args[2] === var || return false
+    elseif ex.head === :call && _plan_call_name(ex.args[1]) === :getindex
+        length(ex.args) == 3 || return false
+        ex.args[3] === var || return false
+    end
+    for a in ex.args
+        a isa LineNumberNode && continue
+        _plan_rhs_index_is_loop_var(a, var) || return false
+    end
+    return true
+end
+
 function _plan_index_fill_for(ex::Expr)
     ex.head === :for || return nothing
     length(ex.args) == 2 || return nothing
@@ -124,6 +140,7 @@ function _plan_index_fill_for(ex::Expr)
     lhs.args[2] === var || return nothing
     _plan_expr_mentions_symbol(rhs, dest) && return nothing
     _plan_expr_has_escape(rhs) && return nothing
+    _plan_rhs_index_is_loop_var(rhs, var) || return nothing
     return (var=var, iter=iter, dest=dest, rhs=rhs)
 end
 
@@ -182,7 +199,8 @@ end
 
 Inspect `script` without starting a job. Syntax only: Distributed vocabulary,
 `map` / `filter` / comprehensions, and independent indexed `for`
-(`dest[i] = …`). Accumulating or multi-statement `for` is out of scope.
+(`dest[i] = …` with loop-var indices and no `return` in the RHS).
+Accumulating, stencil, or multi-statement `for` is out of scope.
 Effect analysis is not applied at this stage.
 
 Suggests `:drive`, `:ride`, or `:go`. The caller still chooses the command.
