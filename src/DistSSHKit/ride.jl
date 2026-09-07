@@ -144,6 +144,22 @@ function _ride_filter(f, xs)
     end
 end
 
+"""Indexed fill after [`ride!`](@ref) rewrite. Sequential writes if unsafe."""
+function _ride_index_fill!(dest, f, xs)
+    fn = _ride_callable(f)
+    if _RIDE_DEPTH[] >= 1 || !_can_distribute(f, xs)
+        for i in xs
+            dest[i] = fn(i)
+        end
+        return dest
+    end
+    vals = _ride_map(f, xs)
+    for (i, v) in zip(xs, vals)
+        dest[i] = v
+    end
+    return dest
+end
+
 function _ride_map_fn_arg(fex)
     fex isa Symbol && return Expr(
         :call,
@@ -197,37 +213,12 @@ function _ride_rewrite(ex)
     elseif h === :for
         fill = _plan_index_fill_for(ex)
         if fill !== nothing
-            it = gensym(:ride_it)
-            vals = gensym(:ride_vals)
-            v = gensym(:ride_v)
             return Expr(
-                :let,
-                Expr(
-                    :block,
-                    Expr(:(=), it, Expr(:call, :collect, _ride_rewrite(fill.iter))),
-                    Expr(
-                        :(=),
-                        vals,
-                        Expr(
-                            :call,
-                            GlobalRef(DistSSHKit, :_ride_map),
-                            Expr(:->, fill.var, _ride_rewrite(fill.rhs)),
-                            it,
-                        ),
-                    ),
-                ),
-                Expr(
-                    :block,
-                    Expr(
-                        :for,
-                        Expr(
-                            :(=),
-                            Expr(:tuple, fill.var, v),
-                            Expr(:call, :zip, it, vals),
-                        ),
-                        Expr(:block, Expr(:call, :setindex!, fill.dest, v, fill.var)),
-                    ),
-                ),
+                :call,
+                GlobalRef(DistSSHKit, :_ride_index_fill!),
+                fill.dest,
+                Expr(:->, fill.var, _ride_rewrite(fill.rhs)),
+                Expr(:call, :collect, _ride_rewrite(fill.iter)),
             )
         end
     end

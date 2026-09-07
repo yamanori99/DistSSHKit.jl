@@ -53,8 +53,8 @@ using Test
 
         fill = Meta.parse("for i in eachindex(xs); ys[i] = xs[i] * xs[i]; end")
         fr = DistSSHKit._ride_rewrite(fill)
-        @test fr.head === :let
-        @test occursin("_ride_map", string(fr))
+        @test fr.head === :call
+        @test fr.args[1] === GlobalRef(DistSSHKit, :_ride_index_fill!)
 
         acc = Meta.parse("for x in xs; s += x; end")
         @test DistSSHKit._ride_rewrite(acc).head === :for
@@ -190,6 +190,21 @@ using Test
         ra = DistSSHKit.ride!(alias_path, "parent:1"; spi_check=false)
         @test ra.ok
         @test read(aout, String) == "1,1,1"
+
+        obs_path = joinpath(tmp, "observe.jl")
+        oout = joinpath(tmp, "observe.txt")
+        write(obs_path, """
+            dest = [1, 2, 3]
+            seen = Int[]
+            observe(i) = (push!(seen, dest[1]); 0)
+            for i in eachindex(dest)
+                dest[i] = observe(i)
+            end
+            write($(repr(oout)), join(string.(seen), ",") * ";" * join(string.(dest), ","))
+            """)
+        ro = DistSSHKit.ride!(obs_path, "parent:1"; spi_check=false)
+        @test ro.ok
+        @test read(oout, String) == "1,0,0;0,0,0"
 
         child = DistSSHKit.ride!(map_path, "child:host1")
         @test !child.ok
