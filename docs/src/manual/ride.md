@@ -1,8 +1,9 @@
 # [ride](@id Manual-ride)
 
 Experimental. Run a **plain** script (`map` / `filter` / simple
-comprehensions). Kit rewrites those calls and may `pmap` them on Distributed
-workers (parent and SSH `child:`). Inspect first with [`plan`](@ref).
+comprehensions / independent indexed `for`). Kit rewrites those forms and
+may `pmap` them on Distributed workers (parent and SSH `child:`). Inspect
+first with [`plan`](@ref).
 
 ```bash
 julia --project=. -m DistSSHKit plan SCRIPT.jl
@@ -15,11 +16,12 @@ Prepare remotes with [`setup`](@ref Manual-setup) first. Distributed
 vocabulary (`pmap`, `@everywhere`, …) is an error; that script belongs on
 `drive`. Listed `child:` hosts are fail-closed.
 
-`for` loops stay sequential. `plan` tells you to rewrite them as `map`.
-Broadcast, `reduce`, and accumulating `for` are out of scope.
+`for i in iter; dest[i] = expr; end` is rewritten when `expr` does not
+read `dest` (workers compute `expr`; the parent writes `dest`).
+Broadcast, `reduce`, and accumulating `for` stay out of scope.
 
-`--spi-check` is **on** by default: each rewritten `map` / `filter` is also
-run sequentially and compared. `--no-spi-check` skips that. Under
+`--spi-check` is **on** by default: each rewritten `map` / `filter` (including
+values from indexed `for`) is also run sequentially and compared. `--no-spi-check` skips that. Under
 `--progress`, a successful run prints `SPI check: passed` after the script
 stdout.
 

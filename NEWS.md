@@ -6,6 +6,9 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+- `ride` / `ride!`: independent indexed `for` (`dest[i] = expr` with no
+  `dest` in `expr`) is rewritten like `map`. Accumulating loops stay
+  sequential; `plan` still marks those out of scope.
 - `drive` / `ride` no longer `pkill -f julia.*--worker` on SSH hosts. Leftover
   remote workers are `pkill`d only when `job_id` / `DISTSSHKIT_JOB_ID` is set
   (`pkill -f distsshkit-job:<id>`, same as [`terminate!`](@ref)). Untagged machine-wide sweep stays `setup --cleanup`.

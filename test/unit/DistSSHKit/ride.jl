@@ -51,6 +51,14 @@ using Test
         fx2 = Meta.parse("for i in xs; f(i); end")
         @test DistSSHKit._ride_rewrite(fx2).head === :for
 
+        fill = Meta.parse("for i in eachindex(xs); ys[i] = xs[i] * xs[i]; end")
+        fr = DistSSHKit._ride_rewrite(fill)
+        @test fr.head === :let
+        @test occursin("_ride_map", string(fr))
+
+        acc = Meta.parse("for x in xs; s += x; end")
+        @test DistSSHKit._ride_rewrite(acc).head === :for
+
         pre = DistSSHKit._ride_worker_prelude(Meta.parseall("""
             function work(x)
                 x + 1
@@ -136,6 +144,21 @@ using Test
         rn = DistSSHKit.ride!(named, "parent:1"; spi_check=true)
         @test rn.ok
         @test read(nout, String) == "1,4,9"
+
+        loop = joinpath(tmp, "loop.jl")
+        lout = joinpath(tmp, "loop.txt")
+        write(loop, """
+            xs = 1:4
+            ys = similar(collect(xs))
+            for i in eachindex(xs)
+                ys[i] = xs[i] * xs[i]
+            end
+            write($(repr(lout)), join(string.(ys), ","))
+            """)
+        rl = DistSSHKit.ride!(loop, "parent:1"; spi_check=true)
+        @test rl.ok
+        @test rl.spi_ok !== false
+        @test read(lout, String) == "1,4,9,16"
 
         child = DistSSHKit.ride!(map_path, "child:host1")
         @test !child.ok

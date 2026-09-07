@@ -1,4 +1,4 @@
-# `ride` — rewrite map / filter / comprehension and run (experimental).
+# `ride` — rewrite map / filter / comprehension / independent indexed for.
 # Workers: parent `addprocs`, or SSH children via drive `add_drive_workers!`.
 
 const _RIDE_DEPTH = Ref(0)
@@ -194,6 +194,42 @@ function _ride_rewrite(ex)
                 )
             end
         end
+    elseif h === :for
+        fill = _plan_index_fill_for(ex)
+        if fill !== nothing
+            it = gensym(:ride_it)
+            vals = gensym(:ride_vals)
+            v = gensym(:ride_v)
+            return Expr(
+                :let,
+                Expr(
+                    :block,
+                    Expr(:(=), it, _ride_rewrite(fill.iter)),
+                    Expr(
+                        :(=),
+                        vals,
+                        Expr(
+                            :call,
+                            GlobalRef(DistSSHKit, :_ride_map),
+                            Expr(:->, fill.var, _ride_rewrite(fill.rhs)),
+                            it,
+                        ),
+                    ),
+                ),
+                Expr(
+                    :block,
+                    Expr(
+                        :for,
+                        Expr(
+                            :(=),
+                            Expr(:tuple, fill.var, v),
+                            Expr(:call, :zip, it, vals),
+                        ),
+                        Expr(:block, Expr(:call, :setindex!, fill.dest, v, fill.var)),
+                    ),
+                ),
+            )
+        end
     end
     return Expr(h, Any[_ride_rewrite(a) for a in args]...)
 end
@@ -388,9 +424,10 @@ end
 """
     ride!(script, workers...; args=[], spi_check=true, output_dir=nothing, project=pwd())
 
-Experimental. Rewrite `map` / `filter` / simple comprehensions and run the
-script on Distributed workers (parent and optional SSH `child:`). Rejects
-Distributed vocabulary (use [`drive!`](@ref)).
+Experimental. Rewrite `map` / `filter` / simple comprehensions / independent
+indexed `for` (`dest[i] = …`) and run the script on Distributed workers
+(parent and optional SSH `child:`). Rejects Distributed vocabulary
+(use [`drive!`](@ref)).
 
 Worker add for SSH children is the same `add_drive_workers!` path as drive.
 The job `project` is `Pkg.activate`d on the parent first (drive does this

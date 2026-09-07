@@ -10,7 +10,7 @@ refused).
 - [`without_kit/`](without_kit/): standalone Julia. `julia …`, `go`, or
   `go!`
 - [`ride/`](ride/): plain scripts for `plan` / `go` / `ride` (`map`, `filter`,
-  `for` as plan out-of-scope)
+  indexed `for`)
 
 ```text
 demos/
@@ -26,7 +26,7 @@ demos/
     map_file.jl         # file: map_results.csv
     map_echo.jl         # stdout
     filter_echo.jl      # stdout
-    for_loop.jl         # plan: out of scope
+    for_loop.jl         # indexed for (ride candidate)
 ```
 
 Naming: `{topic}_{file|echo}` — `*_file` writes a file, `*_echo` prints only.
@@ -82,7 +82,7 @@ file (`setup!` first).
 
 - `map_echo.jl` / `map_file.jl` — `map` (ride candidate)
 - `filter_echo.jl` — `filter`
-- `for_loop.jl` — `plan` reports out of scope
+- `for_loop.jl` — independent indexed `for` (`plan` suggests ride)
 
 ```bash
 julia --project=. -m DistSSHKit demo install ride

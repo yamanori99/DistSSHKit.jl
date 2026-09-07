@@ -35,7 +35,8 @@ end
 function show_ride_usage(; io::IO=stdout)
     print_help_chrome("DistSSHKit ride"; io=io)
     print_help_lines(io,
-        "Experimental. Split map / filter / simple comprehensions on Distributed workers.",
+        "Experimental. Split map / filter / simple comprehensions / indexed for",
+        "on Distributed workers.",
         "Does not analyze (see plan). Rejects Distributed vocabulary (use drive).",
         "SSH child: uses the same worker-add path as drive (setup the project first).",
     )
