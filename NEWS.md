@@ -10,8 +10,9 @@ GitHub Releases may copy these sections (`Release notes:` on
   `dest` in `expr`, loop-var indices only) is rewritten like `map`.
   Unsafe fills do not collect the iterator first. Overlapping views
   (`dest` / `src` sharing storage, including arrays nested in a captured
-  struct) stay interleaved. Accumulating / stencil loops stay sequential;
-  `plan` still marks those out of scope.
+  struct) stay interleaved. An incomplete capture walk also stays sequential.
+  Accumulating / stencil loops stay sequential; `plan` still marks those
+  out of scope.
 - `drive` / `ride` no longer `pkill -f julia.*--worker` on SSH hosts. Leftover
   remote workers are `pkill`d only when `job_id` / `DISTSSHKIT_JOB_ID` is set
   (`pkill -f distsshkit-job:<id>`, same as [`terminate!`](@ref)). Untagged machine-wide sweep stays `setup --cleanup`.

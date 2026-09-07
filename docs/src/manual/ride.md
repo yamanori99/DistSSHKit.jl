@@ -23,7 +23,8 @@ effect analysis rejects distribution, or `dest` may alias an array the
 RHS captures (including nested in a struct), the iterator is not collected first;
 each `dest[i] = expr` runs in order. Distributed fills collect then map.
 SPI compares mapped RHS values before `dest` writes, so it does not catch
-that aliasing; the runtime overlap check does.
+that aliasing; the runtime overlap check does (including fail-closed if
+the capture walk hits its depth limit).
 Broadcast, `reduce`, and accumulating `for` stay out of scope.
 
 `--spi-check` is **on** by default: each rewritten `map` / `filter` (including

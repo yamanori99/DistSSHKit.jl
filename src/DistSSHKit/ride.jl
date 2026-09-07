@@ -4,6 +4,7 @@
 const _RIDE_DEPTH = Ref(0)
 const _RIDE_SPI = Ref(true)
 const _RIDE_SPI_OK = Ref{Union{Nothing,Bool}}(nothing)
+const _RIDE_CAPTURE_DEPTH = 4
 
 """Outcome of [`ride!`](@ref). Experimental."""
 struct RideResult
@@ -95,32 +96,32 @@ function _can_distribute(f, xs)::Bool
     return _ride_effects_free(fn, T) && _ride_index_free(xs)
 end
 
-function _ride_collect_arrays!(out::Vector{AbstractArray}, x, depth::Int)
-    depth > 4 && return
+function _ride_collect_arrays!(out::Vector{AbstractArray}, x, depth::Int)::Bool
+    depth > _RIDE_CAPTURE_DEPTH && return true
     if x isa AbstractArray
         push!(out, x)
-        return
+        return false
     end
     if x isa Core.Box
-        isdefined(x, :contents) &&
-            _ride_collect_arrays!(out, getfield(x, :contents), depth + 1)
-        return
+        isdefined(x, :contents) || return false
+        return _ride_collect_arrays!(out, getfield(x, :contents), depth + 1)
     end
-    x isa Union{Module, Type, Symbol, AbstractString, Number, Nothing} && return
-    isbits(x) && return
+    x isa Union{Module, Type, Symbol, AbstractString, Number, Nothing} && return false
+    isbits(x) && return false
+    cut = false
     n = nfields(x)
     for i in 1:n
         isdefined(x, i) || continue
-        _ride_collect_arrays!(out, getfield(x, i), depth + 1)
+        cut |= _ride_collect_arrays!(out, getfield(x, i), depth + 1)
     end
-    return
+    return cut
 end
 
-"""True when `f` captures an array that may share storage with `dest`."""
+"""True when `f` may share storage with `dest`, or capture walk was truncated."""
 function _ride_mightalias_dest(dest, f)::Bool
     dest isa AbstractArray || return false
     acc = AbstractArray[]
-    _ride_collect_arrays!(acc, f, 0)
+    _ride_collect_arrays!(acc, f, 0) && return true
     for a in acc
         try
             Base.mightalias(dest, a) && return true
