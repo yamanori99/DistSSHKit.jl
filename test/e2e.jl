@@ -8,6 +8,7 @@
 #   testenv/docker-ssh/scripts/up.sh --e2e
 #   testenv/apple-container-ssh/scripts/up.sh --e2e   # Mac Apple silicon; same suite
 #   DISTSSHKIT_SSH_E2E=1 julia --project=. test/e2e.jl   # from kit root
+# Inner `@testset`s print `[i/N]` (see `_E2E_N`) so CI logs are not a long stall.
 #   DISTSSHKIT_CODE_COVERAGE=1 …/up.sh --e2e            # + .cov (child CLI too)
 #   ./.github/jetls-check.sh             # e2e.jl is a JETLS entry (not via runtests.jl)
 #
@@ -39,9 +40,21 @@ const remote_root = _ssh_e2e_remote_root()
 const remote_tokens = String["child:$(hosts[1]):1", "child:$(hosts[2]):1"]
 _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
 
+# Same banner idea as `test/runtests.jl`. Inner `@testset`s can take minutes
+# of SSH with no Test output until they finish. Update `_E2E_N` when adding one.
+const _E2E_N = 28
+const _E2E_I = Ref(0)
+function _e2e_announce(label::AbstractString)
+    _E2E_I[] += 1
+    println("[$( _E2E_I[])/$_E2E_N]  $label")
+    flush(stdout)
+    return nothing
+end
+
 @testset "SSH E2E (docker-ssh)" verbose=true begin
     _with_ssh_e2e_suite() do suite
         @testset "julia path resolve (kit parent + remotes)" begin
+            _e2e_announce("julia path resolve (kit parent + remotes)")
             withenv(_e2e_base_env()...) do
                 ctrl = DistSSHKit.resolve_controller_julia("auto")
                 @test isabspath(ctrl)
@@ -75,6 +88,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         end
 
         @testset "run_on_host exitcode" begin
+            _e2e_announce("run_on_host exitcode")
             withenv(_e2e_base_env()...) do
                 host = hosts[1]
                 ok = DistSSHKit.run_on_host(host, ["--version"])
@@ -100,6 +114,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         pi_file = joinpath(proj, "demos", "without_kit", "pi_file.jl")
 
         @testset "setup --delete (clean slate)" begin
+            _e2e_announce("setup --delete (clean slate)")
             proc, out = _run_kit_setup(;
                 setup_args=["--delete", "--remote-path", remote_root, setup_hosts...],
                 project_root=proj,
@@ -113,6 +128,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         end
 
         @testset "setup --rsync" begin
+            _e2e_announce("setup --rsync")
             proc, out = _run_kit_setup(;
                 setup_args=["--rsync", "--remote-path", remote_root, setup_hosts...],
                 project_root=proj,
@@ -129,6 +145,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         end
 
         @testset "setup --instantiate" begin
+            _e2e_announce("setup --instantiate")
             proc, out = _run_kit_setup(;
                 setup_args=["--instantiate", "--remote-path", remote_root, setup_hosts...],
                 project_root=proj,
@@ -138,6 +155,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         end
 
         @testset "setup --check (major.minor; no --ignore-julia-version)" begin
+            _e2e_announce("setup --check (major.minor; no --ignore-julia-version)")
             # rsync excludes .git/; --check warns on missing remote hash but must
             # still pass Julia major.minor + project/deps. Git parity is not
             # claimed for the rsync path (see docker-ssh README).
@@ -151,6 +169,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         end
 
         @testset "setup --juliaup (mismatch then align to kit parent)" begin
+            _e2e_announce("setup --juliaup (mismatch then align to kit parent)")
             ch = _ssh_e2e_julia_channels()
             @test ch.alt != ch.default
             host = hosts[1]
@@ -216,6 +235,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         end
 
         @testset "setup --juliaup parent + one remote" begin
+            _e2e_announce("setup --juliaup parent + one remote")
             ch = _ssh_e2e_julia_channels()
             @test ch.alt != ch.default
             host = hosts[1]
@@ -295,6 +315,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         end
 
         @testset "setup --runtest (job Pkg.test)" begin
+            _e2e_announce("setup --runtest (job Pkg.test)")
             proc, out = _run_kit_setup(;
                 setup_args=["--runtest", "--remote-path", remote_root, setup_hosts...],
                 project_root=proj,
@@ -304,6 +325,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         end
 
         @testset "setup --runtest fails when job tests fail" begin
+            _e2e_announce("setup --runtest fails when job tests fail")
             try
                 _ssh_e2e_push_job_runtests!(hosts, remote_root; fail=true)
                 proc, out = _run_kit_setup(;
@@ -322,6 +344,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         end
 
         @testset "size two remotes" begin
+            _e2e_announce("size two remotes")
             proc, out = _run_kit_size(;
                 size_args=["-q", remote_tokens...],
                 project_root=proj,
@@ -335,6 +358,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         end
 
         @testset "drive square_echo two remotes" begin
+            _e2e_announce("drive square_echo two remotes")
             proc, out = _run_kit_drive(;
                 script=echo_script,
                 host_root=proj,
@@ -350,6 +374,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         end
 
         @testset "drive square_file CSV is local (kit parent main)" begin
+            _e2e_announce("drive square_file CSV is local (kit parent main)")
             square_file = joinpath(proj, "demos", "with_kit", "square_file.jl")
             out_csv = joinpath(proj, "demos", "with_kit", "output", "square_results.csv")
             isfile(out_csv) && rm(out_csv)
@@ -371,6 +396,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         end
 
         @testset "drive collect bytes written on workers" begin
+            _e2e_announce("drive collect bytes written on workers")
             script = joinpath(proj, "worker_file.jl")
             collect_root = joinpath(proj, "output")
             isdir(collect_root) && rm(collect_root; recursive=true)
@@ -451,6 +477,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         end
 
         @testset "drive remote worker error is a real failure" begin
+            _e2e_announce("drive remote worker error is a real failure")
             proc, out = _run_kit_drive(;
                 script=joinpath(proj, "fail.jl"),
                 host_root=proj,
@@ -468,6 +495,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         end
 
         @testset "drive mixed local+remotes smoke" begin
+            _e2e_announce("drive mixed local+remotes smoke")
             proc, out = _run_kit_drive(;
                 script=smoke,
                 host_root=proj,
@@ -481,6 +509,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         end
 
         @testset "go pi_echo both remotes" begin
+            _e2e_announce("go pi_echo both remotes")
             proc, out = _run_kit_go(;
                 script=pi_echo,
                 hosts=remote_tokens,
@@ -500,6 +529,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         end
 
         @testset "go pi_file both remotes + collect" begin
+            _e2e_announce("go pi_file both remotes + collect")
             # Queue always sets job_id. The mark is `-L` on the remote, not `--eval`.
             job_id = "e2e-go-1"
             proc, out = _run_kit_go(;
@@ -536,6 +566,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         end
 
         @testset "go pi_file with --output-dir" begin
+            _e2e_announce("go pi_file with --output-dir")
             custom = joinpath(proj, "go_cli_output")
             isdir(custom) && rm(custom; recursive=true)
             proc, out = _run_kit_go(;
@@ -557,6 +588,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
 
         # Own remote root: do not reuse `remote_root` (later nonempty `--rsync` must still refuse).
         @testset "go --rsync empty remote" begin
+            _e2e_announce("go --rsync empty remote")
             oneshot = _ssh_e2e_go_rsync_remote_root()
             oneshot_env = _ssh_e2e_env(; remote_project=oneshot)
             try
@@ -605,6 +637,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
 
         # `~/…` remote root: setup + drive still run. square_file CSV is local.
         @testset "drive square_file collect with tilde remote root" begin
+            _e2e_announce("drive square_file collect with tilde remote root")
             tilde_root = _ssh_e2e_tilde_remote_root()
             tilde_env = _ssh_e2e_env(; remote_project=tilde_root)
             square_file = joinpath(proj, "demos", "with_kit", "square_file.jl")
@@ -648,6 +681,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
 
         # Julian API path (same remotes): setup! → go! / pipeline!
         @testset "Julian API setup! + go!/pipeline!" begin
+            _e2e_announce("Julian API setup! + go!/pipeline!")
             withenv(_e2e_base_env()...) do
                 session = KitSession(
                     project=proj,
@@ -719,6 +753,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         # second. `pipeline!` above already did one in-process remote drive;
         # these are the reentrant calls that guard the regression over SSH.
         @testset "in-process drive! is reentrant (no worker leak)" begin
+            _e2e_announce("in-process drive! is reentrant (no worker leak)")
             withenv(_e2e_base_env()...) do
                 for call in 1:2
                     out = mktemp() do out_path, out_io
@@ -757,6 +792,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         # cannot help. The ssh child may keep the tunnel, so reap is the
         # shortened deadline. Silent-stall scheduling is unit-tested.
         @testset "detached drive kill reaps remote workers" begin
+            _e2e_announce("detached drive kill reaps remote workers")
             sleep_script = joinpath(proj, "sleep.jl")
             host = hosts[1]
             log_dir = joinpath(suite.logs, "heartbeat-drive")
@@ -854,6 +890,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         # Detached SSH ride writes `kit.hosts`; `terminate!` SIGTERMs then
         # tagged `pkill` (never `julia.*--worker`). Parent-only ride is unit.
         @testset "detached ride terminate! reaps remote workers" begin
+            _e2e_announce("detached ride terminate! reaps remote workers")
             ride_script = joinpath(proj, "ride_sleep.jl")
             host = hosts[1]
             _ssh_e2e_ssh(host, "pkill -f 'julia.*--worker' || true")
@@ -948,6 +985,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         end
 
         @testset "setup --rsync refuses nonempty" begin
+            _e2e_announce("setup --rsync refuses nonempty")
             proc, out = _run_kit_setup(;
                 setup_args=["--rsync", "--remote-path", remote_root, setup_hosts[1]],
                 project_root=proj,
@@ -959,6 +997,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
         end
 
         @testset "inter-child SSH (w1 → w2 via compose DNS)" begin
+            _e2e_announce("inter-child SSH (w1 → w2 via compose DNS)")
             cmd = Cmd([
                 "ssh", "-F", g.ssh_config, hosts[1],
                 "ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 " *
@@ -971,6 +1010,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
 
         # Git path (separate remote root): bare on w1 → clone → check hash → sync → --require-git.
         @testset "git clone + sync + require-git" begin
+            _e2e_announce("git clone + sync + require-git")
             git_root = _ssh_e2e_git_remote_root()
             git_env = _ssh_e2e_env(; remote_project=git_root)
             seed = withenv(git_env...) do

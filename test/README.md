@@ -72,6 +72,9 @@ Green on one layer does not imply the others. `Pkg.test()` does not run
 - **e2e** (~15–25 min): real SSH + rsync, two Linux workers; **PR** /
   **main** (path filter), `cut` / weekly / dispatch (Compose). Not
   markdown-only allowlisted PRs. Not local-only CLI wiring.
+  `test/e2e.jl` prints `[i/N]` at the start of each inner `@testset`
+  (SSH steps can sit silent for minutes otherwise). Update `_E2E_N` when
+  adding a case.
 - **e2e weekly** (10–50 min): same `e2e.jl` from Linux, macOS Intel, or
   WSL2 (not a PR check; starts on a `cut` merge, required before register).
   Not macOS workers.
