@@ -28,8 +28,8 @@ function show_plan_usage(; io::IO=stdout)
     print_help_chrome("DistSSHKit plan"; io=io)
     print_help_lines(io,
         "Inspect a script. Does not start a job.",
-        "Suggests go, ride, or drive from syntax (map / filter / comprehension,",
-        "for as out of scope, Distributed vocabulary → drive).",
+        "Suggests go, ride, or drive from syntax (map / filter / comprehension /",
+        "independent indexed for; other for is out of scope; Distributed → drive).",
         "Optional slot estimate calls size! (off unless hosts / --gb-per-worker / --probe).",
     )
     print_help_blank(io)

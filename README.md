@@ -117,8 +117,8 @@ Details:
 Three ways to run a script:
 
 - **go** — each host runs your `.jl` as-is from start to finish
-- **ride** — kit splits independent `map` / filter / comprehension work
-  (experimental; parent or SSH workers)
+- **ride** — kit splits independent `map` / filter / comprehension /
+  indexed `for` work (experimental; parent or SSH workers)
 - **drive** — one master farms work to workers (built on Distributed.jl)
 
 `plan` inspects a script and suggests one of these; it does not run.

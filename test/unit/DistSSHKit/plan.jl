@@ -33,11 +33,34 @@ using Test
             end
             """)
         kf = DistSSHKit.plan(for_path)
-        @test kf.suggest === :go
-        @test any(f -> f.kind === :for && f.status === :out_of_scope, kf.findings)
+        @test kf.suggest === :ride
+        @test any(f -> f.kind === :for && f.status === :candidate, kf.findings)
         buf = IOBuffer()
         DistSSHKit.print_plan(kf; io=buf)
-        @test occursin("suggest:  go", String(take!(buf)))
+        @test occursin("suggest:  ride", String(take!(buf)))
+
+        acc_path = joinpath(tmp, "acc.jl")
+        write(acc_path, """
+            s = 0
+            for x in 1:3
+                s += x
+            end
+            """)
+        ka = DistSSHKit.plan(acc_path)
+        @test ka.suggest === :go
+        @test any(f -> f.kind === :for && f.status === :out_of_scope, ka.findings)
+
+        stenc_path = joinpath(tmp, "stenc.jl")
+        write(stenc_path, """
+            dest = [1, 2, 3]
+            alias = dest
+            for i in 2:length(dest)
+                dest[i] = alias[i - 1]
+            end
+            """)
+        ks = DistSSHKit.plan(stenc_path)
+        @test ks.suggest === :go
+        @test any(f -> f.kind === :for && f.status === :out_of_scope, ks.findings)
 
         drive_path = joinpath(tmp, "driver.jl")
         write(drive_path, """

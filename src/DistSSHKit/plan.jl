@@ -70,6 +70,80 @@ function _plan_push!(
     return nothing
 end
 
+function _plan_expr_mentions_symbol(ex, name::Symbol)::Bool
+    ex === name && return true
+    ex isa Expr || return false
+    for a in ex.args
+        a isa LineNumberNode && continue
+        _plan_expr_mentions_symbol(a, name) && return true
+    end
+    return false
+end
+
+function _plan_expr_has_escape(ex)::Bool
+    ex isa Expr || return false
+    h = ex.head
+    h in (:break, :continue, :return) && return true
+    for a in ex.args
+        _plan_expr_has_escape(a) && return true
+    end
+    return false
+end
+
+function _plan_for_body_stmts(body)::Vector{Any}
+    body isa Expr && body.head === :block || return Any[body]
+    stmts = Any[]
+    for a in body.args
+        a isa LineNumberNode && continue
+        a isa Expr && a.head === :linenumber && continue
+        push!(stmts, a)
+    end
+    return stmts
+end
+
+"""
+Indexed fill `for i in iter; dest[i] = rhs; end` with no `dest` in `rhs`.
+Workers can compute `rhs`; the parent writes `dest` afterward.
+"""
+function _plan_rhs_index_is_loop_var(ex, var::Symbol)::Bool
+    ex isa Expr || return true
+    if ex.head === :ref
+        length(ex.args) == 2 || return false
+        ex.args[2] === var || return false
+    elseif ex.head === :call && _plan_call_name(ex.args[1]) === :getindex
+        length(ex.args) == 3 || return false
+        ex.args[3] === var || return false
+    end
+    for a in ex.args
+        a isa LineNumberNode && continue
+        _plan_rhs_index_is_loop_var(a, var) || return false
+    end
+    return true
+end
+
+function _plan_index_fill_for(ex::Expr)
+    ex.head === :for || return nothing
+    length(ex.args) == 2 || return nothing
+    it, body = ex.args
+    it isa Expr && it.head === :(=) && length(it.args) == 2 || return nothing
+    var = it.args[1]
+    var isa Symbol || return nothing
+    iter = it.args[2]
+    stmts = _plan_for_body_stmts(body)
+    length(stmts) == 1 || return nothing
+    asg = stmts[1]
+    asg isa Expr && asg.head === :(=) && length(asg.args) == 2 || return nothing
+    lhs, rhs = asg.args
+    lhs isa Expr && lhs.head === :ref && length(lhs.args) == 2 || return nothing
+    dest = lhs.args[1]
+    dest isa Symbol || return nothing
+    lhs.args[2] === var || return nothing
+    _plan_expr_mentions_symbol(rhs, dest) && return nothing
+    _plan_expr_has_escape(rhs) && return nothing
+    _plan_rhs_index_is_loop_var(rhs, var) || return nothing
+    return (var=var, iter=iter, dest=dest, rhs=rhs)
+end
+
 function _plan_walk!(acc::Vector{PlanFinding}, ex, line::Int)::Int
     if ex isa LineNumberNode
         return ex.line
@@ -101,7 +175,11 @@ function _plan_walk!(acc::Vector{PlanFinding}, ex, line::Int)::Int
     elseif h === :comprehension || h === :typed_comprehension
         _plan_push!(acc, line, :comprehension, :candidate, ex)
     elseif h === :for
-        _plan_push!(acc, line, :for, :out_of_scope, ex)
+        if _plan_index_fill_for(ex) !== nothing
+            _plan_push!(acc, line, :for, :candidate, ex)
+        else
+            _plan_push!(acc, line, :for, :out_of_scope, ex)
+        end
     end
     for a in args
         line = _plan_walk!(acc, a, line)
@@ -120,8 +198,10 @@ end
          gb_per_worker=nothing, probe=nothing, mem_headroom, parent_gb) -> KitPlan
 
 Inspect `script` without starting a job. Syntax only: Distributed vocabulary,
-`map` / `filter` / comprehensions, and `for` (out of scope). Effect analysis
-is not applied at this stage.
+`map` / `filter` / comprehensions, and independent indexed `for`
+(`dest[i] = …` with loop-var indices and no `return` in the RHS).
+Accumulating, stencil, or multi-statement `for` is out of scope.
+Effect analysis is not applied at this stage.
 
 Suggests `:drive`, `:ride`, or `:go`. The caller still chooses the command.
 

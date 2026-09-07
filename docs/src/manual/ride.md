@@ -1,8 +1,9 @@
 # [ride](@id Manual-ride)
 
 Experimental. Run a **plain** script (`map` / `filter` / simple
-comprehensions). Kit rewrites those calls and may `pmap` them on Distributed
-workers (parent and SSH `child:`). Inspect first with [`plan`](@ref).
+comprehensions / independent indexed `for`). Kit rewrites those forms and
+may `pmap` them on Distributed workers (parent and SSH `child:`). Inspect
+first with [`plan`](@ref).
 
 ```bash
 julia --project=. -m DistSSHKit plan SCRIPT.jl
@@ -15,11 +16,22 @@ Prepare remotes with [`setup`](@ref Manual-setup) first. Distributed
 vocabulary (`pmap`, `@everywhere`, …) is an error; that script belongs on
 `drive`. Listed `child:` hosts are fail-closed.
 
-`for` loops stay sequential. `plan` tells you to rewrite them as `map`.
-Broadcast, `reduce`, and accumulating `for` are out of scope.
+`for i in iter; dest[i] = expr; end` is rewritten when `expr` does not
+read `dest`, does not `return` / `break` / `continue`, and every index in
+`expr` is `i` (so `dest[i] = alias[i - 1]` stays sequential). If runtime
+effect analysis rejects distribution, or `dest` may alias an array the
+RHS captures (including nested in a struct), or a `Main` array aliases
+`dest` (including `const` globals the closure does not capture), or
+`iterate` on the loop iterator is not effect-free, the iterator is not
+collected first;
+each `dest[i] = expr` runs in order. Distributed fills collect then map.
+SPI compares mapped RHS values before `dest` writes, so it does not catch
+that aliasing; the runtime overlap check does (including fail-closed if
+the capture walk hits its depth limit).
+Broadcast, `reduce`, and accumulating `for` stay out of scope.
 
-`--spi-check` is **on** by default: each rewritten `map` / `filter` is also
-run sequentially and compared. `--no-spi-check` skips that. Under
+`--spi-check` is **on** by default: each rewritten `map` / `filter` (including
+values from indexed `for`) is also run sequentially and compared. `--no-spi-check` skips that. Under
 `--progress`, a successful run prints `SPI check: passed` after the script
 stdout.
 

@@ -1,9 +1,10 @@
-# `ride` — rewrite map / filter / comprehension and run (experimental).
+# `ride` — rewrite map / filter / comprehension / independent indexed for.
 # Workers: parent `addprocs`, or SSH children via drive `add_drive_workers!`.
 
 const _RIDE_DEPTH = Ref(0)
 const _RIDE_SPI = Ref(true)
 const _RIDE_SPI_OK = Ref{Union{Nothing,Bool}}(nothing)
+const _RIDE_CAPTURE_DEPTH = 4
 
 """Outcome of [`ride!`](@ref). Experimental."""
 struct RideResult
@@ -66,6 +67,32 @@ function _ride_index_free(xs)::Bool
     end
 end
 
+function _ride_iterate_free(xs)::Bool
+    T = typeof(xs)
+    try
+        e = Base.infer_effects(Base.iterate, Tuple{T})
+        Core.Compiler.is_effect_free(e) || return false
+    catch
+        return false
+    end
+    try
+        et = eltype(xs)
+        e = Base.infer_effects(Base.iterate, Tuple{T,Union{Nothing,et}})
+        return Core.Compiler.is_effect_free(e)
+    catch
+        return false
+    end
+end
+
+function _ride_pmap_worker(f, x)
+    _RIDE_DEPTH[] += 1
+    try
+        return _ride_callable(f)(x)
+    finally
+        _RIDE_DEPTH[] -= 1
+    end
+end
+
 function _ride_apply_named(name::Symbol, x)
     f = getglobal(Main, name)
     return Base.invokelatest(f, x)
@@ -82,7 +109,9 @@ function _ride_named_fn(name::Symbol, value)
 end
 
 function _can_distribute(f, xs)::Bool
-    isempty(xs) && return false
+    Base.IteratorSize(typeof(xs)) isa Union{Base.HasLength, Base.HasShape} ||
+        return false
+    length(xs) == 0 && return false
     nprocs() < 2 && return false
     T = eltype(xs)
     fn = try
@@ -90,7 +119,67 @@ function _can_distribute(f, xs)::Bool
     catch
         return false
     end
-    return _ride_effects_free(fn, T) && _ride_index_free(xs)
+    return _ride_effects_free(fn, T) && _ride_index_free(xs) && _ride_iterate_free(xs)
+end
+
+function _ride_collect_arrays!(out::Vector{AbstractArray}, x, depth::Int)::Bool
+    depth > _RIDE_CAPTURE_DEPTH && return true
+    if x isa AbstractArray
+        push!(out, x)
+        return false
+    end
+    if x isa Core.Box
+        isdefined(x, :contents) || return false
+        return _ride_collect_arrays!(out, getfield(x, :contents), depth + 1)
+    end
+    x isa Union{Module, Type, Symbol, AbstractString, Number, Nothing} && return false
+    isbits(x) && return false
+    cut = false
+    n = nfields(x)
+    for i in 1:n
+        isdefined(x, i) || continue
+        cut |= _ride_collect_arrays!(out, getfield(x, i), depth + 1)
+    end
+    return cut
+end
+
+function _ride_array_aliases_dest(dest, a)::Bool
+    a === dest && return false
+    try
+        return Base.mightalias(dest, a)
+    catch
+        return true
+    end
+end
+
+function _ride_mightalias_main(dest)::Bool
+    for n in names(Main)
+        isdefined(Main, n) || continue
+        v = try
+            getfield(Main, n)
+        catch
+            continue
+        end
+        v isa AbstractArray || continue
+        _ride_array_aliases_dest(dest, v) && return true
+    end
+    return false
+end
+
+"""True when `f` or a `Main` array may share storage with `dest`, or the walk was truncated."""
+function _ride_mightalias_dest(dest, f)::Bool
+    dest isa AbstractArray || return false
+    acc = AbstractArray[]
+    _ride_collect_arrays!(acc, f, 0) && return true
+    for a in acc
+        _ride_array_aliases_dest(dest, a) && return true
+    end
+    return _ride_mightalias_main(dest)
+end
+
+function _can_distribute_fill(dest, f, xs)::Bool
+    _can_distribute(f, xs) || return false
+    return !_ride_mightalias_dest(dest, _ride_callable(f))
 end
 
 function _ride_compare(a, b)::Bool
@@ -109,7 +198,7 @@ function _ride_map(f, xs)
         if !_can_distribute(f, xs)
             return map(_ride_callable(f), xs)
         end
-        dist = pmap(_ride_callable(f), xs)
+        dist = pmap(x -> _ride_pmap_worker(f, x), xs)
         if _RIDE_SPI[]
             seq = map(_ride_callable(f), xs)
             ok = _ride_compare(dist, seq)
@@ -130,7 +219,7 @@ function _ride_filter(f, xs)
         if !_can_distribute(f, xs)
             return filter(_ride_callable(f), xs)
         end
-        flags = pmap(_ride_callable(f), xs)
+        flags = pmap(x -> _ride_pmap_worker(f, x), xs)
         dist = xs[findall(identity, flags)]
         if _RIDE_SPI[]
             seq = filter(_ride_callable(f), xs)
@@ -142,6 +231,23 @@ function _ride_filter(f, xs)
     finally
         _RIDE_DEPTH[] -= 1
     end
+end
+
+"""Indexed fill after [`ride!`](@ref) rewrite. Sequential writes if unsafe."""
+function _ride_index_fill!(dest, f, xs)
+    fn = _ride_callable(f)
+    if _RIDE_DEPTH[] >= 1 || !_can_distribute_fill(dest, f, xs)
+        for i in xs
+            dest[i] = fn(i)
+        end
+        return nothing
+    end
+    it = collect(xs)
+    vals = _ride_map(f, it)
+    for (i, v) in zip(it, vals)
+        dest[i] = v
+    end
+    return nothing
 end
 
 function _ride_map_fn_arg(fex)
@@ -193,6 +299,17 @@ function _ride_rewrite(ex)
                     _ride_rewrite(iter),
                 )
             end
+        end
+    elseif h === :for
+        fill = _plan_index_fill_for(ex)
+        if fill !== nothing
+            return Expr(
+                :call,
+                GlobalRef(DistSSHKit, :_ride_index_fill!),
+                fill.dest,
+                Expr(:->, fill.var, _ride_rewrite(fill.rhs)),
+                _ride_rewrite(fill.iter),
+            )
         end
     end
     return Expr(h, Any[_ride_rewrite(a) for a in args]...)
@@ -388,9 +505,10 @@ end
 """
     ride!(script, workers...; args=[], spi_check=true, output_dir=nothing, project=pwd())
 
-Experimental. Rewrite `map` / `filter` / simple comprehensions and run the
-script on Distributed workers (parent and optional SSH `child:`). Rejects
-Distributed vocabulary (use [`drive!`](@ref)).
+Experimental. Rewrite `map` / `filter` / simple comprehensions / independent
+indexed `for` (`dest[i] = …`) and run the script on Distributed workers
+(parent and optional SSH `child:`). Rejects Distributed vocabulary
+(use [`drive!`](@ref)).
 
 Worker add for SSH children is the same `add_drive_workers!` path as drive.
 The job `project` is `Pkg.activate`d on the parent first (drive does this
