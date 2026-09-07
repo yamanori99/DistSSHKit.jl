@@ -4,7 +4,7 @@ Bundled examples: local first, then optional remotes
 (after [Prepare](@ref Tutorial-Prepare)).
 
 Also see [User Guide · demo](@ref Manual-demo), [go](@ref Manual-go),
-[drive](@ref Manual-drive), [API](@ref API).
+[ride](@ref Manual-ride), [drive](@ref Manual-drive), [API](@ref API).
 
 ## Install
 
@@ -14,11 +14,16 @@ Run this from a **job** project, not the DistSSHKit checkout (that
 ```bash
 julia --project=. -m DistSSHKit demo install with_kit
 julia --project=. -m DistSSHKit demo install without_kit
+julia --project=. -m DistSSHKit demo install ride
 ```
 
+!!! note "One family per command"
+    Bare `demo install` is refused. Copy only the family you will run.
+    `ride` is experimental ([User Guide · ride](@ref Manual-ride)).
+
 That copies each family into `./distsshkit_demos/` (not `./demos/`, so a
-job's own `demos/` is untouched). Package sources stay `demos/with_kit/`
-and `demos/without_kit/`.
+job's own `demos/` is untouched). Package sources stay `demos/with_kit/`,
+`demos/without_kit/`, and `demos/ride/`.
 
 ```text
 distsshkit_demos/
@@ -30,17 +35,26 @@ distsshkit_demos/
     pi_file.jl       # file: pi_results.txt
     pi_echo.jl       # stdout only
     pipeline_pi.jl       # go!(script, "parent:2") → pi_file.jl
+  ride/              # after `demo install ride` (plain scripts)
+    map_echo.jl      # stdout: map
+    map_file.jl      # file: map_results.csv
+    filter_echo.jl   # stdout: filter
+    for_loop.jl      # indexed for (ride candidate)
 ```
 
-Each topic has a `*_file.jl` and `*_echo.jl` pair: same job, but `*_file.jl`
-writes under the slot's `DISTRIBUTED_OUTPUT_DIR` (so `go` / `drive` can collect
-results from remotes). Use `*_echo.jl` when you only want terminal output.
+`with_kit/` and `without_kit/` pair `*_file.jl` with `*_echo.jl`: same
+job, but `*_file.jl` writes under the slot's `DISTRIBUTED_OUTPUT_DIR`
+(so `go` / `drive` can collect from remotes). Use `*_echo.jl` for
+terminal output only. `ride/` has `map_file` / `map_echo`; `filter_echo`
+and `for_loop` are echo-only.
 
 Keep `Project.toml` at the project root — do not add
 `distsshkit_demos/Project.toml`.
 
 Prefer **`go`** unless you already need in-script parallelism; use **`drive`**
-for driver scripts that farm work with `pmap`.
+for driver scripts that farm work with `pmap`. **`ride`** is experimental:
+plain `map` / `filter` / indexed `for` without Distributed in the file.
+[`plan`](@ref Manual-plan) suggests which of the three.
 
 ## Standalone scripts (`without_kit/`)
 
@@ -99,3 +113,27 @@ julia --project=. -m DistSSHKit drive \
 Driver contract (`init_output_dir!` / `main`) and further topics: see
 [User Guide · drive](@ref Manual-drive) and [API](@ref API)
 (`drive!`, `pipeline!`, `worker_pmap`).
+
+## Plain scripts for `ride` (`ride/`)
+
+Same family as `without_kit/`: no DistSSHKit import, no `pmap`. Kit may
+split independent `map` / `filter` / indexed `for`. Experimental; details
+in [User Guide · ride](@ref Manual-ride).
+
+```bash
+julia --project=. -m DistSSHKit plan \
+  distsshkit_demos/ride/map_echo.jl
+julia --project=. -m DistSSHKit ride parent:2 \
+  distsshkit_demos/ride/map_echo.jl
+```
+
+Indexed `for` (`dest[i] = …`):
+
+```bash
+julia --project=. -m DistSSHKit plan \
+  distsshkit_demos/ride/for_loop.jl
+julia --project=. -m DistSSHKit ride parent:2 \
+  distsshkit_demos/ride/for_loop.jl
+```
+
+If `plan` says `drive`, the file already uses Distributed; do not `ride`.
