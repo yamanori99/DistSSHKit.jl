@@ -42,7 +42,7 @@ using Test
             @test_throws ArgumentError DistSSHKit.peel_kit_cli_flags(["--progress", "--quiet"])
             @test_throws ArgumentError DistSSHKit.peel_kit_cli_flags(["--progress", "--verbose"])
             @test_throws ArgumentError DistSSHKit.peel_kit_cli_flags(["--verbose", "-q"])
-            @test_throws ArgumentError DistSSHKit.KitCliSession(quiet=true, verbosity=:progress)
+            @test_throws ArgumentError DistSSHKit.KitCliSession(quiet = true, verbosity = :progress)
         end
         withenv("DISTSSHKIT_QUIET" => "1", "DISTSSHKIT_PROGRESS" => "1") do
             @test_throws ArgumentError DistSSHKit.default_kit_cli_session()
@@ -70,8 +70,8 @@ using Test
             @test session.verbosity === :verbose
             @test !session.quiet
         end
-        @test DistSSHKit.kit_cli_auto_verbosity(; live=true) === :progress
-        @test DistSSHKit.kit_cli_auto_verbosity(; live=false) === :verbose
+        @test DistSSHKit.kit_cli_auto_verbosity(; live = true) === :progress
+        @test DistSSHKit.kit_cli_auto_verbosity(; live = false) === :verbose
     end
 
     @testset "apply_kit_cli_session!" begin
@@ -79,16 +79,16 @@ using Test
             prev = DistSSHKit.kit_verbosity()
             prev_ni = DistSSHKit.kit_noninteractive()
             try
-                DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(yes=true))
+                DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(yes = true))
                 @test DistSSHKit.kit_confirm("ignored")
 
-                DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(verbosity=:progress))
+                DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(verbosity = :progress))
                 @test DistSSHKit.kit_verbosity() === :progress
                 @test DistSSHKit.kit_output_progress()
                 @test !DistSSHKit.kit_output_detail()
                 @test !DistSSHKit.kit_output_quiet()
 
-                DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(verbosity=:verbose))
+                DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(verbosity = :verbose))
                 @test DistSSHKit.kit_verbosity() === :verbose
                 @test DistSSHKit.kit_output_detail()
             finally
@@ -103,12 +103,12 @@ using Test
             prev_ni = DistSSHKit.kit_noninteractive()
             DistSSHKit.set_kit_noninteractive!(false)
             try
-                function _confirm_stdio(answer; keyword=nothing)
+                function _confirm_stdio(answer; keyword = nothing)
                     return _capture_stdio() do stdin_io, _
                         write(stdin_io, answer)
                         flush(stdin_io)
                         seekstart(stdin_io)
-                        DistSSHKit.kit_confirm("really wipe?"; keyword=keyword)
+                        DistSSHKit.kit_confirm("really wipe?"; keyword = keyword)
                     end
                 end
                 # Prompt must show in every verbosity (TTY default is :progress).
@@ -119,9 +119,9 @@ using Test
                         @test occursin("really wipe?", out)
                         _, ok = _confirm_stdio("y\n")
                         @test ok
-                        _, ok = _confirm_stdio("DELETE\n"; keyword="DELETE")
+                        _, ok = _confirm_stdio("DELETE\n"; keyword = "DELETE")
                         @test ok
-                        _, ok = _confirm_stdio("nope\n"; keyword="DELETE")
+                        _, ok = _confirm_stdio("nope\n"; keyword = "DELETE")
                         @test !ok
                     end
                 end
@@ -170,7 +170,7 @@ using Test
         @test DistSSHKit.read_hosts_file_lines(hosts_file) == ["child:host-a", "child:host-b:4"]
         @test DistSSHKit.split_worker_token("host-b:4") == ("host-b", 4)
         @test DistSSHKit.parse_placement_token("child:host-b:4") ==
-            (role=:child, name="host-b", n=4)
+            (role = :child, name = "host-b", n = 4)
 
         let lines = DistSSHKit.read_hosts_file_lines(hosts_file)
             slots = DistSSHKit._go_plan_slots(lines)
@@ -179,10 +179,10 @@ using Test
         end
 
         withenv("DISTSSHKIT_HOSTS" => "child:env-a:2, child:env-b", "DISTSSHKIT_HOSTS_FILE" => nothing) do
-            session = DistSSHKit.KitCliSession(hosts_flag=["parent:3"], hosts_file=hosts_file)
-            @test DistSSHKit.kit_host_source_tokens(session; keep_counts=true) ==
+            session = DistSSHKit.KitCliSession(hosts_flag = ["parent:3"], hosts_file = hosts_file)
+            @test DistSSHKit.kit_host_source_tokens(session; keep_counts = true) ==
                 ["parent:3", "child:env-a:2", "child:env-b", "child:host-a", "child:host-b:4"]
-            @test DistSSHKit.kit_host_source_tokens(session; keep_counts=false, roles=true) ==
+            @test DistSSHKit.kit_host_source_tokens(session; keep_counts = false, roles = true) ==
                 ["parent", "env-a", "env-b", "host-a", "host-b"]
         end
     end

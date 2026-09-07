@@ -1,18 +1,18 @@
 function print_size_report(
-    all_hosts::Vector{String},
-    hosts::Vector{String},
-    samples::Dict{String,WorkerMemorySample},
-    opts;
-    show_peak::Bool=false,
-)
+        all_hosts::Vector{String},
+        hosts::Vector{String},
+        samples::Dict{String, WorkerMemorySample},
+        opts;
+        show_peak::Bool = false,
+    )
     local_total, local_nproc = get_local_resources()
-    host_resources = Dict{String,NamedTuple}(
-        PARENT_HOST_NAME => (total_gb=local_total, nproc=local_nproc)
+    host_resources = Dict{String, NamedTuple}(
+        PARENT_HOST_NAME => (total_gb = local_total, nproc = local_nproc)
     )
     for host in hosts
         host_resources[host] = (
             total_gb = something(get_remote_total_gb(host), 0.0),
-            nproc    = something(get_remote_nproc(host), 1)
+            nproc = something(get_remote_nproc(host), 1),
         )
     end
 
@@ -21,8 +21,8 @@ function print_size_report(
         all_hosts,
         hosts,
         per_worker_gb;
-        mem_headroom=opts.mem_headroom,
-        parent_gb=opts.parent_gb,
+        mem_headroom = opts.mem_headroom,
+        parent_gb = opts.parent_gb,
     )
 
     # Table stays on stdout under -q / --progress (not kit_println).
@@ -41,19 +41,19 @@ function print_size_report(
         shown = is_parent_host_name(host) ? PARENT_HOST_NAME : host
         if show_peak
             println(
-                "  $(lpad(shown, host_col))  $(round(res.total_gb, digits=1)) GB   $(res.nproc)      ",
+                "  $(lpad(shown, host_col))  $(round(res.total_gb, digits = 1)) GB   $(res.nproc)      ",
                 "$(s.baseline_gb) GB   $(s.peak_gb) GB   $n",
             )
         else
             println(
-                "  $(lpad(shown, host_col))  $(round(res.total_gb, digits=1)) GB   $(res.nproc)      ",
+                "  $(lpad(shown, host_col))  $(round(res.total_gb, digits = 1)) GB   $(res.nproc)      ",
                 "$(effective_worker_gb(s)) GB     $n",
             )
         end
     end
     println()
 
-    total = plan.parent_workers + sum(values(plan.child_workers); init=0)
+    total = plan.parent_workers + sum(values(plan.child_workers); init = 0)
     println("Total: $total workers")
     println()
 
@@ -70,18 +70,18 @@ function print_size_report(
         println("    $(rstrip(worker_args)) \\")
         println("    <script.jl> <args>")
     end
-    println(rule_line())
+    return println(rule_line())
 end
 
 function resolve_worker_memory_samples(
-    project::AbstractString,
-    all_hosts::Vector{String},
-    hosts::Vector{String},
-    opts,
-)::Union{Dict{String,WorkerMemorySample},Nothing}
+        project::AbstractString,
+        all_hosts::Vector{String},
+        hosts::Vector{String},
+        opts,
+    )::Union{Dict{String, WorkerMemorySample}, Nothing}
     if opts.gb_per_worker !== nothing
         g = Float64(opts.gb_per_worker)
-        samples = Dict{String,WorkerMemorySample}()
+        samples = Dict{String, WorkerMemorySample}()
         for h in all_hosts
             samples[h] = WorkerMemorySample(g, g)
         end
@@ -99,9 +99,9 @@ function resolve_worker_memory_samples(
     measured = measure_rss(
         project,
         hosts;
-        include_parent=opts.include_parent,
-        probe=opts.probe,
-        hint_surface=:cli,
+        include_parent = opts.include_parent,
+        probe = opts.probe,
+        hint_surface = :cli,
     )
     if isempty(measured)
         print_err("Measurement failed. Use --gb-per-worker N.")
@@ -112,7 +112,7 @@ function resolve_worker_memory_samples(
     if !isempty(failed)
         print_warn("  Connection failed: $(join(failed, ", "))\n")
     end
-    samples = Dict{String,WorkerMemorySample}()
+    samples = Dict{String, WorkerMemorySample}()
     for h in all_hosts
         if haskey(measured, h)
             s = measured[h]

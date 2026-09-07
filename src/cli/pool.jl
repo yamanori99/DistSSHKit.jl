@@ -48,24 +48,24 @@ function pool_main()::Cint
     DistSSHKit.kit_println()
 
     session = DistSSHKit.KitSession(
-        project=PROJECT_ROOT,
-        workers=tokens,
-        quiet=opts.cli_session.quiet,
-        verbosity=opts.cli_session.verbosity,
-        yes=opts.cli_session.yes,
+        project = PROJECT_ROOT,
+        workers = tokens,
+        quiet = opts.cli_session.quiet,
+        verbosity = opts.cli_session.verbosity,
+        yes = opts.cli_session.yes,
     )
     result = pool!(
         session;
-        gb_per_worker=opts.gb_per_worker,
-        mem_headroom=opts.mem_headroom,
-        parent_gb=opts.parent_gb,
+        gb_per_worker = opts.gb_per_worker,
+        mem_headroom = opts.mem_headroom,
+        parent_gb = opts.parent_gb,
     )
     print_pool(result)
     return result.ok ? 0 : 1
 end
 
 if get(ENV, "DIST_SSH_KIT_CLI_INCLUDE", "") != "1" &&
-   !isempty(PROGRAM_FILE) &&
-   abspath(PROGRAM_FILE) == abspath(@__FILE__)
+        !isempty(PROGRAM_FILE) &&
+        abspath(PROGRAM_FILE) == abspath(@__FILE__)
     exit(pool_main())
 end

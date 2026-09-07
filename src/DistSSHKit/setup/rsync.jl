@@ -33,20 +33,20 @@ child exits without reading stdin (fake rsync, or rsync dying on argv). A list
 file is the same rsync contract without that pipe.
 """
 function _run_rsync_files_from(
-    rsync_bin::Vector{String},
-    opts::Vector{String},
-    src::AbstractString,
-    dest::AbstractString,
-    files::Vector{String};
-    stderr=stderr,
-)
+        rsync_bin::Vector{String},
+        opts::Vector{String},
+        src::AbstractString,
+        dest::AbstractString,
+        files::Vector{String};
+        stderr = stderr,
+    )
     mktemp() do path, io
         for rel in files
             println(io, rel)
         end
         close(io)
         cmd = Cmd(vcat(rsync_bin, opts, ["--files-from=$path", String(src), String(dest)]))
-        run(pipeline(cmd; stderr=stderr))
+        run(pipeline(cmd; stderr = stderr))
     end
     return nothing
 end
@@ -83,7 +83,7 @@ function remote_dest_status(host::String, remote_path::AbstractString)::Symbol
         result = read(
             pipeline(
                 _host_sync_remote_shell_cmd(host, _remote_dest_status_script(remote_path));
-                stderr=devnull,
+                stderr = devnull,
             ),
             String,
         )
@@ -122,8 +122,8 @@ function _ensure_remote_dir(host::String, remote_path::String)::Bool
         run(
             pipeline(
                 _host_sync_remote_shell_cmd(host, "mkdir -p $pq");
-                stderr=devnull,
-                stdout=devnull,
+                stderr = devnull,
+                stdout = devnull,
             ),
         )
         return true
@@ -134,11 +134,11 @@ function _ensure_remote_dir(host::String, remote_path::String)::Bool
 end
 
 function _print_rsync_safety_banner!(
-    local_root::AbstractString,
-    remote_path::AbstractString,
-    hosts::Vector{String},
-    path_anchor::AbstractString,
-)
+        local_root::AbstractString,
+        remote_path::AbstractString,
+        hosts::Vector{String},
+        path_anchor::AbstractString,
+    )
     # Consent text: always on the terminal (same gate as `kit_confirm`).
     print_warn("  This bypasses git entirely: no commit, no push/pull, no hash check.\n")
     println_fatal("  Local and remote git commits will likely disagree afterwards.")
@@ -163,26 +163,26 @@ Run rsync for one host. Returns
 Throws on rsync command failure after setup.
 """
 function _rsync_one_host!(
-    host::String,
-    local_root::AbstractString,
-    remote_path::AbstractString,
-    ssh_cmd_str::String,
-)
+        host::String,
+        local_root::AbstractString,
+        remote_path::AbstractString,
+        ssh_cmd_str::String,
+    )
     st = remote_dest_status(host, remote_path)
     if st === :nonempty
         return (;
-            status=:busy,
-            message=remote_dest_busy_message(host, remote_path),
-            dir_created=false,
+            status = :busy,
+            message = remote_dest_busy_message(host, remote_path),
+            dir_created = false,
         )
     end
     dir_created = false
     if st === :missing
         if !_ensure_remote_dir(host, remote_path)
             return (;
-                status=:mkdir_fail,
-                message="could not create remote directory",
-                dir_created=false,
+                status = :mkdir_fail,
+                message = "could not create remote directory",
+                dir_created = false,
             )
         end
         dir_created = true
@@ -206,8 +206,8 @@ function _rsync_one_host!(
             ],
         ),
     )
-    run(pipeline(rsync_cmd; stderr=stderr))
-    return (; status=:ok, message="", dir_created=dir_created)
+    run(pipeline(rsync_cmd; stderr = stderr))
+    return (; status = :ok, message = "", dir_created = dir_created)
 end
 
 """
@@ -228,26 +228,26 @@ When `confirm=true`, prints warnings and requires typing `rsync` (unless
 but the nonempty-path refusal still applies).
 """
 function rsync_project_to_hosts!(
-    hosts::Vector{String},
-    local_root::AbstractString,
-    remote_path::AbstractString;
-    confirm::Bool=true,
-    report::Bool=false,
-    path_anchor::AbstractString=local_root,
-)::NamedTuple
+        hosts::Vector{String},
+        local_root::AbstractString,
+        remote_path::AbstractString;
+        confirm::Bool = true,
+        report::Bool = false,
+        path_anchor::AbstractString = local_root,
+    )::NamedTuple
     local_root = canonical_local_path(local_root)
     remote_path = String(remote_path)
     path_anchor = canonical_local_path(path_anchor)
 
     if confirm && !kit_noninteractive()
         _print_rsync_safety_banner!(local_root, remote_path, hosts, path_anchor)
-        if !kit_confirm("Type 'rsync' to confirm: "; keyword="rsync")
+        if !kit_confirm("Type 'rsync' to confirm: "; keyword = "rsync")
             println_fatal("Cancelled.")
             return (
-                cancelled=true,
-                succeeded=0,
-                failed=0,
-                host_results=HostResult[],
+                cancelled = true,
+                succeeded = 0,
+                failed = 0,
+                host_results = HostResult[],
             )
         end
         println_fatal()
@@ -328,9 +328,9 @@ function rsync_project_to_hosts!(
     end
 
     return (
-        cancelled=false,
-        succeeded=succeeded,
-        failed=failed,
-        host_results=host_results,
+        cancelled = false,
+        succeeded = succeeded,
+        failed = failed,
+        host_results = host_results,
     )
 end

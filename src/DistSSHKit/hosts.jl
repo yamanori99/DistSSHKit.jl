@@ -35,15 +35,17 @@ end
 """`ArgumentError` for removed `--local` / `-l` (0.4)."""
 function throw_removed_local_flag(arg::AbstractString)
     a = String(arg)
-    throw(ArgumentError(
-        "$(a) was removed in DistSSHKit 0.4; use $(PARENT_HOST_NAME) / $(PARENT_HOST_NAME):N",
-    ))
+    throw(
+        ArgumentError(
+            "$(a) was removed in DistSSHKit 0.4; use $(PARENT_HOST_NAME) / $(PARENT_HOST_NAME):N",
+        )
+    )
 end
 
-function _placement_count_suffix(spec::AbstractString)::Tuple{String,Union{Nothing,Int}}
+function _placement_count_suffix(spec::AbstractString)::Tuple{String, Union{Nothing, Int}}
     s = strip(String(spec))
     if contains(s, ':')
-        parts = split(s, ':'; limit=2)
+        parts = split(s, ':'; limit = 2)
         n = try
             parse(Int, parts[2])
         catch
@@ -56,10 +58,10 @@ end
 
 """Format a go/drive/size token (`parent[:N]` or `child:NAME[:N]`)."""
 function format_placement_token(
-    role::Symbol,
-    name::String,
-    n::Union{Nothing,Integer}=nothing,
-)::String
+        role::Symbol,
+        name::String,
+        n::Union{Nothing, Integer} = nothing,
+    )::String
     nn = n === nothing ? nothing : Int(n)
     if role === :parent
         nn === nothing && return PARENT_HOST_NAME
@@ -74,7 +76,7 @@ end
 format_placement_token(
     role::Symbol,
     name::AbstractString,
-    n::Union{Nothing,Integer}=nothing,
+    n::Union{Nothing, Integer} = nothing,
 ) = format_placement_token(role, name isa String ? name : string(name), n)
 
 const _PLACEMENT_HINT =
@@ -82,11 +84,13 @@ const _PLACEMENT_HINT =
 
 function throw_legacy_placement_token(raw::AbstractString)
     s = String(raw)
-    base = split(s, ':'; limit=2)[1]
+    base = split(s, ':'; limit = 2)[1]
     if base == "parenthost" || base == "masterhost" || base == "childhost"
-        throw(ArgumentError(
-            "$(repr(s)) was removed; $_PLACEMENT_HINT",
-        ))
+        throw(
+            ArgumentError(
+                "$(repr(s)) was removed; $_PLACEMENT_HINT",
+            )
+        )
     end
     return nothing
 end
@@ -98,13 +102,13 @@ Returns `(role, name, n)` where `role` is `:parent` or `:child`, `name` is
 `parent` or the SSH host, and `n` is the explicit count or `nothing` (`-w` / size).
 """
 function parse_placement_token(
-    spec::AbstractString,
-)::NamedTuple{(:role, :name, :n), Tuple{Symbol, String, Union{Nothing, Int}}}
+        spec::AbstractString,
+    )::NamedTuple{(:role, :name, :n), Tuple{Symbol, String, Union{Nothing, Int}}}
     s = strip(String(spec))
     isempty(s) && throw(ArgumentError("empty host token"))
     throw_legacy_placement_token(s)
     if s == PARENT_HOST_NAME
-        return (role=:parent, name=PARENT_HOST_NAME, n=nothing)
+        return (role = :parent, name = PARENT_HOST_NAME, n = nothing)
     end
     if startswith(s, PARENT_HOST_NAME * ":")
         rest = s[(lastindex(PARENT_HOST_NAME) + 2):end]
@@ -114,17 +118,19 @@ function parse_placement_token(
         catch
             throw(ArgumentError("$(repr(s)): parent count must be an integer"))
         end
-        return (role=:parent, name=PARENT_HOST_NAME, n)
+        return (role = :parent, name = PARENT_HOST_NAME, n)
     end
     if startswith(s, CHILD_TOKEN_PREFIX)
         rest = s[(lastindex(CHILD_TOKEN_PREFIX) + 1):end]
         isempty(rest) && throw(ArgumentError("$(repr(s)): missing SSH name after `child:`"))
         name, n = _placement_count_suffix(rest)
         isempty(name) && throw(ArgumentError("$(repr(s)): missing SSH name after `child:`"))
-        is_parent_host_name(name) && throw(ArgumentError(
-            "$(repr(s)): Kit side is `parent`, not `child:parent`",
-        ))
-        return (role=:child, name=name, n)
+        is_parent_host_name(name) && throw(
+            ArgumentError(
+                "$(repr(s)): Kit side is `parent`, not `child:parent`",
+            )
+        )
+        return (role = :child, name = name, n)
     end
     throw(ArgumentError("$(repr(s)): $_PLACEMENT_HINT"))
 end
@@ -178,19 +184,19 @@ Short, actionable summary for SSH / remote-shell failures.
 
 Prefer this over dumping a full `ProcessFailedException` with a long `Cmd`.
 """
-function summarize_ssh_error(err; stderr::AbstractString="")::String
+function summarize_ssh_error(err; stderr::AbstractString = "")::String
     detail = strip(String(stderr))
     msg = sprint(showerror, err)
     blob = isempty(detail) ? msg : detail * "\n" * msg
 
     if occursin(r"(?i)bad configuration option:\s*usekeychain|usekeychain", blob)
         return "SSH config rejects UseKeychain (common with Homebrew OpenSSH). " *
-               "Under `Host *` in ~/.ssh/config add `IgnoreUnknown UseKeychain`, " *
-               "or put Apple's ssh first: PATH=\"/usr/bin:\$PATH\"."
+            "Under `Host *` in ~/.ssh/config add `IgnoreUnknown UseKeychain`, " *
+            "or put Apple's ssh first: PATH=\"/usr/bin:\$PATH\"."
     end
     if occursin(r"(?i)permission denied|no matching host key|host key verification failed", blob)
         return "SSH auth/host-key failed (BatchMode; no password prompt). " *
-               "Fix: ssh-copy-id HOST  (or trust the host key once interactively)."
+            "Fix: ssh-copy-id HOST  (or trust the host key once interactively)."
     end
     if occursin(r"(?i)could not resolve hostname|name or service not known|nodename nor servname", blob)
         return "SSH host not found (DNS / typo / missing SSH config Host alias)."
@@ -212,7 +218,7 @@ function summarize_ssh_error(err; stderr::AbstractString="")::String
     return _truncate_ssh_message(msg)
 end
 
-function _truncate_ssh_message(msg::AbstractString; limit::Int=220)::String
+function _truncate_ssh_message(msg::AbstractString; limit::Int = 220)::String
     s = replace(strip(String(msg)), r"\s+" => " ")
     length(s) <= limit && return s
     return s[1:prevind(s, limit)] * "…"

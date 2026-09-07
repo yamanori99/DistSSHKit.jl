@@ -5,7 +5,7 @@ using Distributed
 using DistSSHKit
 
 function init_output_dir!(_)
-    DistSSHKit.resolve_distributed_output_dir!(ARGS, joinpath(@__DIR__, "output"))
+    return DistSSHKit.resolve_distributed_output_dir!(ARGS, joinpath(@__DIR__, "output"))
 end
 
 function write_worker_file()
@@ -20,4 +20,5 @@ function main()
     for w in workers()
         remotecall_fetch(write_worker_file, w)
     end
+    return
 end

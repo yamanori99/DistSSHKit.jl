@@ -36,7 +36,7 @@ function main()
     write(out_path, "n=$n inside=$inside pi=$pi_hat\n")
 
     println("π ≈ $pi_hat  (inside=$inside / n=$n)")
-    println("wrote ", relpath(out_path, @__DIR__))
+    return println("wrote ", relpath(out_path, @__DIR__))
 end
 
 main()

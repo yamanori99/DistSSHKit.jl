@@ -11,55 +11,61 @@ using Test
     env = _child_julia_env()
 
     _with_tempdir() do tmp
-        solo_echo_proc, solo_echo_out = _run_subprocess(setenv(
-            Cmd([julia, "--startup-file=no", "--project=$kit_root", echo, "--n", "4"]),
-            env,
-        ))
-        _assert_proc_ok(solo_echo_proc, solo_echo_out; label="pi_echo solo")
+        solo_echo_proc, solo_echo_out = _run_subprocess(
+            setenv(
+                Cmd([julia, "--startup-file=no", "--project=$kit_root", echo, "--n", "4"]),
+                env,
+            )
+        )
+        _assert_proc_ok(solo_echo_proc, solo_echo_out; label = "pi_echo solo")
         echo_line = match(r"π ≈ .+", solo_echo_out)
         @test echo_line !== nothing
 
         go_echo_proc, go_echo_out = _run_kit_go(;
-            script=echo,
-            script_args=["--n", "4"],
-            project_root=tmp,
-            go_flags=["-y"],
+            script = echo,
+            script_args = ["--n", "4"],
+            project_root = tmp,
+            go_flags = ["-y"],
         )
-        _assert_proc_ok(go_echo_proc, go_echo_out; label="pi_echo go")
+        _assert_proc_ok(go_echo_proc, go_echo_out; label = "pi_echo go")
         @test occursin(echo_line.match, go_echo_out)
         echo_batch = _ssh_e2e_latest_go_batch(tmp)
         @test echo_batch !== nothing
         echo_batch === nothing && error("expected go batch for pi_echo")
-        _assert_kit_progress_done(echo_batch; kind=:go)
+        _assert_kit_progress_done(echo_batch; kind = :go)
 
         solo_dir = joinpath(tmp, "solo_out")
         mkpath(solo_dir)
-        solo_file_proc, solo_file_out = _run_subprocess(setenv(
-            Cmd([julia, "--startup-file=no", "--project=$kit_root", file, "--n", "4"]),
-            _child_julia_env(Dict("DISTRIBUTED_OUTPUT_DIR" => solo_dir)),
-        ))
-        _assert_proc_ok(solo_file_proc, solo_file_out; label="pi_file solo")
+        solo_file_proc, solo_file_out = _run_subprocess(
+            setenv(
+                Cmd([julia, "--startup-file=no", "--project=$kit_root", file, "--n", "4"]),
+                _child_julia_env(Dict("DISTRIBUTED_OUTPUT_DIR" => solo_dir)),
+            )
+        )
+        _assert_proc_ok(solo_file_proc, solo_file_out; label = "pi_file solo")
         solo_body = read(joinpath(solo_dir, "pi_results.txt"), String)
         @test occursin("pi=", solo_body)
 
         go_file_proc, go_file_out = _run_kit_go(;
-            script=file,
-            script_args=["--n", "4"],
-            project_root=tmp,
-            go_flags=["-y"],
+            script = file,
+            script_args = ["--n", "4"],
+            project_root = tmp,
+            go_flags = ["-y"],
         )
-        _assert_proc_ok(go_file_proc, go_file_out; label="pi_file go")
+        _assert_proc_ok(go_file_proc, go_file_out; label = "pi_file go")
         file_batch = _ssh_e2e_latest_go_batch(tmp)
         @test file_batch !== nothing
         file_batch === nothing && error("expected go batch for pi_file")
         @test read(joinpath(file_batch, "parent", "pi_results.txt"), String) == solo_body
-        _assert_kit_progress_done(file_batch; kind=:go)
+        _assert_kit_progress_done(file_batch; kind = :go)
 
-        pipe_proc, pipe_out = _run_subprocess(setenv(
-            Cmd(Cmd([julia, "--startup-file=no", "--project=$kit_root", pipe_script, "--n", "4"]); dir=tmp),
-            env,
-        ))
-        _assert_proc_ok(pipe_proc, pipe_out; label="pipeline_pi demo")
+        pipe_proc, pipe_out = _run_subprocess(
+            setenv(
+                Cmd(Cmd([julia, "--startup-file=no", "--project=$kit_root", pipe_script, "--n", "4"]); dir = tmp),
+                env,
+            )
+        )
+        _assert_proc_ok(pipe_proc, pipe_out; label = "pipeline_pi demo")
         @test occursin("pipeline ok", pipe_out)
         pipe_batch = _ssh_e2e_latest_go_batch(tmp)
         @test pipe_batch !== nothing
@@ -68,6 +74,6 @@ using Test
         b = read(joinpath(pipe_batch, "parent-2", "pi_results.txt"), String)
         @test occursin("pi=", a)
         @test a == b
-        _assert_kit_progress_done(pipe_batch; kind=:go)
+        _assert_kit_progress_done(pipe_batch; kind = :go)
     end
 end

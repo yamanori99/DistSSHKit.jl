@@ -9,12 +9,12 @@ Uses `DISTRIBUTED_REMOTE_PROJECT_ROOT` (via `remote_path_for_ssh_collect`) to ma
 Respects `--quiet` / `--progress` via kit printers (kit log still written when open).
 """
 function drive_collect_tree(
-    local_root::AbstractString,
-    host_names::Vector{String};
-    merge::Bool=false,
-    strict::Bool=false,
-)
-    repo_root  = DistSSHKit.canonical_local_path(PROJECT_ROOT)
+        local_root::AbstractString,
+        host_names::Vector{String};
+        merge::Bool = false,
+        strict::Bool = false,
+    )
+    repo_root = DistSSHKit.canonical_local_path(PROJECT_ROOT)
     local_root = DistSSHKit.canonical_local_path(local_root)
     transport = DistSSHKit._host_sync_rsync_transport()
     rsync_bin = DistSSHKit._host_sync_rsync_argv()
@@ -25,7 +25,7 @@ function drive_collect_tree(
     writeln_field(
         "Mode",
         merge ? "full sync (same-named files updated when remote differs)" :
-                "missing paths only (existing local files left unchanged)",
+            "missing paths only (existing local files left unchanged)",
     )
     writeln_field("Hosts", join(host_names, ", "))
     writeln_both("")
@@ -49,10 +49,12 @@ function drive_collect_tree(
             end
             host_remote = host_remote::String
             pq = DistSSHKit._remote_shell_path_word(host_remote)
-            if !success(pipeline(
-                    DistSSHKit._host_sync_remote_shell_cmd(host, "test -d $pq");
-                    stderr=devnull, stdout=devnull,
-                ))
+            if !success(
+                    pipeline(
+                        DistSSHKit._host_sync_remote_shell_cmd(host, "test -d $pq");
+                        stderr = devnull, stdout = devnull,
+                    )
+                )
                 writeln_both("(skip: no directory on host at $host_remote)")
                 writeln_both("      hint: export DISTRIBUTED_REMOTE_PROJECT_ROOT=<repo root on SSH host>")
                 strict && (ok = false)
@@ -67,17 +69,21 @@ function drive_collect_tree(
 
             if merge
                 # No `--mkpath`: macOS ships BSD rsync without that flag (GNU rsync 3.2.3+).
-                rsync_cmd = Cmd(vcat(
-                    rsync_bin,
-                    ["-az", "-e", transport, string(host, ":", host_remote, "/"), local_root * "/"],
-                ))
-                run(pipeline(rsync_cmd; stderr=stderr))
+                rsync_cmd = Cmd(
+                    vcat(
+                        rsync_bin,
+                        ["-az", "-e", transport, string(host, ":", host_remote, "/"), local_root * "/"],
+                    )
+                )
+                run(pipeline(rsync_cmd; stderr = stderr))
                 n = length(remote_files)
                 print_ok("✓ (synced $n remote file$(n == 1 ? "" : "s"))")
                 writeln_both("")
             else
-                need = String[rel for (_, rel) in remote_files
-                              if !isfile(joinpath(local_root, rel))]
+                need = String[
+                    rel for (_, rel) in remote_files
+                        if !isfile(joinpath(local_root, rel))
+                ]
                 if isempty(need)
                     writeln_both("(nothing new — all remote files exist locally; use --collect-overwrite to replace)")
                     continue

@@ -8,7 +8,7 @@ using Distributed
 using DistSSHKit
 
 function init_output_dir!(_)
-    DistSSHKit.resolve_distributed_output_dir!(ARGS, joinpath(@__DIR__, "output"))
+    return DistSSHKit.resolve_distributed_output_dir!(ARGS, joinpath(@__DIR__, "output"))
 end
 
 function main()
@@ -26,5 +26,5 @@ function main()
         text *= "$i,$(results[i])\n"
     end
     write(out_path, text)
-    println("wrote ", out_path)
+    return println("wrote ", out_path)
 end

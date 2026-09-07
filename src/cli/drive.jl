@@ -31,7 +31,7 @@ include(joinpath(@__DIR__, "..", "DistSSHKit", "drive", "_load_runtime.jl"))
 
 function _restore_drive_args!(original_args::Vector{String})
     empty!(ARGS)
-    append!(ARGS, original_args)
+    return append!(ARGS, original_args)
 end
 
 function drive_main()::Cint
@@ -45,11 +45,11 @@ end
 
 function _drive_main_body(original_args::Vector{String})::Cint
     parsed = parse_drive_args(ARGS)
-    return run_drive_parsed!(parsed; original_args=original_args)
+    return run_drive_parsed!(parsed; original_args = original_args)
 end
 
 if get(ENV, "DIST_SSH_KIT_CLI_INCLUDE", "") != "1" &&
-   !isempty(PROGRAM_FILE) &&
-   abspath(PROGRAM_FILE) == abspath(@__FILE__)
+        !isempty(PROGRAM_FILE) &&
+        abspath(PROGRAM_FILE) == abspath(@__FILE__)
     exit(drive_main())
 end

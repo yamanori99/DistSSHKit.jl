@@ -56,71 +56,71 @@ using Test
     @testset "project layout" begin
         # Standalone kit vs host-app embedding (the two layouts that matter).
         withenv("DISTRIBUTED_PROJECT_ROOT" => nothing) do
-        _with_tempdir() do tmp
-            d = tmp
-            write(joinpath(d, "Project.toml"), "name = \"DistSSHKit\"\n")
-            src = joinpath(d, "src")
-            mkpath(src)
-            @test DistSSHKit.kit_project_root(src) == d
-            cd(d) do
-                @test DistSSHKit.cli_project_root(src) == realpath(d)
+            _with_tempdir() do tmp
+                d = tmp
+                write(joinpath(d, "Project.toml"), "name = \"DistSSHKit\"\n")
+                src = joinpath(d, "src")
+                mkpath(src)
+                @test DistSSHKit.kit_project_root(src) == d
+                cd(d) do
+                    @test DistSSHKit.cli_project_root(src) == realpath(d)
+                end
+                @test DistSSHKit._cli_job_root(d, d) == d
+                @test DistSSHKit.resolve_pkg_project_dir(d) == d
             end
-            @test DistSSHKit._cli_job_root(d, d) == d
-            @test DistSSHKit.resolve_pkg_project_dir(d) == d
-        end
-        withenv("DISTRIBUTED_PROJECT_ROOT" => "/override/root") do
-            @test DistSSHKit.cli_project_root("/unused") == "/override/root"
-        end
-        _with_tempdir() do tmp
-            d = tmp
-            app = joinpath(d, "MyApp")
-            kit = joinpath(app, "DistSSHKit")
-            scripts = joinpath(app, "scripts", "jobs")
-            mkpath(scripts)
-            mkpath(joinpath(kit, "src"))
-            write(joinpath(app, "Project.toml"), "name = \"MyApp\"\n")
-            write(joinpath(kit, "Project.toml"), "name = \"DistSSHKit\"\n")
-            @test DistSSHKit.kit_project_root(joinpath(kit, "src")) == app
-            @test DistSSHKit.cli_project_root(joinpath(kit, "src")) == app
-            @test DistSSHKit.resolve_pkg_project_dir(scripts) == app
-        end
-        _with_tempdir() do tmp
-            d = tmp
-            @test DistSSHKit.project_package_name(d) === nothing
-            write(joinpath(d, "Project.toml"), "name = \"FooBar\"\n")
-            @test DistSSHKit.project_package_name(d) == "FooBar"
-        end
-        _with_tempdir() do tmp
-            d = tmp
-            write(joinpath(d, "Project.toml"), "name = \"DistSSHKit\"\n")
-            cli = joinpath(d, "src", "cli")
-            mkpath(cli)
-            @test DistSSHKit.kit_project_root(cli) == d
-            @test DistSSHKit.cli_project_disp(d, DistSSHKit.canonical_local_path(d)) ==
-                basename(abspath(d))
-        end
-        @test DistSSHKit._path_is_under("/a/b/c", "/a/b")
-        @test DistSSHKit._path_is_under("/a/b", "/a/b")
-        @test !DistSSHKit._path_is_under("/a/bother", "/a/b")
-        # Loaded DistSSHKit is not the host Project.toml (Pkg.add / apps).
-        _with_tempdir() do tmp
-            d = tmp
-            pkg = joinpath(d, "packages", "DistSSHKit", "XXXX")
-            mkpath(joinpath(pkg, "src"))
-            write(joinpath(pkg, "Project.toml"), "name = \"DistSSHKit\"\n")
-            job = joinpath(d, "MyJob")
-            mkpath(job)
-            write(joinpath(job, "Project.toml"), "name = \"MyJob\"\n")
-            empty = joinpath(d, "scratch")
-            mkpath(empty)
-            src = joinpath(pkg, "src")
-            @test DistSSHKit.kit_project_root(src) == pkg
-            @test DistSSHKit._cli_job_root(pkg, job) == job
-            @test DistSSHKit._cli_job_root(pkg, empty) == empty
-            cd(job) do
-                @test DistSSHKit.cli_project_root(src) == realpath(job)
+            withenv("DISTRIBUTED_PROJECT_ROOT" => "/override/root") do
+                @test DistSSHKit.cli_project_root("/unused") == "/override/root"
             end
-        end
+            _with_tempdir() do tmp
+                d = tmp
+                app = joinpath(d, "MyApp")
+                kit = joinpath(app, "DistSSHKit")
+                scripts = joinpath(app, "scripts", "jobs")
+                mkpath(scripts)
+                mkpath(joinpath(kit, "src"))
+                write(joinpath(app, "Project.toml"), "name = \"MyApp\"\n")
+                write(joinpath(kit, "Project.toml"), "name = \"DistSSHKit\"\n")
+                @test DistSSHKit.kit_project_root(joinpath(kit, "src")) == app
+                @test DistSSHKit.cli_project_root(joinpath(kit, "src")) == app
+                @test DistSSHKit.resolve_pkg_project_dir(scripts) == app
+            end
+            _with_tempdir() do tmp
+                d = tmp
+                @test DistSSHKit.project_package_name(d) === nothing
+                write(joinpath(d, "Project.toml"), "name = \"FooBar\"\n")
+                @test DistSSHKit.project_package_name(d) == "FooBar"
+            end
+            _with_tempdir() do tmp
+                d = tmp
+                write(joinpath(d, "Project.toml"), "name = \"DistSSHKit\"\n")
+                cli = joinpath(d, "src", "cli")
+                mkpath(cli)
+                @test DistSSHKit.kit_project_root(cli) == d
+                @test DistSSHKit.cli_project_disp(d, DistSSHKit.canonical_local_path(d)) ==
+                    basename(abspath(d))
+            end
+            @test DistSSHKit._path_is_under("/a/b/c", "/a/b")
+            @test DistSSHKit._path_is_under("/a/b", "/a/b")
+            @test !DistSSHKit._path_is_under("/a/bother", "/a/b")
+            # Loaded DistSSHKit is not the host Project.toml (Pkg.add / apps).
+            _with_tempdir() do tmp
+                d = tmp
+                pkg = joinpath(d, "packages", "DistSSHKit", "XXXX")
+                mkpath(joinpath(pkg, "src"))
+                write(joinpath(pkg, "Project.toml"), "name = \"DistSSHKit\"\n")
+                job = joinpath(d, "MyJob")
+                mkpath(job)
+                write(joinpath(job, "Project.toml"), "name = \"MyJob\"\n")
+                empty = joinpath(d, "scratch")
+                mkpath(empty)
+                src = joinpath(pkg, "src")
+                @test DistSSHKit.kit_project_root(src) == pkg
+                @test DistSSHKit._cli_job_root(pkg, job) == job
+                @test DistSSHKit._cli_job_root(pkg, empty) == empty
+                cd(job) do
+                    @test DistSSHKit.cli_project_root(src) == realpath(job)
+                end
+            end
         end
     end
 
@@ -143,16 +143,18 @@ using Test
 
     @testset "help chrome" begin
         buf = IOBuffer()
-        DistSSHKit.print_cli_error("boom"; io=buf)
+        DistSSHKit.print_cli_error("boom"; io = buf)
         @test occursin("Error:", String(take!(buf)))
         @test DistSSHKit._help_section_line("Usage:")
         @test !DistSSHKit._help_section_line("  indented:")
         @test !DistSSHKit._help_section_line("# comment:")
-        txt = sprint(io -> DistSSHKit.print_help_document(
-            "DistSSHKit test",
-            "Usage:\n  cmd --help\n";
-            io=io,
-        ))
+        txt = sprint(
+            io -> DistSSHKit.print_help_document(
+                "DistSSHKit test",
+                "Usage:\n  cmd --help\n";
+                io = io,
+            )
+        )
         @test occursin("DistSSHKit test", txt)
         @test occursin("cmd --help", txt)
     end
@@ -162,7 +164,7 @@ using Test
             _with_tempdir() do tmp
                 with_kit_verbosity(:quiet) do
                     out, _ = _capture_stdio() do _, _
-                        DistSSHKit.init_log_file(tmp; prefix="gate_quiet")
+                        DistSSHKit.init_log_file(tmp; prefix = "gate_quiet")
                         DistSSHKit.writeln_both("quiet-secret")
                     end
                     DistSSHKit.close_log_file()
@@ -170,7 +172,7 @@ using Test
                 end
                 with_kit_verbosity(:verbose) do
                     out, _ = _capture_stdio() do _, _
-                        DistSSHKit.init_log_file(tmp; prefix="gate_verbose")
+                        DistSSHKit.init_log_file(tmp; prefix = "gate_verbose")
                         DistSSHKit.writeln_both("verbose-shown")
                     end
                     DistSSHKit.close_log_file()
@@ -184,7 +186,7 @@ using Test
             _with_tempdir() do tmp
                 with_kit_verbosity(:quiet) do
                     out, log_path = _capture_stdio() do _, _
-                        path = DistSSHKit.init_log_file(tmp; prefix="quiet_test")
+                        path = DistSSHKit.init_log_file(tmp; prefix = "quiet_test")
                         DistSSHKit.writeln_both("hello-quiet")
                         DistSSHKit.println_fatal("fatal-line")
                         return path
@@ -207,7 +209,7 @@ using Test
                     @test !DistSSHKit.kit_output_detail()
                     @test !DistSSHKit.kit_output_quiet()
 
-                    log_path = DistSSHKit.init_log_file(tmp; prefix="progress_test")
+                    log_path = DistSSHKit.init_log_file(tmp; prefix = "progress_test")
                     redirect_stdout(devnull) do
                         DistSSHKit.writeln_both("hello-progress")
                     end
@@ -218,7 +220,7 @@ using Test
         end
 
         @testset "progress bar glyphs" begin
-            empty = DistSSHKit._progress_bar_string(0, 1; tick=0)
+            empty = DistSSHKit._progress_bar_string(0, 1; tick = 0)
             @test length(empty) == DistSSHKit.PROGRESS_BAR_WIDTH
             @test startswith(empty, string(DistSSHKit.PROGRESS_HEAD_CHAR))
             @test count(==(DistSSHKit.PROGRESS_HEAD_CHAR), empty) == 1
@@ -227,7 +229,7 @@ using Test
             @test full == string(DistSSHKit.PROGRESS_FILL_CHAR)^DistSSHKit.PROGRESS_BAR_WIDTH
             @test !occursin(string(DistSSHKit.PROGRESS_HEAD_CHAR), full)
 
-            half = DistSSHKit._progress_bar_string(3, 6; tick=0)
+            half = DistSSHKit._progress_bar_string(3, 6; tick = 0)
             @test length(half) == DistSSHKit.PROGRESS_BAR_WIDTH
             @test occursin(string(DistSSHKit.PROGRESS_FILL_CHAR), half)
             @test occursin(string(DistSSHKit.PROGRESS_HEAD_CHAR), half)
@@ -240,7 +242,7 @@ using Test
                 @test occursin("workers", line)
                 @test occursin("4/6", line)  # in-progress is done+1
                 @test occursin(half, line)
-                done_line = DistSSHKit._progress_line(st; finished=true, ok=true)
+                done_line = DistSSHKit._progress_line(st; finished = true, ok = true)
                 @test occursin("drive", done_line)
                 @test !occursin(half, done_line)
             end
@@ -268,12 +270,12 @@ using Test
 
             _with_tempdir() do tmp
                 with_kit_verbosity(:progress) do
-                    log_path = DistSSHKit.init_log_file(tmp; prefix="progress_bar")
+                    log_path = DistSSHKit.init_log_file(tmp; prefix = "progress_bar")
                     redirect_stdout(devnull) do
-                        DistSSHKit.kit_progress_begin!("drive"; steps=2, kind=:drive)
+                        DistSSHKit.kit_progress_begin!("drive"; steps = 2, kind = :drive)
                         DistSSHKit.kit_progress_step!("sync")
                         DistSSHKit.kit_progress_step!("run")
-                        DistSSHKit.kit_progress_done!(; ok=true, footer="out/batch")
+                        DistSSHKit.kit_progress_done!(; ok = true, footer = "out/batch")
                     end
                     DistSSHKit.close_log_file()
                     body = read(log_path, String)
@@ -288,17 +290,17 @@ using Test
 
             _with_tempdir() do tmp
                 with_kit_verbosity(:progress) do
-                    log_path = DistSSHKit.init_log_file(tmp; prefix="progress_items")
+                    log_path = DistSSHKit.init_log_file(tmp; prefix = "progress_items")
                     redirect_stdout(devnull) do
                         DistSSHKit.kit_progress_begin!(
                             "go";
-                            steps=2,
-                            items=["local-1", "local-2"],
-                            kind=:go,
+                            steps = 2,
+                            items = ["local-1", "local-2"],
+                            kind = :go,
                         )
-                        DistSSHKit.kit_progress_item!("local-1"; status=:ok)
-                        DistSSHKit.kit_progress_item!("local-2"; status=:ok)
-                        DistSSHKit.kit_progress_done!(; ok=true, footer="out/batch")
+                        DistSSHKit.kit_progress_item!("local-1"; status = :ok)
+                        DistSSHKit.kit_progress_item!("local-2"; status = :ok)
+                        DistSSHKit.kit_progress_done!(; ok = true, footer = "out/batch")
                     end
                     DistSSHKit.close_log_file()
                     body = read(log_path, String)
@@ -323,13 +325,13 @@ using Test
             @testset "job_id on progress: lines" begin
                 _with_tempdir() do tmp
                     with_kit_verbosity(:progress) do
-                        log_path = DistSSHKit.init_log_file(tmp; prefix="progress_job")
+                        log_path = DistSSHKit.init_log_file(tmp; prefix = "progress_job")
                         redirect_stdout(devnull) do
                             withenv("DISTSSHKIT_JOB_ID" => nothing) do
                                 DistSSHKit.kit_progress_begin!(
-                                    "drive"; steps=1, kind=:drive, job_id="q-42",
+                                    "drive"; steps = 1, kind = :drive, job_id = "q-42",
                                 )
-                                DistSSHKit.kit_progress_done!(; ok=true)
+                                DistSSHKit.kit_progress_done!(; ok = true)
                             end
                         end
                         DistSSHKit.close_log_file()
@@ -348,11 +350,11 @@ using Test
                 # ENV fallback when `job_id` keyword is omitted.
                 _with_tempdir() do tmp
                     with_kit_verbosity(:progress) do
-                        log_path = DistSSHKit.init_log_file(tmp; prefix="progress_job_env")
+                        log_path = DistSSHKit.init_log_file(tmp; prefix = "progress_job_env")
                         redirect_stdout(devnull) do
                             withenv("DISTSSHKIT_JOB_ID" => "env-7") do
-                                DistSSHKit.kit_progress_begin!("go"; steps=1, kind=:go)
-                                DistSSHKit.kit_progress_done!(; ok=true)
+                                DistSSHKit.kit_progress_begin!("go"; steps = 1, kind = :go)
+                                DistSSHKit.kit_progress_done!(; ok = true)
                             end
                         end
                         DistSSHKit.close_log_file()
@@ -364,11 +366,11 @@ using Test
                 # No job_id → format unchanged (no "job=" anywhere).
                 _with_tempdir() do tmp
                     with_kit_verbosity(:progress) do
-                        log_path = DistSSHKit.init_log_file(tmp; prefix="progress_no_job")
+                        log_path = DistSSHKit.init_log_file(tmp; prefix = "progress_no_job")
                         redirect_stdout(devnull) do
                             withenv("DISTSSHKIT_JOB_ID" => nothing) do
-                                DistSSHKit.kit_progress_begin!("go"; steps=1, kind=:go)
-                                DistSSHKit.kit_progress_done!(; ok=true)
+                                DistSSHKit.kit_progress_begin!("go"; steps = 1, kind = :go)
+                                DistSSHKit.kit_progress_done!(; ok = true)
                             end
                         end
                         DistSSHKit.close_log_file()
@@ -382,10 +384,10 @@ using Test
                 for v in (:quiet, :verbose)
                     with_kit_verbosity(v) do
                         log_path = redirect_stdout(devnull) do
-                            p = DistSSHKit.init_log_file(tmp; prefix="progress_done_$v")
-                            DistSSHKit.kit_progress_begin!("drive"; steps=2, kind=:drive)
+                            p = DistSSHKit.init_log_file(tmp; prefix = "progress_done_$v")
+                            DistSSHKit.kit_progress_begin!("drive"; steps = 2, kind = :drive)
                             DistSSHKit.kit_progress_step!("sync")
-                            DistSSHKit.kit_progress_done!(; ok=false)
+                            DistSSHKit.kit_progress_done!(; ok = false)
                             p
                         end
                         DistSSHKit.close_log_file()
@@ -428,8 +430,8 @@ using Test
                 write(
                     p,
                     "progress: begin kind=drive label=drive total=2 t=1.0\n" *
-                    "progress: step kind=drive label=workers done=0 total=2 cur=1 t=2.5\n" *
-                    "progress: done kind=drive ok=true done=2 total=2 t=3.0\n",
+                        "progress: step kind=drive label=workers done=0 total=2 cur=1 t=2.5\n" *
+                        "progress: done kind=drive ok=true done=2 total=2 t=3.0\n",
                 )
                 rows = DistSSHKit.kit_progress_phases(tmp)
                 @test length(rows) == 2
@@ -441,8 +443,8 @@ using Test
                     write(
                         io,
                         "progress: begin kind=drive label=drive total=2 t=100.0\n" *
-                        "progress: step kind=drive label=workers done=0 total=2 cur=1 t=101.0\n" *
-                        "progress: done kind=drive ok=true done=2 total=2 t=104.0\n",
+                            "progress: step kind=drive label=workers done=0 total=2 cur=1 t=101.0\n" *
+                            "progress: done kind=drive ok=true done=2 total=2 t=104.0\n",
                     )
                 end
                 rows2 = DistSSHKit.kit_progress_phases(tmp)
@@ -507,18 +509,18 @@ using Test
                 write(
                     p,
                     "progress: begin kind=go label=go total=2 t=1.0\n" *
-                    "progress: step kind=go label=sync done=0 total=2 cur=0 t=1.2\n" *
-                    "progress: item kind=go label=local-1 status=running done=0 total=2 t=2.0\n" *
-                    "progress: item kind=go label=local-1/run status=running done=0 total=2 t=2.0\n" *
-                    "progress: item kind=go label=local-2 status=running done=0 total=2 t=2.1\n" *
-                    "progress: item kind=go label=local-2/run status=running done=0 total=2 t=2.1\n" *
-                    "progress: item kind=go label=local-1/run status=ok done=0 total=2 t=4.5\n" *
-                    "progress: item kind=go label=local-1/collect status=running done=0 total=2 t=4.5\n" *
-                    "progress: item kind=go label=local-1/collect status=ok done=0 total=2 t=5.0\n" *
-                    "progress: item kind=go label=local-1 status=ok done=1 total=2 t=5.0\n" *
-                    "progress: item kind=go label=local-2/run status=ok done=1 total=2 t=8.0\n" *
-                    "progress: item kind=go label=local-2 status=ok done=2 total=2 t=8.0\n" *
-                    "progress: done kind=go ok=true done=2 total=2 t=8.1\n",
+                        "progress: step kind=go label=sync done=0 total=2 cur=0 t=1.2\n" *
+                        "progress: item kind=go label=local-1 status=running done=0 total=2 t=2.0\n" *
+                        "progress: item kind=go label=local-1/run status=running done=0 total=2 t=2.0\n" *
+                        "progress: item kind=go label=local-2 status=running done=0 total=2 t=2.1\n" *
+                        "progress: item kind=go label=local-2/run status=running done=0 total=2 t=2.1\n" *
+                        "progress: item kind=go label=local-1/run status=ok done=0 total=2 t=4.5\n" *
+                        "progress: item kind=go label=local-1/collect status=running done=0 total=2 t=4.5\n" *
+                        "progress: item kind=go label=local-1/collect status=ok done=0 total=2 t=5.0\n" *
+                        "progress: item kind=go label=local-1 status=ok done=1 total=2 t=5.0\n" *
+                        "progress: item kind=go label=local-2/run status=ok done=1 total=2 t=8.0\n" *
+                        "progress: item kind=go label=local-2 status=ok done=2 total=2 t=8.0\n" *
+                        "progress: done kind=go ok=true done=2 total=2 t=8.1\n",
                 )
                 grows = DistSSHKit.kit_progress_phases(tmp)
                 labs = [r.label for r in grows]
@@ -531,7 +533,7 @@ using Test
                 @test grows[findfirst(==("local-1/run"), labs)].seconds == 2.5
                 @test grows[findfirst(==("local-1/collect"), labs)].seconds == 0.5
                 @test grows[findfirst(==("local-2"), labs)].seconds == 5.9
-                grouped = DistSSHKit._format_kit_progress_phases(grows; wall=7.1)
+                grouped = DistSSHKit._format_kit_progress_phases(grows; wall = 7.1)
                 @test occursin("local-1", grouped)
                 @test occursin("  run", grouped)
                 @test occursin("  collect", grouped)
@@ -541,14 +543,14 @@ using Test
                 write(
                     p,
                     "progress: begin kind=go label=go total=1 t=1.0\n" *
-                    "progress: step kind=go label=ready done=0 total=1 cur=0 t=1.1\n" *
-                    "progress: step kind=go label=sync done=0 total=1 cur=0 t=1.2\n" *
-                    "progress: step kind=go label=run done=0 total=1 cur=0 t=1.3\n" *
-                    "progress: item kind=go label=parent/run status=running done=0 total=1 t=1.4\n" *
-                    "progress: item kind=go label=parent/run status=ok done=0 total=1 t=5.0\n" *
-                    "progress: item kind=go label=parent status=ok done=1 total=1 t=5.0\n" *
-                    "progress: step kind=go label=collect done=1 total=1 cur=1 t=5.1\n" *
-                    "progress: done kind=go ok=true done=1 total=1 t=5.2\n",
+                        "progress: step kind=go label=ready done=0 total=1 cur=0 t=1.1\n" *
+                        "progress: step kind=go label=sync done=0 total=1 cur=0 t=1.2\n" *
+                        "progress: step kind=go label=run done=0 total=1 cur=0 t=1.3\n" *
+                        "progress: item kind=go label=parent/run status=running done=0 total=1 t=1.4\n" *
+                        "progress: item kind=go label=parent/run status=ok done=0 total=1 t=5.0\n" *
+                        "progress: item kind=go label=parent status=ok done=1 total=1 t=5.0\n" *
+                        "progress: step kind=go label=collect done=1 total=1 cur=1 t=5.1\n" *
+                        "progress: done kind=go ok=true done=1 total=1 t=5.2\n",
                 )
                 prows = DistSSHKit.kit_progress_phases(tmp)
                 plabs = [r.label for r in prows]
@@ -564,12 +566,12 @@ using Test
                 write(
                     p,
                     "progress: begin kind=drive label=drive total=7 t=1.0\n" *
-                    "progress: step kind=drive label=workers done=3 total=7 cur=4 t=8.0\n" *
-                    "progress: item kind=drive label=parent/workers status=running done=3 total=7 t=8.0\n" *
-                    "progress: item kind=drive label=parent/workers status=ok done=3 total=7 t=10.5\n" *
-                    "progress: item kind=drive label=parent/init status=running done=5 total=7 t=15.5\n" *
-                    "progress: item kind=drive label=parent/init status=ok done=5 total=7 t=16.0\n" *
-                    "progress: done kind=drive ok=true done=7 total=7 t=16.0\n",
+                        "progress: step kind=drive label=workers done=3 total=7 cur=4 t=8.0\n" *
+                        "progress: item kind=drive label=parent/workers status=running done=3 total=7 t=8.0\n" *
+                        "progress: item kind=drive label=parent/workers status=ok done=3 total=7 t=10.5\n" *
+                        "progress: item kind=drive label=parent/init status=running done=5 total=7 t=15.5\n" *
+                        "progress: item kind=drive label=parent/init status=ok done=5 total=7 t=16.0\n" *
+                        "progress: done kind=drive ok=true done=7 total=7 t=16.0\n",
                 )
                 drows = DistSSHKit.kit_progress_phases(tmp)
                 dtext = DistSSHKit._format_kit_progress_phases(drows)
@@ -580,12 +582,12 @@ using Test
                 write(
                     p,
                     "progress: begin kind=setup label=setup total=1 t=1.0\n" *
-                    "progress: step kind=setup label=rsync done=0 total=1 cur=1 t=1.0\n" *
-                    "progress: item kind=setup label=rsync/h1 status=running done=0 total=1 t=1.1\n" *
-                    "progress: item kind=setup label=rsync/h2 status=running done=0 total=1 t=1.1\n" *
-                    "progress: item kind=setup label=rsync/h1 status=ok done=0 total=1 t=3.1\n" *
-                    "progress: item kind=setup label=rsync/h2 status=ok done=0 total=1 t=4.1\n" *
-                    "progress: done kind=setup ok=true done=1 total=1 t=4.2\n",
+                        "progress: step kind=setup label=rsync done=0 total=1 cur=1 t=1.0\n" *
+                        "progress: item kind=setup label=rsync/h1 status=running done=0 total=1 t=1.1\n" *
+                        "progress: item kind=setup label=rsync/h2 status=running done=0 total=1 t=1.1\n" *
+                        "progress: item kind=setup label=rsync/h1 status=ok done=0 total=1 t=3.1\n" *
+                        "progress: item kind=setup label=rsync/h2 status=ok done=0 total=1 t=4.1\n" *
+                        "progress: done kind=setup ok=true done=1 total=1 t=4.2\n",
                 )
                 srows = DistSSHKit.kit_progress_phases(tmp)
                 stext = DistSSHKit._format_kit_progress_phases(srows)
@@ -613,17 +615,17 @@ using Test
                 oldrec = DistSSHKit.kit_progress_latest(a)
                 oldrec isa NamedTuple || return
                 @test oldrec.event === :begin
-                by_job = DistSSHKit.kit_progress_latest(tmp; job_id="old")
+                by_job = DistSSHKit.kit_progress_latest(tmp; job_id = "old")
                 by_job isa NamedTuple || return
                 @test by_job.job == "old"
-                @test DistSSHKit.kit_progress_latest(tmp; job_id="missing") === nothing
+                @test DistSSHKit.kit_progress_latest(tmp; job_id = "missing") === nothing
             end
             _with_tempdir() do tmp
                 DistSSHKit._set_kit_progress_sidecar!(tmp)
                 try
                     with_kit_verbosity(:quiet) do
-                        DistSSHKit.kit_progress_begin!("drive"; steps=1, kind=:drive)
-                        DistSSHKit.kit_progress_done!(; ok=true)
+                        DistSSHKit.kit_progress_begin!("drive"; steps = 1, kind = :drive)
+                        DistSSHKit.kit_progress_done!(; ok = true)
                     end
                     sidecar = joinpath(tmp, "kit.progress")
                     @test isfile(sidecar)
@@ -645,8 +647,8 @@ using Test
                 try
                     redirect_stdout(devnull) do
                         with_kit_verbosity(:progress) do
-                            DistSSHKit.kit_progress_begin!("drive"; steps=1, kind=:drive)
-                            DistSSHKit.kit_progress_done!(; ok=true)
+                            DistSSHKit.kit_progress_begin!("drive"; steps = 1, kind = :drive)
+                            DistSSHKit.kit_progress_done!(; ok = true)
                         end
                     end
                     body = read(joinpath(tmp, "kit.progress"), String)

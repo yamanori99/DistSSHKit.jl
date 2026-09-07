@@ -3,14 +3,14 @@ using DistSSHKit
 using Base64
 using Downloads
 
-DocMeta.setdocmeta!(DistSSHKit, :DocTestSetup, :(using DistSSHKit); recursive=true)
+DocMeta.setdocmeta!(DistSSHKit, :DocTestSetup, :(using DistSSHKit); recursive = true)
 
 """Nanosoldier SVG with square corners (`rx=0`), for README / docs."""
 function _refresh_pkgeval_badge!()
     dest = joinpath(@__DIR__, "src", "assets", "pkgeval.svg")
     url = "https://juliaci.github.io/NanosoldierReports/pkgeval_badges/D/DistSSHKit.svg"
     try
-        svg = String(take!(Downloads.download(url, IOBuffer(); timeout=15)))
+        svg = String(take!(Downloads.download(url, IOBuffer(); timeout = 15)))
         occursin("PkgEval", svg) || return
         svg = replace(svg, r"rx=\"\d+\"" => "rx=\"0\"")
         svg = replace(svg, r"<linearGradient[\s\S]*?</linearGradient>" => "")
@@ -28,16 +28,16 @@ const FAVICON_PNG_B64 = base64encode(read(joinpath(@__DIR__, "src", "assets", "f
 const FAVICON_DARK_PNG_B64 = base64encode(read(joinpath(@__DIR__, "src", "assets", "favicon-dark.png")))
 
 makedocs(;
-    modules=[DistSSHKit],
-    authors="Takanori Yamamoto, Honoka Ampuku, and contributors",
-    sitename="DistSSHKit.jl",
-    format=Documenter.HTML(;
-        prettyurls=get(ENV, "CI", nothing) == "true",
-        canonical="https://yamanori99.github.io/DistSSHKit.jl",
-        edit_link="main",
+    modules = [DistSSHKit],
+    authors = "Takanori Yamamoto, Honoka Ampuku, and contributors",
+    sitename = "DistSSHKit.jl",
+    format = Documenter.HTML(;
+        prettyurls = get(ENV, "CI", nothing) == "true",
+        canonical = "https://yamanori99.github.io/DistSSHKit.jl",
+        edit_link = "main",
         # api.md is a large autogen page (Documenter default hard limit is 200 KiB).
-        size_threshold_ignore=["api.md"],
-        assets=[
+        size_threshold_ignore = ["api.md"],
+        assets = [
             "assets/custom.css",
             # Tab icon follows Documenter theme (`html.theme--*`), not OS scheme.
             RawHTMLHeadContent(
@@ -50,7 +50,7 @@ makedocs(;
             ),
         ],
     ),
-    pages=[
+    pages = [
         "Introduction" => "index.md",
         "First Steps" => [
             "Requirements" => "requirements.md",
@@ -72,8 +72,8 @@ makedocs(;
         ],
         "API" => "api.md",
     ],
-    checkdocs=:none,
-    warnonly=[:missing_docs, :docs_block, :cross_references],
+    checkdocs = :none,
+    warnonly = [:missing_docs, :docs_block, :cross_references],
 )
 
 # Documenter :ico always writes type=image/x-icon first. HTML5 keeps the first type,
@@ -102,15 +102,15 @@ function rewrite_favicon_types!(build)
             end
         end
     end
-    println("rewrote favicon type on $n HTML pages")
+    return println("rewrote favicon type on $n HTML pages")
 end
 
 rewrite_favicon_types!(joinpath(@__DIR__, "build"))
 
 deploydocs(;
-    repo="github.com/yamanori99/DistSSHKit.jl.git",
-    devbranch="main",
-    push_preview=true,
+    repo = "github.com/yamanori99/DistSSHKit.jl.git",
+    devbranch = "main",
+    push_preview = true,
     # stable = latest tagged release; appears after the first v* tag.
-    versions=["stable" => "v^", "v#.#", "dev" => "dev"],
+    versions = ["stable" => "v^", "v#.#", "dev" => "dev"],
 )

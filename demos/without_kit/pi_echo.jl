@@ -26,7 +26,7 @@ function main()
         end
     end
     pi_hat = 4.0 * inside / n
-    println("π ≈ $pi_hat  (inside=$inside / n=$n)")
+    return println("π ≈ $pi_hat  (inside=$inside / n=$n)")
 end
 
 main()

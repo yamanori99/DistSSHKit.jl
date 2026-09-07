@@ -38,19 +38,19 @@ function plan_main()::Cint
     end
     kp = plan(
         opts.script_path;
-        workers=opts.tokens,
-        project=PROJECT_ROOT,
-        gb_per_worker=opts.gb_per_worker,
-        probe=opts.probe,
-        mem_headroom=opts.mem_headroom,
-        parent_gb=opts.parent_gb,
+        workers = opts.tokens,
+        project = PROJECT_ROOT,
+        gb_per_worker = opts.gb_per_worker,
+        probe = opts.probe,
+        mem_headroom = opts.mem_headroom,
+        parent_gb = opts.parent_gb,
     )
     print_plan(kp)
     return kp.ok ? 0 : 1
 end
 
 if get(ENV, "DIST_SSH_KIT_CLI_INCLUDE", "") != "1" &&
-   !isempty(PROGRAM_FILE) &&
-   abspath(PROGRAM_FILE) == abspath(@__FILE__)
+        !isempty(PROGRAM_FILE) &&
+        abspath(PROGRAM_FILE) == abspath(@__FILE__)
     exit(plan_main())
 end

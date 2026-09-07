@@ -37,10 +37,10 @@ using Test
             @test r.show_help
             @test parse_pool_args(["-h"]).show_help
             open(path, "w") do io
-                DistSSHKit.show_pool_usage(; io=io)
+                DistSSHKit.show_pool_usage(; io = io)
             end
             help = read(path, String)
-            rm(path; force=true)
+            rm(path; force = true)
             @test occursin("DistSSHKit pool", help)
             @test occursin("parent", help)
             @test occursin("--gb-per-worker", help)

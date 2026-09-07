@@ -38,7 +38,7 @@ const hosts = collect(String, _ssh_e2e_hosts())
 const setup_hosts = String["child:$h" for h in hosts]
 const remote_root = _ssh_e2e_remote_root()
 const remote_tokens = String["child:$(hosts[1]):1", "child:$(hosts[2]):1"]
-_e2e_base_env() = _ssh_e2e_env(; remote_project=remote_root)
+_e2e_base_env() = _ssh_e2e_env(; remote_project = remote_root)
 
 # Same banner idea as `test/runtests.jl`. Inner `@testset`s can take minutes
 # of SSH with no Test output until they finish. Update `_E2E_N` when adding one.
@@ -46,12 +46,12 @@ const _E2E_N = 28
 const _E2E_I = Ref(0)
 function _e2e_announce(label::AbstractString)
     _E2E_I[] += 1
-    println("[$( _E2E_I[])/$_E2E_N]  $label")
+    println("[$(_E2E_I[])/$_E2E_N]  $label")
     flush(stdout)
     return nothing
 end
 
-@testset "SSH E2E (docker-ssh)" verbose=true begin
+@testset "SSH E2E (docker-ssh)" verbose = true begin
     _with_ssh_e2e_suite() do suite
         @testset "julia path resolve (kit parent + remotes)" begin
             _e2e_announce("julia path resolve (kit parent + remotes)")
@@ -116,42 +116,46 @@ end
         @testset "setup --delete (clean slate)" begin
             _e2e_announce("setup --delete (clean slate)")
             proc, out = _run_kit_setup(;
-                setup_args=["--delete", "--remote-path", remote_root, setup_hosts...],
-                project_root=proj,
-                extra_env=_e2e_base_env(),
+                setup_args = ["--delete", "--remote-path", remote_root, setup_hosts...],
+                project_root = proj,
+                extra_env = _e2e_base_env(),
             )
-            _assert_ssh_e2e_ok(suite, "setup_delete", proc, out; project=proj, kit=:setup)
+            _assert_ssh_e2e_ok(suite, "setup_delete", proc, out; project = proj, kit = :setup)
             for host in hosts
                 p, ssh_out = _ssh_e2e_ssh(host, "test ! -e $(remote_root)/Project.toml")
-                _assert_proc_ok(p, ssh_out; label="delete $(host) Project.toml gone")
+                _assert_proc_ok(p, ssh_out; label = "delete $(host) Project.toml gone")
             end
         end
 
         @testset "setup --rsync" begin
             _e2e_announce("setup --rsync")
             proc, out = _run_kit_setup(;
-                setup_args=["--rsync", "--remote-path", remote_root, setup_hosts...],
-                project_root=proj,
-                extra_env=_e2e_base_env(),
+                setup_args = ["--rsync", "--remote-path", remote_root, setup_hosts...],
+                project_root = proj,
+                extra_env = _e2e_base_env(),
             )
-            _assert_ssh_e2e_ok(suite, "setup_rsync", proc, out; project=proj, kit=:setup)
+            _assert_ssh_e2e_ok(suite, "setup_rsync", proc, out; project = proj, kit = :setup)
             for host in hosts
-                p, ssh_out = _run_subprocess(Cmd([
-                    "ssh", "-F", g.ssh_config, host,
-                    "test -f $(remote_root)/Project.toml",
-                ]))
-                _assert_proc_ok(p, ssh_out; label="rsync $(host) Project.toml")
+                p, ssh_out = _run_subprocess(
+                    Cmd(
+                        [
+                            "ssh", "-F", g.ssh_config, host,
+                            "test -f $(remote_root)/Project.toml",
+                        ]
+                    )
+                )
+                _assert_proc_ok(p, ssh_out; label = "rsync $(host) Project.toml")
             end
         end
 
         @testset "setup --instantiate" begin
             _e2e_announce("setup --instantiate")
             proc, out = _run_kit_setup(;
-                setup_args=["--instantiate", "--remote-path", remote_root, setup_hosts...],
-                project_root=proj,
-                extra_env=_e2e_base_env(),
+                setup_args = ["--instantiate", "--remote-path", remote_root, setup_hosts...],
+                project_root = proj,
+                extra_env = _e2e_base_env(),
             )
-            _assert_ssh_e2e_ok(suite, "setup_instantiate", proc, out; project=proj, kit=:setup)
+            _assert_ssh_e2e_ok(suite, "setup_instantiate", proc, out; project = proj, kit = :setup)
         end
 
         @testset "setup --check (major.minor; no --ignore-julia-version)" begin
@@ -160,11 +164,11 @@ end
             # still pass Julia major.minor + project/deps. Git parity is not
             # claimed for the rsync path (see docker-ssh README).
             proc, out = _run_kit_setup(;
-                setup_args=["--check", "--remote-path", remote_root, setup_hosts...],
-                project_root=proj,
-                extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
+                setup_args = ["--check", "--remote-path", remote_root, setup_hosts...],
+                project_root = proj,
+                extra_env = merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
             )
-            _assert_ssh_e2e_ok(suite, "setup_check", proc, out; project=proj, kit=:setup)
+            _assert_ssh_e2e_ok(suite, "setup_check", proc, out; project = proj, kit = :setup)
             @test occursin("Julia", out)
         end
 
@@ -176,24 +180,24 @@ end
             try
                 _ssh_e2e_juliaup_default!(host, ch.alt)
                 proc_bad, out_bad = _run_kit_setup(;
-                    setup_args=["--check", "--remote-path", remote_root, setup_hosts...],
-                    project_root=proj,
-                    extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
+                    setup_args = ["--check", "--remote-path", remote_root, setup_hosts...],
+                    project_root = proj,
+                    extra_env = merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
                 )
                 _ssh_e2e_record!(
                     suite, "setup_check_after_alt", proc_bad, out_bad;
-                    expect_ok=false, project=proj, kit=:setup,
+                    expect_ok = false, project = proj, kit = :setup,
                 )
                 @test proc_bad.exitcode != 0
                 @test occursin("mismatch", lowercase(out_bad)) ||
-                      occursin("version", lowercase(out_bad))
+                    occursin("version", lowercase(out_bad))
 
                 proc_up, out_up = _run_kit_setup(;
-                    setup_args=["--juliaup", setup_hosts...],
-                    project_root=proj,
-                    extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
+                    setup_args = ["--juliaup", setup_hosts...],
+                    project_root = proj,
+                    extra_env = merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
                 )
-                _assert_ssh_e2e_ok(suite, "setup_juliaup", proc_up, out_up; project=proj, kit=:setup)
+                _assert_ssh_e2e_ok(suite, "setup_juliaup", proc_up, out_up; project = proj, kit = :setup)
 
                 DistSSHKit.clear_detect_julia_path_cache!()
                 withenv(_e2e_base_env()...) do
@@ -214,20 +218,20 @@ end
                 end
 
                 proc_ok, out_ok = _run_kit_setup(;
-                    setup_args=["--check", "--remote-path", remote_root, setup_hosts...],
-                    project_root=proj,
-                    extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
+                    setup_args = ["--check", "--remote-path", remote_root, setup_hosts...],
+                    project_root = proj,
+                    extra_env = merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
                 )
                 _assert_ssh_e2e_ok(
                     suite, "setup_check_after_juliaup", proc_ok, out_ok;
-                    project=proj, kit=:setup,
+                    project = proj, kit = :setup,
                 )
             finally
                 for h in hosts
                     try
                         _ssh_e2e_juliaup_default!(h, ch.default)
                     catch e
-                        @warn "restore juliaup default failed" host=h exception=e
+                        @warn "restore juliaup default failed" host = h exception = e
                     end
                 end
                 DistSSHKit.clear_detect_julia_path_cache!()
@@ -251,13 +255,13 @@ end
                 @test DistSSHKit.julia_version_mismatch_kind(VERSION, parent_alt) == :minor
 
                 proc_up, out_up = _run_kit_setup(;
-                    setup_args=["--juliaup", "parent", DistSSHKit.setup_cli_host_token(host)],
-                    project_root=proj,
-                    extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
+                    setup_args = ["--juliaup", "parent", DistSSHKit.setup_cli_host_token(host)],
+                    project_root = proj,
+                    extra_env = merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
                 )
                 _assert_ssh_e2e_ok(
                     suite, "setup_juliaup_parent_remote", proc_up, out_up;
-                    project=proj, kit=:setup,
+                    project = proj, kit = :setup,
                 )
                 @test occursin("parent", lowercase(out_up))
 
@@ -291,24 +295,24 @@ end
 
                 # Second remote was not a target; leave it alone. Re-check listed hosts.
                 proc_ok, out_ok = _run_kit_setup(;
-                    setup_args=["--check", "--remote-path", remote_root, DistSSHKit.setup_cli_host_token(host)],
-                    project_root=proj,
-                    extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
+                    setup_args = ["--check", "--remote-path", remote_root, DistSSHKit.setup_cli_host_token(host)],
+                    project_root = proj,
+                    extra_env = merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
                 )
                 _assert_ssh_e2e_ok(
                     suite, "setup_check_after_juliaup_parent", proc_ok, out_ok;
-                    project=proj, kit=:setup,
+                    project = proj, kit = :setup,
                 )
             finally
                 try
                     _ssh_e2e_juliaup_default_local!(parent_restore)
                 catch e
-                    @warn "restore kit parent juliaup default failed" exception=e
+                    @warn "restore kit parent juliaup default failed" exception = e
                 end
                 try
                     _ssh_e2e_juliaup_default!(host, ch.default)
                 catch e
-                    @warn "restore juliaup default failed" host=host exception=e
+                    @warn "restore juliaup default failed" host = host exception = e
                 end
                 DistSSHKit.clear_detect_julia_path_cache!()
             end
@@ -317,38 +321,38 @@ end
         @testset "setup --runtest (job Pkg.test)" begin
             _e2e_announce("setup --runtest (job Pkg.test)")
             proc, out = _run_kit_setup(;
-                setup_args=["--runtest", "--remote-path", remote_root, setup_hosts...],
-                project_root=proj,
-                extra_env=_e2e_base_env(),
+                setup_args = ["--runtest", "--remote-path", remote_root, setup_hosts...],
+                project_root = proj,
+                extra_env = _e2e_base_env(),
             )
-            _assert_ssh_e2e_ok(suite, "setup_runtest", proc, out; project=proj, kit=:setup)
+            _assert_ssh_e2e_ok(suite, "setup_runtest", proc, out; project = proj, kit = :setup)
         end
 
         @testset "setup --runtest fails when job tests fail" begin
             _e2e_announce("setup --runtest fails when job tests fail")
             try
-                _ssh_e2e_push_job_runtests!(hosts, remote_root; fail=true)
+                _ssh_e2e_push_job_runtests!(hosts, remote_root; fail = true)
                 proc, out = _run_kit_setup(;
-                    setup_args=["--runtest", "--remote-path", remote_root, setup_hosts...],
-                    project_root=proj,
-                    extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
+                    setup_args = ["--runtest", "--remote-path", remote_root, setup_hosts...],
+                    project_root = proj,
+                    extra_env = merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
                 )
                 _ssh_e2e_record!(
                     suite, "setup_runtest_fail", proc, out;
-                    expect_ok=false, project=proj, kit=:setup,
+                    expect_ok = false, project = proj, kit = :setup,
                 )
                 @test proc.exitcode != 0
             finally
-                _ssh_e2e_push_job_runtests!(hosts, remote_root; fail=false)
+                _ssh_e2e_push_job_runtests!(hosts, remote_root; fail = false)
             end
         end
 
         @testset "size two remotes" begin
             _e2e_announce("size two remotes")
             proc, out = _run_kit_size(;
-                size_args=["-q", remote_tokens...],
-                project_root=proj,
-                extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
+                size_args = ["-q", remote_tokens...],
+                project_root = proj,
+                extra_env = merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
             )
             _assert_ssh_e2e_ok(suite, "size_remotes", proc, out)
             @test occursin(hosts[1], out)
@@ -360,17 +364,17 @@ end
         @testset "drive square_echo two remotes" begin
             _e2e_announce("drive square_echo two remotes")
             proc, out = _run_kit_drive(;
-                script=echo_script,
-                host_root=proj,
-                parent_workers=0,
-                child_hosts=remote_tokens,
-                script_args=["--n", "4"],
-                drive_flags=["-y", "-q"],
-                extra_env=_e2e_base_env(),
+                script = echo_script,
+                host_root = proj,
+                parent_workers = 0,
+                child_hosts = remote_tokens,
+                script_args = ["--n", "4"],
+                drive_flags = ["-y", "-q"],
+                extra_env = _e2e_base_env(),
             )
             _assert_ssh_e2e_ok(suite, "drive_square_echo", proc, out)
             @test occursin("param^2:", out)
-            _assert_kit_progress_done(joinpath(proj, "demos", "with_kit", "output"); kind=:drive)
+            _assert_kit_progress_done(joinpath(proj, "demos", "with_kit", "output"); kind = :drive)
         end
 
         @testset "drive square_file CSV is local (kit parent main)" begin
@@ -379,60 +383,62 @@ end
             out_csv = joinpath(proj, "demos", "with_kit", "output", "square_results.csv")
             isfile(out_csv) && rm(out_csv)
             proc, out = _run_kit_drive(;
-                script=square_file,
-                host_root=proj,
-                parent_workers=0,
-                child_hosts=remote_tokens,
-                script_args=["--n", "4"],
-                drive_flags=["-y", "-q"],
-                extra_env=_e2e_base_env(),
+                script = square_file,
+                host_root = proj,
+                parent_workers = 0,
+                child_hosts = remote_tokens,
+                script_args = ["--n", "4"],
+                drive_flags = ["-y", "-q"],
+                extra_env = _e2e_base_env(),
             )
             _assert_ssh_e2e_ok(suite, "drive_square_file", proc, out)
             @test isfile(out_csv)
             @test occursin("param,result", read(out_csv, String))
             p, _ = _ssh_e2e_ssh(hosts[1], "test ! -e $(remote_root)/demos/with_kit/output/square_results.csv")
-            _assert_proc_ok(p, ""; label="square_file CSV absent on remote")
-            _assert_kit_progress_done(dirname(out_csv); kind=:drive)
+            _assert_proc_ok(p, ""; label = "square_file CSV absent on remote")
+            _assert_kit_progress_done(dirname(out_csv); kind = :drive)
         end
 
         @testset "drive collect bytes written on workers" begin
             _e2e_announce("drive collect bytes written on workers")
             script = joinpath(proj, "worker_file.jl")
             collect_root = joinpath(proj, "output")
-            isdir(collect_root) && rm(collect_root; recursive=true)
+            isdir(collect_root) && rm(collect_root; recursive = true)
 
             proc, out = _run_kit_drive(;
-                script=script,
-                host_root=proj,
-                parent_workers=0,
-                child_hosts=remote_tokens,
-                drive_flags=["-y", "-q"],
-                extra_env=_e2e_base_env(),
+                script = script,
+                host_root = proj,
+                parent_workers = 0,
+                child_hosts = remote_tokens,
+                drive_flags = ["-y", "-q"],
+                extra_env = _e2e_base_env(),
             )
             _assert_ssh_e2e_ok(suite, "drive_worker_file", proc, out)
-            _assert_kit_progress_done(collect_root; kind=:drive)
+            _assert_kit_progress_done(collect_root; kind = :drive)
 
             worker_jl = """
-                d = $(repr(joinpath(remote_root, "output")))
-                io = IOBuffer()
-                if isdir(d)
-                    for (root, _, files) in walkdir(d)
-                        for name in files
-                            startswith(name, "worker_") && endswith(name, ".txt") || continue
-                            write(io, read(joinpath(root, name)))
-                        end
+            d = $(repr(joinpath(remote_root, "output")))
+            io = IOBuffer()
+            if isdir(d)
+                for (root, _, files) in walkdir(d)
+                    for name in files
+                        startswith(name, "worker_") && endswith(name, ".txt") || continue
+                        write(io, read(joinpath(root, name)))
                     end
                 end
-                print(String(take!(io)))
-                """
+            end
+            print(String(take!(io)))
+            """
             p, remote_body = withenv(_e2e_base_env()...) do
                 _e2e_run_on_host(hosts[1], ["-e", worker_jl])
             end
-            _assert_proc_ok(p, remote_body; label="run_on_host cat worker files")
+            _assert_proc_ok(p, remote_body; label = "run_on_host cat worker files")
             @test occursin("DISTSSHKIT_E2E_WORKER_FILE", remote_body)
 
-            local_files = filter(f -> startswith(basename(f), "worker_"),
-                isdir(collect_root) ? readdir(collect_root; join=true) : String[])
+            local_files = filter(
+                f -> startswith(basename(f), "worker_"),
+                isdir(collect_root) ? readdir(collect_root; join = true) : String[]
+            )
             @test !isempty(local_files)
             @test any(f -> occursin("DISTSSHKIT_E2E_WORKER_FILE", read(f, String)), local_files)
             @test Set(h.host for h in DistSSHKit.kit_result_from_dir(collect_root).hosts) == Set(hosts)
@@ -441,34 +447,36 @@ end
                 rm(f)
             end
             proc, out = _run_kit_drive_collect(;
-                collect_root=collect_root,
-                hosts=hosts,
-                host_root=proj,
-                extra_env=_e2e_base_env(),
+                collect_root = collect_root,
+                hosts = hosts,
+                host_root = proj,
+                extra_env = _e2e_base_env(),
             )
             _assert_ssh_e2e_ok(suite, "collect_missing", proc, out)
-            local_files = filter(f -> startswith(basename(f), "worker_"),
-                readdir(collect_root; join=true))
+            local_files = filter(
+                f -> startswith(basename(f), "worker_"),
+                readdir(collect_root; join = true)
+            )
             @test !isempty(local_files)
             let sample = local_files[1]
                 @test occursin("DISTSSHKIT_E2E_WORKER_FILE", read(sample, String))
 
                 write(sample, "LOCALJUNK\n")
                 proc, out = _run_kit_drive_collect(;
-                    collect_root=collect_root,
-                    hosts=hosts,
-                    host_root=proj,
-                    extra_env=_e2e_base_env(),
+                    collect_root = collect_root,
+                    hosts = hosts,
+                    host_root = proj,
+                    extra_env = _e2e_base_env(),
                 )
                 _assert_ssh_e2e_ok(suite, "collect_missing_skip", proc, out)
                 @test read(sample, String) == "LOCALJUNK\n"
 
                 proc, out = _run_kit_drive_collect(;
-                    collect_root=collect_root,
-                    hosts=hosts,
-                    overwrite=true,
-                    host_root=proj,
-                    extra_env=_e2e_base_env(),
+                    collect_root = collect_root,
+                    hosts = hosts,
+                    overwrite = true,
+                    host_root = proj,
+                    extra_env = _e2e_base_env(),
                 )
                 _assert_ssh_e2e_ok(suite, "collect_overwrite", proc, out)
                 @test occursin("DISTSSHKIT_E2E_WORKER_FILE", read(sample, String))
@@ -479,16 +487,16 @@ end
         @testset "drive remote worker error is a real failure" begin
             _e2e_announce("drive remote worker error is a real failure")
             proc, out = _run_kit_drive(;
-                script=joinpath(proj, "fail.jl"),
-                host_root=proj,
-                parent_workers=0,
-                child_hosts=remote_tokens,
-                drive_flags=["-y", "-q"],
-                extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
+                script = joinpath(proj, "fail.jl"),
+                host_root = proj,
+                parent_workers = 0,
+                child_hosts = remote_tokens,
+                drive_flags = ["-y", "-q"],
+                extra_env = merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
             )
             _ssh_e2e_record!(
                 suite, "drive_remote_error", proc, out;
-                expect_ok=false, project=proj,
+                expect_ok = false, project = proj,
             )
             @test proc.exitcode != 0
             @test occursin("DISTSSHKIT_E2E_REMOTE_FAIL", out)
@@ -497,12 +505,12 @@ end
         @testset "drive mixed local+remotes smoke" begin
             _e2e_announce("drive mixed local+remotes smoke")
             proc, out = _run_kit_drive(;
-                script=smoke,
-                host_root=proj,
-                parent_workers=1,
-                child_hosts=remote_tokens,
-                drive_flags=["-y", "-q"],
-                extra_env=_e2e_base_env(),
+                script = smoke,
+                host_root = proj,
+                parent_workers = 1,
+                child_hosts = remote_tokens,
+                drive_flags = ["-y", "-q"],
+                extra_env = _e2e_base_env(),
             )
             _assert_ssh_e2e_ok(suite, "drive_mixed", proc, out)
             @test occursin("DISTSSHKIT_RUNNER_SMOKE_OK nw=3", out)
@@ -511,21 +519,21 @@ end
         @testset "go pi_echo both remotes" begin
             _e2e_announce("go pi_echo both remotes")
             proc, out = _run_kit_go(;
-                script=pi_echo,
-                hosts=remote_tokens,
-                script_args=["--n", "32"],
-                project_root=proj,
-                go_flags=["-y"],
-                extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
+                script = pi_echo,
+                hosts = remote_tokens,
+                script_args = ["--n", "32"],
+                project_root = proj,
+                go_flags = ["-y"],
+                extra_env = merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
             )
-            _assert_ssh_e2e_ok(suite, "go_pi_echo", proc, out; project=proj, kit=:go)
+            _assert_ssh_e2e_ok(suite, "go_pi_echo", proc, out; project = proj, kit = :go)
             @test occursin(hosts[1], out)
             @test occursin(hosts[2], out)
             @test count(r"π ≈", out) >= 2
             go_echo_batch = _ssh_e2e_latest_go_batch(proj)
             @test go_echo_batch !== nothing
             go_echo_batch === nothing && error("expected go batch for pi_echo")
-            _assert_kit_progress_done(go_echo_batch; kind=:go)
+            _assert_kit_progress_done(go_echo_batch; kind = :go)
         end
 
         @testset "go pi_file both remotes + collect" begin
@@ -533,12 +541,12 @@ end
             # Queue always sets job_id. The mark is `-L` on the remote, not `--eval`.
             job_id = "e2e-go-1"
             proc, out = _run_kit_go(;
-                script=pi_file,
-                hosts=remote_tokens,
-                script_args=["--n", "32"],
-                project_root=proj,
-                go_flags=["-y"],
-                extra_env=merge(
+                script = pi_file,
+                hosts = remote_tokens,
+                script_args = ["--n", "32"],
+                project_root = proj,
+                go_flags = ["-y"],
+                extra_env = merge(
                     _e2e_base_env(),
                     Dict(
                         "DISTSSHKIT_QUIET" => "0",
@@ -546,11 +554,11 @@ end
                     ),
                 ),
             )
-            _assert_ssh_e2e_ok(suite, "go_pi_file", proc, out; project=proj, kit=:go)
+            _assert_ssh_e2e_ok(suite, "go_pi_file", proc, out; project = proj, kit = :go)
             batch = _ssh_e2e_latest_go_batch(proj)
             @test batch !== nothing
             batch === nothing && error("expected go batch for pi_file")
-            _assert_kit_progress_done(batch; kind=:go)
+            _assert_kit_progress_done(batch; kind = :go)
             mark = DistSSHKit.kit_job_pkill_pattern(job_id)
             for host in hosts
                 slot = joinpath(batch, host)
@@ -568,16 +576,16 @@ end
         @testset "go pi_file with --output-dir" begin
             _e2e_announce("go pi_file with --output-dir")
             custom = joinpath(proj, "go_cli_output")
-            isdir(custom) && rm(custom; recursive=true)
+            isdir(custom) && rm(custom; recursive = true)
             proc, out = _run_kit_go(;
-                script=pi_file,
-                hosts=remote_tokens,
-                script_args=["--n", "32"],
-                project_root=proj,
-                go_flags=["-y", "--output-dir", custom],
-                extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
+                script = pi_file,
+                hosts = remote_tokens,
+                script_args = ["--n", "32"],
+                project_root = proj,
+                go_flags = ["-y", "--output-dir", custom],
+                extra_env = merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
             )
-            _assert_ssh_e2e_ok(suite, "go_pi_file_output_dir", proc, out; project=proj, kit=:go)
+            _assert_ssh_e2e_ok(suite, "go_pi_file_output_dir", proc, out; project = proj, kit = :go)
             for host in hosts
                 slot = joinpath(custom, host)
                 @test isdir(slot)
@@ -590,47 +598,51 @@ end
         @testset "go --rsync empty remote" begin
             _e2e_announce("go --rsync empty remote")
             oneshot = _ssh_e2e_go_rsync_remote_root()
-            oneshot_env = _ssh_e2e_env(; remote_project=oneshot)
+            oneshot_env = _ssh_e2e_env(; remote_project = oneshot)
             try
                 proc, out = _run_kit_setup(;
-                    setup_args=["--delete", "--remote-path", oneshot, setup_hosts...],
-                    project_root=proj,
-                    extra_env=oneshot_env,
+                    setup_args = ["--delete", "--remote-path", oneshot, setup_hosts...],
+                    project_root = proj,
+                    extra_env = oneshot_env,
                 )
-                _assert_ssh_e2e_ok(suite, "go_rsync_empty_delete", proc, out; project=proj, kit=:setup)
+                _assert_ssh_e2e_ok(suite, "go_rsync_empty_delete", proc, out; project = proj, kit = :setup)
                 for host in hosts
                     p, ssh_out = _ssh_e2e_ssh(host, "test ! -e $(oneshot)/Project.toml")
-                    _assert_proc_ok(p, ssh_out; label="go --rsync empty $(host) gone")
+                    _assert_proc_ok(p, ssh_out; label = "go --rsync empty $(host) gone")
                 end
 
                 proc, out = _run_kit_go(;
-                    script=pi_echo,
-                    hosts=remote_tokens,
-                    script_args=["--n", "32"],
-                    project_root=proj,
-                    go_flags=["-y", "--rsync"],
-                    extra_env=merge(oneshot_env, Dict("DISTSSHKIT_QUIET" => "0")),
+                    script = pi_echo,
+                    hosts = remote_tokens,
+                    script_args = ["--n", "32"],
+                    project_root = proj,
+                    go_flags = ["-y", "--rsync"],
+                    extra_env = merge(oneshot_env, Dict("DISTSSHKIT_QUIET" => "0")),
                 )
-                _assert_ssh_e2e_ok(suite, "go_rsync_empty", proc, out; project=proj, kit=:go)
+                _assert_ssh_e2e_ok(suite, "go_rsync_empty", proc, out; project = proj, kit = :go)
                 @test occursin(hosts[1], out)
                 @test occursin(hosts[2], out)
                 @test count(r"π ≈", out) >= 2
                 for host in hosts
-                    p, ssh_out = _run_subprocess(Cmd([
-                        "ssh", "-F", g.ssh_config, host,
-                        "test -f $(oneshot)/Project.toml",
-                    ]))
-                    _assert_proc_ok(p, ssh_out; label="go --rsync $(host) Project.toml")
+                    p, ssh_out = _run_subprocess(
+                        Cmd(
+                            [
+                                "ssh", "-F", g.ssh_config, host,
+                                "test -f $(oneshot)/Project.toml",
+                            ]
+                        )
+                    )
+                    _assert_proc_ok(p, ssh_out; label = "go --rsync $(host) Project.toml")
                 end
             finally
                 proc, out = _run_kit_setup(;
-                    setup_args=["--delete", "--remote-path", oneshot, setup_hosts...],
-                    project_root=proj,
-                    extra_env=oneshot_env,
+                    setup_args = ["--delete", "--remote-path", oneshot, setup_hosts...],
+                    project_root = proj,
+                    extra_env = oneshot_env,
                 )
                 _assert_ssh_e2e_ok(
                     suite, "go_rsync_empty_cleanup", proc, out;
-                    project=proj, kit=:setup,
+                    project = proj, kit = :setup,
                 )
             end
         end
@@ -639,40 +651,40 @@ end
         @testset "drive square_file collect with tilde remote root" begin
             _e2e_announce("drive square_file collect with tilde remote root")
             tilde_root = _ssh_e2e_tilde_remote_root()
-            tilde_env = _ssh_e2e_env(; remote_project=tilde_root)
+            tilde_env = _ssh_e2e_env(; remote_project = tilde_root)
             square_file = joinpath(proj, "demos", "with_kit", "square_file.jl")
             out_csv = joinpath(proj, "demos", "with_kit", "output", "square_results.csv")
             isfile(out_csv) && rm(out_csv)
 
             proc, out = _run_kit_setup(;
-                setup_args=["--delete", "--remote-path", tilde_root, setup_hosts...],
-                project_root=proj,
-                extra_env=tilde_env,
+                setup_args = ["--delete", "--remote-path", tilde_root, setup_hosts...],
+                project_root = proj,
+                extra_env = tilde_env,
             )
-            _assert_ssh_e2e_ok(suite, "tilde_delete", proc, out; project=proj, kit=:setup)
+            _assert_ssh_e2e_ok(suite, "tilde_delete", proc, out; project = proj, kit = :setup)
 
             proc, out = _run_kit_setup(;
-                setup_args=["--rsync", "--remote-path", tilde_root, setup_hosts...],
-                project_root=proj,
-                extra_env=tilde_env,
+                setup_args = ["--rsync", "--remote-path", tilde_root, setup_hosts...],
+                project_root = proj,
+                extra_env = tilde_env,
             )
-            _assert_ssh_e2e_ok(suite, "tilde_rsync", proc, out; project=proj, kit=:setup)
+            _assert_ssh_e2e_ok(suite, "tilde_rsync", proc, out; project = proj, kit = :setup)
 
             proc, out = _run_kit_setup(;
-                setup_args=["--instantiate", "--remote-path", tilde_root, setup_hosts...],
-                project_root=proj,
-                extra_env=tilde_env,
+                setup_args = ["--instantiate", "--remote-path", tilde_root, setup_hosts...],
+                project_root = proj,
+                extra_env = tilde_env,
             )
-            _assert_ssh_e2e_ok(suite, "tilde_instantiate", proc, out; project=proj, kit=:setup)
+            _assert_ssh_e2e_ok(suite, "tilde_instantiate", proc, out; project = proj, kit = :setup)
 
             proc, out = _run_kit_drive(;
-                script=square_file,
-                host_root=proj,
-                parent_workers=0,
-                child_hosts=remote_tokens,
-                script_args=["--n", "4"],
-                drive_flags=["-y", "-q"],
-                extra_env=tilde_env,
+                script = square_file,
+                host_root = proj,
+                parent_workers = 0,
+                child_hosts = remote_tokens,
+                script_args = ["--n", "4"],
+                drive_flags = ["-y", "-q"],
+                extra_env = tilde_env,
             )
             _assert_ssh_e2e_ok(suite, "tilde_drive_square_file", proc, out)
             @test isfile(out_csv)
@@ -684,11 +696,11 @@ end
             _e2e_announce("Julian API setup! + go!/pipeline!")
             withenv(_e2e_base_env()...) do
                 session = KitSession(
-                    project=proj,
-                    workers=remote_tokens,
-                    remote=remote_root,
-                    yes=true,
-                    quiet=true,
+                    project = proj,
+                    workers = remote_tokens,
+                    remote = remote_root,
+                    yes = true,
+                    quiet = true,
                 )
                 prep = setup!(session, :delete, :rsync, :instantiate)
                 _assert_ssh_e2e_api_ok(
@@ -703,17 +715,17 @@ end
                 @test all(h -> h.ok, prep.hosts)
 
                 go_out = joinpath(proj, "go_api_output")
-                isdir(go_out) && rm(go_out; recursive=true)
+                isdir(go_out) && rm(go_out; recursive = true)
                 go_res = go!(
                     pi_file,
                     remote_tokens[1];
-                    project=proj,
-                    remote=remote_root,
-                    args=["--n", "16"],
-                    yes=true,
-                    quiet=true,
-                    julia="auto",
-                    output_dir=go_out,
+                    project = proj,
+                    remote = remote_root,
+                    args = ["--n", "16"],
+                    yes = true,
+                    quiet = true,
+                    julia = "auto",
+                    output_dir = go_out,
                 )
                 _assert_ssh_e2e_api_ok(suite, "api_go", go_res.ok)
                 @test go_res.ok
@@ -724,23 +736,23 @@ end
 
                 worker_script = joinpath(proj, "worker_file.jl")
                 worker_out = joinpath(proj, "output")
-                isdir(worker_out) && rm(worker_out; recursive=true)
+                isdir(worker_out) && rm(worker_out; recursive = true)
                 pipe_res = pipeline!(
                     worker_script,
                     remote_tokens[2];
-                    project=proj,
-                    remote=remote_root,
-                    collect=true,
-                    enable_log=false,
-                    yes=true,
-                    quiet=true,
-                    julia="auto",
+                    project = proj,
+                    remote = remote_root,
+                    collect = true,
+                    enable_log = false,
+                    yes = true,
+                    quiet = true,
+                    julia = "auto",
                 )
                 _assert_ssh_e2e_api_ok(suite, "api_pipeline", pipe_res.ok)
                 @test pipe_res.ok
                 worker_txts = filter(
                     f -> startswith(basename(f), "worker_"),
-                    isdir(worker_out) ? readdir(worker_out; join=true) : String[],
+                    isdir(worker_out) ? readdir(worker_out; join = true) : String[],
                 )
                 @test !isempty(worker_txts)
                 @test any(f -> occursin("DISTSSHKIT_E2E_WORKER_FILE", read(f, String)), worker_txts)
@@ -761,11 +773,11 @@ end
                             drive!(
                                 smoke,
                                 remote_tokens;
-                                project=proj,
-                                remote=remote_root,
-                                julia="auto",
-                                verbosity=:verbose,
-                                yes=true,
+                                project = proj,
+                                remote = remote_root,
+                                julia = "auto",
+                                verbosity = :verbose,
+                                yes = true,
                             )
                         end
                         flush(out_io)
@@ -799,29 +811,31 @@ end
             mkpath(log_dir)
             # Detached drive skips global pkill; drop leftovers so pgrep is ours.
             _ssh_e2e_ssh(host, "pkill -f 'julia.*--worker' || true")
-            hb_env = merge(_e2e_base_env(), Dict(
-                "DISTRIBUTED_HEARTBEAT_INTERVAL_SEC" => "1",
-                "DISTRIBUTED_HEARTBEAT_DEADLINE_SEC" => "5",
-                "DISTRIBUTED_INIT_DELAY_SEC" => "0",
-            ))
+            hb_env = merge(
+                _e2e_base_env(), Dict(
+                    "DISTRIBUTED_HEARTBEAT_INTERVAL_SEC" => "1",
+                    "DISTRIBUTED_HEARTBEAT_DEADLINE_SEC" => "5",
+                    "DISTRIBUTED_INIT_DELAY_SEC" => "0",
+                )
+            )
             kp = withenv(hb_env...) do
                 DistSSHKit.execute!(
                     :drive,
                     sleep_script,
                     ["child:$(host):1"];
-                    project=proj,
-                    remote=remote_root,
-                    detached=true,
-                    yes=true,
-                    quiet=true,
-                    enable_log=true,
-                    log_dir=log_dir,
+                    project = proj,
+                    remote = remote_root,
+                    detached = true,
+                    yes = true,
+                    quiet = true,
+                    enable_log = true,
+                    log_dir = log_dir,
                 )
             end
             function _hb_log_text()
                 isdir(log_dir) || return ""
                 buf = IOBuffer()
-                for f in readdir(log_dir; join=true)
+                for f in readdir(log_dir; join = true)
                     endswith(f, ".log") || continue
                     print(buf, read(f, String))
                 end
@@ -829,7 +843,7 @@ end
             end
             function _worker_pids()
                 _, body = _ssh_e2e_ssh(host, "pgrep -f 'julia.*--worker' || true")
-                return Int[parse(Int, s) for s in split(strip(body); keepempty=false)]
+                return Int[parse(Int, s) for s in split(strip(body); keepempty = false)]
             end
             # A queue that lost its in-memory `KitProcess` (e.g. restarted
             # mid-job) falls back to `kit.pid` — assert it names this run's
@@ -899,13 +913,13 @@ end
                     :ride,
                     ride_script,
                     ["child:$(host):1"];
-                    project=proj,
-                    remote=remote_root,
-                    detached=true,
-                    yes=true,
-                    quiet=true,
-                    spi_check=false,
-                    job_id="e2e-ride-term",
+                    project = proj,
+                    remote = remote_root,
+                    detached = true,
+                    yes = true,
+                    quiet = true,
+                    spi_check = false,
+                    job_id = "e2e-ride-term",
                 )
             end
             out = kp.output_dir
@@ -941,7 +955,7 @@ end
 
             function _ride_worker_pids()
                 _, body = _ssh_e2e_ssh(host, "pgrep -f 'julia.*--worker' || true")
-                return Int[parse(Int, s) for s in split(strip(body); keepempty=false)]
+                return Int[parse(Int, s) for s in split(strip(body); keepempty = false)]
             end
             workers_ready = false
             t0w = time()
@@ -963,7 +977,7 @@ end
             @test workers_ready
             @test !isempty(pids)
 
-            result = DistSSHKit.terminate!(kp; grace=15)
+            result = DistSSHKit.terminate!(kp; grace = 15)
             @test result isa DistSSHKit.KitRunResult
             @test result.kind === :ride
             @test !process_running(kp.process)
@@ -987,22 +1001,24 @@ end
         @testset "setup --rsync refuses nonempty" begin
             _e2e_announce("setup --rsync refuses nonempty")
             proc, out = _run_kit_setup(;
-                setup_args=["--rsync", "--remote-path", remote_root, setup_hosts[1]],
-                project_root=proj,
-                extra_env=merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
+                setup_args = ["--rsync", "--remote-path", remote_root, setup_hosts[1]],
+                project_root = proj,
+                extra_env = merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
             )
-            _ssh_e2e_record!(suite, "setup_rsync_refuse", proc, out; expect_ok=false, project=proj, kit=:setup)
+            _ssh_e2e_record!(suite, "setup_rsync_refuse", proc, out; expect_ok = false, project = proj, kit = :setup)
             @test proc.exitcode != 0
             @test occursin("refusing", lowercase(out))
         end
 
         @testset "inter-child SSH (w1 → w2 via compose DNS)" begin
             _e2e_announce("inter-child SSH (w1 → w2 via compose DNS)")
-            cmd = Cmd([
-                "ssh", "-F", g.ssh_config, hosts[1],
-                "ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 " *
-                "dev@child-2 'echo inter-ok'",
-            ])
+            cmd = Cmd(
+                [
+                    "ssh", "-F", g.ssh_config, hosts[1],
+                    "ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 " *
+                        "dev@child-2 'echo inter-ok'",
+                ]
+            )
             proc, out = _run_subprocess(cmd)
             _assert_ssh_e2e_ok(suite, "inter_child_ssh", proc, out)
             @test occursin("inter-ok", out)
@@ -1012,7 +1028,7 @@ end
         @testset "git clone + sync + require-git" begin
             _e2e_announce("git clone + sync + require-git")
             git_root = _ssh_e2e_git_remote_root()
-            git_env = _ssh_e2e_env(; remote_project=git_root)
+            git_env = _ssh_e2e_env(; remote_project = git_root)
             seed = withenv(git_env...) do
                 _ssh_e2e_seed_git_origin!(proj)
             end
@@ -1020,42 +1036,42 @@ end
             seed === nothing && error("expected git origin seed")
 
             proc, out = _run_kit_setup(;
-                setup_args=[
+                setup_args = [
                     "--delete", "--remote-path", git_root, setup_hosts...,
                 ],
-                project_root=proj,
-                extra_env=git_env,
+                project_root = proj,
+                extra_env = git_env,
             )
-            _assert_ssh_e2e_ok(suite, "git_delete", proc, out; project=proj, kit=:setup)
+            _assert_ssh_e2e_ok(suite, "git_delete", proc, out; project = proj, kit = :setup)
 
             proc, out = _run_kit_setup(;
-                setup_args=[
+                setup_args = [
                     "--clone",
                     "--repo", seed.origin_workers,
                     "--remote-path", git_root,
                     setup_hosts...,
                 ],
-                project_root=proj,
-                extra_env=git_env,
+                project_root = proj,
+                extra_env = git_env,
             )
-            _assert_ssh_e2e_ok(suite, "git_clone", proc, out; project=proj, kit=:setup)
+            _assert_ssh_e2e_ok(suite, "git_clone", proc, out; project = proj, kit = :setup)
 
             proc, out = _run_kit_setup(;
-                setup_args=[
+                setup_args = [
                     "--instantiate", "--remote-path", git_root, setup_hosts...,
                 ],
-                project_root=proj,
-                extra_env=git_env,
+                project_root = proj,
+                extra_env = git_env,
             )
-            _assert_ssh_e2e_ok(suite, "git_instantiate", proc, out; project=proj, kit=:setup)
+            _assert_ssh_e2e_ok(suite, "git_instantiate", proc, out; project = proj, kit = :setup)
 
             proc, out = _run_kit_setup(;
-                setup_args=["--check", "--remote-path", git_root, setup_hosts...],
-                project_root=proj,
-                extra_env=merge(git_env, Dict("DISTSSHKIT_QUIET" => "0")),
+                setup_args = ["--check", "--remote-path", git_root, setup_hosts...],
+                project_root = proj,
+                extra_env = merge(git_env, Dict("DISTSSHKIT_QUIET" => "0")),
             )
-            _assert_ssh_e2e_ok(suite, "git_check", proc, out; project=proj, kit=:setup)
-            local_before = DistSSHKit.get_local_git_hash(proj; short=12)
+            _assert_ssh_e2e_ok(suite, "git_check", proc, out; project = proj, kit = :setup)
+            local_before = DistSSHKit.get_local_git_hash(proj; short = 12)
             @test local_before isa String
             local_before isa String || error("expected local git hash")
             @test occursin(local_before, out)
@@ -1067,50 +1083,50 @@ end
             @test bumped != local_before
 
             proc, out = _run_kit_drive(;
-                script=joinpath(proj, "smoke.jl"),
-                host_root=proj,
-                parent_workers=0,
-                child_hosts=remote_tokens,
-                drive_flags=["-y", "-q", "--require-git"],
-                extra_env=merge(git_env, Dict("DISTSSHKIT_QUIET" => "0")),
+                script = joinpath(proj, "smoke.jl"),
+                host_root = proj,
+                parent_workers = 0,
+                child_hosts = remote_tokens,
+                drive_flags = ["-y", "-q", "--require-git"],
+                extra_env = merge(git_env, Dict("DISTSSHKIT_QUIET" => "0")),
             )
             _ssh_e2e_record!(
                 suite, "git_require_git_mismatch", proc, out;
-                expect_ok=false, project=proj,
+                expect_ok = false, project = proj,
             )
             @test proc.exitcode != 0
             @test occursin("mismatch", lowercase(out)) || occursin("could not be verified", lowercase(out))
 
             proc, out = _run_kit_setup(;
-                setup_args=["--sync", "--remote-path", git_root, setup_hosts...],
-                project_root=proj,
-                extra_env=merge(git_env, Dict("DISTSSHKIT_QUIET" => "0")),
+                setup_args = ["--sync", "--remote-path", git_root, setup_hosts...],
+                project_root = proj,
+                extra_env = merge(git_env, Dict("DISTSSHKIT_QUIET" => "0")),
             )
-            _assert_ssh_e2e_ok(suite, "git_sync", proc, out; project=proj, kit=:setup)
+            _assert_ssh_e2e_ok(suite, "git_sync", proc, out; project = proj, kit = :setup)
 
             proc, out = _run_kit_setup(;
-                setup_args=["--check", "--remote-path", git_root, setup_hosts...],
-                project_root=proj,
-                extra_env=merge(git_env, Dict("DISTSSHKIT_QUIET" => "0")),
+                setup_args = ["--check", "--remote-path", git_root, setup_hosts...],
+                project_root = proj,
+                extra_env = merge(git_env, Dict("DISTSSHKIT_QUIET" => "0")),
             )
-            _assert_ssh_e2e_ok(suite, "git_check_after_sync", proc, out; project=proj, kit=:setup)
+            _assert_ssh_e2e_ok(suite, "git_check_after_sync", proc, out; project = proj, kit = :setup)
             bumped isa String || error("expected bumped git hash")
             @test occursin(bumped, out)
 
             # drive --require-git must pass when remotes have matching .git/
             proc, out = _run_kit_drive(;
-                script=joinpath(proj, "smoke.jl"),
-                host_root=proj,
-                parent_workers=0,
-                child_hosts=remote_tokens,
-                drive_flags=["-y", "-q", "--require-git"],
-                extra_env=git_env,
+                script = joinpath(proj, "smoke.jl"),
+                host_root = proj,
+                parent_workers = 0,
+                child_hosts = remote_tokens,
+                drive_flags = ["-y", "-q", "--require-git"],
+                extra_env = git_env,
             )
             _assert_ssh_e2e_ok(suite, "git_drive_require_git", proc, out)
             @test occursin("DISTSSHKIT_RUNNER_SMOKE_OK", out)
 
             pulled = withenv(git_env...) do
-                p = _ssh_e2e_git_bump_commit!(proj; message="e2e-pull")
+                p = _ssh_e2e_git_bump_commit!(proj; message = "e2e-pull")
                 _ssh_e2e_git_push!(proj)
                 p
             end
@@ -1118,11 +1134,11 @@ end
             marker = read(joinpath(proj, "e2e_sync_marker.txt"), String)
 
             proc, out = _run_kit_setup(;
-                setup_args=["--pull", "--remote-path", git_root, setup_hosts...],
-                project_root=proj,
-                extra_env=merge(git_env, Dict("DISTSSHKIT_QUIET" => "0")),
+                setup_args = ["--pull", "--remote-path", git_root, setup_hosts...],
+                project_root = proj,
+                extra_env = merge(git_env, Dict("DISTSSHKIT_QUIET" => "0")),
             )
-            _assert_ssh_e2e_ok(suite, "git_pull", proc, out; project=proj, kit=:setup)
+            _assert_ssh_e2e_ok(suite, "git_pull", proc, out; project = proj, kit = :setup)
             for host in hosts
                 p, body = withenv(git_env...) do
                     _e2e_run_on_host(
@@ -1130,7 +1146,7 @@ end
                         ["-e", "print(read($(repr(joinpath(git_root, "e2e_sync_marker.txt"))), String))"],
                     )
                 end
-                _assert_proc_ok(p, body; label="pull marker $(host)")
+                _assert_proc_ok(p, body; label = "pull marker $(host)")
                 @test body == marker
             end
         end

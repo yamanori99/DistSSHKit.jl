@@ -13,16 +13,16 @@ using Test
         return path
     end
 
-    function _collect!(proj, out_dir, hosts; merge=false)
+    function _collect!(proj, out_dir, hosts; merge = false)
         session = DistSSHKit.KitSession(
-            project=proj,
-            workers=hosts,
-            remote="/fake/remote/CollectHost",
+            project = proj,
+            workers = hosts,
+            remote = "/fake/remote/CollectHost",
         )
-        return DistSSHKit.collect!(session, out_dir; merge=merge)
+        return DistSSHKit.collect!(session, out_dir; merge = merge)
     end
 
-    function _with_collect(f; extra_env=Dict{String,String}())
+    function _with_collect(f; extra_env = Dict{String, String}())
         _with_tempdir() do state_dir
             _with_tempdir() do proj
                 write(joinpath(proj, "Project.toml"), "name = \"CollectHost\"\n")
@@ -36,7 +36,7 @@ using Test
                     extra_env,
                 )
                 withenv(env...) do
-                    DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(quiet=true, yes=true))
+                    DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(quiet = true, yes = true))
                     DistSSHKit._ensure_drive_fragments!(proj)
                     return f(state_dir, proj)
                 end
@@ -114,7 +114,7 @@ using Test
             mkpath(out_dir)
             with_kit_verbosity(:verbose) do
                 captured, result = _capture_stdio() do _, _
-                    _collect!(proj, out_dir, ["child:host1"]; merge=true)
+                    _collect!(proj, out_dir, ["child:host1"]; merge = true)
                 end
                 @test result.ok
                 @test occursin("synced", captured)
@@ -129,13 +129,13 @@ using Test
             @test_skip "1.11 GHA OOM on collect rsync-fail"
             return
         end
-        _with_collect(; extra_env=Dict("DISTSSHKIT_TEST_RSYNC_FAIL" => "1")) do state_dir, proj
+        _with_collect(; extra_env = Dict("DISTSSHKIT_TEST_RSYNC_FAIL" => "1")) do state_dir, proj
             _seed_tree!(state_dir, "host1", "a.txt")
             out_dir = joinpath(proj, "out")
             mkpath(out_dir)
             with_kit_verbosity(:verbose) do
                 captured, result = _capture_stdio() do _, _
-                    _collect!(proj, out_dir, ["child:host1"]; merge=true)
+                    _collect!(proj, out_dir, ["child:host1"]; merge = true)
                 end
                 @test !result.ok
                 @test result.exit_code == 1
@@ -145,7 +145,7 @@ using Test
     end
 
     @testset "collect-missing find failure is not empty success" begin
-        _with_collect(; extra_env=Dict("DISTSSHKIT_TEST_FIND_FAIL" => "1")) do state_dir, proj
+        _with_collect(; extra_env = Dict("DISTSSHKIT_TEST_FIND_FAIL" => "1")) do state_dir, proj
             mkpath(joinpath(state_dir, "host1", "tree"))
             write(joinpath(state_dir, "host1", "tree", "a.txt"), "x\n")
             out_dir = joinpath(proj, "out")
@@ -162,7 +162,7 @@ using Test
     end
 
     @testset "post-run find failure sets HostRunResult" begin
-        _with_collect(; extra_env=Dict("DISTSSHKIT_TEST_FIND_FAIL" => "1")) do state_dir, proj
+        _with_collect(; extra_env = Dict("DISTSSHKIT_TEST_FIND_FAIL" => "1")) do state_dir, proj
             mkpath(joinpath(state_dir, "host1", "tree"))
             script = joinpath(proj, "job.jl")
             write(script, "true\n")

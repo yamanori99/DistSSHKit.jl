@@ -14,9 +14,9 @@ using Test
             @test p.child_workers == Dict("localhost" => 1)
         end
         @test DistSSHKit.parse_placement_token("parent:2") ==
-            (role=:parent, name="parent", n=2)
+            (role = :parent, name = "parent", n = 2)
         @test DistSSHKit.parse_placement_token("child:user@h1:4") ==
-            (role=:child, name="user@h1", n=4)
+            (role = :child, name = "user@h1", n = 4)
         @test_throws ArgumentError DistSSHKit.parse_placement_token("user@h1")
         @test_throws ArgumentError DistSSHKit.parse_placement_token("parenthost:2")
         @test_throws ArgumentError DistSSHKit.parse_placement_token("child:parent")
@@ -55,13 +55,13 @@ using Test
 
         via_stderr = DistSSHKit.summarize_ssh_error(
             ErrorException("failed process"),
-            stderr="Bad configuration option: usekeychain\nterminating",
+            stderr = "Bad configuration option: usekeychain\nterminating",
         )
         @test occursin("IgnoreUnknown", via_stderr)
 
         short = DistSSHKit.summarize_ssh_error(
             ErrorException("x");
-            stderr="only stderr line",
+            stderr = "only stderr line",
         )
         @test short == "only stderr line"
     end

@@ -3,9 +3,9 @@ using Test
 @testset "ride" begin
     @testset "world age" begin
         let name = :_ride_world_age_probe_
-            Core.eval(Main, :($name(x; k=0) = 2x + k))
+            Core.eval(Main, :($name(x; k = 0) = 2x + k))
             @test DistSSHKit._ride_main_call(name, 21) == 42
-            @test DistSSHKit._ride_main_call(name, 10; k=3) == 23
+            @test DistSSHKit._ride_main_call(name, 10; k = 3) == 23
         end
     end
 
@@ -55,8 +55,10 @@ using Test
         fr = DistSSHKit._ride_rewrite(fill)
         @test fr.head === :call
         @test fr.args[1] === GlobalRef(DistSSHKit, :_ride_index_fill!)
-        @test !(fr.args[4] isa Expr && fr.args[4].head === :call &&
-                fr.args[4].args[1] === :collect)
+        @test !(
+            fr.args[4] isa Expr && fr.args[4].head === :call &&
+                fr.args[4].args[1] === :collect
+        )
         ys = zeros(Int, 3)
         @test DistSSHKit._ride_index_fill!(ys, i -> i * i, 1:3) === nothing
         @test ys == [1, 4, 9]
@@ -67,31 +69,35 @@ using Test
         stencil = Meta.parse("for i in 2:length(dest); dest[i] = alias[i - 1]; end")
         @test DistSSHKit._ride_rewrite(stencil).head === :for
 
-        pre = DistSSHKit._ride_worker_prelude(Meta.parseall("""
-            function work(x)
-                x + 1
-            end
-            ys = map(work, 1:3)
-            """))
+        pre = DistSSHKit._ride_worker_prelude(
+            Meta.parseall(
+                """
+                function work(x)
+                    x + 1
+                end
+                ys = map(work, 1:3)
+                """
+            )
+        )
         s = string(pre)
         @test occursin("work", s)
         @test !occursin("map", s)
 
         plan = DistSSHKit._ride_resolve_plan(
             ["child:h:2", "parent:1"];
-            session=nothing,
-            gb_per_worker=nothing,
-            probe=nothing,
-            mem_headroom=DistSSHKit.DEFAULT_MEM_HEADROOM,
-            parent_gb=DistSSHKit.DEFAULT_PARENT_GB,
+            session = nothing,
+            gb_per_worker = nothing,
+            probe = nothing,
+            mem_headroom = DistSSHKit.DEFAULT_MEM_HEADROOM,
+            parent_gb = DistSSHKit.DEFAULT_PARENT_GB,
         )
         @test plan.parent_workers == 1
         @test plan.child_workers["h"] == 2
 
         _with_tempdir() do tmp
             script = joinpath(tmp, "map.jl")
-            d1 = DistSSHKit._ride_batch_dir(script, nothing; project=tmp)
-            d2 = DistSSHKit._ride_batch_dir(script, nothing; project=tmp)
+            d1 = DistSSHKit._ride_batch_dir(script, nothing; project = tmp)
+            d2 = DistSSHKit._ride_batch_dir(script, nothing; project = tmp)
             @test isdir(d1) && isdir(d2)
             @test d1 != d2
         end
@@ -111,11 +117,13 @@ using Test
     _with_tempdir() do tmp
         out = joinpath(tmp, "out.txt")
         map_path = joinpath(tmp, "mapped.jl")
-        write(map_path, """
+        write(
+            map_path, """
             ys = map(x -> x + 1, 1:4)
             write($(repr(out)), join(string.(ys), ","))
-            """)
-        r = DistSSHKit.ride!(map_path, "parent:1"; spi_check=true)
+            """
+        )
+        r = DistSSHKit.ride!(map_path, "parent:1"; spi_check = true)
         @test r.ok
         @test r.workers == 1
         @test r.spi_ok === true
@@ -132,86 +140,99 @@ using Test
 
         fout = joinpath(tmp, "filt.txt")
         filt = joinpath(tmp, "filt.jl")
-        write(filt, """
+        write(
+            filt, """
             ys = filter(iseven, 1:6)
             write($(repr(fout)), join(string.(ys), ","))
-            """)
-        rf = DistSSHKit.ride!(filt, "parent:1"; spi_check=true)
+            """
+        )
+        rf = DistSSHKit.ride!(filt, "parent:1"; spi_check = true)
         @test rf.ok
         @test read(fout, String) == "2,4,6"
 
         named = joinpath(tmp, "named.jl")
         nout = joinpath(tmp, "named.txt")
-        write(named, """
+        write(
+            named, """
             function work(x)
                 x * x
             end
             ys = map(work, 1:3)
             write($(repr(nout)), join(string.(ys), ","))
-            """)
-        rn = DistSSHKit.ride!(named, "parent:1"; spi_check=true)
+            """
+        )
+        rn = DistSSHKit.ride!(named, "parent:1"; spi_check = true)
         @test rn.ok
         @test read(nout, String) == "1,4,9"
 
         loop = joinpath(tmp, "loop.jl")
         lout = joinpath(tmp, "loop.txt")
-        write(loop, """
+        write(
+            loop, """
             xs = 1:4
             ys = similar(collect(xs))
             for i in eachindex(xs)
                 ys[i] = xs[i] * xs[i]
             end
             write($(repr(lout)), join(string.(ys), ","))
-            """)
-        rl = DistSSHKit.ride!(loop, "parent:1"; spi_check=true)
+            """
+        )
+        rl = DistSSHKit.ride!(loop, "parent:1"; spi_check = true)
         @test rl.ok
         @test rl.spi_ok !== false
         @test read(lout, String) == "1,4,9,16"
 
         val_path = joinpath(tmp, "forval.jl")
         vout = joinpath(tmp, "forval.txt")
-        write(val_path, """
+        write(
+            val_path, """
             ys = zeros(Int, 3)
             x = (for i in eachindex(ys)
                 ys[i] = i * i
             end)
             write($(repr(vout)), string(x === nothing) * ";" * join(string.(ys), ","))
-            """)
-        rv = DistSSHKit.ride!(val_path, "parent:1"; spi_check=true)
+            """
+        )
+        rv = DistSSHKit.ride!(val_path, "parent:1"; spi_check = true)
         @test rv.ok
         @test read(vout, String) == "true;1,4,9"
 
         st_path = joinpath(tmp, "stateful.jl")
         stout = joinpath(tmp, "stateful.txt")
-        write(st_path, """
+        write(
+            st_path, """
             xs = [1, 2, 3, 4]
             ys = similar(xs)
             for i in Iterators.Stateful(eachindex(xs))
                 ys[i] = xs[i] * xs[i]
             end
             write($(repr(stout)), join(string.(ys), ","))
-            """)
-        rs = DistSSHKit.ride!(st_path, "parent:1"; spi_check=false)
+            """
+        )
+        rs = DistSSHKit.ride!(st_path, "parent:1"; spi_check = false)
         @test rs.ok
         @test read(stout, String) == "1,4,9,16"
 
         alias_path = joinpath(tmp, "alias.jl")
         aout = joinpath(tmp, "alias.txt")
-        write(alias_path, """
+        write(
+            alias_path, """
             dest = [1, 2, 3]
             alias = dest
             for i in 2:length(dest)
                 dest[i] = alias[i - 1]
             end
             write($(repr(aout)), join(string.(dest), ","))
-            """)
-        ra = DistSSHKit.ride!(alias_path, "parent:1"; spi_check=false)
+            """
+        )
+        ra = DistSSHKit.ride!(alias_path, "parent:1"; spi_check = false)
         @test ra.ok
         @test read(aout, String) == "1,1,1"
 
         obs_path = joinpath(tmp, "observe.jl")
         oout = joinpath(tmp, "observe.txt")
-        write(obs_path, """
+        write(
+            obs_path, """
             dest = [1, 2, 3]
             seen = Int[]
             observe(i) = (push!(seen, dest[1]); 0)
@@ -219,14 +240,16 @@ using Test
                 dest[i] = observe(i)
             end
             write($(repr(oout)), join(string.(seen), ",") * ";" * join(string.(dest), ","))
-            """)
-        ro = DistSSHKit.ride!(obs_path, "parent:1"; spi_check=false)
+            """
+        )
+        ro = DistSSHKit.ride!(obs_path, "parent:1"; spi_check = false)
         @test ro.ok
         @test read(oout, String) == "1,0,0;0,0,0"
 
         gen_path = joinpath(tmp, "geniter.jl")
         gout = joinpath(tmp, "geniter.txt")
-        write(gen_path, """
+        write(
+            gen_path, """
             dest = zeros(Int, 3)
             n = Ref(0)
             struct _RideUnknownIter
@@ -242,14 +265,16 @@ using Test
                 dest[i] = n[]
             end
             write($(repr(gout)), join(string.(dest), ","))
-            """)
-        rg = DistSSHKit.ride!(gen_path, "parent:1"; spi_check=false)
+            """
+        )
+        rg = DistSSHKit.ride!(gen_path, "parent:1"; spi_check = false)
         @test rg.ok
         @test read(gout, String) == "1,2,3"
 
         haslen_path = joinpath(tmp, "hasleniter.jl")
         hout = joinpath(tmp, "hasleniter.txt")
-        write(haslen_path, """
+        write(
+            haslen_path, """
             dest = zeros(Int, 3)
             n = Ref(0)
             struct _RideHasLenIter
@@ -266,14 +291,16 @@ using Test
                 dest[i] = n[]
             end
             write($(repr(hout)), join(string.(dest), ","))
-            """)
-        rh = DistSSHKit.ride!(haslen_path, "parent:1"; spi_check=false)
+            """
+        )
+        rh = DistSSHKit.ride!(haslen_path, "parent:1"; spi_check = false)
         @test rh.ok
         @test read(hout, String) == "1,2,3"
 
         pmapnest_path = joinpath(tmp, "pmapnest.jl")
         pout = joinpath(tmp, "pmapnest.txt")
-        write(pmapnest_path, """
+        write(
+            pmapnest_path, """
             function inner_overlap()
                 data = [1, 2, 3, 4]
                 dest = @view data[2:4]
@@ -288,32 +315,33 @@ using Test
                 out[i] = inner_overlap()
             end
             write($(repr(pout)), join(out, ";"))
-            """)
-        rp = DistSSHKit.ride!(pmapnest_path, "parent:2"; spi_check=false)
+            """
+        )
+        rp = DistSSHKit.ride!(pmapnest_path, "parent:2"; spi_check = false)
         @test rp.ok
         @test read(pout, String) == "1,1,1;1,1,1;1,1,1;1,1,1"
 
         overlap_src = """
-            data = [1, 2, 3, 4]
-            dest = @view data[2:4]
-            src = @view data[1:3]
-            for i in eachindex(dest)
-                dest[i] = src[i]
-            end
-            write(ARGS[1], join(string.(dest), ","))
-            """
+        data = [1, 2, 3, 4]
+        dest = @view data[2:4]
+        src = @view data[1:3]
+        for i in eachindex(dest)
+            dest[i] = src[i]
+        end
+        write(ARGS[1], join(string.(dest), ","))
+        """
         holder_src(struct_name) = """
-            struct $(struct_name)
-                src::AbstractArray
-            end
-            data = [1, 2, 3, 4]
-            dest = @view data[2:4]
-            holder = $(struct_name)(@view data[1:3])
-            for i in eachindex(dest)
-                dest[i] = holder.src[i]
-            end
-            write(ARGS[1], join(string.(dest), ","))
-            """
+        struct $(struct_name)
+            src::AbstractArray
+        end
+        data = [1, 2, 3, 4]
+        dest = @view data[2:4]
+        holder = $(struct_name)(@view data[1:3])
+        for i in eachindex(dest)
+            dest[i] = holder.src[i]
+        end
+        write(ARGS[1], join(string.(dest), ","))
+        """
         nest_n = DistSSHKit._RIDE_CAPTURE_DEPTH + 3
         nested_src(struct_name) = begin
             nest_wraps = join(
@@ -336,37 +364,37 @@ using Test
             """
         end
         const_nospi_src = """
-            const _RideConstData_nospi = [1, 2, 3, 4]
-            dest = @view _RideConstData_nospi[2:4]
-            const _RideConstSrc_nospi = @view _RideConstData_nospi[1:3]
-            for i in eachindex(dest)
-                dest[i] = Main._RideConstSrc_nospi[i]
-            end
-            write(ARGS[1], join(string.(dest), ","))
-            """
+        const _RideConstData_nospi = [1, 2, 3, 4]
+        dest = @view _RideConstData_nospi[2:4]
+        const _RideConstSrc_nospi = @view _RideConstData_nospi[1:3]
+        for i in eachindex(dest)
+            dest[i] = Main._RideConstSrc_nospi[i]
+        end
+        write(ARGS[1], join(string.(dest), ","))
+        """
         const_spi_src = """
-            const _RideConstData_spi = [1, 2, 3, 4]
-            dest = @view _RideConstData_spi[2:4]
-            const _RideConstSrc_spi = @view _RideConstData_spi[1:3]
-            for i in eachindex(dest)
-                dest[i] = Main._RideConstSrc_spi[i]
-            end
-            write(ARGS[1], join(string.(dest), ","))
-            """
+        const _RideConstData_spi = [1, 2, 3, 4]
+        dest = @view _RideConstData_spi[2:4]
+        const _RideConstSrc_spi = @view _RideConstData_spi[1:3]
+        for i in eachindex(dest)
+            dest[i] = Main._RideConstSrc_spi[i]
+        end
+        write(ARGS[1], join(string.(dest), ","))
+        """
         for (body, spi, stem) in (
-            (overlap_src, false, "overlap_nospi"),
-            (overlap_src, true, "overlap_spi"),
-            (holder_src("_RideViewHolder_nospi"), false, "holder_nospi"),
-            (holder_src("_RideViewHolder_spi"), true, "holder_spi"),
-            (nested_src("_RideNest_nospi"), false, "nested_nospi"),
-            (nested_src("_RideNest_spi"), true, "nested_spi"),
-            (const_nospi_src, false, "const_nospi"),
-            (const_spi_src, true, "const_spi"),
-        )
+                (overlap_src, false, "overlap_nospi"),
+                (overlap_src, true, "overlap_spi"),
+                (holder_src("_RideViewHolder_nospi"), false, "holder_nospi"),
+                (holder_src("_RideViewHolder_spi"), true, "holder_spi"),
+                (nested_src("_RideNest_nospi"), false, "nested_nospi"),
+                (nested_src("_RideNest_spi"), true, "nested_spi"),
+                (const_nospi_src, false, "const_nospi"),
+                (const_spi_src, true, "const_spi"),
+            )
             opath = joinpath(tmp, stem * ".jl")
             oout = joinpath(tmp, stem * ".txt")
             write(opath, replace(body, "ARGS[1]" => repr(oout)))
-            rr = DistSSHKit.ride!(opath, "parent:1"; spi_check=spi)
+            rr = DistSSHKit.ride!(opath, "parent:1"; spi_check = spi)
             @test rr.ok
             @test read(oout, String) == "1,1,1"
         end
@@ -383,7 +411,7 @@ using Test
         @test occursin("pmap", something(rd.error, ""))
 
         buf = IOBuffer()
-        DistSSHKit.print_ride(r; io=buf)
+        DistSSHKit.print_ride(r; io = buf)
         shown = String(take!(buf))
         @test startswith(shown, "DistSSHKit ride\n")
         @test occursin("Script: ", shown)

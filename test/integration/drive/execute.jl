@@ -12,7 +12,7 @@ using Test
     _mktemp_host() do proj
         _write_host_project!(proj, "ExecuteDrive")
         script = joinpath(proj, "job.jl")
-        cp(fixture, script; force=true)
+        cp(fixture, script; force = true)
         prev_v = DistSSHKit.kit_verbosity()
         try
             mktemp() do out_path, out_io
@@ -23,9 +23,9 @@ using Test
                                 :drive,
                                 script,
                                 ["parent:2"];
-                                project=proj,
-                                verbosity=:verbose,
-                                yes=true,
+                                project = proj,
+                                verbosity = :verbose,
+                                yes = true,
                             )
                         end
                     end
@@ -40,7 +40,7 @@ using Test
                     @test result.log_dir !== nothing
                     let od = result.output_dir
                         od === nothing && error("expected execute! output_dir")
-                        _assert_kit_progress_done(od; kind=:drive)
+                        _assert_kit_progress_done(od; kind = :drive)
                     end
                     @test occursin("DISTSSHKIT_RUNNER_SMOKE_OK nw=2", out)
                     # stderr: second `main` include after `api.jl` (warn-overwrite)
@@ -58,20 +58,20 @@ end
     _mktemp_host() do proj
         _write_host_project!(proj, "ExecuteDriveDetached")
         script = joinpath(proj, "job.jl")
-        cp(fixture, script; force=true)
+        cp(fixture, script; force = true)
         mktemp() do out_path, out_io
             mktemp() do _, err_io
                 kp = DistSSHKit.execute!(
                     :drive,
                     script,
                     ["parent:2"];
-                    detached=true,
-                    project=proj,
-                    verbosity=:verbose,
-                    mem_headroom=0.5,
-                    parent_gb=0.2,
-                    stdout=out_io,
-                    stderr=err_io,
+                    detached = true,
+                    project = proj,
+                    verbosity = :verbose,
+                    mem_headroom = 0.5,
+                    parent_gb = 0.2,
+                    stdout = out_io,
+                    stderr = err_io,
                 )
                 result = wait(kp)
                 flush(out_io)

@@ -42,9 +42,11 @@ using Test
     @testset "kit_result_from_dir" begin
         _with_tempdir() do d
             @test DistSSHKit.kit_result_from_dir(d) === nothing
-            DistSSHKit._write_kit_result_file(DistSSHKit.KitRunResult(
-                false, :drive, d, nothing, "drive", 42,
-            ))
+            DistSSHKit._write_kit_result_file(
+                DistSSHKit.KitRunResult(
+                    false, :drive, d, nothing, "drive", 42,
+                )
+            )
             got = DistSSHKit.kit_result_from_dir(d)
             @test got isa DistSSHKit.KitRunResult
             @test got.ok === false
@@ -54,13 +56,15 @@ using Test
             @test got.output_dir == d
             @test got.log_dir === nothing
             @test got.hosts == DistSSHKit.HostRunResult[]
-            DistSSHKit._write_kit_result_file(DistSSHKit.KitRunResult(
-                false, :drive, d, nothing, "drive", 1,
-                [
-                    DistSSHKit.HostRunResult("h1", true),
-                    DistSSHKit.HostRunResult("h2", false, ErrorException("boom")),
-                ],
-            ))
+            DistSSHKit._write_kit_result_file(
+                DistSSHKit.KitRunResult(
+                    false, :drive, d, nothing, "drive", 1,
+                    [
+                        DistSSHKit.HostRunResult("h1", true),
+                        DistSSHKit.HostRunResult("h2", false, ErrorException("boom")),
+                    ],
+                )
+            )
             with_hosts = DistSSHKit.kit_result_from_dir(d)
             @test length(with_hosts.hosts) == 2
             @test with_hosts.hosts[1] == DistSSHKit.HostRunResult("h1", true, nothing)
@@ -68,9 +72,11 @@ using Test
             @test with_hosts.hosts[2].ok === false
             @test with_hosts.hosts[2].error == "boom"
             @test DistSSHKit.HostRunResult("h2", false, "boom").error == "boom"
-            DistSSHKit._write_kit_result_file(DistSSHKit.KitRunResult(
-                true, :ride, d, nothing, nothing, 0,
-            ))
+            DistSSHKit._write_kit_result_file(
+                DistSSHKit.KitRunResult(
+                    true, :ride, d, nothing, nothing, 0,
+                )
+            )
             ride_got = DistSSHKit.kit_result_from_dir(d)
             @test ride_got.kind === :ride
             @test ride_got.ok
@@ -94,13 +100,13 @@ using Test
             @test got[1].last_seen === nothing
             DistSSHKit._register_drive_host_worker_ids!("h1", [1])
             DistSSHKit._register_drive_host_worker_ids!("h2", [999999])
-            DistSSHKit._refresh_drive_host_status_file!(d, nothing; now=1.5)
+            DistSSHKit._refresh_drive_host_status_file!(d, nothing; now = 1.5)
             live = DistSSHKit.drive_host_status(d)
             by = Dict(r.host => r for r in live)
             @test by["h1"].state === :alive
             @test by["h1"].last_seen == 1.5
             @test by["h2"].state === :left
-            DistSSHKit._mark_drive_hosts_collect_pending!(d, nothing; now=2.0)
+            DistSSHKit._mark_drive_hosts_collect_pending!(d, nothing; now = 2.0)
             pending = DistSSHKit.drive_host_status(d)
             by2 = Dict(r.host => r for r in pending)
             @test by2["h1"].state === :collect_pending
@@ -127,7 +133,7 @@ using Test
             @test isdir(d1)
             @test occursin(joinpath(".distsshkit", "go"), d1)
             @test startswith(basename(d1), "batch_")
-            d2 = DistSSHKit.allocate_output_dir(:drive, "run.jl"; project, job_id="q1")
+            d2 = DistSSHKit.allocate_output_dir(:drive, "run.jl"; project, job_id = "q1")
             @test isdir(d2)
             @test occursin(joinpath(".distsshkit", "drive"), d2)
             @test occursin("_q1", basename(d2))
@@ -145,7 +151,7 @@ using Test
             end
             @test err_kind isa ArgumentError
             err_id = try
-                DistSSHKit.allocate_output_dir(:go, "x.jl"; project, job_id="bad id")
+                DistSSHKit.allocate_output_dir(:go, "x.jl"; project, job_id = "bad id")
                 nothing
             catch e
                 e
@@ -164,16 +170,16 @@ using Test
             script = joinpath(project, "job.jl")
             write(script, "")
             withenv("DISTRIBUTED_OUTPUT_DIR" => nothing) do
-                d = DistSSHKit._ensure_drive_output_env!(script; project=project)
+                d = DistSSHKit._ensure_drive_output_env!(script; project = project)
                 @test isdir(d)
                 @test startswith(basename(d), "job_")
                 @test occursin(joinpath(".distsshkit", "drive"), d)
                 @test ENV["DISTRIBUTED_OUTPUT_DIR"] == d
-                @test DistSSHKit._ensure_drive_output_env!(script; project=project) == d
+                @test DistSSHKit._ensure_drive_output_env!(script; project = project) == d
             end
             explicit = joinpath(project, "out")
             withenv("DISTRIBUTED_OUTPUT_DIR" => explicit) do
-                got = DistSSHKit._ensure_drive_output_env!(script; project=project)
+                got = DistSSHKit._ensure_drive_output_env!(script; project = project)
                 @test got == DistSSHKit.canonical_local_path(explicit)
             end
         end
@@ -218,38 +224,38 @@ using Test
     end
 
     @testset "execute_detached_accepts" begin
-        @test DistSSHKit.execute_detached_accepts(:quiet; kind=:go)
-        @test DistSSHKit.execute_detached_accepts(:quiet; kind=:drive)
-        @test DistSSHKit.execute_detached_accepts(:job_id; kind=:go)
-        @test DistSSHKit.execute_detached_accepts(:job_id; kind=:drive)
-        @test DistSSHKit.execute_detached_accepts(:output_dir; kind=:go)
-        @test DistSSHKit.execute_detached_accepts(:output_dir; kind=:drive)
-        @test DistSSHKit.execute_detached_accepts(:log_dir; kind=:drive)
-        @test !DistSSHKit.execute_detached_accepts(:log_dir; kind=:go)
-        @test DistSSHKit.execute_detached_accepts(:skip_hash_check; kind=:drive)
-        @test DistSSHKit.execute_detached_accepts(:mem_headroom; kind=:drive)
-        @test DistSSHKit.execute_detached_accepts(:parent_gb; kind=:drive)
-        @test DistSSHKit.execute_detached_accepts(:repeat; kind=:go)
-        @test !DistSSHKit.execute_detached_accepts(:repeat; kind=:drive)
-        @test DistSSHKit.execute_detached_accepts(:workers; kind=:drive)
-        @test DistSSHKit.execute_detached_accepts(:mem_headroom; kind=:go)
-        @test DistSSHKit.execute_detached_accepts(:parent_gb; kind=:go)
-        @test !DistSSHKit.execute_detached_accepts(:workers; kind=:go)
-        @test !DistSSHKit.execute_detached_accepts(:plan; kind=:go)
-        @test !DistSSHKit.execute_detached_accepts(:plan; kind=:drive)
-        @test DistSSHKit.execute_detached_accepts(:spi_check; kind=:ride)
-        @test DistSSHKit.execute_detached_accepts(:gb_per_worker; kind=:ride)
-        @test DistSSHKit.execute_detached_accepts(:mem_headroom; kind=:ride)
-        @test DistSSHKit.execute_detached_accepts(:output_dir; kind=:ride)
-        @test !DistSSHKit.execute_detached_accepts(:repeat; kind=:ride)
-        @test !DistSSHKit.execute_detached_accepts(:sync_script; kind=:ride)
-        @test !DistSSHKit.execute_detached_accepts(:log_dir; kind=:ride)
-        @test !DistSSHKit.execute_detached_accepts(:require_all_hosts; kind=:ride)
-        @test !DistSSHKit.execute_detached_accepts(:spi_check; kind=:go)
-        @test !DistSSHKit.execute_detached_accepts(:spi_check; kind=:drive)
-        @test DistSSHKit.execute_detached_accepts(:gb_per_worker; kind=:go)
+        @test DistSSHKit.execute_detached_accepts(:quiet; kind = :go)
+        @test DistSSHKit.execute_detached_accepts(:quiet; kind = :drive)
+        @test DistSSHKit.execute_detached_accepts(:job_id; kind = :go)
+        @test DistSSHKit.execute_detached_accepts(:job_id; kind = :drive)
+        @test DistSSHKit.execute_detached_accepts(:output_dir; kind = :go)
+        @test DistSSHKit.execute_detached_accepts(:output_dir; kind = :drive)
+        @test DistSSHKit.execute_detached_accepts(:log_dir; kind = :drive)
+        @test !DistSSHKit.execute_detached_accepts(:log_dir; kind = :go)
+        @test DistSSHKit.execute_detached_accepts(:skip_hash_check; kind = :drive)
+        @test DistSSHKit.execute_detached_accepts(:mem_headroom; kind = :drive)
+        @test DistSSHKit.execute_detached_accepts(:parent_gb; kind = :drive)
+        @test DistSSHKit.execute_detached_accepts(:repeat; kind = :go)
+        @test !DistSSHKit.execute_detached_accepts(:repeat; kind = :drive)
+        @test DistSSHKit.execute_detached_accepts(:workers; kind = :drive)
+        @test DistSSHKit.execute_detached_accepts(:mem_headroom; kind = :go)
+        @test DistSSHKit.execute_detached_accepts(:parent_gb; kind = :go)
+        @test !DistSSHKit.execute_detached_accepts(:workers; kind = :go)
+        @test !DistSSHKit.execute_detached_accepts(:plan; kind = :go)
+        @test !DistSSHKit.execute_detached_accepts(:plan; kind = :drive)
+        @test DistSSHKit.execute_detached_accepts(:spi_check; kind = :ride)
+        @test DistSSHKit.execute_detached_accepts(:gb_per_worker; kind = :ride)
+        @test DistSSHKit.execute_detached_accepts(:mem_headroom; kind = :ride)
+        @test DistSSHKit.execute_detached_accepts(:output_dir; kind = :ride)
+        @test !DistSSHKit.execute_detached_accepts(:repeat; kind = :ride)
+        @test !DistSSHKit.execute_detached_accepts(:sync_script; kind = :ride)
+        @test !DistSSHKit.execute_detached_accepts(:log_dir; kind = :ride)
+        @test !DistSSHKit.execute_detached_accepts(:require_all_hosts; kind = :ride)
+        @test !DistSSHKit.execute_detached_accepts(:spi_check; kind = :go)
+        @test !DistSSHKit.execute_detached_accepts(:spi_check; kind = :drive)
+        @test DistSSHKit.execute_detached_accepts(:gb_per_worker; kind = :go)
         err = try
-            DistSSHKit.execute_detached_accepts(:quiet; kind=:pipeline)
+            DistSSHKit.execute_detached_accepts(:quiet; kind = :pipeline)
             nothing
         catch e
             e
@@ -261,19 +267,19 @@ using Test
     @testset "detached drive argv mem_headroom" begin
         argv = DistSSHKit._execute_detached_argv(
             :drive, "job.jl", ["parent:1"], String[];
-            output_dir="/tmp/out",
-            log_dir=nothing,
-            sync=nothing,
-            julia=nothing,
-            quiet=true,
-            verbosity=nothing,
-            hosts_file=nothing,
-            enable_log=false,
-            package=nothing,
-            require_all_hosts=false,
-            skip_hash_check=true,
-            mem_headroom=0.5,
-            parent_gb=0.2,
+            output_dir = "/tmp/out",
+            log_dir = nothing,
+            sync = nothing,
+            julia = nothing,
+            quiet = true,
+            verbosity = nothing,
+            hosts_file = nothing,
+            enable_log = false,
+            package = nothing,
+            require_all_hosts = false,
+            skip_hash_check = true,
+            mem_headroom = 0.5,
+            parent_gb = 0.2,
         )
         @test "--mem-headroom" in argv
         @test "0.5" in argv
@@ -283,57 +289,57 @@ using Test
         @test !("--require-all-hosts" in argv)
         argv0 = DistSSHKit._execute_detached_argv(
             :drive, "job.jl", ["parent:1"], String[];
-            output_dir="/tmp/out",
-            log_dir=nothing,
-            sync=nothing,
-            julia=nothing,
-            quiet=true,
-            verbosity=nothing,
-            hosts_file=nothing,
-            enable_log=false,
-            package=nothing,
-            require_all_hosts=false,
-            skip_hash_check=true,
+            output_dir = "/tmp/out",
+            log_dir = nothing,
+            sync = nothing,
+            julia = nothing,
+            quiet = true,
+            verbosity = nothing,
+            hosts_file = nothing,
+            enable_log = false,
+            package = nothing,
+            require_all_hosts = false,
+            skip_hash_check = true,
         )
         @test !("--mem-headroom" in argv0)
         @test !("--parent-gb" in argv0)
         @test "--best-effort" in argv0
         argvw = DistSSHKit._execute_detached_argv(
             :drive, "job.jl", ["child:host1"], String[];
-            output_dir="/tmp/out",
-            log_dir=nothing,
-            sync=nothing,
-            julia=nothing,
-            quiet=true,
-            verbosity=nothing,
-            hosts_file=nothing,
-            enable_log=false,
-            package=nothing,
-            require_all_hosts=false,
-            skip_hash_check=true,
-            workers=4,
+            output_dir = "/tmp/out",
+            log_dir = nothing,
+            sync = nothing,
+            julia = nothing,
+            quiet = true,
+            verbosity = nothing,
+            hosts_file = nothing,
+            enable_log = false,
+            package = nothing,
+            require_all_hosts = false,
+            skip_hash_check = true,
+            workers = 4,
         )
         @test "--workers" in argvw
         @test "4" in argvw
         @test "--best-effort" in argvw
         argv_rep = DistSSHKit._execute_detached_argv(
             :go, "job.jl", String[], String[];
-            output_dir="/tmp/out",
-            log_dir=nothing,
-            sync=nothing,
-            julia=nothing,
-            quiet=true,
-            verbosity=nothing,
-            hosts_file=nothing,
-            enable_log=false,
-            package=nothing,
-            require_all_hosts=nothing,
-            skip_hash_check=true,
-            repeat=100,
-            mem_headroom=0.5,
-            parent_gb=1.0,
-            gb_per_worker=1.5,
-            probe="/tmp/probe.jl",
+            output_dir = "/tmp/out",
+            log_dir = nothing,
+            sync = nothing,
+            julia = nothing,
+            quiet = true,
+            verbosity = nothing,
+            hosts_file = nothing,
+            enable_log = false,
+            package = nothing,
+            require_all_hosts = nothing,
+            skip_hash_check = true,
+            repeat = 100,
+            mem_headroom = 0.5,
+            parent_gb = 1.0,
+            gb_per_worker = 1.5,
+            probe = "/tmp/probe.jl",
         )
         @test "--repeat" in argv_rep
         @test "100" in argv_rep
@@ -343,63 +349,63 @@ using Test
         @test "--probe" in argv_rep
         argv_strict = DistSSHKit._execute_detached_argv(
             :drive, "job.jl", ["child:host1"], String[];
-            output_dir="/tmp/out",
-            log_dir=nothing,
-            sync=nothing,
-            julia=nothing,
-            quiet=true,
-            verbosity=nothing,
-            hosts_file=nothing,
-            enable_log=false,
-            package=nothing,
-            require_all_hosts=true,
-            skip_hash_check=true,
+            output_dir = "/tmp/out",
+            log_dir = nothing,
+            sync = nothing,
+            julia = nothing,
+            quiet = true,
+            verbosity = nothing,
+            hosts_file = nothing,
+            enable_log = false,
+            package = nothing,
+            require_all_hosts = true,
+            skip_hash_check = true,
         )
         @test "--require-all-hosts" in argv_strict
         @test !("--best-effort" in argv_strict)
         @test_throws ArgumentError DistSSHKit._execute_detached_argv(
             :drive, "job.jl", ["child:host1"], String[];
-            output_dir="/tmp/out",
-            log_dir=nothing,
-            sync=nothing,
-            julia=nothing,
-            quiet=true,
-            verbosity=nothing,
-            hosts_file=nothing,
-            enable_log=false,
-            package=nothing,
-            require_all_hosts=0,
-            skip_hash_check=true,
+            output_dir = "/tmp/out",
+            log_dir = nothing,
+            sync = nothing,
+            julia = nothing,
+            quiet = true,
+            verbosity = nothing,
+            hosts_file = nothing,
+            enable_log = false,
+            package = nothing,
+            require_all_hosts = 0,
+            skip_hash_check = true,
         )
         @test_throws ArgumentError DistSSHKit._execute_detached_argv(
             :drive, "job.jl", ["child:host1"], String[];
-            output_dir="/tmp/out",
-            log_dir=nothing,
-            sync=nothing,
-            julia=nothing,
-            quiet=true,
-            verbosity=nothing,
-            hosts_file=nothing,
-            enable_log=false,
-            package=nothing,
-            require_all_hosts=nothing,
-            skip_hash_check=true,
+            output_dir = "/tmp/out",
+            log_dir = nothing,
+            sync = nothing,
+            julia = nothing,
+            quiet = true,
+            verbosity = nothing,
+            hosts_file = nothing,
+            enable_log = false,
+            package = nothing,
+            require_all_hosts = nothing,
+            skip_hash_check = true,
         )
         argv_ride = DistSSHKit._execute_detached_argv(
             :ride, "job.jl", ["parent:2"], String[];
-            output_dir="/tmp/out",
-            log_dir=nothing,
-            sync=nothing,
-            julia=nothing,
-            quiet=true,
-            verbosity=nothing,
-            hosts_file=nothing,
-            enable_log=true,
-            package=nothing,
-            require_all_hosts=true,
-            skip_hash_check=true,
-            spi_check=false,
-            gb_per_worker=1.5,
+            output_dir = "/tmp/out",
+            log_dir = nothing,
+            sync = nothing,
+            julia = nothing,
+            quiet = true,
+            verbosity = nothing,
+            hosts_file = nothing,
+            enable_log = true,
+            package = nothing,
+            require_all_hosts = true,
+            skip_hash_check = true,
+            spi_check = false,
+            gb_per_worker = 1.5,
         )
         @test argv_ride[1] == "ride"
         @test "--no-spi-check" in argv_ride
@@ -409,11 +415,13 @@ using Test
     end
 
     @testset "execute_kwargs_from_parsed" begin
-        go = DistSSHKit.parse_go_args([
-            "--progress", "--julia", "/opt/julia/bin/julia",
-            "--output-dir", "my_runs", "--sync", "child:h1", "job.jl", "8",
-        ])
-        gkw = DistSSHKit.execute_kwargs_from_parsed(go; kind=:go)
+        go = DistSSHKit.parse_go_args(
+            [
+                "--progress", "--julia", "/opt/julia/bin/julia",
+                "--output-dir", "my_runs", "--sync", "child:h1", "job.jl", "8",
+            ]
+        )
+        gkw = DistSSHKit.execute_kwargs_from_parsed(go; kind = :go)
         @test gkw[:verbosity] === :progress
         @test gkw[:julia] == "/opt/julia/bin/julia"
         @test gkw[:output_dir] == "my_runs"
@@ -421,40 +429,46 @@ using Test
         @test gkw[:args] == ["8"]
         @test !haskey(gkw, :hosts_file)
         @test !haskey(gkw, :workers)
-        @test DistSSHKit.host_tokens(go; kind=:go) == ["child:h1"]
-        @test Set(keys(gkw)) == Set([
-            :output_dir, :args, :julia, :quiet, :verbosity, :sync,
-            :gb_per_worker, :probe, :mem_headroom, :parent_gb,
-        ])
+        @test DistSSHKit.host_tokens(go; kind = :go) == ["child:h1"]
+        @test Set(keys(gkw)) == Set(
+            [
+                :output_dir, :args, :julia, :quiet, :verbosity, :sync,
+                :gb_per_worker, :probe, :mem_headroom, :parent_gb,
+            ]
+        )
         go_r = DistSSHKit.parse_go_args(["--repeat", "8", "job.jl"])
-        @test DistSSHKit.execute_kwargs_from_parsed(go_r; kind=:go)[:repeat] == 8
+        @test DistSSHKit.execute_kwargs_from_parsed(go_r; kind = :go)[:repeat] == 8
 
-        ride = DistSSHKit.parse_ride_args([
-            "--no-spi-check", "parent:2", "job.jl",
-        ])
-        rkw = DistSSHKit.execute_kwargs_from_parsed(ride; kind=:ride)
+        ride = DistSSHKit.parse_ride_args(
+            [
+                "--no-spi-check", "parent:2", "job.jl",
+            ]
+        )
+        rkw = DistSSHKit.execute_kwargs_from_parsed(ride; kind = :ride)
         @test rkw[:spi_check] === false
-        @test DistSSHKit.host_tokens(ride; kind=:ride) == ["parent:2"]
+        @test DistSSHKit.host_tokens(ride; kind = :ride) == ["parent:2"]
         @test !haskey(rkw, :sync)
 
         hosts_file = _sample_hosts_file()
-        drive = DistSSHKit.parse_drive_args([
-            "--no-log", "--package", "Foo", "--mem-headroom", "0.5",
-            "--parent-gb", "0.2", "--workers", "4",
-            "--hosts-file", hosts_file, "s.jl",
-        ])
-        dkw = DistSSHKit.execute_kwargs_from_parsed(drive; kind=:drive)
+        drive = DistSSHKit.parse_drive_args(
+            [
+                "--no-log", "--package", "Foo", "--mem-headroom", "0.5",
+                "--parent-gb", "0.2", "--workers", "4",
+                "--hosts-file", hosts_file, "s.jl",
+            ]
+        )
+        dkw = DistSSHKit.execute_kwargs_from_parsed(drive; kind = :drive)
         @test dkw[:enable_log] === false
         @test dkw[:package] == "Foo"
         @test dkw[:mem_headroom] == 0.5
         @test dkw[:parent_gb] == 0.2
         @test dkw[:workers] == 4
         @test !haskey(dkw, :hosts_file)
-        @test DistSSHKit.host_tokens(drive; kind=:drive) == ["child:host-a", "child:host-b:4"]
+        @test DistSSHKit.host_tokens(drive; kind = :drive) == ["child:host-a", "child:host-b:4"]
         bare = DistSSHKit.parse_drive_args(["child:host1", "s.jl"])
-        @test !haskey(DistSSHKit.execute_kwargs_from_parsed(bare; kind=:drive), :workers)
+        @test !haskey(DistSSHKit.execute_kwargs_from_parsed(bare; kind = :drive), :workers)
         errk = try
-            DistSSHKit.execute_kwargs_from_parsed(go; kind=:pipeline)
+            DistSSHKit.execute_kwargs_from_parsed(go; kind = :pipeline)
             nothing
         catch e
             e
@@ -476,7 +490,7 @@ using Test
 
     @testset "detached rejects unknown / yes=false" begin
         err = try
-            DistSSHKit.execute!(:go, "job.jl", ["parent:1"]; detached=true, plan=nothing)
+            DistSSHKit.execute!(:go, "job.jl", ["parent:1"]; detached = true, plan = nothing)
             nothing
         catch e
             e
@@ -485,7 +499,7 @@ using Test
         @test occursin("does not accept keyword :plan", sprint(showerror, err))
 
         err2 = try
-            DistSSHKit.execute!(:go, "job.jl", ["parent:1"]; detached=true, yes=false)
+            DistSSHKit.execute!(:go, "job.jl", ["parent:1"]; detached = true, yes = false)
             nothing
         catch e
             e
@@ -494,7 +508,7 @@ using Test
         @test occursin("yes=true", sprint(showerror, err2))
 
         err3 = try
-            DistSSHKit.execute!(:go, "job.jl", ["parent:1"]; detached=true, log_dir="x")
+            DistSSHKit.execute!(:go, "job.jl", ["parent:1"]; detached = true, log_dir = "x")
             nothing
         catch e
             e
@@ -503,7 +517,7 @@ using Test
         @test occursin(":log_dir", sprint(showerror, err3))
 
         err4 = try
-            DistSSHKit.execute!(:go, "job.jl", ["parent:1"]; detached=true, skip_hash_check=true)
+            DistSSHKit.execute!(:go, "job.jl", ["parent:1"]; detached = true, skip_hash_check = true)
             nothing
         catch e
             e
@@ -512,7 +526,7 @@ using Test
         @test occursin(":skip_hash_check", sprint(showerror, err4))
 
         err5 = try
-            DistSSHKit.execute!(:go, "job.jl", ["parent:1"]; detached=true, workers=4)
+            DistSSHKit.execute!(:go, "job.jl", ["parent:1"]; detached = true, workers = 4)
             nothing
         catch e
             e
@@ -521,7 +535,7 @@ using Test
         @test occursin(":workers", sprint(showerror, err5))
 
         err6 = try
-            DistSSHKit.execute!(:drive, "job.jl", ["parent:1"]; detached=true, spi_check=false)
+            DistSSHKit.execute!(:drive, "job.jl", ["parent:1"]; detached = true, spi_check = false)
             nothing
         catch e
             e
@@ -534,19 +548,21 @@ using Test
         _with_tempdir() do proj
             write(joinpath(proj, "Project.toml"), "name = \"ExecuteGo\"\n")
             script = joinpath(proj, "job.jl")
-            write(script, """
+            write(
+                script, """
                 out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", ".")
                 mkpath(out)
                 write(joinpath(out, "args.txt"), join(ARGS, ","))
-                """)
+                """
+            )
             result = DistSSHKit.execute!(
                 :go,
                 script,
                 ["parent:1"];
-                project=proj,
-                args=["8"],
-                quiet=true,
-                yes=true,
+                project = proj,
+                args = ["8"],
+                quiet = true,
+                yes = true,
             )
             @test result isa DistSSHKit.KitRunResult
             @test result.kind === :go
@@ -561,23 +577,25 @@ using Test
         _with_tempdir() do proj
             write(joinpath(proj, "Project.toml"), "name = \"ExecuteGoDetached\"\n")
             script = joinpath(proj, "job.jl")
-            write(script, """
+            write(
+                script, """
                 out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", ".")
                 mkpath(out)
                 write(joinpath(out, "args.txt"), join(ARGS, ","))
-                """)
+                """
+            )
             mktemp() do _, out_io
                 mktemp() do _, err_io
                     kp = DistSSHKit.execute!(
                         :go,
                         script,
                         ["parent:1"];
-                        detached=true,
-                        project=proj,
-                        args=["8"],
-                        quiet=true,
-                        stdout=out_io,
-                        stderr=err_io,
+                        detached = true,
+                        project = proj,
+                        args = ["8"],
+                        quiet = true,
+                        stdout = out_io,
+                        stderr = err_io,
                     )
                     pid_path = joinpath(kp.output_dir, "kit.pid")
                     if process_running(kp.process)
@@ -626,23 +644,25 @@ using Test
             write(joinpath(proj, "Project.toml"), "name = \"ExecuteGoJobId\"\n")
             script = joinpath(proj, "job.jl")
             ran = joinpath(proj, "RAN")
-            write(script, """
+            write(
+                script, """
                 out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", ".")
                 mkpath(out)
                 write($(repr(ran)), "yes")
-                """)
+                """
+            )
             mktemp() do _, out_io
                 mktemp() do _, err_io
                     kp = DistSSHKit.execute!(
                         :go,
                         script,
                         ["parent:1"];
-                        detached=true,
-                        project=proj,
-                        verbosity=:progress,
-                        job_id="q-1",
-                        stdout=out_io,
-                        stderr=err_io,
+                        detached = true,
+                        project = proj,
+                        verbosity = :progress,
+                        job_id = "q-1",
+                        stdout = out_io,
+                        stderr = err_io,
                     )
                     result = wait(kp)
                     @test result.ok
@@ -664,17 +684,19 @@ using Test
         _with_tempdir() do proj
             write(joinpath(proj, "Project.toml"), "name = \"ExecuteGoStdio\"\n")
             script = joinpath(proj, "job.jl")
-            write(script, """
+            write(
+                script, """
                 out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", ".")
                 mkpath(out)
-                """)
+                """
+            )
             kp = DistSSHKit.execute!(
                 :go,
                 script,
                 ["parent:1"];
-                detached=true,
-                project=proj,
-                quiet=true,
+                detached = true,
+                project = proj,
+                quiet = true,
             )
             result = wait(kp)
             @test result.ok
@@ -709,25 +731,27 @@ using Test
         _with_tempdir() do proj
             write(joinpath(proj, "Project.toml"), "name = \"WaitHung\"\n")
             script = joinpath(proj, "job.jl")
-            write(script, """
+            write(
+                script, """
                 out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", ".")
                 mkpath(out)
                 sleep(60)
-                """)
+                """
+            )
             kp = DistSSHKit.execute!(
                 :go,
                 script,
                 ["parent:1"];
-                detached=true,
-                project=proj,
-                quiet=true,
+                detached = true,
+                project = proj,
+                quiet = true,
             )
-            hung = wait(kp; timeout=0.4)
+            hung = wait(kp; timeout = 0.4)
             @test hung.ok === false
             @test hung.failed_step == "hung"
             @test hung.exit_code == 124
             @test process_running(kp.process)
-            killed = DistSSHKit.terminate!(kp; grace=2)
+            killed = DistSSHKit.terminate!(kp; grace = 2)
             @test !process_running(kp.process)
             @test killed isa DistSSHKit.KitRunResult
         end
@@ -737,25 +761,27 @@ using Test
         _with_tempdir() do proj
             write(joinpath(proj, "Project.toml"), "name = \"TerminateGo\"\n")
             script = joinpath(proj, "job.jl")
-            write(script, """
+            write(
+                script, """
                 out = get(ENV, "DISTRIBUTED_OUTPUT_DIR", ".")
                 mkpath(out)
                 sleep(60)
-                """)
+                """
+            )
             mktemp() do _, out_io
                 mktemp() do _, err_io
                     kp = DistSSHKit.execute!(
                         :go,
                         script,
                         ["parent:1"];
-                        detached=true,
-                        project=proj,
-                        verbosity=:progress,
-                        job_id="t-1",
-                        stdout=out_io,
-                        stderr=err_io,
+                        detached = true,
+                        project = proj,
+                        verbosity = :progress,
+                        job_id = "t-1",
+                        stdout = out_io,
+                        stderr = err_io,
                     )
-                    result = DistSSHKit.terminate!(kp; grace=2)
+                    result = DistSSHKit.terminate!(kp; grace = 2)
                     @test result isa DistSSHKit.KitRunResult
                     @test !process_running(kp.process)
                     @test result.kind === :go
@@ -768,23 +794,25 @@ using Test
         _with_tempdir() do proj
             write(joinpath(proj, "Project.toml"), "name = \"TerminateRide\"\n")
             script = joinpath(proj, "job.jl")
-            write(script, """
+            write(
+                script, """
                 sleep(60)
-                """)
+                """
+            )
             mktemp() do _, out_io
                 mktemp() do _, err_io
                     kp = DistSSHKit.execute!(
                         :ride,
                         script,
                         ["parent:1"];
-                        detached=true,
-                        project=proj,
-                        verbosity=:progress,
-                        job_id="t-ride",
-                        stdout=out_io,
-                        stderr=err_io,
+                        detached = true,
+                        project = proj,
+                        verbosity = :progress,
+                        job_id = "t-ride",
+                        stdout = out_io,
+                        stderr = err_io,
                     )
-                    result = DistSSHKit.terminate!(kp; grace=2)
+                    result = DistSSHKit.terminate!(kp; grace = 2)
                     @test result isa DistSSHKit.KitRunResult
                     @test !process_running(kp.process)
                     @test result.kind === :ride
@@ -795,7 +823,7 @@ using Test
 
     @testset "terminate_run! missing pid" begin
         _with_tempdir() do d
-            r = DistSSHKit.terminate_run!(d; grace=0)
+            r = DistSSHKit.terminate_run!(d; grace = 0)
             @test r isa DistSSHKit.KitRunResult
             @test r.ok === false
             @test r.failed_step == "terminated"

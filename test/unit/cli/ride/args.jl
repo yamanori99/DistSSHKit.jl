@@ -22,10 +22,10 @@ using Test
     let path = tempname()
         @test parse_ride_args(["--help"]).help
         open(path, "w") do io
-            DistSSHKit.show_ride_usage(; io=io)
+            DistSSHKit.show_ride_usage(; io = io)
         end
         help = read(path, String)
-        rm(path; force=true)
+        rm(path; force = true)
         @test occursin("DistSSHKit ride", help)
         @test occursin("plan", help)
         @test occursin("child:", help)
