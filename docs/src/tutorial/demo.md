@@ -22,8 +22,8 @@ julia --project=. -m DistSSHKit demo install ride
     `ride` is experimental ([User Guide · ride](@ref Manual-ride)).
 
 That copies each family into `./distsshkit_demos/` (not `./demos/`, so a
-job's own `demos/` is untouched). Package sources stay `demos/with_kit/`
-and `demos/without_kit/`.
+job's own `demos/` is untouched). Package sources stay `demos/with_kit/`,
+`demos/without_kit/`, and `demos/ride/`.
 
 ```text
 distsshkit_demos/
@@ -42,9 +42,11 @@ distsshkit_demos/
     for_loop.jl      # indexed for (ride candidate)
 ```
 
-Each topic has a `*_file.jl` and `*_echo.jl` pair: same job, but `*_file.jl`
-writes under the slot's `DISTRIBUTED_OUTPUT_DIR` (so `go` / `drive` can collect
-results from remotes). Use `*_echo.jl` when you only want terminal output.
+`with_kit/` and `without_kit/` pair `*_file.jl` with `*_echo.jl`: same
+job, but `*_file.jl` writes under the slot's `DISTRIBUTED_OUTPUT_DIR`
+(so `go` / `drive` can collect from remotes). Use `*_echo.jl` for
+terminal output only. `ride/` has `map_file` / `map_echo`; `filter_echo`
+and `for_loop` are echo-only.
 
 Keep `Project.toml` at the project root — do not add
 `distsshkit_demos/Project.toml`.
