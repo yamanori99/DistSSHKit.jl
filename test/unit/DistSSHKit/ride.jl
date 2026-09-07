@@ -268,6 +268,24 @@ using Test
             end
             write(ARGS[1], join(string.(dest), ","))
             """
+        const_nospi_src = """
+            const _RideConstData_nospi = [1, 2, 3, 4]
+            dest = @view _RideConstData_nospi[2:4]
+            const _RideConstSrc_nospi = @view _RideConstData_nospi[1:3]
+            for i in eachindex(dest)
+                dest[i] = Main._RideConstSrc_nospi[i]
+            end
+            write(ARGS[1], join(string.(dest), ","))
+            """
+        const_spi_src = """
+            const _RideConstData_spi = [1, 2, 3, 4]
+            dest = @view _RideConstData_spi[2:4]
+            const _RideConstSrc_spi = @view _RideConstData_spi[1:3]
+            for i in eachindex(dest)
+                dest[i] = Main._RideConstSrc_spi[i]
+            end
+            write(ARGS[1], join(string.(dest), ","))
+            """
         for (body, spi, stem) in (
             (overlap_src, false, "overlap_nospi"),
             (overlap_src, true, "overlap_spi"),
@@ -275,6 +293,8 @@ using Test
             (holder_src, true, "holder_spi"),
             (nested_src, false, "nested_nospi"),
             (nested_src, true, "nested_spi"),
+            (const_nospi_src, false, "const_nospi"),
+            (const_spi_src, true, "const_spi"),
         )
             opath = joinpath(tmp, stem * ".jl")
             oout = joinpath(tmp, stem * ".txt")

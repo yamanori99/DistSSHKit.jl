@@ -11,6 +11,7 @@ GitHub Releases may copy these sections (`Release notes:` on
   Unsafe fills do not collect the iterator first. Overlapping views
   (`dest` / `src` sharing storage, including arrays nested in a captured
   struct) stay interleaved. An incomplete capture walk also stays sequential.
+  A `const` global RHS array that aliases `dest` stays sequential too.
   Accumulating / stencil loops stay sequential; `plan` still marks those
   out of scope.
 - `drive` / `ride` no longer `pkill -f julia.*--worker` on SSH hosts. Leftover

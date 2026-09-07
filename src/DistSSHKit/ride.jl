@@ -117,19 +117,38 @@ function _ride_collect_arrays!(out::Vector{AbstractArray}, x, depth::Int)::Bool
     return cut
 end
 
-"""True when `f` may share storage with `dest`, or capture walk was truncated."""
+function _ride_array_aliases_dest(dest, a)::Bool
+    a === dest && return false
+    try
+        return Base.mightalias(dest, a)
+    catch
+        return true
+    end
+end
+
+function _ride_mightalias_main(dest)::Bool
+    for n in names(Main)
+        isdefined(Main, n) || continue
+        v = try
+            getfield(Main, n)
+        catch
+            continue
+        end
+        v isa AbstractArray || continue
+        _ride_array_aliases_dest(dest, v) && return true
+    end
+    return false
+end
+
+"""True when `f` or a `Main` array may share storage with `dest`, or the walk was truncated."""
 function _ride_mightalias_dest(dest, f)::Bool
     dest isa AbstractArray || return false
     acc = AbstractArray[]
     _ride_collect_arrays!(acc, f, 0) && return true
     for a in acc
-        try
-            Base.mightalias(dest, a) && return true
-        catch
-            return true
-        end
+        _ride_array_aliases_dest(dest, a) && return true
     end
-    return false
+    return _ride_mightalias_main(dest)
 end
 
 function _can_distribute_fill(dest, f, xs)::Bool
