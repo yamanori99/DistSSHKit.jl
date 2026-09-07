@@ -82,7 +82,9 @@ function _ride_named_fn(name::Symbol, value)
 end
 
 function _can_distribute(f, xs)::Bool
-    isempty(xs) && return false
+    Base.IteratorSize(typeof(xs)) isa Union{Base.HasLength, Base.HasShape} ||
+        return false
+    length(xs) == 0 && return false
     nprocs() < 2 && return false
     T = eltype(xs)
     fn = try
@@ -153,8 +155,9 @@ function _ride_index_fill!(dest, f, xs)
         end
         return dest
     end
-    vals = _ride_map(f, xs)
-    for (i, v) in zip(xs, vals)
+    it = collect(xs)
+    vals = _ride_map(f, it)
+    for (i, v) in zip(it, vals)
         dest[i] = v
     end
     return dest
@@ -218,7 +221,7 @@ function _ride_rewrite(ex)
                 GlobalRef(DistSSHKit, :_ride_index_fill!),
                 fill.dest,
                 Expr(:->, fill.var, _ride_rewrite(fill.rhs)),
-                Expr(:call, :collect, _ride_rewrite(fill.iter)),
+                _ride_rewrite(fill.iter),
             )
         end
     end

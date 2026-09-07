@@ -55,6 +55,8 @@ using Test
         fr = DistSSHKit._ride_rewrite(fill)
         @test fr.head === :call
         @test fr.args[1] === GlobalRef(DistSSHKit, :_ride_index_fill!)
+        @test !(fr.args[4] isa Expr && fr.args[4].head === :call &&
+                fr.args[4].args[1] === :collect)
 
         acc = Meta.parse("for x in xs; s += x; end")
         @test DistSSHKit._ride_rewrite(acc).head === :for
@@ -205,6 +207,29 @@ using Test
         ro = DistSSHKit.ride!(obs_path, "parent:1"; spi_check=false)
         @test ro.ok
         @test read(oout, String) == "1,0,0;0,0,0"
+
+        gen_path = joinpath(tmp, "geniter.jl")
+        gout = joinpath(tmp, "geniter.txt")
+        write(gen_path, """
+            dest = zeros(Int, 3)
+            n = Ref(0)
+            struct _RideUnknownIter
+                n::Ref{Int}
+            end
+            Base.IteratorSize(::Type{_RideUnknownIter}) = Base.SizeUnknown()
+            function Base.iterate(it::_RideUnknownIter, st=1)
+                st > 3 && return nothing
+                it.n[] += 1
+                return (st, st + 1)
+            end
+            for i in _RideUnknownIter(n)
+                dest[i] = n[]
+            end
+            write($(repr(gout)), join(string.(dest), ","))
+            """)
+        rg = DistSSHKit.ride!(gen_path, "parent:1"; spi_check=false)
+        @test rg.ok
+        @test read(gout, String) == "1,2,3"
 
         child = DistSSHKit.ride!(map_path, "child:host1")
         @test !child.ok

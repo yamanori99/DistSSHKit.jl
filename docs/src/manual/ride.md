@@ -18,9 +18,9 @@ vocabulary (`pmap`, `@everywhere`, …) is an error; that script belongs on
 
 `for i in iter; dest[i] = expr; end` is rewritten when `expr` does not
 read `dest`, does not `return` / `break` / `continue`, and every index in
-`expr` is `i` (so `dest[i] = alias[i - 1]` stays sequential). The iterator
-is `collect`ed. If runtime effect analysis rejects distribution, each
-`dest[i] = expr` still runs in order (not a full RHS pass then writes).
+`expr` is `i` (so `dest[i] = alias[i - 1]` stays sequential). If runtime
+effect analysis rejects distribution, the iterator is not collected first;
+each `dest[i] = expr` runs in order. Distributed fills collect then map.
 Broadcast, `reduce`, and accumulating `for` stay out of scope.
 
 `--spi-check` is **on** by default: each rewritten `map` / `filter` (including
