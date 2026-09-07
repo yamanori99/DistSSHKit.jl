@@ -95,6 +95,46 @@ function _can_distribute(f, xs)::Bool
     return _ride_effects_free(fn, T) && _ride_index_free(xs)
 end
 
+function _ride_collect_arrays!(out::Vector{AbstractArray}, x, depth::Int)
+    depth > 4 && return
+    if x isa AbstractArray
+        push!(out, x)
+        return
+    end
+    if x isa Core.Box
+        isdefined(x, :contents) &&
+            _ride_collect_arrays!(out, getfield(x, :contents), depth + 1)
+        return
+    end
+    x isa Function || return
+    n = nfields(x)
+    for i in 1:n
+        isdefined(x, i) || continue
+        _ride_collect_arrays!(out, getfield(x, i), depth + 1)
+    end
+    return
+end
+
+"""True when `f` captures an array that may share storage with `dest`."""
+function _ride_mightalias_dest(dest, f)::Bool
+    dest isa AbstractArray || return false
+    acc = AbstractArray[]
+    _ride_collect_arrays!(acc, f, 0)
+    for a in acc
+        try
+            Base.mightalias(dest, a) && return true
+        catch
+            return true
+        end
+    end
+    return false
+end
+
+function _can_distribute_fill(dest, f, xs)::Bool
+    _can_distribute(f, xs) || return false
+    return !_ride_mightalias_dest(dest, _ride_callable(f))
+end
+
 function _ride_compare(a, b)::Bool
     try
         return a == b
@@ -149,7 +189,7 @@ end
 """Indexed fill after [`ride!`](@ref) rewrite. Sequential writes if unsafe."""
 function _ride_index_fill!(dest, f, xs)
     fn = _ride_callable(f)
-    if _RIDE_DEPTH[] >= 1 || !_can_distribute(f, xs)
+    if _RIDE_DEPTH[] >= 1 || !_can_distribute_fill(dest, f, xs)
         for i in xs
             dest[i] = fn(i)
         end

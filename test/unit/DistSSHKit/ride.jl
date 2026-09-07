@@ -231,6 +231,24 @@ using Test
         @test rg.ok
         @test read(gout, String) == "1,2,3"
 
+        overlap_src = """
+            data = [1, 2, 3, 4]
+            dest = @view data[2:4]
+            src = @view data[1:3]
+            for i in eachindex(dest)
+                dest[i] = src[i]
+            end
+            write(ARGS[1], join(string.(dest), ","))
+            """
+        for (spi, stem) in ((false, "overlap_nospi"), (true, "overlap_spi"))
+            opath = joinpath(tmp, stem * ".jl")
+            oout = joinpath(tmp, stem * ".txt")
+            write(opath, replace(overlap_src, "ARGS[1]" => repr(oout)))
+            rr = DistSSHKit.ride!(opath, "parent:1"; spi_check=spi)
+            @test rr.ok
+            @test read(oout, String) == "1,1,1"
+        end
+
         child = DistSSHKit.ride!(map_path, "child:host1")
         @test !child.ok
         @test occursin("KitSession", something(child.error, ""))

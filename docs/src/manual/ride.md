@@ -19,8 +19,11 @@ vocabulary (`pmap`, `@everywhere`, …) is an error; that script belongs on
 `for i in iter; dest[i] = expr; end` is rewritten when `expr` does not
 read `dest`, does not `return` / `break` / `continue`, and every index in
 `expr` is `i` (so `dest[i] = alias[i - 1]` stays sequential). If runtime
-effect analysis rejects distribution, the iterator is not collected first;
+effect analysis rejects distribution, or `dest` may alias an array the
+RHS captures (overlapping `@view`s), the iterator is not collected first;
 each `dest[i] = expr` runs in order. Distributed fills collect then map.
+SPI compares mapped RHS values before `dest` writes, so it does not catch
+that aliasing; the runtime overlap check does.
 Broadcast, `reduce`, and accumulating `for` stay out of scope.
 
 `--spi-check` is **on** by default: each rewritten `map` / `filter` (including
