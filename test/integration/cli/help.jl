@@ -59,4 +59,25 @@ using Test
     @test occursin("--julia", out)
     @test occursin("--output-dir", out)
     @test !occursin("--gb-per-worker", out)
+
+    # Counted tokens must get past ride_main into ride! (not UndefVarError in Main).
+    mktempdir() do d
+        script = joinpath(d, "id.jl")
+        write(script, "map(identity, 1:2)\n")
+        od = joinpath(d, "out")
+        mkdir(od)
+        proc, out = _run_subprocess(
+            setenv(
+                _kit_cli_cmd(
+                    [
+                        "ride", "-y", "-q", "--no-spi-check",
+                        "--output-dir", od, "parent:1", script,
+                    ]
+                ),
+                merge(env, Dict("DISTRIBUTED_PROJECT_ROOT" => _kit_root())),
+            ),
+        )
+        @test !occursin("UndefVarError", out)
+        @test proc.exitcode == 0
+    end
 end

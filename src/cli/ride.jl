@@ -39,7 +39,6 @@ function ride_main()::Cint
         return 0
     end
     tok = parsed.hosts
-    require_counted_placement_tokens(tok; surface = :cli)
     remote_raw = strip(get(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT", ""))
     result = ride!(
         parsed.script_path,
