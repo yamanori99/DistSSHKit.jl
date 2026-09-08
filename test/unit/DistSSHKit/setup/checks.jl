@@ -23,7 +23,16 @@ using Pkg
     @test occursin("/opt/homebrew/bin/juliaup", sh)
     @test occursin(" add ", sh) || occursin("add '", sh)
     @test occursin("update", sh) && occursin("default", sh)
-    @test occursin("printf 'juliaup add %s failed", sh)
+    @test occursin("echo already", sh)
+    @test occursin("\$1==\"*\"", sh)
+    st = """
+    Default  Channel  Version
+    -------------------------------------------------------------------------
+         *  1.13     1.13.2+0.aarch64.apple.darwin14
+          1.12     1.12.7+0.aarch64.apple.darwin14
+    """
+    @test DistSSHKit._juliaup_default_channel_from_status(st) == "1.13"
+    @test DistSSHKit._juliaup_default_channel_from_status("no default here") === nothing
     # Channel must not enter remote diagnostics unquoted (shell metacharacters).
     sh_meta = DistSSHKit._juliaup_align_remote_sh("1.12\$(id)")
     @test occursin("'1.12\$(id)'", sh_meta)
@@ -78,12 +87,50 @@ using Pkg
         withenv("DISTSSHKIT_TEST_LOCAL_JULIAUP" => ju) do
             @test DistSSHKit.find_local_juliaup() == ju
             ch = "$(VERSION.major).$(VERSION.minor)"
-            captured, ver = _capture_stdio() do _, _
+            captured, r = _capture_stdio() do _, _
                 DistSSHKit._juliaup_align_local!(ch)
             end
-            @test DistSSHKit.julia_version_mismatch_kind(VERSION, ver) != :minor
+            @test r.changed
+            @test DistSSHKit.julia_version_mismatch_kind(VERSION, r.ver) != :minor
             @test !occursin("Checking for new Julia versions", captured)
             @test !occursin("already installed", captured)
+        end
+    end
+
+    mktempdir() do d
+        ju = joinpath(d, "juliaup")
+        jl = joinpath(d, "julia")
+        ch = "$(VERSION.major).$(VERSION.minor)"
+        write(
+            ju,
+            """
+            #!/bin/sh
+            case "\$1" in
+              status) echo '       *  $ch     julia version'; exit 0 ;;
+              add|update|default) echo "unexpected \$1" >&2; exit 1 ;;
+              *) exit 1 ;;
+            esac
+            """,
+        )
+        write(
+            jl,
+            """
+            #!/bin/sh
+            echo "julia version $(VERSION.major).$(VERSION.minor).$(VERSION.patch)"
+            """,
+        )
+        chmod(ju, 0o755)
+        chmod(jl, 0o755)
+        withenv("DISTSSHKIT_TEST_LOCAL_JULIAUP" => ju) do
+            r = DistSSHKit._juliaup_align_local!(ch)
+            @test !r.changed
+            @test DistSSHKit.julia_version_mismatch_kind(VERSION, r.ver) != :minor
+            out, _ = with_kit_verbosity(:progress) do
+                _capture_stdio() do _, _
+                    DistSSHKit.juliaup_align_remotes(["parent"]; confirm = false)
+                end
+            end
+            @test occursin("parent: already on $ch", out)
         end
     end
 
@@ -120,16 +167,16 @@ using Pkg
         end
     end
 
-    r = withenv("PATH" => "/nonexistent-distsshkit-path") do
-        redirect_stdout(devnull) do
-            redirect_stderr(devnull) do
-                DistSSHKit._report_local_host_tools!()
+    @test begin
+        t = withenv("PATH" => "/nonexistent-distsshkit-path") do
+            redirect_stdout(devnull) do
+                redirect_stderr(devnull) do
+                    DistSSHKit._report_local_host_tools!()
+                end
             end
         end
+        !t.ssh && !t.rsync && !t.git
     end
-    @test !r.ssh
-    @test !r.rsync
-    @test !r.git
 
     expr = DistSSHKit._project_deps_probe_expr()
     @test occursin("locate_package", expr)

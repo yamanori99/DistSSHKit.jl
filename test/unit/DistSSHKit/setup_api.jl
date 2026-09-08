@@ -130,6 +130,21 @@ using Test
                     @test up.ok && !up.cancelled
                     @test length(up.hosts) == 1 && up.hosts[1].ok
                 end
+                withenv(
+                    ver_env...,
+                    "DISTSSHKIT_TEST_JULIAUP_ALREADY" => "1",
+                ) do
+                    empty!(DistSSHKit._DETECT_JULIA_PATH_CACHE)
+                    out, up = with_kit_verbosity(:progress) do
+                        _capture_stdio() do _, _
+                            r = DistSSHKit.setup!(session, :juliaup)
+                            return r
+                        end
+                    end
+                    @test up.ok && !up.cancelled
+                    ch = "$(VERSION.major).$(VERSION.minor)"
+                    @test occursin("$host: already on $ch", out)
+                end
                 withenv("DISTSSHKIT_TEST_NO_JULIAUP" => "1") do
                     empty!(DistSSHKit._DETECT_JULIA_PATH_CACHE)
                     bad = DistSSHKit.setup!(session, :juliaup)
