@@ -54,20 +54,22 @@ using Test
                 @test r.hosts == [("host1", 2)]
                 @test DistSSHKit.host_tokens(r; kind = :drive) == ["parent:3", "child:host1:2"]
             end
-            let r = parse_drive_args(["parent:4", "child:host1", "child:host2:2", "s.jl"])
-                @test DistSSHKit.host_tokens(r; kind = :drive) == ["parent:4", "child:host1", "child:host2:2"]
+            let r = parse_drive_args(["parent:4", "child:host1:1", "child:host2:2", "s.jl"])
+                @test DistSSHKit.host_tokens(r; kind = :drive) == ["parent:4", "child:host1:1", "child:host2:2"]
             end
             @test_throws ArgumentError parse_drive_args(["--local", "4", "myscript.jl", "a", "b"])
             @test_throws ArgumentError parse_drive_args(["--local:5", "s.jl"])
             @test_throws ArgumentError parse_drive_args(["-l:2", "s.jl"])
             @test_throws ArgumentError parse_drive_args(["-l", "3", "s.jl"])
-            let r = parse_drive_args(["--workers:7", "child:host1", "s.jl"])
+            let r = parse_drive_args(["--workers:7", "child:host1:1", "s.jl"])
                 @test r.default_workers == 7
-                @test r.hosts == [("host1", nothing)]
-                @test DistSSHKit.host_tokens(r; kind = :drive) == ["child:host1"]
+                @test r.parent_workers == 7
+                @test r.hosts == [("host1", 1)]
+                @test DistSSHKit.host_tokens(r; kind = :drive) == ["parent:7", "child:host1:1"]
             end
-            let r = parse_drive_args(["-w:4", "child:host1", "s.jl"])
+            let r = parse_drive_args(["-w:4", "child:host1:1", "s.jl"])
                 @test r.default_workers == 4
+                @test r.parent_workers == 4
             end
             let r = parse_drive_args(["child:local:3", "child:host1:2", "s.jl"])
                 @test r.parent_workers == 0
@@ -86,9 +88,10 @@ using Test
             @test_throws ArgumentError parse_drive_args(["--julia"])
             @test_throws ArgumentError parse_drive_args(["--require-git", "--require-git", "s.jl"])
 
-            let r = parse_drive_args(["--workers", "3", "child:host1", "child:host2:5", "s.jl"])
+            let r = parse_drive_args(["--workers", "3", "child:host1:1", "child:host2:5", "s.jl"])
                 @test r.default_workers == 3
-                @test r.hosts == [("host1", nothing), ("host2", 5)]
+                @test r.parent_workers == 3
+                @test r.hosts == [("host1", 1), ("host2", 5)]
             end
             let r = parse_drive_args(["--julia", "/usr/bin/julia", "s.jl"])
                 @test r.julia == "/usr/bin/julia"
@@ -114,21 +117,24 @@ using Test
             end
             hosts_file = _sample_hosts_file()
             let r = parse_drive_args(["--hosts-file", hosts_file, "child:host-cli:2", "s.jl"])
-                @test r.hosts == [("host-cli", 2), ("host-a", nothing), ("host-b", 4)]
+                @test r.hosts == [("host-cli", 2), ("host-a", 1), ("host-b", 4)]
             end
-            let r = parse_drive_args(["--hosts", "child:h-csv:2,child:h-csv-b", "s.jl"])
-                @test r.hosts == [("h-csv", 2), ("h-csv-b", nothing)]
+            @test_throws ArgumentError parse_drive_args(
+                ["--hosts", "child:h-csv:2,child:h-csv-b", "s.jl"],
+            )
+            let r = parse_drive_args(["--hosts", "child:h-csv:2,child:h-csv-b:1", "s.jl"])
+                @test r.hosts == [("h-csv", 2), ("h-csv-b", 1)]
             end
             let r = parse_drive_args(["-q", "-y", "s.jl"])
                 @test r.cli_session.quiet == true
                 @test r.cli_session.yes == true
                 DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession())
             end
-            withenv("DISTSSHKIT_HOSTS" => "child:env-host:3, child:env-b") do
+            withenv("DISTSSHKIT_HOSTS" => "child:env-host:3, child:env-b:1") do
                 let r = parse_drive_args(["parent:2", "s.jl"])
                     @test r.parent_workers == 2
                     @test ("env-host", 3) in r.hosts
-                    @test ("env-b", nothing) in r.hosts
+                    @test ("env-b", 1) in r.hosts
                 end
             end
             let r = parse_drive_args(String[])
@@ -160,7 +166,7 @@ using Test
             @test r.mem_headroom == 0.5
             @test r.parent_gb == 0.2
         end
-        let r = parse_drive_args(["--sync", "child:host1", "s.jl"])
+        let r = parse_drive_args(["--sync", "child:host1:1", "s.jl"])
             @test r.sync_mode === :sync
             @test r.skip_hash_check == true
         end
@@ -168,11 +174,11 @@ using Test
             @test r.sync_mode === :rsync
             @test r.skip_hash_check == true
         end
-        let r = parse_drive_args(["--require-git", "child:host1", "s.jl"])
+        let r = parse_drive_args(["--require-git", "child:host1:1", "s.jl"])
             @test r.sync_mode === nothing
             @test r.skip_hash_check == false
         end
-        let r = parse_drive_args(["--require-git", "--sync", "child:host1", "s.jl"])
+        let r = parse_drive_args(["--require-git", "--sync", "child:host1:1", "s.jl"])
             @test r.sync_mode === :sync
             @test r.skip_hash_check == false
         end
@@ -181,7 +187,7 @@ using Test
             @test r.sync_mode === nothing
             @test r.skip_hash_check == true
         end
-        let r = parse_drive_args(["--sync", "--skip-git-guard", "child:host1", "s.jl"])
+        let r = parse_drive_args(["--sync", "--skip-git-guard", "child:host1:1", "s.jl"])
             @test r.sync_mode === :sync
             @test r.skip_hash_check == true
         end
@@ -191,7 +197,7 @@ using Test
         @test_throws ArgumentError parse_drive_args(["--require-git", "--skip-git-guard", "s.jl"])
         @test_throws ArgumentError parse_drive_args(["--sync", "--collect-missing", "out", "child:h1"])
         # Duplicate same sync flag is a no-op (only mixed flags throw).
-        let r = parse_drive_args(["--sync", "--sync", "child:host1", "s.jl"])
+        let r = parse_drive_args(["--sync", "--sync", "child:host1:1", "s.jl"])
             @test r.sync_mode === :sync
         end
         @test_throws ArgumentError parse_drive_args(["child:host1", "--collect-missing", "out", "child:h1"])
@@ -219,7 +225,7 @@ using Test
         @test occursin("instantiates missing deps", txt)
         @test occursin("post-run-new", txt)
         @test occursin("off by default", lowercase(txt))
-        @test occursin("parent[:N]", txt)
+        @test occursin("parent:N", txt)
         @test occursin("progress DIR", txt)
         @test !occursin(r"--parent(?!-gb)", txt)
         @test !occursin("--local", txt)

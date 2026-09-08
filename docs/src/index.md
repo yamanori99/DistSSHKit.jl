@@ -22,8 +22,9 @@ from the terminal or from Julia / notebooks.
 Call paths:
 
 - **Julia API** — `setup!` for remotes, `go!` / `drive!` to run, or
-  `pipeline!` for optional sync → `size!` → `drive!` → collect (not `setup!`;
-  rsync there does not instantiate)
+  `pipeline!` for optional sync → `drive!` → collect (not `setup!`;
+  rsync there does not instantiate). Occupancy is CLI `size` / `size!`;
+  paste the printed tokens.
 - **CLI** — `julia --project=. -m DistSSHKit go …` / `ride …` / `drive …` /
   `plan …` (and `setup`, `demo`, …)
 - **`distsshkit` (experimental)** — after `pkg> app add DistSSHKit`, a

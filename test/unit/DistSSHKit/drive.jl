@@ -23,7 +23,7 @@ using Test
             e
         end
         @test err isa ArgumentError
-        @test occursin("KitSession", sprint(showerror, err))
+        @test occursin(":N", sprint(showerror, err))
 
         @test_throws ArgumentError DistSSHKit.parse_worker_tokens(["parent:1", "parent:2"])
 
@@ -32,6 +32,8 @@ using Test
         @test auto.parent_workers == 0
         @test auto.child_workers == Dict("h1" => 3)
         @test DistSSHKit.child_hosts_from_tokens(["parent:2", "child:h1", "child:h2:4"]) == ["h1", "h2"]
+        @test_throws ArgumentError DistSSHKit.require_counted_placement_tokens(["parent"])
+        @test DistSSHKit.require_counted_placement_tokens(["parent:1"]) === nothing
 
         let kw = DistSSHKit.ParsedWorkerTokens(;
                 parent_workers = 2,
@@ -51,11 +53,8 @@ using Test
                 workers = ["parent"],
                 include_parent_for_size = true,
             )
-            plan = DistSSHKit.worker_plan_from_tokens(
-                ["parent"];
-                session = session,
-                gb_per_worker = 2.0,
-            )
+            @test_throws ArgumentError DistSSHKit.worker_plan_from_tokens(["parent"])
+            plan = DistSSHKit.size!(session; gb_per_worker = 2.0)
             local_total, local_nproc = DistSSHKit.get_local_resources()
             @test plan.parent_workers == DistSSHKit.size_worker_count(
                 local_total, local_nproc, 2.0; is_parent = true,
@@ -447,7 +446,7 @@ using Test
 
     @testset "pipeline_config_from_env" begin
         withenv(
-            "DISTSSHKIT_HOSTS" => "child:host-a, child:host-b",
+            "DISTSSHKIT_HOSTS" => "child:host-a:1, child:host-b:1",
             "DISTRIBUTED_REMOTE_PROJECT_ROOT" => "/remote/App",
             "DRIVER" => "demos/job.jl",
             "SYNC_MODE" => "off",
@@ -456,7 +455,7 @@ using Test
             "JULIA_DISTRIBUTED_EXE" => "/opt/julia/bin/julia",
         ) do
             cfg = DistSSHKit.pipeline_config_from_env()
-            @test cfg.tokens == ["child:host-a", "child:host-b"]
+            @test cfg.tokens == ["child:host-a:1", "child:host-b:1"]
             @test cfg.remote == "/remote/App"
             @test cfg.driver == "demos/job.jl"
             @test cfg.sync === false
@@ -480,7 +479,7 @@ using Test
                 "JULIA_DISTRIBUTED_EXE" => "",
             ) do
                 cfg = DistSSHKit.pipeline_config_from_env()
-                @test cfg.tokens == ["child:env-a:2", "child:host-a", "child:host-b:4"]
+                @test cfg.tokens == ["child:env-a:2", "child:host-a:1", "child:host-b:4"]
                 @test cfg.hosts_file === nothing
             end
         end
@@ -489,7 +488,7 @@ using Test
                 s = DistSSHKit.KitSession(workers = ["parent:1"])
                 @test s.tokens == ["parent:1"]
                 empty = DistSSHKit.KitSession(workers = String[])
-                @test empty.tokens == ["child:host-a", "child:host-b:4"]
+                @test empty.tokens == ["child:host-a:1", "child:host-b:4"]
             end
         end
     end

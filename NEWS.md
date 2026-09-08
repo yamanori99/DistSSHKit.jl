@@ -6,6 +6,14 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+- go / drive / ride: a listed `parent` / `child:NAME` needs `:N`. Omitting
+  it is not 1 and not `size!` (0.6.0 had filled that with occupancy). No
+  tokens still means one parent slot. `go --repeat` still treats omit `:N`
+  as an uncapped pool host. Estimate with CLI `size` / `size!`, then paste
+  `parent:8`. Drive `-w N` is parent workers when no `parent` token is
+  listed. Go / ride no longer take `--gb-per-worker` / `--probe` /
+  `--mem-headroom` / `--parent-gb` (those only served omit-`:N` sizing).
+
 ## 0.6.0
 
 Breaking cut after `0.5.4`. DistSSHQueue still pins Kit **0.5.x** until

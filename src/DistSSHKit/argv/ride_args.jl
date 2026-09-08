@@ -10,10 +10,6 @@ function _ride_parsed(;
         spi_check::Bool,
         output_dir,
         julia = nothing,
-        gb_per_worker = nothing,
-        probe = nothing,
-        mem_headroom = DEFAULT_MEM_HEADROOM,
-        parent_gb = DEFAULT_PARENT_GB,
     )
     return (
         help = help,
@@ -25,10 +21,6 @@ function _ride_parsed(;
         spi_check = spi_check,
         output_dir = output_dir,
         julia = julia,
-        gb_per_worker = gb_per_worker,
-        probe = probe,
-        mem_headroom = mem_headroom,
-        parent_gb = parent_gb,
     )
 end
 
@@ -54,16 +46,12 @@ function show_ride_usage(; io::IO = stdout)
     print_help_section("Options"; io = io)
     print_help_lines(
         io,
-        "  parent[:N] / child:NAME[:N]  Distributed workers (default parent:1)",
-        "  omit :N             size! that host (like go / drive)",
+        "  parent:N / child:NAME:N  Distributed workers (default: no tokens → parent:1)",
+        "  omit :N             error (use size, then paste counts)",
         "  --spi-check         compare to sequential map/filter (default on)",
         "  --no-spi-check      skip that compare",
         "  --output-dir PATH   DISTRIBUTED_OUTPUT_DIR for the script",
         "  --julia PATH        remote Julia (ENV or auto)",
-        "  --gb-per-worker N   size! assume N GB (when a host omits :N)",
-        "  --probe PATH        size! warm-up script for peak RSS",
-        "  --mem-headroom N    RAM fraction (default $(DEFAULT_MEM_HEADROOM))",
-        "  --parent-gb N       parent process reserve (default $(DEFAULT_PARENT_GB))",
         "  $(KIT_HOSTS_FLAG_HELP)",
         "  --hosts-file PATH   one token per line",
         "  $(KIT_QUIET_FLAG_HELP)",
@@ -88,10 +76,6 @@ function parse_ride_args(args::AbstractVector{<:AbstractString})
     output_dir = nothing
     julia_exe = nothing
     spi_check = true
-    gb_per_worker = nothing
-    probe = nothing
-    mem_headroom = DEFAULT_MEM_HEADROOM
-    parent_gb = DEFAULT_PARENT_GB
     c = CliCursor(collect(String, rest))
     while !cli_at_end(c)
         arg = cli_current(c)::String
@@ -101,14 +85,6 @@ function parse_ride_args(args::AbstractVector{<:AbstractString})
             output_dir = cli_take_value!(c, arg)
         elseif arg == "--julia"
             julia_exe = cli_take_value!(c, arg)
-        elseif arg == "--gb-per-worker"
-            gb_per_worker = parse(Float64, cli_take_value!(c, arg))
-        elseif arg == "--probe"
-            probe = String(cli_take_value!(c, arg))
-        elseif arg == "--mem-headroom"
-            mem_headroom = parse(Float64, cli_take_value!(c, arg))
-        elseif arg == "--parent-gb"
-            parent_gb = parse(Float64, cli_take_value!(c, arg))
         elseif arg == "--spi-check"
             cli_consume!(c)
             spi_check = true
@@ -135,10 +111,6 @@ function parse_ride_args(args::AbstractVector{<:AbstractString})
                 spi_check = spi_check,
                 output_dir = output_dir,
                 julia = julia_exe,
-                gb_per_worker = gb_per_worker,
-                probe = probe,
-                mem_headroom = mem_headroom,
-                parent_gb = parent_gb,
             )
         elseif endswith(arg, ".jl")
             script_path = arg
@@ -167,6 +139,9 @@ function parse_ride_args(args::AbstractVector{<:AbstractString})
         julia_exe = nothing
     end
     apply_kit_cli_session!(cli_session)
+    if script_path !== nothing
+        require_counted_placement_tokens(hosts; surface = :cli)
+    end
     return _ride_parsed(;
         help = false,
         show_version = cli_session.show_version,
@@ -177,9 +152,5 @@ function parse_ride_args(args::AbstractVector{<:AbstractString})
         spi_check = spi_check,
         output_dir = output_dir,
         julia = julia_exe,
-        gb_per_worker = gb_per_worker,
-        probe = probe,
-        mem_headroom = mem_headroom,
-        parent_gb = parent_gb,
     )
 end

@@ -114,7 +114,7 @@ SSH 先の台数に上限はない。台数を増やすほど SSH 接続や配�
 - **plan** — `.jl` を検査して go / ride / drive を提案する。ディスク読みと parse のみ (bang なし、SSH なし)。任意のスロット見積は `size!` を呼ぶ
 - **pool** / **pool!** — 列挙ホストのコアと RAM (SSH するので bang)。RSS なし。届かないホストは `ok=false` のまま残る
 
-**size** / **size!** は occupancy (RSS の WorkerPlan)。`go` / `drive` はトークンに `:N` が無いときに使う。CLI `size` も同じ計画を出す。ダッシュボードではない。
+**size** / **size!** は occupancy (RSS の WorkerPlan)。CLI `size` が計画を出す。go / drive / ride の列挙トークンは `:N` 必須 (トークンなしは parent 1枠)。ダッシュボードではない。
 
 go 単体も十分有用だが、まず go で単独実行を確認してから、
 drive / Distributed.jl 対応へ進む段階的な開発ができる。
@@ -241,7 +241,7 @@ drive!("path/to/driver.jl", "parent:2", "child:user@host1:4"; remote=remote)
 setup!(session, :sync)  # 2回目以降の更新
 ```
 
-`pipeline!` は任意のまとめ呼びである。sync → `size!` → `drive!` → collect を一度にできる。
+`pipeline!` は任意のまとめ呼びである。sync → `drive!` → collect を一度にできる。
 `setup!` は含まない。`sync=:rsync` はコピーのみ (instantiate しない)。
 リモートは先に用意するか、`drive!(…; sync=:rsync)` を使う。
 詳細: [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/)。

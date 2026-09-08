@@ -18,7 +18,8 @@ end
                quiet=false, verbosity=nothing, yes=true, include_parent_for_size=false)
 
 Build a session for drive APIs. `workers` are CLI-style tokens
-(`parent:2`, `child:user@host:1`). Omitted `:N` is filled by `-w` or [`size!`](@ref).
+(`parent:2`, `child:user@host:1`). go / drive / ride require `:N` on listed
+tokens. `size` / `pool` / `setup` still accept a bare host list.
 
 `session.hosts` keeps remote SSH names only (for sync / collect).
 `session.tokens` keeps the original tokens (including `parent:N`).

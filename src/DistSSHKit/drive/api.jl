@@ -64,7 +64,7 @@ function drive!(
         _ensure_drive_fragments!(session.project)
         resolved = plan
         if resolved === nothing && !isempty(session.tokens)
-            resolved = worker_plan_from_tokens(session.tokens; session = session)
+            resolved = worker_plan_from_tokens(session.tokens)
         end
         parsed = drive_parsed_from_session(
             session,

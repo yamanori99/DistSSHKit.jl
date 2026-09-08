@@ -31,8 +31,8 @@ Both share host tokens (`parent:N`, `child:NAME:N`) and optional `--sync` /
 - **Script:** go is ordinary `.jl` (no Kit APIs). Drive is a driver with
   `init_output_dir!` / `main`.
 - **`child:NAME:N`:** go is N **concurrent full script runs**. Omit `:N`
-  (without `--repeat`) to [`size!`](@ref) that host. Drive is N
-  **Distributed workers**.
+  only with `--repeat` (uncapped). Drive is N **Distributed workers**;
+  omit `:N` is an error. Estimate with [`size`](@ref Manual-size).
 - **Collect:** go is slot-overwrite after remotes. Drive is post-run-new
   after `main()`; optional collect-only flags.
 - **Success:** go requires every listed slot to run (`ok=false` if one
@@ -64,7 +64,7 @@ Same **names** are shared on purpose; a few meanings differ by command:
 - `--output-dir`: **`go`** is batch root (`PATH/{slot}/`). **`drive`** is
   result root (`DISTRIBUTED_OUTPUT_DIR`). Different on purpose.
 - `--hosts`: CSV tokens. `setup` / `size` / `pool` strip `:N` from `parent` /
-  `child:NAME[:N]`. `go` / `drive` keep `child:NAME:N`.
+  `child:NAME[:N]`. `go` / `ride` / `drive` require `:N` on listed tokens.
 - `--hosts-file`: same as `--hosts` for that command.
 - Shared flags: `-q`/`--quiet`, `--progress`, `--verbose`, `-y`/`--yes`,
   `--hosts`, `--hosts-file`, `-v`/`--version` — same on setup / go /
@@ -74,7 +74,7 @@ Same **names** are shared on purpose; a few meanings differ by command:
 
 **Hosts.** Sources, in the order they append after positional tokens:
 
-- CLI tokens on setup / go / drive / size / pool: `parent[:N]`, `child:NAME[:N]`
+- CLI tokens: `setup` / `size` / `pool` may omit `:N`; `go` / `ride` / `drive` need `parent:N` / `child:NAME:N`
 - `--hosts` (CSV)
 - `DISTSSHKIT_HOSTS` (comma-separated)
 - `--hosts-file` (default path from `DISTSSHKIT_HOSTS_FILE`)

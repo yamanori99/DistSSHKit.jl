@@ -49,11 +49,10 @@ Remote project paths use the same resolution as [`drive`](@ref Manual-drive)
 
 Measurement is a **hint**, not a job peak: baseline is package-load RSS; with
 `--probe`, peak is after that script runs. Worker counts use
-`max(baseline, peak)`. Prefer an explicit `child:NAME:N` (CLI / API tokens) or
-`--gb-per-worker` when you know the workload. Prefer [`size!`](@ref).
-It returns a [`WorkerPlan`](@ref) for
-`drive!(session, …; plan=…)`; day-to-day runs usually use tokens instead
-(`drive!("job.jl", "parent:2"; …)`).
+`max(baseline, peak)`. Print a plan, then paste `parent:N` / `child:NAME:N`
+into go / ride / drive. Prefer `--gb-per-worker` when you know the workload.
+[`size!`](@ref) returns a [`WorkerPlan`](@ref) for
+`drive!(session, …; plan=…)`.
 
 `DISTSSHKIT_JOBS` (default 1) parallelizes Julia-path detection only; probe
 workers are still added one host at a time.

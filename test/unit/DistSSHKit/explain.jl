@@ -73,6 +73,10 @@ using Test
         @test occursin("collect!", DistSSHKit.explain_no_hosts(; surface = :api, kind = :collect))
         @test occursin("size!", DistSSHKit.explain_no_hosts(; surface = :api, kind = :size))
         @test occursin("pool!", DistSSHKit.explain_no_hosts(; surface = :api, kind = :pool))
+        @test occursin(
+            ":N",
+            DistSSHKit.explain_bare_placement_tokens(["parent"]; surface = :cli),
+        )
     end
 
     @testset "clone / probe / driver" begin

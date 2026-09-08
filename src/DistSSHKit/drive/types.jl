@@ -133,9 +133,8 @@ end
 """
     parse_worker_tokens(tokens) -> ParsedWorkerTokens
 
-Classify CLI-style tokens. Explicit `:N` is fixed; omitted `:N` is sized later
-or filled by `-w`. `parent` / `parent:N` is the Kit side; SSH children are
-`child:NAME` / `child:NAME:N`.
+Classify CLI-style tokens. `size` / `pool` / `setup` may omit `:N` (host list).
+go / drive / ride placement requires `:N` except `go --repeat` (omit = uncapped).
 """
 function parse_worker_tokens(
         tokens::AbstractVector{<:AbstractString},
@@ -190,6 +189,17 @@ end
 """True when every token has an explicit worker/slot count (`:N`)."""
 function worker_tokens_fully_specified(parsed::ParsedWorkerTokens)::Bool
     return !parsed.parent_autosize && isempty(parsed.child_auto)
+end
+
+"""Throw unless every token has `:N` (go / drive / ride placement)."""
+function require_counted_placement_tokens(
+        tokens::AbstractVector{<:AbstractString};
+        surface::Symbol = :api,
+    )::Nothing
+    isempty(tokens) && return nothing
+    parsed = parse_worker_tokens(tokens)
+    worker_tokens_fully_specified(parsed) && return nothing
+    throw(ArgumentError(explain_bare_placement_tokens(tokens; surface = surface)))
 end
 
 """SSH host names from tokens (parent tokens omitted)."""
@@ -355,8 +365,8 @@ end
 
 Settings for [`pipeline!`](@ref): sync, worker tokens, driver run, and optional collect.
 
-Worker placement uses CLI-style tokens (`parent:2`, `child:user@host:1`). Omitted `:N` is sized with
-sized via [`size!`](@ref). Set `sync=false` to skip sync. Set `collect=false`
+Worker placement uses CLI-style tokens (`parent:2`, `child:user@host:1`).
+Listed tokens need `:N`. Set `sync=false` to skip sync. Set `collect=false`
 to skip rsync-back. Git parity is off by default; pass `skip_hash_check=false`
 (or CLI `--require-git`) to require matching remote commits.
 

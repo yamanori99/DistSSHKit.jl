@@ -326,8 +326,8 @@ end
 Rebuild CLI host tokens for [`execute!`](@ref).
 
 Go tokens are the parser strings. Ride uses the same shape. Drive tuples plus
-`parent_workers` emit `parent:N` then `child:NAME[:N]`; omitted counts stay
-omitted (no invented `:1`). `kind` must be `:go`, `:drive`, or `:ride`.
+`parent_workers` emit `parent:N` then `child:NAME:N`. `kind` must be `:go`,
+`:drive`, or `:ride`.
 """
 function host_tokens(hosts::AbstractVector{<:AbstractString})::Vector{String}
     return String[String(h) for h in hosts]

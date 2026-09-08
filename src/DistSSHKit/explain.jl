@@ -103,7 +103,7 @@ function explain_no_hosts(;
     elseif kind === :size
         head = "KitSession has no hosts for size!"
         hint = if surface === :api
-            "Hint: pass workers=[\"parent:2\", …] or workers=[\"child:user@host\", …] (omit :N → autosize)"
+            "Hint: pass workers=[\"parent\", …] or workers=[\"child:user@host\", …] (`size!` ignores :N)"
         else
             "Hint: pass local and/or SSH hosts (see size --help)"
         end
@@ -122,6 +122,28 @@ function explain_no_hosts(;
         "Hint: pass workers= with child:NAME tokens, or hosts_file="
     else
         "Hint: pass child:NAME tokens, or --hosts-file / DISTSSHKIT_HOSTS_FILE"
+    end
+    return join_explained_message(head, hint)
+end
+
+"""go / drive / ride listed a host without `:N`."""
+function explain_bare_placement_tokens(
+        tokens::AbstractVector{<:AbstractString};
+        surface::Symbol = :cli,
+    )::String
+    surface = _normalize_hint_surface(surface)
+    bare = String[]
+    for raw in tokens
+        p = parse_placement_token(String(raw))
+        p.n === nothing && push!(bare, String(raw))
+    end
+    isempty(bare) && return ""
+    listed = join(bare, ' ')
+    head = "each go / drive / ride token needs :N; bare $(listed) is not allowed"
+    hint = if surface === :api
+        "Hint: write parent:1 / child:NAME:2 (or omit tokens for one parent slot). Autosize is size! / CLI size, then pass the printed tokens. go --repeat still treats omit :N as an uncapped pool host."
+    else
+        "Hint: write parent:1 or child:NAME:2. No tokens = one parent slot. Estimate with `size`, then paste parent:N / child:NAME:N. go --repeat: omit :N is an uncapped cap, not a count."
     end
     return join_explained_message(head, hint)
 end

@@ -23,11 +23,11 @@ function show_go_usage(; io::IO = stdout)
     print_help_section("Slots"; io = io)
     print_help_lines(
         io,
-        "  parent[:N] / child:NAME[:N]  N full-script runs (not drive workers)",
-        "  omit :N             size! that host (like drive); explicit :N wins",
+        "  parent:N / child:NAME:N  N full-script runs (not drive workers)",
+        "  omit :N             error unless --repeat (then uncapped cap)",
         "  parent:0                     skip parent when children are listed",
         "  --repeat N          N independent runs; spread across listed hosts",
-        "                       (omit :N is a per-host cap, not size!)",
+        "                       (omit :N is a per-host cap, not a count)",
         "  $(KIT_HOSTS_FLAG_HELP)",
         "  --hosts-file PATH   one token per line",
     )
@@ -38,10 +38,6 @@ function show_go_usage(; io::IO = stdout)
         "  --sync / --rsync    optional pre-run; --rsync instantiates if needed",
         "  --julia PATH        remote Julia (ENV or auto)",
         "  --output-dir PATH   batch root; slots are PATH/<slot>/",
-        "  --gb-per-worker N   size! assume N GB (when a host omits :N)",
-        "  --probe PATH        size! warm-up script for peak RSS",
-        "  --mem-headroom N    RAM fraction (default $(DEFAULT_MEM_HEADROOM))",
-        "  --parent-gb N       parent process reserve (default $(DEFAULT_PARENT_GB))",
         "  $(KIT_TIME_HELP)",
         "  $(KIT_QUIET_FLAG_HELP)",
         "  $(KIT_PROGRESS_FLAG_HELP)",
@@ -101,10 +97,6 @@ function _go_parsed(;
         output_dir,
         julia,
         repeat,
-        gb_per_worker = nothing,
-        probe = nothing,
-        mem_headroom = DEFAULT_MEM_HEADROOM,
-        parent_gb = DEFAULT_PARENT_GB,
     )
     return (
         help = help,
@@ -117,10 +109,6 @@ function _go_parsed(;
         output_dir = output_dir,
         julia = julia,
         repeat = repeat,
-        gb_per_worker = gb_per_worker,
-        probe = probe,
-        mem_headroom = mem_headroom,
-        parent_gb = parent_gb,
     )
 end
 
@@ -136,10 +124,6 @@ function parse_go_args(args::AbstractVector{<:AbstractString})
     # nothing → go! default (false); :sync / :rsync / false (= skip)
     sync::Union{Nothing, Symbol, Bool} = nothing
     repeat_n::Union{Nothing, Int} = nothing
-    gb_per_worker = nothing
-    probe = nothing
-    mem_headroom = DEFAULT_MEM_HEADROOM
-    parent_gb = DEFAULT_PARENT_GB
     c = CliCursor(collect(String, rest))
     while !cli_at_end(c)
         arg = cli_current(c)::String
@@ -150,14 +134,6 @@ function parse_go_args(args::AbstractVector{<:AbstractString})
         elseif arg == "--repeat"
             repeat_n === nothing || throw(ArgumentError("go: --repeat given more than once"))
             repeat_n = _go_parse_repeat(cli_take_value!(c, arg))
-        elseif arg == "--gb-per-worker"
-            gb_per_worker = parse(Float64, cli_take_value!(c, arg))
-        elseif arg == "--probe"
-            probe = String(cli_take_value!(c, arg))
-        elseif arg == "--mem-headroom"
-            mem_headroom = parse(Float64, cli_take_value!(c, arg))
-        elseif arg == "--parent-gb"
-            parent_gb = parse(Float64, cli_take_value!(c, arg))
         elseif arg == "--sync"
             cli_consume!(c)
             sync = _go_set_sync!(sync, :sync)
@@ -188,10 +164,6 @@ function parse_go_args(args::AbstractVector{<:AbstractString})
                 output_dir = output_dir,
                 julia = julia_exe,
                 repeat = repeat_n,
-                gb_per_worker = gb_per_worker,
-                probe = probe,
-                mem_headroom = mem_headroom,
-                parent_gb = parent_gb,
             )
         elseif endswith(arg, ".jl")
             script_path = arg
@@ -220,6 +192,9 @@ function parse_go_args(args::AbstractVector{<:AbstractString})
         julia_exe = nothing
     end
     apply_kit_cli_session!(cli_session)
+    if script_path !== nothing && repeat_n === nothing
+        require_counted_placement_tokens(hosts; surface = :cli)
+    end
     return _go_parsed(;
         help = false,
         show_version = cli_session.show_version,
@@ -231,9 +206,5 @@ function parse_go_args(args::AbstractVector{<:AbstractString})
         output_dir = output_dir,
         julia = julia_exe,
         repeat = repeat_n,
-        gb_per_worker = gb_per_worker,
-        probe = probe,
-        mem_headroom = mem_headroom,
-        parent_gb = parent_gb,
     )
 end

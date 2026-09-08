@@ -58,5 +58,5 @@ using Test
     @test occursin("Usage", out)
     @test occursin("--julia", out)
     @test occursin("--output-dir", out)
-    @test occursin("--gb-per-worker", out)
+    @test !occursin("--gb-per-worker", out)
 end

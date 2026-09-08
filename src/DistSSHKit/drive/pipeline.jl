@@ -157,11 +157,11 @@ end
     pipeline!(driver, workers::AbstractVector; kwargs...) -> PipelineResult
     pipeline!(config::PipelineConfig) -> PipelineResult
 
-Run the usual remote workflow: optional sync, [`size!`](@ref), driver, optional collect.
+Run the usual remote workflow: optional sync, driver, optional collect.
 Does not call [`setup!`](@ref); prepare remotes first.
 
-Worker tokens match the CLI (`parent:2`, `child:user@host:1`). Omitted `:N` is sized with
-[`size!`](@ref). Keyword `args` are passed to the driver; `remote` is the remote
+Worker tokens match the CLI (`parent:2`, `child:user@host:1`). Listed tokens
+need `:N`. Keyword `args` are passed to the driver; `remote` is the remote
 project path. Default `yes=true` skips confirm prompts.
 
 ```julia
@@ -222,14 +222,7 @@ function _pipeline_run!(config::PipelineConfig, session::KitSession, driver::Str
     plan = if isempty(session.tokens)
         WorkerPlan()
     else
-        worker_plan_from_tokens(
-            session.tokens;
-            session = session,
-            gb_per_worker = config.gb_per_worker,
-            probe = config.size_probe,
-            mem_headroom = config.mem_headroom,
-            parent_gb = config.parent_gb,
-        )
+        worker_plan_from_tokens(session.tokens)
     end
 
     do_collect = resolve_pipeline_collect(config, session)

@@ -40,7 +40,7 @@ if !isdefined(Main, :_test_root)
     function _sample_hosts_file()::String
         path, io = mktemp()
         try
-            write(io, "# lab hosts (comments and host:N lines)\nchild:host-a\nchild:host-b:4\n")
+            write(io, "# lab hosts (comments and host:N lines)\nchild:host-a:1\nchild:host-b:4\n")
             close(io)
         catch
             close(io)

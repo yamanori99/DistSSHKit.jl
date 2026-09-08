@@ -47,7 +47,7 @@ When the script is a **driver** (`init_output_dir!` / `main`, `pmap`,
 
 ```text
 (optional setup! / sync! / instantiate!)
-  →  size!  →  drive!  →  (optional collect!)
+  →  (optional size!)  →  drive!  →  (optional collect!)
 ```
 
 First-time remotes usually look like:
@@ -88,8 +88,7 @@ A few points that carry over from the CLI:
 - Pass `julia=` on `go!` / `drive!` / `pipeline!` to pin the remote Julia
   binary (same as CLI `--julia`)
 
-Or call [`pipeline!`](@ref) for optional sync → [`size!`](@ref) →
-[`drive!`](@ref)
+Or call [`pipeline!`](@ref) for optional sync → [`drive!`](@ref)
 → collect in one shot (`pipeline!` does not call [`setup!`](@ref)).
 [`pipeline_config_from_env`](@ref) reads `DISTSSHKIT_HOSTS` /
 `DISTSSHKIT_HOSTS_FILE`, `SYNC_MODE` (`rsync` / `sync` / `off`; unset → off for
@@ -138,8 +137,9 @@ probe. Unreachable hosts stay listed with `ok=false`.
 
 ### Occupancy — `size!`
 
-RSS-based [`WorkerPlan`](@ref) used by `go` / `drive` when `:N` is omitted,
-and by CLI `size`. Occupancy math behind autosize, not a cluster dashboard.
+RSS-based [`WorkerPlan`](@ref) used by CLI `size` and [`size!`](@ref).
+go / drive / ride do not infer `:N` from occupancy. Paste printed `parent:N`
+/ `child:NAME:N` tokens.
 
 ```@docs
 plan
@@ -166,7 +166,7 @@ report_pipeline_errors
 
 [`host_tokens`](@ref) rebuilds `execute!` token strings from
 `parse_go_args` / `parse_drive_args`. Go keeps parser strings; drive emits
-`parent:N` from `parent_workers` and `child:NAME[:N]` for SSH.
+`parent:N` from `parent_workers` and `child:NAME:N` for SSH.
 [`is_parent_host_name`](@ref) is the `parent` token (not a hostname).
 
 ```@docs
@@ -314,8 +314,8 @@ Without `job_id`, only the child pid is signaled.
   way for `:ride`. Hosts stay in
   [`host_tokens`](@ref); `:workers` is drive `--workers` when set.
   `:log_dir` / `:mem_headroom` / `:parent_gb` / `:workers` are drive-only
-  except ride also takes `:mem_headroom` / `:parent_gb` / `:spi_check` /
-  `:gb_per_worker` / `:probe`; `:plan` is never accepted.
+  except ride also takes `:spi_check`; go / ride do not take size flags;
+  `:plan` is never accepted.
 - `job_id` (`execute!` keyword, or `ENV["DISTSSHKIT_JOB_ID"]` for in-process
   `go!` / `drive!`): `job=<id>` on every `progress:` line. Drive workers get a
   comment-only `--eval=#distsshkit-job:<id>`; go slots `-L` a no-op file of

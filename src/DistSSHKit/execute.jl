@@ -24,8 +24,6 @@ const _EXECUTE_DETACHED_KW = Set{Symbol}(
         :job_id,
         :sync_script,
         :spi_check,
-        :gb_per_worker,
-        :probe,
     )
 )
 const _EXECUTE_DETACHED_DRIVE_ONLY = (
@@ -76,14 +74,15 @@ function execute_detached_accepts(kw::Symbol; kind::Symbol)::Bool
     _require_execute_kind!(kind)
     kw in _EXECUTE_DETACHED_NAMED && return true
     kw in _EXECUTE_DETACHED_KW || return false
-    kind === :go && return !(kw in _EXECUTE_DETACHED_DRIVE_ONLY) && kw !== :spi_check
+    kind === :go && return !(kw in _EXECUTE_DETACHED_DRIVE_ONLY) &&
+        !(kw in (:spi_check, :mem_headroom, :parent_gb))
     kind === :ride && return !(
         kw in (
             :repeat, :sync_script, :package, :log_dir, :enable_log, :skip_hash_check,
-            :workers, :require_all_hosts,
+            :workers, :require_all_hosts, :mem_headroom, :parent_gb,
         )
     )
-    return !(kw in (:repeat, :spi_check, :gb_per_worker, :probe))
+    return !(kw in (:repeat, :spi_check))
 end
 
 """
@@ -111,18 +110,10 @@ function execute_kwargs_from_parsed(parsed; kind::Symbol)::Dict{Symbol, Any}
     if kind === :go
         kw[:sync] = parsed.sync
         parsed.repeat === nothing || (kw[:repeat] = parsed.repeat)
-        kw[:gb_per_worker] = parsed.gb_per_worker
-        kw[:probe] = parsed.probe
-        kw[:mem_headroom] = parsed.mem_headroom
-        kw[:parent_gb] = parsed.parent_gb
         return kw
     end
     if kind === :ride
         kw[:spi_check] = parsed.spi_check
-        kw[:gb_per_worker] = parsed.gb_per_worker
-        kw[:probe] = parsed.probe
-        kw[:mem_headroom] = parsed.mem_headroom
-        kw[:parent_gb] = parsed.parent_gb
         return kw
     end
     kw[:sync] = parsed.sync_mode
@@ -267,8 +258,8 @@ and [`drive!`](@ref) already share (`ride!` ignores `sync`). With `detached=fals
 `output_dir`, `args`, `project`, `sync`, `julia`, `quiet`, `verbosity`, `yes`,
 `remote`, `hosts_file`, `job_id`, and drive-only `log_dir`, `enable_log`,
 `package`, `require_all_hosts`, `skip_hash_check`, `mem_headroom`, `parent_gb`,
-`workers`, `sync_script`. Go-only `repeat`. Ride: `spi_check`, `gb_per_worker`,
-`probe`, `mem_headroom`, `parent_gb`. `yes` must be `true` (the
+`workers`, `sync_script`. Go-only `repeat`. Ride: `spi_check`. Neither go nor
+ride takes `size!` flags. `yes` must be `true` (the
 default): an unattended child cannot answer a prompt. `remote` that starts
 with `~` is stored in `DISTRIBUTED_REMOTE_PROJECT_ROOT` as a layout path
 (not `expanduser` on the kit parent). Child stdio defaults to
@@ -380,6 +371,13 @@ function _execute_detached!(
                 "execute!(:go, ...; detached=true) does not accept keyword :spi_check",
             )
         )
+        for k in (:mem_headroom, :parent_gb)
+            haskey(kwargs, k) && throw(
+                ArgumentError(
+                    "execute!(:go, ...; detached=true) does not accept keyword $(repr(k))",
+                )
+            )
+        end
     elseif kind === :ride
         haskey(kwargs, :repeat) && throw(
             ArgumentError(
@@ -388,7 +386,7 @@ function _execute_detached!(
         )
         for k in (
                 :sync_script, :package, :log_dir, :enable_log, :skip_hash_check,
-                :workers, :require_all_hosts,
+                :workers, :require_all_hosts, :mem_headroom, :parent_gb,
             )
             haskey(kwargs, k) && throw(
                 ArgumentError(
@@ -407,13 +405,11 @@ function _execute_detached!(
                 "execute!(:drive, ...; detached=true) does not accept keyword :repeat",
             )
         )
-        for k in (:spi_check, :gb_per_worker, :probe)
-            haskey(kwargs, k) && throw(
-                ArgumentError(
-                    "execute!(:drive, ...; detached=true) does not accept keyword $(repr(k))",
-                )
+        haskey(kwargs, :spi_check) && throw(
+            ArgumentError(
+                "execute!(:drive, ...; detached=true) does not accept keyword :spi_check",
             )
-        end
+        )
     end
     yes = get(kwargs, :yes, true)
     yes === true || throw(ArgumentError("execute!(...; detached=true) requires yes=true"))
@@ -443,8 +439,6 @@ function _execute_detached!(
     repeat = get(kwargs, :repeat, nothing)
     sync_script = get(kwargs, :sync_script, false)
     spi_check = get(kwargs, :spi_check, true)
-    gb_per_worker = get(kwargs, :gb_per_worker, nothing)
-    probe = get(kwargs, :probe, nothing)
     sync_script isa Bool || throw(
         ArgumentError(
             "sync_script must be a Bool, got $(repr(sync_script))",
@@ -508,8 +502,6 @@ function _execute_detached!(
         repeat = repeat,
         sync_script = sync_script,
         spi_check = spi_check,
-        gb_per_worker = gb_per_worker,
-        probe = probe,
     )
     extra = Dict{String, String}("DISTRIBUTED_PROJECT_ROOT" => proj)
     if remote !== nothing && !isempty(strip(String(remote)))
@@ -1244,8 +1236,6 @@ function _execute_detached_argv(
         repeat = nothing,
         sync_script::Bool = false,
         spi_check::Bool = true,
-        gb_per_worker = nothing,
-        probe = nothing,
     )::Vector{String}
     argv = String[String(kind)]
     push!(argv, "-y")
@@ -1307,31 +1297,7 @@ function _execute_detached_argv(
         sync_script && push!(argv, "--sync-script")
     elseif kind === :ride
         spi_check || push!(argv, "--no-spi-check")
-        if mem_headroom !== nothing
-            push!(argv, "--mem-headroom", string(Float64(mem_headroom)))
-        end
-        if parent_gb !== nothing
-            push!(argv, "--parent-gb", string(Float64(parent_gb)))
-        end
-        if gb_per_worker !== nothing
-            push!(argv, "--gb-per-worker", string(Float64(gb_per_worker)))
-        end
-        if probe !== nothing && !isempty(strip(String(probe)))
-            push!(argv, "--probe", String(probe))
-        end
     else
-        if mem_headroom !== nothing
-            push!(argv, "--mem-headroom", string(Float64(mem_headroom)))
-        end
-        if parent_gb !== nothing
-            push!(argv, "--parent-gb", string(Float64(parent_gb)))
-        end
-        if gb_per_worker !== nothing
-            push!(argv, "--gb-per-worker", string(Float64(gb_per_worker)))
-        end
-        if probe !== nothing && !isempty(strip(String(probe)))
-            push!(argv, "--probe", String(probe))
-        end
         if repeat !== nothing
             push!(argv, "--repeat", string(Int(repeat)))
         end
