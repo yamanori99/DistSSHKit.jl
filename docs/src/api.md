@@ -139,7 +139,8 @@ probe. Unreachable hosts stay listed with `ok=false`.
 
 RSS-based [`WorkerPlan`](@ref) used by CLI `size` and [`size!`](@ref).
 go / drive / ride do not infer `:N` from occupancy. Paste printed `parent:N`
-/ `child:NAME:N` tokens.
+/ `child:NAME:N` tokens. `go --repeat` may still list bare pool hosts
+(omit `:N` = uncapped).
 
 ```@docs
 plan

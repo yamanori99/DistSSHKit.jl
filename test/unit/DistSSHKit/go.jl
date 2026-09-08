@@ -11,11 +11,14 @@ using Dates
             @test s[1].kind === :parent
             @test s[1].label == "parent"
         end
-        let s = DistSSHKit._go_plan_slots(["parent"])
+        # `--repeat` pool helper: omit `:N` stays uncapped. go! / parse_go_args
+        # reject the same token via `require_counted_placement_tokens`.
+        let s = DistSSHKit._go_plan_slots(["parent"]; total = 1)
             @test length(s) == 1
             @test s[1].kind === :parent
             @test s[1].label == "parent"
         end
+        @test_throws ArgumentError DistSSHKit.require_counted_placement_tokens(["parent"])
         let s = DistSSHKit._go_plan_slots(["child:local:2"])
             @test length(s) == 2
             @test s[1].kind === :child && s[1].label == "local-1"

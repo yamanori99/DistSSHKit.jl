@@ -131,7 +131,8 @@ Three ways to run a script:
 
 **size** / **size!** is occupancy (RSS `WorkerPlan`).
 CLI `size` prints a plan. go / drive / ride require `:N` on listed tokens
-(no tokens → one parent slot). It is not a dashboard.
+(no tokens → one parent slot). `go --repeat` still allows listed hosts
+without `:N` (uncapped pool). It is not a dashboard.
 
 `go` alone is plenty useful. A common path is to first check a standalone run
 with `go`, then move to `drive` / Distributed.jl when you need it.

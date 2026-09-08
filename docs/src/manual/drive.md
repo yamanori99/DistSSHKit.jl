@@ -31,8 +31,8 @@ One-shot onto an empty/missing path: `drive --rsync` (instantiates if needed).
   definitions only)
 - `--require-git`: opt-in git parity: dirty-tree warn + remote commit must
   match local
-- `--require-all-hosts`: fail unless every explicit `parent[:N]` /
-  `child:NAME[:N]` joined, stayed, and collect succeeded (**default**)
+- `--require-all-hosts`: fail unless every explicit `parent:N` /
+  `child:NAME:N` joined, stayed, and collect succeeded (**default**)
 - `--best-effort`: allow a partial run (missing join or collect error does
   not fail)
 - `--skip-git-guard`: compat no-op (parity already off)

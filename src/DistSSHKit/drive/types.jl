@@ -385,8 +385,6 @@ mutable struct PipelineConfig
     driver::String
     args::Vector{String}
     sync::Union{Symbol, Bool, Nothing}
-    gb_per_worker::Union{Nothing, Float64}
-    size_probe::Union{Nothing, String}
     mem_headroom::Float64
     parent_gb::Float64
     skip_hash_check::Union{Nothing, Bool}
@@ -410,8 +408,6 @@ function PipelineConfig(;
         driver::AbstractString,
         args::AbstractVector{<:AbstractString} = String[],
         sync::Union{Symbol, Bool, Nothing} = nothing,
-        gb_per_worker::Union{Nothing, Real} = nothing,
-        size_probe::Union{Nothing, AbstractString} = nothing,
         mem_headroom::Real = DEFAULT_MEM_HEADROOM,
         parent_gb::Real = DEFAULT_PARENT_GB,
         skip_hash_check::Union{Nothing, Bool} = nothing,
@@ -427,9 +423,6 @@ function PipelineConfig(;
     rr !== nothing && isempty(rr) && (rr = nothing)
     hf = hosts_file === nothing ? nothing : String(strip(String(hosts_file)))
     hf !== nothing && isempty(hf) && (hf = nothing)
-    gbp = gb_per_worker === nothing ? nothing : Float64(gb_per_worker)
-    probe = size_probe === nothing ? nothing : String(size_probe)
-    probe !== nothing && isempty(strip(probe)) && (probe = nothing)
     od = output_dir === nothing ? nothing : String(output_dir)
     ld = log_dir === nothing ? nothing : String(log_dir)
     pkg = package === nothing ? nothing : String(package)
@@ -450,8 +443,6 @@ function PipelineConfig(;
         String(driver),
         Base.collect(String, args),
         sync,
-        gbp,
-        probe,
         Float64(mem_headroom),
         Float64(parent_gb),
         skip_hash_check,

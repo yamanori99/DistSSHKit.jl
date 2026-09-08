@@ -191,12 +191,10 @@ using Test
         end
     end
 
-    @testset "PipelineConfig size_probe / DISTSSHKIT_SIZE_PROBE" begin
+    @testset "PipelineConfig rejects DISTSSHKIT_SIZE_PROBE" begin
         _with_tempdir() do tmp
             driver = joinpath(tmp, "job.jl")
             write(driver, "")
-            cfg = DistSSHKit.PipelineConfig(driver = driver, size_probe = "warmup.jl")
-            @test cfg.size_probe == "warmup.jl"
             withenv(
                 "DRIVER" => driver,
                 "DISTSSHKIT_SIZE_PROBE" => "from_env.jl",
@@ -205,8 +203,14 @@ using Test
                 "SYNC_MODE" => "off",
                 "GB_PER_WORKER" => nothing,
             ) do
-                env_cfg = DistSSHKit.pipeline_config_from_env()
-                @test env_cfg.size_probe == "from_env.jl"
+                err = try
+                    DistSSHKit.pipeline_config_from_env()
+                    nothing
+                catch e
+                    e
+                end
+                @test err isa ArgumentError
+                @test occursin("DISTSSHKIT_SIZE_PROBE", sprint(showerror, err))
             end
         end
     end

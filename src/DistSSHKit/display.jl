@@ -146,7 +146,7 @@ end
 
 # One in-process Kit job at a time (`go!` / `drive!` / `ride!` / `size!` / …).
 # `.kit.lock` is per `output_dir` and pid; it does not serialize two runs in
-# this process. Nested calls on the same task (`pipeline!` → `size!`) are ok.
+# this process. Nested calls on the same task (`pipeline!` → `drive!`) are ok.
 const _KIT_INPROC_GATE = ReentrantLock()
 const _KIT_INPROC_OWNER = Ref{Union{Nothing, Task}}(nothing)
 const _KIT_INPROC_KIND = Ref{Union{Nothing, Symbol}}(nothing)

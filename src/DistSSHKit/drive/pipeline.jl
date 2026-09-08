@@ -1,4 +1,4 @@
-# pipeline! — sync → size! → drive → collect.
+# pipeline! — sync → drive → collect.
 
 function _parse_env_sync_mode(raw::AbstractString)::Union{Symbol, Bool, Nothing}
     s = lowercase(strip(String(raw)))
@@ -9,10 +9,17 @@ function _parse_env_sync_mode(raw::AbstractString)::Union{Symbol, Bool, Nothing}
     throw(ArgumentError("invalid SYNC_MODE=$(repr(raw)); use rsync, sync, or off"))
 end
 
-function _optional_env_float(name::AbstractString)::Union{Nothing, Float64}
-    raw = strip(get(ENV, String(name), ""))
-    isempty(raw) && return nothing
-    return parse(Float64, raw)
+function _reject_obsolete_pipeline_size_env()
+    for name in ("GB_PER_WORKER", "DISTSSHKIT_SIZE_PROBE")
+        raw = strip(get(ENV, name, ""))
+        isempty(raw) && continue
+        throw(
+            ArgumentError(
+                "$name is no longer used by pipeline!; occupancy is CLI size / size!, then paste parent:N / child:NAME:N",
+            ),
+        )
+    end
+    return nothing
 end
 
 function _pipeline_config_driver_path(driver::Union{Nothing, AbstractString})::String
@@ -32,13 +39,11 @@ Build [`PipelineConfig`](@ref) from environment variables.
 
 | Variable | Role |
 |----------|------|
-| `DISTSSHKIT_HOSTS` | Comma-separated placement tokens (`parent[:N]` / `child:NAME[:N]`) |
+| `DISTSSHKIT_HOSTS` | Comma-separated placement tokens (`parent:N` / `child:NAME:N`) |
 | `DISTSSHKIT_HOSTS_FILE` | Hosts file (appended after `DISTSSHKIT_HOSTS`, same order as CLI) |
 | `DISTRIBUTED_REMOTE_PROJECT_ROOT` | Remote repo root |
 | `DISTRIBUTED_PROJECT_ROOT` | Local project root |
 | `DRIVER` | Driver script path |
-| `GB_PER_WORKER` | Skip RSS probe when set |
-| `DISTSSHKIT_SIZE_PROBE` | Optional warm-up script for peak RSS (see size `--probe`) |
 | `SYNC_MODE` | `rsync`, `sync`, or `off` |
 | `JULIA_DISTRIBUTED_EXE` | Remote Julia path (same as CLI `--julia`; `auto` / unset → detect) |
 | `DISTSSHKIT_YES` / `DISTSSHKIT_QUIET` / `DISTSSHKIT_PROGRESS` / `DISTSSHKIT_VERBOSE` | Same as CLI `-y` / `-q` / `--progress` / `--verbose` |
@@ -46,6 +51,7 @@ Build [`PipelineConfig`](@ref) from environment variables.
 function pipeline_config_from_env(;
         driver::Union{Nothing, AbstractString} = nothing,
     )::PipelineConfig
+    _reject_obsolete_pipeline_size_env()
     driver_path = _pipeline_config_driver_path(driver)
     remote_raw = strip(get(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT", ""))
     sync_raw = strip(get(ENV, "SYNC_MODE", ""))
@@ -62,10 +68,6 @@ function pipeline_config_from_env(;
         quiet = env_v === :quiet,
         verbosity = env_v,
         driver = String(driver_path),
-        gb_per_worker = _optional_env_float("GB_PER_WORKER"),
-        size_probe = let p = strip(get(ENV, "DISTSSHKIT_SIZE_PROBE", ""))
-            isempty(p) ? nothing : String(p)
-        end,
         sync = _parse_env_sync_mode(sync_raw),
         julia = let j = strip(get(ENV, "JULIA_DISTRIBUTED_EXE", ""))
             isempty(j) || lowercase(j) == "auto" ? nothing : String(j)

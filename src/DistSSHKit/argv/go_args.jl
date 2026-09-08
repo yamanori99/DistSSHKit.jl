@@ -24,10 +24,10 @@ function show_go_usage(; io::IO = stdout)
     print_help_lines(
         io,
         "  parent:N / child:NAME:N  N full-script runs (not drive workers)",
-        "  omit :N             error unless --repeat (then uncapped cap)",
+        "  omit :N             error unless --repeat (then host is uncapped)",
         "  parent:0                     skip parent when children are listed",
         "  --repeat N          N independent runs; spread across listed hosts",
-        "                       (omit :N is a per-host cap, not a count)",
+        "                       (:N is a per-host cap; omit :N leaves it uncapped)",
         "  $(KIT_HOSTS_FLAG_HELP)",
         "  --hosts-file PATH   one token per line",
     )

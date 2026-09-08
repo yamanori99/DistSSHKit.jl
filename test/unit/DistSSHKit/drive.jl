@@ -454,12 +454,28 @@ using Test
             "DISTSSHKIT_HOSTS_FILE" => "",
             "JULIA_DISTRIBUTED_EXE" => "/opt/julia/bin/julia",
         ) do
+            err = try
+                DistSSHKit.pipeline_config_from_env()
+                nothing
+            catch e
+                e
+            end
+            @test err isa ArgumentError
+            @test occursin("GB_PER_WORKER", sprint(showerror, err))
+        end
+        withenv(
+            "DISTSSHKIT_HOSTS" => "child:host-a:1, child:host-b:1",
+            "DISTRIBUTED_REMOTE_PROJECT_ROOT" => "/remote/App",
+            "DRIVER" => "demos/job.jl",
+            "SYNC_MODE" => "off",
+            "DISTSSHKIT_HOSTS_FILE" => "",
+            "JULIA_DISTRIBUTED_EXE" => "/opt/julia/bin/julia",
+        ) do
             cfg = DistSSHKit.pipeline_config_from_env()
             @test cfg.tokens == ["child:host-a:1", "child:host-b:1"]
             @test cfg.remote == "/remote/App"
             @test cfg.driver == "demos/job.jl"
             @test cfg.sync === false
-            @test cfg.gb_per_worker == 2.0
             @test cfg.julia == "/opt/julia/bin/julia"
         end
         withenv(
