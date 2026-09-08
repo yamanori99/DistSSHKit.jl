@@ -135,10 +135,17 @@ using Test
                     "DISTSSHKIT_TEST_JULIAUP_ALREADY" => "1",
                 ) do
                     empty!(DistSSHKit._DETECT_JULIA_PATH_CACHE)
+                    # `quiet=true` would re-pin `:quiet` in `apply_session_env!`
+                    # and swallow the `:progress` already-on line.
+                    progress_session = DistSSHKit.KitSession(
+                        project = proj,
+                        workers = ["child:$host"],
+                        remote = "~/App.jl",
+                        yes = true,
+                    )
                     out, up = with_kit_verbosity(:progress) do
                         _capture_stdio() do _, _
-                            r = DistSSHKit.setup!(session, :juliaup)
-                            return r
+                            DistSSHKit.setup!(progress_session, :juliaup)
                         end
                     end
                     @test up.ok && !up.cancelled
