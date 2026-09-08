@@ -6,6 +6,12 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+## 0.7.0
+
+Breaking cut after `0.6.0`.
+
+### Breaking
+
 - go / drive / ride: a listed `parent` / `child:NAME` needs `:N`. Omitting
   it is not 1 and not `size!` (0.6.0 had filled that with occupancy). No
   tokens still means one parent slot. `go --repeat` still treats omit `:N`
@@ -15,6 +21,9 @@ GitHub Releases may copy these sections (`Release notes:` on
   `--mem-headroom` / `--parent-gb` (those only served omit-`:N` sizing).
   `pipeline!` no longer reads `GB_PER_WORKER` / `DISTSSHKIT_SIZE_PROBE`
   (those env vars now error).
+
+### Setup
+
 - `setup --juliaup`: consent stays visible on a live TTY; targets already on
   the kit channel skip align and print `already on 1.13` under `--progress`
   (#355).
