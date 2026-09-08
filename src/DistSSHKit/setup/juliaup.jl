@@ -176,7 +176,7 @@ function _juliaup_align_local!(
     ju === nothing && error(
         "juliaup not found (tried: $(join(candidates, ", ")))",
     )
-    add, _, add_err = _juliaup_run_captured(ju, ["add", ch])
+    add, add_out, add_err = _juliaup_run_captured(ju, ["add", ch])
     if add.exitcode != 0
         st = sprint() do io
             try
@@ -185,7 +185,7 @@ function _juliaup_align_local!(
             end
         end
         occursin(ch, st) || error(
-            _juliaup_captured_fail_msg(["add", ch], add, "", add_err),
+            _juliaup_captured_fail_msg(["add", ch], add, add_out, add_err),
         )
     end
     for args in (["update", ch], ["default", ch])

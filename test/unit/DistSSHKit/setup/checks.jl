@@ -56,10 +56,12 @@ using Pkg
         write(
             ju, """
             #!/bin/sh
-            echo "Checking for new Julia versions" >&2
-            echo "'1.13' is already installed."
             case "\$1" in
-              add|update|default) exit 0 ;;
+              add|update|default)
+                echo "Checking for new Julia versions" >&2
+                echo "'1.13' is already installed."
+                exit 0
+                ;;
               status) echo "1.12"; exit 0 ;;
               *) exit 1 ;;
             esac
@@ -77,19 +79,44 @@ using Pkg
             @test DistSSHKit.find_local_juliaup() == ju
             ch = "$(VERSION.major).$(VERSION.minor)"
             captured, ver = _capture_stdio() do _, _
-                mktemp() do _, err_io
-                    v = redirect_stderr(err_io) do
-                        DistSSHKit._juliaup_align_local!(ch)
-                    end
-                    flush(err_io)
-                    seekstart(err_io)
-                    @test !occursin("Checking for new Julia versions", read(err_io, String))
-                    v
-                end
+                DistSSHKit._juliaup_align_local!(ch)
             end
             @test DistSSHKit.julia_version_mismatch_kind(VERSION, ver) != :minor
             @test !occursin("Checking for new Julia versions", captured)
             @test !occursin("already installed", captured)
+        end
+    end
+
+    mktempdir() do d
+        ju = joinpath(d, "juliaup")
+        jl = joinpath(d, "julia")
+        write(
+            ju, """
+            #!/bin/sh
+            case "\$1" in
+              add) echo "network failed"; exit 1 ;;
+              status) echo "empty"; exit 0 ;;
+              *) exit 1 ;;
+            esac
+            """
+        )
+        write(
+            jl, """
+            #!/bin/sh
+            echo "julia version $(VERSION.major).$(VERSION.minor).$(VERSION.patch)"
+            """
+        )
+        chmod(ju, 0o755)
+        chmod(jl, 0o755)
+        withenv("DISTSSHKIT_TEST_LOCAL_JULIAUP" => ju) do
+            err = try
+                DistSSHKit._juliaup_align_local!("$(VERSION.major).$(VERSION.minor)")
+                nothing
+            catch e
+                sprint(showerror, e)
+            end
+            @test err !== nothing
+            @test occursin("network failed", err)
         end
     end
 

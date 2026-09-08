@@ -1166,6 +1166,8 @@ function with_kit_progress_suspended(f)
         if KIT_PROGRESS_SUSPEND[] == 0
             cur = KIT_PROGRESS[]
             if cur isa KitProgressState && _progress_is_current(cur)
+                cur.drawn = 0
+                cur.cursor_hidden = false
                 _progress_draw!(cur)
                 _progress_start_spinner!(cur)
             end

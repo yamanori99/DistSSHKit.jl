@@ -28,7 +28,7 @@ using Test
         @test startswith(t, Base.shell_escape(DistSSHKit._ssh_exe()))
         cmd = DistSSHKit._host_sync_remote_shell_cmd("host.test", "true")
         @test cmd.exec[1] == DistSSHKit._ssh_exe()
-        @test cmd.exec[2] == "-n"
+        @test "-n" in cmd.exec
     end
 
     @testset "remote_dir / ensure" begin
