@@ -66,7 +66,7 @@ using Test
         write(script, "map(identity, 1:2)\n")
         od = joinpath(d, "out")
         mkdir(od)
-        proc, out = _run_subprocess(
+        ride_proc, ride_out = _run_subprocess(
             setenv(
                 _kit_cli_cmd(
                     [
@@ -77,7 +77,7 @@ using Test
                 merge(env, Dict("DISTRIBUTED_PROJECT_ROOT" => _kit_root())),
             ),
         )
-        @test !occursin("UndefVarError", out)
-        @test proc.exitcode == 0
+        @test !occursin("UndefVarError", ride_out)
+        @test ride_proc.exitcode == 0
     end
 end
