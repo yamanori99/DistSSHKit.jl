@@ -1137,6 +1137,42 @@ function _progress_start_spinner!(state::KitProgressState)
     return nothing
 end
 
+# Nested `kit_confirm` / consent: stop the `\r` bar so the prompt stays visible.
+const KIT_PROGRESS_SUSPEND = Ref(0)
+
+"""
+Pause the live `\r` bar while `f()` prints to the TTY and reads stdin.
+
+The spinner redraws the current line. After consent text moves the cursor,
+that wipes `kit_confirm` and looks like a hung job (`readline` still waits).
+"""
+function with_kit_progress_suspended(f)
+    raw = KIT_PROGRESS[]
+    KIT_PROGRESS_SUSPEND[] += 1
+    first = KIT_PROGRESS_SUSPEND[] == 1
+    try
+        if first && raw isa KitProgressState
+            _progress_stop_spinner!(raw)
+            if _progress_can_draw()
+                io = _progress_io()
+                println(io)
+                print(io, "\e[?25h")
+                flush(io)
+            end
+        end
+        return f()
+    finally
+        KIT_PROGRESS_SUSPEND[] -= 1
+        if KIT_PROGRESS_SUSPEND[] == 0
+            cur = KIT_PROGRESS[]
+            if cur isa KitProgressState && _progress_is_current(cur)
+                _progress_draw!(cur)
+                _progress_start_spinner!(cur)
+            end
+        end
+    end
+end
+
 function _progress_print_bar!(io::IO, done::Int, total::Int, tick::Int)
     width = PROGRESS_BAR_WIDTH
     filled = _progress_filled(done, total; width = width)

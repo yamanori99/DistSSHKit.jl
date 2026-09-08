@@ -718,6 +718,17 @@ using Test
             end
         end
 
+        @testset "with_kit_progress_suspended is reentrant" begin
+            DistSSHKit.KIT_PROGRESS_SUSPEND[] = 0
+            n = DistSSHKit.with_kit_progress_suspended() do
+                DistSSHKit.with_kit_progress_suspended() do
+                    DistSSHKit.KIT_PROGRESS_SUSPEND[]
+                end
+            end
+            @test n == 2
+            @test DistSSHKit.KIT_PROGRESS_SUSPEND[] == 0
+        end
+
         @testset "kit_spin! skips animation off verbose TTY" begin
             with_kit_verbosity(:quiet) do
                 @test DistSSHKit._spinner_can_draw() == false

@@ -56,6 +56,8 @@ using Pkg
         write(
             ju, """
             #!/bin/sh
+            echo "Checking for new Julia versions" >&2
+            echo "'1.13' is already installed."
             case "\$1" in
               add|update|default) exit 0 ;;
               status) echo "1.12"; exit 0 ;;
@@ -73,8 +75,21 @@ using Pkg
         chmod(jl, 0o755)
         withenv("DISTSSHKIT_TEST_LOCAL_JULIAUP" => ju) do
             @test DistSSHKit.find_local_juliaup() == ju
-            ver = DistSSHKit._juliaup_align_local!("$(VERSION.major).$(VERSION.minor)")
+            ch = "$(VERSION.major).$(VERSION.minor)"
+            captured, ver = _capture_stdio() do _, _
+                mktemp() do _, err_io
+                    v = redirect_stderr(err_io) do
+                        DistSSHKit._juliaup_align_local!(ch)
+                    end
+                    flush(err_io)
+                    seekstart(err_io)
+                    @test !occursin("Checking for new Julia versions", read(err_io, String))
+                    v
+                end
+            end
             @test DistSSHKit.julia_version_mismatch_kind(VERSION, ver) != :minor
+            @test !occursin("Checking for new Julia versions", captured)
+            @test !occursin("already installed", captured)
         end
     end
 

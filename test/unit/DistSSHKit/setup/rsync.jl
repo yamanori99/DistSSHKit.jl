@@ -26,6 +26,9 @@ using Test
         Sys.which("ssh") === nothing && return
         t = DistSSHKit._host_sync_rsync_transport()
         @test startswith(t, Base.shell_escape(DistSSHKit._ssh_exe()))
+        cmd = DistSSHKit._host_sync_remote_shell_cmd("host.test", "true")
+        @test cmd.exec[1] == DistSSHKit._ssh_exe()
+        @test cmd.exec[2] == "-n"
     end
 
     @testset "remote_dir / ensure" begin

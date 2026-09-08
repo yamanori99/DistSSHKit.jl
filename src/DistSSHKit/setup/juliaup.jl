@@ -142,6 +142,30 @@ function _local_julia_beside_juliaup(juliaup_path::AbstractString)::String
     return joinpath(dirname(String(juliaup_path)), "julia")
 end
 
+"""Run local `juliaup` with stdout/stderr captured (live setup bar must not see it)."""
+function _juliaup_run_captured(
+        ju::AbstractString,
+        args::AbstractVector{<:AbstractString},
+    )
+    out = IOBuffer()
+    err = IOBuffer()
+    cmd = Cmd(String[String(ju), String.(args)...])
+    proc = run(pipeline(ignorestatus(cmd); stdout = out, stderr = err); wait = true)
+    return proc, String(take!(out)), String(take!(err))
+end
+
+function _juliaup_captured_fail_msg(
+        args::AbstractVector{<:AbstractString},
+        proc,
+        stdout_s::AbstractString,
+        stderr_s::AbstractString,
+    )::String
+    msg = strip(String(stderr_s))
+    isempty(msg) && (msg = strip(String(stdout_s)))
+    isempty(msg) && (msg = "juliaup $(join(args, " ")) exit $(proc.exitcode)")
+    return first(split(msg, '\n'))
+end
+
 """Run local `juliaup add` / `update` / `default` for `channel`."""
 function _juliaup_align_local!(
         channel::AbstractString;
@@ -152,7 +176,7 @@ function _juliaup_align_local!(
     ju === nothing && error(
         "juliaup not found (tried: $(join(candidates, ", ")))",
     )
-    add = run(ignorestatus(Cmd([ju, "add", ch])); wait = true)
+    add, _, add_err = _juliaup_run_captured(ju, ["add", ch])
     if add.exitcode != 0
         st = sprint() do io
             try
@@ -160,10 +184,14 @@ function _juliaup_align_local!(
             catch
             end
         end
-        occursin(ch, st) || error("juliaup add $ch failed")
+        occursin(ch, st) || error(
+            _juliaup_captured_fail_msg(["add", ch], add, "", add_err),
+        )
     end
-    run(Cmd([ju, "update", ch]); wait = true)
-    run(Cmd([ju, "default", ch]); wait = true)
+    for args in (["update", ch], ["default", ch])
+        proc, out_s, err_s = _juliaup_run_captured(ju, args)
+        proc.exitcode == 0 || error(_juliaup_captured_fail_msg(args, proc, out_s, err_s))
+    end
     jl = _local_julia_beside_juliaup(ju)
     isfile(jl) || error("Julia not found after juliaup align ($jl)")
     out = read(`$jl --version`, String)
@@ -208,18 +236,22 @@ function juliaup_align_remotes(
     )::NamedTuple
     ch = String(channel)
     if confirm && !kit_noninteractive()
-        print_err("  This will run juliaup add/update/default $ch on each target.\n")
-        println_fatal("  That changes the host default Julia.")
-        println_fatal("  Targets: $(join(hosts, ", "))")
-        println_fatal("  Needs juliaup at \$HOME/.juliaup/bin/juliaup or Homebrew")
-        println_fatal("  (/opt/homebrew/bin/juliaup or /usr/local/bin/juliaup).")
-        println_fatal("  The running kit process keeps its current Julia until restart.")
-        println_fatal()
-        kit_confirm("Type 'juliaup' to confirm: "; keyword = "juliaup") || begin
-            println_fatal("Cancelled.")
-            return (; cancelled = true, succeeded = 0, failed = 0, hosts = HostResult[])
+        cancelled = with_kit_progress_suspended() do
+            print_err("  This will run juliaup add/update/default $ch on each target.\n")
+            println_fatal("  That changes the host default Julia.")
+            println_fatal("  Targets: $(join(hosts, ", "))")
+            println_fatal("  Needs juliaup at \$HOME/.juliaup/bin/juliaup or Homebrew")
+            println_fatal("  (/opt/homebrew/bin/juliaup or /usr/local/bin/juliaup).")
+            println_fatal("  The running kit process keeps its current Julia until restart.")
+            println_fatal()
+            kit_confirm("Type 'juliaup' to confirm: "; keyword = "juliaup") || begin
+                println_fatal("Cancelled.")
+                return true
+            end
+            println_fatal()
+            return false
         end
-        println_fatal()
+        cancelled && return (; cancelled = true, succeeded = 0, failed = 0, hosts = HostResult[])
     end
 
     remote_sh = _juliaup_align_remote_sh(ch)
