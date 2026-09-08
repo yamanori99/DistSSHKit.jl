@@ -718,6 +718,33 @@ using Test
             end
         end
 
+        @testset "with_kit_progress_suspended is reentrant" begin
+            n = DistSSHKit.with_kit_progress_suspended() do
+                DistSSHKit.with_kit_progress_suspended() do
+                    2
+                end
+            end
+            @test n == 2
+        end
+
+        @testset "with_kit_progress_suspended resets item-bar cursor" begin
+            prev = DistSSHKit.KIT_PROGRESS[]
+            try
+                st = DistSSHKit.KitProgressState("go", 2, 0, "go")
+                push!(st.items, DistSSHKit.KitProgressItem("local-1", :running, 0))
+                st.drawn = 3
+                st.cursor_hidden = true
+                DistSSHKit.KIT_PROGRESS[] = st
+                DistSSHKit.with_kit_progress_suspended() do
+                    return nothing
+                end
+                @test st.drawn == 0
+                @test !st.cursor_hidden
+            finally
+                DistSSHKit.KIT_PROGRESS[] = prev
+            end
+        end
+
         @testset "kit_spin! skips animation off verbose TTY" begin
             with_kit_verbosity(:quiet) do
                 @test DistSSHKit._spinner_can_draw() == false

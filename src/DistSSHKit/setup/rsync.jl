@@ -56,7 +56,8 @@ function _host_sync_remote_shell_cmd(host::String, remote_script::String)::Cmd
     if !isempty(custom)
         return Cmd(vcat(_test_double_julia_argv(custom), [host, remote_script]))
     end
-    return _ssh_cmd([ssh_opts()..., host, remote_script])
+    # `-n`: do not forward kit stdin (juliaup/git must not wait on a TTY pipe).
+    return _ssh_cmd(["-n", ssh_opts()..., host, remote_script])
 end
 
 """Remote shell snippet classifying `remote_path` as MISSING / EMPTY / NONEMPTY."""

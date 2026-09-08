@@ -40,6 +40,7 @@ function ride_main()::Cint
     end
     tok = parsed.hosts
     require_counted_placement_tokens(tok; surface = :cli)
+    remote_raw = strip(get(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT", ""))
     result = ride!(
         parsed.script_path,
         tok;
@@ -48,6 +49,7 @@ function ride_main()::Cint
         output_dir = parsed.output_dir,
         project = PROJECT_ROOT,
         julia = parsed.julia,
+        remote = isempty(remote_raw) ? nothing : remote_raw,
     )
     if !(kit_output_progress() && result.ok)
         print_ride(result)

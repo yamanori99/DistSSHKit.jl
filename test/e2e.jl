@@ -936,19 +936,19 @@ end
                 sleep(0.5)
             end
             listed = hosts_ready ? DistSSHKit._read_kit_hosts(String(out)) : String[]
-            err_snip = let p = joinpath(String(out), "kit.out")
-                if isfile(p)
-                    text = strip(read(p, String))
-                    last(text, min(length(text), 800))
-                else
-                    ""
-                end
+            function _kit_snip(name)
+                p = joinpath(String(out), name)
+                isfile(p) || return ""
+                text = strip(read(p, String))
+                return last(text, min(length(text), 800))
             end
+            err_snip = _kit_snip("kit.out")
+            err_err = _kit_snip("kit.err")
             _assert_ssh_e2e_api_ok(
                 suite,
                 "ride_kit_hosts",
                 hosts_ready && host in listed,
-                "ready=$(hosts_ready) listed=$(listed) path=$(hosts_path) out=$(repr(err_snip))",
+                "ready=$(hosts_ready) listed=$(listed) path=$(hosts_path) out=$(repr(err_snip)) err=$(repr(err_err))",
             )
             @test hosts_ready
             @test host in listed

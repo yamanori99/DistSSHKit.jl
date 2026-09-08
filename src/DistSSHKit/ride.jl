@@ -645,6 +645,9 @@ function _ride_run!(
     try
         ENV["DISTRIBUTED_OUTPUT_DIR"] = batch_dir
         mkpath(batch_dir)
+        # Listed SSH names before join, so terminate! / kit.hosts waiters
+        # still see them if add_drive_workers! throws.
+        _write_kit_hosts_file(child_hosts_from_tokens(tok), batch_dir, nothing)
         if remote !== nothing
             rr = strip(String(remote))
             !isempty(rr) && (ENV["DISTRIBUTED_REMOTE_PROJECT_ROOT"] = rr)

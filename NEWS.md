@@ -13,6 +13,9 @@ GitHub Releases may copy these sections (`Release notes:` on
   `parent:8`. Drive `-w N` is parent workers when no `parent` token is
   listed. Go / ride no longer take `--gb-per-worker` / `--probe` /
   `--mem-headroom` / `--parent-gb` (those only served omit-`:N` sizing).
+- `setup --juliaup`: consent stays visible on a live TTY; targets already on
+  the kit channel skip align and print `already on 1.13` under `--progress`
+  (#355).
 
 ## 0.6.0
 
