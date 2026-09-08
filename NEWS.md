@@ -6,6 +6,10 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+- `setup --juliaup`: consent stays visible on a live TTY; targets already on
+  the kit channel skip align and print `already on 1.13` under `--progress`
+  (#355).
+
 ## 0.6.0
 
 Breaking cut after `0.5.4`. DistSSHQueue still pins Kit **0.5.x** until

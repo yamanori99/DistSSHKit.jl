@@ -58,6 +58,11 @@ function _juliaup_align_remote_sh(
       echo \"juliaup not found (tried: $tried)\" >&2
       exit 127
     fi
+    default=\$( \"\$JU\" status 2>/dev/null | awk '\$1==\"*\" { print \$2; exit }' )
+    if [ \"\$default\" = $cq ]; then
+      echo already
+      exit 0
+    fi
     if ! \"\$JU\" add $cq; then
       if ! \"\$JU\" status 2>/dev/null | grep -F -q $cq; then
         # `$cq` (not raw `$ch`): channel may come from the API; keep it shell-safe.
@@ -142,17 +147,95 @@ function _local_julia_beside_juliaup(juliaup_path::AbstractString)::String
     return joinpath(dirname(String(juliaup_path)), "julia")
 end
 
+"""Run local `juliaup` with stdout/stderr captured (live setup bar must not see it)."""
+function _juliaup_run_captured(
+        ju::AbstractString,
+        args::AbstractVector{<:AbstractString},
+    )
+    out = IOBuffer()
+    err = IOBuffer()
+    cmd = Cmd(String[String(ju), String.(args)...])
+    proc = run(pipeline(ignorestatus(cmd); stdout = out, stderr = err); wait = true)
+    return proc, String(take!(out)), String(take!(err))
+end
+
+function _juliaup_captured_fail_msg(
+        args::AbstractVector{<:AbstractString},
+        proc,
+        stdout_s::AbstractString,
+        stderr_s::AbstractString,
+    )::String
+    msg = strip(String(stderr_s))
+    isempty(msg) && (msg = strip(String(stdout_s)))
+    isempty(msg) && (msg = "juliaup $(join(args, " ")) exit $(proc.exitcode)")
+    return first(split(msg, '\n'))
+end
+
+"""Default juliaup channel from `juliaup status` (`*` row), or `nothing`."""
+function _juliaup_default_channel_from_status(status_out::AbstractString)::Union{Nothing, String}
+    for line in split(status_out, '\n'; keepempty = false)
+        s = strip(line)
+        isempty(s) && continue
+        startswith(s, "Default") && continue
+        startswith(s, "-") && continue
+        m = match(r"^\*\s+(\S+)", s)
+        m === nothing && continue
+        cap = m.captures[1]
+        cap isa AbstractString && return String(cap)
+    end
+    return nothing
+end
+
+"""When default channel and Julia version already match `channel`, return that version."""
+function _juliaup_local_already_aligned(
+        ju::AbstractString,
+        channel::AbstractString,
+    )::Union{Nothing, VersionNumber}
+    ch = String(channel)
+    proc, out, _ = _juliaup_run_captured(ju, ["status"])
+    proc.exitcode == 0 || return nothing
+    default_ch = _juliaup_default_channel_from_status(out)
+    default_ch === nothing && return nothing
+    default_ch == ch || return nothing
+    jl = _local_julia_beside_juliaup(ju)
+    isfile(jl) || return nothing
+    ver = parse_julia_version(read(`$jl --version`, String))
+    ver === nothing && return nothing
+    julia_version_mismatch_kind(VERSION, ver) == :minor && return nothing
+    return ver
+end
+
+"""One host line visible under `:progress` when juliaup is already on `channel`."""
+function print_juliaup_already_on!(host::AbstractString, channel::AbstractString)
+    msg = "  $(String(host)): already on $(String(channel))"
+    with_kit_progress_suspended() do
+        if kit_output_detail() || kit_output_progress()
+            if kit_output_detail() && use_colors()
+                printstyled(msg; color = :green)
+                println()
+            else
+                println(msg)
+            end
+        end
+    end
+    _kit_log_writeln(msg)
+    return nothing
+end
+
 """Run local `juliaup add` / `update` / `default` for `channel`."""
 function _juliaup_align_local!(
         channel::AbstractString;
         candidates::Vector{String} = local_juliaup_candidates(),
-    )::VersionNumber
+    )::NamedTuple
     ch = String(channel)
     ju = find_local_juliaup(candidates)
     ju === nothing && error(
         "juliaup not found (tried: $(join(candidates, ", ")))",
     )
-    add = run(ignorestatus(Cmd([ju, "add", ch])); wait = true)
+    if (ver = _juliaup_local_already_aligned(ju, ch)) !== nothing
+        return (; ver, changed = false)
+    end
+    add, add_out, add_err = _juliaup_run_captured(ju, ["add", ch])
     if add.exitcode != 0
         st = sprint() do io
             try
@@ -160,10 +243,14 @@ function _juliaup_align_local!(
             catch
             end
         end
-        occursin(ch, st) || error("juliaup add $ch failed")
+        occursin(ch, st) || error(
+            _juliaup_captured_fail_msg(["add", ch], add, add_out, add_err),
+        )
     end
-    run(Cmd([ju, "update", ch]); wait = true)
-    run(Cmd([ju, "default", ch]); wait = true)
+    for args in (["update", ch], ["default", ch])
+        proc, out_s, err_s = _juliaup_run_captured(ju, args)
+        proc.exitcode == 0 || error(_juliaup_captured_fail_msg(args, proc, out_s, err_s))
+    end
     jl = _local_julia_beside_juliaup(ju)
     isfile(jl) || error("Julia not found after juliaup align ($jl)")
     out = read(`$jl --version`, String)
@@ -172,7 +259,7 @@ function _juliaup_align_local!(
     if julia_version_mismatch_kind(VERSION, ver) == :minor
         error("still mismatched after align: process $(VERSION), juliaup default $ver")
     end
-    return ver
+    return (; ver, changed = true)
 end
 
 """Parse remote Julia version via setup SSH transport (`DISTSSHKIT_TEST_SSH`)."""
@@ -208,18 +295,22 @@ function juliaup_align_remotes(
     )::NamedTuple
     ch = String(channel)
     if confirm && !kit_noninteractive()
-        print_err("  This will run juliaup add/update/default $ch on each target.\n")
-        println_fatal("  That changes the host default Julia.")
-        println_fatal("  Targets: $(join(hosts, ", "))")
-        println_fatal("  Needs juliaup at \$HOME/.juliaup/bin/juliaup or Homebrew")
-        println_fatal("  (/opt/homebrew/bin/juliaup or /usr/local/bin/juliaup).")
-        println_fatal("  The running kit process keeps its current Julia until restart.")
-        println_fatal()
-        kit_confirm("Type 'juliaup' to confirm: "; keyword = "juliaup") || begin
-            println_fatal("Cancelled.")
-            return (; cancelled = true, succeeded = 0, failed = 0, hosts = HostResult[])
+        cancelled = with_kit_progress_suspended() do
+            print_err("  This will run juliaup add/update/default $ch on each target.\n")
+            println_fatal("  That changes the host default Julia.")
+            println_fatal("  Targets: $(join(hosts, ", "))")
+            println_fatal("  Needs juliaup at \$HOME/.juliaup/bin/juliaup or Homebrew")
+            println_fatal("  (/opt/homebrew/bin/juliaup or /usr/local/bin/juliaup).")
+            println_fatal("  The running kit process keeps its current Julia until restart.")
+            println_fatal()
+            kit_confirm("Type 'juliaup' to confirm: "; keyword = "juliaup") || begin
+                println_fatal("Cancelled.")
+                return true
+            end
+            println_fatal()
+            return false
         end
-        println_fatal()
+        cancelled && return (; cancelled = true, succeeded = 0, failed = 0, hosts = HostResult[])
     end
 
     remote_sh = _juliaup_align_remote_sh(ch)
@@ -232,18 +323,22 @@ function juliaup_align_remotes(
         out_buf = IOBuffer()
         try
             if is_parent_host_name(host)
-                ver = kit_spin!("  $PARENT_HOST_NAME: ") do
+                r = kit_spin!("  $PARENT_HOST_NAME: ") do
                     _juliaup_align_local!(ch)
                 end
-                print_ok("✓ Julia $ver (channel $ch)")
-                kit_println()
-                kit_println("    Note: this process still runs Julia $VERSION until you restart.")
+                if r.changed
+                    print_ok("✓ Julia $(r.ver) (channel $ch)")
+                    kit_println()
+                    kit_println("    Note: this process still runs Julia $VERSION until you restart.")
+                else
+                    print_juliaup_already_on!(PARENT_HOST_NAME, ch)
+                end
                 succeeded += 1
                 push!(host_results, HostResult(PARENT_HOST_NAME, true, "juliaup $ch"))
                 _setup_host_span!(host, :ok)
                 continue
             end
-            kit_spin!("  $host: ") do
+            align_out = kit_spin!("  $host: ") do
                 proc = run(
                     pipeline(
                         ignorestatus(_host_sync_remote_shell_cmd(host, remote_sh));
@@ -258,19 +353,23 @@ function juliaup_align_remotes(
                     isempty(msg) && (msg = "juliaup align exit $(proc.exitcode)")
                     error(first(split(msg, '\n')))
                 end
-                return nothing
+                return strip(String(take!(out_buf)))
             end
-            clear_detect_julia_path_cache!(host)
-            path = detect_julia_path(host)
-            path === nothing && error("Julia not found after juliaup align")
-            ver = _remote_julia_version_setup_ssh(host, path)
-            ver === nothing && error("Julia --version unparseable after juliaup align")
-            if julia_version_mismatch_kind(VERSION, ver) == :minor
-                error("still mismatched after align: local $(VERSION), remote $ver")
+            if align_out == "already"
+                print_juliaup_already_on!(host, ch)
+            else
+                clear_detect_julia_path_cache!(host)
+                path = detect_julia_path(host)
+                path === nothing && error("Julia not found after juliaup align")
+                ver = _remote_julia_version_setup_ssh(host, path)
+                ver === nothing && error("Julia --version unparseable after juliaup align")
+                if julia_version_mismatch_kind(VERSION, ver) == :minor
+                    error("still mismatched after align: local $(VERSION), remote $ver")
+                end
+                print_ok("✓ Julia $ver (channel $ch)")
+                kit_println()
+                print_juliaup_parent_patch_note!(ver; channel = ch)
             end
-            print_ok("✓ Julia $ver (channel $ch)")
-            kit_println()
-            print_juliaup_parent_patch_note!(ver; channel = ch)
             succeeded += 1
             push!(host_results, HostResult(host, true, "juliaup $ch"))
             _setup_host_span!(host, :ok)

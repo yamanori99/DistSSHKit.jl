@@ -24,8 +24,13 @@ using Test
 
     @testset "rsync -e quotes ssh" begin
         Sys.which("ssh") === nothing && return
-        t = DistSSHKit._host_sync_rsync_transport()
-        @test startswith(t, Base.shell_escape(DistSSHKit._ssh_exe()))
+        withenv("DISTSSHKIT_TEST_SSH" => nothing) do
+            t = DistSSHKit._host_sync_rsync_transport()
+            @test startswith(t, Base.shell_escape(DistSSHKit._ssh_exe()))
+            cmd = DistSSHKit._host_sync_remote_shell_cmd("host.test", "true")
+            @test cmd.exec[1] == DistSSHKit._ssh_exe()
+            @test "-n" in cmd.exec
+        end
     end
 
     @testset "remote_dir / ensure" begin
