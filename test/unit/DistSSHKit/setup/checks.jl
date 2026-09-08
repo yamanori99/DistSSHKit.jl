@@ -127,9 +127,9 @@ using Pkg
             end
         end
     end
-    @test r.ssh == false
-    @test r.rsync == false
-    @test r.git == false
+    @test !r.ssh
+    @test !r.rsync
+    @test !r.git
 
     expr = DistSSHKit._project_deps_probe_expr()
     @test occursin("locate_package", expr)
