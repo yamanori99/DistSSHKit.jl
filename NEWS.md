@@ -8,8 +8,7 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## 0.7.0
 
-Breaking cut after `0.6.0`. DistSSHQueue still pins Kit **0.6.x** until
-a Queue compat patch (`DistSSHKit = "0.7"`).
+Breaking cut after `0.6.0`.
 
 ### Breaking
 
