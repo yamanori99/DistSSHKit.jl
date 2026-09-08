@@ -6,7 +6,7 @@ Run a **standalone** script as-is (no Kit APIs in the job file). Each
 
 ```bash
 julia --project=. -m DistSSHKit go [options] \
-  [parent:N] [child:NAME[:N]...] SCRIPT.jl [script_args...]
+  [parent:N] [child:NAME:N...] SCRIPT.jl [script_args...]
 ```
 
 Also: [First Steps · Demo](@ref Tutorial-Demo), [drive](@ref Manual-drive),
@@ -14,8 +14,10 @@ Also: [First Steps · Demo](@ref Tutorial-Demo), [drive](@ref Manual-drive),
 [User Guide](@ref Manual).
 
 `parent:N` / `child:NAME:N` stay explicit counts. Omitting `:N` on a listed
-host (not `--repeat`) fills the count via [`size!`](@ref), like drive.
-`go SCRIPT.jl` with no host tokens is still one parent slot.
+host is an error unless `--repeat` (then it is an uncapped pool host, not a
+count). Drive / ride also require `:N`. `go SCRIPT.jl` with no host tokens is
+still one parent slot. Estimate with [`size`](@ref Manual-size), then paste
+the printed tokens.
 A bare `julia -m DistSSHKit SCRIPT.jl` is not `go`; name the command.
 `--repeat N` still spreads N runs; explicit `:N` is a cap, while omitted
 `:N` stays uncapped and does not use `size!`.
@@ -39,10 +41,6 @@ if needed). Later git updates (`setup --sync` / `go --sync`) need a
 - `--julia PATH`: Julia on remotes (default: auto / `JULIA_DISTRIBUTED_EXE`)
 - `--output-dir PATH`: **batch root**; slots write under `PATH/{slot}/`
   (not `drive --output-dir`)
-- `--gb-per-worker N`: when a listed host omits `:N`, assume N GB per slot
-  ([`size!`](@ref); same as [`plan`](@ref) / [`size`](@ref Manual-size))
-- `--probe PATH`: size! warm-up script (peak RSS)
-- `--mem-headroom N` / `--parent-gb N`: same RAM budget as `size`
 - `--hosts CSV`: comma-separated slot specs (same form as CLI tokens /
   `DISTSSHKIT_HOSTS`)
 - `-q` / `--quiet`: hide terminal detail; `go_*.log` and per-slot logs

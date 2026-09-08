@@ -238,14 +238,15 @@ using Test
         @test DistSSHKit.execute_detached_accepts(:repeat; kind = :go)
         @test !DistSSHKit.execute_detached_accepts(:repeat; kind = :drive)
         @test DistSSHKit.execute_detached_accepts(:workers; kind = :drive)
-        @test DistSSHKit.execute_detached_accepts(:mem_headroom; kind = :go)
-        @test DistSSHKit.execute_detached_accepts(:parent_gb; kind = :go)
+        @test !DistSSHKit.execute_detached_accepts(:mem_headroom; kind = :go)
+        @test !DistSSHKit.execute_detached_accepts(:parent_gb; kind = :go)
+        @test !DistSSHKit.execute_detached_accepts(:gb_per_worker; kind = :go)
         @test !DistSSHKit.execute_detached_accepts(:workers; kind = :go)
         @test !DistSSHKit.execute_detached_accepts(:plan; kind = :go)
         @test !DistSSHKit.execute_detached_accepts(:plan; kind = :drive)
         @test DistSSHKit.execute_detached_accepts(:spi_check; kind = :ride)
-        @test DistSSHKit.execute_detached_accepts(:gb_per_worker; kind = :ride)
-        @test DistSSHKit.execute_detached_accepts(:mem_headroom; kind = :ride)
+        @test !DistSSHKit.execute_detached_accepts(:gb_per_worker; kind = :ride)
+        @test !DistSSHKit.execute_detached_accepts(:mem_headroom; kind = :ride)
         @test DistSSHKit.execute_detached_accepts(:output_dir; kind = :ride)
         @test !DistSSHKit.execute_detached_accepts(:repeat; kind = :ride)
         @test !DistSSHKit.execute_detached_accepts(:sync_script; kind = :ride)
@@ -253,7 +254,6 @@ using Test
         @test !DistSSHKit.execute_detached_accepts(:require_all_hosts; kind = :ride)
         @test !DistSSHKit.execute_detached_accepts(:spi_check; kind = :go)
         @test !DistSSHKit.execute_detached_accepts(:spi_check; kind = :drive)
-        @test DistSSHKit.execute_detached_accepts(:gb_per_worker; kind = :go)
         err = try
             DistSSHKit.execute_detached_accepts(:quiet; kind = :pipeline)
             nothing
@@ -336,17 +336,12 @@ using Test
             require_all_hosts = nothing,
             skip_hash_check = true,
             repeat = 100,
-            mem_headroom = 0.5,
-            parent_gb = 1.0,
-            gb_per_worker = 1.5,
-            probe = "/tmp/probe.jl",
         )
         @test "--repeat" in argv_rep
         @test "100" in argv_rep
-        @test "--mem-headroom" in argv_rep
-        @test "--parent-gb" in argv_rep
-        @test "--gb-per-worker" in argv_rep
-        @test "--probe" in argv_rep
+        @test !("--mem-headroom" in argv_rep)
+        @test !("--gb-per-worker" in argv_rep)
+        @test !("--probe" in argv_rep)
         argv_strict = DistSSHKit._execute_detached_argv(
             :drive, "job.jl", ["child:host1"], String[];
             output_dir = "/tmp/out",
@@ -405,12 +400,10 @@ using Test
             require_all_hosts = true,
             skip_hash_check = true,
             spi_check = false,
-            gb_per_worker = 1.5,
         )
         @test argv_ride[1] == "ride"
         @test "--no-spi-check" in argv_ride
-        @test "--gb-per-worker" in argv_ride
-        @test "1.5" in argv_ride
+        @test !("--gb-per-worker" in argv_ride)
         @test "--output-dir" in argv_ride
     end
 
@@ -418,7 +411,7 @@ using Test
         go = DistSSHKit.parse_go_args(
             [
                 "--progress", "--julia", "/opt/julia/bin/julia",
-                "--output-dir", "my_runs", "--sync", "child:h1", "job.jl", "8",
+                "--output-dir", "my_runs", "--sync", "child:h1:1", "job.jl", "8",
             ]
         )
         gkw = DistSSHKit.execute_kwargs_from_parsed(go; kind = :go)
@@ -429,11 +422,10 @@ using Test
         @test gkw[:args] == ["8"]
         @test !haskey(gkw, :hosts_file)
         @test !haskey(gkw, :workers)
-        @test DistSSHKit.host_tokens(go; kind = :go) == ["child:h1"]
+        @test DistSSHKit.host_tokens(go; kind = :go) == ["child:h1:1"]
         @test Set(keys(gkw)) == Set(
             [
                 :output_dir, :args, :julia, :quiet, :verbosity, :sync,
-                :gb_per_worker, :probe, :mem_headroom, :parent_gb,
             ]
         )
         go_r = DistSSHKit.parse_go_args(["--repeat", "8", "job.jl"])
@@ -446,6 +438,7 @@ using Test
         )
         rkw = DistSSHKit.execute_kwargs_from_parsed(ride; kind = :ride)
         @test rkw[:spi_check] === false
+        @test !haskey(rkw, :gb_per_worker)
         @test DistSSHKit.host_tokens(ride; kind = :ride) == ["parent:2"]
         @test !haskey(rkw, :sync)
 
@@ -464,8 +457,9 @@ using Test
         @test dkw[:parent_gb] == 0.2
         @test dkw[:workers] == 4
         @test !haskey(dkw, :hosts_file)
-        @test DistSSHKit.host_tokens(drive; kind = :drive) == ["child:host-a", "child:host-b:4"]
-        bare = DistSSHKit.parse_drive_args(["child:host1", "s.jl"])
+        @test DistSSHKit.host_tokens(drive; kind = :drive) ==
+            ["parent:4", "child:host-a:1", "child:host-b:4"]
+        bare = DistSSHKit.parse_drive_args(["child:host1:1", "s.jl"])
         @test !haskey(DistSSHKit.execute_kwargs_from_parsed(bare; kind = :drive), :workers)
         errk = try
             DistSSHKit.execute_kwargs_from_parsed(go; kind = :pipeline)

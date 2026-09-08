@@ -15,7 +15,7 @@ using TOML
 
 # Public surface. Prefer `julia -m DistSSHKit …` for day-to-day CLI.
 #   user — go! / ride! / drive! / plan / pool! / size! / setup! / pipeline!
-#   occupancy — size! (RSS WorkerPlan; also behind go/drive autosize)
+#   occupancy — size! (RSS WorkerPlan; CLI size / pool; not implied by omit :N)
 #   queue — execute!(; detached=true), parsers, paths, help chrome
 #   argv wrappers `go` / `drive` stay unexported (`main` / tests)
 export worker_pmap

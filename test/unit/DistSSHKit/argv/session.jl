@@ -167,7 +167,7 @@ using Test
 
     @testset "hosts file" begin
         hosts_file = _sample_hosts_file()
-        @test DistSSHKit.read_hosts_file_lines(hosts_file) == ["child:host-a", "child:host-b:4"]
+        @test DistSSHKit.read_hosts_file_lines(hosts_file) == ["child:host-a:1", "child:host-b:4"]
         @test DistSSHKit.split_worker_token("host-b:4") == ("host-b", 4)
         @test DistSSHKit.parse_placement_token("child:host-b:4") ==
             (role = :child, name = "host-b", n = 4)
@@ -181,7 +181,7 @@ using Test
         withenv("DISTSSHKIT_HOSTS" => "child:env-a:2, child:env-b", "DISTSSHKIT_HOSTS_FILE" => nothing) do
             session = DistSSHKit.KitCliSession(hosts_flag = ["parent:3"], hosts_file = hosts_file)
             @test DistSSHKit.kit_host_source_tokens(session; keep_counts = true) ==
-                ["parent:3", "child:env-a:2", "child:env-b", "child:host-a", "child:host-b:4"]
+                ["parent:3", "child:env-a:2", "child:env-b", "child:host-a:1", "child:host-b:4"]
             @test DistSSHKit.kit_host_source_tokens(session; keep_counts = false, roles = true) ==
                 ["parent", "env-a", "env-b", "host-a", "host-b"]
         end

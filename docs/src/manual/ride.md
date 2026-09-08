@@ -11,7 +11,8 @@ julia --project=. -m DistSSHKit ride parent:2 SCRIPT.jl
 julia --project=. -m DistSSHKit ride parent:1 child:host1:2 SCRIPT.jl
 ```
 
-SSH children use the same worker-add path as [`drive`](@ref Manual-drive).
+Listed tokens need `:N` (no tokens → `parent:1`). SSH children use the same
+worker-add path as [`drive`](@ref Manual-drive).
 Prepare remotes with [`setup`](@ref Manual-setup) first. Distributed
 vocabulary (`pmap`, `@everywhere`, …) is an error; that script belongs on
 `drive`. Listed `child:` hosts are fail-closed.

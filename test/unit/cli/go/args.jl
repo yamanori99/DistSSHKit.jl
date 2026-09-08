@@ -28,22 +28,24 @@ using Test
             @test r.script_args == ["8"]
             @test isempty(r.hosts)
         end
-        let r = parse_go_args(["child:user@lab", "job.jl"])
+        let r = parse_go_args(["child:user@lab:1", "job.jl"])
             @test r.script_path == "job.jl"
-            @test r.hosts == ["child:user@lab"]
+            @test r.hosts == ["child:user@lab:1"]
         end
-        let r = parse_go_args(["--hosts", "child:host-a,child:host-b:2", "job.jl"])
-            @test r.hosts == ["child:host-a", "child:host-b:2"]
+        let r = parse_go_args(["--hosts", "child:host-a:1,child:host-b:2", "job.jl"])
+            @test r.hosts == ["child:host-a:1", "child:host-b:2"]
             @test r.script_path == "job.jl"
         end
         @test_throws ArgumentError parse_go_args(["user@lab", "job.jl"])
-        let r = parse_go_args(["parent:4", "child:host1", "child:host2:2", "job.jl"])
-            @test DistSSHKit.host_tokens(r; kind = :go) == ["parent:4", "child:host1", "child:host2:2"]
+        @test_throws ArgumentError parse_go_args(["parent", "job.jl"])
+        @test_throws ArgumentError parse_go_args(["child:host1", "job.jl"])
+        let r = parse_go_args(["parent:4", "child:host1:1", "child:host2:2", "job.jl"])
+            @test DistSSHKit.host_tokens(r; kind = :go) == ["parent:4", "child:host1:1", "child:host2:2"]
         end
-        let r = parse_go_args(["child:local:2", "child:h1", "job.jl", "4"])
-            @test r.hosts == ["child:local:2", "child:h1"]
-            @test DistSSHKit.host_tokens(r; kind = :go) == ["child:local:2", "child:h1"]
-            @test DistSSHKit.host_tokens(r.hosts) == ["child:local:2", "child:h1"]
+        let r = parse_go_args(["child:local:2", "child:h1:1", "job.jl", "4"])
+            @test r.hosts == ["child:local:2", "child:h1:1"]
+            @test DistSSHKit.host_tokens(r; kind = :go) == ["child:local:2", "child:h1:1"]
+            @test DistSSHKit.host_tokens(r.hosts) == ["child:local:2", "child:h1:1"]
             @test_throws ArgumentError DistSSHKit.host_tokens(r; kind = :pipeline)
             @test r.script_path == "job.jl"
             @test r.script_args == ["4"]
@@ -71,20 +73,20 @@ using Test
 
     @testset "sync flags" begin
         # Parser leaves sync=nothing; go! maps nothing → false (no pre-run sync).
-        let r = parse_go_args(["child:local:2", "child:h1", "job.jl"])
+        let r = parse_go_args(["child:local:2", "child:h1:1", "job.jl"])
             @test r.sync === nothing
         end
-        let r = parse_go_args(["--sync", "child:h1", "job.jl"])
+        let r = parse_go_args(["--sync", "child:h1:1", "job.jl"])
             @test r.sync === :sync
         end
-        let r = parse_go_args(["--rsync", "child:h1", "job.jl"])
+        let r = parse_go_args(["--rsync", "child:h1:1", "job.jl"])
             @test r.sync === :rsync
         end
         let r = parse_go_args(["--skip-sync", "child:local:1", "child:h1:2", "job.jl"])
             @test r.sync === false
             @test r.hosts == ["child:local:1", "child:h1:2"]
         end
-        let r = parse_go_args(["--skip-git-guard", "child:h1", "job.jl"])
+        let r = parse_go_args(["--skip-git-guard", "child:h1:1", "job.jl"])
             @test r.sync === false  # go alias of --skip-sync
         end
         @test_throws ArgumentError parse_go_args(["--skip-sync", "--rsync", "job.jl"])
@@ -101,24 +103,14 @@ using Test
             @test r.cli_session.yes
             DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession())
         end
-        withenv("DISTSSHKIT_HOSTS" => "child:env-a:2,child:env-b") do
+        withenv("DISTSSHKIT_HOSTS" => "child:env-a:2,child:env-b:1") do
             let r = parse_go_args(["job.jl"])
-                @test r.hosts == ["child:env-a:2", "child:env-b"]
+                @test r.hosts == ["child:env-a:2", "child:env-b:1"]
             end
         end
-        let r = parse_go_args(
-                [
-                    "--gb-per-worker", "1.5", "--mem-headroom", "0.5",
-                    "--parent-gb", "0.2", "--probe", "warm.jl",
-                    "parent", "job.jl",
-                ]
-            )
-            @test r.gb_per_worker == 1.5
-            @test r.mem_headroom == 0.5
-            @test r.parent_gb == 0.2
-            @test r.probe == "warm.jl"
-            @test r.hosts == ["parent"]
-        end
+        @test_throws ArgumentError parse_go_args(
+            ["--gb-per-worker", "1.5", "parent", "job.jl"],
+        )
         @test_throws ArgumentError parse_go_args(["--julia"])
     end
 
@@ -171,7 +163,7 @@ using Test
         hosts_file = _sample_hosts_file()
         withenv("DISTSSHKIT_HOSTS" => nothing, "DISTSSHKIT_HOSTS_FILE" => nothing) do
             let r = parse_go_args(["--hosts-file", hosts_file, "job.jl"])
-                @test r.hosts == ["child:host-a", "child:host-b:4"]
+                @test r.hosts == ["child:host-a:1", "child:host-b:4"]
                 @test r.script_path == "job.jl"
             end
         end

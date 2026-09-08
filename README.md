@@ -130,8 +130,9 @@ Three ways to run a script:
   No RSS. Unreachable hosts stay listed with `ok=false`
 
 **size** / **size!** is occupancy (RSS `WorkerPlan`).
-`go` / `drive` use it when a token has no `:N`. CLI `size` prints the same
-plan. It is not a dashboard.
+CLI `size` prints a plan. go / drive / ride require `:N` on listed tokens
+(no tokens → one parent slot). `go --repeat` still allows listed hosts
+without `:N` (uncapped pool). It is not a dashboard.
 
 `go` alone is plenty useful. A common path is to first check a standalone run
 with `go`, then move to `drive` / Distributed.jl when you need it.
@@ -265,7 +266,7 @@ drive!("path/to/driver.jl", "parent:2", "child:user@host1:4"; remote=remote)
 setup!(session, :sync)  # later updates
 ```
 
-`pipeline!` is an optional one-shot: sync → `size!` → `drive!` → collect.
+`pipeline!` is an optional one-shot: sync → `drive!` → collect.
 It does not run `setup!`. `sync=:rsync` there copies only (no instantiate);
 prepare remotes first, or use `drive!(…; sync=:rsync)`.
 Details: [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/).

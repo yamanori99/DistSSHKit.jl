@@ -49,7 +49,7 @@ result = pipeline!(driver, "parent:2"; args = ARGS, collect = false, enable_log 
 #       args=ARGS,
 #       collect=true,                   # false → skip; path → collect root
 #       # project=pwd(),
-#       # hosts_file="hosts.txt",       # extra parent / child:NAME[:N] lines
+#       # hosts_file="hosts.txt",       # extra parent:N / child:NAME:N lines
 #       # yes=true,                     # skip confirm prompts (API default)
 #       # quiet=false,
 #       # verbosity=nothing,            # :quiet | :progress | :verbose
@@ -60,8 +60,6 @@ result = pipeline!(driver, "parent:2"; args = ARGS, collect = false, enable_log 
 #       # log_dir=nothing,
 #       # package=nothing,              # package name hint on workers
 #       # skip_hash_check=nothing,      # false → require remote git parity
-#       # gb_per_worker=nothing,        # size! when a host has no :N
-#       # size_probe=nothing,           # warm-up script for size! peak RSS
 #       # mem_headroom=0.75,
 #       # parent_gb=0.4,
 #   )

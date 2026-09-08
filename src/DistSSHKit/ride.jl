@@ -375,23 +375,9 @@ function _ride_push_prelude!(ex)
     return nothing
 end
 
-function _ride_resolve_plan(
-        tokens::Vector{String};
-        session::Union{Nothing, KitSession},
-        gb_per_worker,
-        probe,
-        mem_headroom,
-        parent_gb,
-    )::WorkerPlan
+function _ride_resolve_plan(tokens::Vector{String})::WorkerPlan
     isempty(tokens) && return WorkerPlan(1, Dict{String, Int}())
-    return worker_plan_from_tokens(
-        tokens;
-        session = session,
-        gb_per_worker = gb_per_worker,
-        probe = probe,
-        mem_headroom = mem_headroom,
-        parent_gb = parent_gb,
-    )
+    return worker_plan_from_tokens(tokens)
 end
 
 function _ride_activate_project!(project::AbstractString)
@@ -598,11 +584,6 @@ function ride!(
         project::AbstractString = pwd(),
         julia::Union{Nothing, AbstractString} = nothing,
         remote::Union{Nothing, AbstractString} = nothing,
-        session::Union{Nothing, KitSession} = nothing,
-        gb_per_worker::Union{Nothing, Real} = nothing,
-        probe::Union{Nothing, AbstractString} = nothing,
-        mem_headroom::Real = DEFAULT_MEM_HEADROOM,
-        parent_gb::Real = DEFAULT_PARENT_GB,
         require_all_hosts::Bool = true,
     )::RideResult
     path = canonical_local_path(script)
@@ -615,8 +596,7 @@ function ride!(
     try
         return _ride_run!(
             path, julia_s, tokens, args, spi_check, output_dir, project, julia,
-            remote, session, gb_per_worker, probe, mem_headroom, parent_gb,
-            require_all_hosts,
+            remote, require_all_hosts,
         )
     finally
         _release_kit_inproc_run!()
@@ -633,23 +613,11 @@ function _ride_run!(
         project,
         julia,
         remote,
-        session,
-        gb_per_worker,
-        probe,
-        mem_headroom,
-        parent_gb,
         require_all_hosts,
     )
     tok = String[String(t) for t in tokens]
     wp = try
-        _ride_resolve_plan(
-            tok;
-            session = session,
-            gb_per_worker = gb_per_worker,
-            probe = probe,
-            mem_headroom = mem_headroom,
-            parent_gb = parent_gb,
-        )
+        _ride_resolve_plan(tok)
     catch e
         e isa ArgumentError && return RideResult(
             false, path, 0, nothing, sprint(showerror, e), julia_s,
@@ -677,12 +645,12 @@ function _ride_run!(
     try
         ENV["DISTRIBUTED_OUTPUT_DIR"] = batch_dir
         mkpath(batch_dir)
+        # Listed SSH names before join, so terminate! / kit.hosts waiters
+        # still see them if add_drive_workers! throws.
+        _write_kit_hosts_file(child_hosts_from_tokens(tok), batch_dir, nothing)
         if remote !== nothing
             rr = strip(String(remote))
             !isempty(rr) && (ENV["DISTRIBUTED_REMOTE_PROJECT_ROOT"] = rr)
-        elseif session !== nothing
-            rrs = session.remote
-            rrs isa AbstractString && (ENV["DISTRIBUTED_REMOTE_PROJECT_ROOT"] = String(rrs))
         end
         empty!(ARGS)
         append!(ARGS, String[String(a) for a in args])

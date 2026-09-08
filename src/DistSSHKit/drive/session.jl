@@ -17,8 +17,10 @@ end
     KitSession(; project=pwd(), workers=[], remote=nothing, hosts_file=nothing,
                quiet=false, verbosity=nothing, yes=true, include_parent_for_size=false)
 
-Build a session for drive APIs. `workers` are CLI-style tokens
-(`parent:2`, `child:user@host:1`). Omitted `:N` is filled by `-w` or [`size!`](@ref).
+Build a session for drive APIs. `workers` is a CLI-style host list.
+`setup!` / `size!` / `pool!` / `sync!` / `collect!` accept a bare list
+(`child:user@host`). `go!` / `drive!` / `ride!` / `pipeline!` require `:N`
+on listed tokens (`parent:2`, `child:user@host:1`).
 
 `session.hosts` keeps remote SSH names only (for sync / collect).
 `session.tokens` keeps the original tokens (including `parent:N`).

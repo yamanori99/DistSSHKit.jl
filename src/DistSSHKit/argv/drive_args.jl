@@ -60,16 +60,19 @@ function _drive_push_host_token!(
         hosts::Vector{Tuple{String, Union{Int, Nothing}}},
         parent_workers::Int,
         token::AbstractString,
-        default_workers,
+        parent_listed::Ref{Bool},
     )::Int
     p = parse_placement_token(String(token))
+    p.n === nothing && throw(
+        ArgumentError(explain_bare_placement_tokens([token]; surface = :cli)),
+    )
     if p.role === :parent
+        parent_listed[] = true
         n = p.n
         n === 0 && return parent_workers
-        count = something(n, default_workers, 1)
         return _drive_set_parent_workers!(
             parent_workers,
-            count,
+            n,
             String(token),
         )
     end
@@ -99,6 +102,7 @@ function parse_drive_args(args::Vector{String})
     mem_headroom = DEFAULT_MEM_HEADROOM
     parent_gb = DEFAULT_PARENT_GB
     hosts = Tuple{String, Union{Int, Nothing}}[]
+    parent_listed = Ref(false)
     script_path = nothing
     script_args = String[]
 
@@ -327,7 +331,7 @@ function parse_drive_args(args::Vector{String})
                 hosts,
                 parent_workers,
                 arg,
-                default_workers,
+                parent_listed,
             )
             i += 1
         end
@@ -366,11 +370,18 @@ function parse_drive_args(args::Vector{String})
             hosts,
             parent_workers,
             tok,
-            default_workers,
+            parent_listed,
         )
     end
 
     apply_kit_cli_session!(cli_session)
+    if !parent_listed[] && default_workers !== nothing
+        parent_workers = _drive_set_parent_workers!(
+            parent_workers,
+            default_workers,
+            "-w",
+        )
+    end
 
     return (
         parent_workers = parent_workers,
@@ -420,8 +431,8 @@ function show_drive_usage(; io::IO = stdout)
     print_help_section("Workers"; io = io)
     print_help_lines(
         io,
-        "  parent[:N]          Kit-side workers (omit N → --workers or 1)",
-        "  child:NAME[:N]      SSH workers (same :N / --workers rule)",
+        "  parent:N / child:NAME:N  required :N (no tokens → parent:1)",
+        "  omit :N             error (use size, then paste parent:8)",
         "  $(KIT_HOSTS_FLAG_HELP)",
         "  --hosts-file PATH   one token per line",
     )
@@ -429,7 +440,7 @@ function show_drive_usage(; io::IO = stdout)
     print_help_section("Options"; io = io)
     print_help_lines(
         io,
-        "  -w, --workers N     default when host has no :N",
+        "  -w, --workers N     parent:N when no parent token is listed",
         "  --sync / --rsync    optional pre-run; --rsync instantiates if needed",
         "  --sync-script       re-include the full driver on workers (default: defs only)",
         "  --require-git       $(REQUIRE_GIT_MEANING)",

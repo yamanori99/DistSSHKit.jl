@@ -25,7 +25,7 @@ still lack Manifest deps get [`instantiate!`](@ref) (same as CLI
 Git parity is off by default (`skip_hash_check=true`). With `sync=:rsync`, parity
 stays off even if `skip_hash_check=false` (no remote `.git/`).
 `require_all_hosts=true` (the default; CLI `--require-all-hosts`) fails unless
-every explicit `parent[:N]` / `child:NAME[:N]` joined, stayed through the run,
+every explicit `parent:N` / `child:NAME:N` joined, stayed through the run,
 and collect succeeded. Pass `require_all_hosts=false` or CLI `--best-effort`
 for a partial run.
 
@@ -64,7 +64,7 @@ function drive!(
         _ensure_drive_fragments!(session.project)
         resolved = plan
         if resolved === nothing && !isempty(session.tokens)
-            resolved = worker_plan_from_tokens(session.tokens; session = session)
+            resolved = worker_plan_from_tokens(session.tokens)
         end
         parsed = drive_parsed_from_session(
             session,

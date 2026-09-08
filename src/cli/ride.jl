@@ -39,17 +39,7 @@ function ride_main()::Cint
         return 0
     end
     tok = parsed.hosts
-    sess = nothing
-    if !isempty(tok)
-        pt = parse_worker_tokens(tok)
-        if !worker_tokens_fully_specified(pt)
-            sess = KitSession(;
-                project = PROJECT_ROOT,
-                workers = tok,
-                include_parent_for_size = pt.parent_autosize,
-            )
-        end
-    end
+    remote_raw = strip(get(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT", ""))
     result = ride!(
         parsed.script_path,
         tok;
@@ -58,11 +48,7 @@ function ride_main()::Cint
         output_dir = parsed.output_dir,
         project = PROJECT_ROOT,
         julia = parsed.julia,
-        session = sess,
-        gb_per_worker = parsed.gb_per_worker,
-        probe = parsed.probe,
-        mem_headroom = parsed.mem_headroom,
-        parent_gb = parsed.parent_gb,
+        remote = isempty(remote_raw) ? nothing : remote_raw,
     )
     if !(kit_output_progress() && result.ok)
         print_ride(result)

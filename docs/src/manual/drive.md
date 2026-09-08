@@ -6,7 +6,7 @@ workers. The script is a **driver** that farms work (e.g. `pmap`).
 
 ```bash
 julia --project=. -m DistSSHKit drive [options] \
-  [parent:N] [child:NAME[:N]...] SCRIPT.jl [script_args...]
+  [parent:N] [child:NAME:N...] SCRIPT.jl [script_args...]
 ```
 
 Also: [First Steps · Demo](@ref Tutorial-Demo), [go](@ref Manual-go),
@@ -31,13 +31,13 @@ One-shot onto an empty/missing path: `drive --rsync` (instantiates if needed).
   definitions only)
 - `--require-git`: opt-in git parity: dirty-tree warn + remote commit must
   match local
-- `--require-all-hosts`: fail unless every explicit `parent[:N]` /
-  `child:NAME[:N]` joined, stayed, and collect succeeded (**default**)
+- `--require-all-hosts`: fail unless every explicit `parent:N` /
+  `child:NAME:N` joined, stayed, and collect succeeded (**default**)
 - `--best-effort`: allow a partial run (missing join or collect error does
   not fail)
 - `--skip-git-guard`: compat no-op (parity already off)
-- `-w` / `--workers N`: default worker count for hosts without `:N` (also
-  `-w:N`)
+- `-w` / `--workers N`: `parent:N` when no `parent` token is listed (also
+  `-w:N`). Listed hosts still need `:N`.
 - `--julia PATH`: Julia on SSH workers
 - `--mem-headroom N`: RAM fraction for memory preflight (default `0.75`;
   same as [`size`](@ref Manual-size))
@@ -89,8 +89,9 @@ onto an empty path). Prefer matching Julia **major.minor**; align with
 
 ## Workers
 
-`parent:N` / `child:NAME:N` (or `-w` defaults). Size with
-[`size`](@ref Manual-size).
+Listed tokens need `:N`. `-w N` is `parent:N` when no `parent` token is
+listed. Estimate with [`size`](@ref Manual-size), then paste the printed
+tokens.
 
 - Local workers are torn down with `rmprocs` at the end of every `drive` run
 - SSH leftover `pkill` matches argv `distsshkit-job:<id>` when `job_id` /

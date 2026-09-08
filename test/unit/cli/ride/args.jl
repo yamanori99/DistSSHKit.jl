@@ -30,6 +30,8 @@ using Test
         @test occursin("plan", help)
         @test occursin("child:", help)
         @test !occursin("--analyze", help)
+        @test !occursin("--gb-per-worker", help)
+        @test_throws ArgumentError parse_ride_args(["--gb-per-worker", "1.5", "job.jl"])
         @test !occursin("#!/usr/bin/env julia", help)
     end
 end

@@ -72,7 +72,7 @@ Build execution slots from host tokens.
 - No tokens → one parent slot (directory label `parent`)
 - `parent:N` → N slots on this job's DistSSHKit parent
 - `parent:0` skips parent when children are listed
-- `child:NAME` without `:N` → [`size!`](@ref) on that host (needs a session)
+- `parent` / `child:NAME` without `:N` → error (except `--repeat`: uncapped)
 - `child:NAME:N` → N SSH slots (`NAME`, or `NAME-1` … when N>1)
 - `total=N` (`--repeat N`): N independent runs, round-robin across listed
   hosts. No tokens → all N on parent. Omit `:N` → no cap on that host.
@@ -172,36 +172,6 @@ function _go_tokens_for_repeat(
         end
     end
     return tokens
-end
-
-"""Fill omitted `:N` via [`worker_plan_from_tokens`](@ref). `--repeat` skips this."""
-function _go_autosize_tokens(
-        host_tokens::AbstractVector{<:AbstractString};
-        session::KitSession,
-        gb_per_worker::Union{Nothing, Real} = nothing,
-        probe::Union{Nothing, AbstractString} = nothing,
-        mem_headroom::Real = DEFAULT_MEM_HEADROOM,
-        parent_gb::Real = DEFAULT_PARENT_GB,
-    )::Vector{String}
-    isempty(host_tokens) && return String[String(t) for t in host_tokens]
-    parsed = parse_worker_tokens(host_tokens)
-    worker_tokens_fully_specified(parsed) &&
-        return String[String(t) for t in host_tokens]
-    wp = worker_plan_from_tokens(
-        host_tokens;
-        session = session,
-        gb_per_worker = gb_per_worker,
-        probe = probe,
-        mem_headroom = mem_headroom,
-        parent_gb = parent_gb,
-    )
-    filled = resolved_placement_tokens(wp)
-    isempty(filled) && throw(
-        ArgumentError(
-            "no execution slots: size! suggested 0 workers for $(join(host_tokens, ' '))",
-        )
-    )
-    return filled
 end
 
 function _go_plan_slots(
@@ -811,8 +781,8 @@ is still read (API `go!("job.jl")`). Non-empty `workers` (CLI
 started together. `repeat=N` (CLI `--repeat N`) is the total number of those
 runs, spread round-robin across listed hosts (no tokens → all on parent).
 `:N` on a token is a per-host cap when `repeat` is set; omit it to leave that
-host uncapped. Without `repeat`, omitted `:N` is filled by [`size!`](@ref)
-(same as drive). Empty tokens stay one parent slot.
+host uncapped. Without `repeat`, every listed token needs `:N` (omitting it is
+not 1 and not [`size!`](@ref)). Empty tokens stay one parent slot.
 `path_anchor` shortens displayed paths (CLI passes kit project root).
 """
 function go!(
@@ -833,10 +803,6 @@ function go!(
         hint_surface::Symbol = :api,
         original_args::Vector{String} = String[],
         repeat::Union{Nothing, Integer} = nothing,
-        gb_per_worker::Union{Nothing, Real} = nothing,
-        probe::Union{Nothing, AbstractString} = nothing,
-        mem_headroom::Real = DEFAULT_MEM_HEADROOM,
-        parent_gb::Real = DEFAULT_PARENT_GB,
     )::GoResult
     script_path = canonical_local_path(script)
     proj = canonical_local_path(project)
@@ -872,10 +838,6 @@ function go!(
             hint_surface,
             original_args,
             repeat,
-            gb_per_worker,
-            probe,
-            mem_headroom,
-            parent_gb,
         )
     finally
         _release_kit_inproc_run!()
@@ -900,10 +862,6 @@ function _go_run!(
         hint_surface,
         original_args,
         repeat,
-        gb_per_worker,
-        probe,
-        mem_headroom,
-        parent_gb,
     )
     anchor = something(path_anchor, proj)
 
@@ -921,24 +879,8 @@ function _go_run!(
             push!(tokens, line)
         end
     end
-    if repeat === nothing && !isempty(tokens) &&
-            !worker_tokens_fully_specified(parse_worker_tokens(tokens))
-        size_session = KitSession(
-            project = proj,
-            workers = tokens,
-            remote = remote,
-            quiet = quiet,
-            verbosity = verbosity,
-            yes = yes,
-        )
-        tokens = _go_autosize_tokens(
-            tokens;
-            session = size_session,
-            gb_per_worker = gb_per_worker,
-            probe = probe,
-            mem_headroom = mem_headroom,
-            parent_gb = parent_gb,
-        )
+    if repeat === nothing
+        require_counted_placement_tokens(tokens; surface = hint_surface)
     end
     slots = _go_plan_slots(tokens; total = repeat)
     place = placement_tokens_from_go_slots(slots)

@@ -83,14 +83,7 @@ using Test
         @test occursin("work", s)
         @test !occursin("map", s)
 
-        plan = DistSSHKit._ride_resolve_plan(
-            ["child:h:2", "parent:1"];
-            session = nothing,
-            gb_per_worker = nothing,
-            probe = nothing,
-            mem_headroom = DistSSHKit.DEFAULT_MEM_HEADROOM,
-            parent_gb = DistSSHKit.DEFAULT_PARENT_GB,
-        )
+        plan = DistSSHKit._ride_resolve_plan(["child:h:2", "parent:1"])
         @test plan.parent_workers == 1
         @test plan.child_workers["h"] == 2
 
@@ -401,7 +394,7 @@ using Test
 
         child = DistSSHKit.ride!(map_path, "child:host1")
         @test !child.ok
-        @test occursin("KitSession", something(child.error, ""))
+        @test occursin(":N", something(child.error, ""))
 
         drive_path = joinpath(tmp, "driver.jl")
         write(drive_path, "using Distributed\npmap(x -> x, 1:2)\n")
