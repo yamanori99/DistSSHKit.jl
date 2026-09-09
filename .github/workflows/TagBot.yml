@@ -4,9 +4,9 @@
 #
 # Do not set `permissions:` here (TagBot troubleshooting: use repo defaults).
 # SSH deploy key pushes the tag so Docs on `vX.Y.Z` runs. GitHub Releases use
-# `token`. `GITHUB_TOKEN` often 403s on POST /releases (`workflows: write`);
-# set repo secret `TAGBOT_PAT` (fine-grained: this repo, Contents + Issues +
-# Workflows write). Empty secret falls back to `GITHUB_TOKEN`.
+# `token`. Prefer repo secret `TAGBOT_PAT` (fine-grained, this repo: Contents
+# + Issues write). Add Workflows write only if the tagged SHA changes
+# `.github/workflows`. Empty secret falls back to `GITHUB_TOKEN`.
 name: TagBot
 on:
   issue_comment:
