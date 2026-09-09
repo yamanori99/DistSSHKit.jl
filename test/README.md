@@ -76,7 +76,8 @@ Green on one layer does not imply the others. `Pkg.test()` does not run
   (SSH steps can sit silent for minutes otherwise). Update `_E2E_N` when
   adding a case.
 - **e2e weekly** (10–50 min): same `e2e.jl` from Linux, macOS Intel, or
-  WSL2 (not a PR check; starts on a `cut` merge, required before register).
+  WSL2 (not a PR check; starts on a `cut` merge; Intel / WSL are
+  watchers). Register from cut PR Linux E2E.
   Not macOS workers.
 - **doctests** (~5 s): `src/` docstring examples (Documenter, Julia 1.12).
   Not workers / SSH.

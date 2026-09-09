@@ -121,8 +121,8 @@ squash to `main` (`Project.toml` version up): bake
 `ubuntu-latest (image)` to GHCR, then `ubuntu-latest`, `macos-15-intel`, and
 `windows-latest (WSL2)` pull that tag and run the suite. Weekly Linux is the
 same suite as `cut` / **main** Linux E2E, not a PR check.
-Wait for that Full green on the merge commit before
-`@JuliaRegistrator register`.
+Register from the cut PR's Linux E2E. Weekly Intel / WSL are
+watchers (`cut-hold` only if weekly Linux is red).
 
 Those kit parent jobs wait for `ubuntu-latest (image)` then pull
 `ghcr.io/<owner>/distsshkit-linux-ssh-worker:<sha>` instead of building

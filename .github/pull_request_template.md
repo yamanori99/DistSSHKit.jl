@@ -11,5 +11,6 @@
 
 - [ ] Not breaking — or `breaking` label (incompatible behavior)
 - [ ] Version raise — or `cut` label (`Project.toml` `version` went
-      up; after merge Full runs, then register; `cut-hold` if red)
+      up; register from Linux E2E; weekly Intel / WSL watch;
+      `cut-hold` if weekly Linux is red)
 - [ ] Remote / smoke tested if this PR needs it
