@@ -43,10 +43,8 @@ Breaking cut after `0.6.0`.
 
 ## 0.6.0
 
-Breaking cut after `0.5.4`. DistSSHQueue still pins Kit **0.5.x** until
+**Breaking** cut after `0.5.4`. DistSSHQueue still pins Kit **0.5.x** until
 a Queue compat patch.
-
-### Breaking
 
 - Name the runner: `go`, `plan`, `ride`, or `drive`. A bare `.jl` is
   no longer implicit `go`.
