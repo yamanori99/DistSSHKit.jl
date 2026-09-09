@@ -357,7 +357,9 @@ domains share a shape.
 ## Issues and Discussions
 
 **Issues** (Bug / Enhancement forms only): `bug` or `enhancement`. The
-area dropdown is triage; add `area:*` if useful. Usage questions are
+area dropdown is triage; add `area:*` if useful. Horizon (`when:*`) is
+**when**, not type or path: every open Issue gets exactly one of
+`when:current` / `when:next` / `when:later`. Usage questions are
 Discussions. Confirmed bugs are Issues. `breaking` and `cut` are PR
 labels; `cut-hold` is an Issue label after a cut merge. Direction:
 [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26).
@@ -382,8 +384,8 @@ do not need an Announcements post; the GitHub Release is enough.
 Every tracked path must match some `area:*` glob (`gen-labeler.sh
 --check`). Globs are positive paths; do not add `!` excludes (labeler
 ORs them as "not this path" and tags unrelated files). Path labeler
-syncs only `area:*`. After `setLabels` it restores type / `cut` / other
-non-area labels so a concurrent Type job is not wiped.
+syncs only `area:*`. After `setLabels` it restores type / `cut` / `when:*`
+/ other non-area labels so a concurrent Type job is not wiped.
 
 - `src/cli/<area>/` (`explain` / `demos` too): `area:<area>`
 - Shared kit (`src/DistSSHKit.jl`, leftover DistSSHKit / argv stems,
@@ -426,6 +428,27 @@ CI infers, in order:
 `fix/` plus `Fixes` an enhancement issue gets `enhancement`. `breaking`
 may sit next to the type label. After merge Full runs; a human
 registers when green (or holds with `cut-hold`); TagBot tags.
+
+Ruleset `main` requires check `PR label` (workflow `Type`). Type labels
+(`bug` / `enhancement` / `breaking` / `chore` / `cut`) and each `area:*`
+must exist (`gh label create` if missing). `when:*` is Issues only (not
+a PR type).
+
+| Kind | Color | Labels |
+| --- | --- | --- |
+| Type | red / green / yellow / dark red / purple / mint | `bug` `enhancement` `chore` `breaking` `cut` `dependencies` |
+| Path area | teal `#bfdadc` | `area:drive` `area:go` `area:setup` `area:explain` `area:size` `area:demos` `area:kit` `area:project-docs` |
+| Documenter | blue `#0075ca` | `area:docs` (and leftover `docs`) |
+| CI | black `#000000` | `area:ci` (and leftover `ci`) |
+| Hold | orange `#bf8700` | `cut-hold` on Issue `E2E weekly failed` after a red Full |
+| Test harness | pale blue `#c5def5` | `area:test` |
+| Horizon | orange `#fdba74` / violet `#c4b5fd` / slate `#94a3b8` | `when:current` `when:next` `when:later` |
+
+| `when:*` | Use |
+| --- | --- |
+| `when:current` | Broken daily path or CLI that lies; same 0.7 contract |
+| `when:next` | Same contract: chrome, copy, colors |
+| `when:later` | Later cut: DistSSHUp, testitem, citation, comparison docs |
 
 ## Language
 
