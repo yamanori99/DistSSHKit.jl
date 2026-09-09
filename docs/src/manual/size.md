@@ -58,7 +58,7 @@ into go / ride / drive. Prefer `--gb-per-worker` when you know the workload.
 workers are still added one host at a time.
 
 ```bash
-julia --project=. -m DistSSHKit size parent host1 host2
+julia --project=. -m DistSSHKit size parent child:host1 child:host2
 julia --project=. -m DistSSHKit size --probe warmup.jl parent
 ```
 
