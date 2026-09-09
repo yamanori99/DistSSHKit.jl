@@ -6,6 +6,10 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+## 0.7.1
+
+Patch after `0.7.0`.
+
 - Drive runtime (`run_drive_parsed!`, workers, collect) lives in DistSSHKit,
   not Main. Worker bootstrap uses `include_string` / `Core.eval` on Main so
   remotes still need no DistSSHKit. Fixes `#360` class of Main `UndefVarError`
@@ -39,10 +43,8 @@ Breaking cut after `0.6.0`.
 
 ## 0.6.0
 
-Breaking cut after `0.5.4`. DistSSHQueue still pins Kit **0.5.x** until
+**Breaking** cut after `0.5.4`. DistSSHQueue still pins Kit **0.5.x** until
 a Queue compat patch.
-
-### Breaking
 
 - Name the runner: `go`, `plan`, `ride`, or `drive`. A bare `.jl` is
   no longer implicit `go`.
