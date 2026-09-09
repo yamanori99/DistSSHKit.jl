@@ -137,7 +137,7 @@ function run_prepare_workers!()
     write_both("  Running prepare_workers!... ")
     flush(stdout)
     return try
-        Main.prepare_workers!()
+        Base.invokelatest(Main.prepare_workers!)
         _drive_eval_workers(:(Base.invokelatest(Main.prepare_workers!)))
         print_ok("✓")
         writeln_both("")
@@ -237,7 +237,11 @@ function init_drive_workers!(proj_dir::String, explicit_package, path_anchor::St
 
                 # Skip processes where the binding already exists (e.g. master
                 # already loaded DistSSHKit via `julia -m DistSSHKit`).
-                load_src = "isdefined(Main, $(repr(pkg_sym))) || using $pkg_sym"
+                load_src = """
+                if !isdefined(Main, $(repr(pkg_sym)))
+                    using $pkg_sym
+                end
+                """
                 _drive_include_workers(load_src)
 
                 for w in workers()
