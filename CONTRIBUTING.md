@@ -179,8 +179,9 @@ A new root markdown file stays heavy until listed in
 [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml).
 A `cut` label skips none of this: Pkg.test, JETLS, Aqua, Documenter,
 and Linux E2E all run (E2E Codecov too). macOS / WSL stay on `E2E weekly`,
-not the PR (Full starts on the merge commit when `version` went up).
-Register only after that matrix is green on the merge commit.
+not the PR. Register from the cut PR's Linux E2E (optional local Mac
+`./testenv/docker-ssh/scripts/up.sh --e2e`). Intel / WSL weekly are
+watchers, not the register gate.
 
 Required to merge (branch protection uses these names). Tip jobs are
 allow-failure. A job skipped by the heavy / E2E gate shows as skipping
@@ -251,10 +252,9 @@ not rewrite files you did not mean to touch.
 **E2E weekly** (Sunday 04:00 JST, Run workflow, or a `cut` squash on
 `main`): `ubuntu-latest`, `macos-15-intel`, WSL2 → `ubuntu-24.04`.
 Linux job uploads E2E Codecov. Not a PR check. Failure opens (or
-comments on) Issue `E2E weekly failed`; a later green run closes it.
-A red run after a `cut` merge also adds `cut-hold`. Register only
-after Full is green on that merge commit. Cron still runs when no
-cut landed that week.
+comments on) Issue `E2E weekly failed`; a later all-green run closes it.
+A red **Linux** job after a `cut` merge adds `cut-hold`. Intel / WSL red
+does not. Cron still runs when no cut landed that week.
 
 **CI weekly** (Sunday 10:00 JST, or Run workflow): same `Pkg.test` /
 JETLS / Aqua slots as a PR (no coverage). Not a PR check. Catches max /
@@ -294,9 +294,10 @@ with `setup --delete`. First deploy `--rsync`; later git `--sync` /
 - `cut`: `Project.toml` `version` went up. CI adds this; other
   `Project.toml` edits do not. The PR suite does not path-skip.
 - `cut-hold`: postpone register. CI adds this on Issue `E2E weekly
-  failed` when Full is red after a `cut` merge; remove it (or wait
-  for a green Full) before register. You may add it yourself to
-  pause. Do not lower `version`; General never takes a version down.
+  failed` when the weekly **Linux** job is red after a `cut` merge;
+  remove it (or wait for a green Linux weekly) before register. Intel /
+  WSL red does not add it. You may add it yourself to pause. Do not
+  lower `version`; General never takes a version down.
 
 On a breaking line bump `x` in `0.x.y`; otherwise bump `y`.
 
@@ -317,21 +318,24 @@ two-week rule above unless a General user needs them sooner.
 
 ### After a cut merges
 
-1. **E2E weekly** starts on the **merge commit** (`Project.toml`
-   version went up). Do not register until Linux, macOS Intel, and
-   WSL are green. Path-filtered PRs already run Linux E2E; `cut` still
-   forces it (with Codecov) on the version-bump PR. Full covers macOS /
-   WSL after squash. Do not wait for Sunday cron. `workflow_dispatch`
-   remains for a re-run.
-2. Full red: Issue `E2E weekly failed` gets `cut-hold`. Do not
-   `@JuliaRegistrator register` while `cut-hold` is open. Do not
-   lower `version`.
-3. Full green: CI removes `cut-hold` and closes the Issue. Register
-   on that merge commit (not the PR body). Paste the NEWS section
-   under `Release notes:`.
-4. Skip that version on General instead: keep `cut-hold` until a later
+1. Register when the **cut PR Linux E2E** is green (`ubuntu-latest →
+   ubuntu-24.04`, with Codecov). Path-filtered PRs already run that
+   job; `cut` still forces it. Optional: local Mac
+   `./testenv/docker-ssh/scripts/up.sh --e2e` (same suite; not Colima
+   Intel CI). Do not wait for weekly Intel / WSL.
+2. **E2E weekly** still starts on the merge commit (`Project.toml`
+   version went up): Linux, `macos-15-intel`, WSL2. Watchers. Do not
+   wait for Sunday cron. `workflow_dispatch` remains for a re-run.
+3. Weekly **Linux** red after a cut: Issue `E2E weekly failed` gets
+   `cut-hold`. Do not `@JuliaRegistrator register` while `cut-hold` is
+   open. Do not lower `version`. Intel / WSL red comments on that
+   Issue without `cut-hold`.
+4. Weekly Linux green: CI removes `cut-hold` and closes the Issue when
+   the whole weekly run is green. Register on the merge commit (not
+   the PR body). Paste the NEWS section under `Release notes:`.
+5. Skip that version on General instead: keep `cut-hold` until a later
    cut (higher `version`) is ready, then register that later cut.
-5. TagBot tags once General has the release.
+6. TagBot tags once General has the release.
 
 TagBot uses SSH deploy key secret `DOCUMENTER_KEY` (write deploy key on
 this repo) so the `vX.Y.Z` tag starts Docs and `stable` updates. Docs
@@ -426,8 +430,9 @@ CI infers, in order:
    anything else → chore
 
 `fix/` plus `Fixes` an enhancement issue gets `enhancement`. `breaking`
-may sit next to the type label. After merge Full runs; a human
-registers when green (or holds with `cut-hold`); TagBot tags.
+may sit next to the type label. After a cut, a human registers from
+Linux E2E (or holds with `cut-hold` if weekly Linux is red); TagBot
+tags.
 
 Ruleset `main` requires check `PR label` (workflow `Type`). Type labels
 (`bug` / `enhancement` / `breaking` / `chore` / `cut`) and each `area:*`
@@ -440,7 +445,7 @@ a PR type).
 | Path area | teal `#bfdadc` | `area:drive` `area:go` `area:setup` `area:explain` `area:size` `area:demos` `area:kit` `area:project-docs` |
 | Documenter | blue `#0075ca` | `area:docs` (and leftover `docs`) |
 | CI | black `#000000` | `area:ci` (and leftover `ci`) |
-| Hold | orange `#bf8700` | `cut-hold` on Issue `E2E weekly failed` after a red Full |
+| Hold | orange `#bf8700` | `cut-hold` on Issue `E2E weekly failed` after a red weekly Linux job |
 | Test harness | pale blue `#c5def5` | `area:test` |
 | Horizon | orange `#fdba74` / violet `#c4b5fd` / slate `#94a3b8` | `when:current` `when:next` `when:later` |
 

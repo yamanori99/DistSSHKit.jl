@@ -2,7 +2,9 @@ name: E2E weekly
 
 # Not on pull_request: skipped macOS/WSL jobs would show on every PR, and
 # job-name expressions do not expand when skipped.
-# Push to main with a version increase (a `cut` squash) runs Full on that SHA.
+# Push to main with a version increase (a `cut` squash) runs the weekly
+# matrix on that SHA (Linux + Intel + WSL). Register from cut PR Linux
+# E2E; Intel / WSL are watchers. `cut-hold` only if weekly Linux is red.
 on:
   push:
     branches:
@@ -269,6 +271,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FAILED: ${{ contains(join(needs.*.result, ','), 'failure') }}
+          LINUX_FAILED: ${{ needs.linux-image.result == 'failure' || needs.linux-e2e.result == 'failure' }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           CUT_PUSH: ${{ github.event_name == 'push' }}
         run: |
@@ -277,14 +280,16 @@ jobs:
           if [ "$FAILED" = "true" ]; then
             body="Latest run: $RUN_URL
 
-          Not a PR check. Re-run **E2E weekly** after a fix. A red run after a \`cut\` merge adds \`cut-hold\` (do not register)."
+          Not a PR check. Re-run **E2E weekly** after a fix. A red **Linux** job after a \`cut\` merge adds \`cut-hold\` (do not register). Intel / WSL red does not."
             labels=ci
-            if [ "$CUT_PUSH" = "true" ]; then
+            hold=false
+            if [ "$CUT_PUSH" = "true" ] && [ "$LINUX_FAILED" = "true" ]; then
               labels=ci,cut-hold
+              hold=true
             fi
             if [ -n "$existing" ]; then
               gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
-              if [ "$CUT_PUSH" = "true" ]; then
+              if [ "$hold" = "true" ]; then
                 gh issue edit "$existing" --repo "$GITHUB_REPOSITORY" --add-label cut-hold
               fi
             else
