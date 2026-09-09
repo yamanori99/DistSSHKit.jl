@@ -342,15 +342,18 @@ function execute!(
     return kit_run_result(result)
 end
 
-function _toml_names_distsshkit(path::AbstractString)::Bool
-    isfile(path) || return false
+function _parse_toml_dict(path::AbstractString)
+    isfile(path) || return nothing
     raw = try
         TOML.parsefile(String(path))
     catch
-        return false
+        return nothing
     end
+    return raw isa AbstractDict ? raw : nothing
+end
+
+function _deps_has_distsshkit(raw)::Bool
     raw isa AbstractDict || return false
-    haskey(raw, "DistSSHKit") && return true
     deps = get(raw, "deps", nothing)
     return deps isa AbstractDict && haskey(deps, "DistSSHKit")
 end
@@ -358,8 +361,11 @@ end
 """Whether a job tree can load `-m DistSSHKit` via `--project=` at `project`."""
 function _project_tree_has_distsshkit(project::AbstractString)::Bool
     p = String(project)
-    return _toml_names_distsshkit(joinpath(p, "Project.toml")) ||
-        _toml_names_distsshkit(joinpath(p, "Manifest.toml"))
+    _deps_has_distsshkit(_parse_toml_dict(joinpath(p, "Project.toml"))) && return true
+    mt = _parse_toml_dict(joinpath(p, "Manifest.toml"))
+    mt isa AbstractDict || return false
+    haskey(mt, "DistSSHKit") && return true
+    return _deps_has_distsshkit(mt)
 end
 
 """`--project=` for a detached `-m DistSSHKit` child."""

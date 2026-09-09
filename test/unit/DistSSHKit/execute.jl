@@ -16,6 +16,15 @@ using Test
             write(
                 joinpath(proj, "Project.toml"),
                 """
+                name = "BogusTopLevel"
+                DistSSHKit = "not-a-dep"
+                """,
+            )
+            @test !DistSSHKit._project_tree_has_distsshkit(proj)
+            @test DistSSHKit._detached_julia_project(proj) == kit
+            write(
+                joinpath(proj, "Project.toml"),
+                """
                 name = "HasKitDep"
                 [deps]
                 DistSSHKit = "ceec0504-c968-4be5-b215-667cae0e8f81"
