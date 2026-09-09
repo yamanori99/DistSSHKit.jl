@@ -313,6 +313,7 @@ using Test
             with_kit_verbosity(:progress) do
                 @test_throws ArgumentError DistSSHKit.sync!(local_only)
                 @test_throws ArgumentError DistSSHKit.sync!(local_only; mode = false)
+                @test_throws ArgumentError DistSSHKit.sync!(remote; mode = nothing)
                 @test_throws ArgumentError DistSSHKit.sync!(remote; mode = :nope)
             end
         end
