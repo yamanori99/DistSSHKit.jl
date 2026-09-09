@@ -291,6 +291,8 @@ jobs:
               gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
               if [ "$hold" = "true" ]; then
                 gh issue edit "$existing" --repo "$GITHUB_REPOSITORY" --add-label cut-hold
+              else
+                gh issue edit "$existing" --repo "$GITHUB_REPOSITORY" --remove-label cut-hold || true
               fi
             else
               gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label "$labels" --body "$body"

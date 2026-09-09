@@ -330,9 +330,10 @@ two-week rule above unless a General user needs them sooner.
    `cut-hold`. Do not `@JuliaRegistrator register` while `cut-hold` is
    open. Do not lower `version`. Intel / WSL red comments on that
    Issue without `cut-hold`.
-4. Weekly Linux green: CI removes `cut-hold` and closes the Issue when
-   the whole weekly run is green. Register on the merge commit (not
-   the PR body). Paste the NEWS section under `Release notes:`.
+4. Weekly Linux green: CI removes `cut-hold` even if Intel / WSL are
+   still red (the Issue stays open until the whole weekly run is
+   green). Register on the merge commit (not the PR body). Paste the
+   NEWS section under `Release notes:`.
 5. Skip that version on General instead: keep `cut-hold` until a later
    cut (higher `version`) is ready, then register that later cut.
 6. TagBot tags once General has the release.
