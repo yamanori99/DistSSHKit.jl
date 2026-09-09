@@ -31,13 +31,12 @@ function collect!(
     )
     return _with_kit_inproc_run!(:collect) do
         apply_session_env!(session)
-        _ensure_drive_fragments!(session.project)
-        collect_fn = Main.eval(:(drive_collect_tree))
-        ok = Base.invokelatest(
-            collect_fn,
+        ok = drive_collect_tree(
             String(local_root),
             host_list;
             merge = merge,
+            project_root = session.project,
+            path_anchor = canonical_local_path(session.project),
         )
         return CollectResult(ok, ok ? 0 : 1)
     end

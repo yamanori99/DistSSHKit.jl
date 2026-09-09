@@ -245,7 +245,6 @@ using Test
             script = joinpath(tmp, "job.jl")
             write(script, "")
             session = DistSSHKit.KitSession(project = tmp, workers = ["child:host-a"])
-            DistSSHKit._ensure_drive_fragments!(tmp)
 
             parsed = DistSSHKit.drive_parsed_from_session(session, script)
             @test parsed.sync_mode === nothing
@@ -319,12 +318,11 @@ using Test
         end
     end
 
-    @testset "drive runtime helpers in Main" begin
-        # `_common.jl` / `checks.jl` load into Main with the drive CLI fragments.
+    @testset "drive runtime helpers" begin
+        # `checks.jl` / `workers.jl` live in DistSSHKit (not Main fragments).
         _with_tempdir() do tmp
-            DistSSHKit._ensure_drive_fragments!(tmp)
-            @test Main.estimate_worker_memory_gb() > 0
-            total, avail = Main.estimate_available_gb()
+            @test DistSSHKit.estimate_worker_memory_gb() > 0
+            total, avail = DistSSHKit.estimate_available_gb()
             @test total > 0
             @test avail > 0
             with_kit_verbosity(:progress) do
@@ -333,21 +331,21 @@ using Test
                 )
                 redirect_stdout(devnull) do
                     redirect_stderr(devnull) do
-                        @test Main.check_memory_capacity(1, Tuple{String, Union{Int, Nothing}}[], nothing)
-                        ok, mm, uv = Main.check_git_hashes(String[], tmp)
+                        @test DistSSHKit.check_memory_capacity(1, Tuple{String, Union{Int, Nothing}}[], nothing)
+                        ok, mm, uv = DistSSHKit.check_git_hashes(String[], tmp)
                         @test ok
                         @test isempty(mm)
                         @test isempty(uv)
-                        @test !Main._skip_global_worker_pkill()
+                        @test !DistSSHKit._skip_global_worker_pkill()
                         withenv("DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL" => "1") do
-                            @test Main._skip_global_worker_pkill()
-                            Main.cleanup_stale_workers!(Tuple{String, Union{Int, Nothing}}[])
+                            @test DistSSHKit._skip_global_worker_pkill()
+                            DistSSHKit.cleanup_stale_workers!(Tuple{String, Union{Int, Nothing}}[])
                         end
                     end
                 end
             end
             missing = joinpath(tmp, "no_such_driver.jl")
-            msg = Main.drive_script_not_found_message(missing, tmp; surface = :api)
+            msg = DistSSHKit.drive_script_not_found_message(missing, tmp; surface = :api)
             @test occursin("not found", lowercase(msg))
         end
     end

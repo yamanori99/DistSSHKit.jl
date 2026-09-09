@@ -1,7 +1,12 @@
-function place_drive_sentinels!(successful_hosts::Vector{String}, script_dir::String, skip_collect::Bool)::String
+function place_drive_sentinels!(
+        successful_hosts::Vector{String},
+        script_dir::String,
+        skip_collect::Bool,
+        project_root::AbstractString,
+    )::String
     (skip_collect || isempty(successful_hosts)) && return ""
     sentinel_name = ".drive_sentinel_$(getpid())_$(Dates.format(now(), "yyyymmddTHHMMSS"))"
-    repo_ra = DistSSHKit.canonical_local_path(PROJECT_ROOT)
+    repo_ra = canonical_local_path(project_root)
     collect_roots_sentinel = distributed_collect_root_dirs(script_dir, repo_ra)
     for local_rd in collect_roots_sentinel
         _early_local = DistSSHKit.canonical_local_path(local_rd)
@@ -135,6 +140,7 @@ function collect_drive_results!(
         sentinel_name::String,
         skip_collect::Bool,
         path_anchor::String,
+        project_root::AbstractString,
     )
     results_dir = DistSSHKit.resolve_drive_output_dir(script_dir)
 
@@ -151,12 +157,12 @@ function collect_drive_results!(
         return true, [DistSSHKit.HostRunResult(h, true) for h in unique(successful_hosts)]
     end
 
-    collect_roots = distributed_collect_root_dirs(script_dir, DistSSHKit.canonical_local_path(PROJECT_ROOT))
+    collect_roots = distributed_collect_root_dirs(script_dir, canonical_local_path(project_root))
     for local_rd in collect_roots
         mkpath(local_rd)
     end
     writeln_both("Collecting results from remote hosts..."; color = :light_black)
-    repo_ra = DistSSHKit.canonical_local_path(PROJECT_ROOT)
+    repo_ra = canonical_local_path(project_root)
     hosts_u = unique(successful_hosts)
     n_hosts = length(hosts_u)
     totals = zeros(Int, n_hosts)

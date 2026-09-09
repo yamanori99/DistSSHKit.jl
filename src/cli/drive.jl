@@ -23,12 +23,6 @@ if !isdefined(@__MODULE__, :DistSSHKit)
 end
 include(joinpath(@__DIR__, "drive", "_using.jl"))
 
-const PROJECT_ROOT = cli_project_root(@__DIR__)
-const _PATH_ANCHOR = DistSSHKit.canonical_local_path(PROJECT_ROOT)
-
-# Execution core lives under DistSSHKit/drive/runtime/ (Main-scoped for Distributed).
-include(joinpath(@__DIR__, "..", "DistSSHKit", "drive", "_load_runtime.jl"))
-
 function _restore_drive_args!(original_args::Vector{String})
     empty!(ARGS)
     return append!(ARGS, original_args)
@@ -45,7 +39,11 @@ end
 
 function _drive_main_body(original_args::Vector{String})::Cint
     parsed = parse_drive_args(ARGS)
-    return run_drive_parsed!(parsed; original_args = original_args)
+    return run_drive_parsed!(
+        parsed;
+        original_args = original_args,
+        project_root = cli_project_root(@__DIR__),
+    )
 end
 
 if get(ENV, "DIST_SSH_KIT_CLI_INCLUDE", "") != "1" &&

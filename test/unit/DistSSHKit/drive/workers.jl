@@ -1,30 +1,17 @@
 using Test
 using Distributed
 
-# Oracle: worker lifecycle helpers in drive/runtime/workers.jl.
-# Those fragments are Main-scoped (`cli/drive.jl` / `_ensure_drive_fragments!`).
+# Oracle: worker lifecycle helpers in drive/runtime/workers.jl (DistSSHKit module).
 # Do not `include` the runtime sources from this file: JetLS follows top-level
-# `include()` from `test/runtests.jl` and would then type-check production
-# `workers.jl` inside a test module (wrong `PROJECT_ROOT`, `hosts::Vector{String}`
-# unpacked as `Char`). Load the same way `drive!` does, at top level, so
-# `Main.*` methods exist before this file's `@testset` is lowered (world age).
+# `include()` from `test/runtests.jl` and would type-check production
+# `workers.jl` inside a test module.
 
 const _EMPTY_DRIVE_HOSTS = Tuple{String, Union{Int, Nothing}}[]
 
-let _frag_root = mktempdir()
-    try
-        DistSSHKit._ensure_drive_fragments!(_frag_root)
-    finally
-        rm(_frag_root; recursive = true, force = true)
-    end
-end
-
 @testset "drive workers lifecycle" begin
     _with_tempdir() do tmp
-        DistSSHKit._ensure_drive_fragments!(tmp)
 
-        @testset "setup_cli_host_token is not a Main name" begin
-            @test !isdefined(Main, :setup_cli_host_token)
+        @testset "setup_cli_host_token child token" begin
             host_name = "worker-host"
             hint = "hint: julia --project=. -m DistSSHKit setup --instantiate $(DistSSHKit.setup_cli_host_token(host_name))"
             @test occursin("child:worker-host", hint)
@@ -33,7 +20,7 @@ end
         @testset "register_worker_cleanup! lone master is a no-op" begin
             @test nprocs() == 1
             @test workers() == [1]
-            cleanup = Main.register_worker_cleanup!(String[])
+            cleanup = DistSSHKit.register_worker_cleanup!(String[])
             # Must not rmprocs([1]) / warn "process 1 not removed".
             @test cleanup() === nothing
             @test nprocs() == 1
@@ -46,7 +33,7 @@ end
             added = workers()
             @test length(added) == 2
             try
-                cleanup = Main.register_worker_cleanup!(String[])
+                cleanup = DistSSHKit.register_worker_cleanup!(String[])
                 cleanup()
                 @test nprocs() == 1
                 @test workers() == [1]
@@ -62,7 +49,7 @@ end
             addprocs(1; topology = :master_worker)
             pre = workers()[end]
             try
-                cleanup = Main.register_worker_cleanup!(String[])
+                cleanup = DistSSHKit.register_worker_cleanup!(String[])
                 cleanup()
                 @test pre ∉ workers()
                 addprocs(1; topology = :master_worker)
@@ -82,7 +69,7 @@ end
             withenv("DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL" => nothing) do
                 mktemp() do path, io
                     redirect_stdout(io) do
-                        Main.cleanup_stale_workers!(_EMPTY_DRIVE_HOSTS)
+                        DistSSHKit.cleanup_stale_workers!(_EMPTY_DRIVE_HOSTS)
                     end
                     flush(io)
                     @test !occursin("Cleaning up stale workers", read(path, String))
@@ -94,7 +81,7 @@ end
             withenv("DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL" => nothing, "DISTSSHKIT_JOB_ID" => nothing) do
                 mktemp() do path, io
                     redirect_stdout(io) do
-                        Main.cleanup_stale_workers!(
+                        DistSSHKit.cleanup_stale_workers!(
                             Tuple{String, Union{Int, Nothing}}[("example.invalid", 1)],
                         )
                     end
@@ -108,7 +95,7 @@ end
             withenv("DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL" => "1") do
                 mktemp() do path, io
                     redirect_stdout(io) do
-                        Main.cleanup_stale_workers!(
+                        DistSSHKit.cleanup_stale_workers!(
                             Tuple{String, Union{Int, Nothing}}[("example.invalid", 1)],
                         )
                     end
@@ -122,8 +109,8 @@ end
             script = joinpath(tmp, "job.jl")
             write(script, "")
             @test_throws ErrorException redirect_stdout(devnull) do
-                Main.add_drive_workers!(
-                    _EMPTY_DRIVE_HOSTS, 0, nothing, nothing, tmp, script,
+                DistSSHKit.add_drive_workers!(
+                    _EMPTY_DRIVE_HOSTS, 0, nothing, nothing, tmp, script, tmp,
                 )
             end
         end
@@ -133,8 +120,8 @@ end
             write(script, "")
             before = Set(workers())
             successful_hosts = redirect_stdout(devnull) do
-                Main.add_drive_workers!(
-                    _EMPTY_DRIVE_HOSTS, 2, nothing, nothing, tmp, script,
+                DistSSHKit.add_drive_workers!(
+                    _EMPTY_DRIVE_HOSTS, 2, nothing, nothing, tmp, script, tmp,
                 )
             end
             added = setdiff(Set(workers()), before)
@@ -143,7 +130,7 @@ end
                 @test length(added) == 2
                 @test nprocs() > 1
                 for w in added
-                    @test get(Main.RUNNER_WORKER_PROJECT_DIRS, w, nothing) == tmp
+                    @test get(DistSSHKit.RUNNER_WORKER_PROJECT_DIRS, w, nothing) == tmp
                 end
             finally
                 for w in added

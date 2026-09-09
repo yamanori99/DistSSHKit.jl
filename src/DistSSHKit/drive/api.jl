@@ -61,7 +61,6 @@ function drive!(
     )::DriveResult
     return _with_kit_inproc_run!(:drive) do
         apply_session_env!(session)
-        _ensure_drive_fragments!(session.project)
         resolved = plan
         if resolved === nothing && !isempty(session.tokens)
             resolved = worker_plan_from_tokens(session.tokens)
@@ -89,14 +88,13 @@ function drive!(
         resolved_log_dir = Ref{Union{Nothing, String}}(nothing)
         resolved_hosts = Ref{Vector{HostRunResult}}(HostRunResult[])
         try
-            run_fn = Main.eval(:(run_drive_parsed!))
-            code = Base.invokelatest(
-                run_fn,
+            code = run_drive_parsed!(
                 parsed;
                 original_args = original_args,
                 resolved_output_dir = resolved_output_dir,
                 resolved_log_dir = resolved_log_dir,
                 resolved_hosts = resolved_hosts,
+                project_root = session.project,
             )
             return DriveResult(
                 code == 0, Int(code);

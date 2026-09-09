@@ -397,21 +397,8 @@ function _ride_restore_project!(prev)
     return nothing
 end
 
-function _ride_main_call(name::Symbol, args...; kwargs...)
-    Base.invokelatest(isdefined, Main, name) ||
-        error("ride: drive runtime not loaded ($name)")
-    f = Base.invokelatest(getfield, Main, name)
-    return Base.invokelatest(f, args...; kwargs...)
-end
-
 function _ride_init_drive_workers!(proj_dir::AbstractString)
-    isdefined(Main, :init_drive_workers!) || return
-    anchor = if isdefined(Main, :_PATH_ANCHOR)
-        String(getfield(Main, :_PATH_ANCHOR))
-    else
-        String(proj_dir)
-    end
-    _ride_main_call(:init_drive_workers!, String(proj_dir), nothing, anchor)
+    init_drive_workers!(String(proj_dir), nothing, canonical_local_path(proj_dir))
     return nothing
 end
 
@@ -437,21 +424,20 @@ function _ride_add_workers!(
                 exeflags = _drive_worker_exeflags(project),
             )
         else
-            _ensure_drive_fragments!(project)
             julia_exe = if julia === nothing || strip(String(julia)) == "" ||
                     lowercase(strip(String(julia))) == "auto"
                 nothing
             else
                 String(julia)
             end
-            successful = _ride_main_call(
-                :add_drive_workers!,
+            successful = add_drive_workers!(
                 child_hosts,
                 plan.parent_workers,
                 1,
                 julia_exe,
                 String(project),
                 String(script_path),
+                String(project),
             )
             ssh_hosts = String[String(h) for h in successful]
             if require_all_hosts
@@ -467,12 +453,7 @@ function _ride_add_workers!(
                     )
                 end
             end
-            if isdefined(Main, :wait_for_worker_connections!)
-                _ride_main_call(
-                    :wait_for_worker_connections!;
-                    ssh = !isempty(child_hosts),
-                )
-            end
+            wait_for_worker_connections!(; ssh = !isempty(child_hosts))
             _ride_init_drive_workers!(project)
         end
         added = Int[w for w in workers() if w ∉ before]

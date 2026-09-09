@@ -1,37 +1,3 @@
-# Lazy `include` of CLI fragments into `Main` (needs `PROJECT_ROOT`, `ssh_opts()`).
-
-const _KIT_SRC = abspath(joinpath(@__DIR__, "..", ".."))
-const _CLI_SRC = joinpath(_KIT_SRC, "cli")
-
-"""Ensure drive runtime (`run_drive_parsed!`) is loaded into `Main`."""
-function _ensure_drive_fragments!(project::AbstractString)
-    proj = canonical_local_path(project)
-    if isdefined(Main, :run_drive_parsed!)
-        if isdefined(Main, :PROJECT_ROOT)
-            try
-                Main.eval(:(PROJECT_ROOT = $proj))
-            catch
-                # const PROJECT_ROOT from a prior include — leave as-is
-            end
-        end
-        return
-    end
-    prev_include = get(ENV, "DIST_SSH_KIT_CLI_INCLUDE", nothing)
-    ENV["DIST_SSH_KIT_CLI_INCLUDE"] = "1"
-    try
-        haskey(ENV, "DISTRIBUTED_PROJECT_ROOT") || (ENV["DISTRIBUTED_PROJECT_ROOT"] = proj)
-        Core.include(Main, joinpath(_CLI_SRC, "drive.jl"))
-        push!(_KIT_CLI_LOADED, "drive.jl")
-    finally
-        if prev_include === nothing
-            delete!(ENV, "DIST_SSH_KIT_CLI_INCLUDE")
-        else
-            ENV["DIST_SSH_KIT_CLI_INCLUDE"] = prev_include
-        end
-    end
-    return nothing
-end
-
 """Build a `parse_drive_args`-shaped NamedTuple from a session + options."""
 function drive_parsed_from_session(
         session::KitSession,
