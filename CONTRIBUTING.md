@@ -343,6 +343,18 @@ this repo) so the `vX.Y.Z` tag starts Docs and `stable` updates. Docs
 still deploy with `GITHUB_TOKEN`. Do not add a `+doc1` tag unless that
 path failed. Manual rebuild: `gh workflow run Docs --ref vX.Y.Z`.
 
+GitHub Releases need a token that can `POST /repos/.../releases`.
+`GITHUB_TOKEN` often returns 403 (`workflows: write`) even when the
+tagged commit does not touch `.github/workflows`. Keep cut commits to
+`Project.toml` + `NEWS.md` (no workflow files). For Releases, set
+repo secret **`TAGBOT_PAT`**: fine-grained PAT, this repo only,
+Contents read/write, Issues read/write, Workflows read/write. TagBot
+falls back to `GITHUB_TOKEN` if the secret is empty. Do not put
+`permissions:` on `.github/workflows/TagBot.yml` (TagBot defaults).
+If TagBot opens `TagBot: Manual intervention needed for releases`,
+the tag may already exist; create the Release only
+(`gh release create vX.Y.Z --notes "…"`), then close the Issue.
+
 Repo Settings → Actions → Workflow permissions: **Read and write**
 (`GITHUB_TOKEN`).
 
