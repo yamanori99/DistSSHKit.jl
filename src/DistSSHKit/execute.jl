@@ -254,7 +254,9 @@ and [`drive!`](@ref) already share (`ride!` ignores `sync`). With `detached=fals
 (default), any other keyword is forwarded to the chosen function.
 
 `detached=true` spawns `julia -m DistSSHKit go|ride|drive` and returns a
-[`KitProcess`](@ref). Keywords are then an allow-list (unknown names throw):
+[`KitProcess`](@ref). `--project=` is `project=` when that tree lists
+DistSSHKit (`Project.toml` `[deps]` or `Manifest.toml`); otherwise
+`pkgdir(DistSSHKit)`. Keywords are then an allow-list (unknown names throw):
 `output_dir`, `args`, `project`, `sync`, `julia`, `quiet`, `verbosity`, `yes`,
 `remote`, `hosts_file`, `job_id`, and drive-only `log_dir`, `enable_log`,
 `package`, `require_all_hosts`, `skip_hash_check`, `mem_headroom`, `parent_gb`,
@@ -338,6 +340,36 @@ function execute!(
         )
     end
     return kit_run_result(result)
+end
+
+function _toml_names_distsshkit(path::AbstractString)::Bool
+    isfile(path) || return false
+    raw = try
+        TOML.parsefile(String(path))
+    catch
+        return false
+    end
+    raw isa AbstractDict || return false
+    haskey(raw, "DistSSHKit") && return true
+    deps = get(raw, "deps", nothing)
+    return deps isa AbstractDict && haskey(deps, "DistSSHKit")
+end
+
+"""Whether a job tree can load `-m DistSSHKit` via `--project=` at `project`."""
+function _project_tree_has_distsshkit(project::AbstractString)::Bool
+    p = String(project)
+    return _toml_names_distsshkit(joinpath(p, "Project.toml")) ||
+        _toml_names_distsshkit(joinpath(p, "Manifest.toml"))
+end
+
+"""`--project=` for a detached `-m DistSSHKit` child."""
+function _detached_julia_project(project::AbstractString)::String
+    kit_proj = pkgdir(DistSSHKit)
+    kit_proj === nothing && throw(
+        ArgumentError("pkgdir(DistSSHKit) is nothing; cannot spawn -m DistSSHKit"),
+    )
+    _project_tree_has_distsshkit(project) && return String(project)
+    return kit_proj
 end
 
 function _execute_detached!(
@@ -513,13 +545,12 @@ function _execute_detached!(
     end
     env = _execute_detached_env(extra)
     julia_bin = resolve_controller_julia(julia)
-    kit_proj = pkgdir(DistSSHKit)
-    kit_proj === nothing && throw(ArgumentError("pkgdir(DistSSHKit) is nothing; cannot spawn -m DistSSHKit"))
+    child_proj = _detached_julia_project(proj)
     cmd = Cmd(
         String[
             julia_bin,
             "--startup-file=no",
-            "--project=$(kit_proj)",
+            "--project=$(child_proj)",
             "-m",
             "DistSSHKit",
             argv...,

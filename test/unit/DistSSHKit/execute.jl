@@ -6,6 +6,45 @@ using Test
 # in-process `drive!` and owns the warn-overwrite check).
 
 @testset "execute!" begin
+    @testset "_detached_julia_project" begin
+        kit = pkgdir(DistSSHKit)
+        @test kit !== nothing
+        _with_tempdir() do proj
+            write(joinpath(proj, "Project.toml"), "name = \"NoKitHere\"\n")
+            @test !DistSSHKit._project_tree_has_distsshkit(proj)
+            @test DistSSHKit._detached_julia_project(proj) == kit
+            write(
+                joinpath(proj, "Project.toml"),
+                """
+                name = "HasKitDep"
+                [deps]
+                DistSSHKit = "ceec0504-c968-4be5-b215-667cae0e8f81"
+                """,
+            )
+            @test DistSSHKit._project_tree_has_distsshkit(proj)
+            @test DistSSHKit._detached_julia_project(proj) == proj
+        end
+        _with_tempdir() do proj
+            write(joinpath(proj, "Project.toml"), "name = \"QueueOnly\"\n")
+            write(
+                joinpath(proj, "Manifest.toml"),
+                """
+                manifest_format = "2.0"
+                [deps.DistSSHKit]
+                uuid = "ceec0504-c968-4be5-b215-667cae0e8f81"
+                """,
+            )
+            @test DistSSHKit._project_tree_has_distsshkit(proj)
+            @test DistSSHKit._detached_julia_project(proj) == proj
+        end
+        _with_tempdir() do proj
+            write(joinpath(proj, "Project.toml"), "name = \"JunkManifest\"\n")
+            write(joinpath(proj, "Manifest.toml"), "not = [ toml")
+            @test !DistSSHKit._project_tree_has_distsshkit(proj)
+            @test DistSSHKit._detached_julia_project(proj) == kit
+        end
+    end
+
     @testset "_remove_kit_pid_file" begin
         _with_tempdir() do d
             pid_path = joinpath(d, "kit.pid")
