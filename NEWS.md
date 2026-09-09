@@ -6,6 +6,10 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+- Detached `execute!` uses `--project=` of `project=` when that tree has
+  DistSSHKit (`Project.toml` deps or `Manifest.toml`); otherwise
+  `pkgdir(DistSSHKit)` (#359).
+
 ## 0.7.0
 
 Breaking cut after `0.6.0`.
