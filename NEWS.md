@@ -6,9 +6,11 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
-- Drive worker/git hints call `DistSSHKit.setup_cli_host_token` (Main-scoped
-  runtime; unexported name was `UndefVarError` instead of `child:NAME`)
-  (#360).
+- Drive runtime (`run_drive_parsed!`, workers, collect) lives in DistSSHKit,
+  not Main. Worker bootstrap uses `include_string` / `Core.eval` on Main so
+  remotes still need no DistSSHKit. Fixes `#360` class of Main `UndefVarError`
+  on hints.
+- Drive worker/git hints call `setup_cli_host_token` (`child:NAME`) (#360).
 - Detached `execute!` uses `--project=` of `project=` when that tree has
   DistSSHKit (`Project.toml` deps or `Manifest.toml`); otherwise
   `pkgdir(DistSSHKit)` (#359).

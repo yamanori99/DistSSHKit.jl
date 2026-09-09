@@ -14,11 +14,13 @@ Also available as `setup!(session, :rsync)` / `setup!(session, :sync)`.
 
 Returns [`SyncResult`](@ref).
 """
-function sync!(session::KitSession; mode::Union{Symbol, Bool} = :sync)::SyncResult
+function sync!(session::KitSession; mode = :sync)::SyncResult
+    # Untyped kw: JETLS treats omitted kwargs as `nothing`, not `Union{Symbol,Bool}`.
     mode === false && throw(ArgumentError("sync!: mode=false means skip sync; do not call sync!"))
-    mode === :rsync || mode === :sync || throw(
+    kind = mode
+    kind === :rsync || kind === :sync || throw(
         ArgumentError(
-            "sync! mode must be :rsync or :sync, got $(repr(mode))",
+            "sync! mode must be :rsync or :sync, got $(repr(kind))",
         )
     )
     isempty(session.hosts) && throw(
@@ -30,7 +32,7 @@ function sync!(session::KitSession; mode::Union{Symbol, Bool} = :sync)::SyncResu
         apply_session_env!(session)
         remote_path = session_remote_root(session)
 
-        if mode === :rsync
+        if kind === :rsync
             raw = rsync_project_to_hosts!(
                 session.hosts,
                 session.project,

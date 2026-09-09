@@ -13,15 +13,17 @@ function drive_collect_tree(
         host_names::Vector{String};
         merge::Bool = false,
         strict::Bool = false,
+        project_root::AbstractString,
+        path_anchor::AbstractString,
     )
-    repo_root = DistSSHKit.canonical_local_path(PROJECT_ROOT)
+    repo_root = canonical_local_path(project_root)
     local_root = DistSSHKit.canonical_local_path(local_root)
     transport = DistSSHKit._host_sync_rsync_transport()
     rsync_bin = DistSSHKit._host_sync_rsync_argv()
 
     print_header(merge ? "DistSSHKit collect-overwrite" : "DistSSHKit collect-missing")
     writeln_both("")
-    writeln_field("Local root", display_path(local_root, _PATH_ANCHOR))
+    writeln_field("Local root", display_path(local_root, path_anchor))
     writeln_field(
         "Mode",
         merge ? "full sync (same-named files updated when remote differs)" :

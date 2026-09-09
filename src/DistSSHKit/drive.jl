@@ -1,8 +1,9 @@
 # Drive API — session, sync!, instantiate!, setup!, size!,
 # drive!, collect!, pipeline!.
 # Result types live in `drive/types.jl` (included from `DistSSHKit.jl` before `setup/`).
-# Worker execution core lives in `drive/runtime/` and is loaded into `Main` only
-# (see `drive/_load_runtime.jl`, used by `cli/drive.jl` and `drive!`).
+# Worker execution core lives in `drive/runtime/` (included from `DistSSHKit.jl`
+# after heartbeat.jl). Worker bootstrap is `include_string` / `Core.eval` on
+# Main so remotes do not need DistSSHKit.
 
 include(joinpath(@__DIR__, "drive", "session.jl"))
 include(joinpath(@__DIR__, "drive", "bridge.jl"))

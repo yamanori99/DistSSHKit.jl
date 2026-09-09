@@ -58,6 +58,7 @@ function add_drive_workers!(
         julia_exe,
         proj_dir::String,
         script_path::String,
+        project_root::String,
     )::Vector{String}
     empty!(RUNNER_WORKER_PROJECT_DIRS)
     empty!(RUNNER_WORKER_SCRIPT_PATHS)
@@ -118,7 +119,7 @@ function add_drive_workers!(
 
             host_workers = something(host_workers_spec, default_workers, 1)
 
-            repo_ra = DistSSHKit.canonical_local_path(PROJECT_ROOT)
+            repo_ra = canonical_local_path(project_root)
             script_dir = dirname(script_path)
             remote_dir = resolve_host_path_abs(host_name, script_dir, repo_ra)
             remote_proj = resolve_host_path_abs(host_name, proj_dir, repo_ra)
@@ -130,8 +131,8 @@ function add_drive_workers!(
                     remote_path_for_ssh_collect(script_path, repo_ra)
                 print_progress_err("✗ (remote path not found: $missing)")
                 writeln_both("")
-                writeln_both("    hint: julia --project=. -m DistSSHKit setup --rsync $(DistSSHKit.setup_cli_host_token(host_name))")
-                writeln_both("          julia --project=. -m DistSSHKit setup --instantiate $(DistSSHKit.setup_cli_host_token(host_name))")
+                writeln_both("    hint: julia --project=. -m DistSSHKit setup --rsync $(setup_cli_host_token(host_name))")
+                writeln_both("          julia --project=. -m DistSSHKit setup --instantiate $(setup_cli_host_token(host_name))")
                 writeln_both("          or drive --rsync onto an empty path (instantiates missing deps)")
                 writeln_both("           or export DISTRIBUTED_REMOTE_PROJECT_ROOT=<abs path on host>")
                 continue
@@ -144,7 +145,7 @@ function add_drive_workers!(
                 write_both("$host_name ($host_workers workers): ")
                 print_progress_err("✗ ($deps_err)")
                 writeln_both("")
-                writeln_both("    hint: julia --project=. -m DistSSHKit setup --instantiate $(DistSSHKit.setup_cli_host_token(host_name))")
+                writeln_both("    hint: julia --project=. -m DistSSHKit setup --instantiate $(setup_cli_host_token(host_name))")
                 continue
             end
 

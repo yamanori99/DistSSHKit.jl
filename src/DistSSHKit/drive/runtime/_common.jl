@@ -1,5 +1,4 @@
-# Loaded once from drive.jl before other drive/*.jl fragments.
-# Do not `include` DistSSHKit here — that duplicates `drive.jl` and triggers IDE DuplicateInclude.
+# Loaded once from DistSSHKit.jl before other drive/runtime fragments.
 using Dates
 using Distributed
 
@@ -9,5 +8,5 @@ function drive_script_not_found_message(
         project_root::AbstractString;
         surface::Symbol = :cli,
     )::String
-    return DistSSHKit.explain_script_not_found(script_path, project_root; surface = surface)
+    return explain_script_not_found(script_path, project_root; surface = surface)
 end

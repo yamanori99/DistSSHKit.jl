@@ -37,7 +37,6 @@ using Test
                 )
                 withenv(env...) do
                     DistSSHKit.apply_kit_cli_session!(DistSSHKit.KitCliSession(quiet = true, yes = true))
-                    DistSSHKit._ensure_drive_fragments!(proj)
                     return f(state_dir, proj)
                 end
             end
@@ -169,8 +168,8 @@ using Test
             out = joinpath(proj, "out")
             mkpath(out)
             withenv("DISTRIBUTED_OUTPUT_DIR" => out) do
-                ok, hrs = Main.collect_drive_results!(
-                    ["host1"], dirname(script), ".drive_sentinel_x", false, proj,
+                ok, hrs = DistSSHKit.collect_drive_results!(
+                    ["host1"], dirname(script), ".drive_sentinel_x", false, proj, proj,
                 )
                 @test !ok
                 @test length(hrs) == 1
@@ -185,7 +184,7 @@ using Test
             script = joinpath(proj, "job.jl")
             write(script, "true\n")
             withenv("DISTSSHKIT_TEST_SSH_LOG" => logp) do
-                name = Main.place_drive_sentinels!(["host1"], dirname(script), true)
+                name = DistSSHKit.place_drive_sentinels!(["host1"], dirname(script), true, proj)
                 @test name == ""
             end
             @test !isfile(logp) || !occursin("mkdir", read(logp, String))

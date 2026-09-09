@@ -1,14 +1,6 @@
 using Test
 
 @testset "ride" begin
-    @testset "world age" begin
-        let name = :_ride_world_age_probe_
-            Core.eval(Main, :($name(x; k = 0) = 2x + k))
-            @test DistSSHKit._ride_main_call(name, 21) == 42
-            @test DistSSHKit._ride_main_call(name, 10; k = 3) == 23
-        end
-    end
-
     @testset "activate project" begin
         prev = Base.active_project()
         _with_tempdir() do tmp

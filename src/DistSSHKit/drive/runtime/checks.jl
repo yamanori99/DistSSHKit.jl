@@ -1,25 +1,3 @@
-using .DistSSHKit:
-    DEFAULT_PARENT_GB,
-    DEFAULT_MEM_HEADROOM,
-    PARENT_HOST_NAME,
-    WORKER_MEMORY_GB_FALLBACK,
-    get_local_git_hash,
-    get_local_resources,
-    get_remote_git_hash,
-    get_remote_nproc,
-    get_remote_total_gb,
-    print_ok,
-    print_progress_err,
-    print_progress_warn,
-    print_warn,
-    println_fatal,
-    rss_bytes_to_worker_gb,
-    size_worker_count,
-    write_both,
-    writeln_both,
-    _host_tool_present,
-    explain_host_tool_missing
-
 # Runner-only preflight checks (git parity, memory capacity).
 
 function estimate_worker_memory_gb()
@@ -116,7 +94,7 @@ function check_memory_capacity(
         println_fatal()
         println_fatal("Consider reducing worker count.")
         println_fatal()
-        DistSSHKit.kit_confirm("Continue anyway? [y/N]: ") || begin
+        kit_confirm("Continue anyway? [y/N]: ") || begin
             println_fatal("Aborted.")
             return false
         end
@@ -126,7 +104,7 @@ function check_memory_capacity(
 end
 
 function check_git_hashes(hosts::Vector{String}, proj_dir::String)
-    remote_root = DistSSHKit.resolve_remote_project_root(proj_dir)
+    remote_root = resolve_remote_project_root(proj_dir)
     env_remote = strip(get(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT", ""))
 
     local_hash = get_local_git_hash(proj_dir)
