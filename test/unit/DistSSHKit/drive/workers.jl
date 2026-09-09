@@ -23,6 +23,13 @@ end
     _with_tempdir() do tmp
         DistSSHKit._ensure_drive_fragments!(tmp)
 
+        @testset "setup_cli_host_token is not a Main name" begin
+            @test !isdefined(Main, :setup_cli_host_token)
+            host_name = "worker-host"
+            hint = "hint: julia --project=. -m DistSSHKit setup --instantiate $(DistSSHKit.setup_cli_host_token(host_name))"
+            @test occursin("child:worker-host", hint)
+        end
+
         @testset "register_worker_cleanup! lone master is a no-op" begin
             @test nprocs() == 1
             @test workers() == [1]

@@ -6,6 +6,9 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+- Drive worker/git hints call `DistSSHKit.setup_cli_host_token` (Main-scoped
+  runtime; unexported name was `UndefVarError` instead of `child:NAME`)
+  (#360).
 - Detached `execute!` uses `--project=` of `project=` when that tree has
   DistSSHKit (`Project.toml` deps or `Manifest.toml`); otherwise
   `pkgdir(DistSSHKit)` (#359).
