@@ -231,8 +231,8 @@ function init_drive_workers!(proj_dir::String, explicit_package, path_anchor::St
                     end
                 end
 
-                for (_, w) in host_workers
-                    _drive_eval_main(w, :(Pkg.precompile(; io = devnull)))
+                @sync for (_, w) in host_workers
+                    @async _drive_eval_main(w, :(Pkg.precompile(; io = devnull)))
                 end
 
                 # Skip processes where the binding already exists (e.g. master
@@ -264,7 +264,11 @@ function init_drive_workers!(proj_dir::String, explicit_package, path_anchor::St
 
         write_both("  Verifying workers... ")
         flush(stdout)
-        test_results = [_drive_eval_main(w, :((myid(), 1 + 1))) for w in workers()]
+        ws = workers()
+        test_results = Vector{Any}(undef, length(ws))
+        @sync for (i, w) in enumerate(ws)
+            @async test_results[i] = _drive_eval_main(w, :((myid(), 1 + 1)))
+        end
         working_count = count(r -> r[2] == 2, test_results)
         print_ok("✓ ($working_count workers verified)")
         writeln_both("")
