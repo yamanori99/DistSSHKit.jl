@@ -249,10 +249,10 @@ function _run_drive_parsed_locked!(
                         println_fatal("Git hash mismatch on $(join(mismatches, ", "))")
                         println_fatal()
                         println_fatal("To re-deploy with git:")
-                        println_fatal("  julia --project=. -m DistSSHKit setup --sync $(join(setup_cli_host_token.(mismatches), " "))")
+                        println_fatal("  julia --project=. -m DistSSHKit setup --sync $(join(DistSSHKit.setup_cli_host_token.(mismatches), " "))")
                         println_fatal()
                         println_fatal("Or re-deploy with rsync (after setup --delete if the path is nonempty):")
-                        println_fatal("  julia --project=. -m DistSSHKit setup --rsync $(join(setup_cli_host_token.(mismatches), " "))")
+                        println_fatal("  julia --project=. -m DistSSHKit setup --rsync $(join(DistSSHKit.setup_cli_host_token.(mismatches), " "))")
                         println_fatal()
                     end
                     if !isempty(unverifiable)
