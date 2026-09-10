@@ -191,7 +191,8 @@ wait(execute!(:go, "job.jl", ["parent:1"]; detached=true, args=["8"]))
 
 - Spawns a child `julia -m DistSSHKit go|ride|drive` (not in-process `go!` /
   `ride!` / `drive!`). `--project=` is the job `project=` when that tree
-  lists DistSSHKit; otherwise `pkgdir(DistSSHKit)`
+  lists DistSSHKit in `Project.toml` `[deps]`; otherwise `pkgdir(DistSSHKit)`
+  (Manifest-only / transitive DistSSHKit does not count)
 - Keywords are an allow-list; `yes` must stay `true`
 - Child stdio defaults to `kit.out` / `kit.err` in `output_dir`. Pass
   `stdout` / `stderr` to override (`stdout=stdout` inherits the parent).

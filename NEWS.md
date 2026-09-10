@@ -6,6 +6,11 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+- Detached `execute!` `--project=` of `project=` only when DistSSHKit is a
+  **direct** `Project.toml` `[deps]` entry. A Manifest-only (transitive)
+  DistSSHKit, as in DistSSHQueue jobs, uses `pkgdir(DistSSHKit)` so
+  `julia -m DistSSHKit` can load (#372).
+
 ## 0.7.1
 
 Patch after `0.7.0`.

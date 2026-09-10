@@ -255,8 +255,9 @@ and [`drive!`](@ref) already share (`ride!` ignores `sync`). With `detached=fals
 
 `detached=true` spawns `julia -m DistSSHKit go|ride|drive` and returns a
 [`KitProcess`](@ref). `--project=` is `project=` when that tree lists
-DistSSHKit (`Project.toml` `[deps]` or `Manifest.toml`); otherwise
-`pkgdir(DistSSHKit)`. Keywords are then an allow-list (unknown names throw):
+DistSSHKit in `Project.toml` `[deps]` (`julia -m` needs a direct dep);
+otherwise `pkgdir(DistSSHKit)`. A Manifest-only / transitive DistSSHKit
+does not count. Keywords are then an allow-list (unknown names throw):
 `output_dir`, `args`, `project`, `sync`, `julia`, `quiet`, `verbosity`, `yes`,
 `remote`, `hosts_file`, `job_id`, and drive-only `log_dir`, `enable_log`,
 `package`, `require_all_hosts`, `skip_hash_check`, `mem_headroom`, `parent_gb`,
@@ -358,14 +359,15 @@ function _deps_has_distsshkit(raw)::Bool
     return deps isa AbstractDict && haskey(deps, "DistSSHKit")
 end
 
-"""Whether a job tree can load `-m DistSSHKit` via `--project=` at `project`."""
+"""Whether a job tree can load `-m DistSSHKit` via `--project=` at `project`.
+
+`julia -m` needs a **direct** dependency, so only `Project.toml` `[deps]`
+counts. `Manifest.toml` is a flat resolved graph; a `DistSSHKit` entry there
+can be transitive (e.g. via DistSSHQueue) and does not mean `--project=` can
+load it with `-m` (#372)."""
 function _project_tree_has_distsshkit(project::AbstractString)::Bool
     p = String(project)
-    _deps_has_distsshkit(_parse_toml_dict(joinpath(p, "Project.toml"))) && return true
-    mt = _parse_toml_dict(joinpath(p, "Manifest.toml"))
-    mt isa AbstractDict || return false
-    haskey(mt, "DistSSHKit") && return true
-    return _deps_has_distsshkit(mt)
+    return _deps_has_distsshkit(_parse_toml_dict(joinpath(p, "Project.toml")))
 end
 
 """`--project=` for a detached `-m DistSSHKit` child."""
