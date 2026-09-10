@@ -42,7 +42,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project = remote_root)
 
 # Same banner idea as `test/runtests.jl`. Inner `@testset`s can take minutes
 # of SSH with no Test output until they finish. Update `_E2E_N` when adding one.
-const _E2E_N = 28
+const _E2E_N = 29
 const _E2E_I = Ref(0)
 function _e2e_announce(label::AbstractString)
     _E2E_I[] += 1
@@ -336,7 +336,7 @@ end
             _assert_ssh_e2e_api_ok(
                 suite,
                 "juliaup_update_default_unchanged_$(host)",
-                true,
+                after == before,
                 "channel=$(after)",
             )
         end

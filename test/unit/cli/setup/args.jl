@@ -84,10 +84,12 @@ using Test
         @test r.mode == :juliaup_update
         @test r.hosts == ["parent", "host1"]
     end
-    let r = parse_setup_args(["update", "child:host1"])
-        @test r.mode == :juliaup_update
-        @test r.hosts == ["host1"]
+    let r = parse_setup_args(["--check", "child:update"])
+        @test r.mode == :check
+        @test r.hosts == ["update"]
     end
+    @test_throws ArgumentError parse_setup_args(["update", "child:host1"])
+    @test_throws ArgumentError parse_setup_args(["--juliaup", "child:host1", "update"])
 
     let r = parse_setup_args(["--check", "--hosts-file", _sample_hosts_file(), "child:host-cli"])
         @test r.hosts == ["host-cli", "host-a", "host-b"]
