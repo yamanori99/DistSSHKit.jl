@@ -350,7 +350,9 @@ SHA did not touch `.github/workflows`. Keep cut commits to
 repo secret **`TAGBOT_PAT`**: fine-grained PAT, this repo only,
 Contents read/write, Issues read/write. Add Workflows read/write only
 when the tagged SHA changes `.github/workflows` (GitHub then requires
-it). TagBot falls back to `GITHUB_TOKEN` if the secret is empty. Do not put
+it). TagBot reads General with `GITHUB_TOKEN` (`registry_token`); a
+this-repo-only PAT 401s on `GET JuliaRegistries/General`. Empty
+`TAGBOT_PAT` still falls back to `GITHUB_TOKEN` for `token`. Do not put
 `permissions:` on `.github/workflows/TagBot.yml` (TagBot defaults).
 If TagBot opens `TagBot: Manual intervention needed for releases`,
 the tag may already exist; create the Release only

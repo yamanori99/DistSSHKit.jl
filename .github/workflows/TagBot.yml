@@ -28,6 +28,9 @@ jobs:
       - uses: JuliaRegistries/TagBot@v1
         with:
           token: ${{ secrets.TAGBOT_PAT || secrets.GITHUB_TOKEN }}
+          # Fine-grained TAGBOT_PAT is this repo only (Releases). It 401s on
+          # GET JuliaRegistries/General. GITHUB_TOKEN can read public General.
+          registry_token: ${{ secrets.GITHUB_TOKEN }}
           # SSH deploy key so the version tag starts Documentation.yml (`stable`).
           # Docs still push gh-pages with GITHUB_TOKEN (not this key).
           ssh: ${{ secrets.DOCUMENTER_KEY }}
