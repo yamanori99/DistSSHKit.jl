@@ -358,14 +358,15 @@ function _deps_has_distsshkit(raw)::Bool
     return deps isa AbstractDict && haskey(deps, "DistSSHKit")
 end
 
-"""Whether a job tree can load `-m DistSSHKit` via `--project=` at `project`."""
+"""Whether a job tree can load `-m DistSSHKit` via `--project=` at `project`.
+
+`julia -m` needs a **direct** dependency, so only `Project.toml` `[deps]`
+counts. `Manifest.toml` is a flat resolved graph; a `DistSSHKit` entry there
+can be transitive (e.g. via DistSSHQueue) and does not mean `--project=` can
+load it with `-m` (#372)."""
 function _project_tree_has_distsshkit(project::AbstractString)::Bool
     p = String(project)
-    _deps_has_distsshkit(_parse_toml_dict(joinpath(p, "Project.toml"))) && return true
-    mt = _parse_toml_dict(joinpath(p, "Manifest.toml"))
-    mt isa AbstractDict || return false
-    haskey(mt, "DistSSHKit") && return true
-    return _deps_has_distsshkit(mt)
+    return _deps_has_distsshkit(_parse_toml_dict(joinpath(p, "Project.toml")))
 end
 
 """`--project=` for a detached `-m DistSSHKit` child."""

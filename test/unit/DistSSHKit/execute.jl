@@ -34,6 +34,9 @@ using Test
             @test DistSSHKit._detached_julia_project(proj) == proj
         end
         _with_tempdir() do proj
+            # DistSSHKit only transitive (e.g. via DistSSHQueue [deps]): the
+            # Manifest is a flat graph and does not mark this direct, so
+            # `-m DistSSHKit` cannot load from here (#372).
             write(joinpath(proj, "Project.toml"), "name = \"QueueOnly\"\n")
             write(
                 joinpath(proj, "Manifest.toml"),
@@ -43,8 +46,8 @@ using Test
                 uuid = "ceec0504-c968-4be5-b215-667cae0e8f81"
                 """,
             )
-            @test DistSSHKit._project_tree_has_distsshkit(proj)
-            @test DistSSHKit._detached_julia_project(proj) == proj
+            @test !DistSSHKit._project_tree_has_distsshkit(proj)
+            @test DistSSHKit._detached_julia_project(proj) == kit
         end
         _with_tempdir() do proj
             write(joinpath(proj, "Project.toml"), "name = \"JunkManifest\"\n")
