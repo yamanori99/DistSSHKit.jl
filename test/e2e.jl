@@ -318,6 +318,29 @@ end
             end
         end
 
+        @testset "setup --juliaup-update (default channel unchanged)" begin
+            _e2e_announce("setup --juliaup-update (default channel unchanged)")
+            host = hosts[1]
+            before = _ssh_e2e_juliaup_remote_default_channel(host)
+            proc, out = _run_kit_setup(;
+                setup_args = ["--juliaup-update", DistSSHKit.setup_cli_host_token(host)],
+                project_root = proj,
+                extra_env = merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
+            )
+            _assert_ssh_e2e_ok(
+                suite, "setup_juliaup_update", proc, out;
+                project = proj, kit = :setup,
+            )
+            after = _ssh_e2e_juliaup_remote_default_channel(host)
+            @test after == before
+            _assert_ssh_e2e_api_ok(
+                suite,
+                "juliaup_update_default_unchanged_$(host)",
+                true,
+                "channel=$(after)",
+            )
+        end
+
         @testset "setup --runtest (job Pkg.test)" begin
             _e2e_announce("setup --runtest (job Pkg.test)")
             proc, out = _run_kit_setup(;

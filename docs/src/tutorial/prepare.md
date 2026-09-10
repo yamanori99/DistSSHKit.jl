@@ -69,6 +69,8 @@ If check fails on Julia major.minor (and hosts already have juliaup):
 ```bash
 julia --project=. -m DistSSHKit setup --juliaup child:YourHost1 child:YourHost2
 julia --project=. -m DistSSHKit setup --juliaup parent   # this machine too
+# refresh installed channels only (no default):
+# julia --project=. -m DistSSHKit setup --juliaup-update child:YourHost1
 ```
 
 Clean slate (confirm when prompted):

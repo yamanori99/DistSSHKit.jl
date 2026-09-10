@@ -29,6 +29,7 @@ using Test
             "--pull" => :pull,
             "--instantiate" => :instantiate,
             "--juliaup" => :juliaup,
+            "--juliaup-update" => :juliaup_update,
             "--cleanup" => :cleanup,
             "--prune" => :prune,
             "--delete" => :delete,
@@ -79,6 +80,14 @@ using Test
     let r = parse_setup_args(["--juliaup", "child:host1:4"])
         @test r.hosts == ["host1"]
     end
+    let r = parse_setup_args(["--juliaup", "update", "parent", "child:host1"])
+        @test r.mode == :juliaup_update
+        @test r.hosts == ["parent", "host1"]
+    end
+    let r = parse_setup_args(["update", "child:host1"])
+        @test r.mode == :juliaup_update
+        @test r.hosts == ["host1"]
+    end
 
     let r = parse_setup_args(["--check", "--hosts-file", _sample_hosts_file(), "child:host-cli"])
         @test r.hosts == ["host-cli", "host-a", "host-b"]
@@ -100,6 +109,7 @@ using Test
         @test occursin("--older-than", txt)
         @test occursin("--runtest", txt)
         @test occursin("--juliaup", txt)
+        @test occursin("--juliaup-update", txt)
         @test occursin("--hosts", txt)
         @test occursin("child:host1", txt)
         @test occursin("parent", txt)

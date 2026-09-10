@@ -5,6 +5,7 @@
 function setup_progress_step_name(mode::Symbol)::String
     mode === :rsync_push && return "rsync"
     mode === :rsync && return "rsync"
+    mode === :juliaup_update && return "juliaup-update"
     return String(mode)
 end
 

@@ -73,6 +73,16 @@ function main()
         exit(0)
     end
     if (occursin(".juliaup/bin/juliaup", script) || occursin("/opt/homebrew/bin/juliaup", script)) &&
+            occursin("\"\$JU\" update", script) &&
+            !occursin("echo already", script)
+        if get(ENV, "DISTSSHKIT_TEST_NO_JULIAUP", "") == "1"
+            println(stderr, "juliaup not found (tried: \$HOME/.juliaup/bin/juliaup, /opt/homebrew/bin/juliaup)")
+            exit(127)
+        end
+        println("ok")
+        exit(0)
+    end
+    if (occursin(".juliaup/bin/juliaup", script) || occursin("/opt/homebrew/bin/juliaup", script)) &&
             (occursin(" add ", script) || occursin("default", script))
         if get(ENV, "DISTSSHKIT_TEST_NO_JULIAUP", "") == "1"
             println(stderr, "juliaup not found (tried: \$HOME/.juliaup/bin/juliaup, /opt/homebrew/bin/juliaup)")

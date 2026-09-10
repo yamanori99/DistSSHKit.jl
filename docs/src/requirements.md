@@ -150,6 +150,7 @@ If the major.minor does not match the kit machine, align with juliaup
 ```bash
 julia --project=. -m DistSSHKit setup --juliaup child:USER@HOST
 julia --project=. -m DistSSHKit setup --juliaup parent   # this machine
+julia --project=. -m DistSSHKit setup --juliaup-update child:USER@HOST
 # or manually (official install or macOS Homebrew):
 # ssh USER@HOST '$HOME/.juliaup/bin/juliaup add 1.12 &&
 #   $HOME/.juliaup/bin/juliaup update 1.12 &&

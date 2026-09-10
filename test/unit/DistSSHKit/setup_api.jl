@@ -157,6 +157,24 @@ using Test
                     bad = DistSSHKit.setup!(session, :juliaup)
                     @test !bad.ok
                 end
+                ssh_log = joinpath(proj, "ssh.log")
+                withenv(ver_env..., "DISTSSHKIT_TEST_SSH_LOG" => ssh_log) do
+                    empty!(DistSSHKit._DETECT_JULIA_PATH_CACHE)
+                    upd = DistSSHKit.setup!(session, :juliaup_update)
+                    @test upd.ok && !upd.cancelled
+                    @test length(upd.hosts) == 1 && upd.hosts[1].ok
+                    @test occursin("update", upd.hosts[1].message)
+                    logged = isfile(ssh_log) ? read(ssh_log, String) : ""
+                    @test occursin("\"\$JU\" update", logged)
+                    @test !occursin("echo already", logged)
+                    @test !occursin(" add ", logged)
+                    @test !occursin("default", logged)
+                end
+                withenv("DISTSSHKIT_TEST_NO_JULIAUP" => "1") do
+                    empty!(DistSSHKit._DETECT_JULIA_PATH_CACHE)
+                    bad_up = DistSSHKit.setup!(session, :juliaup_update)
+                    @test !bad_up.ok
+                end
             end
         end
         _with_tempdir() do proj
@@ -194,6 +212,39 @@ using Test
                     @test up.ok && !up.cancelled
                     @test length(up.hosts) == 1 && up.hosts[1].ok
                     @test up.hosts[1].host == "parent"
+                end
+            end
+        end
+        _with_tempdir() do proj
+            write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\n")
+            mktempdir() do d
+                ju = joinpath(d, "juliaup")
+                logp = joinpath(d, "argv.log")
+                write(
+                    ju, """
+                    #!/bin/sh
+                    printf '%s\\n' "\$1" >> $(repr(logp))
+                    case "\$1" in
+                      add|update|default) exit 0 ;;
+                      status) echo ok; exit 0 ;;
+                      *) exit 1 ;;
+                    esac
+                    """
+                )
+                chmod(ju, 0o755)
+                session = DistSSHKit.KitSession(
+                    project = proj,
+                    workers = ["parent"],
+                    remote = "~/App.jl",
+                    yes = true,
+                    quiet = true,
+                )
+                withenv("DISTSSHKIT_TEST_LOCAL_JULIAUP" => ju) do
+                    upd = DistSSHKit.setup!(session, :juliaup_update)
+                    @test upd.ok && !upd.cancelled
+                    @test length(upd.hosts) == 1 && upd.hosts[1].ok
+                    @test upd.hosts[1].host == "parent"
+                    @test strip(read(logp, String)) == "update"
                 end
             end
         end
