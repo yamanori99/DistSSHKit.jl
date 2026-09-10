@@ -6,6 +6,10 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+## 0.7.2
+
+Patch after `0.7.1`.
+
 - Detached `execute!` `--project=` of `project=` only when DistSSHKit is a
   **direct** `Project.toml` `[deps]` entry. A Manifest-only (transitive)
   DistSSHKit, as in DistSSHQueue jobs, uses `pkgdir(DistSSHKit)` so
