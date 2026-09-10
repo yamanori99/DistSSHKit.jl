@@ -255,8 +255,9 @@ and [`drive!`](@ref) already share (`ride!` ignores `sync`). With `detached=fals
 
 `detached=true` spawns `julia -m DistSSHKit go|ride|drive` and returns a
 [`KitProcess`](@ref). `--project=` is `project=` when that tree lists
-DistSSHKit (`Project.toml` `[deps]` or `Manifest.toml`); otherwise
-`pkgdir(DistSSHKit)`. Keywords are then an allow-list (unknown names throw):
+DistSSHKit in `Project.toml` `[deps]` (`julia -m` needs a direct dep);
+otherwise `pkgdir(DistSSHKit)`. A Manifest-only / transitive DistSSHKit
+does not count. Keywords are then an allow-list (unknown names throw):
 `output_dir`, `args`, `project`, `sync`, `julia`, `quiet`, `verbosity`, `yes`,
 `remote`, `hosts_file`, `job_id`, and drive-only `log_dir`, `enable_log`,
 `package`, `require_all_hosts`, `skip_hash_check`, `mem_headroom`, `parent_gb`,
