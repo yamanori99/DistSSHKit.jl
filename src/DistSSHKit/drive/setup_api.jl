@@ -8,6 +8,7 @@ const _SETUP_BANG_MODES = (
     :pull,
     :instantiate,
     :juliaup,
+    :juliaup_update,
     :check,
     :runtest,
     :cleanup,
@@ -29,6 +30,7 @@ Prepare SSH hosts — same jobs as `julia -m DistSSHKit setup --…`.
 | `:pull` | `--pull` | Local pull then remote pull; confirm unless `session.yes` |
 | `:instantiate` | `--instantiate` | `julia=` (default `"auto"`) |
 | `:juliaup` | `--juliaup` | Align Julia via juliaup on `child:NAME` and/or `parent` (`\$HOME/.juliaup` or Homebrew); confirm unless `session.yes`. Tip if kit parent patch lags channel latest |
+| `:juliaup_update` | `--juliaup-update` | `juliaup update` on those hosts (no `default`); confirm unless `session.yes`. Also `setup --juliaup update` |
 | `:check` | `--check` | `ignore_julia_version=`, `check_code_sync=` |
 | `:runtest` | `--runtest` | job `Pkg.test()` on remotes; `julia=` |
 | `:cleanup` | `--cleanup` | Kill stale workers (no confirm) |
@@ -146,7 +148,7 @@ function _setup_one!(
         id::Union{Nothing, AbstractString} = nothing,
     )::SyncResult
     _setup_bang_preflight!(session, mode; repo = repo)
-    hosts = _setup_bang_hosts!(session; allow_parent = mode === :juliaup)
+    hosts = _setup_bang_hosts!(session; allow_parent = setup_mode_allows_parent(mode))
     remote_path = session_remote_root(session)
     julia_path = isempty(strip(String(julia))) ? "auto" : String(julia)
 
@@ -180,12 +182,14 @@ function _setup_one!(
         return SyncResult(false, raw.host_results; ok = raw.ok)
     elseif mode === :instantiate
         return instantiate!(session; julia = julia_path)
-    elseif mode === :juliaup
+    elseif mode === :juliaup || mode === :juliaup_update
         ssh_hosts = setup_juliaup_ssh_hosts(hosts)
         if !isempty(ssh_hosts)
             preflight_setup_ssh(ssh_hosts) || return SyncResult(true, HostResult[]; ok = false)
         end
-        raw = juliaup_align_remotes(hosts; confirm = !session.yes)
+        raw = mode === :juliaup ?
+            juliaup_align_remotes(hosts; confirm = !session.yes) :
+            juliaup_update_remotes(hosts; confirm = !session.yes)
         return _sync_result_from_host_op(raw)
     elseif mode === :runtest
         preflight_setup_ssh(hosts) || return SyncResult(true, HostResult[]; ok = false)
@@ -238,7 +242,7 @@ function _setup_bang_hosts!(session::KitSession; allow_parent::Bool = false)
     apply_session_env!(session)
     hosts = copy(session.hosts)
     # `session.hosts` is SSH children only; parent lives on `tokens`.
-    # Always surface `parent` so non-`:juliaup` modes hit validate_setup_hosts
+    # Always surface `parent` so non-juliaup modes hit validate_setup_hosts
     # instead of silently dropping it.
     for t in session.tokens
         pt = try

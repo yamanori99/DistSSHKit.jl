@@ -9,9 +9,13 @@ Validate normalized setup hosts (SSH names after CLI placement parse).
 
 CLI entry is the same vocabulary as go / drive / size (`parent[:N]` /
 `child:NAME[:N]`; `:N` ignored). After parse, this checks the stripped
-names. `setup --juliaup` also accepts [`PARENT_HOST_NAME`](@ref) when
-`allow_parent=true`.
+names. `setup --juliaup` / `--juliaup-update` also accept
+[`PARENT_HOST_NAME`](@ref) when `allow_parent=true`.
 """
+function setup_mode_allows_parent(mode::Symbol)::Bool
+    return mode === :juliaup || mode === :juliaup_update
+end
+
 function validate_setup_hosts(
         hosts::AbstractVector{<:AbstractString};
         allow_parent::Bool = false,
@@ -23,8 +27,9 @@ function validate_setup_hosts(
         if is_parent_host_name(host)
             allow_parent || throw(
                 ArgumentError(
-                    "setup: $(repr(host)) is only for --juliaup (kit parent machine). " *
-                        "SSH targets use `child:NAME` (or `child:NAME:N`; `:N` ignored).",
+                    "setup: $(repr(host)) is only for --juliaup / --juliaup-update " *
+                        "(kit parent machine). SSH targets use `child:NAME` " *
+                        "(or `child:NAME:N`; `:N` ignored).",
                 )
             )
             continue

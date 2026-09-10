@@ -85,6 +85,15 @@ if !isdefined(Main, :_ssh_e2e_enabled)
         return (; default = String(def), alt = String(alt))
     end
 
+    """Default channel from remote `juliaup status` (`*` row)."""
+    function _ssh_e2e_juliaup_remote_default_channel(host::AbstractString)::String
+        proc, out = _ssh_e2e_ssh(host, "\$HOME/.juliaup/bin/juliaup status")
+        proc.exitcode == 0 || error("juliaup status on $host failed: $out")
+        ch = DistSSHKit._juliaup_default_channel_from_status(out)
+        ch === nothing && error("no default channel in juliaup status on $host:\n$out")
+        return ch
+    end
+
     """Set remote juliaup default channel (`\$HOME/.juliaup/bin/juliaup default …`)."""
     function _ssh_e2e_juliaup_default!(host::AbstractString, channel::AbstractString)
         ch = String(channel)

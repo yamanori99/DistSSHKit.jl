@@ -60,7 +60,10 @@ if !isdefined(@__MODULE__, :setup_main)
         end
 
         try
-            validate_setup_hosts(opts.hosts; allow_parent = opts.mode === :juliaup)
+            validate_setup_hosts(
+                opts.hosts;
+                allow_parent = setup_mode_allows_parent(opts.mode::Symbol),
+            )
         catch e
             e isa ArgumentError || rethrow()
             # Fatal: always on terminal.
@@ -88,6 +91,7 @@ if !isdefined(@__MODULE__, :setup_main)
                 :rsync_push => "rsync (no git)",
                 :instantiate => "Instantiate",
                 :juliaup => "juliaup (align Julia)",
+                :juliaup_update => "juliaup update",
                 :runtest => "Pkg.test (job)",
                 :cleanup => "Cleanup Workers",
                 :prune => "Prune kit leaves",
@@ -105,7 +109,7 @@ if !isdefined(@__MODULE__, :setup_main)
                     kit_println()
                     return Cint(1)
                 end
-            elseif mode === :juliaup
+            elseif setup_mode_allows_parent(mode)
                 ssh_hosts = setup_juliaup_ssh_hosts(opts.hosts)
                 if !isempty(ssh_hosts) && !preflight_setup_ssh(ssh_hosts)
                     print_err("SSH preflight failed. Fix connectivity, then retry.")
@@ -160,6 +164,15 @@ if !isdefined(@__MODULE__, :setup_main)
                     finish_host_op!(
                             "juliaup",
                             juliaup_align_remotes(opts.hosts),
+                        ) ? 0 : 1
+                )
+            end
+
+            if mode === :juliaup_update
+                return Cint(
+                    finish_host_op!(
+                            "juliaup update",
+                            juliaup_update_remotes(opts.hosts),
                         ) ? 0 : 1
                 )
             end

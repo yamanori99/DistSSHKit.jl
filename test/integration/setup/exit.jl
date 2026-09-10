@@ -80,4 +80,51 @@ using Test
             @test occursin("Pkg.test complete (2 host(s))", combined)
         end
     end
+
+    @testset "juliaup-update" begin
+        _with_tempdir() do state_dir
+            proc, combined = _run_kit_setup(
+                setup_args = ["--juliaup-update", "child:host1"],
+                extra_env = merge(
+                    _fake_setup_remote_env(state_dir),
+                    Dict("DISTSSHKIT_TEST_NO_JULIAUP" => "1"),
+                ),
+            )
+            @test proc.exitcode == 1
+            @test occursin("juliaup update did not succeed on any host", combined)
+        end
+        _with_tempdir() do state_dir
+            proc, combined = _run_kit_setup(
+                setup_args = ["--juliaup", "update", "child:host1", "child:host2"],
+                extra_env = _fake_setup_remote_env(state_dir),
+            )
+            @test proc.exitcode == 0
+            @test occursin("juliaup update complete (2 host(s))", combined)
+        end
+        _with_tempdir() do state_dir
+            mktempdir() do d
+                ju = joinpath(d, "juliaup")
+                write(
+                    ju, """
+                    #!/bin/sh
+                    case "\$1" in
+                      update) exit 0 ;;
+                      add|default) exit 2 ;;
+                      *) exit 1 ;;
+                    esac
+                    """
+                )
+                chmod(ju, 0o755)
+                proc, combined = _run_kit_setup(
+                    setup_args = ["--juliaup-update", "parent"],
+                    extra_env = merge(
+                        _fake_setup_remote_env(state_dir),
+                        Dict("DISTSSHKIT_TEST_LOCAL_JULIAUP" => ju),
+                    ),
+                )
+                @test proc.exitcode == 0
+                @test occursin("juliaup update complete (1 host(s))", combined)
+            end
+        end
+    end
 end

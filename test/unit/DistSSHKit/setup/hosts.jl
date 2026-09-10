@@ -18,7 +18,9 @@ using Test
         @test_throws ArgumentError DistSSHKit.validate_setup_hosts(["parent"])
         @test DistSSHKit.validate_setup_hosts(["parent"]; allow_parent = true) === nothing
         @test DistSSHKit.validate_setup_hosts(["parent", "host-a"]; allow_parent = true) === nothing
-        @test DistSSHKit.setup_juliaup_ssh_hosts(["parent", "host-a"]) == ["host-a"]
+        @test DistSSHKit.setup_mode_allows_parent(:juliaup)
+        @test DistSSHKit.setup_mode_allows_parent(:juliaup_update)
+        @test !DistSSHKit.setup_mode_allows_parent(:check)
         @test DistSSHKit.setup_juliaup_ssh_hosts(["parent"]) == String[]
         @test DistSSHKit.validate_setup_hosts(["local"]) === nothing
         @test_throws ArgumentError DistSSHKit.validate_setup_hosts(["demos/foo.jl"])

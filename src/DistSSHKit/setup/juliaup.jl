@@ -76,6 +76,29 @@ function _juliaup_align_remote_sh(
     """
 end
 
+"""SSH body: `juliaup update` (all installed channels; does not `default`)."""
+function _juliaup_update_remote_sh(
+        candidates::Vector{String} = remote_juliaup_candidates(),
+    )::String
+    words = join(_juliaup_candidate_sh_word.(candidates), " ")
+    tried = join(candidates, ", ")
+    return """
+    JU=\"\"
+    for c in $words; do
+      if [ -x \"\$c\" ]; then
+        JU=\"\$c\"
+        break
+      fi
+    done
+    if [ -z \"\$JU\" ]; then
+      echo \"juliaup not found (tried: $tried)\" >&2
+      exit 127
+    fi
+    \"\$JU\" update || exit \$?
+    echo ok
+    """
+end
+
 """Print Fix lines for missing / mismatched remote Julia (check output)."""
 function print_juliaup_align_fix!(
         host::AbstractString;
@@ -372,6 +395,105 @@ function juliaup_align_remotes(
             end
             succeeded += 1
             push!(host_results, HostResult(host, true, "juliaup $ch"))
+            _setup_host_span!(host, :ok)
+        catch e
+            detail = strip(String(take!(err_buf)))
+            report_remote_failure(e; stderr = detail)
+            combined = isempty(detail) ? sprint(showerror, e) : detail
+            if occursin("juliaup not found", combined) || occursin("127", combined)
+                kit_println("    Install juliaup on $host first (see Requirements), then retry.")
+            end
+            failed += 1
+            push!(host_results, HostResult(host, false, combined))
+            _setup_host_span!(host, :fail)
+        end
+    end
+    return (; host_op_result(succeeded = succeeded, failed = failed)..., hosts = host_results)
+end
+
+"""Run local `juliaup update` (all installed channels)."""
+function _juliaup_update_local!(
+        candidates::Vector{String} = local_juliaup_candidates(),
+    )
+    ju = find_local_juliaup(candidates)
+    ju === nothing && error(
+        "juliaup not found (tried: $(join(candidates, ", ")))",
+    )
+    proc, out_s, err_s = _juliaup_run_captured(ju, ["update"])
+    proc.exitcode == 0 || error(_juliaup_captured_fail_msg(["update"], proc, out_s, err_s))
+    return nothing
+end
+
+"""
+Run `juliaup update` on each target (installed channels; does not `default`).
+
+Same hosts as `--juliaup` (`child:NAME` and/or `parent`). Confirm unless
+`confirm=false`. Does not install juliaup.
+"""
+function juliaup_update_remotes(
+        hosts::Vector{String};
+        confirm::Bool = true,
+    )::NamedTuple
+    if confirm && !kit_noninteractive()
+        cancelled = with_kit_progress_suspended() do
+            print_err("  This will run juliaup update on each target.\n")
+            println_fatal("  Installed channels refresh; the host default is unchanged.")
+            println_fatal("  Targets: $(join(hosts, ", "))")
+            println_fatal("  Needs juliaup at \$HOME/.juliaup/bin/juliaup or Homebrew")
+            println_fatal("  (/opt/homebrew/bin/juliaup or /usr/local/bin/juliaup).")
+            println_fatal("  The running kit process keeps its current Julia until restart.")
+            println_fatal()
+            kit_confirm("Type 'update' to confirm: "; keyword = "update") || begin
+                println_fatal("Cancelled.")
+                return true
+            end
+            println_fatal()
+            return false
+        end
+        cancelled && return (; cancelled = true, succeeded = 0, failed = 0, hosts = HostResult[])
+    end
+
+    remote_sh = _juliaup_update_remote_sh()
+    succeeded = 0
+    failed = 0
+    host_results = HostResult[]
+    for host in hosts
+        _setup_host_span!(host, :running)
+        err_buf = IOBuffer()
+        out_buf = IOBuffer()
+        try
+            if is_parent_host_name(host)
+                kit_spin!("  $PARENT_HOST_NAME: ") do
+                    _juliaup_update_local!()
+                end
+                print_ok("✓ juliaup update")
+                kit_println()
+                succeeded += 1
+                push!(host_results, HostResult(PARENT_HOST_NAME, true, "juliaup update"))
+                _setup_host_span!(host, :ok)
+                continue
+            end
+            kit_spin!("  $host: ") do
+                proc = run(
+                    pipeline(
+                        ignorestatus(_host_sync_remote_shell_cmd(host, remote_sh));
+                        stdout = out_buf,
+                        stderr = err_buf,
+                    );
+                    wait = true,
+                )
+                if proc.exitcode != 0
+                    msg = strip(String(take!(err_buf)))
+                    isempty(msg) && (msg = strip(String(take!(out_buf))))
+                    isempty(msg) && (msg = "juliaup update exit $(proc.exitcode)")
+                    error(first(split(msg, '\n')))
+                end
+                return nothing
+            end
+            print_ok("✓ juliaup update")
+            kit_println()
+            succeeded += 1
+            push!(host_results, HostResult(host, true, "juliaup update"))
             _setup_host_span!(host, :ok)
         catch e
             detail = strip(String(take!(err_buf)))

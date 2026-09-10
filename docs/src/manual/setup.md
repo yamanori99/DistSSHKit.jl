@@ -4,12 +4,12 @@ Prepare SSH hosts before [`go`](@ref Manual-go) / [`drive`](@ref Manual-drive).
 
 ```bash
 julia --project=. -m DistSSHKit setup [options] [child:NAME]
-# Repeat child:NAME for more hosts. --juliaup also accepts parent / parent:N
+# Repeat child:NAME for more hosts. --juliaup / --juliaup-update also accept parent / parent:N
 # (:N ignored).
 ```
 
 From Julia, use [`setup!`](@ref) for the same modes as this CLI
-(`:delete`, `:rsync`, `:clone`, `:instantiate`, `:juliaup`, `:check`, `:runtest`,
+(`:delete`, `:rsync`, `:clone`, `:instantiate`, `:juliaup`, `:juliaup_update`, `:check`, `:runtest`,
 `:prune`, …), or the shorter [`sync!`](@ref) / [`instantiate!`](@ref) aliases
 ([API](@ref API), [First Steps · Prepare](@ref Tutorial-Prepare)).
 `setup!(session, :clone)` requires an explicit `repo=` URL (clone runs
@@ -51,6 +51,10 @@ Pick **one mode** per invocation (except shared options).
   not change the Julia process already running the kit. If remotes land
   on a newer patch than the kit parent, prints a Tip pointing at
   `setup --juliaup parent`
+- `--juliaup-update`: `juliaup update` on those hosts (all installed
+  channels; confirm unless `-y`). Does **not** `add` or `default`.
+  Same as `setup --juliaup update child:NAME`. Use `--juliaup` to
+  align the default channel
 - `--runtest`: `Pkg.test()` of the **job** project on remotes (not
   DistSSHKit's tests)
 - `--prune`: delete `.distsshkit/{go,drive,setup}` leaves on localhost
@@ -74,7 +78,7 @@ Pick **one mode** per invocation (except shared options).
 - `--verbose`: full detail (non-TTY default)
 - `-y` / `--yes`: accept confirmation prompts non-interactively
 - `--hosts CSV`: comma-separated `child:NAME[:N]` (`:N` stripped). With
-  `--juliaup`, also `parent` / `parent:N`
+  `--juliaup` / `--juliaup-update`, also `parent` / `parent:N`
 - `--hosts-file PATH`: append the same tokens (`:N` stripped)
 - `-v` / `--version`: print DistSSHKit version and exit
 - `-h` / `--help`: full help

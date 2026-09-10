@@ -42,7 +42,7 @@ _e2e_base_env() = _ssh_e2e_env(; remote_project = remote_root)
 
 # Same banner idea as `test/runtests.jl`. Inner `@testset`s can take minutes
 # of SSH with no Test output until they finish. Update `_E2E_N` when adding one.
-const _E2E_N = 28
+const _E2E_N = 29
 const _E2E_I = Ref(0)
 function _e2e_announce(label::AbstractString)
     _E2E_I[] += 1
@@ -316,6 +316,29 @@ end
                 end
                 DistSSHKit.clear_detect_julia_path_cache!()
             end
+        end
+
+        @testset "setup --juliaup-update (default channel unchanged)" begin
+            _e2e_announce("setup --juliaup-update (default channel unchanged)")
+            host = hosts[1]
+            before = _ssh_e2e_juliaup_remote_default_channel(host)
+            proc, out = _run_kit_setup(;
+                setup_args = ["--juliaup-update", DistSSHKit.setup_cli_host_token(host)],
+                project_root = proj,
+                extra_env = merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
+            )
+            _assert_ssh_e2e_ok(
+                suite, "setup_juliaup_update", proc, out;
+                project = proj, kit = :setup,
+            )
+            after = _ssh_e2e_juliaup_remote_default_channel(host)
+            @test after == before
+            _assert_ssh_e2e_api_ok(
+                suite,
+                "juliaup_update_default_unchanged_$(host)",
+                after == before,
+                "channel=$(after)",
+            )
         end
 
         @testset "setup --runtest (job Pkg.test)" begin

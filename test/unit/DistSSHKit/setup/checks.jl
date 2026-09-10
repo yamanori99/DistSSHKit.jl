@@ -25,6 +25,11 @@ using Pkg
     @test occursin("update", sh) && occursin("default", sh)
     @test occursin("echo already", sh)
     @test occursin("\$1==\"*\"", sh)
+    up_sh = DistSSHKit._juliaup_update_remote_sh()
+    @test occursin(raw"$HOME/.juliaup/bin/juliaup", up_sh)
+    @test occursin("\"\$JU\" update", up_sh)
+    @test !occursin("echo already", up_sh)
+    @test !occursin("default", up_sh)
     st = """
     Default  Channel  Version
     -------------------------------------------------------------------------

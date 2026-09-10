@@ -5,7 +5,7 @@ function show_requirements(; io::IO = stdout)
         "Deploy and check the project on SSH hosts before go / drive.",
         "Recommended: --rsync, --instantiate, --check, then optional --runtest.",
         "Hosts: child:NAME[:N] (same as go / drive / size; :N ignored).",
-        "       --juliaup also accepts parent[:N].",
+        "       --juliaup / --juliaup-update also accept parent[:N].",
         "Remote path: ~/Parent/RepoName, or --remote-path / ENV.",
         "Git parity is drive --require-git (off by default).",
     )
@@ -19,6 +19,8 @@ function show_requirements(; io::IO = stdout)
         "  setup --check child:host1 child:host2",
         "  setup --juliaup child:host1 child:host2",
         "  setup --juliaup parent child:host1",
+        "  setup --juliaup-update child:host1",
+        "  setup --juliaup update parent child:host1",
         "  setup --runtest child:host1 child:host2",
     )
     print_help_blank(io)
@@ -31,6 +33,8 @@ function show_requirements(; io::IO = stdout)
         "  --instantiate        Pkg.instantiate on remotes",
         "  --juliaup            align Julia via juliaup (confirm unless -y;",
         "                       child:NAME and/or parent)",
+        "  --juliaup-update     juliaup update (confirm unless -y;",
+        "                       child:NAME and/or parent; no default)",
         "  --check              SSH, Julia, project, deps",
         "  --runtest            Pkg.test of the job project on remotes",
         "  --cleanup / --delete stale workers / remote tree",
@@ -49,7 +53,7 @@ function show_requirements(; io::IO = stdout)
         "  $(KIT_TIME_HELP)",
         "  -y, --yes            skip confirmations",
         "  --hosts CSV          child:NAME[:N] (`:N` stripped; --juliaup",
-        "                       also accepts parent[:N])",
+        "                       / --juliaup-update also accept parent[:N])",
         "  --hosts-file PATH    one token per line (`:N` stripped)",
         "  --version, -v        print version and exit",
         "  --older-than DAYS    with --prune: mtime at least DAYS old",
@@ -97,7 +101,15 @@ function parse_setup_args(args::Vector{String})
             mode = :instantiate
             cli_consume!(c)
         elseif arg == "--juliaup"
-            mode = :juliaup
+            cli_consume!(c)
+            if cli_current(c) == "update"
+                mode = :juliaup_update
+                cli_consume!(c)
+            else
+                mode = :juliaup
+            end
+        elseif arg == "--juliaup-update"
+            mode = :juliaup_update
             cli_consume!(c)
         elseif arg == "--runtest"
             mode = :runtest

@@ -6,6 +6,11 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+- `setup --juliaup-update` / `setup --juliaup update` /
+  `setup!(session, :juliaup_update)`: run `juliaup update` on
+  `child:NAME` and/or `parent` (does not change the default; confirm
+  unless `-y`). `--juliaup` remains channel align (`add` / `default`).
+
 ## 0.7.2
 
 Patch after `0.7.1`.
