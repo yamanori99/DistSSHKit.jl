@@ -194,7 +194,7 @@ jobs:
       - uses: actions/cache@v6
         with:
           path: .ci-cache/wsl-julia
-          key: wsl-julia-max-${{ hashFiles('Project.toml', 'test/Project.toml') }}
+          key: wsl-julia-max-${{ hashFiles('Project.toml', 'test/Project.toml', '.github/julia-slots.env') }}
       - name: GHCR token for WSL
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
