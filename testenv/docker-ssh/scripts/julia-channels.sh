@@ -3,10 +3,10 @@
 # Sets JULIA_DEFAULT_CHANNEL / JULIA_ALT_CHANNEL from .github/julia-slots.env
 # (major.minor for juliaup). Also exports DISTSSHKIT_E2E_* for test/e2e.jl.
 #
-# Do not `source` the env file: values like `~1.13.0-0` would expand as ~user.
+# Do not `source` the env file: values like `~1.14.0-0` would expand as ~user.
 
 _distsshkit_julia_channel_mm() {
-  # ~1.13.0-0 → 1.13 ; 1.12 → 1.12 ; 1.14-nightly → 1.14
+  # ~1.14.0-0 → 1.14 ; 1.12 → 1.12 ; 1.14-nightly → 1.14
   local raw="${1#\~}"
   if [[ "${raw}" =~ ^([0-9]+\.[0-9]+) ]]; then
     printf '%s\n' "${BASH_REMATCH[1]}"

@@ -140,10 +140,11 @@ max`). That pin lags when `max` / `tip` move past what JETLS lists
 (today 1.12.2–1.13). Raise it only after JETLS supports that runtime.
 No JETLS **tip**.
 
-When a new RC lands, change `JULIA_SLOT_MAX` only. If that RC is a new
-**major.minor**, bump the worker Dockerfile / WSL `--default-channel`
-in the same PR (E2E pair). When bumping compat, raise `JULIA_SLOT_MIN`
-only.
+When a new RC lands, change `JULIA_SLOT_MAX` only (`~x.y.0-0` so
+setup-julia includes prereleases). When that minor GAs, drop the tilde
+and pin `x.y`. If that RC is a new **major.minor**, bump the worker
+Dockerfile / WSL `--default-channel` in the same PR (E2E pair). When
+bumping compat, raise `JULIA_SLOT_MIN` only.
 
 ### PR CI
 
@@ -152,7 +153,8 @@ These run as jobs of the `Test` workflow
 `Pkg.test` min / max, JETLS min / max, Aqua min / max, Documenter min,
 Gitleaks. Linux E2E (max) uses the same **path filter** as **main** push
 (`src/**`, `test/**`, `demos/**`, `testenv/**` minus markdown under those
-trees, `Project.toml`, `.github/workflows/CI.yml`). It also runs on
+trees, `Project.toml`, `.github/julia-slots.env`,
+`.github/workflows/CI.yml`). It also runs on
 **`cut`**, **E2E weekly**, and `workflow_dispatch`. Tip `Pkg.test` / Aqua
 stay on **main**, **CI weekly**, and `cut`. Registry tree stays on
 **main** and `cut` (ci-cut), not ordinary PRs.
