@@ -8,10 +8,12 @@ updates:
     labels:
       - dependencies
 
-  # Stdlibs are ignored. Dependabot's Julia updater appends `< 0.0.1`
+  # Ignore stdlibs, not an allow-list of third-party names. A new
+  # registry dep is picked up automatically; a new stdlib [deps]
+  # entry should be added here. The Julia updater appends `< 0.0.1`
   # (union with 0.0.0) for the pre-1.10 Pkg.test sandbox. This package
-  # is Julia 1.12, so that clause is wrong. Keep Dates / Distributed /
-  # Pkg / SHA / TOML / Test pinned to the Julia floor by hand.
+  # is Julia 1.12, so that clause is wrong. Keep stdlib [compat] at
+  # the Julia floor by hand.
   - package-ecosystem: julia
     directory: /
     schedule:
@@ -19,7 +21,10 @@ updates:
     open-pull-requests-limit: 5
     labels:
       - dependencies
-    allow:
-      - dependency-name: ArgParse
-      - dependency-name: JSON
-      - dependency-name: Documenter
+    ignore:
+      - dependency-name: Dates
+      - dependency-name: Distributed
+      - dependency-name: Pkg
+      - dependency-name: SHA
+      - dependency-name: TOML
+      - dependency-name: Test

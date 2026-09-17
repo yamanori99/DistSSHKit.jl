@@ -443,12 +443,14 @@ Every PR needs one of `bug` / `enhancement` / `chore`. Dependabot skips
 the type check (`dependencies` only). Override with
 `gh pr edit N --add-label …`.
 
-Weekly Dependabot covers `github-actions` and Julia **third-party**
-deps only (`ArgParse`, `JSON`, `Documenter`). Stdlib `[compat]` stays
-with the Julia floor (`Dates` / `Distributed` `1.11`, `Pkg` `1.12`,
-`SHA` `"0.7, 1"`, `TOML` / `Test` `"1"`). The Julia updater otherwise
-appends `< 0.0.1` for the pre-1.10 Pkg.test 0.0.0 sandbox; this package
-is 1.12 and does not need that union (comma is or, not and). Scan /
+Weekly Dependabot covers `github-actions` and Julia registry deps.
+Stdlib names are `ignore` in [`.github/dependabot.yml`](.github/dependabot.yml)
+(`Dates`, `Distributed`, `Pkg`, `SHA`, `TOML`, `Test`). A new
+third-party `[deps]` entry is picked up with no YAML change; a new
+stdlib must be added to that ignore list. Stdlib `[compat]` stays with
+the Julia floor. The Julia updater otherwise appends `< 0.0.1` for the
+pre-1.10 Pkg.test 0.0.0 sandbox; this package is 1.12 and does not need
+that union (comma is or, not and). Scan /
 `./.github/pkg-compat-check.sh` rejects that token.
 
 CI infers, in order:
