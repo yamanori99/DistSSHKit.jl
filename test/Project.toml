@@ -13,7 +13,7 @@ DistSSHKit = {path = ".."}
 
 [compat]
 ArgParse = "1"
-Dates = "1.11"
+Dates = "1.11, < 0.0.1, 1"
 Distributed = "1.11"
 JSON = "1"
 Pkg = "1.12"
