@@ -15,7 +15,9 @@ updates:
   # is Julia 1.12, so that clause is wrong. Keep stdlib [compat] at
   # the Julia floor by hand.
   - package-ecosystem: julia
-    directory: /
+    directories:
+      - "/"
+      - "/docs"
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
