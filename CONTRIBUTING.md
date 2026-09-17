@@ -151,7 +151,8 @@ bumping compat, raise `JULIA_SLOT_MIN` only.
 These run as jobs of the `Test` workflow
 ([`.github/workflows/CI.yml`](.github/workflows/CI.yml)). Ubuntu:
 `Pkg.test` min / max, JETLS min / max, Aqua min / max, Documenter min,
-Gitleaks. Linux E2E (max) uses the same **path filter** as **main** push
+Gitleaks (also rejects `< 0.0.1` in `Project.toml`). Linux E2E (max)
+uses the same **path filter** as **main** push
 (`src/**`, `test/**`, `demos/**`, `testenv/**` minus markdown under those
 trees, `Project.toml`, `.github/julia-slots.env`,
 `.github/workflows/CI.yml`). It also runs on
@@ -441,6 +442,16 @@ Backfill every PR after a vocabulary change:
 Every PR needs one of `bug` / `enhancement` / `chore`. Dependabot skips
 the type check (`dependencies` only). Override with
 `gh pr edit N --add-label …`.
+
+Weekly Dependabot covers `github-actions` and Julia registry deps.
+Stdlib names are `ignore` in [`.github/dependabot.yml`](.github/dependabot.yml)
+(`Dates`, `Distributed`, `Pkg`, `SHA`, `TOML`, `Test`). A new
+third-party `[deps]` entry is picked up with no YAML change; a new
+stdlib must be added to that ignore list. Stdlib `[compat]` stays with
+the Julia floor. The Julia updater otherwise appends `< 0.0.1` for the
+pre-1.10 Pkg.test 0.0.0 sandbox; this package is 1.12 and does not need
+that union (comma is or, not and). Scan /
+`./.github/pkg-compat-check.sh` rejects that token.
 
 CI infers, in order:
 
