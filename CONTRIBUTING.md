@@ -151,7 +151,8 @@ bumping compat, raise `JULIA_SLOT_MIN` only.
 These run as jobs of the `Test` workflow
 ([`.github/workflows/CI.yml`](.github/workflows/CI.yml)). Ubuntu:
 `Pkg.test` min / max, JETLS min / max, Aqua min / max, Documenter min,
-Gitleaks. Linux E2E (max) uses the same **path filter** as **main** push
+Gitleaks (also rejects `< 0.0.1` in `Project.toml`). Linux E2E (max)
+uses the same **path filter** as **main** push
 (`src/**`, `test/**`, `demos/**`, `testenv/**` minus markdown under those
 trees, `Project.toml`, `.github/julia-slots.env`,
 `.github/workflows/CI.yml`). It also runs on
@@ -441,6 +442,14 @@ Backfill every PR after a vocabulary change:
 Every PR needs one of `bug` / `enhancement` / `chore`. Dependabot skips
 the type check (`dependencies` only). Override with
 `gh pr edit N --add-label …`.
+
+Weekly Dependabot covers `github-actions` and Julia **third-party**
+deps only (`ArgParse`, `JSON`, `Documenter`). Stdlib `[compat]` stays
+with the Julia floor (`Dates` / `Distributed` `1.11`, `Pkg` `1.12`,
+`SHA` `"0.7, 1"`, `TOML` / `Test` `"1"`). The Julia updater otherwise
+appends `< 0.0.1` for the pre-1.10 Pkg.test 0.0.0 sandbox; this package
+is 1.12 and does not need that union (comma is or, not and). Scan /
+`./.github/pkg-compat-check.sh` rejects that token.
 
 CI infers, in order:
 
