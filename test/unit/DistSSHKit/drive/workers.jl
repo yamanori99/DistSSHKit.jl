@@ -28,6 +28,27 @@ const _EMPTY_DRIVE_HOSTS = Tuple{String, Union{Int, Nothing}}[]
             @test cleanup() === nothing
         end
 
+        @testset "_interrupt_drive_workers! (#371)" begin
+            @test nprocs() == 1
+            @test DistSSHKit._interrupt_drive_workers!() === nothing
+            addprocs(1; topology = :master_worker)
+            added = workers()
+            seen = Int[]
+            prev = DistSSHKit.INTERRUPT_DRIVE_WORKERS[]
+            DistSSHKit.INTERRUPT_DRIVE_WORKERS[] = pids -> append!(seen, pids)
+            try
+                @test DistSSHKit._interrupt_drive_workers!() === nothing
+                @test seen == added
+                @test workers() == added
+            finally
+                DistSSHKit.INTERRUPT_DRIVE_WORKERS[] = prev
+                for w in added
+                    w in workers() && rmprocs(w; waitfor = 2.0)
+                end
+            end
+            @test nprocs() == 1
+        end
+
         @testset "register_worker_cleanup! removes added workers" begin
             addprocs(2; topology = :master_worker)
             added = workers()

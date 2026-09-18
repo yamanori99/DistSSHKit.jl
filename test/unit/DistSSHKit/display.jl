@@ -771,4 +771,32 @@ using Test
             end
         end
     end
+
+    @testset "background loop ignores InterruptException (#371)" begin
+        n = Ref(0)
+        t = @async begin
+            while n[] < 3
+                DistSSHKit._ignore_interrupt() do
+                    n[] += 1
+                    n[] == 1 && sleep(30)
+                    return nothing
+                end
+            end
+            :ok
+        end
+        t0 = time()
+        while n[] < 1 && (time() - t0) < 5
+            yield()
+            sleep(0.01)
+        end
+        @test n[] >= 1
+        sleep(0.05)
+        schedule(t, InterruptException(); error = true)
+        @test fetch(t) === :ok
+        @test n[] >= 3
+    end
+
+    @testset "driver sigint as exception helper (#371)" begin
+        @test DistSSHKit._with_driver_sigint_exceptions(() -> 7) == 7
+    end
 end
