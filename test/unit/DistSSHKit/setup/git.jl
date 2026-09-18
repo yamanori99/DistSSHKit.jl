@@ -95,8 +95,8 @@ using Test
                     _init_commit!(work)
                     for v in (:quiet, :progress, :verbose)
                         with_kit_verbosity(v) do
-                            _with_active_kit_progress() do st
-                                out, raw = _capture_stdio() do stdin_io, _
+                            _with_active_kit_progress() do _
+                                out, raw, nsus = _capture_stdio(; probe_suspend = true) do stdin_io, _
                                     println(stdin_io, "n")
                                     flush(stdin_io)
                                     seekstart(stdin_io)
@@ -111,9 +111,9 @@ using Test
                                 @test occursin("Cancelled.", out)
                                 @test occursin("Proceed?", out)
                                 @test occursin("git push", out)
-                                # #374: confirm prompt suspends the live bar (drawn/cursor reset).
-                                @test st.drawn == 0
-                                @test !st.cursor_hidden
+                                # #374: bar is suspended while stdin is read, then released.
+                                @test nsus >= 1
+                                @test DistSSHKit.KIT_PROGRESS_SUSPEND[] == 0
                             end
                         end
                     end
