@@ -6,10 +6,24 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+## 0.7.3
+
+Patch after `0.7.2`.
+
 - `setup --juliaup-update` / `setup --juliaup update` /
   `setup!(session, :juliaup_update)`: run `juliaup update` on
   `child:NAME` and/or `parent` (does not change the default; confirm
   unless `-y`). `--juliaup` remains channel align (`add` / `default`).
+- `setup --check` warns (does not fail) when there is no local git
+  commit (#370).
+- Setup confirm prompts (`delete` / `clone` / `prune` / `rsync` / git
+  sync) suspend the live progress bar so the prompt stays readable
+  (#374).
+- `drive` warns when a nested `include(...)` (`if` / `||` / `&&`) is
+  dropped from publish. The drive manual documents publish AST rules
+  and per-worker `@__DIR__` (#380, #381).
+- Ctrl-C during `drive` **run** stops the driver and interrupts workers
+  (exit 130); one SIGINT is enough (#371).
 
 ## 0.7.2
 
