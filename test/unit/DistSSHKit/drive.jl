@@ -571,6 +571,36 @@ using Test
             @test occursin("function main", dsrc)
             @test occursin("pmap", dsrc)
             @test !occursin("println", dsrc)
+
+            g = joinpath(tmp, "guarded.jl")
+            write(
+                g, """
+                using Distributed
+                const DEMO_JL = joinpath(@__DIR__, "lib.jl")
+                isdefined(Main, :load_full_config) || include(DEMO_JL)
+                if !isdefined(Main, :other)
+                    include("other.jl")
+                end
+                function main()
+                    pmap(identity, 1:2)
+                end
+                """
+            )
+            gsrc, gwarns = DistSSHKit._drive_publish_extract(g)
+            @test occursin("using Distributed", gsrc)
+            @test occursin("function main", gsrc)
+            @test !occursin("include(DEMO_JL)", gsrc)
+            @test !occursin("include(\"other.jl\")", gsrc)
+            @test length(gwarns) == 2
+            @test occursin("line 3:", gwarns[1])
+            @test occursin("inside if/||/&&", gwarns[1])
+            @test occursin("--sync-script", gwarns[1])
+            @test occursin("line 4:", gwarns[2]) || occursin("line 5:", gwarns[2])
+            gout, _ = _capture_stdio() do _, _
+                DistSSHKit._drive_publish_source(g)
+            end
+            @test occursin("is not published", gout)
+            @test occursin("--sync-script", gout)
         end
     end
 

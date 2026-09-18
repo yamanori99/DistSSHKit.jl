@@ -78,18 +78,23 @@ using Test
             try
                 for v in (:quiet, :progress, :verbose)
                     with_kit_verbosity(v) do
-                        out, result = _capture_stdio() do stdin_io, _
-                            println(stdin_io, "no")
-                            flush(stdin_io)
-                            seekstart(stdin_io)
-                            DistSSHKit.delete_remotes(["host1"], "~/App.jl")
+                        _with_active_kit_progress() do st
+                            out, result = _capture_stdio() do stdin_io, _
+                                println(stdin_io, "no")
+                                flush(stdin_io)
+                                seekstart(stdin_io)
+                                DistSSHKit.delete_remotes(["host1"], "~/App.jl")
+                            end
+                            @test result.cancelled && result.succeeded == 0 && result.failed == 0
+                            @test isempty(result.hosts)
+                            @test occursin("Cancelled.", out)
+                            @test occursin("DELETE", out)
+                            @test occursin("Type 'delete'", out)
+                            @test occursin("~/App.jl", out)
+                            # #374: confirm prompt suspends the live bar (drawn/cursor reset).
+                            @test st.drawn == 0
+                            @test !st.cursor_hidden
                         end
-                        @test result.cancelled && result.succeeded == 0 && result.failed == 0
-                        @test isempty(result.hosts)
-                        @test occursin("Cancelled.", out)
-                        @test occursin("DELETE", out)
-                        @test occursin("Type 'delete'", out)
-                        @test occursin("~/App.jl", out)
                     end
                 end
             finally
@@ -160,6 +165,39 @@ using Test
             end
             @test !result.cancelled && result.succeeded == 0 && result.failed == 1
             @test length(result.hosts) == 1 && !result.hosts[1].ok
+        end
+    end
+
+    @testset "prune_kit_leaves confirm abort" begin
+        withenv("DISTSSHKIT_YES" => nothing) do
+            prev_ni = DistSSHKit.kit_noninteractive()
+            DistSSHKit.set_kit_noninteractive!(false)
+            try
+                _with_tempdir() do tmp
+                    for v in (:quiet, :progress, :verbose)
+                        with_kit_verbosity(v) do
+                            _with_active_kit_progress() do st
+                                out, result = _capture_stdio() do stdin_io, _
+                                    println(stdin_io, "no")
+                                    flush(stdin_io)
+                                    seekstart(stdin_io)
+                                    DistSSHKit.prune_kit_leaves(["host1"], "~/App.jl", tmp)
+                                end
+                                @test result.cancelled && result.succeeded == 0 && result.failed == 0
+                                @test isempty(result.hosts)
+                                @test occursin("Cancelled.", out)
+                                @test occursin("Type 'prune'", out)
+                                @test occursin("~/App.jl", out)
+                                # #374: confirm prompt suspends the live bar (drawn/cursor reset).
+                                @test st.drawn == 0
+                                @test !st.cursor_hidden
+                            end
+                        end
+                    end
+                end
+            finally
+                DistSSHKit.set_kit_noninteractive!(prev_ni)
+            end
         end
     end
 end

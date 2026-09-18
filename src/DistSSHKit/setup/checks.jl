@@ -205,8 +205,9 @@ function check_prerequisites(
         end
         local_hash = get_local_git_hash(proj; short = 12)
         if local_hash === nothing
-            fail("Could not get local git commit")
-            all_ok = false
+            # No repo / no HEAD (e.g. DistSSHQueue stage without `.git/`): warn, do not fail.
+            warn("Could not get local git commit")
+            kit_println("    Skip hash check (not a git commit); instantiate still proceeds")
         else
             ok("Git commit: $local_hash")
         end
@@ -295,7 +296,10 @@ function check_prerequisites(
             if remote_hash === nothing
                 warn("Could not get remote git commit")
                 needs_sync = true
-            elseif local_hash !== nothing && remote_hash == local_hash
+            elseif local_hash === nothing
+                warn("Git commit not comparable (no local commit)")
+                needs_sync = true
+            elseif remote_hash == local_hash
                 ok("Git commit matches ($remote_hash)")
             else
                 needs_sync = true

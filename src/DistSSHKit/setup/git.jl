@@ -96,15 +96,19 @@ function git_sync_project_to_hosts!(
     host_results = HostResult[]
 
     if confirm && !kit_noninteractive()
-        _print_git_sync_banner!(
-            hosts, proj, remote;
-            do_push = do_push, do_pull = do_pull, do_local_pull = do_local_pull,
-        )
-        kit_confirm("Proceed? [y/N]: ") || begin
-            println_fatal("Cancelled.")
-            return (; ok = false, cancelled = true, host_results = HostResult[])
+        cancelled = with_kit_progress_suspended() do
+            _print_git_sync_banner!(
+                hosts, proj, remote;
+                do_push = do_push, do_pull = do_pull, do_local_pull = do_local_pull,
+            )
+            kit_confirm("Proceed? [y/N]: ") || begin
+                println_fatal("Cancelled.")
+                return true
+            end
+            println_fatal()
+            return false
         end
-        println_fatal()
+        cancelled && return (; ok = false, cancelled = true, host_results = HostResult[])
     end
 
     if do_local_pull

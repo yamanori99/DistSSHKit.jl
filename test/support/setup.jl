@@ -83,6 +83,27 @@ if !isdefined(Main, :_run_kit_setup)
         end
     end
 
+    """
+    Seed `KIT_PROGRESS[]` with a live-looking bar (`drawn > 0`, cursor hidden)
+    before `f(state)`, restoring the previous progress state afterwards.
+
+    Use to assert that a confirm prompt (`kit_confirm` /
+    `with_kit_progress_suspended`) actually suspends and redraws the bar
+    (`state.drawn == 0`, `!state.cursor_hidden` after `f` returns) — see #374.
+    """
+    function _with_active_kit_progress(f::Function)
+        prev = DistSSHKit.KIT_PROGRESS[]
+        st = DistSSHKit.KitProgressState("op", 1, 0, "op")
+        st.drawn = 3
+        st.cursor_hidden = true
+        DistSSHKit.KIT_PROGRESS[] = st
+        try
+            return f(st)
+        finally
+            DistSSHKit.KIT_PROGRESS[] = prev
+        end
+    end
+
     """Run the kit `go` CLI as a subprocess.
 
     Same project-root rule as [`_run_kit_setup`](@ref): omit `project_root` only for

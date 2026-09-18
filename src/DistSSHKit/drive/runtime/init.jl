@@ -84,12 +84,23 @@ Default: definitions / `using` / `import` / `include` (not top-level work).
 process). Definitions on the master are compiled in the post-package-load
 world (Julia 1.12+ world age).
 
+Bare top-level `include(...)` is published; wrapping it in `if` / `||` /
+`&&` is dropped with a warning. Prefer `@__DIR__` for per-worker sibling
+paths. See [Publishing to workers](@ref Manual-drive-publish).
+
 `init_output_dir!` is invoked separately on the master before workers start.
 """
 function sync_driver_to_workers!(script_path::String; sync_script::Bool = false)
     sp = abspath(String(script_path))
     write_both("  Syncing driver to workers... ")
     flush(stdout)
+    src = if sync_script
+        ""
+    else
+        extracted, warns = DistSSHKit._drive_publish_extract(sp)
+        DistSSHKit._drive_print_skipped_include_warns!(warns)
+        extracted
+    end
     return try
         DistSSHKit._with_progress_job_stdio_capture!() do
             if sync_script
@@ -97,13 +108,10 @@ function sync_driver_to_workers!(script_path::String; sync_script::Bool = false)
                     worker_script = get(RUNNER_WORKER_SCRIPT_PATHS, w, sp)
                     _drive_invokelatest_main(w, :_drive_worker_include!, worker_script)
                 end
-            else
-                src = DistSSHKit._drive_publish_source(sp)
-                if !isempty(src)
-                    for w in workers()
-                        worker_script = get(RUNNER_WORKER_SCRIPT_PATHS, w, sp)
-                        _drive_invokelatest_main(w, :_drive_worker_publish!, src, worker_script)
-                    end
+            elseif !isempty(src)
+                for w in workers()
+                    worker_script = get(RUNNER_WORKER_SCRIPT_PATHS, w, sp)
+                    _drive_invokelatest_main(w, :_drive_worker_publish!, src, worker_script)
                 end
             end
             for w in workers()

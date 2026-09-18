@@ -275,4 +275,40 @@ end
             end
         end
     end
+
+    @testset "sync_driver_to_workers! warns and skips guarded include (#380)" begin
+        _with_tempdir() do tmp
+            lib = joinpath(tmp, "lib.jl")
+            write(lib, "other_loaded() = true\n")
+            g = joinpath(tmp, "guarded.jl")
+            write(
+                g, """
+                using Distributed
+                function work(x)
+                    return x * x
+                end
+                isdefined(Main, :other_loaded) || include(joinpath(@__DIR__, "lib.jl"))
+                """
+            )
+            addprocs(1; topology = :master_worker)
+            w = workers()[end]
+            try
+                DistSSHKit._drive_include_workers(DistSSHKit._DRIVE_WORKER_BOOTSTRAP)
+                out, _ = _capture_stdio() do _, _
+                    DistSSHKit.sync_driver_to_workers!(g)
+                end
+                @test occursin("is not published", out)
+                @test occursin("--sync-script", out)
+                @test remotecall_fetch(w) do
+                    isdefined(Main, :work) && Base.invokelatest(getfield(Main, :work), 3) == 9
+                end
+                # The guarded include never reached the worker.
+                @test !remotecall_fetch(w) do
+                    isdefined(Main, :other_loaded)
+                end
+            finally
+                w in workers() && rmprocs(w; waitfor = 2.0)
+            end
+        end
+    end
 end
