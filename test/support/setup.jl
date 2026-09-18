@@ -65,14 +65,17 @@ if !isdefined(Main, :_run_kit_setup)
                     redirect_stdout(stdout_io) do
                         redirect_stdin(pin) do
                             feeder = @async begin
-                                t0 = time()
-                                while DistSSHKit.KIT_PROGRESS_SUSPEND[] == 0
-                                    (time() - t0) > 5 && error("timeout waiting for progress suspend")
-                                    yield()
+                                try
+                                    t0 = time()
+                                    while DistSSHKit.KIT_PROGRESS_SUSPEND[] == 0
+                                        (time() - t0) > 5 && error("timeout waiting for progress suspend")
+                                        yield()
+                                    end
+                                    seen[] = DistSSHKit.KIT_PROGRESS_SUSPEND[]
+                                    write(pin.in, read(stdin_io))
+                                finally
+                                    close(pin.in)
                                 end
-                                seen[] = DistSSHKit.KIT_PROGRESS_SUSPEND[]
-                                write(pin.in, read(stdin_io))
-                                close(pin.in)
                                 return nothing
                             end
                             v = f(stdin_io, stdout_io)
