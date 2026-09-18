@@ -225,6 +225,18 @@ function wait_for_worker_connections!(; ssh::Bool = true)
     end
 end
 
+"""SIGINT in-flight `pmap` work on workers before `rmprocs`."""
+const INTERRUPT_DRIVE_WORKERS = Ref{Function}(interrupt)
+
+function _interrupt_drive_workers!()
+    nprocs() <= 1 && return nothing
+    try
+        INTERRUPT_DRIVE_WORKERS[](workers())
+    catch
+    end
+    return nothing
+end
+
 function register_worker_cleanup!(successful_hosts::Vector{String})
     cleanup_registered = Ref(false)
     function drive_atexit_cleanup()

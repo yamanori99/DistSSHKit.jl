@@ -174,6 +174,14 @@ using Test
             DistSSHKit._stop_drive_host_status_monitor!()
             DistSSHKit._start_drive_host_status_monitor!(d, nothing)
             DistSSHKit._stop_drive_host_status_monitor!()
+            DistSSHKit._start_drive_host_status_monitor!(d, nothing)
+            t = DistSSHKit.DRIVE_HOST_STATUS_TASK[]
+            @test t isa Task
+            sleep(0.05)
+            schedule(t::Task, InterruptException(); error = true)
+            sleep(0.3)
+            @test DistSSHKit._drive_host_status_monitor_active()
+            DistSSHKit._stop_drive_host_status_monitor!()
         end
         DistSSHKit._clear_drive_host_worker_ids!()
     end

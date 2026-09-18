@@ -42,6 +42,21 @@ function place_drive_sentinels!(
     return sentinel_name
 end
 
+"""Turn SIGINT into `InterruptException` for the duration of `f`.
+
+CLI `julia -m` defaults to exit-on-sigint, so Ctrl-C never reaches the
+`catch InterruptException` path. Restore the script default afterward
+unless this is an interactive session (`drive!` from the REPL).
+"""
+function _with_driver_sigint_exceptions(f)
+    Base.exit_on_sigint(false)
+    try
+        return f()
+    finally
+        isinteractive() || Base.exit_on_sigint(true)
+    end
+end
+
 function run_driver_script!(enable_log::Bool, drive_atexit_cleanup)
     writeln_both("Running script..."; color = :light_black)
     writeln_both("")
@@ -55,82 +70,91 @@ function run_driver_script!(enable_log::Bool, drive_atexit_cleanup)
             end
         end
     end
-    return try
-        if enable_log && LOG_FILE_HANDLE[] !== nothing
-            orig_stdout = stdout
-            log_io = LOG_FILE_HANDLE[]
-            linebuf = UInt8[]
-            rd, wr = redirect_stdout()
-            reader = @async begin
-                try
-                    while true
-                        data = readavailable(rd)
-                        if !isempty(data)
-                            # `:verbose`: live on the terminal. `:progress`: capture
-                            # and replay after the bar so the TTY stays a single line.
-                            # `:quiet`: kit log only.
-                            if DistSSHKit.kit_output_detail()
-                                write(orig_stdout, data)
-                            elseif DistSSHKit.kit_output_progress()
-                                DistSSHKit._append_job_stdout_capture!(data)
-                            end
-                            for b in data
-                                if b == 0x0d
-                                    empty!(linebuf)
-                                elseif b == 0x0a
-                                    write(log_io, linebuf)
-                                    write(log_io, b)
-                                    flush(log_io)
-                                    empty!(linebuf)
-                                else
-                                    push!(linebuf, b)
+    return _with_driver_sigint_exceptions() do
+        try
+            if enable_log && LOG_FILE_HANDLE[] !== nothing
+                orig_stdout = stdout
+                log_io = LOG_FILE_HANDLE[]
+                linebuf = UInt8[]
+                rd, wr = redirect_stdout()
+                reader = @async begin
+                    disable_sigint() do
+                        try
+                            while true
+                                data = _ignore_interrupt() do
+                                    return readavailable(rd)
                                 end
+                                data isa AbstractVector{UInt8} || continue
+                                if !isempty(data)
+                                    # `:verbose`: live on the terminal. `:progress`: capture
+                                    # and replay after the bar so the TTY stays a single line.
+                                    # `:quiet`: kit log only.
+                                    if DistSSHKit.kit_output_detail()
+                                        write(orig_stdout, data)
+                                    elseif DistSSHKit.kit_output_progress()
+                                        DistSSHKit._append_job_stdout_capture!(data)
+                                    end
+                                    for b in data
+                                        if b == 0x0d
+                                            empty!(linebuf)
+                                        elseif b == 0x0a
+                                            write(log_io, linebuf)
+                                            write(log_io, b)
+                                            flush(log_io)
+                                            empty!(linebuf)
+                                        else
+                                            push!(linebuf, b)
+                                        end
+                                    end
+                                end
+                                # NOTE: no `yield()` here on an empty read — `readavailable` already
+                                # blocks until data or close, so spin-yielding instead of letting it
+                                # block starves libuv's notice of `wr` closing (observed ~30s stalls).
+                                isempty(data) && (eof(rd) || !isopen(wr)) && break
                             end
+                            if !isempty(linebuf)
+                                write(log_io, linebuf)
+                                flush(log_io)
+                            end
+                        catch e
+                            isa(e, InterruptException) && return
+                            isa(e, Base.IOError) || rethrow()
                         end
-                        # NOTE: no `yield()` here on an empty read — `readavailable` already
-                        # blocks until data or close, so spin-yielding instead of letting it
-                        # block starves libuv's notice of `wr` closing (observed ~30s stalls).
-                        isempty(data) && (eof(rd) || !isopen(wr)) && break
                     end
-                    if !isempty(linebuf)
-                        write(log_io, linebuf)
-                        flush(log_io)
-                    end
-                catch e
-                    isa(e, Base.IOError) || rethrow()
                 end
-            end
-            try
+                try
+                    call_main()
+                finally
+                    flush(stdout)
+                    close(wr)
+                    # `rd` normally reaches EOF once `wr` closes, but local worker processes
+                    # (spawned via `addprocs`) inherit our stdout fd and keep the underlying
+                    # pipe open until they exit, so EOF may never arrive here. All real script
+                    # output is already flushed to `rd` by this point (readavailable drains it
+                    # as it's written), so a short grace period is enough before we force-close.
+                    wait_ok = @async wait(reader)
+                    for _ in 1:20
+                        istaskdone(wait_ok) && break
+                        sleep(0.05)
+                    end
+                    if !istaskdone(wait_ok)
+                        close(rd)
+                        wait(reader)
+                    end
+                    redirect_stdout(orig_stdout)
+                end
+            else
                 call_main()
-            finally
-                flush(stdout)
-                close(wr)
-                # `rd` normally reaches EOF once `wr` closes, but local worker processes
-                # (spawned via `addprocs`) inherit our stdout fd and keep the underlying
-                # pipe open until they exit, so EOF may never arrive here. All real script
-                # output is already flushed to `rd` by this point (readavailable drains it
-                # as it's written), so a short grace period is enough before we force-close.
-                wait_ok = @async wait(reader)
-                for _ in 1:20
-                    istaskdone(wait_ok) && break
-                    sleep(0.05)
-                end
-                if !istaskdone(wait_ok)
-                    close(rd)
-                    wait(reader)
-                end
-                redirect_stdout(orig_stdout)
             end
-        else
-            call_main()
+        catch e
+            if e isa InterruptException
+                writeln_both("\nInterrupted. Cleaning up workers...")
+                _interrupt_drive_workers!()
+                drive_atexit_cleanup()
+                exit(130)
+            end
+            rethrow()
         end
-    catch e
-        if e isa InterruptException
-            writeln_both("\nInterrupted. Cleaning up workers...")
-            drive_atexit_cleanup()
-            exit(130)
-        end
-        rethrow()
     end
 end
 

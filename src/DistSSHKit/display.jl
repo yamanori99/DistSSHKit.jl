@@ -427,14 +427,20 @@ end
 
 function _drain_job_stdio_pipe!(rd, wr)
     return @async begin
-        try
-            while true
-                data = readavailable(rd)
-                isempty(data) || _append_job_stdout_capture!(data)
-                isempty(data) && (eof(rd) || !isopen(wr)) && break
+        disable_sigint() do
+            try
+                while true
+                    data = _ignore_interrupt() do
+                        return readavailable(rd)
+                    end
+                    data isa AbstractVector{UInt8} || continue
+                    isempty(data) || _append_job_stdout_capture!(data)
+                    isempty(data) && (eof(rd) || !isopen(wr)) && break
+                end
+            catch e
+                isa(e, InterruptException) && return
+                isa(e, Base.IOError) || rethrow()
             end
-        catch e
-            isa(e, Base.IOError) || rethrow()
         end
     end
 end
@@ -690,6 +696,22 @@ const SPINNER_FRAMES = ('⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', 
 _spinner_can_draw()::Bool =
     kit_output_detail() && stdout isa Base.TTY && !haskey(ENV, "NO_COLOR")
 
+"""Run `f` without letting Ctrl-C abort this task.
+
+A dying `@async` spinner / reader consumes SIGINT and never delivers
+`InterruptException` to the driver (`pmap`). Catch and continue so the
+background loop stays up; `disable_sigint` on the caller keeps the first
+Ctrl-C for the main task.
+"""
+function _ignore_interrupt(f)
+    try
+        return f()
+    catch e
+        e isa InterruptException || rethrow()
+        return nothing
+    end
+end
+
 """
     kit_spin!(prefix, f) -> result of f()
 
@@ -707,18 +729,22 @@ function kit_spin!(f, prefix::AbstractString)
     done = Ref(false)
     prefix_s = String(prefix)
     spinner_task = @async begin
-        i = 1
-        while !done[]
-            print(stdout, '\r', prefix_s)
-            if use_colors()
-                printstyled(stdout, SPINNER_FRAMES[i]; color = :light_black)
-            else
-                print(stdout, SPINNER_FRAMES[i])
+        disable_sigint() do
+            i = 1
+            while !done[]
+                _ignore_interrupt() do
+                    print(stdout, '\r', prefix_s)
+                    if use_colors()
+                        printstyled(stdout, SPINNER_FRAMES[i]; color = :light_black)
+                    else
+                        print(stdout, SPINNER_FRAMES[i])
+                    end
+                    print(stdout, "\e[K")
+                    flush(stdout)
+                    i = i == length(SPINNER_FRAMES) ? 1 : i + 1
+                    sleep(0.08)
+                end
             end
-            print(stdout, "\e[K")
-            flush(stdout)
-            i = i == length(SPINNER_FRAMES) ? 1 : i + 1
-            sleep(0.08)
         end
     end
     try
@@ -1126,12 +1152,16 @@ function _progress_start_spinner!(state::KitProgressState)
     (_progress_can_draw() && !state.spinning) || return nothing
     state.spinning = true
     state.spinner_task = @async begin
-        while state.spinning
-            _progress_is_current(state) || break
-            lock(KIT_PROGRESS_LOCK) do
-                _progress_spinner_tick!(state)
+        disable_sigint() do
+            while state.spinning
+                _progress_is_current(state) || break
+                _ignore_interrupt() do
+                    lock(KIT_PROGRESS_LOCK) do
+                        _progress_spinner_tick!(state)
+                    end
+                    sleep(0.08)
+                end
             end
-            sleep(0.08)
         end
     end
     return nothing

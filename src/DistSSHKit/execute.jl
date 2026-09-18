@@ -865,15 +865,20 @@ function _start_drive_host_status_monitor!(
     interval = _heartbeat_config().interval
     _refresh_drive_host_status_file!(output_dir, log_dir)
     DRIVE_HOST_STATUS_TASK[] = @async begin
-        while !DRIVE_HOST_STATUS_STOP[]
-            t0 = time()
-            while !DRIVE_HOST_STATUS_STOP[] && (time() - t0) < interval
-                sleep(0.2)
-            end
-            DRIVE_HOST_STATUS_STOP[] && break
-            try
-                _refresh_drive_host_status_file!(output_dir, log_dir)
-            catch
+        disable_sigint() do
+            while !DRIVE_HOST_STATUS_STOP[]
+                _ignore_interrupt() do
+                    t0 = time()
+                    while !DRIVE_HOST_STATUS_STOP[] && (time() - t0) < interval
+                        sleep(0.2)
+                    end
+                    DRIVE_HOST_STATUS_STOP[] && return
+                    try
+                        _refresh_drive_host_status_file!(output_dir, log_dir)
+                    catch
+                    end
+                    return nothing
+                end
             end
         end
     end
