@@ -24,6 +24,37 @@ here only (`--require-git`). Prepare remotes with
 [`setup --rsync`](@ref Manual-setup) **or** `--clone`, then `--instantiate`.
 One-shot onto an empty/missing path: `drive --rsync` (instantiates if needed).
 
+## [Publishing to workers](@id Manual-drive-publish)
+
+Default publish (not `--sync-script`) re-evaluates **bare top-level**
+`function` / `macro` / `struct` / `using` / `import` / `const` /
+`include(...)` (and short-form methods) on each worker. Top-level work
+(`println`, loops, `pmap` at file scope) stays on the master Load.
+
+Wrapping `include(...)` in `if` / `||` / `&&` hides it from publish:
+
+```julia
+isdefined(Main, :load_full_config) || include(DEMO_JL)
+```
+
+That node is `Expr(:||, …)`, not a bare `include` call, so workers never
+see it. `drive` warns and continues. Use a bare `include(...)`, or
+`--sync-script` for a full-file worker include.
+
+`@__DIR__` is re-evaluated on each worker: `_drive_worker_publish!` sets
+`task_local_storage()[:SOURCE_PATH]` to that worker’s remapped script
+path before re-running published source. Prefer `@__DIR__`-derived
+`const`s for sibling files (parent, `child:NAME`, and DistSSHQueue
+`qhost:` trees have different absolute paths). Do not bake a master
+`abspath` / `@__FILE__` / `Base.active_project()` into the published
+source:
+
+```julia
+const REPO_ROOT = dirname(@__DIR__)
+const DEMO_JL = joinpath(REPO_ROOT, "demo.jl")
+include(DEMO_JL)
+```
+
 ## Flags
 
 - `--sync` / `--rsync`: optional pre-run copy; `--rsync` instantiates if needed
@@ -121,8 +152,10 @@ kit parent never `relpath`s against a tilde base (same ENV as
 ## Driver script
 
 Expects `init_output_dir!` / `main` (and optional hooks). Top-level work on
-Load is not repeated on workers unless `--sync-script`. Details and ENV:
-`drive --help`. Embed with [`drive!`](@ref) / [`pipeline!`](@ref).
+Load is not repeated on workers unless `--sync-script`. Publish rules and
+`@__DIR__` on workers: [Publishing to workers](@ref Manual-drive-publish).
+Details and ENV: `drive --help`. Embed with [`drive!`](@ref) /
+[`pipeline!`](@ref).
 
 ## Wall time
 

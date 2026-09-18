@@ -95,21 +95,26 @@ using Test
                     _init_commit!(work)
                     for v in (:quiet, :progress, :verbose)
                         with_kit_verbosity(v) do
-                            out, raw = _capture_stdio() do stdin_io, _
-                                println(stdin_io, "n")
-                                flush(stdin_io)
-                                seekstart(stdin_io)
-                                DistSSHKit.git_sync_project_to_hosts!(
-                                    ["host1"], work, "~/App.jl";
-                                    do_push = true, do_pull = true, do_local_pull = false,
-                                )
+                            _with_active_kit_progress() do _
+                                out, raw, nsus = _capture_stdio(; probe_suspend = true) do stdin_io, _
+                                    println(stdin_io, "n")
+                                    flush(stdin_io)
+                                    seekstart(stdin_io)
+                                    DistSSHKit.git_sync_project_to_hosts!(
+                                        ["host1"], work, "~/App.jl";
+                                        do_push = true, do_pull = true, do_local_pull = false,
+                                    )
+                                end
+                                @test !raw.ok
+                                @test raw.cancelled
+                                @test isempty(raw.host_results)
+                                @test occursin("Cancelled.", out)
+                                @test occursin("Proceed?", out)
+                                @test occursin("git push", out)
+                                # #374: bar is suspended while stdin is read, then released.
+                                @test nsus >= 1
+                                @test DistSSHKit.KIT_PROGRESS_SUSPEND[] == 0
                             end
-                            @test !raw.ok
-                            @test raw.cancelled
-                            @test isempty(raw.host_results)
-                            @test occursin("Cancelled.", out)
-                            @test occursin("Proceed?", out)
-                            @test occursin("git push", out)
                         end
                     end
                     _, raw_skip = _capture_stdio() do _, _

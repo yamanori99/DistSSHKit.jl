@@ -50,17 +50,50 @@ if !isdefined(Main, :_run_kit_setup)
 
     Use only when asserting on printed messages. For return-value checks, prefer
     `_apply_quiet_setup_session!` / `report=false` instead of discarding stdout.
+
+    `probe_suspend=true` feeds stdin through a pipe after `KIT_PROGRESS_SUSPEND`
+    is already up (confirm `readline` is pending) and returns that count as a
+    third value (#374).
     """
-    function _capture_stdio(f::Function)
+    function _capture_stdio(f::Function; probe_suspend::Bool = false)
+        seen = Ref(0)
         return mktemp() do _stdin_path, stdin_io
             mktemp() do stdout_path, stdout_io
-                value = redirect_stdout(stdout_io) do
-                    redirect_stdin(stdin_io) do
-                        f(stdin_io, stdout_io)
+                value = if probe_suspend
+                    pin = Pipe()
+                    Base.link_pipe!(pin)
+                    redirect_stdout(stdout_io) do
+                        redirect_stdin(pin) do
+                            feeder = @async begin
+                                try
+                                    t0 = time()
+                                    while DistSSHKit.KIT_PROGRESS_SUSPEND[] == 0
+                                        (time() - t0) > 5 && error("timeout waiting for progress suspend")
+                                        yield()
+                                    end
+                                    seen[] = DistSSHKit.KIT_PROGRESS_SUSPEND[]
+                                    write(pin.in, read(stdin_io))
+                                finally
+                                    close(pin.in)
+                                end
+                                return nothing
+                            end
+                            v = f(stdin_io, stdout_io)
+                            wait(feeder)
+                            return v
+                        end
+                    end
+                else
+                    redirect_stdout(stdout_io) do
+                        redirect_stdin(stdin_io) do
+                            f(stdin_io, stdout_io)
+                        end
                     end
                 end
                 flush(stdout_io)
-                return read(stdout_path, String), value
+                out = read(stdout_path, String)
+                probe_suspend || return out, value
+                return out, value, seen[]
             end
         end
     end
@@ -80,6 +113,26 @@ if !isdefined(Main, :_run_kit_setup)
             DistSSHKit.kit_progress_done!()
             DistSSHKit._set_kit_progress_sidecar!(nothing)
             DistSSHKit.set_kit_verbosity!(prev)
+        end
+    end
+
+    """
+    Seed `KIT_PROGRESS[]` so confirm paths enter `with_kit_progress_suspended`
+    with a live bar, restoring the previous progress state afterwards.
+
+    Assert `KIT_PROGRESS_SUSPEND[] > 0` *during* stdin read (`probe_suspend`
+    on `_capture_stdio`), then `== 0` after the op returns (#374).
+    Post-return `drawn` / `cursor_hidden` are reset by cleanup even without
+    a live `KIT_PROGRESS_IO`, so they do not prove the prompt hid the bar.
+    """
+    function _with_active_kit_progress(f::Function)
+        prev = DistSSHKit.KIT_PROGRESS[]
+        st = DistSSHKit.KitProgressState("op", 1, 0, "op")
+        DistSSHKit.KIT_PROGRESS[] = st
+        try
+            return f(st)
+        finally
+            DistSSHKit.KIT_PROGRESS[] = prev
         end
     end
 

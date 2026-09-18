@@ -52,16 +52,21 @@ using Test
             try
                 for v in (:quiet, :progress, :verbose)
                     with_kit_verbosity(v) do
-                        out, result = _capture_stdio() do stdin_io, _
-                            println(stdin_io, "")
-                            flush(stdin_io)
-                            seekstart(stdin_io)
-                            DistSSHKit.rsync_push_to_remotes(["host1"], remote_path, project)
+                        _with_active_kit_progress() do _
+                            out, result, nsus = _capture_stdio(; probe_suspend = true) do stdin_io, _
+                                println(stdin_io, "")
+                                flush(stdin_io)
+                                seekstart(stdin_io)
+                                DistSSHKit.rsync_push_to_remotes(["host1"], remote_path, project)
+                            end
+                            @test result == (cancelled = true, succeeded = 0, failed = 0)
+                            @test occursin("Cancelled.", out)
+                            @test occursin("bypasses git", out)
+                            @test occursin("Type 'rsync'", out)
+                            # #374: bar is suspended while stdin is read, then released.
+                            @test nsus >= 1
+                            @test DistSSHKit.KIT_PROGRESS_SUSPEND[] == 0
                         end
-                        @test result == (cancelled = true, succeeded = 0, failed = 0)
-                        @test occursin("Cancelled.", out)
-                        @test occursin("bypasses git", out)
-                        @test occursin("Type 'rsync'", out)
                     end
                 end
             finally

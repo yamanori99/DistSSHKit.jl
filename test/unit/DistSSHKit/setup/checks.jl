@@ -200,4 +200,58 @@ using Pkg
         end
         @test DistSSHKit.probe_project_deps(dir) === nothing
     end
+
+    @testset "check_prerequisites git commit missing is a warning" begin
+        _with_tempdir() do dir
+            write(joinpath(dir, "Project.toml"), "[deps]\n")
+            out, result = with_kit_verbosity(:verbose) do
+                _capture_stdio() do _, _
+                    DistSSHKit.check_prerequisites(
+                        String[], "auto", "~/App.jl", dir;
+                        require_clean_git = false,
+                    )
+                end
+            end
+            @test occursin("Could not get local git commit", out)
+            @test occursin("Skip hash check", out)
+            @test !occursin("✗ Could not get local git commit", out)
+            Sys.which("ssh") === nothing || @test result.ok
+        end
+    end
+
+    @testset "check_prerequisites dirty tree" begin
+        Sys.which("git") === nothing && return
+        _with_tempdir() do dir
+            write(joinpath(dir, "Project.toml"), "[deps]\n")
+            run(pipeline(`git -C $dir init -q`; stdout = devnull, stderr = devnull))
+            run(pipeline(`git -C $dir config user.email "test@example.com"`; stdout = devnull, stderr = devnull))
+            run(pipeline(`git -C $dir config user.name "Test"`; stdout = devnull, stderr = devnull))
+            run(pipeline(`git -C $dir add Project.toml`; stdout = devnull, stderr = devnull))
+            run(pipeline(`git -C $dir commit -q -m init`; stdout = devnull, stderr = devnull))
+            write(joinpath(dir, "dirty.txt"), "x\n")
+
+            out_warn, result_warn = with_kit_verbosity(:verbose) do
+                _capture_stdio() do _, _
+                    DistSSHKit.check_prerequisites(
+                        String[], "auto", "~/App.jl", dir;
+                        require_clean_git = false,
+                    )
+                end
+            end
+            @test occursin("Git has uncommitted changes", out_warn)
+            @test !occursin("✗ Git has uncommitted changes", out_warn)
+            Sys.which("ssh") === nothing || @test result_warn.ok
+
+            out_fail, result_fail = with_kit_verbosity(:verbose) do
+                _capture_stdio() do _, _
+                    DistSSHKit.check_prerequisites(
+                        String[], "auto", "~/App.jl", dir;
+                        require_clean_git = true,
+                    )
+                end
+            end
+            @test !result_fail.ok
+            @test occursin("Git has uncommitted changes", out_fail)
+        end
+    end
 end

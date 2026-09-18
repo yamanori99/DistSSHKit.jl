@@ -241,17 +241,21 @@ function rsync_project_to_hosts!(
     path_anchor = canonical_local_path(path_anchor)
 
     if confirm && !kit_noninteractive()
-        _print_rsync_safety_banner!(local_root, remote_path, hosts, path_anchor)
-        if !kit_confirm("Type 'rsync' to confirm: "; keyword = "rsync")
-            println_fatal("Cancelled.")
-            return (
-                cancelled = true,
-                succeeded = 0,
-                failed = 0,
-                host_results = HostResult[],
-            )
+        cancelled = with_kit_progress_suspended() do
+            _print_rsync_safety_banner!(local_root, remote_path, hosts, path_anchor)
+            if !kit_confirm("Type 'rsync' to confirm: "; keyword = "rsync")
+                println_fatal("Cancelled.")
+                return true
+            end
+            println_fatal()
+            return false
         end
-        println_fatal()
+        cancelled && return (
+            cancelled = true,
+            succeeded = 0,
+            failed = 0,
+            host_results = HostResult[],
+        )
     end
 
     ssh_cmd_str = _host_sync_rsync_transport()

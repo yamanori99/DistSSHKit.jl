@@ -69,19 +69,23 @@ function prune_kit_leaves(
         skip_setup::Union{Nothing, AbstractString} = nothing,
     )::NamedTuple
     if confirm && !kit_noninteractive()
-        print_err("  This will DELETE .distsshkit go/drive/setup leaves.\n")
-        println_fatal("  Local project: $project")
-        println_fatal("  Remote path: $remote_path")
-        println_fatal("  Hosts: $(join(hosts, ", "))")
-        older_days !== nothing && println_fatal("  older-than: $older_days day(s)")
-        id !== nothing && println_fatal("  id: $id")
-        println_fatal("  Deploy tree and output/ are left alone.")
-        println_fatal()
-        kit_confirm("Type 'prune' to confirm: "; keyword = "prune") || begin
-            println_fatal("Cancelled.")
-            return (; cancelled = true, succeeded = 0, failed = 0, hosts = HostResult[])
+        cancelled = with_kit_progress_suspended() do
+            print_err("  This will DELETE .distsshkit go/drive/setup leaves.\n")
+            println_fatal("  Local project: $project")
+            println_fatal("  Remote path: $remote_path")
+            println_fatal("  Hosts: $(join(hosts, ", "))")
+            older_days !== nothing && println_fatal("  older-than: $older_days day(s)")
+            id !== nothing && println_fatal("  id: $id")
+            println_fatal("  Deploy tree and output/ are left alone.")
+            println_fatal()
+            kit_confirm("Type 'prune' to confirm: "; keyword = "prune") || begin
+                println_fatal("Cancelled.")
+                return true
+            end
+            println_fatal()
+            return false
         end
-        println_fatal()
+        cancelled && return (; cancelled = true, succeeded = 0, failed = 0, hosts = HostResult[])
     end
 
     kit_spin!("  localhost: ") do
