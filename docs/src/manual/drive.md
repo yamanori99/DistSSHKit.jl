@@ -124,6 +124,9 @@ Listed tokens need `:N`. `-w N` is `parent:N` when no `parent` token is
 listed. Estimate with [`size`](@ref Manual-size), then paste the printed
 tokens.
 
+- Ctrl-C during **run** stops the driver (exit 130): interrupt in-flight
+  worker `pmap`, then `rmprocs`. One SIGINT is enough; the live bar does
+  not swallow it
 - Local workers are torn down with `rmprocs` at the end of every `drive` run
 - SSH leftover `pkill` matches argv `distsshkit-job:<id>` when `job_id` /
   `DISTSSHKIT_JOB_ID` is set (drive workers: `--eval=#distsshkit-job:<id>`).

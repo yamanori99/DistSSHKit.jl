@@ -32,7 +32,8 @@ Also: [Requirements](@ref), `setup --help`. Flag vocabulary:
 Pick **one mode** per invocation (except shared options).
 
 - `--check`: local `ssh` / `rsync` / `git` on PATH; remotes: SSH, Julia,
-  project, deps; git commit parity when remotes have `.git/`
+  project, deps; git commit parity when remotes have `.git/`. A missing
+  local git commit is a warning (instantiate still proceeds), not a fail
 - `--clone`: `git clone` onto each remote at an empty/missing path
   (confirm unless `-y`)
 - `--rsync`: rsync local tree onto missing/empty path (recommended first
