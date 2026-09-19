@@ -75,7 +75,12 @@ include(DEMO_JL)
 - `--parent-gb N`: GB reserved for the parent process (default `0.4`; same
   as size)
 - `--output-dir PATH`: **result root** → `DISTRIBUTED_OUTPUT_DIR` (not go
-  batch root)
+  batch root). Omitted: the driver may set it in `init_output_dir!`;
+  otherwise Kit allocates `{script}/.distsshkit/drive/<stem>_<UTC>/`.
+  Detached `execute!(:drive)` does not pin `--output-dir` unless you pass
+  `output_dir=` (or inherit `DISTRIBUTED_OUTPUT_DIR`).
+- Run sidecars (`kit.pid`, `kit.out` / `kit.err`, `run.toml`) live under
+  `{script}/.distsshkit/runs/drive/<stem>_<UTC>/`, not in the artifact dir.
 - `--log-dir PATH`: log directory override
 - `--no-log`: do not write `drive_<timestamp>.log`
 - `--package NAME`: `using NAME` on workers (override Project.toml name)

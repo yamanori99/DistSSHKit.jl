@@ -59,7 +59,7 @@ function setup!(
         id::Union{Nothing, AbstractString} = nothing,
     )::SyncResult
     _setup_bang_preflight!(session, mode; repo = repo)
-    log_dir = joinpath(session.project, ".distsshkit", "setup")
+    log_dir = setup_log_dir(session.project)
     step = setup_progress_step_name(mode)
     return _with_kit_inproc_run!(:setup) do
         apply_session_env!(session)
@@ -222,7 +222,7 @@ function _setup_one!(
         return _sync_result_from_host_op(raw)
     elseif mode === :prune
         preflight_setup_ssh(hosts) || return SyncResult(true, HostResult[]; ok = false)
-        log_dir = joinpath(session.project, ".distsshkit", "setup")
+        log_dir = setup_log_dir(session.project)
         raw = prune_kit_leaves(
             hosts,
             remote_path,

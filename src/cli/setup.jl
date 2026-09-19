@@ -203,7 +203,7 @@ if !isdefined(@__MODULE__, :setup_main)
                                 project;
                                 older_days = opts.older_days,
                                 id = opts.prune_id,
-                                skip_setup = joinpath(project, ".distsshkit", "setup"),
+                                skip_setup = DistSSHKit.setup_log_dir(project),
                             ),
                         ) ? 0 : 1
                 )
@@ -267,7 +267,7 @@ if !isdefined(@__MODULE__, :setup_main)
             return Cint(0)
         end
 
-        log_dir = joinpath(project, ".distsshkit", "setup")
+        log_dir = DistSSHKit.setup_log_dir(project)
         init_log_file(
             log_dir;
             prefix = "setup",

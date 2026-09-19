@@ -67,6 +67,9 @@ export RideResult
 export print_ride
 export execute!
 export allocate_output_dir
+export allocate_run_dir
+export kit_run_dir
+export read_kit_run_toml
 export execute_detached_accepts
 export execute_kwargs_from_parsed
 export kit_pid_file_running
@@ -108,6 +111,7 @@ include("DistSSHKit/remote.jl")
 include("DistSSHKit/demos.jl")
 include("DistSSHKit/distributed.jl")
 include("DistSSHKit/drive/types.jl")
+include("DistSSHKit/run_manifest.jl")
 include("DistSSHKit/size/measure.jl")
 include("DistSSHKit/setup.jl")
 include("DistSSHKit/argv/drive_args.jl")

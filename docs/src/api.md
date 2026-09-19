@@ -195,11 +195,10 @@ wait(execute!(:go, "job.jl", ["parent:1"]; detached=true, args=["8"]))
   lists DistSSHKit in `Project.toml` `[deps]`; otherwise `pkgdir(DistSSHKit)`
   (Manifest-only / transitive DistSSHKit does not count)
 - Keywords are an allow-list; `yes` must stay `true`
-- Child stdio defaults to `kit.out` / `kit.err` in `output_dir`. Pass
-  `stdout` / `stderr` to override (`stdout=stdout` inherits the parent).
-  Parent `redirect_stdout` does not apply to the subprocess
-- [`KitProcess`](@ref) holds the `Base.Process` and the dirs resolved before
-  spawn
+- Child stdio defaults to `kit.out` / `kit.err` in `run_dir`
+- [`KitProcess`](@ref) holds the `Base.Process`, `run_dir`, and artifact
+  `output_dir` when known before spawn (detached `:drive` may leave
+  `output_dir` as `nothing` until `wait` reads `kit.result`)
 - `wait` converts it to [`KitRunResult`](@ref). If the child wrote `kit.result`,
   that file wins (including `go!` `failed_step`). Otherwise a non-zero child
   exit yields `failed_step` `"go"` / `"ride"` / `"drive"` only. `wait(kp; timeout=N)`
@@ -208,6 +207,9 @@ wait(execute!(:go, "job.jl", ["parent:1"]; detached=true, args=["8"]))
 ```@docs
 execute!
 allocate_output_dir
+allocate_run_dir
+kit_run_dir
+read_kit_run_toml
 execute_detached_accepts
 execute_kwargs_from_parsed
 KitProcess
@@ -308,11 +310,13 @@ Without `job_id`, only the child pid is signaled.
 
 #### Before spawn
 
-- [`allocate_output_dir`](@ref): create a unique directory under
+- [`allocate_output_dir`](@ref): create a unique **artifact** directory under
   `{script}/.distsshkit/<kind>/` for a later `output_dir=`. Omitted `go` /
-  `ride` / `drive` default is `{script}/.distsshkit/<kind>/<stem>_<UTC>/`.
-  Drive still keeps `--output-dir` / `init_output_dir!` when those set
-  `DISTRIBUTED_OUTPUT_DIR`.
+  `ride` default is still `{script}/.distsshkit/<kind>/<stem>_<UTC>/`.
+  Detached `drive` does not pin that path before spawn, so
+  `init_output_dir!` can set `DISTRIBUTED_OUTPUT_DIR`.
+- [`allocate_run_dir`](@ref): Kit run bundle
+  `{script}/.distsshkit/runs/<kind>/<stem>_<UTC>/` (`run.toml`, pid, stdio).
 - [`execute_kwargs_from_parsed`](@ref): map `parse_go_args` /
   `parse_drive_args` onto detached `execute!` keywords. Ride argv maps the same
   way for `:ride`. Hosts stay in
