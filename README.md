@@ -178,7 +178,7 @@ remote, `go --rsync` / `drive --rsync` can copy and instantiate in one shot
   - `--juliaup-update` (`juliaup update` on those hosts; confirm unless
     `-y`; also `setup --juliaup update`)
   - `--cleanup` (kill leftover worker processes)
-  - `--prune` (remove `.distsshkit` go/drive/setup leaves; keeps the deploy)
+  - `--prune` (remove `.distsshkit` go/drive/setup/runs leaves; keeps the deploy)
   - `--delete` (remove the remote project directory — destructive)
 
 `--rsync` / `--clone` / `--sync` / `--pull` / `--delete` / `--prune` /
@@ -211,7 +211,7 @@ julia --project=. -m DistSSHKit setup --check child:user@host1 child:user@host2
 Other commands that come in handy:
 
 ```bash
-# Remove go/drive/setup leaves (keeps the project tree)
+# Remove go/drive/setup/runs leaves (keeps the project tree)
 julia --project=. -m DistSSHKit setup --prune child:user@host1 child:user@host2
 # Clean up leftover worker processes
 julia --project=. -m DistSSHKit setup --cleanup child:user@host1 child:user@host2

@@ -19,6 +19,11 @@ function kit_run_dir()::Union{Nothing, String}
     return canonical_local_path(raw)
 end
 
+function _is_permission_denied(e)::Bool
+    e isa Base.IOError || return false
+    return e.code == Base.UV_EACCES || e.code == Base.UV_EPERM
+end
+
 """Exclusive `mkdir` of `dir`. On EEXIST, retry `dir-<time_ns>`."""
 function _mkdir_unique!(dir::AbstractString)::String
     mkpath(dirname(dir))
@@ -45,6 +50,10 @@ artifact `output_dir`.
 Layout: `{script dir}/.distsshkit/runs/<kind>/<script-stem>_<UTC-stamp>/`.
 When `job_id` is set it is appended after the stamp (same charset as
 [`execute!`](@ref) `job_id`).
+
+If that parent tree is not writable (read-only `pkgdir` / Registry
+install), the same leaf is created under `{project}/.distsshkit/runs/…`,
+then under `tempdir()/distsshkit-runs/…`.
 """
 function allocate_run_dir(
         kind::Symbol,
@@ -66,8 +75,26 @@ function allocate_run_dir(
     raw = String(script)
     script_path = isabspath(raw) ? raw : joinpath(proj, raw)
     script_dir = dirname(canonical_local_path(script_path))
-    dir = joinpath(script_dir, ".distsshkit", "runs", String(kind), leaf)
-    return _mkdir_unique!(dir)
+    rel = joinpath(".distsshkit", "runs", String(kind), leaf)
+    candidates = (
+        joinpath(script_dir, rel),
+        joinpath(proj, rel),
+        joinpath(tempdir(), "distsshkit-runs", String(kind), leaf),
+    )
+    last = nothing
+    seen = Set{String}()
+    for dir in candidates
+        dir in seen && continue
+        push!(seen, dir)
+        try
+            return _mkdir_unique!(dir)
+        catch e
+            _is_permission_denied(e) || rethrow()
+            last = e
+        end
+    end
+    last === nothing && error("allocate_run_dir: no candidate path")
+    throw(last)
 end
 
 function _ensure_kit_run_dir!(

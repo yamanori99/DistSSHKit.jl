@@ -13,6 +13,10 @@ GitHub Releases may copy these sections (`Release notes:` on
   `DISTRIBUTED_OUTPUT_DIR`. The child honors `init_output_dir!`. Sidecars
   (`kit.pid`, `kit.out` / `kit.err`, `run.toml`) live under
   `{script}/.distsshkit/runs/<kind>/<stem>_<UTC>/`.
+  If the script directory is not writable (Registry / `Pkg.test` tree),
+  the run bundle is created under `{project}/.distsshkit/runs/…` then
+  `tempdir()/distsshkit-runs/…`. `setup --prune` also removes
+  `.distsshkit/runs/` leaves.
 
 ## 0.7.3
 

@@ -282,6 +282,23 @@ using Test
             @test raw["schema"] == 1
             @test occursin("out", String(raw["output_dir"]))
         end
+
+        _with_tempdir() do project
+            ro = joinpath(project, "ro")
+            mkpath(ro)
+            script = joinpath(ro, "job.jl")
+            write(script, "")
+            chmod(ro, 0o555)
+            try
+                d = DistSSHKit.allocate_run_dir(:go, script; project)
+                @test isdir(d)
+                @test occursin(joinpath(".distsshkit", "runs", "go"), d)
+                @test startswith(d, DistSSHKit.canonical_local_path(project))
+                @test !startswith(d, DistSSHKit.canonical_local_path(ro))
+            finally
+                chmod(ro, 0o755)
+            end
+        end
     end
 
     @testset "_execute_detached_dirs drive unique" begin

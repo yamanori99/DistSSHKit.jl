@@ -155,7 +155,7 @@ CLI のオプションと Julia API は1対1である。
 - その他
   - `--check` (SSH / Julia / 依存関係の疎通確認)
   - `--juliaup` (juliaup で `child:NAME` や `parent` の Julia を揃える。確認あり。`-y` で省略)
-  - `--prune` (`.distsshkit` の go / drive / setup を消す。配置ツリーは残す)
+  - `--prune` (`.distsshkit` の go / drive / setup / runs を消す。配置ツリーは残す)
   - `--cleanup` (残っているワーカープロセスの掃除)
   - `--delete` (リモートのプロジェクトディレクトリを削除。破壊的操作)
 

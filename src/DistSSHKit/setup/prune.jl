@@ -1,4 +1,4 @@
-# Prune `.distsshkit/{go,drive,setup}` leaves without wiping the deploy tree.
+# Prune `.distsshkit/{go,drive,setup,runs}` leaves without wiping the deploy tree.
 
 """Remove matching kit leaf dirs under `root`. Returns the number removed."""
 function prune_kit_leaf_dirs!(
@@ -20,6 +20,18 @@ function prune_kit_leaf_dirs!(
                 _prune_id_ok(basename(child), idn) || continue
                 _prune_age_ok(child, older_days) || continue
                 push!(victims, child)
+            end
+        end
+        runs = joinpath(dir, "runs")
+        if isdir(runs)
+            for kind_dir in readdir(runs; join = true)
+                isdir(kind_dir) || continue
+                for child in readdir(kind_dir; join = true)
+                    isdir(child) || continue
+                    _prune_id_ok(basename(child), idn) || continue
+                    _prune_age_ok(child, older_days) || continue
+                    push!(victims, child)
+                end
             end
         end
         if idn === nothing
@@ -70,7 +82,7 @@ function prune_kit_leaves(
     )::NamedTuple
     if confirm && !kit_noninteractive()
         cancelled = with_kit_progress_suspended() do
-            print_err("  This will DELETE .distsshkit go/drive/setup leaves.\n")
+            print_err("  This will DELETE .distsshkit go/drive/setup/runs leaves.\n")
             println_fatal("  Local project: $project")
             println_fatal("  Remote path: $remote_path")
             println_fatal("  Hosts: $(join(hosts, ", "))")
@@ -159,6 +171,23 @@ function _prune_remote_shell(
             [ -n "\$(find "\$child" -maxdepth 0 -mtime +"\$((older - 1))" 2>/dev/null)" ] || continue
           fi
           rm -rf "\$child"
+        done
+      fi
+      runs="\$kit/runs"
+      if [ -d "\$runs" ]; then
+        for kinddir in "\$runs"/*; do
+          [ -d "\$kinddir" ] || continue
+          for child in "\$kinddir"/*; do
+            [ -d "\$child" ] || continue
+            base=\$(basename "\$child")
+            if [ -n "\$id" ]; then
+              case "\$base" in *"\$id"*) ;; *) continue ;; esac
+            fi
+            if [ -n "\$older" ] && [ "\$older" != 0 ]; then
+              [ -n "\$(find "\$child" -maxdepth 0 -mtime +"\$((older - 1))" 2>/dev/null)" ] || continue
+            fi
+            rm -rf "\$child"
+          done
         done
       fi
       if [ -z "\$id" ]; then

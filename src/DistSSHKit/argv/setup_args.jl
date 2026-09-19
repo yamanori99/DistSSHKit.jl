@@ -38,7 +38,7 @@ function show_requirements(; io::IO = stdout)
         "  --check              SSH, Julia, project, deps",
         "  --runtest            Pkg.test of the job project on remotes",
         "  --cleanup / --delete stale workers / remote tree",
-        "  --prune              .distsshkit go/drive/setup leaves",
+        "  --prune              .distsshkit go/drive/setup/runs leaves",
     )
     print_help_blank(io)
     print_help_section("Options"; io = io)
@@ -57,7 +57,7 @@ function show_requirements(; io::IO = stdout)
         "  --hosts-file PATH    one token per line (`:N` stripped)",
         "  --version, -v        print version and exit",
         "  --older-than DAYS    with --prune: mtime at least DAYS old",
-        "  --id TOKEN           with --prune: go batch name contains TOKEN",
+        "  --id TOKEN           with --prune: go / runs leaf name contains TOKEN",
     )
     print_help_blank(io)
     print_help_section("Environment"; io = io)
