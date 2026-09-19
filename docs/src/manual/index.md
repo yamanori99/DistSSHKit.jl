@@ -117,8 +117,8 @@ run dir when `DISTSSHKIT_RUN_DIR` is set). Artifacts: go
 `{script}/.distsshkit/go/{stem}_{UTC}/`; drive (no `--output-dir` and no
 `init_output_dir!`): `{script}/.distsshkit/drive/{stem}_{UTC}/`. Sidecars
 (`run.toml`, pid, stdio): `{script}/.distsshkit/runs/<kind>/{stem}_{UTC}/`
-(falls back to `{project}/.distsshkit/runs/…` if the script dir is not
-writable). Add `.distsshkit/` to the **job** project's
+(if that tree is not writable: `{project}/.distsshkit/runs/…`, then
+`tempdir()/distsshkit-runs/…`). Add `.distsshkit/` to the **job** project's
 `.gitignore` — DistSSHKit's own repo already ignores it, but `Pkg.add`
 does not. Otherwise go/drive output can show up as untracked files,
 including under `drive --require-git`.

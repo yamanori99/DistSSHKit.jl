@@ -57,7 +57,7 @@ function show_requirements(; io::IO = stdout)
         "  --hosts-file PATH    one token per line (`:N` stripped)",
         "  --version, -v        print version and exit",
         "  --older-than DAYS    with --prune: mtime at least DAYS old",
-        "  --id TOKEN           with --prune: go batch name contains TOKEN",
+        "  --id TOKEN           with --prune: go / runs leaf name contains TOKEN",
     )
     print_help_blank(io)
     print_help_section("Environment"; io = io)

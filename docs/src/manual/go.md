@@ -75,6 +75,8 @@ If the script is outside the project, `{project}/.distsshkit/go/{stem}_{UTC}/`.
 `DISTRIBUTED_OUTPUT_DIR` to each slot directory.
 Kit sidecars for that invocation (`run.toml`, pid, stdio) live under
 `{script}/.distsshkit/runs/go/{stem}_{UTC}/`, not in the batch root.
+If that path is not writable, `{project}/.distsshkit/runs/go/…`, then
+`tempdir()/distsshkit-runs/go/…`.
 Add `.distsshkit/` to the job project's `.gitignore` so these paths stay
 untracked and `setup --rsync` does not push them (rsync also excludes that
 name). See [User Guide](@ref Manual).

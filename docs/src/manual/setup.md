@@ -61,7 +61,7 @@ Pick **one mode** per invocation (except shared options).
 - `--prune`: delete `.distsshkit/{go,drive,setup,runs}` leaves on localhost
   (job project) and remotes (confirm unless `-y`). Does not `--delete`
   the deploy tree. `--older-than DAYS` (mtime). `--id TOKEN` (go batch
-  name contains TOKEN; skips drive/setup)
+  or `runs/<kind>/<leaf>` name contains TOKEN; skips drive/setup)
 - `--cleanup`: kill stale Julia worker processes (local + remotes;
   untagged `julia --worker` / `--bind-to`. Drive leftover pkill is
   `job_id`-tagged only; `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` skips that)
