@@ -128,7 +128,8 @@ Handle to a detached [`execute!`](@ref) child (`detached=true`).
 `ride`, explicit `output_dir=`, or inherited `DISTRIBUTED_OUTPUT_DIR`).
 Detached `:drive` without those leaves `output_dir` as `nothing` so the child
 can honor `init_output_dir!`. `log_dir` is `nothing` for `:go` / `:ride`.
-Convert with `wait`.
+[`wait`](@ref) returns a [`KitRunResult`](@ref); it does not fill
+`output_dir` on this handle.
 """
 struct KitProcess
     process::Base.Process
@@ -171,6 +172,10 @@ end
     wait(kp::KitProcess; timeout=nothing) -> KitRunResult
 
 Block until the detached child exits, then return a [`KitRunResult`](@ref).
+
+Does not mutate `kp.output_dir` / `kp.log_dir`. After a detached `:drive`
+that deferred the artifact leaf, read the returned result (or
+[`kit_result_from_dir`](@ref) / [`read_kit_run_toml`](@ref) on `kp.run_dir`).
 
 `timeout` is wall-clock seconds until the **child process** exits (not the
 drive worker heartbeat). `nothing` waits forever. On timeout the child is

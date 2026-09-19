@@ -197,8 +197,11 @@ wait(execute!(:go, "job.jl", ["parent:1"]; detached=true, args=["8"]))
 - Keywords are an allow-list; `yes` must stay `true`
 - Child stdio defaults to `kit.out` / `kit.err` in `run_dir`
 - [`KitProcess`](@ref) holds the `Base.Process`, `run_dir`, and artifact
-  `output_dir` when known before spawn (detached `:drive` may leave
-  `output_dir` as `nothing` until `wait` reads `kit.result`)
+  `output_dir` when known **before spawn**. Detached `:drive` without
+  `output_dir=` / inherited `DISTRIBUTED_OUTPUT_DIR` leaves `kp.output_dir`
+  as `nothing`. [`wait`](@ref) does **not** write back into `kp`; the
+  resolved leaf is [`KitRunResult.output_dir`](@ref) (from `kit.result` /
+  `run.toml`)
 - `wait` converts it to [`KitRunResult`](@ref). If the child wrote `kit.result`,
   that file wins (including `go!` `failed_step`). Otherwise a non-zero child
   exit yields `failed_step` `"go"` / `"ride"` / `"drive"` only. `wait(kp; timeout=N)`
