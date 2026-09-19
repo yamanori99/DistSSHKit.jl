@@ -17,7 +17,7 @@ a Queue compat patch.
   or passes `--output-dir` unless the caller set `output_dir=` or
   `DISTRIBUTED_OUTPUT_DIR`. The child honors `init_output_dir!`. Sidecars
   (`kit.pid`, `kit.out` / `kit.err`, `run.toml`) live under
-  `{script}/.distsshkit/runs/<kind>/<stem>_<UTC>/` (#394).
+  `{script dir}/.distsshkit/runs/<kind>/<stem>_<UTC>/` (#394).
   If the script directory is not writable (Registry / `Pkg.test` tree),
   the run bundle is created under `{project}/.distsshkit/runs/…` then
   `tempdir()/distsshkit-runs/…`. `setup --prune` also removes
