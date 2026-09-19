@@ -69,6 +69,19 @@ using Test
             DistSSHKit._remove_kit_pid_file(4242, d, nothing)
             @test !isfile(pid_path)
         end
+        _with_tempdir() do d
+            proc = run(
+                pipeline(
+                    ignorestatus(`$(Base.julia_cmd()) --startup-file=no -e nothing`);
+                    stdout = devnull,
+                    stderr = devnull,
+                );
+                wait = false,
+            )
+            wait(proc)
+            DistSSHKit._write_detached_kit_pid_file!(proc, d, nothing; run_dir = d)
+            @test !isfile(joinpath(d, "kit.pid"))
+        end
     end
 
     @testset "kit_pid_file_running" begin
@@ -244,40 +257,69 @@ using Test
         end
     end
 
+    @testset "allocate_run_dir" begin
+        _with_tempdir() do project
+            script = joinpath(project, "job.jl")
+            write(script, "")
+            d1 = DistSSHKit.allocate_run_dir(:drive, script; project)
+            @test isdir(d1)
+            @test occursin(joinpath(".distsshkit", "runs", "drive"), d1)
+            @test startswith(basename(d1), "job_")
+            d2 = DistSSHKit.allocate_run_dir(:go, "batch.jl"; project, job_id = "q1")
+            @test occursin(joinpath(".distsshkit", "runs", "go"), d2)
+            @test occursin("_q1", basename(d2))
+            @test DistSSHKit.read_kit_run_toml(d1) === nothing
+            DistSSHKit.write_kit_run_toml!(
+                d1;
+                kind = :drive,
+                output_dir = joinpath(project, "out"),
+                result = DistSSHKit.KitRunResult(true, :drive, joinpath(project, "out"), nothing, nothing, 0),
+            )
+            raw = DistSSHKit.read_kit_run_toml(d1)
+            @test raw isa AbstractDict
+            @test raw["kind"] == "drive"
+            @test raw["ok"] === true
+            @test raw["schema"] == 1
+            @test occursin("out", String(raw["output_dir"]))
+        end
+    end
+
     @testset "_execute_detached_dirs drive unique" begin
         _with_tempdir() do project
             script = joinpath(project, "job.jl")
             write(script, "")
+            run_a = DistSSHKit.allocate_run_dir(:drive, script; project)
+            run_b = DistSSHKit.allocate_run_dir(:drive, script; project)
             withenv("DISTRIBUTED_OUTPUT_DIR" => nothing) do
                 a, la = DistSSHKit._execute_detached_dirs(
-                    :drive, project, script, nothing, nothing, true,
+                    :drive, project, script, nothing, nothing, true, run_a,
                 )
                 b, lb = DistSSHKit._execute_detached_dirs(
-                    :drive, project, script, nothing, nothing, true,
+                    :drive, project, script, nothing, nothing, true, run_b,
                 )
-                @test a != b
-                @test la == a
-                @test lb == b
-                @test startswith(basename(a), "job_")
+                @test a === nothing
+                @test b === nothing
+                @test la == DistSSHKit.canonical_local_path(run_a)
+                @test lb == DistSSHKit.canonical_local_path(run_b)
                 _, nolog = DistSSHKit._execute_detached_dirs(
-                    :drive, project, script, nothing, nothing, false,
+                    :drive, project, script, nothing, nothing, false, run_a,
                 )
                 @test nolog === nothing
             end
             custom = joinpath(project, "fixed")
             mkpath(custom)
             c, lc = DistSSHKit._execute_detached_dirs(
-                :drive, project, script, custom, nothing, true,
+                :drive, project, script, custom, nothing, true, run_a,
             )
             @test c == DistSSHKit.canonical_local_path(custom)
-            @test lc == c
+            @test lc == DistSSHKit.canonical_local_path(run_a)
             inherited = joinpath(project, "from_env")
             withenv("DISTRIBUTED_OUTPUT_DIR" => inherited) do
                 e, le = DistSSHKit._execute_detached_dirs(
-                    :drive, project, script, nothing, nothing, true,
+                    :drive, project, script, nothing, nothing, true, run_a,
                 )
                 @test e == DistSSHKit.canonical_local_path(inherited)
-                @test le == e
+                @test le == DistSSHKit.canonical_local_path(run_a)
             end
         end
     end
@@ -753,8 +795,9 @@ using Test
             )
             result = wait(kp)
             @test result.ok
-            @test isfile(joinpath(result.output_dir, "kit.out"))
-            @test isfile(joinpath(result.output_dir, "kit.err"))
+            @test kp.run_dir !== nothing
+            @test isfile(joinpath(kp.run_dir, "kit.out"))
+            @test isfile(joinpath(kp.run_dir, "kit.err"))
         end
     end
 

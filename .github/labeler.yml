@@ -53,6 +53,7 @@
           - "src/DistSSHKit/namespace.*"
           - "src/DistSSHKit/namespace_sync.*"
           - "src/DistSSHKit/remote.*"
+          - "src/DistSSHKit/run_manifest.*"
           - "src/DistSSHKit/argv/args.jl"
           - "src/DistSSHKit/argv/session.jl"
           - "test/unit/DistSSHKit/display.jl"

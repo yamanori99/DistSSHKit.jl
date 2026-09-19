@@ -71,12 +71,27 @@ using Test
         _with_tempdir() do tmp
             script_dir = joinpath(tmp, "app")
             mkpath(script_dir)
-            withenv("DISTRIBUTED_OUTPUT_DIR" => nothing) do
+            withenv(
+                "DISTRIBUTED_OUTPUT_DIR" => nothing,
+                DistSSHKit.DISTSSHKIT_RUN_DIR_ENV => nothing,
+            ) do
                 @test DistSSHKit.resolve_drive_log_dir(nothing, script_dir) ==
                     DistSSHKit.kit_dir_beside_script(script_dir, :drive)
             end
+            run_dir = joinpath(tmp, "run")
+            mkpath(run_dir)
+            withenv(
+                "DISTRIBUTED_OUTPUT_DIR" => joinpath(tmp, "env-out"),
+                DistSSHKit.DISTSSHKIT_RUN_DIR_ENV => run_dir,
+            ) do
+                @test DistSSHKit.resolve_drive_log_dir(nothing, script_dir) ==
+                    DistSSHKit.canonical_local_path(run_dir)
+            end
             env_dir = joinpath(tmp, "env-out")
-            withenv("DISTRIBUTED_OUTPUT_DIR" => env_dir) do
+            withenv(
+                "DISTRIBUTED_OUTPUT_DIR" => env_dir,
+                DistSSHKit.DISTSSHKIT_RUN_DIR_ENV => nothing,
+            ) do
                 @test DistSSHKit.resolve_drive_log_dir(nothing, script_dir) == env_dir
                 explicit = joinpath(tmp, "explicit-logs")
                 @test DistSSHKit.resolve_drive_log_dir(explicit, script_dir) == explicit

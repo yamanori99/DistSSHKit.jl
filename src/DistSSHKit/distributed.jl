@@ -75,6 +75,8 @@ function resolve_drive_log_dir(
     )::String
     resolved = log_dir
     if resolved === nothing
+        rd = kit_run_dir()
+        rd !== nothing && return rd
         resolved = get(ENV, "DISTRIBUTED_OUTPUT_DIR", nothing)
     end
     if resolved === nothing

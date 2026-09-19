@@ -736,7 +736,18 @@ function _go_complete!(
     _maybe_print_kit_progress_phases(batch_dir)
     close_log_file()
     _set_kit_progress_sidecar!(nothing)
-    _write_kit_result_file(kit_run_result(result, tokens))
+    kr = kit_run_result(result, tokens)
+    _write_kit_result_file(kr)
+    rd = kit_run_dir()
+    if rd !== nothing
+        write_kit_run_toml!(
+            rd;
+            kind = :go,
+            output_dir = batch_dir,
+            log_dir = batch_dir,
+            result = kr,
+        )
+    end
     release_lock()
     _remove_kit_pid_file(getpid(), batch_dir, nothing)
     return result
@@ -819,7 +830,9 @@ function go!(
         )
     end
     _acquire_kit_inproc_run!(:go)
+    old_run = get(ENV, DISTSSHKIT_RUN_DIR_ENV, nothing)
     try
+        _ensure_kit_run_dir!(:go, script_path; project = proj)
         return _go_run!(
             script_path,
             proj,
@@ -840,6 +853,7 @@ function go!(
             repeat,
         )
     finally
+        _restore_kit_run_dir_env!(old_run)
         _release_kit_inproc_run!()
     end
 end

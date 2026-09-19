@@ -73,28 +73,58 @@ end
                     stdout = out_io,
                     stderr = err_io,
                 )
+                @test kp isa DistSSHKit.KitProcess
+                @test kp.kind === :drive
+                @test kp.run_dir !== nothing
                 result = wait(kp)
                 flush(out_io)
                 flush(err_io)
                 out = read(out_path, String)
-                @test kp isa DistSSHKit.KitProcess
-                @test kp.kind === :drive
-                @test kp.output_dir !== nothing
-                @test kp.log_dir !== nothing
                 @test result isa DistSSHKit.KitRunResult
                 @test result.kind === :drive
                 @test result.ok
                 @test result.exit_code == 0
-                @test result.output_dir == kp.output_dir
-                @test result.log_dir == kp.log_dir
+                @test result.output_dir !== nothing
                 @test occursin("DISTSSHKIT_RUNNER_SMOKE_OK nw=2", out)
-                @test !isfile(joinpath(result.output_dir, "kit.pid"))
-                @test !isfile(joinpath(result.log_dir, "kit.pid"))
-                recovered = DistSSHKit.kit_result_from_dir(result.output_dir)
+                recovered = DistSSHKit.kit_result_from_dir(kp.run_dir)
                 @test recovered isa DistSSHKit.KitRunResult
                 @test recovered.ok
-                @test recovered.kind === :drive
-                @test recovered.exit_code == 0
+                raw = DistSSHKit.read_kit_run_toml(kp.run_dir)
+                @test raw isa AbstractDict
+                @test raw["kind"] == "drive"
+            end
+        end
+    end
+end
+
+@testset "execute! :drive init_output_dir! detached" begin
+    fixture = _fixture("drive_init_output.jl")
+    _mktemp_host() do proj
+        _write_host_project!(proj, "ExecuteDriveHook")
+        script = joinpath(proj, "job.jl")
+        cp(fixture, script; force = true)
+        dest = joinpath(proj, "from_hook")
+        mktemp() do _, out_io
+            mktemp() do _, err_io
+                kp = DistSSHKit.execute!(
+                    :drive,
+                    script,
+                    ["parent:1"];
+                    detached = true,
+                    project = proj,
+                    args = ["--out", dest],
+                    verbosity = :quiet,
+                    yes = true,
+                    stdout = out_io,
+                    stderr = err_io,
+                )
+                result = wait(kp)
+                @test result.ok
+                @test result.output_dir == DistSSHKit.canonical_local_path(dest)
+                @test isfile(joinpath(dest, "hook.txt"))
+                @test kp.output_dir === nothing
+                raw = DistSSHKit.read_kit_run_toml(kp.run_dir)
+                @test raw["output_dir"] == DistSSHKit.canonical_local_path(dest)
             end
         end
     end

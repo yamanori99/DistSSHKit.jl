@@ -195,11 +195,13 @@ wait(execute!(:go, "job.jl", ["parent:1"]; detached=true, args=["8"]))
   lists DistSSHKit in `Project.toml` `[deps]`; otherwise `pkgdir(DistSSHKit)`
   (Manifest-only / transitive DistSSHKit does not count)
 - Keywords are an allow-list; `yes` must stay `true`
-- Child stdio defaults to `kit.out` / `kit.err` in `output_dir`. Pass
-  `stdout` / `stderr` to override (`stdout=stdout` inherits the parent).
-  Parent `redirect_stdout` does not apply to the subprocess
-- [`KitProcess`](@ref) holds the `Base.Process` and the dirs resolved before
-  spawn
+- Child stdio defaults to `kit.out` / `kit.err` in `run_dir`
+- [`KitProcess`](@ref) holds the `Base.Process`, `run_dir`, and artifact
+  `output_dir` when known **before spawn**. Detached `:drive` without
+  `output_dir=` / inherited `DISTRIBUTED_OUTPUT_DIR` leaves `kp.output_dir`
+  as `nothing`. [`wait`](@ref) does **not** write back into `kp`; the
+  resolved leaf is [`KitRunResult.output_dir`](@ref) (from `kit.result` /
+  `run.toml`)
 - `wait` converts it to [`KitRunResult`](@ref). If the child wrote `kit.result`,
   that file wins (including `go!` `failed_step`). Otherwise a non-zero child
   exit yields `failed_step` `"go"` / `"ride"` / `"drive"` only. `wait(kp; timeout=N)`
@@ -208,6 +210,9 @@ wait(execute!(:go, "job.jl", ["parent:1"]; detached=true, args=["8"]))
 ```@docs
 execute!
 allocate_output_dir
+allocate_run_dir
+kit_run_dir
+read_kit_run_toml
 execute_detached_accepts
 execute_kwargs_from_parsed
 KitProcess
@@ -260,18 +265,26 @@ path, then SIGKILLs if needed, then `pkill`s only argv tagged with this
 run's `job_id`. `kp.process` is still a `Base.Process` if you need `kill`
 yourself.
 
-#### Sidecar files (`output_dir`)
+#### Sidecar files
 
-On-disk contract for a detached (or in-process) run. `kit.pid`, `kit.job`,
-`kit.hosts`, `kit.hosts.status`, and `kit.result` are also written under
-`log_dir` when that path is distinct. `.kit.lock` and `kit.out` / `kit.err`
-stay in `output_dir`. Kit logs (`go_*.log` / `drive_*.log`) are not this list.
+Detached stdio (`kit.out` / `kit.err`) lives in [`KitProcess.run_dir`](@ref).
+`kit.pid`, `kit.job`, `kit.hosts`, `kit.hosts.status`, and `kit.result` are
+written under `run_dir`, and also under `output_dir` / `log_dir` when those
+paths are known at write time. `.kit.lock` stays on the artifact `output_dir`
+(exclusive run against that leaf). Kit logs (`go_*.log` / `drive_*.log`)
+default to `run_dir` for drive when `DISTSSHKIT_RUN_DIR` is set; go still
+writes `go_*.log` next to the batch.
 
-- `.kit.lock`: pid of the process holding the dir. A second **process** against
-  the same path raises `ArgumentError`. A lock left by a dead pid is
-  reclaimed. Two in-process runs share a pid, so Kit also rejects overlapping
+On-disk contract:
+
+- `.kit.lock`: pid of the process holding the **artifact** dir. A second
+  **process** against the same path raises `ArgumentError`. A lock left by a
+  dead pid is reclaimed. Two in-process runs share a pid, so Kit also rejects
+  overlapping
   `go!` / `drive!` / `ride!` / `size!` / `pool!` / `setup!` / `sync!` /
   `instantiate!` / `collect!` / `push_cache!` / `pipeline!` (same-task nesting is ok).
+- `kit.out` / `kit.err`: detached child stdio when `stdout` / `stderr` were
+  omitted (`run_dir`).
 - `kit.pid`: child OS pid, optional start key on the second line.
   Running is [`kit_pid_file_running`](@ref) (pid plus start).
   Removed on a normal
@@ -293,8 +306,6 @@ stay in `output_dir`. Kit logs (`go_*.log` / `drive_*.log`) are not this list.
 - `kit.progress`: `progress:` lines for watchers
   (`kit_progress_latest`). Written even when `--no-log` skips
   `drive_*.log`.
-- `kit.out` / `kit.err`: detached child stdio when `stdout` / `stderr`
-  were omitted.
 
 Together: running (`kit.pid` live and start matches, no result), finished
 (result present), or died hard (leftover pid that is dead or reused, no
@@ -308,11 +319,13 @@ Without `job_id`, only the child pid is signaled.
 
 #### Before spawn
 
-- [`allocate_output_dir`](@ref): create a unique directory under
+- [`allocate_output_dir`](@ref): create a unique **artifact** directory under
   `{script}/.distsshkit/<kind>/` for a later `output_dir=`. Omitted `go` /
-  `ride` / `drive` default is `{script}/.distsshkit/<kind>/<stem>_<UTC>/`.
-  Drive still keeps `--output-dir` / `init_output_dir!` when those set
-  `DISTRIBUTED_OUTPUT_DIR`.
+  `ride` default is still `{script}/.distsshkit/<kind>/<stem>_<UTC>/`.
+  Detached `drive` does not pin that path before spawn, so
+  `init_output_dir!` can set `DISTRIBUTED_OUTPUT_DIR`.
+- [`allocate_run_dir`](@ref): Kit run bundle
+  `{script}/.distsshkit/runs/<kind>/<stem>_<UTC>/` (`run.toml`, pid, stdio).
 - [`execute_kwargs_from_parsed`](@ref): map `parse_go_args` /
   `parse_drive_args` onto detached `execute!` keywords. Ride argv maps the same
   way for `:ride`. Hosts stay in

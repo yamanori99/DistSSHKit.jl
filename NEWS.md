@@ -6,6 +6,14 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+### Breaking (cut later)
+
+- Detached `execute!(:drive)` no longer pre-allocates artifact `output_dir`
+  or passes `--output-dir` unless the caller set `output_dir=` or
+  `DISTRIBUTED_OUTPUT_DIR`. The child honors `init_output_dir!`. Sidecars
+  (`kit.pid`, `kit.out` / `kit.err`, `run.toml`) live under
+  `{script}/.distsshkit/runs/<kind>/<stem>_<UTC>/`.
+
 ## 0.7.3
 
 Patch after `0.7.2`.

@@ -89,6 +89,10 @@ function run_drive_parsed!(
     end
 
     DistSSHKit._acquire_kit_inproc_run!(:drive)
+    old_run = get(ENV, DistSSHKit.DISTSSHKIT_RUN_DIR_ENV, nothing)
+    run_dir = DistSSHKit._ensure_kit_run_dir!(
+        :drive, script_path; project = proj_dir,
+    )
     return try
         activate_drive_project!(proj_dir)
 
@@ -124,22 +128,29 @@ function run_drive_parsed!(
             finally
                 out = DistSSHKit.resolve_drive_output_dir(script_dir)
                 log = enable_log ? DistSSHKit.resolve_drive_log_dir(log_dir, script_dir) : nothing
-                DistSSHKit._write_kit_result_file(
-                    DistSSHKit.KitRunResult(
-                        code == 0,
-                        :drive,
-                        out,
-                        log,
-                        code == 0 ? nothing : "drive",
-                        Int(code),
-                        hosts_acc[],
-                        DistSSHKit.resolved_placement_tokens(parent_workers, hosts, default_workers),
-                    )
+                result = DistSSHKit.KitRunResult(
+                    code == 0,
+                    :drive,
+                    out,
+                    log,
+                    code == 0 ? nothing : "drive",
+                    Int(code),
+                    hosts_acc[],
+                    DistSSHKit.resolved_placement_tokens(parent_workers, hosts, default_workers),
+                )
+                DistSSHKit._write_kit_result_file(result)
+                DistSSHKit.write_kit_run_toml!(
+                    run_dir;
+                    kind = :drive,
+                    output_dir = out,
+                    log_dir = log,
+                    result = result,
                 )
                 DistSSHKit._remove_kit_pid_file(
                     getpid(),
                     out,
-                    log,
+                    log;
+                    run_dir = run_dir,
                 )
                 release_output_dir_lock()
             end
@@ -151,6 +162,7 @@ function run_drive_parsed!(
             end
         end
     finally
+        DistSSHKit._restore_kit_run_dir_env!(old_run)
         DistSSHKit._release_kit_inproc_run!()
     end
 end

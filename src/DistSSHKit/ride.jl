@@ -574,12 +574,15 @@ function ride!(
     any(f -> f.status === :drive_vocab, kp.findings) &&
         return RideResult(false, path, 0, nothing, _ride_drive_vocab_error(kp), julia_s)
     _acquire_kit_inproc_run!(:ride)
+    old_run = get(ENV, DISTSSHKIT_RUN_DIR_ENV, nothing)
     try
+        _ensure_kit_run_dir!(:ride, path; project = project)
         return _ride_run!(
             path, julia_s, tokens, args, spi_check, output_dir, project, julia,
             remote, require_all_hosts,
         )
     finally
+        _restore_kit_run_dir_env!(old_run)
         _release_kit_inproc_run!()
     end
 end
@@ -682,7 +685,20 @@ function _ride_run!(
                 _maybe_print_kit_progress_phases(batch_dir)
                 _set_kit_progress_sidecar!(nothing)
             end
-            isdir(batch_dir) && _write_kit_result_file(kit_run_result(outcome))
+            isdir(batch_dir) && begin
+                kr = kit_run_result(outcome)
+                _write_kit_result_file(kr)
+                rd = kit_run_dir()
+                if rd !== nothing
+                    write_kit_run_toml!(
+                        rd;
+                        kind = :ride,
+                        output_dir = batch_dir,
+                        log_dir = nothing,
+                        result = kr,
+                    )
+                end
+            end
             _remove_kit_pid_file(getpid(), batch_dir, nothing)
             release_lock()
             empty!(ARGS)

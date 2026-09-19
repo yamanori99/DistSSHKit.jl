@@ -52,17 +52,6 @@ const _EXECUTE_DETACHED_NAMED = (
     :detached,
 )
 
-const _KIT_EXECUTE_KINDS = (:go, :drive, :ride)
-
-function _require_execute_kind!(kind::Symbol)
-    kind in _KIT_EXECUTE_KINDS || throw(
-        ArgumentError(
-            "execute! kind must be :go, :drive, or :ride, got $(repr(kind))",
-        )
-    )
-    return nothing
-end
-
 """
     execute_detached_accepts(kw; kind) -> Bool
 
@@ -134,9 +123,13 @@ end
 Handle to a detached [`execute!`](@ref) child (`detached=true`).
 
 `process` is the `julia -m DistSSHKit go|drive|ride` subprocess.
-`output_dir` / `log_dir` are resolved in the parent before spawn so they match
-the child (`log_dir` is `nothing` for `:go`, matching [`kit_run_result`](@ref)
-on [`GoResult`](@ref)). Convert with `wait`.
+`run_dir` is always allocated in the parent before spawn (pid / `kit.out` /
+`run.toml`). `output_dir` is the artifact root when known at spawn (`go` /
+`ride`, explicit `output_dir=`, or inherited `DISTRIBUTED_OUTPUT_DIR`).
+Detached `:drive` without those leaves `output_dir` as `nothing` so the child
+can honor `init_output_dir!`. `log_dir` is `nothing` for `:go` / `:ride`.
+[`wait`](@ref) returns a [`KitRunResult`](@ref); it does not fill
+`output_dir` on this handle.
 """
 struct KitProcess
     process::Base.Process
@@ -145,6 +138,7 @@ struct KitProcess
     log_dir::Union{Nothing, String}
     stdout_owned::Union{Nothing, IO}
     stderr_owned::Union{Nothing, IO}
+    run_dir::Union{Nothing, String}
 end
 
 function KitProcess(
@@ -154,11 +148,12 @@ function KitProcess(
         log_dir::Union{Nothing, AbstractString} = nothing,
         stdout_owned::Union{Nothing, IO} = nothing,
         stderr_owned::Union{Nothing, IO} = nothing,
+        run_dir::Union{Nothing, AbstractString} = nothing,
     )
     _require_execute_kind!(kind)
     return KitProcess(
         process, kind, _optional_path(output_dir), _optional_path(log_dir),
-        stdout_owned, stderr_owned,
+        stdout_owned, stderr_owned, _optional_path(run_dir),
     )
 end
 
@@ -178,15 +173,19 @@ end
 
 Block until the detached child exits, then return a [`KitRunResult`](@ref).
 
+Does not mutate `kp.output_dir` / `kp.log_dir`. After a detached `:drive`
+that deferred the artifact leaf, read the returned result (or
+[`kit_result_from_dir`](@ref) / [`read_kit_run_toml`](@ref) on `kp.run_dir`).
+
 `timeout` is wall-clock seconds until the **child process** exits (not the
 drive worker heartbeat). `nothing` waits forever. On timeout the child is
 left running: `failed_step` is `"hung"`, `exit_code` is `124`, and owned
 stdio stays open. Call [`terminate!`](@ref) if the hang is fatal.
 
-If the child wrote `kit.result`, that file is the source of truth (including
-`failed_step` from `go!` / `ride!`). Otherwise `failed_step` is
-`"go"` / `"ride"` / `"drive"` on a
-non-zero exit — the parent cannot recover a more specific in-process step name.
+If the child wrote `kit.result` under `run_dir` or `output_dir`, that file is
+the source of truth (including `failed_step` from `go!` / `ride!`). Otherwise
+`failed_step` is `"go"` / `"ride"` / `"drive"` on a non-zero exit — the parent
+cannot recover a more specific in-process step name.
 
 Best-effort: remove `kit.pid` if it still names this child (pid captured
 before `wait` on the OS process; after reap `getpid` can throw ESRCH).
@@ -217,8 +216,10 @@ function Base.wait(
     end
     try
         wait(kp.process)
-        recovered = kp.output_dir === nothing ? nothing : kit_result_from_dir(kp.output_dir)
-        child_pid !== nothing && _remove_kit_pid_file(child_pid, kp.output_dir, kp.log_dir)
+        recovered = _kit_result_from_process(kp)
+        child_pid !== nothing && _remove_kit_pid_file(
+            child_pid, kp.output_dir, kp.log_dir; run_dir = kp.run_dir,
+        )
         recovered !== nothing && return recovered
         code = Int(something(kp.process.exitcode, 1))
         ok = code == 0
@@ -266,9 +267,11 @@ ride takes `size!` flags. `yes` must be `true` (the
 default): an unattended child cannot answer a prompt. `remote` that starts
 with `~` is stored in `DISTRIBUTED_REMOTE_PROJECT_ROOT` as a layout path
 (not `expanduser` on the kit parent). Child stdio defaults to
-`kit.out` / `kit.err` in `output_dir`. Pass `stdout` / `stderr` (`IO`) to
+`kit.out` / `kit.err` in `run_dir`. Pass `stdout` / `stderr` (`IO`) to
 override; `stdout=stdout` inherits the parent. Parent `redirect_stdout` does
-not apply to the subprocess.
+not apply to the subprocess. Detached `:drive` omits `--output-dir` unless
+`output_dir=` or inherited `DISTRIBUTED_OUTPUT_DIR` is set, so
+`init_output_dir!` can choose the artifact root.
 
 `job_id`, if given, is passed to the child as `DISTSSHKIT_JOB_ID`, which
 adds `job=<id>` to every `progress:` log line. `DISTSSHKIT_PROGRESS=1` is
@@ -512,6 +515,15 @@ function _execute_detached!(
 
     proj = canonical_local_path(project)
     script_path = canonical_local_path(script)
+    job_id = get(kwargs, :job_id, nothing)
+    job_id_s = if job_id !== nothing && !isempty(strip(String(job_id)))
+        _parse_kit_job_id(String(job_id))
+    else
+        nothing
+    end
+    run_dir = allocate_run_dir(
+        kind, script_path; project = proj, job_id = job_id_s,
+    )
     resolved_output, resolved_log = _execute_detached_dirs(
         kind,
         proj,
@@ -519,6 +531,7 @@ function _execute_detached!(
         output_dir,
         log_dir,
         enable_log,
+        run_dir,
     )
     argv = _execute_detached_argv(
         kind,
@@ -543,13 +556,15 @@ function _execute_detached!(
         sync_script = sync_script,
         spi_check = spi_check,
     )
-    extra = Dict{String, String}("DISTRIBUTED_PROJECT_ROOT" => proj)
+    extra = Dict{String, String}(
+        "DISTRIBUTED_PROJECT_ROOT" => proj,
+        DISTSSHKIT_RUN_DIR_ENV => run_dir,
+    )
     if remote !== nothing && !isempty(strip(String(remote)))
         extra["DISTRIBUTED_REMOTE_PROJECT_ROOT"] = remote_env_project_root(String(remote))
     end
-    job_id = get(kwargs, :job_id, nothing)
-    if job_id !== nothing && !isempty(strip(String(job_id)))
-        extra["DISTSSHKIT_JOB_ID"] = _parse_kit_job_id(String(job_id))
+    if job_id_s !== nothing
+        extra["DISTSSHKIT_JOB_ID"] = job_id_s
     end
     env = _execute_detached_env(extra)
     julia_bin = resolve_controller_julia(julia)
@@ -565,7 +580,7 @@ function _execute_detached!(
         ]
     )
     child = ignorestatus(setenv(cmd, env))
-    stdio_out, stdio_err, owned_out, owned_err = _execute_detached_stdio(kwargs, resolved_output)
+    stdio_out, stdio_err, owned_out, owned_err = _execute_detached_stdio(kwargs, run_dir)
     proc = try
         run(pipeline(child; stdout = stdio_out, stderr = stdio_err); wait = false)
     catch
@@ -574,9 +589,10 @@ function _execute_detached!(
         end
         rethrow()
     end
-    _write_kit_pid_file(
-        getpid(proc), resolved_output, resolved_log;
-        job_id = get(extra, "DISTSSHKIT_JOB_ID", nothing),
+    _write_detached_kit_pid_file!(
+        proc, resolved_output, resolved_log;
+        job_id = job_id_s,
+        run_dir = run_dir,
     )
     return KitProcess(
         proc;
@@ -585,26 +601,56 @@ function _execute_detached!(
         log_dir = resolved_log,
         stdout_owned = owned_out,
         stderr_owned = owned_err,
+        run_dir = run_dir,
     )
 end
 
-"""Open `kit.out` / `kit.err` under `output_dir` when `stdout` / `stderr` are omitted."""
-function _execute_detached_stdio(kwargs, output_dir::AbstractString)
+"""Open `kit.out` / `kit.err` under `run_dir` when `stdout` / `stderr` are omitted."""
+function _execute_detached_stdio(kwargs, run_dir::AbstractString)
     stdio_out = get(kwargs, :stdout, nothing)
     stdio_err = get(kwargs, :stderr, nothing)
     owned_out = nothing
     owned_err = nothing
     if stdio_out === nothing
-        mkpath(output_dir)
-        owned_out = open(joinpath(output_dir, "kit.out"), "w")
+        mkpath(run_dir)
+        owned_out = open(joinpath(run_dir, "kit.out"), "w")
         stdio_out = owned_out
     end
     if stdio_err === nothing
-        mkpath(output_dir)
-        owned_err = open(joinpath(output_dir, "kit.err"), "w")
+        mkpath(run_dir)
+        owned_err = open(joinpath(run_dir, "kit.err"), "w")
         stdio_err = owned_err
     end
     return stdio_out, stdio_err, owned_out, owned_err
+end
+
+"""Write `kit.pid` only while this `Base.Process` is still running.
+
+If the child already exited (and likely removed the file), skip the write.
+After the write, drop the file again if this process has reaped — so a
+recycled OS pid is not left for [`kit_pid_file_running`](@ref).
+"""
+function _write_detached_kit_pid_file!(
+        proc::Base.Process,
+        output_dir::Union{Nothing, AbstractString},
+        log_dir::Union{Nothing, AbstractString};
+        job_id::Union{Nothing, AbstractString} = nothing,
+        run_dir::Union{Nothing, AbstractString} = nothing,
+    )
+    process_running(proc) || return nothing
+    child_pid = try
+        Int(getpid(proc))
+    catch
+        return nothing
+    end
+    _write_kit_pid_file(
+        child_pid, output_dir, log_dir;
+        job_id = job_id,
+        run_dir = run_dir,
+    )
+    process_running(proc) && return nothing
+    _remove_kit_pid_file(child_pid, output_dir, log_dir; run_dir = run_dir)
+    return nothing
 end
 
 """
@@ -622,19 +668,35 @@ when the caller still has a [`KitProcess`](@ref). SIGKILL / crash can leave
 the file; a reused pid can then look alive.
 """
 function _kit_sidecar_dirs(
-        output_dir::AbstractString,
-        log_dir::Union{Nothing, AbstractString},
+        output_dir::Union{Nothing, AbstractString},
+        log_dir::Union{Nothing, AbstractString};
+        run_dir::Union{Nothing, AbstractString} = kit_run_dir(),
     )
-    return log_dir === nothing || log_dir == output_dir ? (output_dir,) : (output_dir, log_dir)
+    dirs = String[]
+    function add!(p)
+        p === nothing && return nothing
+        s = String(p)
+        isempty(strip(s)) && return nothing
+        for d in dirs
+            d == s && return nothing
+        end
+        push!(dirs, s)
+        return nothing
+    end
+    add!(run_dir)
+    add!(output_dir)
+    add!(log_dir)
+    return dirs
 end
 
 function _write_kit_pid_file(
         pid::Integer,
-        output_dir::AbstractString,
+        output_dir::Union{Nothing, AbstractString},
         log_dir::Union{Nothing, AbstractString};
         job_id::Union{Nothing, AbstractString} = nothing,
+        run_dir::Union{Nothing, AbstractString} = kit_run_dir(),
     )
-    dirs = _kit_sidecar_dirs(output_dir, log_dir)
+    dirs = _kit_sidecar_dirs(output_dir, log_dir; run_dir = run_dir)
     for d in dirs
         try
             mkpath(d) # child creates it too, but may not have raced ahead of us yet
@@ -979,10 +1041,11 @@ end
 function _remove_kit_pid_file(
         pid::Integer,
         output_dir::Union{Nothing, AbstractString},
-        log_dir::Union{Nothing, AbstractString},
+        log_dir::Union{Nothing, AbstractString};
+        run_dir::Union{Nothing, AbstractString} = kit_run_dir(),
     )
-    output_dir === nothing && return nothing
-    dirs = log_dir === nothing || log_dir == output_dir ? (output_dir,) : (output_dir, log_dir)
+    dirs = _kit_sidecar_dirs(output_dir, log_dir; run_dir = run_dir)
+    isempty(dirs) && return nothing
     want = Int(pid)
     for d in dirs
         path = joinpath(d, "kit.pid")
@@ -1000,16 +1063,14 @@ end
 
 """Best-effort `kit.result` TOML next to `kit.pid`. Never throws."""
 function _write_kit_result_file(result::KitRunResult)
-    output_dir = result.output_dir
-    output_dir === nothing && return nothing
-    dirs = result.log_dir === nothing || result.log_dir == output_dir ?
-        (output_dir,) : (output_dir, result.log_dir)
+    dirs = _kit_sidecar_dirs(result.output_dir, result.log_dir)
+    isempty(dirs) && return nothing
     data = Dict{String, Any}(
         "ok" => result.ok,
         "kind" => String(result.kind),
         "exit_code" => result.exit_code,
-        "output_dir" => String(output_dir),
     )
+    result.output_dir !== nothing && (data["output_dir"] = String(result.output_dir))
     result.failed_step !== nothing && (data["failed_step"] = result.failed_step)
     result.log_dir !== nothing && (data["log_dir"] = result.log_dir)
     if !isempty(result.hosts)
@@ -1081,6 +1142,15 @@ function kit_result_from_dir(output_dir::AbstractString)::Union{Nothing, KitRunR
     end
 end
 
+function _kit_result_from_process(kp::KitProcess)::Union{Nothing, KitRunResult}
+    for d in (kp.run_dir, kp.output_dir, kp.log_dir)
+        d === nothing && continue
+        recovered = kit_result_from_dir(d)
+        recovered !== nothing && return recovered
+    end
+    return nothing
+end
+
 function _kit_result_hosts_from_toml(raw)::Vector{HostRunResult}
     raw isa AbstractVector || return HostRunResult[]
     out = HostRunResult[]
@@ -1137,8 +1207,12 @@ function drive_host_status(output_dir::AbstractString)::Vector{DriveHostStatus}
 end
 
 function drive_host_status(kp::KitProcess)::Vector{DriveHostStatus}
-    kp.output_dir === nothing && return DriveHostStatus[]
-    return drive_host_status(kp.output_dir)
+    for d in (kp.run_dir, kp.output_dir, kp.log_dir)
+        d === nothing && continue
+        rows = drive_host_status(d)
+        isempty(rows) || return rows
+    end
+    return DriveHostStatus[]
 end
 
 """
@@ -1158,9 +1232,8 @@ This matches omitted in-process defaults for go, ride, and drive:
 `{script}/.distsshkit/<kind>/<stem>_<UTC>/`. Drive still honors
 `output_dir` / `--output-dir` and a driver's `init_output_dir!`
 (`DISTRIBUTED_OUTPUT_DIR`) when those are set. Detached `execute!(:drive)`
-pins that path with `--output-dir` before spawn (`KitProcess.output_dir`);
-it does not wait for `init_output_dir!`. A non-blank inherited
-`DISTRIBUTED_OUTPUT_DIR` is used when `output_dir` is omitted.
+does not pin `--output-dir` unless `output_dir=` or inherited
+`DISTRIBUTED_OUTPUT_DIR` is set.
 """
 function allocate_output_dir(
         kind::Symbol,
@@ -1183,23 +1256,6 @@ function allocate_output_dir(
     script_path = isabspath(raw) ? raw : joinpath(proj, raw)
     dir = joinpath(kit_dir_beside_script(dirname(canonical_local_path(script_path)), kind), leaf)
     return _mkdir_unique!(dir)
-end
-
-"""Exclusive `mkdir` of `dir`. On EEXIST, retry `dir-<time_ns>`."""
-function _mkdir_unique!(dir::AbstractString)::String
-    mkpath(dirname(dir))
-    base = String(dir)
-    while true
-        try
-            mkdir(base)
-            return canonical_local_path(base)
-        catch e
-            e isa Base.IOError || rethrow()
-            e.code == Base.UV_EEXIST || rethrow()
-            base = String(dir) * "-" * string(time_ns())
-        end
-    end
-    return
 end
 
 """Set `DISTRIBUTED_OUTPUT_DIR` for a drive run and return it.
@@ -1231,7 +1287,8 @@ function _execute_detached_dirs(
         output_dir::Union{Nothing, AbstractString},
         log_dir::Union{Nothing, AbstractString},
         enable_log,
-    )::Tuple{String, Union{Nothing, String}}
+        run_dir::AbstractString,
+    )::Tuple{Union{Nothing, String}, Union{Nothing, String}}
     resolved_output = if output_dir !== nothing
         canonical_local_path(output_dir)
     elseif kind === :go
@@ -1245,7 +1302,7 @@ function _execute_detached_dirs(
             mkpath(d)
             d
         else
-            allocate_output_dir(:drive, script_path; project = project)
+            nothing
         end
     end
     resolved_log = if kind === :go || kind === :ride || enable_log === false
@@ -1253,7 +1310,7 @@ function _execute_detached_dirs(
     elseif log_dir !== nothing
         canonical_local_path(String(log_dir))
     else
-        resolved_output
+        canonical_local_path(run_dir)
     end
     return resolved_output, resolved_log
 end
@@ -1263,7 +1320,7 @@ function _execute_detached_argv(
         script_path::AbstractString,
         tokens::AbstractVector{<:AbstractString},
         args::AbstractVector{<:AbstractString};
-        output_dir::AbstractString,
+        output_dir::Union{Nothing, AbstractString},
         log_dir::Union{Nothing, AbstractString},
         sync::Union{Symbol, Bool, Nothing},
         julia::Union{Nothing, AbstractString},
@@ -1294,7 +1351,7 @@ function _execute_detached_argv(
     else
         throw(ArgumentError("verbosity must be :quiet, :progress, or :verbose, got $(repr(verbosity))"))
     end
-    push!(argv, "--output-dir", String(output_dir))
+    output_dir !== nothing && push!(argv, "--output-dir", String(output_dir))
     if sync === :sync
         push!(argv, "--sync")
     elseif sync === :rsync
@@ -1393,9 +1450,9 @@ function terminate!(kp::KitProcess; grace::Real = 10)::KitRunResult
             end
         end
     end
-    out = kp.output_dir
-    job_id = out === nothing ? nothing : _read_kit_text_file(out, "kit.job")
-    hosts = out === nothing ? String[] : _read_kit_hosts(out)
+    sidecar = something(kp.run_dir, kp.output_dir)
+    job_id = sidecar === nothing ? nothing : _read_kit_text_file(sidecar, "kit.job")
+    hosts = sidecar === nothing ? String[] : _read_kit_hosts(sidecar)
     _reap_tagged_workers!(job_id, hosts)
     return wait(kp)
 end
