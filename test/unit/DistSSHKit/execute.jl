@@ -69,6 +69,19 @@ using Test
             DistSSHKit._remove_kit_pid_file(4242, d, nothing)
             @test !isfile(pid_path)
         end
+        _with_tempdir() do d
+            proc = run(
+                pipeline(
+                    ignorestatus(`$(Base.julia_cmd()) --startup-file=no -e nothing`);
+                    stdout = devnull,
+                    stderr = devnull,
+                );
+                wait = false,
+            )
+            wait(proc)
+            DistSSHKit._write_detached_kit_pid_file!(proc, d, nothing; run_dir = d)
+            @test !isfile(joinpath(d, "kit.pid"))
+        end
     end
 
     @testset "kit_pid_file_running" begin

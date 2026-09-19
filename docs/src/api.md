@@ -265,18 +265,26 @@ path, then SIGKILLs if needed, then `pkill`s only argv tagged with this
 run's `job_id`. `kp.process` is still a `Base.Process` if you need `kill`
 yourself.
 
-#### Sidecar files (`output_dir`)
+#### Sidecar files
 
-On-disk contract for a detached (or in-process) run. `kit.pid`, `kit.job`,
-`kit.hosts`, `kit.hosts.status`, and `kit.result` are also written under
-`log_dir` when that path is distinct. `.kit.lock` and `kit.out` / `kit.err`
-stay in `output_dir`. Kit logs (`go_*.log` / `drive_*.log`) are not this list.
+Detached stdio (`kit.out` / `kit.err`) lives in [`KitProcess.run_dir`](@ref).
+`kit.pid`, `kit.job`, `kit.hosts`, `kit.hosts.status`, and `kit.result` are
+written under `run_dir`, and also under `output_dir` / `log_dir` when those
+paths are known at write time. `.kit.lock` stays on the artifact `output_dir`
+(exclusive run against that leaf). Kit logs (`go_*.log` / `drive_*.log`)
+default to `run_dir` for drive when `DISTSSHKIT_RUN_DIR` is set; go still
+writes `go_*.log` next to the batch.
 
-- `.kit.lock`: pid of the process holding the dir. A second **process** against
-  the same path raises `ArgumentError`. A lock left by a dead pid is
-  reclaimed. Two in-process runs share a pid, so Kit also rejects overlapping
+On-disk contract:
+
+- `.kit.lock`: pid of the process holding the **artifact** dir. A second
+  **process** against the same path raises `ArgumentError`. A lock left by a
+  dead pid is reclaimed. Two in-process runs share a pid, so Kit also rejects
+  overlapping
   `go!` / `drive!` / `ride!` / `size!` / `pool!` / `setup!` / `sync!` /
   `instantiate!` / `collect!` / `push_cache!` / `pipeline!` (same-task nesting is ok).
+- `kit.out` / `kit.err`: detached child stdio when `stdout` / `stderr` were
+  omitted (`run_dir`).
 - `kit.pid`: child OS pid, optional start key on the second line.
   Running is [`kit_pid_file_running`](@ref) (pid plus start).
   Removed on a normal
@@ -298,8 +306,6 @@ stay in `output_dir`. Kit logs (`go_*.log` / `drive_*.log`) are not this list.
 - `kit.progress`: `progress:` lines for watchers
   (`kit_progress_latest`). Written even when `--no-log` skips
   `drive_*.log`.
-- `kit.out` / `kit.err`: detached child stdio when `stdout` / `stderr`
-  were omitted.
 
 Together: running (`kit.pid` live and start matches, no result), finished
 (result present), or died hard (leftover pid that is dead or reused, no

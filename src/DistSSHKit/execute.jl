@@ -589,8 +589,8 @@ function _execute_detached!(
         end
         rethrow()
     end
-    _write_kit_pid_file(
-        getpid(proc), resolved_output, resolved_log;
+    _write_detached_kit_pid_file!(
+        proc, resolved_output, resolved_log;
         job_id = job_id_s,
         run_dir = run_dir,
     )
@@ -622,6 +622,35 @@ function _execute_detached_stdio(kwargs, run_dir::AbstractString)
         stdio_err = owned_err
     end
     return stdio_out, stdio_err, owned_out, owned_err
+end
+
+"""Write `kit.pid` only while this `Base.Process` is still running.
+
+If the child already exited (and likely removed the file), skip the write.
+After the write, drop the file again if this process has reaped — so a
+recycled OS pid is not left for [`kit_pid_file_running`](@ref).
+"""
+function _write_detached_kit_pid_file!(
+        proc::Base.Process,
+        output_dir::Union{Nothing, AbstractString},
+        log_dir::Union{Nothing, AbstractString};
+        job_id::Union{Nothing, AbstractString} = nothing,
+        run_dir::Union{Nothing, AbstractString} = nothing,
+    )
+    process_running(proc) || return nothing
+    child_pid = try
+        Int(getpid(proc))
+    catch
+        return nothing
+    end
+    _write_kit_pid_file(
+        child_pid, output_dir, log_dir;
+        job_id = job_id,
+        run_dir = run_dir,
+    )
+    process_running(proc) && return nothing
+    _remove_kit_pid_file(child_pid, output_dir, log_dir; run_dir = run_dir)
+    return nothing
 end
 
 """
