@@ -34,7 +34,7 @@ Prepare SSH hosts — same jobs as `julia -m DistSSHKit setup --…`.
 | `:check` | `--check` | `ignore_julia_version=`, `check_code_sync=` |
 | `:runtest` | `--runtest` | job `Pkg.test()` on remotes; `julia=` |
 | `:cleanup` | `--cleanup` | Kill stale workers (no confirm) |
-| `:prune` | `--prune` | `.distsshkit` go/drive/setup leaves; confirm unless `session.yes`. `older_days=`, `id=` |
+| `:prune` | `--prune` | `.distsshkit` go/drive/setup/runs leaves; confirm unless `session.yes`. `older_days=`, `id=` |
 
 Confirmations follow `session.yes` (CLI `-y`). Multiple modes run in order and
 stop on the first failure:

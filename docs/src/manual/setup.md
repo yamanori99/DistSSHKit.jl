@@ -58,7 +58,7 @@ Pick **one mode** per invocation (except shared options).
   align the default channel
 - `--runtest`: `Pkg.test()` of the **job** project on remotes (not
   DistSSHKit's tests)
-- `--prune`: delete `.distsshkit/{go,drive,setup}` leaves on localhost
+- `--prune`: delete `.distsshkit/{go,drive,setup,runs}` leaves on localhost
   (job project) and remotes (confirm unless `-y`). Does not `--delete`
   the deploy tree. `--older-than DAYS` (mtime). `--id TOKEN` (go batch
   name contains TOKEN; skips drive/setup)

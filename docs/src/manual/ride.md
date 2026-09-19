@@ -43,5 +43,8 @@ if `f` and `getindex` are `:effect_free`, parallel map does not introduce
 new data races. Thread-parallel POC and this SSH/process `ride` are not
 the same implementation.
 
+Default artifacts: `{script}/.distsshkit/ride/{stem}_{UTC}/`. Kit sidecars
+(`run.toml`, pid, stdio): `{script}/.distsshkit/runs/ride/{stem}_{UTC}/`.
+
 Also: `ride --help`. API: [`ride!`](@ref), [`execute!`](@ref) (`:ride`, including
 `detached=true` for DistSSHQueue).

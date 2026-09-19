@@ -72,15 +72,22 @@ using Test
             mkpath(go_keep)
             mkpath(drive)
             write(joinpath(proj, "Project.toml"), "name = \"Tmp\"\n")
+            run_keep = joinpath(proj, "scripts", ".distsshkit", "runs", "go", "job_keep_id")
+            run_old = joinpath(proj, ".distsshkit", "runs", "drive", "job_20200101T000000Z")
+            mkpath(run_keep)
+            mkpath(run_old)
             n = DistSSHKit.prune_kit_leaf_dirs!(proj; id = "keep_id")
-            @test n == 1
+            @test n == 2
             @test isdir(go_old)
             @test !isdir(go_keep)
             @test isdir(drive)
+            @test isdir(run_old)
+            @test !isdir(run_keep)
             n2 = DistSSHKit.prune_kit_leaf_dirs!(proj)
-            @test n2 >= 2
+            @test n2 >= 3
             @test !isdir(go_old)
             @test !isdir(drive)
+            @test !isdir(run_old)
             @test isfile(joinpath(proj, "Project.toml"))
         end
 

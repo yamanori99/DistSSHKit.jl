@@ -103,7 +103,7 @@ Worker `addprocs` stays sequential.
 - `drive` does not `pkill -f julia --worker` on remotes. With `job_id` /
   `DISTSSHKIT_JOB_ID` it `pkill`s argv `distsshkit-job:<id>`. Skip that leftover
   pkill with `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1`; `rmprocs` still runs
-- `setup --prune` removes `.distsshkit/{go,drive,setup}` leaves (not the
+- `setup --prune` removes `.distsshkit/{go,drive,setup,runs}` leaves (not the
   deploy). `--cleanup` kills stale workers (untagged `julia --worker` /
   `--bind-to` on localhost and remotes; other Distributed jobs on the same
   login can match). `--delete` removes the remote project tree
@@ -112,9 +112,13 @@ Worker `addprocs` stays sequential.
   `-L` a no-op file of that name so the script still runs; drive workers
   get `--eval=#distsshkit-job:<id>`
 
-**Kit files.** Setup logs: `{project}/.distsshkit/setup/`. Go:
-`{script}/.distsshkit/go/{stem}_{UTC}/`. Drive (no `--output-dir` and no
-`init_output_dir!`): `{script}/.distsshkit/drive/{stem}_{UTC}/`. Add `.distsshkit/` to the **job** project's
+**Kit files.** Setup logs: `{project}/.distsshkit/setup/` (or the current
+run dir when `DISTSSHKIT_RUN_DIR` is set). Artifacts: go
+`{script}/.distsshkit/go/{stem}_{UTC}/`; drive (no `--output-dir` and no
+`init_output_dir!`): `{script}/.distsshkit/drive/{stem}_{UTC}/`. Sidecars
+(`run.toml`, pid, stdio): `{script}/.distsshkit/runs/<kind>/{stem}_{UTC}/`
+(falls back to `{project}/.distsshkit/runs/…` if the script dir is not
+writable). Add `.distsshkit/` to the **job** project's
 `.gitignore` — DistSSHKit's own repo already ignores it, but `Pkg.add`
 does not. Otherwise go/drive output can show up as untracked files,
 including under `drive --require-git`.

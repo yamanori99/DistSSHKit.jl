@@ -326,6 +326,8 @@ Without `job_id`, only the child pid is signaled.
   `init_output_dir!` can set `DISTRIBUTED_OUTPUT_DIR`.
 - [`allocate_run_dir`](@ref): Kit run bundle
   `{script}/.distsshkit/runs/<kind>/<stem>_<UTC>/` (`run.toml`, pid, stdio).
+  Falls back to `{project}/.distsshkit/runs/…` then `tempdir()` when the
+  script directory is not writable.
 - [`execute_kwargs_from_parsed`](@ref): map `parse_go_args` /
   `parse_drive_args` onto detached `execute!` keywords. Ride argv maps the same
   way for `:ride`. Hosts stay in
