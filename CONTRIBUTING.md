@@ -384,7 +384,9 @@ domains share a shape.
 **Issues** (Bug / Enhancement forms only): `bug` or `enhancement`. The
 area dropdown is triage; add `area:*` if useful. Horizon (`when:*`) is
 **when**, not type or path: every open Issue gets exactly one of
-`when:current` / `when:next` / `when:later`. Usage questions are
+`when:current` / `when:next` / `when:later`. `julia-next` is optional
+and orthogonal: Julia tip / next stable Base or stdlib drift (keep
+`when:later` until that Julia is the kit contract). Usage questions are
 Discussions. Confirmed bugs are Issues. `breaking` and `cut` are PR
 labels; `cut-hold` is an Issue label after a cut merge. Direction:
 [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26).
@@ -467,8 +469,8 @@ tags.
 
 Ruleset `main` requires check `PR label` (workflow `Type`). Type labels
 (`bug` / `enhancement` / `breaking` / `chore` / `cut`) and each `area:*`
-must exist (`gh label create` if missing). `when:*` is Issues only (not
-a PR type).
+must exist (`gh label create` if missing). `when:*` and `julia-next` are
+Issues only (not a PR type).
 
 | Kind | Color | Labels |
 | --- | --- | --- |
@@ -479,6 +481,7 @@ a PR type).
 | Hold | orange `#bf8700` | `cut-hold` on Issue `E2E weekly failed` after a red weekly Linux job |
 | Test harness | pale blue `#c5def5` | `area:test` |
 | Horizon | orange `#fdba74` / violet `#c4b5fd` / slate `#94a3b8` | `when:current` `when:next` `when:later` |
+| Julia next | Julia purple `#9558b2` | `julia-next` (Issues: tip / next-stable API; not a PR type) |
 
 | `when:*` | Use |
 | --- | --- |
