@@ -6,17 +6,29 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
-### Breaking (cut later)
+## 0.8.0
+
+Breaking cut after `0.7.3`. DistSSHQueue still pins Kit **0.7.3** until
+a Queue compat patch.
+
+### Breaking
 
 - Detached `execute!(:drive)` no longer pre-allocates artifact `output_dir`
   or passes `--output-dir` unless the caller set `output_dir=` or
   `DISTRIBUTED_OUTPUT_DIR`. The child honors `init_output_dir!`. Sidecars
   (`kit.pid`, `kit.out` / `kit.err`, `run.toml`) live under
-  `{script}/.distsshkit/runs/<kind>/<stem>_<UTC>/`.
+  `{script dir}/.distsshkit/runs/<kind>/<stem>_<UTC>/` (#394).
   If the script directory is not writable (Registry / `Pkg.test` tree),
   the run bundle is created under `{project}/.distsshkit/runs/…` then
   `tempdir()/distsshkit-runs/…`. `setup --prune` also removes
-  `.distsshkit/runs/` leaves.
+  `.distsshkit/runs/` leaves (#396).
+  `wait` does not mutate `KitProcess.output_dir`; use the returned
+  `KitRunResult`.
+
+### Run dir
+
+- `allocate_run_dir`, `kit_run_dir`, `read_kit_run_toml` for the per-run
+  bundle.
 
 ## 0.7.3
 
