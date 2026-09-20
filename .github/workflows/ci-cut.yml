@@ -1,5 +1,7 @@
-# `cut` added after open. Default pull_request types omit `labeled`; keep it
-# off Test so area/type labels cannot skip or cancel Pkg.test.
+# `cut` added after open. Keep `labeled` off Test so area/type labels
+# cannot skip or cancel Pkg.test. Test evaluates `cut` only at start, so
+# this workflow runs the cut-only slots (tip / Aqua tip / registry tree).
+# Concurrency is per label name so `chore` cannot cancel a `cut` run.
 name: Test (cut)
 
 on:
@@ -7,7 +9,7 @@ on:
     types: [labeled]
 
 concurrency:
-  group: ci-cut-${{ github.ref }}
+  group: ci-cut-${{ github.ref }}-${{ github.event.label.name }}
   cancel-in-progress: true
 
 permissions:
@@ -15,8 +17,41 @@ permissions:
   actions: write # julia-actions/cache delete-old-caches
 
 jobs:
+  test-tip:
+    # Unique skip name so a non-cut label does not overwrite Test's check.
+    if: github.event.label.name == 'cut'
+    name: ${{ github.event.label.name == 'cut' && 'Pkg.test - tip - ubuntu-latest' || 'cut label skip (tip)' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/julia-slot
+        with:
+          slot: tip
+      - uses: julia-actions/cache@v3
+        with:
+          cache-scratchspaces: false
+      - uses: ./.github/actions/pkg-test
+
+  aqua-tip:
+    if: github.event.label.name == 'cut'
+    name: ${{ github.event.label.name == 'cut' && 'Aqua - tip - ubuntu-latest' || 'cut label skip (aqua)' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/julia-slot
+        with:
+          slot: tip
+      - uses: julia-actions/cache@v3
+        with:
+          cache-scratchspaces: false
+      - name: Aqua.test_all (latest Aqua)
+        run: ./.github/aqua-check.sh
+
   test-registry-tree:
-    # Unique name when skipped so a `bug` label does not overwrite Test's check.
     if: github.event.label.name == 'cut'
     name: ${{ github.event.label.name == 'cut' && 'Pkg.test - registry tree - ubuntu-latest' || 'cut label skip' }}
     runs-on: ubuntu-latest
@@ -26,15 +61,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: ./.github/actions/ci-heavy
-        id: detect
       - uses: ./.github/actions/julia-slot
-        if: steps.detect.outputs.heavy == 'true'
         with:
           slot: tip
       - uses: julia-actions/cache@v3
-        if: steps.detect.outputs.heavy == 'true'
         with:
           cache-scratchspaces: false
       - uses: ./.github/actions/registry-tree-test
-        if: steps.detect.outputs.heavy == 'true'
