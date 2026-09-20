@@ -8,7 +8,8 @@ on:
   workflow_dispatch:
 
 # Cancel redundant runs on the same branch/PR.
-# `cut` after open is `.github/workflows/ci-cut.yml` (labeled is not on this workflow).
+# `cut` after open is `.github/workflows/ci-cut.yml` (labeled is not on this
+# workflow). ci-cut runs tip / Aqua tip / registry tree when `cut` is added.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
