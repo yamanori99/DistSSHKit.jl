@@ -5,7 +5,12 @@ using Test
 # Real collect of remote files is ssh-e2e.
 
 # File scope: a local inside `@testset` is captured by `_capture_stdio` and boxed.
-function _collect!(proj, out_dir, hosts; merge = false)
+function _collect!(
+        proj::AbstractString,
+        out_dir::AbstractString,
+        hosts::Vector{String};
+        merge::Bool = false,
+    )
     session = DistSSHKit.KitSession(
         project = proj,
         workers = hosts,
