@@ -150,8 +150,10 @@ bumping compat, raise `JULIA_SLOT_MIN` only.
 
 These run as jobs of the `Test` workflow
 ([`.github/workflows/CI.yml`](.github/workflows/CI.yml)). Ubuntu:
-`Pkg.test` min / max, JETLS min / max, Aqua min / max, Documenter min,
-Gitleaks (also rejects `< 0.0.1` in `Project.toml`). Linux E2E (max)
+`Pkg.test` max, JETLS max, Aqua max, Documenter min,
+Gitleaks (also rejects `< 0.0.1` in `Project.toml`). `Pkg.test` / JETLS /
+Aqua **min** stay on **main**, **CI weekly**, and `cut` (ci-cut when the
+label is added later), not ordinary PRs. Linux E2E (max)
 uses the same **path filter** as **main** push
 (`src/**`, `test/**`, `demos/**`, `testenv/**` minus markdown under those
 trees, `Project.toml`, `.github/julia-slots.env`,
@@ -188,7 +190,8 @@ watchers, not the register gate.
 
 Required to merge (branch protection uses these names). Tip jobs are
 allow-failure. A job skipped by the heavy / E2E gate shows as skipping
-(not a green empty run).
+(not a green empty run). On an ordinary PR the three **min** checks
+skip too; they run on **main**, weekly, and `cut`.
 
 - `Pkg.test - min - ubuntu-latest`
 - `Pkg.test - max - ubuntu-latest`
