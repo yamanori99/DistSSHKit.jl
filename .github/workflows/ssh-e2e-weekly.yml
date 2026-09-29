@@ -276,15 +276,15 @@ jobs:
           CUT_PUSH: ${{ github.event_name == 'push' }}
         run: |
           title='E2E weekly failed'
-          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label ci --search "in:title $title" --json number --jq '.[0].number // empty')"
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label alert --search "in:title $title" --json number --jq '.[0].number // empty')"
           if [ "$FAILED" = "true" ]; then
             body="Latest run: $RUN_URL
 
           Not a PR check. Re-run **E2E weekly** after a fix. A red **Linux** job after a \`cut\` merge adds \`cut-hold\` (do not register). Intel / WSL red does not."
-            labels=ci
+            labels=alert
             hold=false
             if [ "$CUT_PUSH" = "true" ] && [ "$LINUX_FAILED" = "true" ]; then
-              labels=ci,cut-hold
+              labels=alert,cut-hold
               hold=true
             fi
             if [ -n "$existing" ]; then
@@ -299,7 +299,7 @@ jobs:
             fi
           else
             for t in 'E2E weekly failed' 'E2E daily failed'; do
-              n="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label ci --search "in:title $t" --json number --jq '.[0].number // empty')"
+              n="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label alert --search "in:title $t" --json number --jq '.[0].number // empty')"
               if [ -n "$n" ]; then
                 gh issue edit "$n" --repo "$GITHUB_REPOSITORY" --remove-label cut-hold || true
                 gh issue close "$n" --repo "$GITHUB_REPOSITORY" --reason completed --comment "Latest run succeeded: $RUN_URL"

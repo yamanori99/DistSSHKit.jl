@@ -188,7 +188,7 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           title='CI weekly failed'
-          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label ci --search "in:title $title" --json number --jq '.[0].number // empty')"
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label alert --search "in:title $title" --json number --jq '.[0].number // empty')"
           if [ "$FAILED" = "true" ]; then
             body="Latest run: $RUN_URL
 
@@ -196,7 +196,7 @@ jobs:
             if [ -n "$existing" ]; then
               gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
             else
-              gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label ci --body "$body"
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label alert --body "$body"
             fi
           elif [ -n "$existing" ]; then
             gh issue close "$existing" --repo "$GITHUB_REPOSITORY" --reason completed --comment "Latest run succeeded: $RUN_URL"
