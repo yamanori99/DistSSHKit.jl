@@ -51,4 +51,6 @@ fi
 
 # Match aviatesk/JETLS.jl check@release and CI: do not pass `--threads=auto`.
 # That segfaults on Julia 1.13 in signature_analysis_worker (exit 139).
-exec jetls check --root=. --exit-severity=hint "${jetls_args[@]}" "${files[@]}"
+# --exit-severity=hint already fails the job. --show-severity=hint prints that text;
+# the CLI hides hint diagnostics otherwise.
+exec jetls check --root=. --exit-severity=hint --show-severity=hint "${jetls_args[@]}" "${files[@]}"
