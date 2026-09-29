@@ -128,10 +128,10 @@ fourth version job. Slide the pin; keep job names `min` / `max` /
 `tip`.
 
 - **min** (required): `Project.toml` julia floor. Pkg.test (no
-  coverage), Aqua, JETLS, Documenter, bake
+  coverage), Aqua, JETLS
 - **max** (required): newest tagged or prerelease (`versions.json`).
-  Pkg.test, Aqua, **main** / weekly / `cut` E2E, GHCR worker. Codecov
-  `pkgtest` on **main push** only
+  Pkg.test, Aqua, Documenter, bake, **main** / weekly / `cut` E2E,
+  GHCR worker. Codecov `pkgtest` on **main push** only
 - **tip** (not required): next-minor nightly. Pkg.test, Aqua.
   `continue-on-error`
 
@@ -150,7 +150,7 @@ bumping compat, raise `JULIA_SLOT_MIN` only.
 
 These run as jobs of the `Test` workflow
 ([`.github/workflows/CI.yml`](.github/workflows/CI.yml)). Ubuntu:
-`Pkg.test` min / max, JETLS min / max, Aqua min / max, Documenter min,
+`Pkg.test` min / max, JETLS min / max, Aqua min / max, Documenter max,
 Gitleaks (also rejects `< 0.0.1` in `Project.toml`). Linux E2E (max)
 uses the same **path filter** as **main** push
 (`src/**`, `test/**`, `demos/**`, `testenv/**` minus markdown under those
@@ -196,7 +196,7 @@ allow-failure. A job skipped by the heavy / E2E gate shows as skipping
 - `JETLS - max - ubuntu-latest`
 - `Aqua - min - ubuntu-latest`
 - `Aqua - max - ubuntu-latest`
-- `Documenter - min - ubuntu-latest`
+- `Documenter - max - ubuntu-latest`
 - `Gitleaks`
 - `ubuntu-latest → ubuntu-24.04`
 - `PR label`
