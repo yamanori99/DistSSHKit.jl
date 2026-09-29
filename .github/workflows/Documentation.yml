@@ -40,9 +40,12 @@ jobs:
     needs: detect
     if: github.event_name != 'pull_request' || needs.detect.outputs.heavy == 'true' || needs.detect.outputs.docs == 'true'
     # All deploys write gh-pages. Per-ref workflow concurrency does not cover that.
+    # queue: max keeps every pending deploy. The default (single) drops the
+    # older pending run when a third one arrives, so a tag or preview can skip.
     concurrency:
       group: docs-gh-pages
       cancel-in-progress: false
+      queue: max
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
