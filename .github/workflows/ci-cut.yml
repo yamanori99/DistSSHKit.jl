@@ -1,6 +1,6 @@
 # `cut` added after open. Keep `labeled` off Test so area/type labels
 # cannot skip or cancel Pkg.test. Test evaluates `cut` only at start, so
-# this workflow runs the cut-only slots (tip / Aqua tip / registry tree).
+# this workflow runs the cut-only slots (min / tip / Aqua tip / registry tree).
 # Concurrency is per label name so `chore` cannot cancel a `cut` run.
 name: Test (cut)
 
@@ -17,6 +17,57 @@ permissions:
   actions: write # julia-actions/cache delete-old-caches
 
 jobs:
+  test-min:
+    # Unique skip name so a non-cut label does not overwrite Test's check.
+    if: github.event.label.name == 'cut'
+    name: ${{ github.event.label.name == 'cut' && 'Pkg.test - min - ubuntu-latest' || 'cut label skip (test min)' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/julia-slot
+        with:
+          slot: min
+      - uses: julia-actions/cache@v3
+        with:
+          cache-scratchspaces: false
+      - uses: ./.github/actions/pkg-test
+
+  aqua-min:
+    if: github.event.label.name == 'cut'
+    name: ${{ github.event.label.name == 'cut' && 'Aqua - min - ubuntu-latest' || 'cut label skip (aqua min)' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/julia-slot
+        with:
+          slot: min
+      - uses: julia-actions/cache@v3
+        with:
+          cache-scratchspaces: false
+      - name: Aqua.test_all (latest Aqua)
+        run: ./.github/aqua-check.sh
+
+  jetls-min:
+    if: github.event.label.name == 'cut'
+    name: ${{ github.event.label.name == 'cut' && 'JETLS - min - ubuntu-latest' || 'cut label skip (jetls min)' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - id: files
+        run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/julia-slot
+        with:
+          slot: min
+      - uses: julia-actions/cache@v3
+        with:
+          cache-scratchspaces: false
+      - uses: ./.github/actions/jetls-check
+        with:
+          files: ${{ steps.files.outputs.list }}
+
   test-tip:
     # Unique skip name so a non-cut label does not overwrite Test's check.
     if: github.event.label.name == 'cut'
