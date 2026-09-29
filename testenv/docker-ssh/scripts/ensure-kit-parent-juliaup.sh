@@ -4,7 +4,8 @@
 # (no juliaup); remotes already bake both channels in the worker image.
 #
 # Expects JULIA_DEFAULT_CHANNEL / JULIA_ALT_CHANNEL (from julia-channels.sh).
-# Does not change PATH `julia` used to run the suite.
+# Updates both channels, then sets juliaup default back to the default channel
+# before up.sh launches the suite. The suite pins that julia's Sys.BINDIR.
 #
 # Juliaup resolution matches DistSSHKit.local_juliaup_candidates (home install,
 # then macOS Homebrew). Official install.julialang.org refuses when Homebrew
@@ -47,5 +48,10 @@ fi
 # Both channels must exist so E2E can mismatch then realign.
 "${JU}" add "${JULIA_DEFAULT_CHANNEL}" >/dev/null || true
 "${JU}" add "${JULIA_ALT_CHANNEL}" >/dev/null || true
+# Current patch before the suite starts. A later juliaup version-db check
+# (setup --juliaup parent) must not delete the install the suite is running.
+"${JU}" update "${JULIA_DEFAULT_CHANNEL}"
+"${JU}" update "${JULIA_ALT_CHANNEL}"
+"${JU}" default "${JULIA_DEFAULT_CHANNEL}"
 
 echo "kit parent juliaup: ${JU} ($("${JU}" --version 2>/dev/null || echo ok); channels ${JULIA_DEFAULT_CHANNEL} / ${JULIA_ALT_CHANNEL})"

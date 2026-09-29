@@ -4,6 +4,21 @@ using Test
 # SSH+rsync fakes. Fake rsync is `sh` `exit 0` (or 1); it does not copy bytes.
 # Real collect of remote files is ssh-e2e.
 
+# File scope: a local inside `@testset` is captured by `_capture_stdio` and boxed.
+function _collect!(
+        proj::AbstractString,
+        out_dir::AbstractString,
+        hosts::Vector{String};
+        merge::Bool = false,
+    )
+    session = DistSSHKit.KitSession(
+        project = proj,
+        workers = hosts,
+        remote = "/fake/remote/CollectHost",
+    )
+    return DistSSHKit.collect!(session, out_dir; merge = merge)
+end
+
 @testset "drive collect_tree" begin
     function _seed_tree!(state_dir, host, rel)
         slot = replace(host, r"[@:/]" => "_")
@@ -11,15 +26,6 @@ using Test
         mkpath(dirname(path))
         write(path, "remote-bytes\n")
         return path
-    end
-
-    function _collect!(proj, out_dir, hosts; merge = false)
-        session = DistSSHKit.KitSession(
-            project = proj,
-            workers = hosts,
-            remote = "/fake/remote/CollectHost",
-        )
-        return DistSSHKit.collect!(session, out_dir; merge = merge)
     end
 
     function _with_collect(f; extra_env = Dict{String, String}())

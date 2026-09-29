@@ -164,7 +164,7 @@ stay on **main**, **CI weekly**, and `cut`. Registry tree stays on
 workflow ([`.github/workflows/runic.yml`](.github/workflows/runic.yml)).
 It is not a substitute for `Pkg.test`. Soft on PRs (not in the
 required-name list). Monthly cron on `main` opens Issue
-`Runic monthly failed` (`ci`) when `--check` is red.
+`Runic monthly failed` (`alert`) when `--check` is red.
 
 These files **alone** skip the heavy jobs (UI: skipping; Pkg.test /
 JETLS / Aqua do not start). Documenter still runs when `docs/**`, README,
@@ -262,13 +262,13 @@ does not. Cron still runs when no cut landed that week.
 **CI weekly** (Sunday 10:00 JST, or Run workflow): same `Pkg.test` /
 JETLS / Aqua slots as a PR (no coverage). Not a PR check. Catches max /
 Aqua / JETLS `@release` drift when nothing merged that week. Failure of
-min/max jobs opens Issue `CI weekly failed` (`ci`); tip is omitted from
+min/max jobs opens Issue `CI weekly failed` (`alert`); tip is omitted from
 that notify.
 
 **Runic monthly** (1st 10:00 JST, or Run workflow): `runic --check` on
 tracked `.jl` (`version: '1'`). Not a required PR check. Catches Runic
 minor drift when nothing formatted that month. Failure opens Issue
-`Runic monthly failed` (`ci`).
+`Runic monthly failed` (`alert`).
 
 ## Pull requests
 
@@ -477,7 +477,8 @@ Issues only (not a PR type).
 | Type | red / green / yellow / dark red / purple / mint | `bug` `enhancement` `chore` `breaking` `cut` `dependencies` |
 | Path area | teal `#bfdadc` | `area:drive` `area:go` `area:setup` `area:explain` `area:size` `area:demos` `area:kit` `area:project-docs` |
 | Documenter | blue `#0075ca` | `area:docs` (and leftover `docs`) |
-| CI | black `#000000` | `area:ci` (and leftover `ci`) |
+| CI | black `#000000` | `area:ci` |
+| Scheduled failure | orange `#ff4d00` | `alert` on bot Issues (`E2E weekly failed`, `CI weekly failed`, `Runic monthly failed`) |
 | Hold | orange `#bf8700` | `cut-hold` on Issue `E2E weekly failed` after a red weekly Linux job |
 | Test harness | pale blue `#c5def5` | `area:test` |
 | Horizon | orange `#fdba74` / violet `#c4b5fd` / slate `#94a3b8` | `when:current` `when:next` `when:later` |

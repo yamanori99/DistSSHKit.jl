@@ -1,5 +1,15 @@
 using Test
 
+# File scope: a local inside `@testset` is captured by the verbosity `do` and boxed.
+function _confirm_stdio(answer; keyword = nothing)
+    return _capture_stdio() do stdin_io, _
+        write(stdin_io, answer)
+        flush(stdin_io)
+        seekstart(stdin_io)
+        DistSSHKit.kit_confirm("really wipe?"; keyword = keyword)
+    end
+end
+
 @testset "cli_session" begin
     clear_verbosity_env = (
         "DISTSSHKIT_QUIET" => nothing,
@@ -103,14 +113,6 @@ using Test
             prev_ni = DistSSHKit.kit_noninteractive()
             DistSSHKit.set_kit_noninteractive!(false)
             try
-                function _confirm_stdio(answer; keyword = nothing)
-                    return _capture_stdio() do stdin_io, _
-                        write(stdin_io, answer)
-                        flush(stdin_io)
-                        seekstart(stdin_io)
-                        DistSSHKit.kit_confirm("really wipe?"; keyword = keyword)
-                    end
-                end
                 # Prompt must show in every verbosity (TTY default is :progress).
                 for v in (:quiet, :progress, :verbose)
                     with_kit_verbosity(v) do
