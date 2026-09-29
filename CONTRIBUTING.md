@@ -128,10 +128,10 @@ fourth version job. Slide the pin; keep job names `min` / `max` /
 `tip`.
 
 - **min** (required): `Project.toml` julia floor. Pkg.test (no
-  coverage), Aqua, JETLS, Documenter, bake
+  coverage), Aqua, JETLS
 - **max** (required): newest tagged or prerelease (`versions.json`).
-  Pkg.test, Aqua, **main** / weekly / `cut` E2E, GHCR worker. Codecov
-  `pkgtest` on **main push** only
+  Pkg.test, Aqua, Documenter, bake, **main** / weekly / `cut` E2E,
+  GHCR worker. Codecov `pkgtest` on **main push** only
 - **tip** (not required): next-minor nightly. Pkg.test, Aqua.
   `continue-on-error`
 
@@ -150,7 +150,7 @@ bumping compat, raise `JULIA_SLOT_MIN` only.
 
 These run as jobs of the `Test` workflow
 ([`.github/workflows/CI.yml`](.github/workflows/CI.yml)). Ubuntu:
-`Pkg.test` max, JETLS max, Aqua max, Documenter min,
+`Pkg.test` max, JETLS max, Aqua max, Documenter max,
 Gitleaks (also rejects `< 0.0.1` in `Project.toml`). `Pkg.test` / JETLS /
 Aqua **min** stay on **main**, **CI weekly**, and `cut` (ci-cut when the
 label is added later), not ordinary PRs. Linux E2E (max)
@@ -199,7 +199,7 @@ skip too; they run on **main**, weekly, and `cut`.
 - `JETLS - max - ubuntu-latest`
 - `Aqua - min - ubuntu-latest`
 - `Aqua - max - ubuntu-latest`
-- `Documenter - min - ubuntu-latest`
+- `Documenter - max - ubuntu-latest`
 - `Gitleaks`
 - `ubuntu-latest → ubuntu-24.04`
 - `PR label`
