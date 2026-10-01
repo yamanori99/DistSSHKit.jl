@@ -162,16 +162,17 @@ jobs:
                 );
                 return;
               }
-              // `ref` is a branch in this repository and selects the workflow file.
-              // A fork head ref is not a branch here. Dispatch the base branch,
-              // which has `workflow_dispatch` after this change is on the default
-              // branch. ci-cut checks out refs/pull/<n>/merge. Apply `cut` only
-              // after dispatch, so a later Type run can retry. A GITHUB_TOKEN
-              // label does not start `labeled` workflows.
+              // `workflow_dispatch` must exist on the default branch or the API
+              // rejects the dispatch. `ref` is a branch in this repository; a
+              // fork head ref is not. Dispatch the PR base. ci-cut checks out
+              // refs/pull/<n>/merge. Apply `cut` only after dispatch, so a later
+              // Type run can retry. A GITHUB_TOKEN label does not start
+              // `labeled` workflows.
               const baseRef = context.payload.pull_request.base.ref;
-              if (!(await refHasCutDispatch(base))) {
+              const defaultRef = context.payload.repository.default_branch;
+              if (!(await refHasCutDispatch(defaultRef))) {
                 core.warning(
-                  `Not applying cut; ${baseRef} has no workflow_dispatch in ci-cut.yml`,
+                  `Not applying cut; ${defaultRef} has no workflow_dispatch in ci-cut.yml`,
                 );
                 return;
               }
