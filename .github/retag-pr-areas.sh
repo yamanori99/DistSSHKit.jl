@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Backfill `area:*` on every PR from the current `.github/labeler.yml`.
-# Replaces legacy path labels `docs` / `ci` with `area:docs` / `area:ci`.
+# Strips path labels that are no longer generated (including legacy `docs` / `ci`).
 # Does not touch type labels (`bug` / `enhancement` / `chore` / `breaking` /
 # `cut` / `cut-hold` / `dependencies`). Issues are not scanned.
 #
@@ -64,7 +64,8 @@ if not compiled:
     print("no area:* rules in labeler.yml", file=sys.stderr)
     sys.exit(1)
 
-LEGACY = {"docs": "area:docs", "ci": "area:ci"}
+# Non-area names the labeler used to apply. area:* drops come from have_area - wanted.
+LEGACY = {"docs", "ci"}
 
 
 def gh_json(args):
@@ -101,7 +102,7 @@ for pr in sorted(prs, key=lambda p: p["number"]):
     have = {lab["name"] for lab in pr.get("labels") or []}
     have_area = {x for x in have if x.startswith("area:")}
     add = sorted(wanted - have)
-    remove = sorted((have_area - wanted) | (have & LEGACY.keys()))
+    remove = sorted((have_area - wanted) | (have & LEGACY))
     if not add and not remove:
         continue
     changed += 1

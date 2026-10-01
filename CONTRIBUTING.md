@@ -424,29 +424,20 @@ do not need an Announcements post; the GitHub Release is enough.
 ./.github/gen-labeler.sh --check  # CI drift
 ```
 
-Every tracked path must match some `area:*` glob (`gen-labeler.sh
---check`). Globs are positive paths; do not add `!` excludes (labeler
+Path labels are command names only. `gen-labeler.sh --check` fails when
+`labeler.yml` is stale or a `src/cli/<area>` file misses its area.
+Shared kit, the test harness, docs, README / NEWS, and `.github` stay
+unlabeled. Globs are positive paths; do not add `!` excludes (labeler
 ORs them as "not this path" and tags unrelated files). Path labeler
 syncs only `area:*`. After `setLabels` it restores type / `cut` / `when:*`
 / other non-area labels so a concurrent Type job is not wiped.
 
 - `src/cli/<area>/` (`explain` / `demos` too): `area:<area>`
-- Shared kit (`src/DistSSHKit.jl`, leftover DistSSHKit / argv stems,
-  matching unit tests, shared `test/*/cli/` files, package meta):
-  `area:kit`
-- Harness under `test/` (not `unit/` / `integration/`) and
-  `testenv/**`: `area:test`
-- `test/e2e.jl`, `test/support/ssh_e2e.jl`: CLI areas `drive` / `go` /
-  `setup` / `size` as well
 - Product tests under `unit/` and `integration/`: that `area:<area>`
-  (plus `area:kit` when leftover shared kit)
-- `docs/**`: `area:docs`
-- `README.md`, `README.ja.md`, `NEWS.md`, `CONTRIBUTING.md`,
-  `SECURITY.md`: `area:project-docs`
-- `.github/**`, `codecov.yml`, `.coderabbit.yaml`: `area:ci`
+- `test/e2e.jl`, `test/support/ssh_e2e.jl`: each CLI area that has
+  `src/cli/<area>`
 
-New CLI area or a new product-test tree: edit the script, regenerate,
-create the GitHub label.
+New CLI area: edit the script, regenerate, create the GitHub label.
 
 Backfill every PR after a vocabulary change:
 
@@ -491,12 +482,9 @@ Issues only (not a PR type).
 | Kind | Color | Labels |
 | --- | --- | --- |
 | Type | red / green / yellow / dark red / purple / mint | `bug` `enhancement` `chore` `breaking` `cut` `dependencies` |
-| Path area | teal `#bfdadc` | `area:drive` `area:go` `area:setup` `area:explain` `area:size` `area:demos` `area:kit` `area:project-docs` |
-| Documenter | blue `#0075ca` | `area:docs` (and leftover `docs`) |
-| CI | black `#000000` | `area:ci` |
+| Path area | teal `#bfdadc` | `area:drive` `area:go` `area:setup` `area:size` `area:explain` `area:demos` `area:plan` `area:pool` `area:ride` |
 | Scheduled failure | orange `#ff4d00` | `alert` on bot Issues (`E2E weekly failed`, `CI weekly failed`, `Runic monthly failed`) |
 | Hold | orange `#bf8700` | `cut-hold` on Issue `E2E weekly failed` after a red weekly Linux job |
-| Test harness | pale blue `#c5def5` | `area:test` |
 | Horizon | orange `#fdba74` / violet `#c4b5fd` / slate `#94a3b8` | `when:current` `when:next` `when:later` |
 | Julia next | Julia purple `#9558b2` | `julia-next` (Issues: tip / next-stable API; not a PR type) |
 
