@@ -25,9 +25,9 @@ DistSSHKit は、それらをまとめて小さな計算ノードとして使う
 > [!TIP]
 > DistSSHKit で扱っている 1 台、あるいはそのマシン群を、
 > 常時起動の計算ノードとして置いておきたいか?
-> あるいは、その計算資源を研究室の他のメンバーにも使わせたいか?
 > それなら [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
 > (`pkg> add DistSSHQueue`) が向く。ジョブは順番に並ぶ。実行そのものは DistSSHKit が担う。
+> 研究室の他のメンバーに使わせることもできる。
 
 ## インストール
 

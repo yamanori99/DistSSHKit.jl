@@ -6,8 +6,8 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
-- README: DistSSHQueue tip. Leave the machines DistSSHKit runs on as
-  shared compute for the lab (`pkg> add DistSSHQueue`).
+- README: DistSSHQueue tip. Leave the machines DistSSHKit runs on and
+  line jobs up there (`pkg> add DistSSHQueue`).
 
 ## 0.8.0
 
