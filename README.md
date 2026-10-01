@@ -25,12 +25,10 @@ workstations. DistSSHKit helps you use that hardware as a small set of
 compute nodes.
 
 > [!TIP]
-> Want the machines DistSSHKit already runs, any number of them, to keep
-> taking jobs one after another on a machine that stays on? Or want
-> other people in the lab to submit jobs on that hardware?
+> If you want to keep the machines you use for compute (one or several)
+> always on, or to share that compute with other members of your lab, use
 > [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
-> (`pkg> add DistSSHQueue`) is for either. DistSSHKit still does each
-> run.
+> (`pkg> add DistSSHQueue`). DistSSHKit still runs each job.
 
 ## Install
 
@@ -113,11 +111,18 @@ Details:
 [Requirements](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/).
 
 > [!TIP]
-> DistSSHKit runs one job while you stay connected. With
-> [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl),
-> a dropped connection does not stop a job already in the queue.
-> DistSSHKit still does the run. `tmux` can keep a job that is already
-> running. It will not look after jobs that come later.
+> DistSSHKit runs a job over an SSH connection from your development
+> environment to the compute environment.
+> [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
+> (`pkg> add DistSSHQueue`) lets you queue jobs on an always-on machine and
+> run them one after another automatically. Install it on a compute machine
+> that is set up separately from your development environment, and jobs will
+> not be interrupted even if a laptop or other development environment loses
+> its connection. DistSSHKit still runs each job.
+>
+> If you only want to keep a session alive, you can use `tmux` or a similar
+> tool to keep a DistSSHKit run going (the SSH connection must still be
+> kept open).
 
 ### Run: go, ride, drive
 

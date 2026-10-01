@@ -6,9 +6,6 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
-- README: DistSSHQueue tip. Leave the machines DistSSHKit runs on and
-  line jobs up there (`pkg> add DistSSHQueue`).
-
 ## 0.8.0
 
 Breaking cut after `0.7.3`. DistSSHQueue still pins Kit **0.7.3** until
