@@ -23,13 +23,15 @@ Also: [Requirements](@ref), `setup --help`. Flag vocabulary:
 - **`--rsync`** — just sends your local files as-is; no git needed on the
   remote. Good for a first try or a one-off run. The tree is the directory
   that holds the Manifest Pkg reads, so a workspace member also sends that
-  parent. `--project` on workers stays the member. A lock outside that tree,
-  or outside the git work tree for `--clone` / `--sync`, fails before
+  parent. `--project` on workers stays the member, and `go` runs in that
+  directory. A lock outside that tree, a symlink to such a lock, or a lock
+  outside the git work tree for `--clone` / `--sync`, fails before
   instantiate.
-- **`--clone` then `--sync`** — manages the remote as a git repository. Better
-  if you're updating the code continuously, or you want
-  [`drive --require-git`](@ref Manual-drive) to confirm the remote commit
-  matches your local one for reproducibility.
+- **`--clone` then `--sync`** — manages the remote as a git repository. The
+  clone lands on the git work tree root, placed so the Manifest directory
+  is the same deploy root `--rsync` uses. Better if you're updating the
+  code continuously, or you want [`drive --require-git`](@ref Manual-drive)
+  to confirm the remote commit matches your local one for reproducibility.
 
 ## Flags
 

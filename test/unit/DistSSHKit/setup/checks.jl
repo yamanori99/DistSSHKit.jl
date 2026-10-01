@@ -286,6 +286,10 @@ using Pkg
                 julia_remote = DistSSHKit.resolve_remote_project_root(member)
                 @test deploy == joinpath("~", basename(dirname(lab)), "lab")
                 @test julia_remote == joinpath(deploy, "experiments", "run1")
+                if Sys.which("git") !== nothing
+                    run(pipeline(`git -C $lab init -q`; stdout = devnull, stderr = devnull))
+                    @test DistSSHKit.remote_git_clone_dest(member) == deploy
+                end
             end
 
             solo = joinpath(root, "solo")
@@ -319,6 +323,17 @@ using Pkg
             @test outside.manifest == DistSSHKit.canonical_local_path(outside_manifest)
             @test_throws ArgumentError DistSSHKit.ensure_manifest_ships!(elsewhere)
 
+            linked = joinpath(root, "linked")
+            mkpath(linked)
+            write(joinpath(linked, "Project.toml"), "name = \"Linked\"\n[deps]\n")
+            write(joinpath(linked, "Manifest-real.toml"), "# in tree\n")
+            symlink("Manifest-real.toml", joinpath(linked, "Manifest.toml"))
+            linked_env = DistSSHKit.ensure_manifest_ships!(linked)
+            @test linked_env.env_dir == DistSSHKit.canonical_local_path(linked)
+            rm(joinpath(linked, "Manifest.toml"))
+            symlink(outside_manifest, joinpath(linked, "Manifest.toml"))
+            @test_throws ArgumentError DistSSHKit.ensure_manifest_ships!(linked)
+
             if Sys.which("git") !== nothing
                 repo = joinpath(root, "repo")
                 mkpath(repo)
@@ -337,16 +352,17 @@ using Pkg
         end
     end
 
-    @testset "go --project is the member relative to the manifest directory" begin
+    @testset "go cwd is the member project" begin
+        member = "~/lab/experiments/run1"
         inner = DistSSHKit._go_remote_slot_shell_inner(
-            "~/lab",
-            "experiments/run1/slot",
-            "experiments/run1/job.jl",
+            member,
+            "slot",
+            "job.jl",
             String[],
-            "julia";
-            project_flag = joinpath("experiments", "run1"),
+            "julia",
         )
-        @test occursin("cd ~/lab", inner)
-        @test occursin("--project=$(joinpath("experiments", "run1"))", inner)
+        @test occursin("experiments/run1", inner)
+        @test occursin("--project=.", inner)
+        @test !occursin("--project=experiments", inner)
     end
 end

@@ -163,7 +163,8 @@ function _setup_one!(
         ensure_manifest_in_git_worktree!(session.project)
         url = normalize_git_clone_url(_setup_clone_url(repo; surface = hint_surface(session)))
         preflight_setup_ssh(hosts) || return SyncResult(true, HostResult[]; ok = false)
-        raw = clone_to_remotes(hosts, remote_path, url; confirm = !session.yes)
+        clone_dest = remote_git_clone_dest(session.project; cli_override = session.remote)
+        raw = clone_to_remotes(hosts, clone_dest, url; confirm = !session.yes)
         return _sync_result_from_host_op(raw)
     elseif mode === :sync
         return sync!(session; mode = :sync)

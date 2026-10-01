@@ -129,14 +129,18 @@ if !isdefined(@__MODULE__, :setup_main)
             if mode === :clone
                 DistSSHKit.ensure_manifest_in_git_worktree!(project)
                 clone_url = resolve_clone_url(opts.repo_url, project)
-                result = clone_to_remotes(opts.hosts, remote_path, clone_url)
+                clone_dest = DistSSHKit.remote_git_clone_dest(
+                    project;
+                    cli_override = opts.remote_path_override,
+                )
+                result = clone_to_remotes(opts.hosts, clone_dest, clone_url)
                 ok = finish_host_op!("Clone", result)
                 if ok && !result.cancelled && result.failed == 0 &&
                         (
                         opts.remote_path_override !== nothing ||
                             !isempty(strip(get(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT", "")))
                     )
-                    kit_println("  Tip: export DISTRIBUTED_REMOTE_PROJECT_ROOT=$remote_path")
+                    kit_println("  Tip: export DISTRIBUTED_REMOTE_PROJECT_ROOT=$deploy_path")
                     kit_println("       so drive.jl uses the same remote root for workers / collect.")
                     kit_println()
                 end

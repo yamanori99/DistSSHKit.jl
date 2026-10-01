@@ -101,9 +101,11 @@ DistSSHKit assumes a Julia **project** — `Project.toml` at the project root
   `go --rsync` / `drive --rsync` onto an empty/missing path.
 - A `[workspace]` member keeps its own `Project.toml` as `--project`.
   `setup --rsync` sends the directory that holds the Manifest Pkg reads,
-  which may be a parent of the member. Worker `--project` stays the member.
-  A lock that is not inside that tree fails before instantiate. No Manifest
-  still means instantiate resolves, as before.
+  which may be a parent of the member. Worker `--project` stays the member,
+  and `go` runs in that directory. `setup --clone` places the git work tree
+  so that Manifest directory is the deploy root. A lock outside that tree,
+  including a symlink to one, fails before instantiate. No Manifest still
+  means instantiate resolves, as before.
 - Do not `Pkg.develop` DistSSHKit (or a `[sources]` path) in a job project
   you copy to workers. The Manifest records an absolute path the workers
   do not have. `Pkg.add` from General for real runs; keep a separate env

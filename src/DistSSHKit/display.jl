@@ -281,16 +281,42 @@ function julia_project_rel(env)::String
 end
 
 """
+Lock path after following symlinks.
+
+`resolve_pkg_env` keeps the path `Base.active_manifest` returned. rsync `-a`
+copies a symlink as a symlink, so a target outside `env_dir` would not be the
+lock workers instantiate.
+"""
+function manifest_link_target(manifest::AbstractString)::String
+    path = String(manifest)
+    isfile(path) || throw(
+        ArgumentError(
+            "Manifest $path is not a readable file. Workers would not see this lock.",
+        ),
+    )
+    return canonical_local_path(realpath(path))
+end
+
+"""
 Throw when `manifest` is not inside `env_dir` together with `project_dir`.
 
-One rsync cannot carry both. No Manifest is not an error (instantiate resolves).
+One rsync cannot carry both. A symlink whose target leaves that tree is the
+same failure. No Manifest is not an error (instantiate resolves).
 """
 function ensure_manifest_ships!(project::AbstractString)
     env = resolve_pkg_env(project)
-    env.manifest === nothing && return env
+    manifest = env.manifest
+    manifest isa String || return env
     _path_is_under(env.project_dir, env.env_dir) || throw(
         ArgumentError(
-            "Manifest $(env.manifest) is outside the tree setup/rsync would send ($(env.env_dir)). Workers would instantiate a different resolution.",
+            "Manifest $manifest is outside the tree setup/rsync would send ($(env.env_dir)). Workers would instantiate a different resolution.",
+        ),
+    )
+    target = manifest_link_target(manifest)
+    root = canonical_local_path(realpath(env.env_dir))
+    _path_is_under(target, root) || throw(
+        ArgumentError(
+            "Manifest $manifest points at $target, outside the tree setup/rsync would send ($root). Workers would instantiate a different resolution.",
         ),
     )
     return env

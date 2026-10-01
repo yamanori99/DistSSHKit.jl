@@ -612,9 +612,10 @@ function ensure_manifest_in_git_worktree!(project::AbstractString)
     manifest isa String || return nothing
     top = git_work_tree(env.project_dir)
     top isa String || return nothing
-    _path_is_under(manifest, top) || throw(
+    target = manifest_link_target(manifest)
+    _path_is_under(target, canonical_local_path(realpath(top))) || throw(
         ArgumentError(
-            "Manifest $manifest is outside the git work tree ($top). The lock would not reach a clone or git sync.",
+            "Manifest $manifest points at $target, outside the git work tree ($top). The lock would not reach a clone or git sync.",
         ),
     )
     return nothing
@@ -983,6 +984,56 @@ function resolve_remote_project_root(
     deploy = _remote_tree_root(env.env_dir; cli_override = cli_override)
     rel = julia_project_rel(env)
     return rel == "." ? deploy : _join_under_remote_root(deploy, rel)
+end
+
+"""
+Directory `git clone` should create.
+
+When the git work tree root is [`resolve_pkg_env`](@ref) `env_dir`, this is
+[`remote_deploy_root`](@ref). When `env_dir` sits under that work tree, the
+destination is the ancestor of the deploy root by the same relative path, so
+the Manifest directory still lands on the deploy root. No git work tree keeps
+[`resolve_remote_project_root`](@ref) (the member).
+"""
+function remote_git_clone_dest(
+        local_project_root::AbstractString;
+        cli_override::Union{Nothing, AbstractString} = nothing,
+    )::String
+    env = resolve_pkg_env(local_project_root)
+    deploy = _remote_tree_root(env.env_dir; cli_override = cli_override)
+    top = git_work_tree(env.project_dir)
+    top isa String || return resolve_remote_project_root(local_project_root; cli_override = cli_override)
+    # `git rev-parse` may return `/private/var/...` while Julia's temp path is `/var/...`.
+    env_root = canonical_local_path(realpath(env.env_dir))
+    top_root = canonical_local_path(realpath(top))
+    _path_is_under(env_root, top_root) ||
+        return resolve_remote_project_root(local_project_root; cli_override = cli_override)
+    return _remote_ancestor(deploy, relpath(env_root, top_root))
+end
+
+"""Drop `rel` from the end of a remote layout path. `rel` of `.` returns `remote_path`."""
+function _remote_ancestor(remote_path::AbstractString, rel::AbstractString)::String
+    rel == "." && return String(remote_path)
+    p = String(remote_path)
+    for part in reverse(split(String(rel), '/'))
+        (isempty(part) || part == ".") && continue
+        part == ".." && throw(
+            ArgumentError(
+                "Git work tree is not an ancestor of the Manifest directory.",
+            ),
+        )
+        basename(p) == part || throw(
+            ArgumentError(
+                "Remote path $remote_path does not end with $rel, so clone cannot keep the Manifest directory there.",
+            ),
+        )
+        parent = dirname(p)
+        parent == p && throw(
+            ArgumentError("Remote path $remote_path has no parent for $rel."),
+        )
+        p = parent
+    end
+    return p
 end
 
 """Layout path for `DISTRIBUTED_REMOTE_PROJECT_ROOT` (kit parent ENV / `execute!`).
