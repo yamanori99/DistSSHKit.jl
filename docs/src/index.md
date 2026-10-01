@@ -4,8 +4,11 @@ DistSSHKit runs the same Julia project on this machine and over SSH, then
 collects the results. It uses Distributed.jl processes, not threads.
 Supported on **macOS, Linux, and WSL2 Ubuntu** (not native Windows).
 
-To queue jobs on a machine that stays up, see
-[DistSSHQueue.jl](https://yamanori99.github.io/DistSSHQueue.jl/stable/).
+!!! tip
+    If you want to keep the machines you use for compute (one or several)
+    always on, or to share that compute with other members of your lab, use
+    [DistSSHQueue.jl](https://yamanori99.github.io/DistSSHQueue.jl/stable/)
+    (`pkg> add DistSSHQueue`). DistSSHKit still runs each job.
 
 ## What is DistSSHKit?
 
