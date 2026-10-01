@@ -162,18 +162,47 @@ jobs:
                 );
                 return;
               }
-              await addIssueLabels(["cut"]);
-              core.info(
-                `Applied cut (${fmtVer(oldV)} → ${fmtVer(newV)})`,
-              );
-              // A label written with GITHUB_TOKEN does not start `labeled` workflows.
+              // `ref` selects the workflow file. Dispatch only after this head
+              // contains `workflow_dispatch`, and before `cut` is applied, so a
+              // later Type run can retry. A GITHUB_TOKEN label does not start
+              // `labeled` workflows. The head ref keeps the checks on this PR.
+              const headRef = context.payload.pull_request.head.ref;
+              if (!(await headHasCutDispatch(head))) {
+                core.warning(
+                  `Not applying cut; ${headRef} has no workflow_dispatch in ci-cut.yml`,
+                );
+                return;
+              }
               await github.rest.actions.createWorkflowDispatch({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 workflow_id: "ci-cut.yml",
-                ref: context.payload.pull_request.head.ref,
+                ref: headRef,
                 inputs: { pr: String(n) },
               });
+              await addIssueLabels(["cut"]);
+              core.info(
+                `Applied cut (${fmtVer(oldV)} → ${fmtVer(newV)})`,
+              );
+            }
+
+            async function headHasCutDispatch(ref) {
+              try {
+                const { data } = await github.rest.repos.getContent({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  path: ".github/workflows/ci-cut.yml",
+                  ref,
+                });
+                if (data.encoding !== "base64" || typeof data.content !== "string") {
+                  return false;
+                }
+                const text = Buffer.from(data.content, "base64").toString("utf8");
+                return text.includes("workflow_dispatch:");
+              } catch (err) {
+                core.info(`ci-cut.yml at ${ref}: ${err.message}`);
+                return false;
+              }
             }
 
             async function versionAt(ref) {
