@@ -254,4 +254,99 @@ using Pkg
             @test occursin("Git has uncommitted changes", out_fail)
         end
     end
+
+    @testset "resolve_pkg_env follows Base.active_manifest" begin
+        _with_tempdir() do root
+            lab = joinpath(root, "lab")
+            member = joinpath(lab, "experiments", "run1")
+            mkpath(member)
+            write(
+                joinpath(lab, "Project.toml"), """
+                name = "Lab"
+                [workspace]
+                projects = ["experiments/run1"]
+                """
+            )
+            write(joinpath(lab, "Manifest.toml"), "# lock\n")
+            write(
+                joinpath(member, "Project.toml"), """
+                name = "Run1"
+                [deps]
+                """
+            )
+            env = DistSSHKit.resolve_pkg_env(member)
+            @test env.project_dir == DistSSHKit.canonical_local_path(member)
+            @test env.env_dir == DistSSHKit.canonical_local_path(lab)
+            @test env.manifest == DistSSHKit.canonical_local_path(joinpath(lab, "Manifest.toml"))
+            @test DistSSHKit.julia_project_rel(env) == joinpath("experiments", "run1")
+            shipped = DistSSHKit.ensure_manifest_ships!(member)
+            @test shipped.env_dir == env.env_dir
+            withenv("DISTRIBUTED_REMOTE_PROJECT_ROOT" => nothing) do
+                deploy = DistSSHKit.remote_deploy_root(member)
+                julia_remote = DistSSHKit.resolve_remote_project_root(member)
+                @test deploy == joinpath("~", basename(dirname(lab)), "lab")
+                @test julia_remote == joinpath(deploy, "experiments", "run1")
+            end
+
+            solo = joinpath(root, "solo")
+            mkpath(solo)
+            write(joinpath(solo, "Project.toml"), "name = \"Solo\"\n[deps]\n")
+            bare = DistSSHKit.resolve_pkg_env(solo)
+            @test bare.manifest === nothing
+            @test bare.env_dir == bare.project_dir
+            @test DistSSHKit.julia_project_rel(bare) == "."
+
+            ver = joinpath(root, "ver")
+            mkpath(ver)
+            write(joinpath(ver, "Project.toml"), "name = \"Ver\"\n[deps]\n")
+            write(joinpath(ver, "Manifest-v$(VERSION.major).$(VERSION.minor).toml"), "# v\n")
+            versioned = DistSSHKit.resolve_pkg_env(ver)
+            @test versioned.manifest == DistSSHKit.canonical_local_path(
+                joinpath(ver, "Manifest-v$(VERSION.major).$(VERSION.minor).toml"),
+            )
+            @test versioned.env_dir == versioned.project_dir
+
+            elsewhere = joinpath(root, "elsewhere")
+            mkpath(elsewhere)
+            outside_manifest = joinpath(root, "side", "Manifest.toml")
+            mkpath(dirname(outside_manifest))
+            write(outside_manifest, "# x\n")
+            write(
+                joinpath(elsewhere, "Project.toml"),
+                "name = \"Out\"\nmanifest = \"$(outside_manifest)\"\n",
+            )
+            outside = DistSSHKit.resolve_pkg_env(elsewhere)
+            @test outside.manifest == DistSSHKit.canonical_local_path(outside_manifest)
+            @test_throws ArgumentError DistSSHKit.ensure_manifest_ships!(elsewhere)
+
+            if Sys.which("git") !== nothing
+                repo = joinpath(root, "repo")
+                mkpath(repo)
+                write(joinpath(repo, "Project.toml"), "name = \"Repo\"\nmanifest = \"$(outside_manifest)\"\n")
+                run(pipeline(`git -C $repo init -q`; stdout = devnull, stderr = devnull))
+                run(pipeline(`git -C $repo add Project.toml`; stdout = devnull, stderr = devnull))
+                run(
+                    pipeline(
+                        `git -C $repo -c user.email=t@example.com -c user.name=t commit -q -m init`;
+                        stdout = devnull,
+                        stderr = devnull,
+                    )
+                )
+                @test_throws ArgumentError DistSSHKit.ensure_manifest_in_git_worktree!(repo)
+            end
+        end
+    end
+
+    @testset "go --project is the member relative to the manifest directory" begin
+        inner = DistSSHKit._go_remote_slot_shell_inner(
+            "~/lab",
+            "experiments/run1/slot",
+            "experiments/run1/job.jl",
+            String[],
+            "julia";
+            project_flag = joinpath("experiments", "run1"),
+        )
+        @test occursin("cd ~/lab", inner)
+        @test occursin("--project=$(joinpath("experiments", "run1"))", inner)
+    end
 end

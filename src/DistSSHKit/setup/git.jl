@@ -91,6 +91,7 @@ function git_sync_project_to_hosts!(
         do_local_pull::Bool = false,
         confirm::Bool = true,
     )
+    ensure_manifest_in_git_worktree!(project)
     proj = canonical_local_path(project)
     remote = String(remote_path)
     host_results = HostResult[]

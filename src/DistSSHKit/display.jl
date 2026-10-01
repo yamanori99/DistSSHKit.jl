@@ -242,6 +242,61 @@ function resolve_pkg_project_dir(start_dir::AbstractString)::String
 end
 
 """
+Pkg environment for `project` (a directory, or a `Project.toml` path).
+
+`project_dir` is the directory of that `Project.toml` (`--project`).
+`manifest` is `Base.active_manifest` of that file, or `nothing` when Pkg has
+no lock yet. `env_dir` is the directory of `manifest`, or `project_dir` when
+there is no lock. That is the tree `setup --rsync` sends.
+
+Queue: `default_queue_env` (no dedicated `~/.distsshqueue/env`) should return
+`env_dir`. `stage_job_tree!` should rsync `env_dir`, and set
+`DISTRIBUTED_PROJECT_ROOT` to the staged `project_dir` (relative to that
+tree). Serve `--queue-env` is `env_dir`. A job's `--project` stays
+`project_dir`, because `env_dir` as `--project` misses `[deps]` that exist
+only on the member.
+"""
+function resolve_pkg_env(project::AbstractString)
+    project_dir = canonical_local_path(project)
+    if isfile(project_dir) && basename(project_dir) == "Project.toml"
+        project_dir = canonical_local_path(dirname(project_dir))
+    end
+    project_file = joinpath(project_dir, "Project.toml")
+    if !isfile(project_file)
+        return (project_dir = project_dir, env_dir = project_dir, manifest = nothing)
+    end
+    found = Base.active_manifest(project_file)
+    if found === nothing
+        return (project_dir = project_dir, env_dir = project_dir, manifest = nothing)
+    end
+    manifest = canonical_local_path(String(found))
+    env_dir = canonical_local_path(dirname(manifest))
+    return (project_dir = project_dir, env_dir = env_dir, manifest = manifest)
+end
+
+"""`--project` value relative to [`resolve_pkg_env`](@ref) `env_dir` (`.` when they match)."""
+function julia_project_rel(env)::String
+    env.project_dir == env.env_dir && return "."
+    return relpath(env.project_dir, env.env_dir)
+end
+
+"""
+Throw when `manifest` is not inside `env_dir` together with `project_dir`.
+
+One rsync cannot carry both. No Manifest is not an error (instantiate resolves).
+"""
+function ensure_manifest_ships!(project::AbstractString)
+    env = resolve_pkg_env(project)
+    env.manifest === nothing && return env
+    _path_is_under(env.project_dir, env.env_dir) || throw(
+        ArgumentError(
+            "Manifest $(env.manifest) is outside the tree setup/rsync would send ($(env.env_dir)). Workers would instantiate a different resolution.",
+        ),
+    )
+    return env
+end
+
+"""
 Short label for a project root in console output.
 """
 function cli_project_disp(

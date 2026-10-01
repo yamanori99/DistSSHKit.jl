@@ -79,7 +79,7 @@ Green on one layer does not imply the others. `Pkg.test()` does not run
   WSL2 (not a PR check; starts on a `cut` merge; Intel / WSL are
   watchers). Register from cut PR Linux E2E.
   Not macOS workers.
-- **doctests** (~5 s): `src/` docstring examples (Documenter, Julia 1.12).
+- **doctests** (~5 s): `src/` docstring examples (Documenter, Julia 1.13).
   Not workers / SSH.
 
 ## Registry tree

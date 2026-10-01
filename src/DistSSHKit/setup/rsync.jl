@@ -236,19 +236,24 @@ function rsync_project_to_hosts!(
         report::Bool = false,
         path_anchor::AbstractString = local_root,
     )::NamedTuple
-    local_root = canonical_local_path(local_root)
+    given = canonical_local_path(local_root)
+    shipped = ensure_manifest_ships!(given)
+    local_root = shipped.env_dir
+    raw_anchor = canonical_local_path(path_anchor)
+    anchor = raw_anchor == given ? local_root : raw_anchor
     remote_path = String(remote_path)
-    path_anchor = canonical_local_path(path_anchor)
 
     if confirm && !kit_noninteractive()
-        cancelled = with_kit_progress_suspended() do
-            _print_rsync_safety_banner!(local_root, remote_path, hosts, path_anchor)
-            if !kit_confirm("Type 'rsync' to confirm: "; keyword = "rsync")
-                println_fatal("Cancelled.")
-                return true
+        cancelled = let anchor = anchor
+            with_kit_progress_suspended() do
+                _print_rsync_safety_banner!(local_root, remote_path, hosts, anchor)
+                if !kit_confirm("Type 'rsync' to confirm: "; keyword = "rsync")
+                    println_fatal("Cancelled.")
+                    return true
+                end
+                println_fatal()
+                return false
             end
-            println_fatal()
-            return false
         end
         cancelled && return (
             cancelled = true,

@@ -15,7 +15,9 @@ Applies to the machine where you run the kit **and** each SSH host that runs
 jobs.
 
 - **macOS, Linux, and WSL2 Ubuntu** (not native Windows)
-- **Julia 1.12+**
+- **Julia 1.13+**
+  The floor is the maintained stable. When Julia stops updating the
+  previous minor, the kit moves with it (see Contributing, Julia slots).
   - Library (`Pkg.add` / `using` / `go!` / `drive!`), CLI
     (`julia -m DistSSHKit`), and optional `distsshkit`
     ([User Guide](@ref Manual-distsshkit))
@@ -25,7 +27,7 @@ jobs.
   - Prefer **[juliaup](https://github.com/JuliaLang/juliaup)** so
     `$HOME/.juliaup/bin/julia` is available (or macOS Homebrew
     `/opt/homebrew/bin/julia` / `/usr/local/bin/julia`). Otherwise put a
-    1.12+ binary at a usual OS path ([Checks](@ref)) or set `--julia` /
+    1.13+ binary at a usual OS path ([Checks](@ref)) or set `--julia` /
     `JULIA_DISTRIBUTED_EXE`. On major.minor mismatch, use
     [`setup --juliaup`](@ref Manual-setup) when juliaup is already on the
     host (official install or Homebrew; see [Checks](@ref)). Missing path
@@ -97,6 +99,11 @@ DistSSHKit assumes a Julia **project** — `Project.toml` at the project root
   **every** machine that runs jobs: local `Pkg.instantiate()`, and
   `setup --instantiate` on remotes (after `--clone` or `--rsync`), or
   `go --rsync` / `drive --rsync` onto an empty/missing path.
+- A `[workspace]` member keeps its own `Project.toml` as `--project`.
+  `setup --rsync` sends the directory that holds the Manifest Pkg reads,
+  which may be a parent of the member. Worker `--project` stays the member.
+  A lock that is not inside that tree fails before instantiate. No Manifest
+  still means instantiate resolves, as before.
 - Do not `Pkg.develop` DistSSHKit (or a `[sources]` path) in a job project
   you copy to workers. The Manifest records an absolute path the workers
   do not have. `Pkg.add` from General for real runs; keep a separate env
@@ -138,7 +145,7 @@ ssh -o ConnectTimeout=5 -o BatchMode=yes \
   -o StrictHostKeyChecking=accept-new USER@HOST echo ok
 ```
 
-Example — Julia **1.12+**, same major.minor as the kit machine. Non-interactive
+Example — Julia **1.13+**, same major.minor as the kit machine. Non-interactive
 `ssh` often has no login `PATH`, so the binary must be at a **full path**
 below (or you pass `--julia` / `JULIA_DISTRIBUTED_EXE`):
 
@@ -160,15 +167,15 @@ julia --project=. -m DistSSHKit setup --juliaup child:USER@HOST
 julia --project=. -m DistSSHKit setup --juliaup parent   # this machine
 julia --project=. -m DistSSHKit setup --juliaup-update child:USER@HOST
 # or manually (official install or macOS Homebrew):
-# ssh USER@HOST '$HOME/.juliaup/bin/juliaup add 1.12 &&
-#   $HOME/.juliaup/bin/juliaup update 1.12 &&
-#   $HOME/.juliaup/bin/juliaup default 1.12'
-# ssh USER@HOST '/opt/homebrew/bin/juliaup add 1.12 &&
-#   /opt/homebrew/bin/juliaup update 1.12 &&
-#   /opt/homebrew/bin/juliaup default 1.12'
+# ssh USER@HOST '$HOME/.juliaup/bin/juliaup add 1.13 &&
+#   $HOME/.juliaup/bin/juliaup update 1.13 &&
+#   $HOME/.juliaup/bin/juliaup default 1.13'
+# ssh USER@HOST '/opt/homebrew/bin/juliaup add 1.13 &&
+#   /opt/homebrew/bin/juliaup update 1.13 &&
+#   /opt/homebrew/bin/juliaup default 1.13'
 ```
 
-Use your kit parent's major.minor in place of `1.12`. If juliaup is not
+Use your kit parent's major.minor in place of `1.13`. If juliaup is not
 installed on the host, install it first
 ([juliaup](https://github.com/JuliaLang/juliaup) or `brew install juliaup`);
 DistSSHKit does not bootstrap juliaup.

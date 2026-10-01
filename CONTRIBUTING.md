@@ -40,7 +40,7 @@ as an implementation of that POC in README or contract Discussions.
 macOS, Linux, or WSL2 Ubuntu. Not native Windows (the kit shells out to
 `ssh` / `rsync`).
 
-- Library, `Pkg.test()`, `julia -m DistSSHKit`, docs: Julia **1.12+**
+- Library, `Pkg.test()`, `julia -m DistSSHKit`, docs: Julia **1.13+**
 - SSH: Git, OpenSSH, rsync. Match remote **major.minor** (E2E workers =
   slot **max**)
 
@@ -67,7 +67,7 @@ distributed jobs from — the Manifest records an absolute path the
 workers do not have. Keep a separate environment for kit development.
 Real jobs `Pkg.add` DistSSHKit from General.
 
-On 1.12+, `julia --project=. -m DistSSHKit …` matches `Pkg.add`.
+On 1.13+, `julia --project=. -m DistSSHKit …` matches `Pkg.add`.
 
 ## Test
 
@@ -85,7 +85,7 @@ General cut, run the disposable copy in
 **main** and **cut** (slot tip; not a required check). Not on ordinary
 PRs.
 
-Smoke (1.12+; [demos/README.md](demos/README.md)):
+Smoke (1.13+; [demos/README.md](demos/README.md)):
 
 ```bash
 dest=$(mktemp -d)
@@ -134,6 +134,19 @@ fourth version job. Slide the pin; keep job names `min` / `max` /
   GHCR worker. Codecov `pkgtest` on **main push** only
 - **tip** (not required): next-minor nightly. Pkg.test, Aqua.
   `continue-on-error`
+
+This package feels SSH hosts, Pkg, and lockfiles more than a compute-model
+library does. When Julia announces that it has stopped maintaining the
+previous minor, raise the floor to the new stable. The move from 1.12 to
+1.13 is that case (1.12 became unmaintained when 1.13 shipped). Do not
+track the LTS for its own sake. Other situations (a prerelease as the
+floor, dropping a minor only for a language feature, and similar) are
+decided one by one. Do not move the floor to nightly, or to a minor that
+has only just shipped, as an automatic rule.
+`JULIA_E2E_MISMATCH_CHANNEL` is only the other major.minor baked into E2E
+workers so `setup --juliaup` can realign. It is not a fourth slot and not
+a supported floor. When the floor moves, point it at the minor Julia just
+stopped maintaining.
 
 JETLS is min plus `JULIA_SLOT_JETLS_MAX` (job name still `JETLS -
 max`). That pin lags when `max` / `tip` move past what JETLS lists
@@ -454,7 +467,7 @@ Stdlib names are `ignore` in [`.github/dependabot.yml`](.github/dependabot.yml)
 third-party `[deps]` entry is picked up with no YAML change; a new
 stdlib must be added to that ignore list. Stdlib `[compat]` stays with
 the Julia floor. The Julia updater otherwise appends `< 0.0.1` for the
-pre-1.10 Pkg.test 0.0.0 sandbox; this package is 1.12 and does not need
+pre-1.10 Pkg.test 0.0.0 sandbox; this package is 1.13 and does not need
 that union (comma is or, not and). Scan /
 `./.github/pkg-compat-check.sh` rejects that token.
 

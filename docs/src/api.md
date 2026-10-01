@@ -370,6 +370,7 @@ resolve_controller_julia
 canonical_local_path
 short_path
 resolve_pkg_project_dir
+resolve_pkg_env
 explain_script_not_found
 print_cli_error
 print_help_chrome

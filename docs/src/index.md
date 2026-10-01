@@ -36,7 +36,7 @@ Call paths:
   `size`, and `pool` on `julia --project=. -m DistSSHKit`. When to use it:
   [User Guide](@ref Manual-distsshkit).
 
-All of these need **Julia 1.12+** ([Requirements](@ref)).
+All of these need **Julia 1.13+** ([Requirements](@ref)).
 
 Same host tokens for setup / go / drive / ride / size / pool (`parent:2`,
 `child:user@host:1`; setup / size / pool ignore `:N`). Details:
@@ -52,7 +52,7 @@ pkg> add DistSSHKit
 
 Or: `import Pkg; Pkg.add("DistSSHKit")`.
 
-Optional `distsshkit` command (**1.12+**, experimental):
+Optional `distsshkit` command (**1.13+**, experimental):
 [User Guide](@ref Manual-distsshkit).
 
 Also needs **`ssh`**, **`rsync`**, and **`git`** (git deploy only);

@@ -154,11 +154,13 @@ function _setup_one!(
 
     if mode === :delete
         preflight_setup_ssh(hosts) || return SyncResult(true, HostResult[]; ok = false)
-        raw = delete_remotes(hosts, remote_path; confirm = !session.yes)
+        deploy_path = remote_deploy_root(session.project; cli_override = session.remote)
+        raw = delete_remotes(hosts, deploy_path; confirm = !session.yes)
         return _sync_result_from_host_op(raw)
     elseif mode === :rsync
         return sync!(session; mode = :rsync)
     elseif mode === :clone
+        ensure_manifest_in_git_worktree!(session.project)
         url = normalize_git_clone_url(_setup_clone_url(repo; surface = hint_surface(session)))
         preflight_setup_ssh(hosts) || return SyncResult(true, HostResult[]; ok = false)
         raw = clone_to_remotes(hosts, remote_path, url; confirm = !session.yes)

@@ -80,6 +80,10 @@ if !isdefined(@__MODULE__, :setup_main)
             project;
             cli_override = opts.remote_path_override,
         )
+        deploy_path = DistSSHKit.remote_deploy_root(
+            project;
+            cli_override = opts.remote_path_override,
+        )
 
         function setup_job!(mode::Symbol)::Cint
             mode_name = Dict(
@@ -119,10 +123,11 @@ if !isdefined(@__MODULE__, :setup_main)
             end
 
             if mode === :delete
-                return Cint(finish_host_op!("Delete", delete_remotes(opts.hosts, remote_path)) ? 0 : 1)
+                return Cint(finish_host_op!("Delete", delete_remotes(opts.hosts, deploy_path)) ? 0 : 1)
             end
 
             if mode === :clone
+                DistSSHKit.ensure_manifest_in_git_worktree!(project)
                 clone_url = resolve_clone_url(opts.repo_url, project)
                 result = clone_to_remotes(opts.hosts, remote_path, clone_url)
                 ok = finish_host_op!("Clone", result)
@@ -142,7 +147,7 @@ if !isdefined(@__MODULE__, :setup_main)
                 return Cint(
                     finish_host_op!(
                             "rsync",
-                            rsync_push_to_remotes(opts.hosts, remote_path, project; path_anchor = path_anchor),
+                            rsync_push_to_remotes(opts.hosts, deploy_path, project; path_anchor = path_anchor),
                         ) ? 0 : 1
                 )
             end

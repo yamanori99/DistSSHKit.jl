@@ -583,6 +583,43 @@ end
 
 # Git utilities
 
+"""`git rev-parse --show-toplevel` for `proj_dir`, or `nothing` when it is not a work tree."""
+function git_work_tree(proj_dir::AbstractString)::Union{Nothing, String}
+    _host_tool_present("git") || return nothing
+    resolved = canonical_local_path(proj_dir)
+    try
+        s = strip(
+            read(
+                pipeline(_git_cmd(["-C", resolved, "rev-parse", "--show-toplevel"]); stderr = devnull),
+                String,
+            )
+        )
+        return isempty(s) ? nothing : canonical_local_path(s)
+    catch
+        return nothing
+    end
+end
+
+"""
+Throw when the lock Pkg reads is outside the git work tree of `project`.
+
+No Manifest, or no git work tree, is not an error. Clone and git sync cannot
+carry a lock that is not in the repository.
+"""
+function ensure_manifest_in_git_worktree!(project::AbstractString)
+    env = resolve_pkg_env(project)
+    manifest = env.manifest
+    manifest isa String || return nothing
+    top = git_work_tree(env.project_dir)
+    top isa String || return nothing
+    _path_is_under(manifest, top) || throw(
+        ArgumentError(
+            "Manifest $manifest is outside the git work tree ($top). The lock would not reach a clone or git sync.",
+        ),
+    )
+    return nothing
+end
+
 """Get local git commit hash (`short=nothing` → full hash, else `git rev-parse --short`)."""
 function get_local_git_hash(proj_dir::AbstractString; short::Union{Nothing, Int} = nothing)::Union{Nothing, String}
     _host_tool_present("git") || return nothing
@@ -902,20 +939,9 @@ function default_remote_project_path(local_project_root::AbstractString)::String
     return joinpath("~", basename(dirname(root)), basename(root))
 end
 
-"""
-Resolve the repository root path **on SSH worker hosts** for setup / git checks.
-
-Priority:
-1. `cli_override` if non-empty (e.g. `setup.jl --remote-path`)
-2. `ENV["DISTRIBUTED_REMOTE_PROJECT_ROOT"]` if set (prefer an absolute path on the remote;
-   `~` is OK for setup SSH shell commands; drive collect expands `~` on each host before
-   `find` / rsync so kit parent `relpath` never sees a tilde base)
-3. `default_remote_project_path(local_project_root)`
-
-Does not force `abspath` on tilde paths so remote shells can expand `~` per host.
-"""
-function resolve_remote_project_root(
-        local_project_root::AbstractString;
+"""Remote tree root for `local_tree` (override, else `DISTRIBUTED_REMOTE_PROJECT_ROOT`, else the default layout)."""
+function _remote_tree_root(
+        local_tree::AbstractString;
         cli_override::Union{Nothing, AbstractString} = nothing,
     )::String
     if cli_override !== nothing
@@ -924,7 +950,39 @@ function resolve_remote_project_root(
     end
     env = strip(get(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT", ""))
     !isempty(env) && return env
-    return default_remote_project_path(local_project_root)
+    return default_remote_project_path(local_tree)
+end
+
+"""
+Directory on the worker that receives `setup --rsync` of [`resolve_pkg_env`](@ref) `env_dir`.
+
+An override (`--remote-path` / `DISTRIBUTED_REMOTE_PROJECT_ROOT`) is this tree
+root, not the member directory.
+"""
+function remote_deploy_root(
+        local_project_root::AbstractString;
+        cli_override::Union{Nothing, AbstractString} = nothing,
+    )::String
+    env = resolve_pkg_env(local_project_root)
+    return _remote_tree_root(env.env_dir; cli_override = cli_override)
+end
+
+"""
+Worker `--project` path for `local_project_root`.
+
+Same override rules as [`remote_deploy_root`](@ref). When the Manifest lives in
+a parent of the member, this is `deploy_root` plus that relative path.
+A single-project tree returns the deploy root unchanged. Does not `abspath`
+tilde paths.
+"""
+function resolve_remote_project_root(
+        local_project_root::AbstractString;
+        cli_override::Union{Nothing, AbstractString} = nothing,
+    )::String
+    env = resolve_pkg_env(local_project_root)
+    deploy = _remote_tree_root(env.env_dir; cli_override = cli_override)
+    rel = julia_project_rel(env)
+    return rel == "." ? deploy : _join_under_remote_root(deploy, rel)
 end
 
 """Layout path for `DISTRIBUTED_REMOTE_PROJECT_ROOT` (kit parent ENV / `execute!`).

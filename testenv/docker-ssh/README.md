@@ -38,8 +38,9 @@ Worker image installs **two** juliaup channels from
 
 - **default** = slot **max** major.minor (today **1.13**) — matches the E2E
   kit parent so `--check` runs **without** `--ignore-julia-version`
-- **alt** = slot **min** major.minor (today **1.12**) — baked so E2E can
-  `juliaup default` to mismatch, then `setup --juliaup` to realign
+- **alt** = `JULIA_E2E_MISMATCH_CHANNEL` (today **1.12**) — a different
+  major.minor so E2E can `juliaup default` to mismatch, then
+  `setup --juliaup` to realign. Not a supported floor and not a Pkg.test slot.
 
 `up.sh` passes both as Docker / `container` build-args and exports
 `DISTSSHKIT_E2E_JULIA_{DEFAULT,ALT}_CHANNEL` for `test/e2e.jl`. Patch floats

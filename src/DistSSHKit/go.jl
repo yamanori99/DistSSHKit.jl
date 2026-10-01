@@ -503,7 +503,8 @@ function _go_remote_slot_shell_inner(
         slot_rel::AbstractString,
         script_rel::AbstractString,
         script_args::AbstractVector{<:AbstractString},
-        julia_bin::AbstractString,
+        julia_bin::AbstractString;
+        project_flag::AbstractString = ".",
     )::String
     rr = _remote_shell_path_word(remote_root)
     rel_q = _remote_shell_path_word(script_rel)
@@ -535,7 +536,7 @@ function _go_remote_slot_shell_inner(
         "export DISTRIBUTED_OUTPUT_DIR=$slot_q && ",
         job_export,
         job_mark,
-        "$jb$job_load --project=. $rel_q$args_s >$log_q 2>&1; ",
+        "$jb$job_load --project=$(_remote_shell_path_word(project_flag)) $rel_q$args_s >$log_q 2>&1; ",
         "ec=\$?; echo \$ec > $slot_q/go.exitcode; cat $log_q; exit \$ec",
     )
 end
@@ -550,11 +551,18 @@ function _go_run_remote_slot!(
         slot_dir::AbstractString;
         quiet::Bool = false,
         julia::Union{Nothing, AbstractString} = nothing,
+        project_flag::AbstractString = ".",
     )::DriveResult
     mkpath(slot_dir)
     rel = _go_script_relpath(project, script)
+    if project_flag != "."
+        rel = joinpath(String(project_flag), rel)
+    end
     julia_bin = _go_resolve_julia(julia; host = String(host))
-    inner = _go_remote_slot_shell_inner(remote_root, slot_rel, rel, script_args, julia_bin)
+    inner = _go_remote_slot_shell_inner(
+        remote_root, slot_rel, rel, script_args, julia_bin;
+        project_flag = project_flag,
+    )
     cmd = ignorestatus(_ssh_cmd([ssh_opts()..., String(host), inner]))
     # Capture streams ourselves: piping to the parent's stdout can drop ssh exit codes.
     buf = IOBuffer()
@@ -639,9 +647,10 @@ function _go_exec_slot!(
         script_path::AbstractString,
         args::AbstractVector{<:AbstractString},
         batch_dir::AbstractString,
-        sess_rr::AbstractString;
+        deploy_rr::AbstractString;
         quiet::Bool = false,
         julia::Union{Nothing, AbstractString} = nothing,
+        project_flag::AbstractString = ".",
     )
     slot_dir = joinpath(batch_dir, slot.label)
     mkpath(slot_dir)
@@ -654,16 +663,20 @@ function _go_exec_slot!(
     else
         host = slot.host::String
         slot_rel = relpath(slot_dir, proj)
+        if project_flag != "."
+            slot_rel = joinpath(String(project_flag), slot_rel)
+        end
         run_res = _go_run_remote_slot!(
             host,
             proj,
-            sess_rr,
+            deploy_rr,
             script_path,
             args,
             slot_rel,
             slot_dir;
             quiet = quiet,
             julia = julia,
+            project_flag = project_flag,
         )
     end
     _kit_progress_span!(run_lab, run_res.ok ? :ok : :fail)
@@ -675,15 +688,19 @@ function _go_collect_slot!(
         slot::GoSlot,
         proj::AbstractString,
         batch_dir::AbstractString,
-        sess_rr::AbstractString,
+        deploy_rr::AbstractString;
+        project_flag::AbstractString = ".",
     )
     slot.kind === :child || return (collect = nothing, collect_fail = false)
     host = slot.host::String
     slot_dir = joinpath(batch_dir, slot.label)
     slot_rel = relpath(slot_dir, proj)
+    if project_flag != "."
+        slot_rel = joinpath(String(project_flag), slot_rel)
+    end
     col_lab = string(slot.label, "/collect")
     _kit_progress_span!(col_lab, :running)
-    if _go_pull_slot!(host, sess_rr, slot_rel, slot_dir)
+    if _go_pull_slot!(host, deploy_rr, slot_rel, slot_dir)
         _kit_progress_span!(col_lab, :ok)
         return (collect = CollectResult(true, 0), collect_fail = false)
     end
@@ -931,16 +948,17 @@ function _go_run!(
     progress_ok = false
     completed = false
     try
-        sess_rr = session_remote_root(
-            KitSession(
-                project = proj,
-                workers = String[],
-                remote = remote,
-                quiet = quiet,
-                verbosity = verbosity,
-                yes = yes,
-            ),
+        go_session = KitSession(
+            project = proj,
+            workers = String[],
+            remote = remote,
+            quiet = quiet,
+            verbosity = verbosity,
+            yes = yes,
         )
+        sess_rr = session_remote_root(go_session)
+        deploy_rr = remote_deploy_root(proj; cli_override = remote)
+        project_flag = julia_project_rel(resolve_pkg_env(proj))
 
         child_hosts = unique(String[s.host for s in slots if s.kind === :child])
         _write_kit_hosts_file(child_hosts, batch_dir, nothing)
@@ -1039,9 +1057,10 @@ function _go_run!(
                         script_path,
                         args,
                         batch_dir,
-                        sess_rr;
+                        deploy_rr;
                         quiet = quiet,
                         julia = julia,
+                        project_flag = project_flag,
                     )
                 catch e
                     err = e
@@ -1082,7 +1101,10 @@ function _go_run!(
                 @async begin
                     err = nothing
                     outcome = try
-                        _go_collect_slot!(slot, proj, batch_dir, sess_rr)
+                        _go_collect_slot!(
+                            slot, proj, batch_dir, deploy_rr;
+                            project_flag = project_flag,
+                        )
                     catch e
                         err = e
                         (collect = CollectResult(false, 1), collect_fail = true)
