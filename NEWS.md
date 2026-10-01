@@ -12,15 +12,12 @@ GitHub Releases may copy these sections (`Release notes:` on
   when 1.13 shipped; this kit follows the maintained stable, not the LTS.
 - Workspace members: `setup --rsync` sends the directory that holds the
   Manifest Pkg reads (`Base.active_manifest`), not only the member
-  directory. Worker `--project` and the `go` working directory stay that
+  directory. Worker `--project` and the `go` working directory stay the
   member. `setup --clone` places the git work tree so that Manifest
-  directory is the deploy root. `--delete` removes that clone destination
-  when the deploy path can express it, and the rsync deploy root otherwise
-  (including a `--remote-path` that does not end with the work-tree
-  suffix). A lock outside that tree, a symlink to such a
-  lock, or a lock whose path or target is outside the git work tree on
-  `--clone` / `--sync`, fails before instantiate. A project with no
-  Manifest still instantiates by resolving.
+  directory is the deploy root, and `--delete` removes that clone.
+  A lock that would not arrive (outside the rsync tree, or outside the
+  git work tree, including through a symlink) fails before instantiate.
+  No Manifest still resolves.
 - `setup --juliaup update` is no longer accepted. Use
   `setup --juliaup-update` (#400).
 
