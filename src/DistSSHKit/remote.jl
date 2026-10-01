@@ -1022,9 +1022,10 @@ end
 """
 Path `setup --delete` removes.
 
-When the git work tree contains `env_dir`, this is [`remote_git_clone_dest`](@ref),
-so a clone that landed above the deploy root is removed with `.git`. No git
-work tree removes [`remote_deploy_root`](@ref), the rsync tree.
+When the git work tree contains `env_dir` and the deploy path ends with that
+relative path, this is [`remote_git_clone_dest`](@ref), so a clone that landed
+above the deploy root is removed with `.git`. An override that cannot express
+that parent, or no git work tree, removes [`remote_deploy_root`](@ref).
 """
 function remote_delete_root(
         local_project_root::AbstractString;
@@ -1037,29 +1038,34 @@ function remote_delete_root(
     env_root = canonical_local_path(realpath(env.env_dir))
     top_root = canonical_local_path(realpath(top))
     _path_is_under(env_root, top_root) || return deploy
-    return _remote_ancestor(deploy, relpath(env_root, top_root))
+    mapped = _remote_ancestor_or_nothing(deploy, relpath(env_root, top_root))
+    return mapped === nothing ? deploy : mapped
 end
 
 """Drop `rel` from the end of a remote layout path. `rel` of `.` returns `remote_path`."""
 function _remote_ancestor(remote_path::AbstractString, rel::AbstractString)::String
+    mapped = _remote_ancestor_or_nothing(remote_path, rel)
+    mapped === nothing && throw(
+        ArgumentError(
+            "Remote path $remote_path does not end with $rel, so clone cannot keep the Manifest directory there.",
+        ),
+    )
+    return mapped
+end
+
+"""[`_remote_ancestor`](@ref), or `nothing` when `remote_path` does not end with `rel`."""
+function _remote_ancestor_or_nothing(
+        remote_path::AbstractString,
+        rel::AbstractString,
+    )::Union{Nothing, String}
     rel == "." && return String(remote_path)
     p = String(remote_path)
     for part in reverse(split(String(rel), '/'))
         (isempty(part) || part == ".") && continue
-        part == ".." && throw(
-            ArgumentError(
-                "Git work tree is not an ancestor of the Manifest directory.",
-            ),
-        )
-        basename(p) == part || throw(
-            ArgumentError(
-                "Remote path $remote_path does not end with $rel, so clone cannot keep the Manifest directory there.",
-            ),
-        )
+        part == ".." && return nothing
+        basename(p) == part || return nothing
         parent = dirname(p)
-        parent == p && throw(
-            ArgumentError("Remote path $remote_path has no parent for $rel."),
-        )
+        parent == p && return nothing
         p = parent
     end
     return p

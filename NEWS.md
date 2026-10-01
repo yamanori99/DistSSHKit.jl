@@ -15,8 +15,9 @@ GitHub Releases may copy these sections (`Release notes:` on
   directory. Worker `--project` and the `go` working directory stay that
   member. `setup --clone` places the git work tree so that Manifest
   directory is the deploy root. `--delete` removes that clone destination
-  when the git work tree contains the Manifest directory, and the rsync
-  deploy root otherwise. A lock outside that tree, a symlink to such a
+  when the deploy path can express it, and the rsync deploy root otherwise
+  (including a `--remote-path` that does not end with the work-tree
+  suffix). A lock outside that tree, a symlink to such a
   lock, or a lock whose path or target is outside the git work tree on
   `--clone` / `--sync`, fails before instantiate. A project with no
   Manifest still instantiates by resolving.

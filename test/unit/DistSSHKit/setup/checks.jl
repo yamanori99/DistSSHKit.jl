@@ -378,6 +378,10 @@ using Pkg
                     nest_deploy = DistSSHKit.remote_deploy_root(nest_member)
                     @test DistSSHKit.remote_git_clone_dest(nest_member) == dirname(nest_deploy)
                     @test DistSSHKit.remote_delete_root(nest_member) == dirname(nest_deploy)
+                    @test DistSSHKit.remote_delete_root(nest_member; cli_override = "/srv/job") == "/srv/job"
+                    @test_throws ArgumentError DistSSHKit.remote_git_clone_dest(
+                        nest_member; cli_override = "/srv/job",
+                    )
                 end
             end
         end
