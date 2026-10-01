@@ -123,7 +123,11 @@ if !isdefined(@__MODULE__, :setup_main)
             end
 
             if mode === :delete
-                return Cint(finish_host_op!("Delete", delete_remotes(opts.hosts, deploy_path)) ? 0 : 1)
+                delete_path = DistSSHKit.remote_delete_root(
+                    project;
+                    cli_override = opts.remote_path_override,
+                )
+                return Cint(finish_host_op!("Delete", delete_remotes(opts.hosts, delete_path)) ? 0 : 1)
             end
 
             if mode === :clone

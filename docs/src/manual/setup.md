@@ -70,8 +70,10 @@ Pick **one mode** per invocation (except shared options).
 - `--cleanup`: kill stale Julia worker processes (local + remotes;
   untagged `julia --worker` / `--bind-to`. Drive leftover pkill is
   `job_id`-tagged only; `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` skips that)
-- `--delete`: remove remote project dirs (destructive; confirm unless
-  `-y`)
+- `--delete`: remove the remote tree (destructive; confirm unless `-y`).
+  A git checkout removes the clone destination, which is above the deploy
+  root when the work tree contains the Manifest directory. Otherwise this
+  removes the rsync deploy root.
 - `--repo URL`: clone URL (default: local `origin`)
 - `--remote-path PATH`: remote repo root (alias `--remote-dir`; or
   `DISTRIBUTED_REMOTE_PROJECT_ROOT`)

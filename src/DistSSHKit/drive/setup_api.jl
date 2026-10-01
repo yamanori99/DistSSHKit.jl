@@ -154,8 +154,8 @@ function _setup_one!(
 
     if mode === :delete
         preflight_setup_ssh(hosts) || return SyncResult(true, HostResult[]; ok = false)
-        deploy_path = remote_deploy_root(session.project; cli_override = session.remote)
-        raw = delete_remotes(hosts, deploy_path; confirm = !session.yes)
+        delete_path = remote_delete_root(session.project; cli_override = session.remote)
+        raw = delete_remotes(hosts, delete_path; confirm = !session.yes)
         return _sync_result_from_host_op(raw)
     elseif mode === :rsync
         return sync!(session; mode = :rsync)

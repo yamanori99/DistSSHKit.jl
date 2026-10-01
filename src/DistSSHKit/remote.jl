@@ -612,10 +612,18 @@ function ensure_manifest_in_git_worktree!(project::AbstractString)
     manifest isa String || return nothing
     top = git_work_tree(env.project_dir)
     top isa String || return nothing
-    target = manifest_link_target(manifest)
-    _path_is_under(target, canonical_local_path(realpath(top))) || throw(
+    location = canonical_local_path(manifest)
+    # The directory Pkg names, not the symlink target. A link outside the
+    # work tree that points at a lock inside it is still not in the clone.
+    _path_under_resolved(dirname(location), top) || throw(
         ArgumentError(
-            "Manifest $manifest points at $target, outside the git work tree ($top). The lock would not reach a clone or git sync.",
+            "Manifest $location is outside the git work tree ($top). The lock would not reach a clone or git sync.",
+        ),
+    )
+    target = manifest_link_target(manifest)
+    _path_under_resolved(target, top) || throw(
+        ArgumentError(
+            "Manifest $location points at $target, outside the git work tree ($top). The lock would not reach a clone or git sync.",
         ),
     )
     return nothing
@@ -1008,6 +1016,27 @@ function remote_git_clone_dest(
     top_root = canonical_local_path(realpath(top))
     _path_is_under(env_root, top_root) ||
         return resolve_remote_project_root(local_project_root; cli_override = cli_override)
+    return _remote_ancestor(deploy, relpath(env_root, top_root))
+end
+
+"""
+Path `setup --delete` removes.
+
+When the git work tree contains `env_dir`, this is [`remote_git_clone_dest`](@ref),
+so a clone that landed above the deploy root is removed with `.git`. No git
+work tree removes [`remote_deploy_root`](@ref), the rsync tree.
+"""
+function remote_delete_root(
+        local_project_root::AbstractString;
+        cli_override::Union{Nothing, AbstractString} = nothing,
+    )::String
+    env = resolve_pkg_env(local_project_root)
+    deploy = _remote_tree_root(env.env_dir; cli_override = cli_override)
+    top = git_work_tree(env.project_dir)
+    top isa String || return deploy
+    env_root = canonical_local_path(realpath(env.env_dir))
+    top_root = canonical_local_path(realpath(top))
+    _path_is_under(env_root, top_root) || return deploy
     return _remote_ancestor(deploy, relpath(env_root, top_root))
 end
 

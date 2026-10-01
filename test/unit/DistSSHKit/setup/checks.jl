@@ -348,6 +348,37 @@ using Pkg
                     )
                 )
                 @test_throws ArgumentError DistSSHKit.ensure_manifest_in_git_worktree!(repo)
+
+                held = joinpath(root, "held")
+                mkpath(held)
+                inside_lock = joinpath(held, "inside.toml")
+                write(inside_lock, "# inside\n")
+                ext = joinpath(root, "extlocks")
+                mkpath(ext)
+                ext_manifest = joinpath(ext, "Manifest.toml")
+                symlink(inside_lock, ext_manifest)
+                write(
+                    joinpath(held, "Project.toml"),
+                    "name = \"Held\"\nmanifest = \"$(ext_manifest)\"\n",
+                )
+                run(pipeline(`git -C $held init -q`; stdout = devnull, stderr = devnull))
+                @test_throws ArgumentError DistSSHKit.ensure_manifest_in_git_worktree!(held)
+
+                nest = joinpath(root, "nest")
+                nest_member = joinpath(nest, "lab", "experiments", "run1")
+                mkpath(nest_member)
+                write(
+                    joinpath(nest, "lab", "Project.toml"),
+                    "name = \"NestLab\"\n[workspace]\nprojects = [\"experiments/run1\"]\n",
+                )
+                write(joinpath(nest, "lab", "Manifest.toml"), "# lock\n")
+                write(joinpath(nest_member, "Project.toml"), "name = \"NestRun\"\n[deps]\n")
+                run(pipeline(`git -C $nest init -q`; stdout = devnull, stderr = devnull))
+                withenv("DISTRIBUTED_REMOTE_PROJECT_ROOT" => nothing) do
+                    nest_deploy = DistSSHKit.remote_deploy_root(nest_member)
+                    @test DistSSHKit.remote_git_clone_dest(nest_member) == dirname(nest_deploy)
+                    @test DistSSHKit.remote_delete_root(nest_member) == dirname(nest_deploy)
+                end
             end
         end
     end

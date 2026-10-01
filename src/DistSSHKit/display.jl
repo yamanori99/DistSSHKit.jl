@@ -365,6 +365,15 @@ function _path_is_under(path::AbstractString, root::AbstractString)::Bool
     return startswith(p, r * Base.Filesystem.path_separator)
 end
 
+"""Like [`_path_is_under`](@ref) after `realpath`, so `/var` and `/private/var` match."""
+function _path_under_resolved(path::AbstractString, root::AbstractString)::Bool
+    _path_is_under(path, root) && return true
+    p = canonical_local_path(path)
+    r = canonical_local_path(root)
+    (ispath(p) && ispath(r)) || return false
+    return _path_is_under(canonical_local_path(realpath(p)), canonical_local_path(realpath(r)))
+end
+
 """
 Job root for the CLI when DistSSHKit is loaded from `kit`.
 
