@@ -20,6 +20,7 @@ permissions:
   contents: read
   pull-requests: write
   issues: write
+  actions: write # workflow_dispatch Test (cut); GITHUB_TOKEN labels do not start it
 
 jobs:
   require-type:
@@ -165,6 +166,14 @@ jobs:
               core.info(
                 `Applied cut (${fmtVer(oldV)} → ${fmtVer(newV)})`,
               );
+              // A label written with GITHUB_TOKEN does not start `labeled` workflows.
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: "ci-cut.yml",
+                ref: context.payload.pull_request.head.ref,
+                inputs: { pr: String(n) },
+              });
             }
 
             async function versionAt(ref) {
