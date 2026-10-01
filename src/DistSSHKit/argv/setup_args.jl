@@ -20,7 +20,6 @@ function show_requirements(; io::IO = stdout)
         "  setup --juliaup child:host1 child:host2",
         "  setup --juliaup parent child:host1",
         "  setup --juliaup-update child:host1",
-        "  setup --juliaup update parent child:host1",
         "  setup --runtest child:host1 child:host2",
     )
     print_help_blank(io)
@@ -101,13 +100,8 @@ function parse_setup_args(args::Vector{String})
             mode = :instantiate
             cli_consume!(c)
         elseif arg == "--juliaup"
+            mode = :juliaup
             cli_consume!(c)
-            if cli_current(c) == "update"
-                mode = :juliaup_update
-                cli_consume!(c)
-            else
-                mode = :juliaup
-            end
         elseif arg == "--juliaup-update"
             mode = :juliaup_update
             cli_consume!(c)

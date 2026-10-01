@@ -6,6 +6,11 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+### Breaking
+
+- `setup --juliaup update` is no longer accepted. Use
+  `setup --juliaup-update` (#400).
+
 ## 0.8.0
 
 Breaking cut after `0.7.3`. DistSSHQueue still pins Kit **0.7.3** until

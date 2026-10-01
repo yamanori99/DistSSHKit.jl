@@ -187,7 +187,7 @@ remote, `go --rsync` / `drive --rsync` can copy and instantiate in one shot
   - `--juliaup` (align Julia via juliaup on `child:NAME` and/or
     `parent`; confirm unless `-y`)
   - `--juliaup-update` (`juliaup update` on those hosts; confirm unless
-    `-y`; also `setup --juliaup update`)
+    `-y`)
   - `--cleanup` (kill leftover worker processes)
   - `--prune` (remove `.distsshkit` go/drive/setup/runs leaves; keeps the deploy)
   - `--delete` (remove the remote project directory — destructive)
