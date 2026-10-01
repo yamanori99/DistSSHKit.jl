@@ -162,14 +162,16 @@ jobs:
                 );
                 return;
               }
-              // `ref` selects the workflow file. Dispatch only after this head
-              // contains `workflow_dispatch`, and before `cut` is applied, so a
-              // later Type run can retry. A GITHUB_TOKEN label does not start
-              // `labeled` workflows. The head ref keeps the checks on this PR.
-              const headRef = context.payload.pull_request.head.ref;
-              if (!(await headHasCutDispatch(head))) {
+              // `ref` is a branch in this repository and selects the workflow file.
+              // A fork head ref is not a branch here. Dispatch the base branch,
+              // which has `workflow_dispatch` after this change is on the default
+              // branch. ci-cut checks out refs/pull/<n>/merge. Apply `cut` only
+              // after dispatch, so a later Type run can retry. A GITHUB_TOKEN
+              // label does not start `labeled` workflows.
+              const baseRef = context.payload.pull_request.base.ref;
+              if (!(await refHasCutDispatch(base))) {
                 core.warning(
-                  `Not applying cut; ${headRef} has no workflow_dispatch in ci-cut.yml`,
+                  `Not applying cut; ${baseRef} has no workflow_dispatch in ci-cut.yml`,
                 );
                 return;
               }
@@ -177,7 +179,7 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 workflow_id: "ci-cut.yml",
-                ref: headRef,
+                ref: baseRef,
                 inputs: { pr: String(n) },
               });
               await addIssueLabels(["cut"]);
@@ -186,7 +188,7 @@ jobs:
               );
             }
 
-            async function headHasCutDispatch(ref) {
+            async function refHasCutDispatch(ref) {
               try {
                 const { data } = await github.rest.repos.getContent({
                   owner: context.repo.owner,
