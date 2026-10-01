@@ -254,4 +254,150 @@ using Pkg
             @test occursin("Git has uncommitted changes", out_fail)
         end
     end
+
+    @testset "resolve_pkg_env follows Base.active_manifest" begin
+        _with_tempdir() do root
+            lab = joinpath(root, "lab")
+            member = joinpath(lab, "experiments", "run1")
+            mkpath(member)
+            write(
+                joinpath(lab, "Project.toml"), """
+                name = "Lab"
+                [workspace]
+                projects = ["experiments/run1"]
+                """
+            )
+            write(joinpath(lab, "Manifest.toml"), "# lock\n")
+            write(
+                joinpath(member, "Project.toml"), """
+                name = "Run1"
+                [deps]
+                """
+            )
+            env = DistSSHKit.resolve_pkg_env(member)
+            @test env.project_dir == DistSSHKit.canonical_local_path(member)
+            @test env.env_dir == DistSSHKit.canonical_local_path(lab)
+            @test env.manifest == DistSSHKit.canonical_local_path(joinpath(lab, "Manifest.toml"))
+            @test DistSSHKit.julia_project_rel(env) == joinpath("experiments", "run1")
+            shipped = DistSSHKit.ensure_manifest_ships!(member)
+            @test shipped.env_dir == env.env_dir
+            withenv("DISTRIBUTED_REMOTE_PROJECT_ROOT" => nothing) do
+                deploy = DistSSHKit.remote_deploy_root(member)
+                julia_remote = DistSSHKit.resolve_remote_project_root(member)
+                @test deploy == joinpath("~", basename(dirname(lab)), "lab")
+                @test julia_remote == joinpath(deploy, "experiments", "run1")
+                if Sys.which("git") !== nothing
+                    run(pipeline(`git -C $lab init -q`; stdout = devnull, stderr = devnull))
+                    @test DistSSHKit.remote_git_clone_dest(member) == deploy
+                end
+            end
+
+            solo = joinpath(root, "solo")
+            mkpath(solo)
+            write(joinpath(solo, "Project.toml"), "name = \"Solo\"\n[deps]\n")
+            bare = DistSSHKit.resolve_pkg_env(solo)
+            @test bare.manifest === nothing
+            @test bare.env_dir == bare.project_dir
+            @test DistSSHKit.julia_project_rel(bare) == "."
+
+            ver = joinpath(root, "ver")
+            mkpath(ver)
+            write(joinpath(ver, "Project.toml"), "name = \"Ver\"\n[deps]\n")
+            write(joinpath(ver, "Manifest-v$(VERSION.major).$(VERSION.minor).toml"), "# v\n")
+            versioned = DistSSHKit.resolve_pkg_env(ver)
+            @test versioned.manifest == DistSSHKit.canonical_local_path(
+                joinpath(ver, "Manifest-v$(VERSION.major).$(VERSION.minor).toml"),
+            )
+            @test versioned.env_dir == versioned.project_dir
+
+            elsewhere = joinpath(root, "elsewhere")
+            mkpath(elsewhere)
+            outside_manifest = joinpath(root, "side", "Manifest.toml")
+            mkpath(dirname(outside_manifest))
+            write(outside_manifest, "# x\n")
+            write(
+                joinpath(elsewhere, "Project.toml"),
+                "name = \"Out\"\nmanifest = \"$(outside_manifest)\"\n",
+            )
+            outside = DistSSHKit.resolve_pkg_env(elsewhere)
+            @test outside.manifest == DistSSHKit.canonical_local_path(outside_manifest)
+            @test_throws ArgumentError DistSSHKit.ensure_manifest_ships!(elsewhere)
+
+            linked = joinpath(root, "linked")
+            mkpath(linked)
+            write(joinpath(linked, "Project.toml"), "name = \"Linked\"\n[deps]\n")
+            write(joinpath(linked, "Manifest-real.toml"), "# in tree\n")
+            symlink("Manifest-real.toml", joinpath(linked, "Manifest.toml"))
+            linked_env = DistSSHKit.ensure_manifest_ships!(linked)
+            @test linked_env.env_dir == DistSSHKit.canonical_local_path(linked)
+            rm(joinpath(linked, "Manifest.toml"))
+            symlink(outside_manifest, joinpath(linked, "Manifest.toml"))
+            @test_throws ArgumentError DistSSHKit.ensure_manifest_ships!(linked)
+
+            if Sys.which("git") !== nothing
+                repo = joinpath(root, "repo")
+                mkpath(repo)
+                write(joinpath(repo, "Project.toml"), "name = \"Repo\"\nmanifest = \"$(outside_manifest)\"\n")
+                run(pipeline(`git -C $repo init -q`; stdout = devnull, stderr = devnull))
+                run(pipeline(`git -C $repo add Project.toml`; stdout = devnull, stderr = devnull))
+                run(
+                    pipeline(
+                        `git -C $repo -c user.email=t@example.com -c user.name=t commit -q -m init`;
+                        stdout = devnull,
+                        stderr = devnull,
+                    )
+                )
+                @test_throws ArgumentError DistSSHKit.ensure_manifest_in_git_worktree!(repo)
+
+                held = joinpath(root, "held")
+                mkpath(held)
+                inside_lock = joinpath(held, "inside.toml")
+                write(inside_lock, "# inside\n")
+                ext = joinpath(root, "extlocks")
+                mkpath(ext)
+                ext_manifest = joinpath(ext, "Manifest.toml")
+                symlink(inside_lock, ext_manifest)
+                write(
+                    joinpath(held, "Project.toml"),
+                    "name = \"Held\"\nmanifest = \"$(ext_manifest)\"\n",
+                )
+                run(pipeline(`git -C $held init -q`; stdout = devnull, stderr = devnull))
+                @test_throws ArgumentError DistSSHKit.ensure_manifest_in_git_worktree!(held)
+
+                nest = joinpath(root, "nest")
+                nest_member = joinpath(nest, "lab", "experiments", "run1")
+                mkpath(nest_member)
+                write(
+                    joinpath(nest, "lab", "Project.toml"),
+                    "name = \"NestLab\"\n[workspace]\nprojects = [\"experiments/run1\"]\n",
+                )
+                write(joinpath(nest, "lab", "Manifest.toml"), "# lock\n")
+                write(joinpath(nest_member, "Project.toml"), "name = \"NestRun\"\n[deps]\n")
+                run(pipeline(`git -C $nest init -q`; stdout = devnull, stderr = devnull))
+                withenv("DISTRIBUTED_REMOTE_PROJECT_ROOT" => nothing) do
+                    nest_deploy = DistSSHKit.remote_deploy_root(nest_member)
+                    @test DistSSHKit.remote_git_clone_dest(nest_member) == dirname(nest_deploy)
+                    @test DistSSHKit.remote_delete_root(nest_member) == dirname(nest_deploy)
+                    @test DistSSHKit.remote_delete_root(nest_member; cli_override = "/srv/job") == "/srv/job"
+                    @test_throws ArgumentError DistSSHKit.remote_git_clone_dest(
+                        nest_member; cli_override = "/srv/job",
+                    )
+                end
+            end
+        end
+    end
+
+    @testset "go cwd is the member project" begin
+        member = "~/lab/experiments/run1"
+        inner = DistSSHKit._go_remote_slot_shell_inner(
+            member,
+            "slot",
+            "job.jl",
+            String[],
+            "julia",
+        )
+        @test occursin("experiments/run1", inner)
+        @test occursin("--project=.", inner)
+        @test !occursin("--project=experiments", inner)
+    end
 end

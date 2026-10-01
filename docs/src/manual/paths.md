@@ -5,8 +5,9 @@ the kit parent and on workers.
 
 - If `DISTRIBUTED_OUTPUT_DIR` is set (go slot / drive result root), that
   join wins when the file exists, and is the default for new writes
-- Otherwise the path is under the project root (the tree `setup --rsync`
-  already copies, minus `.distsshkit/`)
+- Otherwise the path is under the project root. `setup --rsync` copies the
+  Manifest directory, which can be a parent of that project root on a
+  workspace member (minus `.distsshkit/`)
 
 [`cache_file`](@ref) stores a blob at
 `.distsshkit/cache/sha256/<sha256>` keyed by [`file_sha256`](@ref).

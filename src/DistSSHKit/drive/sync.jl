@@ -30,9 +30,10 @@ function sync!(session::KitSession; mode = :sync)::SyncResult
     )
     return _with_kit_inproc_run!(:sync) do
         apply_session_env!(session)
-        remote_path = session_remote_root(session)
-
         if kind === :rsync
+            remote_path = remote_deploy_root(
+                session.project; cli_override = session.remote,
+            )
             raw = rsync_project_to_hosts!(
                 session.hosts,
                 session.project,
@@ -45,6 +46,8 @@ function sync!(session::KitSession; mode = :sync)::SyncResult
             end
             return SyncResult(false, raw.host_results; ok = raw.failed == 0)
         else
+            ensure_manifest_in_git_worktree!(session.project)
+            remote_path = session_remote_root(session)
             raw = git_sync_project_to_hosts!(
                 session.hosts,
                 session.project,

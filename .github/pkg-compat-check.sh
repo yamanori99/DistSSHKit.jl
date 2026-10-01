@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Reject stdlib 0.0.0 unions. DistSSHKit is Julia 1.12; `< 0.0.1` is only
+# Reject stdlib 0.0.0 unions. DistSSHKit is Julia 1.13; `< 0.0.1` is only
 # for the historical Pkg.test sandbox on older Julias.
 #
 #   ./.github/pkg-compat-check.sh

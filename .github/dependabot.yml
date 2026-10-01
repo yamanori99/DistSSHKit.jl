@@ -12,7 +12,7 @@ updates:
   # registry dep is picked up automatically; a new stdlib [deps]
   # entry should be added here. The Julia updater appends `< 0.0.1`
   # (union with 0.0.0) for the pre-1.10 Pkg.test sandbox. This package
-  # is Julia 1.12, so that clause is wrong. Keep stdlib [compat] at
+  # is Julia 1.13, so that clause is wrong. Keep stdlib [compat] at
   # the Julia floor by hand.
   - package-ecosystem: julia
     directories:

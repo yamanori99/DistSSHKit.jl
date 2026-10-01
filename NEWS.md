@@ -8,6 +8,16 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ### Breaking
 
+- Julia **1.13+** only. 1.12 is dropped. Julia ended maintenance of 1.12
+  when 1.13 shipped; this kit follows the maintained stable, not the LTS.
+- Workspace members: `setup --rsync` sends the directory that holds the
+  Manifest Pkg reads (`Base.active_manifest`), not only the member
+  directory. Worker `--project` and the `go` working directory stay the
+  member. `setup --clone` places the git work tree so that Manifest
+  directory is the deploy root, and `--delete` removes that clone.
+  A lock that would not arrive (outside the rsync tree, or outside the
+  git work tree, including through a symlink) fails before instantiate.
+  No Manifest still resolves.
 - `setup --juliaup update` is no longer accepted. Use
   `setup --juliaup-update` (#400).
 

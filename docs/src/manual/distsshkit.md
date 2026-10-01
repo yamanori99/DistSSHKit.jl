@@ -3,7 +3,7 @@
 A third way to call the kit: a `distsshkit` command in the terminal, like
 `git` or `rsync`. Same flags as `julia -m DistSSHKit`.
 
-!!! warning "Experimental · Julia 1.12+"
+!!! warning "Experimental · Julia 1.13+"
     This is [Pkg Apps](https://pkgdocs.julialang.org/v1/apps/). The default
     remains `pkg> add` and `julia --project=. -m DistSSHKit`.
 

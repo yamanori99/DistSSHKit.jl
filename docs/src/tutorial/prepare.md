@@ -15,7 +15,9 @@ Deploy the tree, then **instantiate on each remote** before `go` / `drive`:
 # Local (once): deps for this project
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
-# Remotes: deploy the tree, then install deps from Manifest.toml
+# Remotes: deploy the tree, then install deps from the Manifest Pkg reads.
+# For a workspace member that lock may sit next to the parent Project.toml,
+# not beside the member. setup --rsync sends that parent directory.
 # Pick one first deploy (rsync: no remote .git/):
 julia --project=. -m DistSSHKit setup --rsync child:YourHost1 child:YourHost2
 # or: julia --project=. -m DistSSHKit setup --clone child:YourHost1 child:YourHost2

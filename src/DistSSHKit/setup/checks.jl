@@ -94,10 +94,9 @@ function probe_project_deps(
     )::Union{Nothing, String}
     proj = canonical_local_path(project)
     isfile(joinpath(proj, "Project.toml")) || return "Project.toml not found"
-    has_manifest =
-        isfile(joinpath(proj, "Manifest.toml")) ||
-        isfile(joinpath(proj, "Manifest-v$(VERSION.major).$(VERSION.minor).toml"))
-    has_manifest || return "Manifest.toml not found (run Pkg.resolve / Pkg.instantiate locally first)"
+    env = resolve_pkg_env(proj)
+    env.manifest === nothing &&
+        return "Manifest.toml not found (run Pkg.resolve / Pkg.instantiate locally first)"
     cmd = ignorestatus(
         Cmd(
             [

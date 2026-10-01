@@ -2,7 +2,7 @@
 DistSSHKit — local + SSH Julia runs (`go` / `plan` / `ride` / `drive` / `setup`) and a small API
 (`go!`, `plan`, `ride!`, `pool!`, `drive!`, `pipeline!`, …).
 
-Package entry: exports, version, `include`s, `main` (`@main` on Julia 1.12+).
+Package entry: exports, version, `include`s, `main` (`@main` on Julia 1.13+).
 CLI entries live under `src/cli/`; argv parsers under `src/DistSSHKit/argv/`.
 """
 module DistSSHKit
@@ -88,6 +88,7 @@ export resolve_controller_julia
 export canonical_local_path
 export short_path
 export resolve_pkg_project_dir
+export resolve_pkg_env
 export explain_script_not_found
 export print_cli_error
 export print_help_chrome
@@ -308,7 +309,7 @@ run_plan(args::Vector{String} = copy(ARGS))::Cint = _run_kit_cli_script("plan.jl
 """
     main(args::Vector{String}=copy(ARGS))
 
-CLI entry. Prefer Julia 1.12+ and `julia -m DistSSHKit SUBCOMMAND …`:
+CLI entry. Prefer Julia 1.13+ and `julia -m DistSSHKit SUBCOMMAND …`:
 
     julia --project=. -m DistSSHKit setup --clone child:host1 child:host2
     julia --project=. -m DistSSHKit go SCRIPT.jl
@@ -380,8 +381,6 @@ function main(args::Vector{String} = copy(ARGS))::Cint
     end
 end
 
-if VERSION >= v"1.12"
-    Base.eval(@__MODULE__, :(@main))
-end
+Base.eval(@__MODULE__, :(@main))
 
 end # module DistSSHKit

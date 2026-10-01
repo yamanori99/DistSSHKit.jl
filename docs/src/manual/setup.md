@@ -21,11 +21,17 @@ Also: [Requirements](@ref), `setup --help`. Flag vocabulary:
 ## [rsync or git?](@id Manual-setup-rsync-or-git)
 
 - **`--rsync`** — just sends your local files as-is; no git needed on the
-  remote. Good for a first try or a one-off run.
-- **`--clone` then `--sync`** — manages the remote as a git repository. Better
-  if you're updating the code continuously, or you want
-  [`drive --require-git`](@ref Manual-drive) to confirm the remote commit
-  matches your local one for reproducibility.
+  remote. Good for a first try or a one-off run. The tree is the directory
+  that holds the Manifest Pkg reads, so a workspace member also sends that
+  parent. `--project` on workers stays the member, and `go` runs in that
+  directory. A lock outside that tree, a symlink to such a lock, or a lock
+  outside the git work tree for `--clone` / `--sync`, fails before
+  instantiate.
+- **`--clone` then `--sync`** — manages the remote as a git repository. The
+  clone lands on the git work tree root, placed so the Manifest directory
+  is the same deploy root `--rsync` uses. Better if you're updating the
+  code continuously, or you want [`drive --require-git`](@ref Manual-drive)
+  to confirm the remote commit matches your local one for reproducibility.
 
 ## Flags
 
@@ -64,8 +70,10 @@ Pick **one mode** per invocation (except shared options).
 - `--cleanup`: kill stale Julia worker processes (local + remotes;
   untagged `julia --worker` / `--bind-to`. Drive leftover pkill is
   `job_id`-tagged only; `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` skips that)
-- `--delete`: remove remote project dirs (destructive; confirm unless
-  `-y`)
+- `--delete`: remove the remote tree (destructive; confirm unless `-y`).
+  A git checkout removes the clone destination when that path sits above
+  the deploy root. A `--remote-path` that cannot express that parent, and
+  a tree with no git work tree, remove the rsync deploy root.
 - `--repo URL`: clone URL (default: local `origin`)
 - `--remote-path PATH`: remote repo root (alias `--remote-dir`; or
   `DISTRIBUTED_REMOTE_PROJECT_ROOT`)

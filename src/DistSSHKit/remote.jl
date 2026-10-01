@@ -583,6 +583,52 @@ end
 
 # Git utilities
 
+"""`git rev-parse --show-toplevel` for `proj_dir`, or `nothing` when it is not a work tree."""
+function git_work_tree(proj_dir::AbstractString)::Union{Nothing, String}
+    _host_tool_present("git") || return nothing
+    resolved = canonical_local_path(proj_dir)
+    try
+        s = strip(
+            read(
+                pipeline(_git_cmd(["-C", resolved, "rev-parse", "--show-toplevel"]); stderr = devnull),
+                String,
+            )
+        )
+        return isempty(s) ? nothing : canonical_local_path(s)
+    catch
+        return nothing
+    end
+end
+
+"""
+Throw when the lock Pkg reads is outside the git work tree of `project`.
+
+No Manifest, or no git work tree, is not an error. Clone and git sync cannot
+carry a lock that is not in the repository.
+"""
+function ensure_manifest_in_git_worktree!(project::AbstractString)
+    env = resolve_pkg_env(project)
+    manifest = env.manifest
+    manifest isa String || return nothing
+    top = git_work_tree(env.project_dir)
+    top isa String || return nothing
+    location = canonical_local_path(manifest)
+    # The directory Pkg names, not the symlink target. A link outside the
+    # work tree that points at a lock inside it is still not in the clone.
+    _path_under_resolved(dirname(location), top) || throw(
+        ArgumentError(
+            "Manifest $location is outside the git work tree ($top). The lock would not reach a clone or git sync.",
+        ),
+    )
+    target = manifest_link_target(manifest)
+    _path_under_resolved(target, top) || throw(
+        ArgumentError(
+            "Manifest $location points at $target, outside the git work tree ($top). The lock would not reach a clone or git sync.",
+        ),
+    )
+    return nothing
+end
+
 """Get local git commit hash (`short=nothing` → full hash, else `git rev-parse --short`)."""
 function get_local_git_hash(proj_dir::AbstractString; short::Union{Nothing, Int} = nothing)::Union{Nothing, String}
     _host_tool_present("git") || return nothing
@@ -902,20 +948,9 @@ function default_remote_project_path(local_project_root::AbstractString)::String
     return joinpath("~", basename(dirname(root)), basename(root))
 end
 
-"""
-Resolve the repository root path **on SSH worker hosts** for setup / git checks.
-
-Priority:
-1. `cli_override` if non-empty (e.g. `setup.jl --remote-path`)
-2. `ENV["DISTRIBUTED_REMOTE_PROJECT_ROOT"]` if set (prefer an absolute path on the remote;
-   `~` is OK for setup SSH shell commands; drive collect expands `~` on each host before
-   `find` / rsync so kit parent `relpath` never sees a tilde base)
-3. `default_remote_project_path(local_project_root)`
-
-Does not force `abspath` on tilde paths so remote shells can expand `~` per host.
-"""
-function resolve_remote_project_root(
-        local_project_root::AbstractString;
+"""Remote tree root for `local_tree` (override, else `DISTRIBUTED_REMOTE_PROJECT_ROOT`, else the default layout)."""
+function _remote_tree_root(
+        local_tree::AbstractString;
         cli_override::Union{Nothing, AbstractString} = nothing,
     )::String
     if cli_override !== nothing
@@ -924,7 +959,116 @@ function resolve_remote_project_root(
     end
     env = strip(get(ENV, "DISTRIBUTED_REMOTE_PROJECT_ROOT", ""))
     !isempty(env) && return env
-    return default_remote_project_path(local_project_root)
+    return default_remote_project_path(local_tree)
+end
+
+"""
+Directory on the worker that receives `setup --rsync` of [`resolve_pkg_env`](@ref) `env_dir`.
+
+An override (`--remote-path` / `DISTRIBUTED_REMOTE_PROJECT_ROOT`) is this tree
+root, not the member directory.
+"""
+function remote_deploy_root(
+        local_project_root::AbstractString;
+        cli_override::Union{Nothing, AbstractString} = nothing,
+    )::String
+    env = resolve_pkg_env(local_project_root)
+    return _remote_tree_root(env.env_dir; cli_override = cli_override)
+end
+
+"""
+Worker `--project` path for `local_project_root`.
+
+Same override rules as [`remote_deploy_root`](@ref). When the Manifest lives in
+a parent of the member, this is `deploy_root` plus that relative path.
+A single-project tree returns the deploy root unchanged. Does not `abspath`
+tilde paths.
+"""
+function resolve_remote_project_root(
+        local_project_root::AbstractString;
+        cli_override::Union{Nothing, AbstractString} = nothing,
+    )::String
+    env = resolve_pkg_env(local_project_root)
+    deploy = _remote_tree_root(env.env_dir; cli_override = cli_override)
+    rel = julia_project_rel(env)
+    return rel == "." ? deploy : _join_under_remote_root(deploy, rel)
+end
+
+"""
+Directory `git clone` should create.
+
+When the git work tree root is [`resolve_pkg_env`](@ref) `env_dir`, this is
+[`remote_deploy_root`](@ref). When `env_dir` sits under that work tree, the
+destination is the ancestor of the deploy root by the same relative path, so
+the Manifest directory still lands on the deploy root. No git work tree keeps
+[`resolve_remote_project_root`](@ref) (the member).
+"""
+function remote_git_clone_dest(
+        local_project_root::AbstractString;
+        cli_override::Union{Nothing, AbstractString} = nothing,
+    )::String
+    env = resolve_pkg_env(local_project_root)
+    deploy = _remote_tree_root(env.env_dir; cli_override = cli_override)
+    top = git_work_tree(env.project_dir)
+    top isa String || return resolve_remote_project_root(local_project_root; cli_override = cli_override)
+    # `git rev-parse` may return `/private/var/...` while Julia's temp path is `/var/...`.
+    env_root = canonical_local_path(realpath(env.env_dir))
+    top_root = canonical_local_path(realpath(top))
+    _path_is_under(env_root, top_root) ||
+        return resolve_remote_project_root(local_project_root; cli_override = cli_override)
+    return _remote_ancestor(deploy, relpath(env_root, top_root))
+end
+
+"""
+Path `setup --delete` removes.
+
+When the git work tree contains `env_dir` and the deploy path ends with that
+relative path, this is [`remote_git_clone_dest`](@ref), so a clone that landed
+above the deploy root is removed with `.git`. An override that cannot express
+that parent, or no git work tree, removes [`remote_deploy_root`](@ref).
+"""
+function remote_delete_root(
+        local_project_root::AbstractString;
+        cli_override::Union{Nothing, AbstractString} = nothing,
+    )::String
+    env = resolve_pkg_env(local_project_root)
+    deploy = _remote_tree_root(env.env_dir; cli_override = cli_override)
+    top = git_work_tree(env.project_dir)
+    top isa String || return deploy
+    env_root = canonical_local_path(realpath(env.env_dir))
+    top_root = canonical_local_path(realpath(top))
+    _path_is_under(env_root, top_root) || return deploy
+    mapped = _remote_ancestor_or_nothing(deploy, relpath(env_root, top_root))
+    return mapped === nothing ? deploy : mapped
+end
+
+"""Drop `rel` from the end of a remote layout path. `rel` of `.` returns `remote_path`."""
+function _remote_ancestor(remote_path::AbstractString, rel::AbstractString)::String
+    mapped = _remote_ancestor_or_nothing(remote_path, rel)
+    mapped === nothing && throw(
+        ArgumentError(
+            "Remote path $remote_path does not end with $rel, so clone cannot keep the Manifest directory there.",
+        ),
+    )
+    return mapped
+end
+
+"""[`_remote_ancestor`](@ref), or `nothing` when `remote_path` does not end with `rel`."""
+function _remote_ancestor_or_nothing(
+        remote_path::AbstractString,
+        rel::AbstractString,
+    )::Union{Nothing, String}
+    rel == "." && return String(remote_path)
+    p = String(remote_path)
+    for part in reverse(split(String(rel), '/'))
+        (isempty(part) || part == ".") && continue
+        part == ".." && return nothing
+        basename(p) == part || return nothing
+        parent = dirname(p)
+        parent == p && return nothing
+        p = parent
+    end
+    return p
 end
 
 """Layout path for `DISTRIBUTED_REMOTE_PROJECT_ROOT` (kit parent ENV / `execute!`).
