@@ -22,7 +22,7 @@ fi
 
 umask 077
 cat > "${SSH_CONFIG}" <<EOF
-Host distsshkit-w1
+Host child-1
   HostName 127.0.0.1
   User dev
   Port 2222
@@ -36,7 +36,7 @@ Host distsshkit-w1
   ServerAliveCountMax 10
   TCPKeepAlive yes
 
-Host distsshkit-w2
+Host child-2
   HostName 127.0.0.1
   User dev
   Port 2223
@@ -52,9 +52,9 @@ Host distsshkit-w2
 EOF
 
 cat > "${HOSTS_FILE}" <<'EOF'
-# DistSSHKit docker-ssh workers (SSH config Host aliases)
-distsshkit-w1
-distsshkit-w2
+# DistSSHKit docker-ssh children (SSH Host, hostname, peer DNS)
+child-1
+child-2
 EOF
 
 echo "Wrote ${SSH_CONFIG}"

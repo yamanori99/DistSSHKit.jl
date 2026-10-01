@@ -14,4 +14,9 @@ else
   exit 1
 fi
 
+# Previous container_name was distsshkit-child-*. Drop it so port 2222 is free.
+if command -v docker >/dev/null 2>&1; then
+  docker rm -f distsshkit-child-1 distsshkit-child-2 >/dev/null 2>&1 || true
+fi
+
 "${COMPOSE[@]}" -f compose.yml down --remove-orphans

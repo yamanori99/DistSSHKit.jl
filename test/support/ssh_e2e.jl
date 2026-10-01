@@ -68,7 +68,7 @@ if !isdefined(Main, :_ssh_e2e_enabled)
         return _run_subprocess(Cmd(vcat(["ssh"], DistSSHKit.ssh_opts(), [String(host), inner])))
     end
 
-    _ssh_e2e_hosts() = ("distsshkit-w1", "distsshkit-w2")
+    _ssh_e2e_hosts() = ("child-1", "child-2")
     _ssh_e2e_remote_root() = "/home/dev/distsshkit-e2e"
 
     """juliaup channels baked into the worker image (from `up.sh` / julia-slots.env)."""
@@ -496,7 +496,7 @@ if !isdefined(Main, :_ssh_e2e_enabled)
 
     """Kit parent → bare URL using docker-ssh Host alias (`User`/`Port` from ssh_config)."""
     function _ssh_e2e_bare_origin_from_controller()::String
-        return "distsshkit-w1:" * _ssh_e2e_bare_origin()
+        return _ssh_e2e_hosts()[1] * ":" * _ssh_e2e_bare_origin()
     end
 
     """
@@ -511,7 +511,7 @@ if !isdefined(Main, :_ssh_e2e_enabled)
         seed_host = String(_ssh_e2e_hosts()[1])
         git_remote = _ssh_e2e_git_remote_root()
 
-        # Fresh bare on w1.
+        # Fresh bare on child-1.
         proc, out = _run_subprocess(
             Cmd(
                 vcat(

@@ -43,8 +43,12 @@ Worker image installs **two** juliaup channels from
   `setup --juliaup` to realign. Not a supported floor and not a Pkg.test slot.
 
 `up.sh` passes both as Docker / `container` build-args and exports
-`DISTSSHKIT_E2E_JULIA_{DEFAULT,ALT}_CHANNEL` for `test/e2e.jl`. Patch floats
-within a channel; only major.minor is required. Install policy:
+`DISTSSHKIT_E2E_JULIA_{DEFAULT,ALT}_CHANNEL` for `test/e2e.jl`. On the build
+path it also resolves each channel's current release from `versions.json`
+(`JULIA_DEFAULT_RELEASE` / `JULIA_ALT_RELEASE`). That string is the image
+cache key, so a new patch, or a prerelease becoming stable, rebuilds the
+juliaup layer. The image build checks `julia --version` against it. Only
+major.minor is required at runtime. Install policy:
 [Requirements](https://yamanori99.github.io/DistSSHKit.jl/dev/requirements/).
 `--e2e` also runs
 [`scripts/ensure-kit-parent-juliaup.sh`](scripts/ensure-kit-parent-juliaup.sh)
@@ -61,7 +65,7 @@ Network Privacy does not block SSH from the kit parent.
 | --- | --- |
 | [`Dockerfile`](Dockerfile) / [`start.sh`](start.sh) | Worker image |
 | [`compose.yml`](compose.yml) | Two children (`child-1` / `child-2`) |
-| [`scripts/julia-channels.sh`](scripts/julia-channels.sh) | slots → juliaup channel build-args |
+| [`scripts/julia-channels.sh`](scripts/julia-channels.sh) | slots → juliaup channel and release build-args |
 | [`scripts/ensure-kit-parent-juliaup.sh`](scripts/ensure-kit-parent-juliaup.sh) | kit parent juliaup + channels for `--e2e` |
 | [`scripts/gen-keys.sh`](scripts/gen-keys.sh) | Keys and SSH config |
 | [`scripts/up.sh`](scripts/up.sh) | Keys → compose up → wait |
@@ -70,10 +74,10 @@ Network Privacy does not block SSH from the kit parent.
 | [`scripts/setup-colima-ci.sh`](scripts/setup-colima-ci.sh) | Colima CI |
 | `.generated/` | gitignored SSH config / keys (created by scripts) |
 
-SSH Host aliases (written to `.generated/ssh_config`):
+SSH hosts (written to `.generated/ssh_config`):
 
-- `distsshkit-w1` → `127.0.0.1:2222` user `dev`
-- `distsshkit-w2` → `127.0.0.1:2223` user `dev`
+- `child-1` → `127.0.0.1:2222` user `dev`
+- `child-2` → `127.0.0.1:2223` user `dev`
 
 ## Local use (macOS, Linux, or WSL2)
 
@@ -106,7 +110,7 @@ Manual smoke:
 
 ```bash
 ./scripts/up.sh
-ssh -F .generated/ssh_config distsshkit-w1 'echo ok; julia --version'
+ssh -F .generated/ssh_config child-1 'echo ok; julia --version'
 ```
 
 ## CI

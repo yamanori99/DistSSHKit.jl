@@ -1033,8 +1033,8 @@ end
             @test occursin("refusing", lowercase(out))
         end
 
-        @testset "inter-child SSH (w1 → w2 via compose DNS)" begin
-            _e2e_announce("inter-child SSH (w1 → w2 via compose DNS)")
+        @testset "inter-child SSH (child-1 → child-2)" begin
+            _e2e_announce("inter-child SSH (child-1 → child-2)")
             cmd = Cmd(
                 [
                     "ssh", "-F", g.ssh_config, hosts[1],
@@ -1047,7 +1047,7 @@ end
             @test occursin("inter-ok", out)
         end
 
-        # Git path (separate remote root): bare on w1 → clone → check hash → sync → --require-git.
+        # Git path (separate remote root): bare on child-1 → clone → check hash → sync → --require-git.
         @testset "git clone + sync + require-git" begin
             _e2e_announce("git clone + sync + require-git")
             git_root = _ssh_e2e_git_remote_root()

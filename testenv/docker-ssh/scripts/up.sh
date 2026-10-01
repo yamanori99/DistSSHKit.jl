@@ -70,7 +70,8 @@ if [[ -n "${DISTSSHKIT_WORKER_IMAGE:-}" ]]; then
   pull_worker_image "$DISTSSHKIT_WORKER_IMAGE"
 else
   # Build a single service so logs are not interleaved (both share the same image).
-  # Compose passes JULIA_*_CHANNEL from the environment into Dockerfile ARGs.
+  # Compose passes JULIA_*_CHANNEL and the resolved releases into Dockerfile ARGs.
+  _distsshkit_export_julia_releases
   "${COMPOSE[@]}" -f compose.yml build child-1
   if [[ -n "${DISTSSHKIT_PUSH_IMAGE:-}" ]]; then
     DISTSSHKIT_LOCAL_IMAGE="$LOCAL_IMAGE" ./scripts/push-image.sh "$DISTSSHKIT_PUSH_IMAGE"
@@ -85,7 +86,7 @@ fi
 ./scripts/down.sh
 "${COMPOSE[@]}" -f compose.yml up -d --no-build
 ./scripts/wait-ready.sh
-echo "Workers ready: distsshkit-w1 (2222), distsshkit-w2 (2223)"
+echo "Workers ready: child-1 (2222), child-2 (2223)"
 echo "SSH config: ${ROOT}/.generated/ssh_config"
 
 if [[ "$RUN_E2E" -eq 1 ]]; then
