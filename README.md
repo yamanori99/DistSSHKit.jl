@@ -25,11 +25,12 @@ workstations. DistSSHKit helps you use that hardware as a small set of
 compute nodes.
 
 > [!TIP]
-> Want the machines DistSSHKit already runs, one or a few, to stay on
-> and take jobs one after another?
+> Want the machines DistSSHKit already runs, any number of them, to keep
+> taking jobs one after another on a machine that stays on? Or want
+> other people in the lab to submit jobs on that hardware?
 > [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
-> (`pkg> add DistSSHQueue`) lines those jobs up. DistSSHKit still does
-> the run. Other people in the lab can submit there too.
+> (`pkg> add DistSSHQueue`) is for either. DistSSHKit still does each
+> run.
 
 ## Install
 

@@ -23,11 +23,11 @@ SSH 分散実行の手順を簡単にし、揃えることで、再現しやす�
 DistSSHKit は、それらをまとめて小さな計算ノードとして使うためのものである。
 
 > [!TIP]
-> DistSSHKit で使う 1 台、または数台を、常時起動の計算ノードにしておける。
-> ジョブを順番に走らせるには
-> [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
-> (`pkg> add DistSSHQueue`) を使う。実行は DistSSHKit が行う。
-> 研究室の他のメンバーも、そこでジョブを走らせることができる。
+> DistSSHKit で既に使っているマシン (何台でも) に、常時起動のマシン上で
+> ジョブを順番に受け続けてほしいか?
+> あるいは、研究室の他の人にも、そのマシンでジョブを出してほしいか?
+> どちらにも [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
+> (`pkg> add DistSSHQueue`) が向く。各ジョブの実行は DistSSHKit が行う。
 
 ## インストール
 
