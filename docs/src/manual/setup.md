@@ -54,8 +54,7 @@ Pick **one mode** per invocation (except shared options).
   `setup --juliaup parent`
 - `--juliaup-update`: `juliaup update` on those hosts (all installed
   channels; confirm unless `-y`). Does **not** `add` or `default`.
-  Same as `setup --juliaup update child:NAME`. Use `--juliaup` to
-  align the default channel
+  Use `--juliaup` to align the default channel
 - `--runtest`: `Pkg.test()` of the **job** project on remotes (not
   DistSSHKit's tests)
 - `--prune`: delete `.distsshkit/{go,drive,setup,runs}` leaves on localhost

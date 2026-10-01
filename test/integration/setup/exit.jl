@@ -95,7 +95,7 @@ using Test
         end
         _with_tempdir() do state_dir
             proc, combined = _run_kit_setup(
-                setup_args = ["--juliaup", "update", "child:host1", "child:host2"],
+                setup_args = ["--juliaup-update", "child:host1", "child:host2"],
                 extra_env = _fake_setup_remote_env(state_dir),
             )
             @test proc.exitcode == 0
