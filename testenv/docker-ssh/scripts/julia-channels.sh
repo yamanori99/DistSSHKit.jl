@@ -73,6 +73,7 @@ _distsshkit_julia_ver_sort_key() {
   return 1
 }
 
+# Highest version in the argument list (`_distsshkit_julia_ver_sort_key`).
 _distsshkit_julia_newest() {
   local best="" best_key="" ver key
   (($#)) || return 1
