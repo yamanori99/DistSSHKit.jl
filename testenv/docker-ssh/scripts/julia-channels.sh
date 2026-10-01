@@ -78,7 +78,9 @@ _distsshkit_julia_newest() {
   (($#)) || return 1
   for ver in "$@"; do
     key="$(_distsshkit_julia_ver_sort_key "${ver}")" || return 1
-    if [[ -z "${best}" || "${key}" -gt "${best_key}" ]]; then
+    # 10# forces base 10. A leading zero would make -gt read the key as octal,
+    # so patch 8 or 9 (00008) is an arithmetic error and loses to 00007.
+    if [[ -z "${best}" || "10#${key}" -gt "10#${best_key}" ]]; then
       best="${ver}"
       best_key="${key}"
     fi
