@@ -23,11 +23,11 @@ SSH 分散実行の手順を簡単にし、揃えることで、再現しやす�
 DistSSHKit は、それらをまとめて小さな計算ノードとして使うためのものである。
 
 > [!TIP]
-> DistSSHKit で扱っている 1 台、あるいはそのマシン群を、
-> 常時起動の計算ノードとして置いておきたいか?
-> それなら [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
-> (`pkg> add DistSSHQueue`) が向く。ジョブは順番に並ぶ。実行そのものは DistSSHKit が担う。
-> 研究室の他のメンバーに使わせることもできる。
+> DistSSHKit で使う 1 台、または数台を、常時起動の計算ノードにしておける。
+> ジョブを順番に走らせるには
+> [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
+> (`pkg> add DistSSHQueue`) を使う。実行は DistSSHKit が行う。
+> 研究室の他のメンバーも、そこでジョブを走らせることができる。
 
 ## インストール
 
@@ -103,7 +103,8 @@ SSH 先の台数に上限はない。台数を増やすほど SSH 接続や配�
 > [!TIP]
 > DistSSHKit は、つながったまま 1 件を走らせる。
 > [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
-> なら、接続が切れても、並んだジョブは止まらない。実行そのものは DistSSHKit が担う。
+> (`pkg> add DistSSHQueue`) を使うと、常時起動のマシンにジョブを並べておけるので、
+> 接続が切れても実行は止まらない。実行そのものは DistSSHKit が行う。
 > `tmux` でも、走っているジョブは残せる。あとから来るジョブまでは見てくれない。
 
 ### 実行: go、ride、drive
