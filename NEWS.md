@@ -19,8 +19,9 @@ GitHub Releases may copy these sections (`Release notes:` on
   git work tree, including through a symlink) fails before instantiate.
   A `[sources]` `path` outside that tree fails the same way. An absolute
   path fails even inside the tree: workers resolve it on their own
-  filesystem. A `url` source is fetched on the worker. No Manifest still
-  resolves.
+  filesystem. Clone and git sync also fail when that path is not in the
+  commit they send (untracked or ignored). A `url` source is fetched on
+  the worker. No Manifest still resolves.
 - `setup --juliaup update` is no longer accepted. Use
   `setup --juliaup-update` (#400).
 

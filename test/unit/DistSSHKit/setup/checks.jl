@@ -505,8 +505,9 @@ using Pkg
 
             if Sys.which("git") !== nothing
                 repo = joinpath(root, "srcjob")
-                mkpath(joinpath(repo, "dev", "Foo"))
-                write(joinpath(repo, "dev", "Foo", "Project.toml"), "name = \"Foo\"\n")
+                foo_src = joinpath(repo, "dev", "Foo")
+                mkpath(foo_src)
+                write(joinpath(foo_src, "Project.toml"), "name = \"Foo\"\n")
                 write(joinpath(repo, "Manifest.toml"), "# lock\n")
                 write(
                     joinpath(repo, "Project.toml"),
@@ -517,7 +518,90 @@ using Pkg
                     """,
                 )
                 run(pipeline(`git -C $repo init -q`; stdout = devnull, stderr = devnull))
+                foo_loc = DistSSHKit.canonical_local_path(foo_src)
+                @test_throws ArgumentError(
+                    "Source path $foo_loc for Foo is not in the git commit a clone or git sync would send.",
+                ) DistSSHKit.ensure_manifest_in_git_worktree!(repo)
+                run(pipeline(`git -C $repo add -A`; stdout = devnull, stderr = devnull))
+                run(
+                    pipeline(
+                        `git -C $repo -c user.email=kit@example.com -c user.name=kit commit -q -m init`;
+                        stdout = devnull,
+                        stderr = devnull,
+                    ),
+                )
                 @test DistSSHKit.ensure_manifest_in_git_worktree!(repo) === nothing
+
+                write(joinpath(repo, ".gitignore"), "dev/Foo/\n")
+                run(pipeline(`git -C $repo add -A`; stdout = devnull, stderr = devnull))
+                run(
+                    pipeline(
+                        `git -C $repo -c user.email=kit@example.com -c user.name=kit commit -q -m ignore`;
+                        stdout = devnull,
+                        stderr = devnull,
+                    ),
+                )
+                @test DistSSHKit.ensure_manifest_in_git_worktree!(repo) === nothing
+
+                bar_src = joinpath(repo, "dev", "Bar")
+                mkpath(bar_src)
+                write(joinpath(bar_src, "Project.toml"), "name = \"Bar\"\n")
+                write(
+                    joinpath(repo, "Project.toml"),
+                    """
+                    name = "Src"
+                    [sources]
+                    Bar = {path = "dev/Bar"}
+                    """,
+                )
+                bar_loc = DistSSHKit.canonical_local_path(bar_src)
+                @test_throws ArgumentError(
+                    "Source path $bar_loc for Bar is not in the git commit a clone or git sync would send.",
+                ) DistSSHKit.ensure_manifest_in_git_worktree!(repo)
+
+                write(joinpath(repo, ".gitignore"), "dev/Foo/\ndev/Skip/\n")
+                skip_src = joinpath(repo, "dev", "Skip")
+                mkpath(skip_src)
+                write(joinpath(skip_src, "Project.toml"), "name = \"Skip\"\n")
+                write(
+                    joinpath(repo, "Project.toml"),
+                    """
+                    name = "Src"
+                    [sources]
+                    Skip = {path = "dev/Skip"}
+                    """,
+                )
+                skip_loc = DistSSHKit.canonical_local_path(skip_src)
+                @test_throws ArgumentError(
+                    "Source path $skip_loc for Skip is not in the git commit a clone or git sync would send.",
+                ) DistSSHKit.ensure_manifest_in_git_worktree!(repo)
+
+                loose = joinpath(repo, "vendor", "Loose")
+                mkpath(loose)
+                write(joinpath(loose, "Project.toml"), "name = \"Loose\"\n")
+                symlink(joinpath("..", "vendor", "Loose"), joinpath(repo, "dev", "Loose"))
+                run(pipeline(`git -C $repo add -- dev/Loose`; stdout = devnull, stderr = devnull))
+                run(
+                    pipeline(
+                        `git -C $repo -c user.email=kit@example.com -c user.name=kit commit -q -m link`;
+                        stdout = devnull,
+                        stderr = devnull,
+                    ),
+                )
+                write(
+                    joinpath(repo, "Project.toml"),
+                    """
+                    name = "Src"
+                    [sources]
+                    Loose = {path = "dev/Loose"}
+                    """,
+                )
+                link_loc = DistSSHKit.canonical_local_path(joinpath(repo, "dev", "Loose"))
+                loose_loc = DistSSHKit.canonical_local_path(loose)
+                @test_throws ArgumentError(
+                    "Source path $link_loc for Loose points at $loose_loc, which is not in the git commit a clone or git sync would send.",
+                ) DistSSHKit.ensure_manifest_in_git_worktree!(repo)
+
                 write(
                     joinpath(repo, "Project.toml"),
                     """

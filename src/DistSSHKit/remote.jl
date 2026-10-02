@@ -606,7 +606,7 @@ work tree of `project`.
 
 No Manifest is not an error. No git work tree is not an error. A `url`
 source is fetched on the worker. Clone and git sync cannot carry a lock
-or path source that is not in the repository.
+outside the repository, or a path source that is not in `HEAD`.
 """
 function ensure_manifest_in_git_worktree!(project::AbstractString)
     env = resolve_pkg_env(project)

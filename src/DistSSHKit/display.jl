@@ -341,9 +341,11 @@ Throw when a `[sources]` `path` would not arrive inside `root`.
 `git=false` is the rsync tree (`env_dir`). `git=true` is the git work tree.
 An absolute path, including after `expanduser`, is rejected even when it
 sits inside `root`: rsync and git copy `Project.toml` unchanged, and Pkg
-resolves that path on the worker. A `url` source is fetched on the worker
-and is not checked. A symlink whose target leaves `root` is the same
-failure as a path that starts outside it.
+resolves that path on the worker. For `git=true`, the path must also be
+in `HEAD`: a clone or git sync omits an untracked or ignored directory,
+and a symlink whose target tree is not in that commit. A `url` source is
+fetched on the worker and is not checked. A symlink whose target leaves
+`root` is the same failure as a path that starts outside it.
 """
 function _ensure_path_sources_in_tree!(env, root::AbstractString; git::Bool)
     root_c = canonical_local_path(root)
@@ -396,9 +398,48 @@ function _ensure_path_sources_in_tree!(env, root::AbstractString; git::Bool)
                     "Source path $location for $name is not a directory. Workers would not see this path.",
                 ),
             )
+            git || continue
+            _git_head_records(root_c, location) || throw(
+                ArgumentError(
+                    "Source path $location for $name is not in the git commit a clone or git sync would send.",
+                ),
+            )
+            target == canonical_local_path(location) && continue
+            _git_head_records(root_c, target) || throw(
+                ArgumentError(
+                    "Source path $location for $name points at $target, which is not in the git commit a clone or git sync would send.",
+                ),
+            )
         end
     end
     return nothing
+end
+
+"""Whether `HEAD` of `work_tree` records `path` or a file under it."""
+function _git_head_records(work_tree::AbstractString, path::AbstractString)::Bool
+    rel = replace(
+        relpath(canonical_local_path(path), canonical_local_path(work_tree)),
+        "\\" => "/",
+    )
+    cmd = _git_cmd(
+        [
+            "--literal-pathspecs",
+            "-C",
+            String(work_tree),
+            "ls-tree",
+            "-r",
+            "--name-only",
+            "HEAD",
+            "--",
+            rel,
+        ]
+    )
+    out = try
+        read(pipeline(cmd; stderr = devnull), String)
+    catch
+        return false
+    end
+    return !isempty(strip(out))
 end
 
 """
