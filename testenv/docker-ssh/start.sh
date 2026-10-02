@@ -10,6 +10,15 @@ if [[ ! -f "${IDENTITY}" || ! -f "${IDENTITY}.pub" ]]; then
     exit 1
 fi
 
+# Docker Compose sets the UTS hostname. Apple container sets the network
+# hostname from --name and keeps /proc/sys/kernel/hostname read-only, so
+# do not write that file (start.sh would exit before sshd).
+if [[ -n "${DISTSSHKIT_HOSTNAME:-}" ]]; then
+    printf '%s\n' "${DISTSSHKIT_HOSTNAME}" > /etc/hostname
+    grep -qw "${DISTSSHKIT_HOSTNAME}" /etc/hosts \
+        || printf '127.0.1.1 %s\n' "${DISTSSHKIT_HOSTNAME}" >> /etc/hosts
+fi
+
 shopt -s nullglob
 for key in /mounted-keys/*.pub; do
     line="$(tr -d '\n\r' < "${key}")"

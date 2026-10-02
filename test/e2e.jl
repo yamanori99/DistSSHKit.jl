@@ -38,12 +38,14 @@ const hosts = collect(String, _ssh_e2e_hosts())
 const setup_hosts = String["child:$h" for h in hosts]
 const remote_root = _ssh_e2e_remote_root()
 const remote_tokens = String["child:$(hosts[1]):1", "child:$(hosts[2]):1"]
+"""ENV overlay for the suite (`-F` ssh config and the remote project path)."""
 _e2e_base_env() = _ssh_e2e_env(; remote_project = remote_root)
 
 # Same banner idea as `test/runtests.jl`. Inner `@testset`s can take minutes
 # of SSH with no Test output until they finish. Update `_E2E_N` when adding one.
 const _E2E_N = 29
 const _E2E_I = Ref(0)
+"""Print `[i/N]` before an inner `@testset`."""
 function _e2e_announce(label::AbstractString)
     _E2E_I[] += 1
     println("[$(_E2E_I[])/$_E2E_N]  $label")
@@ -1033,8 +1035,8 @@ end
             @test occursin("refusing", lowercase(out))
         end
 
-        @testset "inter-child SSH (w1 → w2 via compose DNS)" begin
-            _e2e_announce("inter-child SSH (w1 → w2 via compose DNS)")
+        @testset "inter-child SSH (child-1 → child-2)" begin
+            _e2e_announce("inter-child SSH (child-1 → child-2)")
             cmd = Cmd(
                 [
                     "ssh", "-F", g.ssh_config, hosts[1],
@@ -1047,7 +1049,7 @@ end
             @test occursin("inter-ok", out)
         end
 
-        # Git path (separate remote root): bare on w1 → clone → check hash → sync → --require-git.
+        # Git path (separate remote root): bare on child-1 → clone → check hash → sync → --require-git.
         @testset "git clone + sync + require-git" begin
             _e2e_announce("git clone + sync + require-git")
             git_root = _ssh_e2e_git_remote_root()

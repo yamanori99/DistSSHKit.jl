@@ -18,7 +18,7 @@ for arg in "$@"; do
     --e2e) RUN_E2E=1 ;;
     -h|--help)
       echo "usage: $0 [--e2e]"
-      echo "  Same E2E as docker-ssh (distsshkit-w1 / distsshkit-w2)."
+      echo "  Same E2E as docker-ssh (child-1 / child-2)."
       echo "  Needs macOS 26+ Apple silicon and the container CLI."
       echo "  DISTSSHKIT_CODE_COVERAGE=1  e2e with --code-coverage=user"
       exit 0
@@ -64,7 +64,7 @@ write_ssh_config() {
   mkdir -p "${gen}"
   umask 077
   cat > "${gen}/ssh_config" <<EOF
-Host distsshkit-w1
+Host child-1
   HostName ${ip1}
   User dev
   Port 22
@@ -78,7 +78,7 @@ Host distsshkit-w1
   ServerAliveCountMax 10
   TCPKeepAlive yes
 
-Host distsshkit-w2
+Host child-2
   HostName ${ip2}
   User dev
   Port 22
@@ -98,9 +98,9 @@ inject_child_hosts() {
   local ip1="$1" ip2="$2"
   local cfg="${DOCKER_ROOT}/.generated/ssh_config"
   # Apple default network does not resolve peer names; e2e git uses dev@child-1.
-  ssh -F "${cfg}" distsshkit-w1 \
+  ssh -F "${cfg}" child-1 \
     "grep -q ' child-2\$' /etc/hosts || echo '${ip2} child-2' | sudo tee -a /etc/hosts >/dev/null"
-  ssh -F "${cfg}" distsshkit-w2 \
+  ssh -F "${cfg}" child-2 \
     "grep -q ' child-1\$' /etc/hosts || echo '${ip1} child-1' | sudo tee -a /etc/hosts >/dev/null"
 }
 
@@ -113,12 +113,16 @@ container system start
 source "${DOCKER_ROOT}/scripts/julia-channels.sh"
 _distsshkit_export_julia_channels "${KIT_ROOT}"
 
-# Always build so Dockerfile pin changes (e.g. Julia 1.12 → 1.13) take effect.
-# Layer cache keeps this cheap when the file is unchanged.
+# Always build so channel pins and resolved releases take effect
+# (1.13.0-rc4 → 1.13.1 keeps the channel name 1.13). Layer cache stays
+# when that release string is unchanged.
+_distsshkit_export_julia_releases
 echo "Building ${LOCAL_IMAGE} from docker-ssh/Dockerfile..."
 (cd "${DOCKER_ROOT}" && container build \
   --build-arg "JULIA_DEFAULT_CHANNEL=${JULIA_DEFAULT_CHANNEL}" \
   --build-arg "JULIA_ALT_CHANNEL=${JULIA_ALT_CHANNEL}" \
+  --build-arg "JULIA_DEFAULT_RELEASE=${JULIA_DEFAULT_RELEASE}" \
+  --build-arg "JULIA_ALT_RELEASE=${JULIA_ALT_RELEASE}" \
   -t "${LOCAL_IMAGE}" .)
 
 "${APPLE_ROOT}/scripts/down.sh"
@@ -129,6 +133,7 @@ WORKER_MEMORY="${DISTSSHKIT_APPLE_WORKER_MEMORY:-3584M}"
 for name in "${NAMES[@]}"; do
   container create -d --name "${name}" --network default \
     -c "${WORKER_CPUS}" -m "${WORKER_MEMORY}" \
+    -e "DISTSSHKIT_HOSTNAME=${name}" \
     -u root --mount "${MOUNT}" "${LOCAL_IMAGE}"
   container start "${name}"
 done
@@ -150,16 +155,16 @@ if [[ -z "${IP1}" || -z "${IP2}" ]]; then
 fi
 
 write_ssh_config "${IP1}" "${IP2}"
-echo "Workers: distsshkit-w1 -> ${IP1}:22  distsshkit-w2 -> ${IP2}:22"
+echo "Workers: child-1 -> ${IP1}:22  child-2 -> ${IP2}:22"
 echo "SSH config: ${DOCKER_ROOT}/.generated/ssh_config"
 
 "${DOCKER_ROOT}/scripts/wait-ready.sh"
 inject_child_hosts "${IP1}" "${IP2}"
 echo "Inter-child DNS: child-1 / child-2 in each /etc/hosts"
 # First peer SSH needs accept-new (BatchMode cannot prompt). Same as e2e git warmup.
-ssh -F "${DOCKER_ROOT}/.generated/ssh_config" distsshkit-w1 \
+ssh -F "${DOCKER_ROOT}/.generated/ssh_config" child-1 \
   "ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o LogLevel=ERROR -o ConnectTimeout=5 dev@child-2 true"
-ssh -F "${DOCKER_ROOT}/.generated/ssh_config" distsshkit-w2 \
+ssh -F "${DOCKER_ROOT}/.generated/ssh_config" child-2 \
   "ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o LogLevel=ERROR -o ConnectTimeout=5 dev@child-1 true"
 
 if [[ "$RUN_E2E" -eq 1 ]]; then

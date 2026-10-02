@@ -68,7 +68,9 @@ if !isdefined(Main, :_ssh_e2e_enabled)
         return _run_subprocess(Cmd(vcat(["ssh"], DistSSHKit.ssh_opts(), [String(host), inner])))
     end
 
-    _ssh_e2e_hosts() = ("distsshkit-w1", "distsshkit-w2")
+    """SSH Host names of the two workers (`child-1`, `child-2`)."""
+    _ssh_e2e_hosts() = ("child-1", "child-2")
+    """Remote project root for the main rsync suite."""
     _ssh_e2e_remote_root() = "/home/dev/distsshkit-e2e"
 
     """juliaup channels baked into the worker image (from `up.sh` / julia-slots.env)."""
@@ -147,15 +149,15 @@ if !isdefined(Main, :_ssh_e2e_enabled)
     function _ssh_e2e_local_juliaup_default_channel()::String
         return DistSSHKit.juliaup_channel(_ssh_e2e_local_juliaup_julia_version())
     end
-    # Empty-tree `go --rsync` (copy + instantiate). Not the main rsync root:
-    # later `setup --rsync` nonempty checks would fail if we reused that path.
+    """Empty-tree `go --rsync` root. A later nonempty `--rsync` check uses another path."""
     _ssh_e2e_go_rsync_remote_root() = "/home/dev/distsshkit-e2e-go-rsync"
-    # Separate tree for git clone/sync/--require-git (rsync excludes `.git/`).
+    """Separate tree for git clone/sync/`--require-git` (rsync excludes `.git/`)."""
     _ssh_e2e_git_remote_root() = "/home/dev/distsshkit-e2e-git"
-    # Tilde layout for collect path-boundary coverage (`dev` → `/home/dev/…`).
+    """Tilde layout for collect path-boundary coverage (`dev` → `/home/dev/…`)."""
     _ssh_e2e_tilde_remote_root() = "~/distsshkit-e2e-tilde"
+    """Bare git origin path on child-1."""
     _ssh_e2e_bare_origin() = "/home/dev/distsshkit-e2e-origin.git"
-    # Compose DNS name of child-1 (reachable from both children via inter-worker keys).
+    """Compose DNS URL of the bare origin, reachable from both children."""
     _ssh_e2e_bare_ssh_from_workers() = "dev@child-1:/home/dev/distsshkit-e2e-origin.git"
 
     """Root for kept SSH E2E artifacts: `test/artifacts/ssh-e2e/` (gitignored)."""
@@ -496,7 +498,7 @@ if !isdefined(Main, :_ssh_e2e_enabled)
 
     """Kit parent → bare URL using docker-ssh Host alias (`User`/`Port` from ssh_config)."""
     function _ssh_e2e_bare_origin_from_controller()::String
-        return "distsshkit-w1:" * _ssh_e2e_bare_origin()
+        return _ssh_e2e_hosts()[1] * ":" * _ssh_e2e_bare_origin()
     end
 
     """
@@ -511,7 +513,7 @@ if !isdefined(Main, :_ssh_e2e_enabled)
         seed_host = String(_ssh_e2e_hosts()[1])
         git_remote = _ssh_e2e_git_remote_root()
 
-        # Fresh bare on w1.
+        # Fresh bare on child-1.
         proc, out = _run_subprocess(
             Cmd(
                 vcat(

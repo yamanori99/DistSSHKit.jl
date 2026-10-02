@@ -12,3 +12,4 @@ for name in child-1 child-2 worker-1 worker-2; do
   container rm "${name}" >/dev/null 2>&1 || true
 done
 echo "Removed child-1 and child-2 (and leftover worker-1 / worker-2, if they existed)"
+echo "Remove SSH E2E artifacts: rm -rf test/artifacts/ssh-e2e"

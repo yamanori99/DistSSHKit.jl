@@ -7,8 +7,13 @@ services:
       args:
         JULIA_DEFAULT_CHANNEL: ${JULIA_DEFAULT_CHANNEL:-1.13}
         JULIA_ALT_CHANNEL: ${JULIA_ALT_CHANNEL:-1.12}
+        JULIA_DEFAULT_RELEASE: ${JULIA_DEFAULT_RELEASE:-}
+        JULIA_ALT_RELEASE: ${JULIA_ALT_RELEASE:-}
     image: local/linux-ssh-worker:latest
-    container_name: distsshkit-child-1
+    container_name: child-1
+    hostname: child-1
+    environment:
+      DISTSSHKIT_HOSTNAME: child-1
     ports:
       - "2222:22"
     volumes:
@@ -22,8 +27,13 @@ services:
       args:
         JULIA_DEFAULT_CHANNEL: ${JULIA_DEFAULT_CHANNEL:-1.13}
         JULIA_ALT_CHANNEL: ${JULIA_ALT_CHANNEL:-1.12}
+        JULIA_DEFAULT_RELEASE: ${JULIA_DEFAULT_RELEASE:-}
+        JULIA_ALT_RELEASE: ${JULIA_ALT_RELEASE:-}
     image: local/linux-ssh-worker:latest
-    container_name: distsshkit-child-2
+    container_name: child-2
+    hostname: child-2
+    environment:
+      DISTSSHKIT_HOSTNAME: child-2
     ports:
       - "2223:22"
     volumes:

@@ -2,7 +2,7 @@
 
 Linux SSH workers on a Mac via Apple
 [`container`](https://github.com/apple/container). Same image, keys, and
-`distsshkit-w1` / `distsshkit-w2` aliases as [`../docker-ssh`](../docker-ssh),
+`child-1` / `child-2` aliases as [`../docker-ssh`](../docker-ssh),
 so [`test/e2e.jl`](../../test/e2e.jl) is unchanged.
 
 **Not CI and not `Pkg.test()`.** Compose path stays the default for GitHub
@@ -31,7 +31,8 @@ Each `up.sh` runs `container system start` and rebuilds
 `local/linux-ssh-worker:latest` from
 [`../docker-ssh/Dockerfile`](../docker-ssh/Dockerfile)
 with juliaup channels from `.github/julia-slots.env` (same as Compose).
-Layer cache if the file is unchanged. Then it removes and recreates
+Layer cache if the Dockerfile and the resolved Julia releases are unchanged.
+Then it removes and recreates
 `child-1` / `child-2`.
 Keys come from `docker-ssh/scripts/gen-keys.sh` (mounted from
 `docker-ssh/mounted-keys`).
@@ -42,11 +43,11 @@ Each worker gets 1 CPU / 3.5GB (`DISTSSHKIT_APPLE_WORKER_CPUS` /
 
 SSH aliases after `up.sh`:
 
-- `distsshkit-w1` → worker IP, port 22, user `dev`
-- `distsshkit-w2` → the other worker
+- `child-1` → that container's IP, port 22, user `dev`
+- `child-2` → the other child
 
 ```bash
-ssh -F ../docker-ssh/.generated/ssh_config distsshkit-w1 \
+ssh -F ../docker-ssh/.generated/ssh_config child-1 \
   'echo ok; julia --version'
 ```
 

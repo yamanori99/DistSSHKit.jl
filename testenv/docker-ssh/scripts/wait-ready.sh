@@ -5,7 +5,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SSH_CONFIG="${ROOT}/.generated/ssh_config"
 KNOWN_HOSTS="${ROOT}/.generated/known_hosts"
-HOSTS=(distsshkit-w1 distsshkit-w2)
+HOSTS=(child-1 child-2)
 MAX_ATTEMPTS="${DISTSSHKIT_SSH_WAIT_ATTEMPTS:-60}"
 SLEEP_SEC="${DISTSSHKIT_SSH_WAIT_SLEEP:-2}"
 
