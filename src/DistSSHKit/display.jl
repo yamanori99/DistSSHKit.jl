@@ -341,8 +341,10 @@ Throw when a `[sources]` `path` would not arrive inside `root`.
 `git=false` is the rsync tree (`env_dir`). `git=true` is the git work tree.
 An absolute path, including after `expanduser`, is rejected even when it
 sits inside `root`: rsync and git copy `Project.toml` unchanged, and Pkg
-resolves that path on the worker. For `git=true`, the path must also be
-in `HEAD`. A clone or git sync omits an untracked or ignored directory.
+resolves that path on the worker. For `git=false`, an absolute symlink
+is rejected the same way: rsync keeps the link text. For `git=true`, the
+path must also be in `HEAD`. A clone or git sync omits an untracked or
+ignored directory.
 The symlink target that matters is the one stored in that commit: an
 absolute target, or one that leaves the work tree, fails even when the
 working-tree link currently points inside. A `url` source is fetched on
@@ -374,6 +376,16 @@ function _ensure_path_sources_in_tree!(env, root::AbstractString; git::Bool)
                         "Source path $location for $name is outside the tree setup/rsync would send ($root_c). Workers would not see this path.",
                     ),
                 )
+            end
+            if !git && islink(location)
+                link_text = String(readlink(location))
+                if isabspath(expanduser(link_text))
+                    throw(
+                        ArgumentError(
+                            "Source path $location for $name is a symlink to $link_text. rsync keeps that absolute target, so workers would not see the staged tree.",
+                        ),
+                    )
+                end
             end
             ispath(location) || throw(
                 ArgumentError(

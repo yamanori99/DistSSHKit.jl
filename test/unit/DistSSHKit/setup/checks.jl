@@ -688,6 +688,134 @@ using Pkg
         end
     end
 
+    @testset "path sources the review would have dropped" begin
+        _with_tempdir() do base
+            job = joinpath(base, "job")
+            vendor = joinpath(job, "vendor", "Foo")
+            link = joinpath(job, "dev", "Foo")
+            mkpath(vendor)
+            mkpath(dirname(link))
+            write(joinpath(vendor, "Project.toml"), "name = \"Foo\"\n")
+            write(joinpath(job, "Manifest.toml"), "# lock\n")
+            write(
+                joinpath(job, "Project.toml"),
+                """
+                name = "Job"
+                [sources]
+                Foo = {path = "dev/Foo"}
+                """,
+            )
+            symlink(joinpath("..", "vendor", "Foo"), link)
+            @test DistSSHKit.ensure_manifest_ships!(job).env_dir ==
+                DistSSHKit.canonical_local_path(job)
+            rm(link)
+            abs_vendor = DistSSHKit.canonical_local_path(vendor)
+            symlink(abs_vendor, link)
+            link_loc = DistSSHKit.canonical_local_path(link)
+            @test_throws ArgumentError(
+                "Source path $link_loc for Foo is a symlink to $abs_vendor. rsync keeps that absolute target, so workers would not see the staged tree.",
+            ) DistSSHKit.ensure_manifest_ships!(job)
+            rm(link)
+            symlink("~/nope", link)
+            @test_throws ArgumentError(
+                "Source path $link_loc for Foo is a symlink to ~/nope. rsync keeps that absolute target, so workers would not see the staged tree.",
+            ) DistSSHKit.ensure_manifest_ships!(job)
+
+            if Sys.which("git") !== nothing
+                # `/var` -> `/private/var`: git's toplevel and Julia's path differ.
+                phys = joinpath(base, "private", "var", "repo")
+                foo = joinpath(phys, "dev", "Foo")
+                inn = joinpath(phys, "vendor", "In")
+                mkpath(foo)
+                mkpath(inn)
+                write(joinpath(foo, "Project.toml"), "name = \"Foo\"\n")
+                write(joinpath(inn, "Project.toml"), "name = \"In\"\n")
+                write(joinpath(phys, "Manifest.toml"), "# lock\n")
+                write(
+                    joinpath(phys, "Project.toml"),
+                    """
+                    name = "Src"
+                    [sources]
+                    Foo = {path = "dev/Foo"}
+                    """,
+                )
+                symlink(joinpath("private", "var"), joinpath(base, "var"))
+                logical = joinpath(base, "var", "repo")
+                run(pipeline(`git -C $phys init -q`; stdout = devnull, stderr = devnull))
+                run(pipeline(`git -C $phys add -A`; stdout = devnull, stderr = devnull))
+                run(
+                    pipeline(
+                        `git -C $phys -c user.email=kit@example.com -c user.name=kit commit -q -m init`;
+                        stdout = devnull,
+                        stderr = devnull,
+                    ),
+                )
+                top = DistSSHKit.git_work_tree(logical)
+                foo_logical = joinpath(logical, "dev", "Foo")
+                @test DistSSHKit._git_worktree_relpath(top, foo_logical) == "dev/Foo"
+                @test !startswith(DistSSHKit._git_worktree_relpath(top, foo_logical), "..")
+                @test DistSSHKit.ensure_manifest_in_git_worktree!(logical) === nothing
+
+                abs_foo = DistSSHKit.canonical_local_path(foo_logical)
+                write(
+                    joinpath(logical, "Project.toml"),
+                    """
+                    name = "Src"
+                    [sources]
+                    Foo = {path = "$(abs_foo)"}
+                    """,
+                )
+                @test_throws ArgumentError(
+                    "Source path $abs_foo for Foo is absolute. Workers resolve it on their own filesystem, so it would not be the staged tree.",
+                ) DistSSHKit.ensure_manifest_in_git_worktree!(logical)
+
+                write(
+                    joinpath(phys, "Project.toml"),
+                    """
+                    name = "Src"
+                    [sources]
+                    In = {path = "dev/In"}
+                    """,
+                )
+                symlink(joinpath("..", "vendor", "In"), joinpath(phys, "dev", "In"))
+                run(pipeline(`git -C $phys add -- vendor/In dev/In Project.toml`; stdout = devnull, stderr = devnull))
+                run(
+                    pipeline(
+                        `git -C $phys -c user.email=kit@example.com -c user.name=kit commit -q -m rel`;
+                        stdout = devnull,
+                        stderr = devnull,
+                    ),
+                )
+                in_logical = joinpath(logical, "dev", "In")
+                @test DistSSHKit._git_worktree_relpath(top, in_logical) == "dev/In"
+                @test DistSSHKit.ensure_manifest_in_git_worktree!(logical) === nothing
+
+                abs_inn = DistSSHKit.canonical_local_path(joinpath(logical, "vendor", "In"))
+                symlink(abs_inn, joinpath(phys, "dev", "Abs"))
+                run(pipeline(`git -C $phys add -- dev/Abs`; stdout = devnull, stderr = devnull))
+                run(
+                    pipeline(
+                        `git -C $phys -c user.email=kit@example.com -c user.name=kit commit -q -m abs`;
+                        stdout = devnull,
+                        stderr = devnull,
+                    ),
+                )
+                write(
+                    joinpath(phys, "Project.toml"),
+                    """
+                    name = "Src"
+                    [sources]
+                    Abs = {path = "dev/Abs"}
+                    """,
+                )
+                abs_loc = DistSSHKit.canonical_local_path(joinpath(logical, "dev", "Abs"))
+                @test_throws ArgumentError(
+                    "Source path $abs_loc for Abs is a symlink to $abs_inn in the git commit. A clone keeps that absolute target.",
+                ) DistSSHKit.ensure_manifest_in_git_worktree!(logical)
+            end
+        end
+    end
+
     @testset "go cwd is the member project" begin
         member = "~/lab/experiments/run1"
         inner = DistSSHKit._go_remote_slot_shell_inner(

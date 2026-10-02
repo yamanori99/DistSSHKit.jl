@@ -19,7 +19,9 @@ GitHub Releases may copy these sections (`Release notes:` on
   git work tree, including through a symlink) fails before instantiate.
   A `[sources]` `path` outside that tree fails the same way. An absolute
   path fails even inside the tree: workers resolve it on their own
-  filesystem. Clone and git sync also fail when that path is not in the
+  filesystem. A relative path whose directory entry is an absolute
+  symlink fails the same way, because rsync keeps that link text. Clone
+  and git sync also fail when that path is not in the
   commit they send (untracked or ignored). A symlink in that commit
   whose target is absolute, or leaves the work tree, fails even when the
   working-tree link looks local. A `url` source is fetched on the worker.

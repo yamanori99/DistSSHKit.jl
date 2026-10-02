@@ -107,7 +107,9 @@ DistSSHKit assumes a Julia **project** — `Project.toml` at the project root
   including a symlink to one, fails before instantiate. A `[sources]`
   `path` outside that tree fails the same way. An absolute path fails
   even when it sits inside the tree: the file is copied unchanged, and
-  the worker resolves it on its own filesystem. Clone and git sync also
+  the worker resolves it on its own filesystem. A relative path whose
+  directory entry is an absolute symlink fails the same way, because
+  rsync keeps that link text. Clone and git sync also
   fail when that path is not in the commit they send, including an
   untracked or ignored directory. A symlink in that commit whose target
   is absolute, or leaves the work tree, fails even when the working-tree
