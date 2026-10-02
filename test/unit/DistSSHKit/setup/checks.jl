@@ -406,6 +406,30 @@ using Pkg
             shipped = DistSSHKit.ensure_manifest_ships!(job)
             @test shipped.env_dir == DistSSHKit.canonical_local_path(job)
 
+            abs_foo = DistSSHKit.canonical_local_path(foo)
+            write(
+                joinpath(job, "Project.toml"),
+                """
+                name = "Job"
+                [sources]
+                Foo = {path = "$(abs_foo)"}
+                """,
+            )
+            @test_throws ArgumentError(
+                "Source path $abs_foo for Foo is absolute. Workers resolve it on their own filesystem, so it would not be the staged tree.",
+            ) DistSSHKit.ensure_manifest_ships!(job)
+            write(
+                joinpath(job, "Project.toml"),
+                """
+                name = "Job"
+                [sources]
+                Foo = {path = "~/nope"}
+                """,
+            )
+            @test_throws ArgumentError(
+                "Source path ~/nope for Foo is absolute. Workers resolve it on their own filesystem, so it would not be the staged tree.",
+            ) DistSSHKit.ensure_manifest_ships!(job)
+
             write(
                 joinpath(job, "Project.toml"),
                 """
@@ -427,7 +451,7 @@ using Pkg
                 """
                 name = "Job"
                 [sources]
-                Baz = {path = "$(outside)"}
+                Baz = {path = "../ext/Baz"}
                 """,
             )
             @test_throws ArgumentError DistSSHKit.ensure_manifest_ships!(job)
@@ -474,7 +498,7 @@ using Pkg
                 """
                 name = "Run1"
                 [sources]
-                Baz = {path = "$(outside)"}
+                Baz = {path = "../../../ext/Baz"}
                 """,
             )
             @test_throws ArgumentError DistSSHKit.ensure_manifest_ships!(member)
@@ -499,7 +523,7 @@ using Pkg
                     """
                     name = "Src"
                     [sources]
-                    Baz = {path = "$(outside)"}
+                    Baz = {path = "../ext/Baz"}
                     """,
                 )
                 @test_throws ArgumentError DistSSHKit.ensure_manifest_in_git_worktree!(repo)

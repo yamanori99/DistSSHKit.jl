@@ -105,7 +105,9 @@ DistSSHKit assumes a Julia **project** — `Project.toml` at the project root
   and `go` runs in that directory. `setup --clone` places the git work tree
   so that Manifest directory is the deploy root. A lock outside that tree,
   including a symlink to one, fails before instantiate. A `[sources]`
-  `path` outside that tree fails the same way. A `url` source is fetched
+  `path` outside that tree fails the same way. An absolute path fails
+  even when it sits inside the tree: the file is copied unchanged, and
+  the worker resolves it on its own filesystem. A `url` source is fetched
   on the worker. No Manifest still means instantiate resolves, as before.
 - Do not `Pkg.develop` DistSSHKit (or a `[sources]` path) in a job project
   you copy to workers. The Manifest records an absolute path the workers
