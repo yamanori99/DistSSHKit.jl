@@ -34,9 +34,7 @@ The CPU term prefers the OS core count: remotes use `hw.ncpu` (macOS) or
 `Sys.CPU_THREADS` when that query fails (typical on Linux kit parents).
 Parent hosts reserve 2 cores, children reserve 1. The formula does not
 change with the Julia minor. Kit sizes **process** counts; it does not set
-`--threads=auto` or worker thread pools. Remotes and the local host size
-from the OS core count (`hw.ncpu` or `nproc`), so the count does not follow
-Julia's performance-core heuristic.
+`--threads=auto` or worker thread pools.
 
 Drive preflight uses the same RAM fraction, `parent_gb`, and CPU reserve as
 `size_worker_count` (`pipeline!` / `drive!` / CLI `drive --mem-headroom`).
