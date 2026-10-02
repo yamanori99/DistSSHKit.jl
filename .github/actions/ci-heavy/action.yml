@@ -58,7 +58,8 @@ runs:
           echo "cut=false" >> "$GITHUB_OUTPUT"
           exit 0
         fi
-        echo "cut=$(./.github/version-cut.sh "$BASE" "$HEAD")" >> "$GITHUB_OUTPUT"
+        cut="$(./.github/version-cut.sh "$BASE" "$HEAD")"
+        echo "cut=${cut}" >> "$GITHUB_OUTPUT"
     - id: out
       shell: bash
       env:
