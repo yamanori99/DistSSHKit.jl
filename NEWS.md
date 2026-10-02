@@ -17,15 +17,17 @@ GitHub Releases may copy these sections (`Release notes:` on
   directory is the deploy root, and `--delete` removes that clone.
   A lock that would not arrive (outside the rsync tree, or outside the
   git work tree, including through a symlink) fails before instantiate.
-  A `[sources]` `path` outside that tree fails the same way. An absolute
-  path fails even inside the tree: workers resolve it on their own
-  filesystem. A relative path whose directory entry is an absolute
-  symlink fails the same way, because rsync keeps that link text. Clone
-  and git sync also fail when that path is not in the
-  commit they send (untracked or ignored). A symlink in that commit
-  whose target is absolute, or leaves the work tree, fails even when the
-  working-tree link looks local. A `url` source is fetched on the worker.
   No Manifest still resolves.
+- A `[sources]` `path` has to arrive with that tree. A path outside it
+  fails, including through a symlink. An absolute path fails even inside
+  the tree: workers resolve it on their own filesystem. rsync also
+  rejects a relative path whose directory entry is an absolute symlink,
+  because it keeps that link text. A `url` source is fetched on the
+  worker.
+- Clone and git sync send only what is in the commit. An untracked or
+  ignored `[sources]` path fails. So does a committed symlink whose
+  target is absolute or leaves the work tree, even when the working-tree
+  link looks local.
 - `setup --juliaup update` is no longer accepted. Use
   `setup --juliaup-update` (#400).
 
