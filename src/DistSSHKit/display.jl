@@ -342,10 +342,12 @@ Throw when a `[sources]` `path` would not arrive inside `root`.
 An absolute path, including after `expanduser`, is rejected even when it
 sits inside `root`: rsync and git copy `Project.toml` unchanged, and Pkg
 resolves that path on the worker. For `git=true`, the path must also be
-in `HEAD`: a clone or git sync omits an untracked or ignored directory,
-and a symlink whose target tree is not in that commit. A `url` source is
-fetched on the worker and is not checked. A symlink whose target leaves
-`root` is the same failure as a path that starts outside it.
+in `HEAD`. A clone or git sync omits an untracked or ignored directory.
+The symlink target that matters is the one stored in that commit: an
+absolute target, or one that leaves the work tree, fails even when the
+working-tree link currently points inside. A `url` source is fetched on
+the worker and is not checked. A symlink whose target leaves `root` is
+the same failure as a path that starts outside it.
 """
 function _ensure_path_sources_in_tree!(env, root::AbstractString; git::Bool)
     root_c = canonical_local_path(root)
@@ -399,47 +401,144 @@ function _ensure_path_sources_in_tree!(env, root::AbstractString; git::Bool)
                 ),
             )
             git || continue
-            _git_head_records(root_c, location) || throw(
-                ArgumentError(
-                    "Source path $location for $name is not in the git commit a clone or git sync would send.",
-                ),
-            )
-            target == canonical_local_path(location) && continue
-            _git_head_records(root_c, target) || throw(
-                ArgumentError(
-                    "Source path $location for $name points at $target, which is not in the git commit a clone or git sync would send.",
-                ),
-            )
+            _ensure_git_head_source!(root_c, location, name)
         end
     end
     return nothing
 end
 
-"""Whether `HEAD` of `work_tree` records `path` or a file under it."""
-function _git_head_records(work_tree::AbstractString, path::AbstractString)::Bool
-    rel = replace(
-        relpath(canonical_local_path(path), canonical_local_path(work_tree)),
-        "\\" => "/",
-    )
+"""`realpath` of the parent, with the final component left as written.
+
+A source path may itself be the symlink git recorded. Following that leaf
+would check the target directory instead of the link.
+"""
+function _path_physical_parent(path::AbstractString)::String
+    p = canonical_local_path(path)
+    parent = dirname(p)
+    if parent == p
+        return ispath(p) ? canonical_local_path(realpath(p)) : p
+    end
+    parent_phys = if ispath(parent)
+        canonical_local_path(realpath(parent))
+    else
+        _path_physical_parent(parent)
+    end
+    return joinpath(parent_phys, basename(p))
+end
+
+"""
+Path of `path` relative to `work_tree`, using one physical spelling.
+
+`git rev-parse --show-toplevel` may be `/private/var/...` while Julia still
+has `/var/...`. `relpath` across those spellings leaves the work tree, and
+`ls-tree` then misses a path that is in `HEAD`.
+"""
+function _git_worktree_relpath(work_tree::AbstractString, path::AbstractString)::String
+    root = canonical_local_path(work_tree)
+    root_phys = ispath(root) ? canonical_local_path(realpath(root)) : root
+    src = _path_physical_parent(path)
+    return replace(relpath(src, root_phys), "\\" => "/")
+end
+
+"""`ls-tree` row for `path` in `HEAD`, or `nothing` when that commit omits it."""
+function _git_head_entry(work_tree::AbstractString, path::AbstractString)
+    rel = _git_worktree_relpath(work_tree, path)
+    (rel == ".." || startswith(rel, "../")) && return nothing
     cmd = _git_cmd(
         [
             "--literal-pathspecs",
             "-C",
             String(work_tree),
             "ls-tree",
-            "-r",
-            "--name-only",
+            "-z",
             "HEAD",
             "--",
             rel,
         ]
     )
-    out = try
-        read(pipeline(cmd; stderr = devnull), String)
+    text = try
+        String(read(pipeline(cmd; stderr = devnull)))
     catch
-        return false
+        return nothing
     end
-    return !isempty(strip(out))
+    isempty(text) && return nothing
+    rec = first(split(text, '\0'; keepempty = false))
+    m = match(r"^([0-7]+) (blob|tree|commit) ([0-9a-f]+)\t", rec)
+    m === nothing && return nothing
+    return (mode = String(m.captures[1]), type = String(m.captures[2]), hash = String(m.captures[3]))
+end
+
+"""Bytes of blob `hash` in `work_tree`, without a trailing newline."""
+function _git_blob_text(work_tree::AbstractString, hash::AbstractString)::String
+    cmd = _git_cmd(["-C", String(work_tree), "cat-file", "blob", String(hash)])
+    return chomp(String(read(pipeline(cmd; stderr = devnull))))
+end
+
+"""
+Throw unless `HEAD` of `work_tree` will materialize `location` as a directory
+inside that tree.
+
+A symlink is read from the commit, not from the working tree. An uncommitted
+edit can point a link inside the tree while the clone still has an absolute
+or escaping target.
+"""
+function _ensure_git_head_source!(
+        work_tree::AbstractString,
+        location::AbstractString,
+        name::AbstractString,
+    )
+    seen = Set{String}()
+    origin = canonical_local_path(location)
+    current = origin
+    raw = ""
+    while true
+        key = _path_physical_parent(current)
+        key in seen && throw(
+            ArgumentError(
+                "Source path $origin for $name is a symlink loop in the git commit.",
+            ),
+        )
+        push!(seen, key)
+        entry = _git_head_entry(work_tree, current)
+        if entry === nothing
+            current == origin && throw(
+                ArgumentError(
+                    "Source path $origin for $name is not in the git commit a clone or git sync would send.",
+                ),
+            )
+            throw(
+                ArgumentError(
+                    "Source path $origin for $name is a symlink to $raw in the git commit, which a clone or git sync would omit.",
+                ),
+            )
+        end
+        entry.type == "tree" && return nothing
+        if entry.mode != "120000"
+            throw(
+                ArgumentError(
+                    "Source path $current for $name is not a directory in the git commit a clone or git sync would send.",
+                ),
+            )
+        end
+        raw = _git_blob_text(work_tree, entry.hash)
+        if isabspath(expanduser(raw))
+            throw(
+                ArgumentError(
+                    "Source path $current for $name is a symlink to $raw in the git commit. A clone keeps that absolute target.",
+                ),
+            )
+        end
+        parent = dirname(_path_physical_parent(current))
+        resolved = canonical_local_path(normpath(joinpath(parent, raw)))
+        root = canonical_local_path(work_tree)
+        _path_under_resolved(resolved, root) || throw(
+            ArgumentError(
+                "Source path $current for $name is a symlink to $raw in the git commit, outside the git work tree ($root). The path would not reach a clone or git sync.",
+            ),
+        )
+        current = resolved
+    end
+    return
 end
 
 """

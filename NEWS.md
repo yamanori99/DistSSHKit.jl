@@ -20,8 +20,10 @@ GitHub Releases may copy these sections (`Release notes:` on
   A `[sources]` `path` outside that tree fails the same way. An absolute
   path fails even inside the tree: workers resolve it on their own
   filesystem. Clone and git sync also fail when that path is not in the
-  commit they send (untracked or ignored). A `url` source is fetched on
-  the worker. No Manifest still resolves.
+  commit they send (untracked or ignored). A symlink in that commit
+  whose target is absolute, or leaves the work tree, fails even when the
+  working-tree link looks local. A `url` source is fetched on the worker.
+  No Manifest still resolves.
 - `setup --juliaup update` is no longer accepted. Use
   `setup --juliaup-update` (#400).
 
