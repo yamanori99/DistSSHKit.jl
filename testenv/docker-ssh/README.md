@@ -10,7 +10,7 @@ Real OpenSSH + rsync Linux workers. CI remote SSH coverage uses this stack
 ## Coverage matrix
 
 - Linux (`ubuntu-latest`), workers `ubuntu:24.04` ×2: **CI** — main /
-  `cut` (`E2E`) and weekly (`E2E weekly / ubuntu-latest → ubuntu-24.04`)
+  a version-cut PR (`E2E`) and weekly (`E2E weekly / ubuntu-latest → ubuntu-24.04`)
 - macOS Intel (`macos-15-intel` + Colima), same image: **E2E weekly** —
   `E2E weekly / macos-15-intel → ubuntu-24.04`
 - WSL2 (`windows-latest`), same image: **E2E weekly** —
@@ -117,16 +117,16 @@ ssh -F .generated/ssh_config child-1 'echo ok; julia --version'
 
 [`.github/workflows/CI.yml`](../../.github/workflows/CI.yml) runs
 `./scripts/up.sh --e2e` on `ubuntu-latest` for **main** (E2E-relevant
-paths), `cut` PRs, and manual dispatch
-(`ubuntu-latest → ubuntu-24.04`). Ordinary PRs skip that job's Docker
-steps.
+paths), a PR whose `Project.toml` `version` went up, and manual dispatch
+(`ubuntu-latest → ubuntu-24.04`). Other PRs run it only when those paths
+change.
 [`.github/workflows/ssh-e2e-weekly.yml`][e2e-weekly]
-(`E2E weekly`) runs Sunday 04:00 JST, via Run workflow, or on a `cut`
+(`E2E weekly`) runs Sunday 04:00 JST, via Run workflow, or on a version
 squash to `main` (`Project.toml` version up): bake
 `ubuntu-latest (image)` to GHCR, then `ubuntu-latest`, `macos-15-intel`, and
 `windows-latest (WSL2)` pull that tag and run the suite. Weekly Linux is the
-same suite as `cut` / **main** Linux E2E, not a PR check.
-Register from the cut PR's Linux E2E. Weekly Intel / WSL are
+same suite as a version-cut PR / **main** Linux E2E, not a PR check.
+Register from the version-cut PR's Linux E2E. Weekly Intel / WSL are
 watchers (`cut-hold` only if weekly Linux is red).
 
 Those kit parent jobs wait for `ubuntu-latest (image)` then pull

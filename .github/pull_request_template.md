@@ -10,7 +10,7 @@
 ## Checklist
 
 - [ ] Not breaking — or `breaking` label (incompatible behavior)
-- [ ] Version raise — or `cut` label (`Project.toml` `version` went
-      up; register from Linux E2E; weekly Intel / WSL watch;
+- [ ] Version raise — `Project.toml` `version` went up (CI reads the
+      diff; register from Linux E2E; weekly Intel / WSL watch;
       `cut-hold` if weekly Linux is red)
 - [ ] Remote / smoke tested if this PR needs it

@@ -9,6 +9,9 @@ outputs:
   docs:
     description: true when Documenter should run
     value: ${{ steps.out.outputs.docs }}
+  version_cut:
+    description: true when this PR raises Project.toml version
+    value: ${{ steps.version.outputs.cut }}
 
 runs:
   using: composite
@@ -44,13 +47,26 @@ runs:
             - "README.ja.md"
             - "src/**"
             - "Project.toml"
+    - id: version
+      shell: bash
+      env:
+        BASE: ${{ github.event.pull_request.base.sha }}
+        HEAD: ${{ github.event.pull_request.head.sha }}
+        PR: ${{ github.event.pull_request.number }}
+      run: |
+        if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
+          echo "cut=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        cut="$(./.github/version-cut.sh "$BASE" "$HEAD")"
+        echo "cut=${cut}" >> "$GITHUB_OUTPUT"
     - id: out
       shell: bash
       env:
         HEAVY: ${{ steps.filter.outputs.heavy }}
         DOCS: ${{ steps.filter.outputs.docs }}
-        # Exact name `cut` (version bump). Path skips do not apply.
-        CUT: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'cut') }}
+        # Project.toml version went up. Path skips do not apply.
+        CUT: ${{ steps.version.outputs.cut }}
       run: |
         if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
           echo "heavy=true" >> "$GITHUB_OUTPUT"
@@ -59,7 +75,7 @@ runs:
         elif [ "${CUT}" = "true" ]; then
           echo "heavy=true" >> "$GITHUB_OUTPUT"
           echo "docs=true" >> "$GITHUB_OUTPUT"
-          echo "PR cut: heavy=true docs=true"
+          echo "PR version cut: heavy=true docs=true"
         else
           echo "heavy=${HEAVY}" >> "$GITHUB_OUTPUT"
           echo "docs=${DOCS}" >> "$GITHUB_OUTPUT"

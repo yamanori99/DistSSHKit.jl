@@ -70,14 +70,16 @@ Green on one layer does not imply the others. `Pkg.test()` does not run
 - **integration** (~3 min): child CLI and/or **local** `addprocs`. Not
   real SSH / rsync.
 - **e2e** (~15–25 min): real SSH + rsync, two Linux workers; **PR** /
-  **main** (path filter), `cut` / weekly / dispatch (Compose). Not
-  markdown-only allowlisted PRs. Not local-only CLI wiring.
+  **main** (path filter), a `Project.toml` version increase, weekly, or
+  dispatch (Compose). Not markdown-only allowlisted PRs. Not local-only
+  CLI wiring.
   `test/e2e.jl` prints `[i/N]` at the start of each inner `@testset`
   (SSH steps can sit silent for minutes otherwise). Update `_E2E_N` when
   adding a case.
 - **e2e weekly** (10–50 min): same `e2e.jl` from Linux, macOS Intel, or
-  WSL2 (not a PR check; starts on a `cut` merge; Intel / WSL are
-  watchers). Register from cut PR Linux E2E.
+  WSL2 (not a PR check; starts when `Project.toml` `version` goes up on
+  `main`; Intel / WSL are watchers). Register from the version-cut PR's
+  Linux E2E.
   Not macOS workers.
 - **doctests** (~5 s): `src/` docstring examples (Documenter, Julia 1.13).
   Not workers / SSH.
@@ -95,7 +97,8 @@ from a **bare** `file://` git (so the installed package dir has no `.git` —
 DistSSHKit talks to git for jobs, not for its own install), `chmod a-w` on
 `pkgdir`, then `Pkg.test`. Do this after changing the gates above, and
 before a General cut. CI: `Pkg.test - registry tree` on **main** and
-**cut** (slot tip, no `ssh`; not a required check). Not ordinary PRs.
+a version-cut PR (slot tip, no `ssh`; not a required check). Not
+ordinary PRs.
 
 Copy without `Manifest.toml` (and without `.git`). On Linux, `mktemp -d` is
 enough. On macOS, put the copy under `$HOME` if you will bind-mount it into
@@ -184,8 +187,8 @@ open "$(cat test/artifacts/ssh-e2e/LATEST)/SUMMARY.txt"
 ```
 
 Coverage uploads on **main push** (`Pkg.test` max) and **E2E weekly** /
-**`cut` PR** E2E (`DISTSSHKIT_CODE_COVERAGE=1` on `up.sh --e2e`). Ordinary
-PRs do not run Linux E2E. Local:
+version-cut PR E2E (`DISTSSHKIT_CODE_COVERAGE=1` on `up.sh --e2e`).
+Path-filtered PR E2E runs without that upload. Local:
 
 ```bash
 DISTSSHKIT_CODE_COVERAGE=1 \
