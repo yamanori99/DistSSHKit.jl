@@ -601,31 +601,35 @@ function git_work_tree(proj_dir::AbstractString)::Union{Nothing, String}
 end
 
 """
-Throw when the lock Pkg reads is outside the git work tree of `project`.
+Throw when the lock Pkg reads, or a `[sources]` path, is outside the git
+work tree of `project`.
 
-No Manifest, or no git work tree, is not an error. Clone and git sync cannot
-carry a lock that is not in the repository.
+No Manifest is not an error. No git work tree is not an error. A `url`
+source is fetched on the worker. Clone and git sync cannot carry a lock
+or path source that is not in the repository.
 """
 function ensure_manifest_in_git_worktree!(project::AbstractString)
     env = resolve_pkg_env(project)
-    manifest = env.manifest
-    manifest isa String || return nothing
     top = git_work_tree(env.project_dir)
     top isa String || return nothing
-    location = canonical_local_path(manifest)
-    # The directory Pkg names, not the symlink target. A link outside the
-    # work tree that points at a lock inside it is still not in the clone.
-    _path_under_resolved(dirname(location), top) || throw(
-        ArgumentError(
-            "Manifest $location is outside the git work tree ($top). The lock would not reach a clone or git sync.",
-        ),
-    )
-    target = manifest_link_target(manifest)
-    _path_under_resolved(target, top) || throw(
-        ArgumentError(
-            "Manifest $location points at $target, outside the git work tree ($top). The lock would not reach a clone or git sync.",
-        ),
-    )
+    manifest = env.manifest
+    if manifest isa String
+        location = canonical_local_path(manifest)
+        # The directory Pkg names, not the symlink target. A link outside the
+        # work tree that points at a lock inside it is still not in the clone.
+        _path_under_resolved(dirname(location), top) || throw(
+            ArgumentError(
+                "Manifest $location is outside the git work tree ($top). The lock would not reach a clone or git sync.",
+            ),
+        )
+        target = manifest_link_target(manifest)
+        _path_under_resolved(target, top) || throw(
+            ArgumentError(
+                "Manifest $location points at $target, outside the git work tree ($top). The lock would not reach a clone or git sync.",
+            ),
+        )
+    end
+    _ensure_path_sources_in_tree!(env, top; git = true)
     return nothing
 end
 

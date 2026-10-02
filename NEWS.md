@@ -17,7 +17,8 @@ GitHub Releases may copy these sections (`Release notes:` on
   directory is the deploy root, and `--delete` removes that clone.
   A lock that would not arrive (outside the rsync tree, or outside the
   git work tree, including through a symlink) fails before instantiate.
-  No Manifest still resolves.
+  A `[sources]` `path` outside that tree fails the same way. A `url`
+  source is fetched on the worker. No Manifest still resolves.
 - `setup --juliaup update` is no longer accepted. Use
   `setup --juliaup-update` (#400).
 

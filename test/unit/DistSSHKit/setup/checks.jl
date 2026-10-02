@@ -387,6 +387,113 @@ using Pkg
         end
     end
 
+    @testset "path sources must ship with the lock" begin
+        _with_tempdir() do root
+            job = joinpath(root, "job")
+            foo = joinpath(job, "dev", "Foo")
+            mkpath(foo)
+            write(joinpath(foo, "Project.toml"), "name = \"Foo\"\n")
+            write(joinpath(job, "Manifest.toml"), "# lock\n")
+            write(
+                joinpath(job, "Project.toml"),
+                """
+                name = "Job"
+                [sources]
+                Foo = {path = "dev/Foo"}
+                Bar = {url = "https://example.invalid/Bar.jl.git"}
+                """,
+            )
+            shipped = DistSSHKit.ensure_manifest_ships!(job)
+            @test shipped.env_dir == DistSSHKit.canonical_local_path(job)
+
+            outside = joinpath(root, "ext", "Baz")
+            mkpath(outside)
+            write(joinpath(outside, "Project.toml"), "name = \"Baz\"\n")
+            write(
+                joinpath(job, "Project.toml"),
+                """
+                name = "Job"
+                [sources]
+                Baz = {path = "$(outside)"}
+                """,
+            )
+            @test_throws ArgumentError DistSSHKit.ensure_manifest_ships!(job)
+
+            rm(joinpath(job, "Project.toml"))
+            write(
+                joinpath(job, "Project.toml"),
+                """
+                name = "Job"
+                [sources]
+                Baz = {path = "dev/Baz"}
+                """,
+            )
+            symlink(outside, joinpath(job, "dev", "Baz"))
+            @test_throws ArgumentError DistSSHKit.ensure_manifest_ships!(job)
+
+            lab = joinpath(root, "lab")
+            member = joinpath(lab, "experiments", "run1")
+            inner = joinpath(lab, "dev", "Foo")
+            mkpath(member)
+            mkpath(inner)
+            write(joinpath(inner, "Project.toml"), "name = \"Foo\"\n")
+            write(
+                joinpath(lab, "Project.toml"),
+                """
+                name = "Lab"
+                [workspace]
+                projects = ["experiments/run1"]
+                """,
+            )
+            write(joinpath(lab, "Manifest.toml"), "# lock\n")
+            write(
+                joinpath(member, "Project.toml"),
+                """
+                name = "Run1"
+                [sources]
+                Foo = {path = "../../dev/Foo"}
+                """,
+            )
+            @test DistSSHKit.ensure_manifest_ships!(member).env_dir ==
+                DistSSHKit.canonical_local_path(lab)
+            write(
+                joinpath(member, "Project.toml"),
+                """
+                name = "Run1"
+                [sources]
+                Baz = {path = "$(outside)"}
+                """,
+            )
+            @test_throws ArgumentError DistSSHKit.ensure_manifest_ships!(member)
+
+            if Sys.which("git") !== nothing
+                repo = joinpath(root, "srcjob")
+                mkpath(joinpath(repo, "dev", "Foo"))
+                write(joinpath(repo, "dev", "Foo", "Project.toml"), "name = \"Foo\"\n")
+                write(joinpath(repo, "Manifest.toml"), "# lock\n")
+                write(
+                    joinpath(repo, "Project.toml"),
+                    """
+                    name = "Src"
+                    [sources]
+                    Foo = {path = "dev/Foo"}
+                    """,
+                )
+                run(pipeline(`git -C $repo init -q`; stdout = devnull, stderr = devnull))
+                @test DistSSHKit.ensure_manifest_in_git_worktree!(repo) === nothing
+                write(
+                    joinpath(repo, "Project.toml"),
+                    """
+                    name = "Src"
+                    [sources]
+                    Baz = {path = "$(outside)"}
+                    """,
+                )
+                @test_throws ArgumentError DistSSHKit.ensure_manifest_in_git_worktree!(repo)
+            end
+        end
+    end
+
     @testset "go cwd is the member project" begin
         member = "~/lab/experiments/run1"
         inner = DistSSHKit._go_remote_slot_shell_inner(

@@ -297,14 +297,111 @@ function manifest_link_target(manifest::AbstractString)::String
     return canonical_local_path(realpath(path))
 end
 
+"""Project.toml files whose `[sources]` paths must ride along with `env`."""
+function _pkg_env_project_files(env)::Vector{String}
+    files = String[]
+    member = canonical_local_path(joinpath(env.project_dir, "Project.toml"))
+    isfile(member) && push!(files, member)
+    root = canonical_local_path(joinpath(env.env_dir, "Project.toml"))
+    if isfile(root) && root != member
+        push!(files, root)
+    end
+    return files
+end
+
+"""`(name, path)` for each `[sources]` entry that names a `path`."""
+function _project_path_sources(project_file::AbstractString)::Vector{Tuple{String, String}}
+    data = TOML.parsefile(project_file)
+    sources = get(data, "sources", nothing)
+    sources isa AbstractDict || return Tuple{String, String}[]
+    found = Tuple{String, String}[]
+    for (name, spec) in sources
+        spec isa AbstractDict || continue
+        raw = get(spec, "path", nothing)
+        raw isa AbstractString || continue
+        s = strip(String(raw))
+        isempty(s) && continue
+        push!(found, (String(name), s))
+    end
+    return found
+end
+
+"""`path` from `[sources]`, relative to the Project.toml that declared it."""
+function _resolved_source_path(project_file::AbstractString, raw::AbstractString)::String
+    expanded = expanduser(String(raw))
+    if isabspath(expanded)
+        return canonical_local_path(expanded)
+    end
+    return canonical_local_path(joinpath(dirname(String(project_file)), expanded))
+end
+
 """
-Throw when `manifest` is not inside `env_dir` together with `project_dir`.
+Throw when a `[sources]` `path` would not arrive inside `root`.
+
+`git=false` is the rsync tree (`env_dir`). `git=true` is the git work tree.
+A `url` source is fetched on the worker and is not checked. A symlink whose
+target leaves `root` is the same failure as a path that starts outside it.
+"""
+function _ensure_path_sources_in_tree!(env, root::AbstractString; git::Bool)
+    root_c = canonical_local_path(root)
+    root_real = ispath(root_c) ? canonical_local_path(realpath(root_c)) : root_c
+    for project_file in _pkg_env_project_files(env)
+        for (name, raw) in _project_path_sources(project_file)
+            location = _resolved_source_path(project_file, raw)
+            if git
+                _path_under_resolved(location, root_c) || throw(
+                    ArgumentError(
+                        "Source path $location for $name is outside the git work tree ($root_c). The path would not reach a clone or git sync.",
+                    ),
+                )
+            else
+                _path_is_under(location, root_c) || throw(
+                    ArgumentError(
+                        "Source path $location for $name is outside the tree setup/rsync would send ($root_c). Workers would not see this path.",
+                    ),
+                )
+            end
+            ispath(location) || throw(
+                ArgumentError(
+                    "Source path $location for $name is not a directory. Workers would not see this path.",
+                ),
+            )
+            target = canonical_local_path(realpath(location))
+            inside = if git
+                _path_under_resolved(target, root_real)
+            else
+                _path_is_under(target, root_real)
+            end
+            inside || throw(
+                ArgumentError(
+                    if git
+                        "Source path $location for $name points at $target, outside the git work tree ($root_real). The path would not reach a clone or git sync."
+                    else
+                        "Source path $location for $name points at $target, outside the tree setup/rsync would send ($root_real). Workers would not see this path."
+                    end,
+                ),
+            )
+            isdir(location) || throw(
+                ArgumentError(
+                    "Source path $location for $name is not a directory. Workers would not see this path.",
+                ),
+            )
+        end
+    end
+    return nothing
+end
+
+"""
+Throw when `manifest`, or a `[sources]` path, is not inside `env_dir`
+together with `project_dir`.
 
 One rsync cannot carry both. A symlink whose target leaves that tree is the
-same failure. No Manifest is not an error (instantiate resolves).
+same failure. A `url` source is fetched on the worker. No Manifest is not
+an error (instantiate resolves).
 """
 function ensure_manifest_ships!(project::AbstractString)
     env = resolve_pkg_env(project)
+    _ensure_path_sources_in_tree!(env, env.env_dir; git = false)
     manifest = env.manifest
     manifest isa String || return env
     _path_is_under(env.project_dir, env.env_dir) || throw(
