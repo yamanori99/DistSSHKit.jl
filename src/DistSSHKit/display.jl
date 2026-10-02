@@ -363,7 +363,7 @@ function _ensure_path_sources_in_tree!(env, root::AbstractString; git::Bool)
             end
             ispath(location) || throw(
                 ArgumentError(
-                    "Source path $location for $name is not a directory. Workers would not see this path.",
+                    "Source path $location for $name does not exist. Workers would not see this path.",
                 ),
             )
             target = canonical_local_path(realpath(location))

@@ -406,6 +406,19 @@ using Pkg
             shipped = DistSSHKit.ensure_manifest_ships!(job)
             @test shipped.env_dir == DistSSHKit.canonical_local_path(job)
 
+            write(
+                joinpath(job, "Project.toml"),
+                """
+                name = "Job"
+                [sources]
+                Foo = {path = "dev/Missing"}
+                """,
+            )
+            @test_throws ArgumentError("Source path $(DistSSHKit.canonical_local_path(joinpath(job, "dev", "Missing"))) for Foo does not exist. Workers would not see this path.") DistSSHKit.ensure_manifest_ships!(job)
+            write(joinpath(job, "dev", "Missing"), "not a directory\n")
+            @test_throws ArgumentError("Source path $(DistSSHKit.canonical_local_path(joinpath(job, "dev", "Missing"))) for Foo is not a directory. Workers would not see this path.") DistSSHKit.ensure_manifest_ships!(job)
+            rm(joinpath(job, "dev", "Missing"))
+
             outside = joinpath(root, "ext", "Baz")
             mkpath(outside)
             write(joinpath(outside, "Project.toml"), "name = \"Baz\"\n")
