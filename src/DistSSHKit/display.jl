@@ -477,11 +477,18 @@ function _git_head_entry(work_tree::AbstractString, path::AbstractString)
     rec = first(split(text, '\0'; keepempty = false))
     m = match(r"^([0-7]+) (blob|tree|commit) ([0-9a-f]+)\t", rec)
     m === nothing && return nothing
-    mode, kind, blob = m.captures
-    if !(mode isa AbstractString && kind isa AbstractString && blob isa AbstractString)
-        return nothing
-    end
-    return (mode = String(mode), type = String(kind), hash = String(blob))
+    # Same narrowing as `project_package_name`: `String` only on the
+    # `AbstractString` arm. A later `String(capture)` stays a union split.
+    mode_cap = m.captures[1]
+    mode = mode_cap isa AbstractString ? String(mode_cap) : nothing
+    mode === nothing && return nothing
+    kind_cap = m.captures[2]
+    kind = kind_cap isa AbstractString ? String(kind_cap) : nothing
+    kind === nothing && return nothing
+    blob_cap = m.captures[3]
+    blob = blob_cap isa AbstractString ? String(blob_cap) : nothing
+    blob === nothing && return nothing
+    return (mode = mode, type = kind, hash = blob)
 end
 
 """Bytes of blob `hash` in `work_tree`, without a trailing newline."""
