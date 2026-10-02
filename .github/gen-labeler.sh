@@ -6,9 +6,8 @@
 #   - src/DistSSHKit/argv/<area>* → same area (drive_args.jl, size_report.jl, …)
 #   - kit modules explain / demos → area:explain, area:demos
 #   - product tests under test/unit and test/integration → that area
-#   - SSH E2E entry (`test/e2e.jl`, `test/support/ssh_e2e.jl`) also gets each
-#     CLI area that has src/cli/<area> (the suite is those commands on real SSH)
-#   - shared kit, test harness, docs, README/NEWS, and .github stay unlabeled
+#   - shared kit, test harness (including test/e2e.jl), docs, README/NEWS,
+#     and .github stay unlabeled
 # Do not emit `!` globs: labeler ORs them as "not this path" and tags
 # unrelated files.
 #
@@ -60,12 +59,6 @@ EOF
           - "test/**/${area}.*"
           - "test/fixtures/${area}*"
 EOF
-    if [[ -e "${ROOT}/src/cli/${area}.jl" || -d "${ROOT}/src/cli/${area}" ]]; then
-      cat <<'EOF'
-          - "test/e2e.jl"
-          - "test/support/ssh_e2e.jl"
-EOF
-    fi
     # Bundled demos live under repo-root demos/ (not only DistSSHKit/demos.jl).
     if [[ "$area" == "demos" ]]; then
       cat <<'EOF'

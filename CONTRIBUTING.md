@@ -82,8 +82,8 @@ Checkout `Pkg.test()` is not a Registry tarball. After changing those
 gates (smokes, demo copy, `ssh` / `git` spawn, probe), and before a
 General cut, run the disposable copy in
 [test/README.md](test/README.md#registry-tree). CI runs that shape on
-**main** and **cut** (slot tip; not a required check). Not on ordinary
-PRs.
+**main** and a version-cut PR (slot tip; not a required check). Not on
+ordinary PRs.
 
 Smoke (1.13+; [demos/README.md](demos/README.md)):
 
@@ -103,8 +103,9 @@ testenv/docker-ssh/scripts/up.sh --e2e
 CI uploads Codecov on **main push** only (`Pkg.test` max slot, flag
 `pkgtest`). PR `Pkg.test` runs without coverage instrumentation. E2E
 **Codecov** (flag `e2e`) uploads from two places: the **E2E weekly**
-workflow (`.github/workflows/ssh-e2e-weekly.yml`, always on) and **`cut`
-PR** E2E in `CI.yml` (`coverage=true` only when the `cut` label is set).
+workflow (`.github/workflows/ssh-e2e-weekly.yml`, always on) and a
+**version-cut PR** E2E in `CI.yml` (`coverage=true` only when
+`Project.toml` `version` went up).
 Ordinary / path-filtered PR E2E still runs the job; it does not upload
 coverage. Local coverage:
 
@@ -130,7 +131,7 @@ fourth version job. Slide the pin; keep job names `min` / `max` /
 - **min** (required): `Project.toml` julia floor. Pkg.test (no
   coverage), Aqua, JETLS
 - **max** (required): newest tagged or prerelease (`versions.json`).
-  Pkg.test, Aqua, Documenter, bake, **main** / weekly / `cut` E2E,
+  Pkg.test, Aqua, Documenter, bake, **main** / weekly / version-cut E2E,
   GHCR worker. Codecov `pkgtest` on **main push** only
 - **tip** (not required): next-minor nightly. Pkg.test, Aqua.
   `continue-on-error`
@@ -165,15 +166,15 @@ These run as jobs of the `Test` workflow
 ([`.github/workflows/CI.yml`](.github/workflows/CI.yml)). Ubuntu:
 `Pkg.test` max, JETLS max, Aqua max, Documenter max,
 Gitleaks (also rejects `< 0.0.1` in `Project.toml`). `Pkg.test` / JETLS /
-Aqua **min** stay on **main**, **CI weekly**, and `cut` (ci-cut when the
-label is added later), not ordinary PRs. Linux E2E (max)
+Aqua **min** stay on **main**, **CI weekly**, and a PR whose
+`Project.toml` `version` went up, not ordinary PRs. Linux E2E (max)
 uses the same **path filter** as **main** push
 (`src/**`, `test/**`, `demos/**`, `testenv/**` minus markdown under those
 trees, `Project.toml`, `.github/julia-slots.env`,
-`.github/workflows/CI.yml`). It also runs on
-**`cut`**, **E2E weekly**, and `workflow_dispatch`. Tip `Pkg.test` / Aqua
-stay on **main**, **CI weekly**, and `cut`. Registry tree stays on
-**main** and `cut` (ci-cut), not ordinary PRs.
+`.github/workflows/CI.yml`). It also runs when that version went up,
+on **E2E weekly**, and on `workflow_dispatch`. Tip `Pkg.test` / Aqua
+stay on **main**, **CI weekly**, and a version-cut PR. Registry tree
+stays on **main** and a version-cut PR, not ordinary PRs.
 
 [Runic](https://github.com/fredrikekre/Runic.jl) is a separate light
 workflow ([`.github/workflows/runic.yml`](.github/workflows/runic.yml)).
@@ -195,16 +196,16 @@ skipping UI):
 
 A new root markdown file stays heavy until listed in
 [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml).
-A `cut` label skips none of this: Pkg.test, JETLS, Aqua, Documenter,
+A version increase skips none of this: Pkg.test, JETLS, Aqua, Documenter,
 and Linux E2E all run (E2E Codecov too). macOS / WSL stay on `E2E weekly`,
-not the PR. Register from the cut PR's Linux E2E (optional local Mac
+not the PR. Register from the version-cut PR's Linux E2E (optional local Mac
 `./testenv/docker-ssh/scripts/up.sh --e2e`). Intel / WSL weekly are
 watchers, not the register gate.
 
 Required to merge (branch protection uses these names). Tip jobs are
 allow-failure. A job skipped by the heavy / E2E gate shows as skipping
 (not a green empty run). On an ordinary PR the three **min** checks
-skip too; they run on **main**, weekly, and `cut`.
+skip too; they run on **main**, weekly, and a version-cut PR.
 
 - `Pkg.test - min - ubuntu-latest`
 - `Pkg.test - max - ubuntu-latest`
@@ -218,9 +219,8 @@ skip too; they run on **main**, weekly, and `cut`.
 - `PR label`
 
 **Downstream** ([`.github/workflows/downstream.yml`](.github/workflows/downstream.yml)):
-on `src/**`, `Project.toml`, that workflow, **`cut`** (including when the
-label is added after open — `labeled` is on this workflow only), or
-dispatch, checkout [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
+on `src/**`, `Project.toml`, that workflow, or dispatch, checkout
+[DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
 `main`, `Pkg.develop` this Kit tree, then Queue `Pkg.test()` (unit +
 integration; no SSH E2E). Job name
 `DistSSHQueue - max - ubuntu-latest`. Soft (`continue-on-error`); not
@@ -310,8 +310,9 @@ with `setup --delete`. First deploy `--rsync`; later git `--sync` /
 
 - `breaking`: incompatible behavior. May land **without** a version
   bump. About behavior, not the bump.
-- `cut`: `Project.toml` `version` went up. CI adds this; other
-  `Project.toml` edits do not. The PR suite does not path-skip.
+- version cut: `Project.toml` `version` went up. CI compares that
+  file with the base. Other `Project.toml` edits do not. The PR suite
+  does not path-skip. There is no `cut` label.
 - `cut-hold`: postpone register. CI adds this on Issue `E2E weekly
   failed` when the weekly **Linux** job is red after a `cut` merge;
   remove it (or wait for a green Linux weekly) before register. Intel /
@@ -337,9 +338,9 @@ two-week rule above unless a General user needs them sooner.
 
 ### After a cut merges
 
-1. Register when the **cut PR Linux E2E** is green (`ubuntu-latest →
+1. Register when the **version-cut PR Linux E2E** is green (`ubuntu-latest →
    ubuntu-24.04`, with Codecov). Path-filtered PRs already run that
-   job; `cut` still forces it. Optional: local Mac
+   job; a version increase still forces it. Optional: local Mac
    `./testenv/docker-ssh/scripts/up.sh --e2e` (same suite; not Colima
    Intel CI). Do not wait for weekly Intel / WSL.
 2. **E2E weekly** still starts on the merge commit (`Project.toml`
@@ -403,8 +404,8 @@ area dropdown is triage; add `area:*` if useful. Horizon (`when:*`) is
 `when:current` / `when:next` / `when:later`. `julia-next` is optional
 and orthogonal: Julia tip / next stable Base or stdlib drift (keep
 `when:later` until that Julia is the kit contract). Usage questions are
-Discussions. Confirmed bugs are Issues. `breaking` and `cut` are PR
-labels; `cut-hold` is an Issue label after a cut merge. Direction:
+Discussions. Confirmed bugs are Issues. `breaking` is a PR label.
+`cut-hold` is an Issue label after a cut merge. Direction:
 [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26).
 Security: [SECURITY.md](SECURITY.md).
 
@@ -429,13 +430,11 @@ Path labels are command names only. `gen-labeler.sh --check` fails when
 Shared kit, the test harness, docs, README / NEWS, and `.github` stay
 unlabeled. Globs are positive paths; do not add `!` excludes (labeler
 ORs them as "not this path" and tags unrelated files). Path labeler
-syncs only `area:*`. After `setLabels` it restores type / `cut` / `when:*`
+syncs only `area:*`. After `setLabels` it restores type / `when:*`
 / other non-area labels so a concurrent Type job is not wiped.
 
 - `src/cli/<area>/` (`explain` / `demos` too): `area:<area>`
 - Product tests under `unit/` and `integration/`: that `area:<area>`
-- `test/e2e.jl`, `test/support/ssh_e2e.jl`: each CLI area that has
-  `src/cli/<area>`
 
 New CLI area: edit the script, regenerate, create the GitHub label.
 
@@ -475,13 +474,13 @@ Linux E2E (or holds with `cut-hold` if weekly Linux is red); TagBot
 tags.
 
 Ruleset `main` requires check `PR label` (workflow `Type`). Type labels
-(`bug` / `enhancement` / `breaking` / `chore` / `cut`) and each `area:*`
+(`bug` / `enhancement` / `breaking` / `chore`) and each `area:*`
 must exist (`gh label create` if missing). `when:*` and `julia-next` are
 Issues only (not a PR type).
 
 | Kind | Color | Labels |
 | --- | --- | --- |
-| Type | red / green / yellow / dark red / purple / mint | `bug` `enhancement` `chore` `breaking` `cut` `dependencies` |
+| Type | red / green / yellow / dark red / purple / mint | `bug` `enhancement` `chore` `breaking` `dependencies` |
 | Path area | teal `#bfdadc` | `area:drive` `area:go` `area:setup` `area:size` `area:explain` `area:demos` `area:plan` `area:pool` `area:ride` |
 | Scheduled failure | orange `#ff4d00` | `alert` on bot Issues (`E2E weekly failed`, `CI weekly failed`, `Runic monthly failed`) |
 | Hold | orange `#bf8700` | `cut-hold` on Issue `E2E weekly failed` after a red weekly Linux job |
