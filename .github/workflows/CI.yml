@@ -257,7 +257,9 @@ jobs:
     name: ubuntu-latest → ubuntu-24.04
     needs: detect
     if: needs.detect.outputs.e2e == 'true'
-    runs-on: ubuntu-latest
+    # #393: one Linux E2E on the 26.04 image before ubuntu-latest moves.
+    # Job name stays. Worker image stays ubuntu:24.04. Other jobs stay on ubuntu-latest.
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     permissions:
       contents: read
