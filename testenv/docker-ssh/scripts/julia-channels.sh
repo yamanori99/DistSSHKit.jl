@@ -25,24 +25,25 @@ _distsshkit_slot_value() {
 _distsshkit_export_julia_channels() {
   local kit_root="$1"
   local slots="${kit_root}/.github/julia-slots.env"
-  local slot_max slot_alt
+  local slot_stable slot_alt
   if [[ ! -f "${slots}" ]]; then
     echo "missing ${slots}" >&2
     return 1
   fi
-  slot_max="$(_distsshkit_slot_value JULIA_SLOT_MAX "${slots}")" || {
-    echo "JULIA_SLOT_MAX missing in ${slots}" >&2
+  # First bare stable line (1.13). Nightly lines are not the E2E default.
+  slot_stable="$(grep -E '^~?[0-9]+\.[0-9]' "${slots}" | grep -v nightly | head -n1 || true)"
+  if [[ -z "${slot_stable}" ]]; then
+    echo "no stable Julia version line in ${slots}" >&2
     return 1
-  }
-  # Previous minor for setup --juliaup mismatch. Not JULIA_SLOT_MIN: min and max
-  # can be the same supported stable.
+  fi
+  # Previous minor for setup --juliaup mismatch. Not a supported version.
   slot_alt="$(_distsshkit_slot_value JULIA_E2E_MISMATCH_CHANNEL "${slots}")" || {
     echo "JULIA_E2E_MISMATCH_CHANNEL missing in ${slots}" >&2
     return 1
   }
   export JULIA_DEFAULT_CHANNEL
   export JULIA_ALT_CHANNEL
-  JULIA_DEFAULT_CHANNEL="$(_distsshkit_julia_channel_mm "${slot_max}")"
+  JULIA_DEFAULT_CHANNEL="$(_distsshkit_julia_channel_mm "${slot_stable}")"
   JULIA_ALT_CHANNEL="$(_distsshkit_julia_channel_mm "${slot_alt}")"
   export DISTSSHKIT_E2E_JULIA_DEFAULT_CHANNEL="${JULIA_DEFAULT_CHANNEL}"
   export DISTSSHKIT_E2E_JULIA_ALT_CHANNEL="${JULIA_ALT_CHANNEL}"

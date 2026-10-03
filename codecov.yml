@@ -10,7 +10,7 @@ coverage:
 # GitHub emails every subscriber when Codecov posts a *new* PR comment.
 comment: false
 
-# Pkg.test (flag pkgtest) uploads on main push (max slot only).
+# Pkg.test (flag pkgtest) uploads on main push (1.13 only).
 # E2E (flag e2e) uploads on E2E weekly and version-cut PRs — not ordinary PR E2E.
 # Carryforward: docs-only PRs skip heavy CI and would otherwise drop line hits.
 flag_management:

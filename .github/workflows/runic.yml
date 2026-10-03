@@ -31,7 +31,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/julia-slot
         with:
-          slot: min
+          version: "1.13"
       - uses: fredrikekre/runic-action@v1
         with:
           version: '1'

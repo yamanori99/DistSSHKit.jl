@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 # Cancel redundant runs on the same branch/PR.
-# A Project.toml version increase (see version-cut.sh) runs min / tip /
+# A Project.toml version increase (see version-cut.sh) runs tip /
 # Aqua tip / registry tree in this workflow. No label is involved.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -22,14 +22,15 @@ jobs:
   # Full `Pkg.test()` stays Linux-only. Slow SSH E2E kit parents are `E2E weekly`.
   # PRs run `ubuntu-latest → ubuntu-24.04` in this workflow.
   # One detect job; markdown-only / allowlisted PRs skip heavy jobs (UI: skipping).
-  # Required check names are slot literals (min/max), not Julia versions.
-  # Codecov (flag pkgtest): main push, max slot only — not on pull_request.
+  # Required check names do not include a Julia version.
+  # Codecov (flag pkgtest): main push only — not on pull_request.
   # cache-scratchspaces: false — registry_updates.toml in scratchspaces can
   # poison Pkg.Registry.update on 1.13 if restored corrupt.
   # Aqua / JETLS share this workflow so the Test badge is the PR gate.
-  # Linux E2E (max): path filter on PR / main push; always on a version
+  # Linux E2E (1.13): path filter on PR / main push; always on a version
   # increase and dispatch. JETLS uses `.github/actions/jetls-check` (no nested
-  # cache; julia-actions/cache#236).
+  # cache; julia-actions/cache#236). JETLS runs on 1.13. Add another version
+  # job only when that runtime is outside JETLS's range.
   detect:
     name: detect
     runs-on: ubuntu-latest
@@ -83,24 +84,8 @@ jobs:
             echo "coverage=false" >> "$GITHUB_OUTPUT"
           fi
 
-  test-min:
-    name: Pkg.test - min - ubuntu-latest
-    needs: detect
-    if: github.event_name != 'pull_request' || needs.detect.outputs.version_cut == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/julia-slot
-        with:
-          slot: min
-      - uses: julia-actions/cache@v3
-        with:
-          cache-scratchspaces: false
-      - uses: ./.github/actions/pkg-test
-
-  test-max:
-    name: Pkg.test - max - ubuntu-latest
+  test:
+    name: Pkg.test - 1.13 - ubuntu-latest
     needs: detect
     if: github.event_name != 'pull_request' || needs.detect.outputs.heavy == 'true'
     runs-on: ubuntu-latest
@@ -113,7 +98,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/julia-slot
         with:
-          slot: max
+          version: "1.13"
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
@@ -123,7 +108,7 @@ jobs:
           upload: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
   test-tip:
-    name: Pkg.test - tip - ubuntu-latest
+    name: Pkg.test - 1.14-nightly - ubuntu-latest
     needs: detect
     if: github.event_name != 'pull_request' || needs.detect.outputs.version_cut == 'true'
     runs-on: ubuntu-latest
@@ -133,7 +118,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/julia-slot
         with:
-          slot: tip
+          version: "1.14-nightly"
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
@@ -153,31 +138,14 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/julia-slot
         with:
-          slot: tip
+          version: "1.14-nightly"
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
       - uses: ./.github/actions/registry-tree-test
 
-  aqua-min:
-    name: Aqua - min - ubuntu-latest
-    needs: detect
-    if: github.event_name != 'pull_request' || needs.detect.outputs.version_cut == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/julia-slot
-        with:
-          slot: min
-      - uses: julia-actions/cache@v3
-        with:
-          cache-scratchspaces: false
-      - name: Aqua.test_all (latest Aqua)
-        run: ./.github/aqua-check.sh
-
-  aqua-max:
-    name: Aqua - max - ubuntu-latest
+  aqua:
+    name: Aqua - 1.13 - ubuntu-latest
     needs: detect
     if: github.event_name != 'pull_request' || needs.detect.outputs.heavy == 'true'
     runs-on: ubuntu-latest
@@ -186,7 +154,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/julia-slot
         with:
-          slot: max
+          version: "1.13"
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
@@ -194,7 +162,7 @@ jobs:
         run: ./.github/aqua-check.sh
 
   aqua-tip:
-    name: Aqua - tip - ubuntu-latest
+    name: Aqua - 1.14-nightly - ubuntu-latest
     needs: detect
     if: github.event_name != 'pull_request' || needs.detect.outputs.version_cut == 'true'
     runs-on: ubuntu-latest
@@ -204,37 +172,17 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/julia-slot
         with:
-          slot: tip
+          version: "1.14-nightly"
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
       - name: Aqua.test_all (latest Aqua)
         run: ./.github/aqua-check.sh
 
-  # Literal names: skipped matrix jobs leave ${{ matrix.* }} unexpanded.
-  # Ceiling is JULIA_SLOT_JETLS_MAX (JETLS 1.12.2–1.13), not slot max/tip.
-  jetls-min:
-    name: JETLS - min - ubuntu-latest
-    needs: detect
-    if: github.event_name != 'pull_request' || needs.detect.outputs.version_cut == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v7
-      - id: files
-        run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
-      - uses: ./.github/actions/julia-slot
-        with:
-          slot: min
-      - uses: julia-actions/cache@v3
-        with:
-          cache-scratchspaces: false
-      - uses: ./.github/actions/jetls-check
-        with:
-          files: ${{ steps.files.outputs.list }}
-
-  jetls-max:
-    name: JETLS - max - ubuntu-latest
+  # Literal name: a skipped job must still be this string.
+  # 1.13 only. Add another job when JETLS does not list that version.
+  jetls:
+    name: JETLS - 1.13 - ubuntu-latest
     needs: detect
     if: github.event_name != 'pull_request' || needs.detect.outputs.heavy == 'true'
     runs-on: ubuntu-latest
@@ -245,7 +193,7 @@ jobs:
         run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/julia-slot
         with:
-          slot: jetls-max
+          version: "1.13"
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
@@ -268,7 +216,7 @@ jobs:
       - uses: ./.github/actions/julia-slot
         id: julia
         with:
-          slot: max
+          version: "1.13"
       - name: Julia ${{ steps.julia.outputs.version }}
         run: julia --version
 
