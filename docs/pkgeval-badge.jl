@@ -26,8 +26,13 @@ function refresh_pkgeval_badge(package::AbstractString, dest::AbstractString)::B
     if isfile(dest) && read(dest, String) == svg
         return false
     end
-    mkpath(dirname(abspath(dest)))
-    write(dest, svg)
+    try
+        mkpath(dirname(abspath(dest)))
+        write(dest, svg)
+    catch e
+        @warn "PkgEval badge not written" package dest exception = e
+        return false
+    end
     return true
 end
 
