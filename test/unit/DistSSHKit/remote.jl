@@ -182,7 +182,7 @@ using Test
         @test DistSSHKit.clone_url_from_local_origin(d) == "git@github.com:org/App.jl.git"
     end
 
-    @test DistSSHKit.parse_julia_version("julia version 1.12.6") == v"1.12.6"
+    @test DistSSHKit.parse_julia_version("julia version 1.13.1") == v"1.13.1"
     @test DistSSHKit.parse_julia_version("julia version 1.9.0-DEV") == v"1.9.0"
     @test DistSSHKit.parse_julia_version("julia version 1.13.0-beta1") == v"1.13.0"
     @test DistSSHKit.parse_julia_version("") === nothing
