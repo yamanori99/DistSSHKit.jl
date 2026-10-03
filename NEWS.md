@@ -8,8 +8,9 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ### Breaking
 
-- `ride` compares to a sequential `map` / `filter` only when the caller
-  passes `--spi-check` / `spi_check=true`. `ride!` and `execute!(:ride)`
+- `ride` compares a rewritten `map` / `filter`, including values from
+  an indexed `for`, to a sequential run only when the caller passes
+  `--spi-check` / `spi_check=true`. `ride!` and `execute!(:ride)`
   default `spi_check=false`. Detached `execute!` passes `--spi-check` when
   that keyword is true and `--no-spi-check` when it is false, so an older
   child does not fall back to its own default (#421).
