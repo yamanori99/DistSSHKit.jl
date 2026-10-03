@@ -12,8 +12,8 @@ DistSSHQueue = "24254401-70d8-4a51-8ea4-cfab19f5bc73"
 DistSSHRun = "b568025c-2759-4ef1-8b14-17d00e2cd000"
 
 [sources]
-DistSSHQueue = {rev = "f8613186c1a55f8798d6ee9668bfe69f3df29c63", url = "https://github.com/yamanori99/DistSSHQueue.jl"}
-DistSSHRun = {rev = "52edfdb7a1d94ce67962a31560d0f2df0c996b86", url = "https://github.com/yamanori99/DistSSHRun.jl"}
+DistSSHQueue = {rev = "ee14a130135f7b8daf726912a9889d8afc12871b", url = "https://github.com/yamanori99/DistSSHQueue.jl"}
+DistSSHRun = {rev = "8e7dba0c88566c41015dde6f7b80fcf84dc5ea14", url = "https://github.com/yamanori99/DistSSHRun.jl"}
 
 [compat]
 DistSSHQueue = "0.8"

@@ -6,8 +6,8 @@ Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 
 [sources]
 DistSSHKit = {path = ".."}
-DistSSHQueue = {url = "https://github.com/yamanori99/DistSSHQueue.jl", rev = "f8613186c1a55f8798d6ee9668bfe69f3df29c63"}
-DistSSHRun = {url = "https://github.com/yamanori99/DistSSHRun.jl", rev = "52edfdb7a1d94ce67962a31560d0f2df0c996b86"}
+DistSSHQueue = {url = "https://github.com/yamanori99/DistSSHQueue.jl", rev = "ee14a130135f7b8daf726912a9889d8afc12871b"}
+DistSSHRun = {url = "https://github.com/yamanori99/DistSSHRun.jl", rev = "8e7dba0c88566c41015dde6f7b80fcf84dc5ea14"}
 
 [compat]
 DistSSHQueue = "0.8"
