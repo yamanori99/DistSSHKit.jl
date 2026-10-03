@@ -6,6 +6,11 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+## 0.9.0
+
+Breaking cut after `0.8.0`. DistSSHQueue still pins Kit **0.7.3** until
+a Queue compat patch.
+
 ### Breaking
 
 - Julia **1.13+** only. 1.12 is dropped. Julia ended maintenance of 1.12
