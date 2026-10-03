@@ -3,7 +3,7 @@
 Command reference for the queue that ships in DistSSHKit.
 `julia -m DistSSHKit` accepts the queue-only commands (`submit`, `serve`,
 `status`, and the rest of this section). Queue-host `setup`, and `size` /
-`plan` / `pool` on the queue host, stay `julia -m DistSSHQueue`.
+`plan` / `pool` on the queue host, stay `julia -m DistSSHKit`.
 
 For a hands-on path, use First Steps
 ([Requirements](@ref) → [Queue host](@ref Queue-Tutorial-Prepare) →
@@ -16,7 +16,7 @@ then `--help client` / `--help qhost`. Version is
 job trees stay). `<command> -h` is that verb's Usage and Flags,
 not how to invoke DistSSHQueue. Kit argv is on
 `--help client`. Flags and FAQ:
-`julia --project=. -m DistSSHQueue <command> -h` and the pages below.
+`julia --project=. -m DistSSHKit <command> -h` and the pages below.
 Each command page starts with **Usage**, then **Flags**.
 Kit `go` / `ride` / `drive` / `size` / `plan` / `pool` flags stay in the
 [User Guide](@ref Manual).

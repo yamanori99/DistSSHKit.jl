@@ -402,10 +402,12 @@ worker_pmap
 
 ## Queue
 
-The queue ships in this package. Day-to-day work stays on
-`julia -m DistSSHKit submit …` (and the other queue commands).
-Queue-host `setup`, and `size` / `plan` / `pool` on the queue host, stay
-`julia -m DistSSHQueue`.
+The queue ships in this package. A client runs
+`julia -m DistSSHKit submit …`, with `qhost:HOST` when the queue is
+another machine. On the queue host, `julia -m DistSSHKit qhost setup`
+and `julia -m DistSSHKit qhost serve`. `qhost size` / `qhost plan` /
+`qhost pool` are that machine's inventory. Bare `setup` / `size` /
+`plan` / `pool` stay the run commands.
 
 ```julia
 q = Queue(; store=default_store_path(), follow_config=true)

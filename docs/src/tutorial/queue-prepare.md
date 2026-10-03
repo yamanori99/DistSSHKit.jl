@@ -23,10 +23,10 @@ not the same as `julia --project=`.
 Default Julia env (`pkg> add DistSSHQueue` there):
 
 ```bash
-julia -m DistSSHQueue setup
-julia -m DistSSHQueue add-host parent child:host1
-julia -m DistSSHQueue list-host
-julia -m DistSSHQueue serve
+julia -m DistSSHKit qhost setup
+julia -m DistSSHKit qhost add-host parent child:host1
+julia -m DistSSHKit list-host
+julia -m DistSSHKit qhost serve
 ```
 
 From a checkout of this package, the same verbs with `--project=.`.
@@ -84,7 +84,7 @@ That pulls DistSSHKit **0.9.x** from General. A different dir is
 ## Survive reboot (optional)
 
 ```bash
-julia --project=. -m DistSSHQueue enable --queue-env ~/.distsshqueue/env
+julia --project=. -m DistSSHKit qhost enable --queue-env ~/.distsshqueue/env
 ```
 
 `--queue-env` is the env that loads Queue in the OS unit, not Julia

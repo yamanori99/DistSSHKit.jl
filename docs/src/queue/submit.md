@@ -17,10 +17,10 @@ on a worker. `serve` on the queue host runs the DistSSHKit argv later.
 cd ~/my-job    # Project.toml, SCRIPT.jl; Queue loadable
 
 # another machine (not the queue host)
-julia --project=. -m DistSSHQueue qhost:HOST submit drive parent:4 SCRIPT.jl
+julia --project=. -m DistSSHKit qhost:HOST submit drive parent:4 SCRIPT.jl
 
 # already on the queue host
-julia --project=. -m DistSSHQueue submit drive parent:4 SCRIPT.jl
+julia --project=. -m DistSSHKit submit drive parent:4 SCRIPT.jl
 ```
 
 One argv, four nested pieces. `qhost:HOST` is the SSH name of that
@@ -28,18 +28,18 @@ queue machine. `submit` is Queue. The next word is the DistSSHKit kind
 (`go` / `ride` / `drive`); after that, argv matches DistSSHKit.
 
 ```bash
-julia --project=. -m DistSSHQueue  [qhost:HOST]  submit  drive  parent:4  SCRIPT.jl
+julia --project=. -m DistSSHKit  [qhost:HOST]  submit  drive  parent:4  SCRIPT.jl
 #──────────── Julia ────────────┘  └─ qhost ──┘  Queue   └─── DistSSHKit argv ────┘
 ```
 
 ```bash
-julia --project=. -m DistSSHQueue [qhost:HOST] submit drive parent:4 SCRIPT.jl
+julia --project=. -m DistSSHKit [qhost:HOST] submit drive parent:4 SCRIPT.jl
 ```
 
 A long line in the terminal is still one command. Break after `submit` with `\`:
 
 ```bash
-julia --project=. -m DistSSHQueue [qhost:HOST] submit \
+julia --project=. -m DistSSHKit [qhost:HOST] submit \
     drive parent:4 child:NAME:N SCRIPT.jl
 ```
 
@@ -60,7 +60,7 @@ does not expand `pool:N`. Inspect `pool` (no enqueue) is
 [User Guide · hosts](@ref Queue-hosts).
 
 ```bash
-julia --project=. -m DistSSHQueue  [qhost:HOST]  submit  pool:8  drive  SCRIPT.jl
+julia --project=. -m DistSSHKit  [qhost:HOST]  submit  pool:8  drive  SCRIPT.jl
 #──────────── Julia ────────────┘  └─ qhost ──┘  └── Queue ───┘  └─ DistSSHKit -┘
 ```
 
@@ -70,7 +70,7 @@ experimental.
 
 Also: [First job](@ref Queue-Tutorial-Client), [Walkthrough](@ref Queue-Tutorial-Walkthrough),
 [hosts](@ref Queue-hosts),
-`julia -m DistSSHQueue --help`. Kit flags:
+`julia -m DistSSHKit --help`. Kit flags:
 [go](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/go/),
 [ride](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/ride/),
 [drive](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/drive/).

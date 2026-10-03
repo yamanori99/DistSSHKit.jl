@@ -74,6 +74,8 @@ end
             @test occursin("Usage", err)
             @test occursin("progress", err)
             @test occursin("submit", err)
+            @test occursin("qhost setup", err)
+            @test !occursin("julia -m DistSSHQueue", err)
             @test isempty(out)
         end
         let (code, out, _) = _main_capture(["--version"])
@@ -104,6 +106,12 @@ end
             @test code == 0
             @test occursin("submit", lowercase(combined))
             @test occursin("Jobs", combined)
+        end
+        let (code, out, err) = _main_capture(["qhost", "setup", "--help"])
+            combined = out * err
+            @test code == 0
+            @test occursin("--force", combined)
+            @test !occursin("clone", lowercase(combined))
         end
         let (code, out, err) = _main_capture(["qhost:HOST", "submit", "--help"])
             combined = out * err

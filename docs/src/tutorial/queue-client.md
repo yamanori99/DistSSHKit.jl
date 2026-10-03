@@ -23,10 +23,10 @@ Omit `qhost:`: no rsync; the script is on this machine. Kit still
 copies queue host → workers.
 
 ```bash
-julia --project=. -m DistSSHQueue qhost:HOST list-host
-julia --project=. -m DistSSHQueue qhost:HOST size
-julia --project=. -m DistSSHQueue qhost:HOST plan SCRIPT.jl
-julia --project=. -m DistSSHQueue qhost:HOST pool
+julia --project=. -m DistSSHKit qhost:HOST list-host
+julia --project=. -m DistSSHKit qhost:HOST size
+julia --project=. -m DistSSHKit qhost:HOST plan SCRIPT.jl
+julia --project=. -m DistSSHKit qhost:HOST pool
 ```
 
 One queue host: still pass `qhost:HOST` (or `status qhost:HOST`).
@@ -42,7 +42,7 @@ One queue host: still pass `qhost:HOST` (or `status qhost:HOST`).
 One line, nested the same way as [User Guide · submit](@ref Queue-submit):
 
 ```text
-julia -m DistSSHQueue  [qhost:HOST]  submit  drive  parent:4  SCRIPT.jl
+julia -m DistSSHKit  [qhost:HOST]  submit  drive  parent:4  SCRIPT.jl
 └── Julia ──┘  └── queue host ──┘  └Queue┘  └──────── DistSSHKit argv ────────┘
 ```
 
@@ -55,7 +55,7 @@ julia --project=. -m DistSSHKit drive parent:4 SCRIPT.jl
 Longer argv, still one command (`\` at the end of the line):
 
 ```bash
-julia --project=. -m DistSSHQueue qhost:HOST submit \
+julia --project=. -m DistSSHKit qhost:HOST submit \
     drive parent:4 child:host1:4 SCRIPT.jl
 ```
 
@@ -68,12 +68,12 @@ when workers are on the queue host). Flags:
 [kit drive](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/drive/).
 
 ```bash
-julia --project=. -m DistSSHQueue qhost:HOST submit go child:host1:4 SCRIPT.jl
-julia --project=. -m DistSSHQueue qhost:HOST status
-julia --project=. -m DistSSHQueue qhost:HOST watch
-julia --project=. -m DistSSHQueue qhost:HOST cancel <id>
-julia --project=. -m DistSSHQueue qhost:HOST fetch <id>  # 8-char prefix or full UUID
-julia --project=. -m DistSSHQueue qhost:HOST fetch .distsshqueue/tickets/<uuid>
+julia --project=. -m DistSSHKit qhost:HOST submit go child:host1:4 SCRIPT.jl
+julia --project=. -m DistSSHKit qhost:HOST status
+julia --project=. -m DistSSHKit qhost:HOST watch
+julia --project=. -m DistSSHKit qhost:HOST cancel <id>
+julia --project=. -m DistSSHKit qhost:HOST fetch <id>  # 8-char prefix or full UUID
+julia --project=. -m DistSSHKit qhost:HOST fetch .distsshqueue/tickets/<uuid>
 ```
 
 `submit` starts `serve` if none is running. `serve` instantiates the

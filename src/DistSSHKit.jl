@@ -152,7 +152,7 @@ function print_kit_root_usage(io::IO = stderr)
         "  progress           Phase seconds from kit.progress",
     )
     DistSSHRun.print_help_blank(io)
-    DistSSHRun.print_help_section("Queue"; io = io)
+    DistSSHRun.print_help_section("Client"; io = io)
     DistSSHRun.print_help_lines(
         io,
         "  submit             Enqueue go / ride / drive",
@@ -161,23 +161,22 @@ function print_kit_root_usage(io::IO = stderr)
         "  cancel             Drop queued or stop running",
         "  fetch              Copy a finished leaf",
         "  list-host          Inventory",
-        "  add-host           Add host tokens",
-        "  remove-host        Drop host tokens",
-        "  serve              Run serve in this terminal",
         "  stop               Stop serve, keep files",
-        "  enable             Start serve after reboot",
-        "  disable            Remove that OS registration",
-        "  service            Queue host service",
         "  teardown           Stop serve and remove ~/.distsshqueue",
+        "  qhost:HOST         SSH that client command to the queue host",
     )
     DistSSHRun.print_help_blank(io)
+    DistSSHRun.print_help_section("Queue host"; io = io)
     DistSSHRun.print_help_lines(
         io,
-        "  setup, plan, size, and pool above are the run commands.",
-        "  Queue-host setup, and size / plan / pool on the queue host,",
-        "  stay `julia -m DistSSHQueue`. A leading `qhost:` (or one",
-        "  right after the verb) routes the command to the queue.",
-        "  `--help client` and `--help qhost` print the queue topics.",
+        "  qhost setup        Write config.toml if missing",
+        "  qhost add-host     Add host tokens",
+        "  qhost remove-host  Drop host tokens",
+        "  qhost serve        Run serve in this terminal",
+        "  qhost enable       Start serve after reboot",
+        "  qhost disable      Remove that OS registration",
+        "  qhost service      Queue host service",
+        "  qhost size         size / plan / pool on the queue host",
     )
     DistSSHRun.print_help_blank(io)
     DistSSHRun.print_help_section("Examples"; io = io)
@@ -188,7 +187,8 @@ function print_kit_root_usage(io::IO = stderr)
         "  julia --project=. -m DistSSHKit ride parent:2 SCRIPT.jl",
         "  julia --project=. -m DistSSHKit drive parent:2 SCRIPT.jl",
         "  julia --project=. -m DistSSHKit plan SCRIPT.jl",
-        "  julia --project=. -m DistSSHKit submit drive parent:4 SCRIPT.jl",
+        "  julia --project=. -m DistSSHKit qhost:HOST submit drive parent:4 SCRIPT.jl",
+        "  julia --project=. -m DistSSHKit qhost setup",
     )
     DistSSHRun.print_help_blank(io)
     println(io, "Run `julia -m DistSSHKit <command> -h` for flags.")
@@ -224,6 +224,26 @@ function _leading_command(args::Vector{String})
     return sub, saw
 end
 
+"""Drop a leading `qhost` group word. `qhost:HOST` is a client hop and stays."""
+function _without_qhost_group(args::Vector{String})::Union{Nothing, Vector{String}}
+    i = 1
+    while i <= length(args)
+        a = args[i]
+        if a == "--remote-julia" && i < length(args)
+            i += 2
+        elseif a == "--queue-env" && i < length(args)
+            i += 2
+        elseif startswith(a, "qhost:")
+            return nothing
+        else
+            break
+        end
+    end
+    i <= length(args) || return nothing
+    String(args[i]) == "qhost" || return nothing
+    return [args[1:(i - 1)]; args[(i + 1):end]]
+end
+
 function _version_flag(arg::AbstractString)::Bool
     return arg in ("--version", "-v", "-V")
 end
@@ -234,9 +254,9 @@ end
 CLI entry. Prefer Julia 1.13+ and `julia -m DistSSHKit SUBCOMMAND …`.
 
 Run commands (`setup`, `go`, `ride`, `drive`, `plan`, `size`, `pool`,
-`demo`, `progress`) stay the run surface. Queue-only commands go to
-DistSSHQueue. `qhost:` selects the queue for that command.
-`setup`, `plan`, `size`, and `pool` without `qhost:` stay the run commands.
+`demo`, `progress`) stay the run surface. Client commands take an optional
+`qhost:HOST`. Queue-host commands start with `qhost` (`qhost setup`,
+`qhost serve`, `qhost size`).
 """
 function main(args::Vector{String} = copy(ARGS))::Cint
     if length(args) == 1 && _version_flag(args[1])
@@ -254,6 +274,10 @@ function main(args::Vector{String} = copy(ARGS))::Cint
     if isempty(args)
         print_kit_root_usage()
         return 1
+    end
+    stripped = _without_qhost_group(args)
+    if stripped !== nothing
+        return DistSSHQueue.main(stripped)
     end
     sub, saw_queue = _leading_command(args)
     if saw_queue || sub in _QUEUE_ONLY

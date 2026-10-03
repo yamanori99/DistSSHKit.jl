@@ -5,10 +5,10 @@ not enqueue. Not Kit `--hosts` (that still names workers on `go` /
 `ride` / `drive`).
 
 ```bash
-julia -m DistSSHQueue add-host parent child:host1
-julia -m DistSSHQueue list-host
-julia -m DistSSHQueue size
-julia -m DistSSHQueue remove-host child:host1
+julia -m DistSSHKit qhost add-host parent child:host1
+julia -m DistSSHKit list-host
+julia -m DistSSHKit qhost size
+julia -m DistSSHKit qhost remove-host child:host1
 ```
 
 From a **client**, `list-host`, `size`, `plan`, and `pool` are forwarded like `status`.
@@ -60,7 +60,7 @@ or IdentityFile. `ssh -G` runs on the queue host. NAME is still the
 queue host's hostname, not the client's.
 
 ```bash
-julia -m DistSSHQueue qhost:HOST list-host
+julia -m DistSSHKit qhost:HOST list-host
 ```
 
 ## size
@@ -69,8 +69,8 @@ DistSSHKit `size` on the queue host (cwd / project). Omit tokens to size
 config `hosts`. Does not enqueue. Prints a `submit drive` template.
 
 ```bash
-julia -m DistSSHQueue qhost:HOST size
-julia -m DistSSHQueue qhost:HOST size --gb-per-worker 1.5 parent child:host1
+julia -m DistSSHKit qhost:HOST size
+julia -m DistSSHKit qhost:HOST size --gb-per-worker 1.5 parent child:host1
 ```
 
 Kit flags (`--probe`, `--gb-per-worker`, …):
@@ -84,7 +84,7 @@ and suggests `go` / `ride` / `drive`. Does not enqueue. Prints a
 `submit` template for that kind.
 
 ```bash
-julia -m DistSSHQueue qhost:HOST plan SCRIPT.jl
+julia -m DistSSHKit qhost:HOST plan SCRIPT.jl
 ```
 
 Kit flags:
@@ -102,13 +102,13 @@ tokens. Enqueue with the same `:N` on every config host is
 `submit pool:N` ([submit](@ref Queue-submit)).
 
 ```text
-julia -m DistSSHQueue  [qhost:HOST]  pool  parent  child:host1
+julia -m DistSSHKit  [qhost:HOST]  pool  parent  child:host1
 └── Julia ──┘  └── queue host ──┘  └Queue┘  └──── DistSSHKit argv ────┘
 ```
 
 ```bash
-julia -m DistSSHQueue qhost:HOST pool
-julia -m DistSSHQueue qhost:HOST pool parent child:host1
+julia -m DistSSHKit qhost:HOST pool
+julia -m DistSSHKit qhost:HOST pool parent child:host1
 ```
 
 Kit flags:

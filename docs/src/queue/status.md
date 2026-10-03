@@ -4,11 +4,11 @@ Read the table, watch it live, or cancel a row. The table lives on the
 queue host.
 
 ```bash
-julia --project=. -m DistSSHQueue [qhost:HOST] status [-q] [--tail N|full] [--interval S]
-julia --project=. -m DistSSHQueue [qhost:HOST] watch [-q] [--tail N|full] [--interval S]
-julia --project=. -m DistSSHQueue [qhost:HOST] cancel <id>
-julia --project=. -m DistSSHQueue [qhost:HOST] fetch <id>  # 8-char prefix or full UUID
-julia --project=. -m DistSSHQueue [qhost:HOST] fetch .distsshqueue/tickets/<uuid>
+julia --project=. -m DistSSHKit [qhost:HOST] status [-q] [--tail N|full] [--interval S]
+julia --project=. -m DistSSHKit [qhost:HOST] watch [-q] [--tail N|full] [--interval S]
+julia --project=. -m DistSSHKit [qhost:HOST] cancel <id>
+julia --project=. -m DistSSHKit [qhost:HOST] fetch <id>  # 8-char prefix or full UUID
+julia --project=. -m DistSSHKit [qhost:HOST] fetch .distsshqueue/tickets/<uuid>
 ```
 
 Also: [First job](@ref Queue-Tutorial-Client), [submit](@ref Queue-submit),
