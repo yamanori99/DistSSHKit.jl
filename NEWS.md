@@ -10,8 +10,9 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 - `ride` compares to a sequential `map` / `filter` only when the caller
   passes `--spi-check` / `spi_check=true`. `ride!` and `execute!(:ride)`
-  default `spi_check=false`. Detached `execute!` adds `--spi-check` only
-  then; an omitted flag leaves the compare off (#421).
+  default `spi_check=false`. Detached `execute!` passes `--spi-check` when
+  that keyword is true and `--no-spi-check` when it is false, so an older
+  child does not fall back to its own default (#421).
 
 ## 0.9.0
 

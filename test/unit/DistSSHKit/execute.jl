@@ -521,7 +521,7 @@ using Test
         )
         @test argv_ride[1] == "ride"
         @test !("--spi-check" in argv_ride)
-        @test !("--no-spi-check" in argv_ride)
+        @test "--no-spi-check" in argv_ride
         @test !("--gb-per-worker" in argv_ride)
         @test "--output-dir" in argv_ride
         argv_ride_spi = DistSSHKit._execute_detached_argv(

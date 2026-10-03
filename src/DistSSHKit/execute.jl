@@ -263,8 +263,9 @@ does not count. Keywords are then an allow-list (unknown names throw):
 `remote`, `hosts_file`, `job_id`, and drive-only `log_dir`, `enable_log`,
 `package`, `require_all_hosts`, `skip_hash_check`, `mem_headroom`, `parent_gb`,
 `workers`, `sync_script`. Go-only `repeat`. Ride: `spi_check` (default
-`false`; detached argv includes `--spi-check` only when true, so omission
-leaves the compare off). Neither go nor
+`false`). Detached argv passes `--spi-check` when true and `--no-spi-check`
+when false, so an older child whose default is on still skips the compare.
+Neither go nor
 ride takes `size!` flags. `yes` must be `true` (the
 default): an unattended child cannot answer a prompt. `remote` that starts
 with `~` is stored in `DISTRIBUTED_REMOTE_PROJECT_ROOT` as a layout path
@@ -1399,7 +1400,11 @@ function _execute_detached_argv(
         end
         sync_script && push!(argv, "--sync-script")
     elseif kind === :ride
-        spi_check && push!(argv, "--spi-check")
+        if spi_check
+            push!(argv, "--spi-check")
+        else
+            push!(argv, "--no-spi-check")
+        end
     else
         if repeat !== nothing
             push!(argv, "--repeat", string(Int(repeat)))
