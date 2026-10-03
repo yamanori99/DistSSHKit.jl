@@ -262,7 +262,9 @@ does not count. Keywords are then an allow-list (unknown names throw):
 `output_dir`, `args`, `project`, `sync`, `julia`, `quiet`, `verbosity`, `yes`,
 `remote`, `hosts_file`, `job_id`, and drive-only `log_dir`, `enable_log`,
 `package`, `require_all_hosts`, `skip_hash_check`, `mem_headroom`, `parent_gb`,
-`workers`, `sync_script`. Go-only `repeat`. Ride: `spi_check`. Neither go nor
+`workers`, `sync_script`. Go-only `repeat`. Ride: `spi_check` (default
+`false`; detached argv includes `--spi-check` only when true, so omission
+leaves the compare off). Neither go nor
 ride takes `size!` flags. `yes` must be `true` (the
 default): an unattended child cannot answer a prompt. `remote` that starts
 with `~` is stored in `DISTRIBUTED_REMOTE_PROJECT_ROOT` as a layout path
@@ -481,7 +483,7 @@ function _execute_detached!(
     workers = get(kwargs, :workers, nothing)
     repeat = get(kwargs, :repeat, nothing)
     sync_script = get(kwargs, :sync_script, false)
-    spi_check = get(kwargs, :spi_check, true)
+    spi_check = get(kwargs, :spi_check, false)
     sync_script isa Bool || throw(
         ArgumentError(
             "sync_script must be a Bool, got $(repr(sync_script))",
@@ -1336,7 +1338,7 @@ function _execute_detached_argv(
         workers = nothing,
         repeat = nothing,
         sync_script::Bool = false,
-        spi_check::Bool = true,
+        spi_check::Bool = false,
     )::Vector{String}
     argv = String[String(kind)]
     push!(argv, "-y")
@@ -1397,7 +1399,7 @@ function _execute_detached_argv(
         end
         sync_script && push!(argv, "--sync-script")
     elseif kind === :ride
-        spi_check || push!(argv, "--no-spi-check")
+        spi_check && push!(argv, "--spi-check")
     else
         if repeat !== nothing
             push!(argv, "--repeat", string(Int(repeat)))

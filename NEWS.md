@@ -6,6 +6,13 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ## Unreleased
 
+### Breaking
+
+- `ride` compares to a sequential `map` / `filter` only when the caller
+  passes `--spi-check` / `spi_check=true`. `ride!` and `execute!(:ride)`
+  default `spi_check=false`. Detached `execute!` adds `--spi-check` only
+  then; an omitted flag leaves the compare off (#421).
+
 ## 0.9.0
 
 Breaking cut after `0.8.0`. DistSSHQueue still pins Kit **0.7.3** until
