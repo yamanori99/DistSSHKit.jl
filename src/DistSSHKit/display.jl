@@ -297,14 +297,284 @@ function manifest_link_target(manifest::AbstractString)::String
     return canonical_local_path(realpath(path))
 end
 
+"""Project.toml files whose `[sources]` paths must ride along with `env`."""
+function _pkg_env_project_files(env)::Vector{String}
+    files = String[]
+    member = canonical_local_path(joinpath(env.project_dir, "Project.toml"))
+    isfile(member) && push!(files, member)
+    root = canonical_local_path(joinpath(env.env_dir, "Project.toml"))
+    if isfile(root) && root != member
+        push!(files, root)
+    end
+    return files
+end
+
+"""`(name, path)` for each `[sources]` entry that names a `path`."""
+function _project_path_sources(project_file::AbstractString)::Vector{Tuple{String, String}}
+    data = TOML.parsefile(project_file)
+    sources = get(data, "sources", nothing)
+    sources isa AbstractDict || return Tuple{String, String}[]
+    found = Tuple{String, String}[]
+    for (name, spec) in sources
+        spec isa AbstractDict || continue
+        raw = get(spec, "path", nothing)
+        raw isa AbstractString || continue
+        s = strip(String(raw))
+        isempty(s) && continue
+        push!(found, (String(name), s))
+    end
+    return found
+end
+
+"""`path` from `[sources]`, relative to the Project.toml that declared it."""
+function _resolved_source_path(project_file::AbstractString, raw::AbstractString)::String
+    expanded = expanduser(String(raw))
+    if isabspath(expanded)
+        return canonical_local_path(expanded)
+    end
+    return canonical_local_path(joinpath(dirname(String(project_file)), expanded))
+end
+
 """
-Throw when `manifest` is not inside `env_dir` together with `project_dir`.
+Throw when a `[sources]` `path` would not arrive inside `root`.
+
+`git=false` is the rsync tree (`env_dir`). `git=true` is the git work tree.
+An absolute path, including after `expanduser`, is rejected even when it
+sits inside `root`: rsync and git copy `Project.toml` unchanged, and Pkg
+resolves that path on the worker. For `git=false`, an absolute symlink
+is rejected the same way: rsync keeps the link text. For `git=true`, the
+path must also be in `HEAD`. A clone or git sync omits an untracked or
+ignored directory.
+The symlink target that matters is the one stored in that commit: an
+absolute target, or one that leaves the work tree, fails even when the
+working-tree link currently points inside. A `url` source is fetched on
+the worker and is not checked. A symlink whose target leaves `root` is
+the same failure as a path that starts outside it.
+"""
+function _ensure_path_sources_in_tree!(env, root::AbstractString; git::Bool)
+    root_c = canonical_local_path(root)
+    root_real = ispath(root_c) ? canonical_local_path(realpath(root_c)) : root_c
+    for project_file in _pkg_env_project_files(env)
+        for (name, raw) in _project_path_sources(project_file)
+            if isabspath(expanduser(raw))
+                throw(
+                    ArgumentError(
+                        "Source path $raw for $name is absolute. Workers resolve it on their own filesystem, so it would not be the staged tree.",
+                    ),
+                )
+            end
+            location = _resolved_source_path(project_file, raw)
+            if git
+                _path_under_resolved(location, root_c) || throw(
+                    ArgumentError(
+                        "Source path $location for $name is outside the git work tree ($root_c). The path would not reach a clone or git sync.",
+                    ),
+                )
+            else
+                _path_is_under(location, root_c) || throw(
+                    ArgumentError(
+                        "Source path $location for $name is outside the tree setup/rsync would send ($root_c). Workers would not see this path.",
+                    ),
+                )
+            end
+            if !git && islink(location)
+                link_text = String(readlink(location))
+                if isabspath(expanduser(link_text))
+                    throw(
+                        ArgumentError(
+                            "Source path $location for $name is a symlink to $link_text. rsync keeps that absolute target, so workers would not see the staged tree.",
+                        ),
+                    )
+                end
+            end
+            ispath(location) || throw(
+                ArgumentError(
+                    "Source path $location for $name does not exist. Workers would not see this path.",
+                ),
+            )
+            target = canonical_local_path(realpath(location))
+            inside = if git
+                _path_under_resolved(target, root_real)
+            else
+                _path_is_under(target, root_real)
+            end
+            inside || throw(
+                ArgumentError(
+                    if git
+                        "Source path $location for $name points at $target, outside the git work tree ($root_real). The path would not reach a clone or git sync."
+                    else
+                        "Source path $location for $name points at $target, outside the tree setup/rsync would send ($root_real). Workers would not see this path."
+                    end,
+                ),
+            )
+            isdir(location) || throw(
+                ArgumentError(
+                    "Source path $location for $name is not a directory. Workers would not see this path.",
+                ),
+            )
+            git || continue
+            _ensure_git_head_source!(root_c, location, name)
+        end
+    end
+    return nothing
+end
+
+"""`realpath` of the parent, with the final component left as written.
+
+A source path may itself be the symlink git recorded. Following that leaf
+would check the target directory instead of the link.
+"""
+function _path_physical_parent(path::AbstractString)::String
+    p = canonical_local_path(path)
+    parent = dirname(p)
+    if parent == p
+        return ispath(p) ? canonical_local_path(realpath(p)) : p
+    end
+    parent_phys = if ispath(parent)
+        canonical_local_path(realpath(parent))
+    else
+        _path_physical_parent(parent)
+    end
+    return joinpath(parent_phys, basename(p))
+end
+
+"""
+Path of `path` relative to `work_tree`, using one physical spelling.
+
+`git rev-parse --show-toplevel` may be `/private/var/...` while Julia still
+has `/var/...`. `relpath` across those spellings leaves the work tree, and
+`ls-tree` then misses a path that is in `HEAD`.
+"""
+function _git_worktree_relpath(work_tree::AbstractString, path::AbstractString)::String
+    root = canonical_local_path(work_tree)
+    root_phys = ispath(root) ? canonical_local_path(realpath(root)) : root
+    src = _path_physical_parent(path)
+    return replace(relpath(src, root_phys), "\\" => "/")
+end
+
+"""`ls-tree` row for `path` in `HEAD`, or `nothing` when that commit omits it."""
+function _git_head_entry(work_tree::AbstractString, path::AbstractString)
+    rel = _git_worktree_relpath(work_tree, path)
+    (rel == ".." || startswith(rel, "../")) && return nothing
+    cmd = _git_cmd(
+        [
+            "--literal-pathspecs",
+            "-C",
+            String(work_tree),
+            "ls-tree",
+            "-z",
+            "HEAD",
+            "--",
+            rel,
+        ]
+    )
+    text = try
+        String(read(pipeline(cmd; stderr = devnull)))
+    catch
+        return nothing
+    end
+    isempty(text) && return nothing
+    rec = first(split(text, '\0'; keepempty = false))
+    m = match(r"^([0-7]+) (blob|tree|commit) ([0-9a-f]+)\t", rec)
+    m === nothing && return nothing
+    # Same narrowing as `project_package_name`: `String` only on the
+    # `AbstractString` arm. A later `String(capture)` stays a union split.
+    mode_cap = m.captures[1]
+    mode = mode_cap isa AbstractString ? String(mode_cap) : nothing
+    mode === nothing && return nothing
+    kind_cap = m.captures[2]
+    kind = kind_cap isa AbstractString ? String(kind_cap) : nothing
+    kind === nothing && return nothing
+    blob_cap = m.captures[3]
+    blob = blob_cap isa AbstractString ? String(blob_cap) : nothing
+    blob === nothing && return nothing
+    return (mode = mode, type = kind, hash = blob)
+end
+
+"""Bytes of blob `hash` in `work_tree`, without a trailing newline."""
+function _git_blob_text(work_tree::AbstractString, hash::AbstractString)::String
+    cmd = _git_cmd(["-C", String(work_tree), "cat-file", "blob", String(hash)])
+    return chomp(String(read(pipeline(cmd; stderr = devnull))))
+end
+
+"""
+Throw unless `HEAD` of `work_tree` will materialize `location` as a directory
+inside that tree.
+
+A symlink is read from the commit, not from the working tree. An uncommitted
+edit can point a link inside the tree while the clone still has an absolute
+or escaping target.
+"""
+function _ensure_git_head_source!(
+        work_tree::AbstractString,
+        location::AbstractString,
+        name::AbstractString,
+    )
+    seen = Set{String}()
+    origin = canonical_local_path(location)
+    current = origin
+    raw = ""
+    while true
+        key = _path_physical_parent(current)
+        key in seen && throw(
+            ArgumentError(
+                "Source path $origin for $name is a symlink loop in the git commit.",
+            ),
+        )
+        push!(seen, key)
+        entry = _git_head_entry(work_tree, current)
+        if entry === nothing
+            current == origin && throw(
+                ArgumentError(
+                    "Source path $origin for $name is not in the git commit a clone or git sync would send.",
+                ),
+            )
+            throw(
+                ArgumentError(
+                    "Source path $origin for $name is a symlink to $raw in the git commit, which a clone or git sync would omit.",
+                ),
+            )
+        end
+        entry.type == "tree" && return nothing
+        if entry.mode != "120000"
+            throw(
+                ArgumentError(
+                    "Source path $current for $name is not a directory in the git commit a clone or git sync would send.",
+                ),
+            )
+        end
+        raw = _git_blob_text(work_tree, entry.hash)
+        if isabspath(expanduser(raw))
+            throw(
+                ArgumentError(
+                    "Source path $current for $name is a symlink to $raw in the git commit. A clone keeps that absolute target.",
+                ),
+            )
+        end
+        parent = dirname(_path_physical_parent(current))
+        resolved = canonical_local_path(normpath(joinpath(parent, raw)))
+        root = canonical_local_path(work_tree)
+        _path_under_resolved(resolved, root) || throw(
+            ArgumentError(
+                "Source path $current for $name is a symlink to $raw in the git commit, outside the git work tree ($root). The path would not reach a clone or git sync.",
+            ),
+        )
+        current = resolved
+    end
+    return
+end
+
+"""
+Throw when `manifest`, or a `[sources]` path, is not inside `env_dir`
+together with `project_dir`.
 
 One rsync cannot carry both. A symlink whose target leaves that tree is the
-same failure. No Manifest is not an error (instantiate resolves).
+same failure. A `url` source is fetched on the worker. No Manifest is not
+an error (instantiate resolves).
 """
 function ensure_manifest_ships!(project::AbstractString)
     env = resolve_pkg_env(project)
+    _ensure_path_sources_in_tree!(env, env.env_dir; git = false)
     manifest = env.manifest
     manifest isa String || return env
     _path_is_under(env.project_dir, env.env_dir) || throw(

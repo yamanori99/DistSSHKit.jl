@@ -18,6 +18,16 @@ GitHub Releases may copy these sections (`Release notes:` on
   A lock that would not arrive (outside the rsync tree, or outside the
   git work tree, including through a symlink) fails before instantiate.
   No Manifest still resolves.
+- A `[sources]` `path` has to arrive with that tree. A path outside it
+  fails, including through a symlink. An absolute path fails even inside
+  the tree: workers resolve it on their own filesystem. rsync also
+  rejects a relative path whose directory entry is an absolute symlink,
+  because it keeps that link text. A `url` source is fetched on the
+  worker.
+- Clone and git sync send only what is in the commit. An untracked or
+  ignored `[sources]` path fails. So does a committed symlink whose
+  target is absolute or leaves the work tree, even when the working-tree
+  link looks local.
 - `setup --juliaup update` is no longer accepted. Use
   `setup --juliaup-update` (#400).
 
