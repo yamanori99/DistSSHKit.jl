@@ -7,8 +7,11 @@ using Test
         @test r.script_path == "job.jl"
         @test r.hosts == ["parent:2"]
         @test r.script_args == ["--n", "4"]
-        @test r.spi_check
+        @test !r.spi_check
         @test !r.help
+    end
+    let r = parse_ride_args(["--spi-check", "job.jl"])
+        @test r.spi_check
     end
     let r = parse_ride_args(["--no-spi-check", "job.jl"])
         @test !r.spi_check

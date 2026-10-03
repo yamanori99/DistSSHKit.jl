@@ -40,7 +40,7 @@ function show_ride_usage(; io::IO = stdout)
         "  julia --project=. -m DistSSHKit ride SCRIPT.jl",
         "  ride parent:2 SCRIPT.jl",
         "  ride parent:1 child:host1:2 SCRIPT.jl",
-        "  ride --no-spi-check parent:2 SCRIPT.jl",
+        "  ride --spi-check parent:2 SCRIPT.jl",
     )
     print_help_blank(io)
     print_help_section("Options"; io = io)
@@ -48,7 +48,7 @@ function show_ride_usage(; io::IO = stdout)
         io,
         "  parent:N / child:NAME:N  Distributed workers (default: no tokens → parent:1)",
         "  omit :N             error (use size, then paste counts)",
-        "  --spi-check         compare to sequential map/filter (default on)",
+        "  --spi-check         compare to sequential map/filter (default off)",
         "  --no-spi-check      skip that compare",
         "  --output-dir PATH   DISTRIBUTED_OUTPUT_DIR for the script",
         "  --julia PATH        remote Julia (ENV or auto)",
@@ -62,7 +62,7 @@ function show_ride_usage(; io::IO = stdout)
     print_help_lines(
         io,
         "See also: plan, go, drive, setup.",
-        "API: ride!(script, \"parent:2\", \"child:host:1\"; spi_check=true).",
+        "API: ride!(script, \"parent:2\", \"child:host:1\"; spi_check=false).",
     )
     return nothing
 end
@@ -75,7 +75,7 @@ function parse_ride_args(args::AbstractVector{<:AbstractString})
     script_args = String[]
     output_dir = nothing
     julia_exe = nothing
-    spi_check = true
+    spi_check = false
     c = CliCursor(collect(String, rest))
     while !cli_at_end(c)
         arg = cli_current(c)::String

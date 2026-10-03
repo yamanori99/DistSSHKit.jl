@@ -520,9 +520,27 @@ using Test
             spi_check = false,
         )
         @test argv_ride[1] == "ride"
+        @test !("--spi-check" in argv_ride)
         @test "--no-spi-check" in argv_ride
         @test !("--gb-per-worker" in argv_ride)
         @test "--output-dir" in argv_ride
+        argv_ride_spi = DistSSHKit._execute_detached_argv(
+            :ride, "job.jl", ["parent:2"], String[];
+            output_dir = "/tmp/out",
+            log_dir = nothing,
+            sync = nothing,
+            julia = nothing,
+            quiet = true,
+            verbosity = nothing,
+            hosts_file = nothing,
+            enable_log = true,
+            package = nothing,
+            require_all_hosts = true,
+            skip_hash_check = true,
+            spi_check = true,
+        )
+        @test "--spi-check" in argv_ride_spi
+        @test !("--no-spi-check" in argv_ride_spi)
     end
 
     @testset "execute_kwargs_from_parsed" begin

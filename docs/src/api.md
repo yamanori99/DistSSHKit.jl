@@ -333,7 +333,7 @@ Without `job_id`, only the child pid is signaled.
   way for `:ride`. Hosts stay in
   [`host_tokens`](@ref); `:workers` is drive `--workers` when set.
   `:log_dir` / `:mem_headroom` / `:parent_gb` / `:workers` are drive-only
-  except ride also takes `:spi_check`; go / ride do not take size flags;
+  except ride also takes `:spi_check` (default `false`); go / ride do not take size flags;
   `:plan` is never accepted.
 - `job_id` (`execute!` keyword, or `ENV["DISTSSHKIT_JOB_ID"]` for in-process
   `go!` / `drive!`): `job=<id>` on every `progress:` line. Drive workers get a

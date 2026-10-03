@@ -470,7 +470,7 @@ function _ride_add_workers!(
 end
 
 """
-    ride!(script, workers...; args=[], spi_check=true, output_dir=nothing, project=pwd())
+    ride!(script, workers...; args=[], spi_check=false, output_dir=nothing, project=pwd())
 
 Experimental. Rewrite `map` / `filter` / simple comprehensions / independent
 indexed `for` (`dest[i] = …`) and run the script on Distributed workers
@@ -483,7 +483,7 @@ before `using` the app package on every process). The script still runs on
 the parent (no driver `include` on workers). Named functions used by `map` /
 `filter` are sent to workers as a prelude.
 
-`--spi-check` (default on) compares the distributed result to a sequential
+`--spi-check` (default off) compares the distributed result to a sequential
 `map` / `filter`. Unknown syntax stays sequential. Inspect first with
 [`plan`](@ref). Listed `child:` hosts are fail-closed (`require_all_hosts=true`).
 Queue: [`execute!`](@ref) `:ride` (`detached=true` writes `kit.result` like go;
@@ -560,7 +560,7 @@ function ride!(
         script::AbstractString,
         tokens::AbstractVector{<:AbstractString};
         args::AbstractVector{<:AbstractString} = String[],
-        spi_check::Bool = true,
+        spi_check::Bool = false,
         output_dir::Union{Nothing, AbstractString} = nothing,
         project::AbstractString = pwd(),
         julia::Union{Nothing, AbstractString} = nothing,

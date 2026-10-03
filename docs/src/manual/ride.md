@@ -31,10 +31,12 @@ that aliasing; the runtime overlap check does (including fail-closed if
 the capture walk hits its depth limit).
 Broadcast, `reduce`, and accumulating `for` stay out of scope.
 
-`--spi-check` is **on** by default: each rewritten `map` / `filter` (including
-values from indexed `for`) is also run sequentially and compared. `--no-spi-check` skips that. Under
-`--progress`, a successful run prints `SPI check: passed` after the script
-stdout.
+`--spi-check` is **off** by default. Pass it to also run each rewritten
+`map` / `filter` (including values from indexed `for`) sequentially and
+compare. `--no-spi-check` is an explicit skip. Under `--progress`, a
+successful compare prints `SPI check: passed` after the script stdout.
+With the compare off, or when the script stayed sequential, that line is
+`SPI check: skipped (sequential or off)`.
 
 ride distributes only what the compiler can prove safe. The guarantee
 follows from the discussion in
