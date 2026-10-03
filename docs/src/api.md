@@ -399,3 +399,32 @@ methods in the same session.
 ```@docs
 worker_pmap
 ```
+
+## Queue
+
+The queue ships in this package. Day-to-day work stays on
+`julia -m DistSSHKit submit …` (and the other queue commands).
+Queue-host `setup`, and `size` / `plan` / `pool` on the queue host, stay
+`julia -m DistSSHQueue`.
+
+```julia
+q = Queue(; store=default_store_path(), follow_config=true)
+id = submit!(q, "SCRIPT.jl", "child:host1:4"; kind=:go)
+cancel!(q, id)
+serve!(q)
+```
+
+```@docs
+Queue
+Job
+submit!
+cancel!
+jobs
+job
+load!
+step!
+serve!
+serve
+job_project
+default_store_path
+```

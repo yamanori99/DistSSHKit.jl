@@ -23,10 +23,7 @@ SSH 分散実行の手順を簡単にし、揃えることで、再現しやす�
 DistSSHKit は、それらをまとめて小さな計算ノードとして使うためのものである。
 
 > [!TIP]
-> 計算に使うマシンを常時起動しておきたい場合 (単一でも複数でも) や、
-> その計算資源を研究室の他のメンバーと共有したい場合は、
-> [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
-> (`pkg> add DistSSHQueue`) が使える。各ジョブの実行は、これまでどおり DistSSHKit が担う。
+> 計算に使うマシンを常時起動しておきたい場合や、その計算資源を研究室の他のメンバーと共有したい場合は、キューも DistSSHKit に入っている。`pkg> add DistSSHKit` がインストールになる。
 
 ## インストール
 

@@ -73,7 +73,9 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: yamanori99/DistSSHQueue.jl
-          ref: main
+          # Intake slice: Queue main still depends on Kit. This branch matches
+          # Kit depending on Queue. Point back at main when that lands.
+          ref: breaking/depend-on-run
           path: downstream
           persist-credentials: false
 

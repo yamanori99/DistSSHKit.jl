@@ -1,0 +1,131 @@
+# [Queue](@id Queue-manual)
+
+Command reference for the queue that ships in DistSSHKit.
+`julia -m DistSSHKit` accepts the queue-only commands (`submit`, `serve`,
+`status`, and the rest of this section). Queue-host `setup`, and `size` /
+`plan` / `pool` on the queue host, stay `julia -m DistSSHQueue`.
+
+For a hands-on path, use First Steps
+([Requirements](@ref) → [Queue host](@ref Queue-Tutorial-Prepare) →
+[Walkthrough](@ref Queue-Tutorial-Walkthrough)).
+
+Root `--help` defines Client vs Queue host (`qhost:HOST`), then Usage,
+then `--help client` / `--help qhost`. Version is
+`DistSSHQueue X (DistSSHKit Y)`. `--help client` is Jobs then Hosts;
+`--help qhost` is Setup, Serve, then Danger (`teardown`; needs `-y`;
+job trees stay). `<command> -h` is that verb's Usage and Flags,
+not how to invoke DistSSHQueue. Kit argv is on
+`--help client`. Flags and FAQ:
+`julia --project=. -m DistSSHQueue <command> -h` and the pages below.
+Each command page starts with **Usage**, then **Flags**.
+Kit `go` / `ride` / `drive` / `size` / `plan` / `pool` flags stay in the
+[User Guide](@ref Manual).
+
+| | |
+| --- | --- |
+| [Artifacts and paths](@ref Queue-artifacts) | Script / Kit / Queue ownership and directory layout |
+| [submit](@ref Queue-submit) | Enqueue DistSSHKit `go` / `ride` / `drive` |
+| [status](@ref Queue-status) | `status` / `watch` / `cancel` |
+| [fetch](@ref Queue-fetch) | Copy a finished Kit leaf onto this job tree |
+| [hosts](@ref Queue-hosts) | `add-host` / `remove-host` / `list-host` / `size` / `plan` / `pool` |
+| [serve](@ref Queue-serve) | `serve` / `stop` / `enable` / `disable` |
+| [setup](@ref Queue-setup) | `setup` / `teardown` / `config.toml` |
+
+## Client vs queue host
+
+`qhost:HOST` is a **client** token (like Kit `child:NAME`). Not already
+on the queue host: put it on the command line (leading or right after
+the verb).
+`DISTSSHQUEUE_HOST` alone does not hop. On the queue host, omit
+`qhost:`. After `teardown`, `status` without `qhost:` asks for `setup`
+first (the config is gone), or `qhost:HOST` if this was a client hop.
+Local trial: `DISTSSHQUEUE_LOCAL=1`.
+
+Refuse `qhost:`: `setup`, `serve`, `enable`, `disable`, `add-host`,
+`remove-host`. Forward: `submit`, `status`, `list-host`, `size`, `plan`,
+`pool`, `watch`, `cancel`, `stop`, `teardown`. Client (not forwarded as a
+whole): `fetch` (inverse of stage).
+
+`--hosts` / `--julia` belong to Kit `go` / `ride` / `drive`. Queue-host Julia is
+`--remote-julia` / `JULIA_DISTRIBUTED_EXE`. `--queue-env DIR` is
+`julia --project=` on the queue host (default `~/.distsshqueue/env` if
+you created that dir), not the client's `--project=.`. `--queue-env @`
+is the remote default Julia env. Hop is argv `qhost:HOST` (not
+`DISTSSHKIT_HOSTS`). `DISTSSHQUEUE_HOST` alone does not hop. Not forwarded.
+Not `DISTSSHQUEUE_QHOST` (that is `status` / `watch` display).
+
+`serve` is “run the process”. `enable` is “register that process with
+the OS” (LaunchAgent / systemd). The queue host is **macOS or Linux**.
+`enable` does not make a client or WSL2 the always-on box. `disable`
+is the opposite of `enable`, not of `serve`.
+
+## [Job record](@id Queue-job-record)
+
+Each row contains:
+
+- Identity: `id`, `kind`, `script`, and `hosts`
+- State: `state`, `queued_at`, `started_at`, `finished_at`, and `error`
+- Output references: `result_path`, `run_dir`, a `run_toml` snapshot,
+  and setup log paths when applicable
+
+Queue does not keep a second queue-host copy of Kit's result tree or
+normally pin `output_dir`. See
+[Artifacts and paths](@ref Queue-artifacts) for the output contract.
+
+Kit kwargs (`args`,
+`project`, `output_dir`, …) travel as an opaque bag through DistSSHKit's
+`execute!` allow-list. `serve` also passes `job_id` (the row UUID)
+so Kit progress lines can carry `job=`. `serve` instantiates the job
+project on the queue host, then Kit `setup!` on `child:` hosts, unless
+`DISTSSHQUEUE_NO_KIT_SETUP=1`.
+
+### Store files
+
+The queue-host table is `~/.distsshqueue/jobs.toml`.
+
+- Writers lock `jobs.toml.lock` before rewriting the table.
+- The rewrite truncates in place and is not atomic.
+- `status` and `watch` read without the lock and may encounter a
+  mid-write table.
+- `jobs.toml.pid` identifies a live `serve`; a dead pid is ignored.
+- `jobs.toml.stopped` blocks autoserve after `stop` until an explicit
+  `serve`.
+
+If writers hang and no Queue process holds the lock, remove a stale
+`jobs.toml.lock`. See [Where files live](@ref Requirements) for all
+paths.
+
+### Recovery after `serve` exits
+
+- `:queued` rows reload on the next `serve`.
+- A `:running` row with a live Kit `kit.pid` remains `:running` and
+  blocks the next FIFO job.
+- Without a live `kit.pid`, `kit.result` determines `:done` or
+  `:failed`; without that result, the row becomes `:failed`.
+
+For drive, listed `parent` / `child` hosts must join, stay, and collect
+unless the job passed `--best-effort`. See
+[kit drive](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/drive/).
+Kit `go` / `ride` / `drive` artifacts stay under Kit's tree. `fetch`
+creates the client copy described in
+[Artifacts and paths](@ref Queue-artifacts).
+
+## Shared peel
+
+| Topic | Rule |
+| --- | --- |
+| `-q` / `--quiet` | `status` / `watch`: table only. Kit `DISTSSHKIT_QUIET`. |
+| `--progress` / `--verbose` | Accepted (exclusive with `-q`); Queue has no live Kit run, so they keep chrome. |
+| `-v` / `--version` | Top-level: Queue then DistSSHKit. `submit go -v` is Kit only. |
+| `-y` / `--yes` | `teardown` (or `DISTSSHKIT_YES`). Same values as DistSSHKit. |
+| Ctrl-C | `serve` / `watch`: that process only, never a running Kit job. |
+
+## Out of scope
+
+A scheduler inside DistSSHKit, weakdeps from Queue to DistSSHKit, a glue
+package, lab-wide slot ceilings or occupancy packing, preemption /
+fair-share / priorities / reservations / backfill, HTTP or a listen
+socket, a client that sleeps as `serve`, auto-retry of crashed
+`:running` jobs, a Queue-owned copy of Kit's result trees, and native
+Windows. Day-to-day consequences of the single FIFO:
+[Introduction](@ref Queue-manual).

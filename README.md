@@ -26,9 +26,8 @@ compute nodes.
 
 > [!TIP]
 > If you want to keep the machines you use for compute (one or several)
-> always on, or to share that compute with other members of your lab, use
-> [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
-> (`pkg> add DistSSHQueue`). DistSSHKit still runs each job.
+> always on, or to share that compute with other members of your lab, the
+> queue is part of DistSSHKit. `pkg> add DistSSHKit` is the install.
 
 ## Install
 

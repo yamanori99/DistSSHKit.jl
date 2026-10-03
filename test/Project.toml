@@ -1,21 +1,15 @@
 [deps]
-ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
-Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 DistSSHKit = "ceec0504-c968-4be5-b215-667cae0e8f81"
-Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
-JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
-Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+DistSSHQueue = "24254401-70d8-4a51-8ea4-cfab19f5bc73"
+DistSSHRun = "b568025c-2759-4ef1-8b14-17d00e2cd000"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 
 [sources]
 DistSSHKit = {path = ".."}
+DistSSHQueue = {url = "https://github.com/yamanori99/DistSSHQueue.jl", rev = "f8613186c1a55f8798d6ee9668bfe69f3df29c63"}
+DistSSHRun = {url = "https://github.com/yamanori99/DistSSHRun.jl", rev = "52edfdb7a1d94ce67962a31560d0f2df0c996b86"}
 
 [compat]
-ArgParse = "1"
-Dates = "1.11"
-Distributed = "1.11"
-JSON = "1"
-Pkg = "1.13"
+DistSSHQueue = "0.8"
+DistSSHRun = "0.1"
 Test = "1"
-TOML = "1"

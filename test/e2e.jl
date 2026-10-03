@@ -18,6 +18,7 @@
 using Test
 using Distributed
 using DistSSHKit
+using DistSSHRun
 
 # Same include shape as `test/runtests.jl` so JETLS follows it. Do not route
 # through a non-`const` `kit_root` (JETLS then skips the include).
@@ -882,7 +883,7 @@ end
             end
             _assert_ssh_e2e_api_ok(suite, "kit_pid_file", pid_ready, "path=$(pid_path)")
             @test pid_ready
-            rec = pid_ready ? DistSSHKit._read_kit_pid_record(log_dir) : nothing
+            rec = pid_ready ? DistSSHRun._read_kit_pid_record(log_dir) : nothing
             detached_pid = rec === nothing ? -1 : rec.pid
             @test detached_pid == getpid(kp.process)
 
@@ -960,7 +961,7 @@ end
                 process_running(kp.process) || break
                 sleep(0.5)
             end
-            listed = hosts_ready ? DistSSHKit._read_kit_hosts(String(out)) : String[]
+            listed = hosts_ready ? DistSSHRun._read_kit_hosts(String(out)) : String[]
             function _kit_snip(name)
                 p = joinpath(String(out), name)
                 isfile(p) || return ""

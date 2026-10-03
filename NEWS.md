@@ -8,6 +8,17 @@ GitHub Releases may copy these sections (`Release notes:` on
 
 ### Breaking
 
+- DistSSHKit depends on DistSSHRun and DistSSHQueue and reexports their
+  public names. Private names stay in the package that defines them.
+  `julia -m DistSSHKit` keeps `setup`, `go`, `ride`, `drive`, `plan`,
+  `size`, `pool`, `demo`, and `progress`. It also accepts the queue
+  commands `submit`, `status`, `watch`, `cancel`, `fetch`, `list-host`,
+  `add-host`, `remove-host`, `serve`, `stop`, `enable`, `disable`,
+  `service`, and `teardown`. A leading `qhost:` (or one right after the
+  verb) routes that command to the queue. Queue-host `setup`, and
+  `size` / `plan` / `pool` on the queue host, stay `julia -m DistSSHQueue`.
+  `setup`, `plan`, `size`, and `pool` without `qhost:` stay the run
+  commands (#420).
 - `ride` compares a rewritten `map` / `filter`, including values from
   an indexed `for`, to a sequential run only when the caller passes
   `--spi-check` / `spi_check=true`. `ride!` and `execute!(:ride)`

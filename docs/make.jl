@@ -1,5 +1,7 @@
 using Documenter
 using DistSSHKit
+using DistSSHQueue
+using DistSSHRun
 using Base64
 using Downloads
 
@@ -28,7 +30,7 @@ const FAVICON_PNG_B64 = base64encode(read(joinpath(@__DIR__, "src", "assets", "f
 const FAVICON_DARK_PNG_B64 = base64encode(read(joinpath(@__DIR__, "src", "assets", "favicon-dark.png")))
 
 makedocs(;
-    modules = [DistSSHKit],
+    modules = [DistSSHKit, DistSSHRun, DistSSHQueue],
     authors = "Takanori Yamamoto, Honoka Ampuku, and contributors",
     sitename = "DistSSHKit.jl",
     format = Documenter.HTML(;
@@ -56,6 +58,9 @@ makedocs(;
             "Requirements" => "requirements.md",
             "Prepare" => "tutorial/prepare.md",
             "Demo" => "tutorial/demo.md",
+            "Queue host" => "tutorial/queue-prepare.md",
+            "First job" => "tutorial/queue-client.md",
+            "Walkthrough" => "tutorial/queue-walkthrough.md",
         ],
         "User Guide" => [
             "Overview" => "manual/index.md",
@@ -69,6 +74,14 @@ makedocs(;
             "paths" => "manual/paths.md",
             "demo" => "manual/demo.md",
             "distsshkit" => "manual/distsshkit.md",
+            "Queue" => "queue/index.md",
+            "Artifacts and paths" => "queue/artifacts.md",
+            "submit" => "queue/submit.md",
+            "status" => "queue/status.md",
+            "fetch" => "queue/fetch.md",
+            "hosts" => "queue/hosts.md",
+            "serve" => "queue/serve.md",
+            "Queue setup" => "queue/setup.md",
         ],
         "API" => "api.md",
     ],

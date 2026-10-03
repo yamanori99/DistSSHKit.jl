@@ -22,6 +22,7 @@ Each command page starts with **Flags** for that command.
 - [demo](@ref Manual-demo): install or list bundled example scripts
 - [distsshkit](@ref Manual-distsshkit): optional terminal command
   (`pkg> app add`; experimental)
+- [Queue](@ref Queue-manual): enqueue `go` / `ride` / `drive`, then serve
 
 ## go vs drive (pick one)
 

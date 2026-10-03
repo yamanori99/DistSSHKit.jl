@@ -1,5 +1,7 @@
 if !isdefined(Main, :_run_kit_setup)
 
+    using DistSSHRun
+
     """Run the kit `setup` CLI as a subprocess (for CLI exit-code tests).
 
     Kit logs land under `<project>/.distsshkit/setup/`. When `project_root` is
@@ -111,7 +113,7 @@ if !isdefined(Main, :_run_kit_setup)
         finally
             DistSSHKit.close_log_file()
             DistSSHKit.kit_progress_done!()
-            DistSSHKit._set_kit_progress_sidecar!(nothing)
+            DistSSHRun._set_kit_progress_sidecar!(nothing)
             DistSSHKit.set_kit_verbosity!(prev)
         end
     end
