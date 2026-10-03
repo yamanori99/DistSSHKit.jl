@@ -19,7 +19,7 @@ function _host_sync_rsync_argv()::Vector{String}
     if !isempty(custom)
         path = abspath(custom)
         # `.jl` doubles spawn Julia; prefer `.sh` so collect tests do not nest a
-        # second compiler (1.11 GHA OOM).
+        # second compiler (GHA OOM).
         endswith(path, ".jl") && return _test_double_julia_argv(path)
         return ["sh", path]
     end

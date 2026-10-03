@@ -34,7 +34,7 @@ function _juliaup_candidate_sh_word(path::AbstractString)::String
     return p
 end
 
-"""Channel string for juliaup from a Julia `VersionNumber` (`\"1.12\"`)."""
+"""Channel string for juliaup from a Julia `VersionNumber` (`\"1.13\"`)."""
 juliaup_channel(v::VersionNumber = VERSION)::String = "$(v.major).$(v.minor)"
 
 """SSH body: add / update / default `channel` with remote juliaup."""

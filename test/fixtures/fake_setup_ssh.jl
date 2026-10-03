@@ -94,7 +94,7 @@ function main()
 
     if occursin("--version", script)
         ver = strip(get(ENV, "DISTSSHKIT_TEST_JULIA_VERSION", ""))
-        println(isempty(ver) ? "julia version 1.12.6" : ver)
+        println(isempty(ver) ? "julia version $VERSION" : ver)
         exit(0)
     end
 

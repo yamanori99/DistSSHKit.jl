@@ -265,15 +265,15 @@ function _pkill_remote_tagged_workers!(host::String, job_id::AbstractString)::Bo
     return true
 end
 
-"""Parse `julia --version` output (e.g. `"julia version 1.12.6"`) into a `VersionNumber`.
+"""Parse `julia --version` output (e.g. `"julia version 1.13.1"`) into a `VersionNumber`.
 Returns `nothing` if the text doesn't match the expected pattern.
 
 # Examples
 ```jldoctest
 julia> using DistSSHKit
 
-julia> DistSSHKit.parse_julia_version("julia version 1.12.6")
-v"1.12.6"
+julia> DistSSHKit.parse_julia_version("julia version 1.13.1")
+v"1.13.1"
 
 julia> DistSSHKit.parse_julia_version("not julia") === nothing
 true
