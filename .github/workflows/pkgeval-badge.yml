@@ -1,0 +1,39 @@
+name: PkgEval badge
+
+# Each repository updates its own badge. This workflow only refreshes
+# DistSSHKit. The restyle lives in docs/pkgeval-badge.jl; Queue and Run
+# check out this file and run it for their package.
+on:
+  schedule:
+    # 07:00 JST. Nanosoldier is not daily; a daily pull still picks up a new color.
+    - cron: "0 22 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: "1.13"
+      - name: Refresh badge
+        run: julia --startup-file=no docs/pkgeval-badge.jl DistSSHKit docs/src/assets/pkgeval.svg
+      - name: Commit if the badge changed
+        run: |
+          git add docs/src/assets/pkgeval.svg
+          if git diff --cached --quiet; then
+            echo "PkgEval badge unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Refresh PkgEval badge from Nanosoldier."
+          git pull --rebase origin main
+          git push
