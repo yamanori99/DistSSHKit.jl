@@ -115,7 +115,7 @@ rsync -a \
   ./ "$WORKDIR/"
 ```
 
-This machine (min / max / `+nightly`). Distro `ssh` / `git` stay on `PATH`.
+This machine (**1.13**, and `+nightly`). Distro `ssh` / `git` stay on `PATH`.
 On Linux this is enough for the tree; it does not reproduce a missing
 `ssh`. Do not `git init` inside the copy (that would put `.git` on the kit
 tree). Use a bare repo, then `Pkg.add(; url=)`.
@@ -186,7 +186,7 @@ Open logs with [`test/artifacts/README.md`](artifacts/README.md):
 open "$(cat test/artifacts/ssh-e2e/LATEST)/SUMMARY.txt"
 ```
 
-Coverage uploads on **main push** (`Pkg.test` max) and **E2E weekly** /
+Coverage uploads on **main push** (`Pkg.test` on 1.13) and **E2E weekly** /
 version-cut PR E2E (`DISTSSHKIT_CODE_COVERAGE=1` on `up.sh --e2e`).
 Path-filtered PR E2E runs without that upload. Local:
 

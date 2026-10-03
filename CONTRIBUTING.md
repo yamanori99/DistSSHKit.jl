@@ -41,8 +41,8 @@ macOS, Linux, or WSL2 Ubuntu. Not native Windows (the kit shells out to
 `ssh` / `rsync`).
 
 - Library, `Pkg.test()`, `julia -m DistSSHKit`, docs: Julia **1.13+**
-- SSH: Git, OpenSSH, rsync. Match remote **major.minor** (E2E workers =
-  slot **max**)
+- SSH: Git, OpenSSH, rsync. Match remote **major.minor** (E2E workers
+  use **1.13**, the stable line in `.github/julia-slots.env`)
 
 Prefer [juliaup](https://github.com/JuliaLang/juliaup). Details:
 [Requirements](https://yamanori99.github.io/DistSSHKit.jl/dev/requirements/).
@@ -75,7 +75,7 @@ On 1.13+, `julia --project=. -m DistSSHKit …` matches `Pkg.add`.
 julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
-Run this on slot **min** and **max** (and **tip** if you have nightly).
+Run this on **1.13** (and **1.14-nightly** if you have it).
 Layout: [test/README.md](test/README.md).
 
 Checkout `Pkg.test()` is not a Registry tarball. After changing those
@@ -100,7 +100,7 @@ julia --project=. -m DistSSHKit drive parent:2 \
 testenv/docker-ssh/scripts/up.sh --e2e
 ```
 
-CI uploads Codecov on **main push** only (`Pkg.test` max slot, flag
+CI uploads Codecov on **main push** only (`Pkg.test`, flag
 `pkgtest`). PR `Pkg.test` runs without coverage instrumentation. E2E
 **Codecov** (flag `e2e`) uploads from two places: the **E2E weekly**
 workflow (`.github/workflows/ssh-e2e-weekly.yml`, always on) and a
@@ -121,53 +121,48 @@ Apple silicon, no Docker:
 [testenv/apple-container-ssh](testenv/apple-container-ssh)
 (`./scripts/up.sh --e2e`; same `test/e2e.jl`).
 
-### Julia slots
+### Julia versions
 
-Exactly three pins, in
-[`.github/julia-slots.env`](.github/julia-slots.env). Do not add a
-fourth version job. Slide the pin; keep job names `min` / `max` /
-`tip`.
+Versions are lines in
+[`.github/julia-slots.env`](.github/julia-slots.env). Write the version
+(`1.13`, `1.14-nightly`). The job name uses that same string. Do not add
+a second stable line.
 
-- **min** (required): `Project.toml` julia floor. Pkg.test (no
-  coverage), Aqua, JETLS
-- **max** (required): newest tagged or prerelease (`versions.json`).
-  Pkg.test, Aqua, Documenter, bake, **main** / weekly / version-cut E2E,
-  GHCR worker. Codecov `pkgtest` on **main push** only
-- **tip** (not required): next-minor nightly. Pkg.test, Aqua.
+- **1.13** (required): `Project.toml` julia floor, the maintained stable.
+  Pkg.test, Aqua, JETLS, Documenter, bake, **main** / weekly / version-cut
+  E2E, GHCR worker. Codecov `pkgtest` on **main push** only
+- **1.14-nightly** (not required): next-minor nightly. Pkg.test, Aqua.
   `continue-on-error`
 
 This package feels SSH hosts, Pkg, and lockfiles more than a compute-model
 library does. When Julia announces that it has stopped maintaining the
-previous minor, raise the floor to the new stable. The move from 1.12 to
-1.13 is that case (1.12 became unmaintained when 1.13 shipped). Do not
-track the LTS for its own sake. Other situations (a prerelease as the
-floor, dropping a minor only for a language feature, and similar) are
-decided one by one. Do not move the floor to nightly, or to a minor that
-has only just shipped, as an automatic rule.
+previous minor, raise the stable line to the new stable and rename the
+jobs. The move from 1.12 to 1.13 is that case (1.12 became unmaintained
+when 1.13 shipped). Do not track the LTS for its own sake. Other
+situations (a prerelease as the stable line, dropping a minor only for a
+language feature, and similar) are decided one by one. Do not move the
+stable line to nightly, or to a minor that has only just shipped, as an
+automatic rule. A release candidate of the next minor is not a second
+required version. **1.14-nightly** is that view until the stable line
+moves.
 `JULIA_E2E_MISMATCH_CHANNEL` is only the other major.minor baked into E2E
-workers so `setup --juliaup` can realign. It is not a fourth slot and not
-a supported floor. When the floor moves, point it at the minor Julia just
-stopped maintaining.
+workers so `setup --juliaup` can realign. It is not a test version and not
+a supported line. When the stable line moves, point it at the minor Julia
+just stopped maintaining.
 
-JETLS is min plus `JULIA_SLOT_JETLS_MAX` (job name still `JETLS -
-max`). That pin lags when `max` / `tip` move past what JETLS lists
-(today 1.12.2–1.13). Raise it only after JETLS supports that runtime.
-No JETLS **tip**.
+JETLS runs on **1.13**. If that runtime is outside the range JETLS lists,
+add another version line and job. No JETLS on nightly.
 
-When a new RC lands, change `JULIA_SLOT_MAX` only (`~x.y.0-0` so
-setup-julia includes prereleases). When that minor GAs, drop the tilde
-and pin `x.y`. If that RC is a new **major.minor**, bump the worker
-Dockerfile / WSL `--default-channel` in the same PR (E2E pair). When
-bumping compat, raise `JULIA_SLOT_MIN` only.
+When the stable line moves to a new **major.minor**, change the job names,
+the main ruleset, and the worker Dockerfile / WSL `--default-channel` in
+the same PR (E2E pair).
 
 ### PR CI
 
 These run as jobs of the `Test` workflow
 ([`.github/workflows/CI.yml`](.github/workflows/CI.yml)). Ubuntu:
-`Pkg.test` max, JETLS max, Aqua max, Documenter max,
-Gitleaks (also rejects `< 0.0.1` in `Project.toml`). `Pkg.test` / JETLS /
-Aqua **min** stay on **main**, **CI weekly**, and a PR whose
-`Project.toml` `version` went up, not ordinary PRs. Linux E2E (max)
+`Pkg.test`, JETLS, Aqua, Documenter,
+Gitleaks (also rejects `< 0.0.1` in `Project.toml`). Linux E2E
 uses the same **path filter** as **main** push
 (`src/**`, `test/**`, `demos/**`, `testenv/**` minus markdown under those
 trees, `Project.toml`, `.github/julia-slots.env`,
@@ -204,16 +199,12 @@ watchers, not the register gate.
 
 Required to merge (branch protection uses these names). Tip jobs are
 allow-failure. A job skipped by the heavy / E2E gate shows as skipping
-(not a green empty run). On an ordinary PR the three **min** checks
-skip too; they run on **main**, weekly, and a version-cut PR.
+(not a green empty run).
 
-- `Pkg.test - min - ubuntu-latest`
-- `Pkg.test - max - ubuntu-latest`
-- `JETLS - min - ubuntu-latest`
-- `JETLS - max - ubuntu-latest`
-- `Aqua - min - ubuntu-latest`
-- `Aqua - max - ubuntu-latest`
-- `Documenter - max - ubuntu-latest`
+- `Pkg.test - 1.13 - ubuntu-latest`
+- `JETLS - 1.13 - ubuntu-latest`
+- `Aqua - 1.13 - ubuntu-latest`
+- `Documenter - 1.13 - ubuntu-latest`
 - `Gitleaks`
 - `ubuntu-latest → ubuntu-24.04`
 - `PR label`
@@ -223,7 +214,7 @@ on `src/**`, `Project.toml`, that workflow, or dispatch, checkout
 [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
 `main`, `Pkg.develop` this Kit tree, then Queue `Pkg.test()` (unit +
 integration; no SSH E2E). Job name
-`DistSSHQueue - max - ubuntu-latest`. Soft (`continue-on-error`); not
+`DistSSHQueue - 1.13 - ubuntu-latest`. Soft (`continue-on-error`); not
 required to merge.
 
 ### Local checks
@@ -276,10 +267,10 @@ A red **Linux** job after a `cut` merge adds `cut-hold`. Intel / WSL red
 does not. Cron still runs when no cut landed that week.
 
 **CI weekly** (Sunday 10:00 JST, or Run workflow): same `Pkg.test` /
-JETLS / Aqua slots as a PR (no coverage). Not a PR check. Catches max /
+JETLS / Aqua as a PR (no coverage). Not a PR check. Catches 1.13 /
 Aqua / JETLS `@release` drift when nothing merged that week. Failure of
-min/max jobs opens Issue `CI weekly failed` (`alert`); tip is omitted from
-that notify.
+those jobs opens Issue `CI weekly failed` (`alert`); 1.14-nightly is
+omitted from that notify.
 
 **Runic monthly** (1st 10:00 JST, or Run workflow): `runic --check` on
 tracked `.jl` (`version: '1'`). Not a required PR check. Catches Runic

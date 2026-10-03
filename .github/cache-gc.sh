@@ -21,8 +21,8 @@ rows = json.load(sys.stdin)
 def prefix(key: str) -> str:
     if ";run_id=" in key:
         return key.split(";run_id=", 1)[0]
-    if key.startswith("wsl-julia-max-"):
-        return "wsl-julia-max"
+    if key.startswith("wsl-julia-max-") or key.startswith("wsl-julia-"):
+        return "wsl-julia"
     if key.startswith("2:distributionDirectory"):
         return "2:distributionDirectory"
     return key

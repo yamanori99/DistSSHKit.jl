@@ -1,7 +1,7 @@
 name: CI weekly
 
-# Not on pull_request: insurance for max / tip / Aqua / JETLS @release drift
-# when no PR ran that week. PR / main push stay the gate.
+# Not on pull_request: insurance for 1.13 / 1.14-nightly / Aqua / JETLS
+# @release drift when no PR ran that week. PR / main push stay the gate.
 # tip jobs are continue-on-error and omitted from notify.
 on:
   workflow_dispatch:
@@ -18,36 +18,22 @@ permissions:
   actions: write # julia-actions/cache delete-old-caches
 
 jobs:
-  test-min:
-    name: Pkg.test - min - ubuntu-latest
+  test:
+    name: Pkg.test - 1.13 - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/julia-slot
         with:
-          slot: min
-      - uses: julia-actions/cache@v3
-        with:
-          cache-scratchspaces: false
-      - uses: ./.github/actions/pkg-test
-
-  test-max:
-    name: Pkg.test - max - ubuntu-latest
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/julia-slot
-        with:
-          slot: max
+          version: "1.13"
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
       - uses: ./.github/actions/pkg-test
 
   test-tip:
-    name: Pkg.test - tip - ubuntu-latest
+    name: Pkg.test - 1.14-nightly - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
     continue-on-error: true
@@ -55,14 +41,14 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/julia-slot
         with:
-          slot: tip
+          version: "1.14-nightly"
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
       - uses: ./.github/actions/pkg-test
 
-  jetls-min:
-    name: JETLS - min - ubuntu-latest
+  jetls:
+    name: JETLS - 1.13 - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -71,7 +57,7 @@ jobs:
         run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/julia-slot
         with:
-          slot: min
+          version: "1.13"
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
@@ -79,48 +65,15 @@ jobs:
         with:
           files: ${{ steps.files.outputs.list }}
 
-  jetls-max:
-    name: JETLS - max - ubuntu-latest
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v7
-      - id: files
-        run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
-      - uses: ./.github/actions/julia-slot
-        with:
-          slot: jetls-max
-      - uses: julia-actions/cache@v3
-        with:
-          cache-scratchspaces: false
-      - uses: ./.github/actions/jetls-check
-        with:
-          files: ${{ steps.files.outputs.list }}
-
-  aqua-min:
-    name: Aqua - min - ubuntu-latest
+  aqua:
+    name: Aqua - 1.13 - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/julia-slot
         with:
-          slot: min
-      - uses: julia-actions/cache@v3
-        with:
-          cache-scratchspaces: false
-      - name: Aqua.test_all (latest Aqua)
-        run: ./.github/aqua-check.sh
-
-  aqua-max:
-    name: Aqua - max - ubuntu-latest
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/julia-slot
-        with:
-          slot: max
+          version: "1.13"
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
@@ -128,7 +81,7 @@ jobs:
         run: ./.github/aqua-check.sh
 
   aqua-tip:
-    name: Aqua - tip - ubuntu-latest
+    name: Aqua - 1.14-nightly - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 15
     continue-on-error: true
@@ -136,7 +89,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/julia-slot
         with:
-          slot: tip
+          version: "1.14-nightly"
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
@@ -145,12 +98,9 @@ jobs:
 
   cache-gc:
     needs:
-      - test-min
-      - test-max
-      - jetls-min
-      - jetls-max
-      - aqua-min
-      - aqua-max
+      - test
+      - jetls
+      - aqua
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -167,12 +117,9 @@ jobs:
 
   notify:
     needs:
-      - test-min
-      - test-max
-      - jetls-min
-      - jetls-max
-      - aqua-min
-      - aqua-max
+      - test
+      - jetls
+      - aqua
       - cache-gc
     if: always()
     runs-on: ubuntu-latest

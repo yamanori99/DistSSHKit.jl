@@ -36,7 +36,7 @@ Suite inventory: [`test/README.md`](../../test/README.md#ssh-e2e).
 Worker image installs **two** juliaup channels from
 [`.github/julia-slots.env`](../../.github/julia-slots.env):
 
-- **default** = slot **max** major.minor (today **1.13**) — matches the E2E
+- **default** = the stable line (today **1.13**) — matches the E2E
   kit parent so `--check` runs **without** `--ignore-julia-version`
 - **alt** = `JULIA_E2E_MISMATCH_CHANNEL` (today **1.12**) — a different
   major.minor so E2E can `juliaup default` to mismatch, then

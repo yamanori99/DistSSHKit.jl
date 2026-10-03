@@ -35,7 +35,7 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/julia-slot
         with:
-          slot: max
+          version: "1.13"
       - name: Bake SVG derivatives
         run: julia docs/src/assets/bake.jl
       - name: Check committed SVG assets match bake
