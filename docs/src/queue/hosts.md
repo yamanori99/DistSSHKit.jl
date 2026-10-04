@@ -14,7 +14,7 @@ julia -m DistSSHKit qhost remove-host child:host1
 From a **client**, `list-host`, `size`, `plan`, and `pool` are forwarded like `status`.
 `add-host` / `remove-host` run on the queue host only (like `setup`).
 A major.minor Julia mismatch vs this process is a warning only
-(`DISTSSHKIT_QUIET` silences it). Fix: `setup --juliaup`.
+(`DISTSSHKIT_QUIET` silences it). Fix: `qhost up`.
 
 Also: [Prepare](@ref Queue-Tutorial-Prepare), [submit](@ref Queue-submit),
 [kit size](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/size/),

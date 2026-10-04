@@ -113,6 +113,7 @@ const _RUN_COMMANDS = (
     "ride",
     "setup",
     "size",
+    "up",
 )
 const _QUEUE_ONLY = (
     "add-host",
@@ -142,6 +143,7 @@ function print_kit_root_usage(io::IO = stderr)
     DistSSHRun.print_help_lines(
         io,
         "  setup              Clone / sync / check remotes",
+        "  up                 Align a Julia channel with juliaup",
         "  go                 Run an as-is complete job",
         "  ride               Experimental auto-split of map / filter",
         "  drive              Distributed workers + collect",
@@ -170,6 +172,7 @@ function print_kit_root_usage(io::IO = stderr)
     DistSSHRun.print_help_lines(
         io,
         "  qhost setup        Write config.toml if missing",
+        "  qhost up           Align config hosts with juliaup",
         "  qhost add-host     Add host tokens",
         "  qhost remove-host  Drop host tokens",
         "  qhost serve        Run serve in this terminal",
@@ -183,12 +186,14 @@ function print_kit_root_usage(io::IO = stderr)
     DistSSHRun.print_help_lines(
         io,
         "  julia --project=. -m DistSSHKit setup --check child:host1",
+        "  julia --project=. -m DistSSHKit up child:host1",
         "  julia --project=. -m DistSSHKit go SCRIPT.jl",
         "  julia --project=. -m DistSSHKit ride parent:2 SCRIPT.jl",
         "  julia --project=. -m DistSSHKit drive parent:2 SCRIPT.jl",
         "  julia --project=. -m DistSSHKit plan SCRIPT.jl",
         "  julia --project=. -m DistSSHKit qhost:HOST submit drive parent:4 SCRIPT.jl",
         "  julia --project=. -m DistSSHKit qhost setup",
+        "  julia --project=. -m DistSSHKit qhost up",
     )
     DistSSHRun.print_help_blank(io)
     println(io, "Run `julia -m DistSSHKit <command> -h` for flags.")
@@ -253,10 +258,10 @@ end
 
 CLI entry. Prefer Julia 1.13+ and `julia -m DistSSHKit SUBCOMMAND …`.
 
-Run commands (`setup`, `go`, `ride`, `drive`, `plan`, `size`, `pool`,
+Run commands (`setup`, `up`, `go`, `ride`, `drive`, `plan`, `size`, `pool`,
 `demo`, `progress`) stay the run surface. Client commands take an optional
 `qhost:HOST`. Queue-host commands start with `qhost` (`qhost setup`,
-`qhost serve`, `qhost size`).
+`qhost up`, `qhost serve`, `qhost size`).
 """
 function main(args::Vector{String} = copy(ARGS))::Cint
     if length(args) == 1 && _version_flag(args[1])
@@ -303,7 +308,7 @@ function main(args::Vector{String} = copy(ARGS))::Cint
         DistSSHRun.print_cli_error("Unknown subcommand: $sub")
         println(
             stderr,
-            "Expected: setup | go | ride | drive | plan | size | pool | demo | progress",
+            "Expected: setup | up | go | ride | drive | plan | size | pool | demo | progress",
         )
         println(
             stderr,

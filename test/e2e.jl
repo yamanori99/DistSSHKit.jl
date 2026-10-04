@@ -196,7 +196,8 @@ end
                     occursin("version", lowercase(out_bad))
 
                 proc_up, out_up = _run_kit_setup(;
-                    setup_args = ["--juliaup", setup_hosts...],
+                    command = "up",
+                    setup_args = [setup_hosts...],
                     project_root = proj,
                     extra_env = merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
                 )
@@ -258,7 +259,8 @@ end
                 @test DistSSHKit.julia_version_mismatch_kind(VERSION, parent_alt) == :minor
 
                 proc_up, out_up = _run_kit_setup(;
-                    setup_args = ["--juliaup", "parent", DistSSHKit.setup_cli_host_token(host)],
+                    command = "up",
+                    setup_args = ["parent", DistSSHKit.setup_cli_host_token(host)],
                     project_root = proj,
                     extra_env = merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
                 )
@@ -326,7 +328,8 @@ end
             host = hosts[1]
             before = _ssh_e2e_juliaup_remote_default_channel(host)
             proc, out = _run_kit_setup(;
-                setup_args = ["--juliaup-update", DistSSHKit.setup_cli_host_token(host)],
+                command = "up",
+                setup_args = ["update", DistSSHKit.setup_cli_host_token(host)],
                 project_root = proj,
                 extra_env = merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
             )
