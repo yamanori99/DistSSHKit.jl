@@ -135,9 +135,9 @@ const _QUEUE_HELP_TOPICS = ("client", "qhost", "queue", "queue-host")
 
 """Top-level `julia -m DistSSHKit` usage (no subcommand)."""
 function print_kit_root_usage(io::IO = stderr)
-    DistSSHRun.print_help_chrome("DistSSHKit"; io = io)
+    DistSSHRun.print_help_chrome(string(DistSSHRun.cli_entry()); io = io)
     DistSSHRun.print_help_section("Usage"; io = io)
-    DistSSHRun.print_help_lines(io, "  julia -m DistSSHKit <command> [args...]")
+    DistSSHRun.print_help_lines(io, "  $(DistSSHRun.cli_m()) <command> [args...]")
     DistSSHRun.print_help_blank(io)
     DistSSHRun.print_help_section("Run"; io = io)
     DistSSHRun.print_help_lines(
@@ -185,18 +185,18 @@ function print_kit_root_usage(io::IO = stderr)
     DistSSHRun.print_help_section("Examples"; io = io)
     DistSSHRun.print_help_lines(
         io,
-        "  julia --project=. -m DistSSHKit setup --check child:host1",
-        "  julia --project=. -m DistSSHKit up child:host1",
-        "  julia --project=. -m DistSSHKit go SCRIPT.jl",
-        "  julia --project=. -m DistSSHKit ride parent:2 SCRIPT.jl",
-        "  julia --project=. -m DistSSHKit drive parent:2 SCRIPT.jl",
-        "  julia --project=. -m DistSSHKit plan SCRIPT.jl",
-        "  julia --project=. -m DistSSHKit qhost:HOST submit drive parent:4 SCRIPT.jl",
-        "  julia --project=. -m DistSSHKit qhost setup",
-        "  julia --project=. -m DistSSHKit qhost up",
+        "  $(DistSSHRun.cli_m_project()) setup --check child:host1",
+        "  $(DistSSHRun.cli_m_project()) up child:host1",
+        "  $(DistSSHRun.cli_m_project()) go SCRIPT.jl",
+        "  $(DistSSHRun.cli_m_project()) ride parent:2 SCRIPT.jl",
+        "  $(DistSSHRun.cli_m_project()) drive parent:2 SCRIPT.jl",
+        "  $(DistSSHRun.cli_m_project()) plan SCRIPT.jl",
+        "  $(DistSSHRun.cli_m_project()) qhost:HOST submit drive parent:4 SCRIPT.jl",
+        "  $(DistSSHRun.cli_m_project()) qhost setup",
+        "  $(DistSSHRun.cli_m_project()) qhost up",
     )
     DistSSHRun.print_help_blank(io)
-    println(io, "Run `julia -m DistSSHKit <command> -h` for flags.")
+    println(io, "Run `$(DistSSHRun.cli_m()) <command> -h` for flags.")
     return nothing
 end
 
@@ -264,6 +264,12 @@ Run commands (`setup`, `up`, `go`, `ride`, `drive`, `plan`, `size`, `pool`,
 `qhost up`, `qhost serve`, `qhost size`).
 """
 function main(args::Vector{String} = copy(ARGS))::Cint
+    return DistSSHRun.with_cli_entry(:DistSSHKit) do
+        _main(args)
+    end
+end
+
+function _main(args::Vector{String})::Cint
     if length(args) == 1 && _version_flag(args[1])
         println_kit_version()
         return 0
