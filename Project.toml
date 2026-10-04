@@ -10,14 +10,17 @@ projects = ["test", "docs"]
 [deps]
 DistSSHQueue = "24254401-70d8-4a51-8ea4-cfab19f5bc73"
 DistSSHRun = "b568025c-2759-4ef1-8b14-17d00e2cd000"
+DistSSHUp = "76a6745a-cbcc-444e-a19a-dcac12a79e7c"
 
 [sources]
-DistSSHQueue = {rev = "bf089127e5318239b9faa174afadbbef8add31a3", url = "https://github.com/yamanori99/DistSSHQueue.jl"}
-DistSSHRun = {rev = "e56052c3bdafa38bfd194f1285e989814ef538f9", url = "https://github.com/yamanori99/DistSSHRun.jl"}
+DistSSHQueue = {rev = "25f2d2b1659d1628da6aa7bd1af9322b6752a4ff", url = "https://github.com/yamanori99/DistSSHQueue.jl"}
+DistSSHRun = {rev = "3ff27077b37e88f7b607ca7f92de9bd9c61e08fe", url = "https://github.com/yamanori99/DistSSHRun.jl"}
+DistSSHUp = {rev = "bc0586a569b5aec58ee096578e3d64b8b94e408d", url = "https://github.com/yamanori99/DistSSHUp.jl"}
 
 [compat]
 DistSSHQueue = "0.8"
 DistSSHRun = "0.1"
+DistSSHUp = "0.1"
 julia = "1.13"
 
 [apps.distsshkit]

@@ -8,6 +8,7 @@ module DistSSHKit
 
 using DistSSHQueue
 using DistSSHRun
+import DistSSHUp
 
 # Names this module defines itself. Do not import them from a dependency.
 const _OWN = (
@@ -60,8 +61,6 @@ const _QUALIFIED = (
     :find_local_juliaup,
     :get_local_git_hash,
     :get_remote_julia_version,
-    :julia_version_mismatch_kind,
-    :juliaup_channel,
     :kit_job_mark_comment,
     :kit_job_pkill_pattern,
     :kit_progress_done!,
@@ -77,6 +76,17 @@ const _QUALIFIED = (
 for _n in _QUALIFIED
     isdefined(@__MODULE__, _n) && continue
     _bind!(DistSSHRun, _n; export_name = false)
+end
+
+# Channel names live on DistSSHUp. Not exported.
+const _QUALIFIED_UP = (
+    :julia_version_mismatch_kind,
+    :juliaup_channel,
+)
+
+for _n in _QUALIFIED_UP
+    isdefined(@__MODULE__, _n) && continue
+    _bind!(DistSSHUp, _n; export_name = false)
 end
 
 function _project_version()::VersionNumber
