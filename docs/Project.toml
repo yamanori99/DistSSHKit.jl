@@ -10,7 +10,7 @@ Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 DistSSHBase = {url = "https://github.com/yamanori99/DistSSHBase.jl", rev = "cc4d354c02bcb0ec1d28fec59479ad8dd0e5d93b"}
 DistSSHKit = {path = ".."}
 DistSSHQueue = {url = "https://github.com/yamanori99/DistSSHQueue.jl", rev = "f89aa47eb5e0de660e5a7a74a696552c657ae991"}
-DistSSHRun = {url = "https://github.com/yamanori99/DistSSHRun.jl", rev = "1d02d092ab954b394394a0a3586ba1a27fb21e05"}
+DistSSHRun = {url = "https://github.com/yamanori99/DistSSHRun.jl", rev = "c9d78d115856caa14f4043587e8698728803ac70"}
 DistSSHUp = {url = "https://github.com/yamanori99/DistSSHUp.jl", rev = "01364eeab31539148dae853deaaf72bc5c46d1af"}
 
 [compat]
