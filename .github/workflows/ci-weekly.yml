@@ -15,7 +15,6 @@ concurrency:
 
 permissions:
   contents: read
-  actions: write # julia-actions/cache delete-old-caches
 
 jobs:
   test:
@@ -30,6 +29,7 @@ jobs:
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
+          delete-old-caches: false
       - uses: ./.github/actions/pkg-test
 
   test-tip:
@@ -45,6 +45,7 @@ jobs:
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
+          delete-old-caches: false
       - uses: ./.github/actions/pkg-test
 
   jetls:
@@ -61,6 +62,7 @@ jobs:
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
+          delete-old-caches: false
       - uses: ./.github/actions/jetls-check
         with:
           files: ${{ steps.files.outputs.list }}
@@ -77,6 +79,7 @@ jobs:
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
+          delete-old-caches: false
       - name: Aqua.test_all (latest Aqua)
         run: ./.github/aqua-check.sh
 
@@ -93,6 +96,7 @@ jobs:
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
+          delete-old-caches: false
       - name: Aqua.test_all (latest Aqua)
         run: ./.github/aqua-check.sh
 
@@ -110,7 +114,7 @@ jobs:
       actions: write
     steps:
       - uses: actions/checkout@v7
-      - name: Keep latest cache per restore-key prefix
+      - name: Keep latest cache per ref and restore-key prefix
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash .github/cache-gc.sh

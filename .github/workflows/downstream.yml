@@ -17,7 +17,6 @@ concurrency:
 
 permissions:
   contents: read
-  actions: write # julia-actions/cache delete-old-caches
 
 jobs:
   detect:
@@ -84,6 +83,7 @@ jobs:
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
+          delete-old-caches: false
 
       - name: Pkg.develop Kit + Pkg.test Queue
         run: |
