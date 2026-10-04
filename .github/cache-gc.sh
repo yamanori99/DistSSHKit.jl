@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Keep the newest Actions cache per restore-key prefix (10 GB repo quota).
+# Keep the newest Actions cache per ref and restore-key prefix (10 GB repo quota).
 # Needs gh + GH_TOKEN with actions: write. Safe to re-run.
 set -euo pipefail
 
 # gh paginates; --limit is the max rows returned. Fail if we hit the cap so
 # a full repo does not look "clean" while older caches remain.
 LIMIT=10000
-list_json="$(gh cache list --limit "$LIMIT" --json id,key,createdAt,lastAccessedAt)"
+list_json="$(gh cache list --limit "$LIMIT" --json id,key,ref,createdAt,lastAccessedAt)"
 count="$(python3 -c 'import json,sys; print(len(json.load(sys.stdin)))' <<<"$list_json")"
 if (( count >= LIMIT )); then
   echo "cache-gc: hit --limit $LIMIT; raise LIMIT so every cache is listed" >&2
@@ -32,7 +32,7 @@ def stamp(row: dict) -> str:
 
 groups = {}
 for row in rows:
-    groups.setdefault(prefix(row["key"]), []).append(row)
+    groups.setdefault((row.get("ref") or "", prefix(row["key"])), []).append(row)
 
 for items in groups.values():
     items.sort(key=stamp, reverse=True)

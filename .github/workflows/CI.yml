@@ -16,7 +16,6 @@ concurrency:
 
 permissions:
   contents: read
-  actions: write # julia-actions/cache delete-old-caches
 
 jobs:
   # Full `Pkg.test()` stays Linux-only. Slow SSH E2E kit parents are `E2E weekly`.
@@ -93,7 +92,6 @@ jobs:
     permissions:
       contents: read
       id-token: write # Codecov OIDC on main push
-      actions: write
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/julia-slot
@@ -102,6 +100,7 @@ jobs:
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
+          delete-old-caches: false
       - uses: ./.github/actions/pkg-test
         with:
           coverage: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
@@ -122,6 +121,7 @@ jobs:
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
+          delete-old-caches: false
       - uses: ./.github/actions/pkg-test
 
   # Not a Julia slot. Not required to merge. Catches checkout-only Pkg.test assumptions.
@@ -142,6 +142,7 @@ jobs:
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
+          delete-old-caches: false
       - uses: ./.github/actions/registry-tree-test
 
   aqua:
@@ -158,6 +159,7 @@ jobs:
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
+          delete-old-caches: false
       - name: Aqua.test_all (latest Aqua)
         run: ./.github/aqua-check.sh
 
@@ -176,6 +178,7 @@ jobs:
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
+          delete-old-caches: false
       - name: Aqua.test_all (latest Aqua)
         run: ./.github/aqua-check.sh
 
@@ -197,6 +200,7 @@ jobs:
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
+          delete-old-caches: false
       - uses: ./.github/actions/jetls-check
         with:
           files: ${{ steps.files.outputs.list }}
@@ -209,7 +213,6 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
-      actions: write
       id-token: write # Codecov OIDC when a version-cut PR runs E2E coverage
     steps:
       - uses: actions/checkout@v7
@@ -223,6 +226,7 @@ jobs:
       - uses: julia-actions/cache@v3
         with:
           cache-scratchspaces: false
+          delete-old-caches: false
 
       - uses: julia-actions/julia-buildpkg@v1
 
