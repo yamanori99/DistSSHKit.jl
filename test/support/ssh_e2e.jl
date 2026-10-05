@@ -3,6 +3,7 @@
 if !isdefined(Main, :_ssh_e2e_enabled)
 
     using Dates
+    using DistSSHBase
     using DistSSHRun
     using DistSSHUp
 
@@ -590,7 +591,7 @@ if !isdefined(Main, :_ssh_e2e_enabled)
         write(marker, string(time()) * "\n")
         run(pipeline(`git -C $proj add -A`; stdout = devnull, stderr = devnull))
         run(pipeline(`git -C $proj commit -m $message`; stdout = devnull, stderr = devnull))
-        DistSSHKit.local_git_clean(proj) || error(
+        DistSSHRun.local_git_clean(proj) || error(
             "e2e bump left a dirty tree:\n" *
                 read(pipeline(`git -C $proj status --porcelain`; stderr = devnull), String),
         )

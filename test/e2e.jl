@@ -56,6 +56,13 @@ end
 
 @testset "SSH E2E (docker-ssh)" verbose = true begin
     _with_ssh_e2e_suite() do suite
+        proj = suite.project_remote
+        _stage_ssh_e2e_remote_host!(proj)
+        smoke = joinpath(proj, "smoke.jl")
+        echo_script = joinpath(proj, "demos", "with_kit", "square_echo.jl")
+        pi_echo = joinpath(proj, "demos", "without_kit", "pi_echo.jl")
+        pi_file = joinpath(proj, "demos", "without_kit", "pi_file.jl")
+
         @testset "setup --delete (clean slate)" begin
             _e2e_announce("setup --delete (clean slate)")
             proc, out = _run_kit_setup(;

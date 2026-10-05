@@ -100,10 +100,14 @@ for _n in _QUALIFIED_UP
 end
 
 function _project_version()::VersionNumber
-    path = joinpath(pkgdir(@__MODULE__), "Project.toml")
-    for line in eachline(path)
+    root = pkgdir(@__MODULE__)
+    root === nothing && return v"0.0.0"
+    for line in eachline(joinpath(root, "Project.toml"))
         m = match(r"^version\s*=\s*\"([^\"]+)\"", line)
-        m === nothing || return VersionNumber(m.captures[1])
+        m === nothing && continue
+        cap = m.captures[1]
+        cap === nothing && continue
+        return VersionNumber(String(cap))
     end
     return v"0.0.0"
 end
