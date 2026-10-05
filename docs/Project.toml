@@ -11,7 +11,7 @@ DistSSHBase = {url = "https://github.com/yamanori99/DistSSHBase.jl", rev = "cc4d
 DistSSHKit = {path = ".."}
 DistSSHQueue = {url = "https://github.com/yamanori99/DistSSHQueue.jl", rev = "4c1eb9619235b17b3e29b302d1ea5529f28b051a"}
 DistSSHRun = {url = "https://github.com/yamanori99/DistSSHRun.jl", rev = "8072229910bd7f3202d29595a4a0516f74a0d18d"}
-DistSSHUp = {url = "https://github.com/yamanori99/DistSSHUp.jl", rev = "f942c87db2fd08b7eca31586d05b063ac9fc075b"}
+DistSSHUp = {url = "https://github.com/yamanori99/DistSSHUp.jl", rev = "6c5da969f126fd1e698a611af6e9302c6b23e25a"}
 
 [compat]
 DistSSHBase = "0.1"

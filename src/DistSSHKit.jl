@@ -163,7 +163,7 @@ function print_kit_root_usage(io::IO = stderr)
     DistSSHBase.print_help_lines(
         io,
         "  setup              Clone / sync / check remotes",
-        "  up                 Align a Julia channel with juliaup",
+        "  up                 juliaup add / default / update / status",
         "  go                 Run an as-is complete job",
         "  ride               Experimental auto-split of map / filter",
         "  drive              Distributed workers + collect",
@@ -192,7 +192,7 @@ function print_kit_root_usage(io::IO = stderr)
     DistSSHBase.print_help_lines(
         io,
         "  qhost setup        Write config.toml if missing",
-        "  qhost up           Align config hosts with juliaup",
+        "  qhost up           juliaup verbs on config hosts",
         "  qhost add-host     Add host tokens",
         "  qhost remove-host  Drop host tokens",
         "  qhost serve        Run serve in this terminal",
