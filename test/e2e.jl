@@ -213,7 +213,8 @@ end
                     suite, "setup_juliaup_parent_remote", proc_up, out_up;
                     project = proj, kit = :setup,
                 )
-                @test occursin("parent", lowercase(out_up))
+                @test occursin("add complete (2 host(s)).", out_up)
+                @test occursin("default complete (2 host(s)).", out_up)
 
                 parent_ver = _ssh_e2e_local_juliaup_julia_version()
                 @test parent_ver.major == VERSION.major
