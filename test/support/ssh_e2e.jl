@@ -66,7 +66,7 @@ if !isdefined(Main, :_ssh_e2e_enabled)
     Call under `withenv` that sets `DISTRIBUTED_SSH_OPTS` (E2E `_ssh_e2e_env`).
     """
     function _e2e_run_on_host(host::AbstractString, argv::AbstractVector{<:AbstractString})
-        inner = DistSSHRun._run_on_host_remote_sh(String[String(a) for a in argv])
+        inner = DistSSHBase._run_on_host_remote_sh(String[String(a) for a in argv])
         return _run_subprocess(Cmd(vcat(["ssh"], DistSSHKit.ssh_opts(), [String(host), inner])))
     end
 
@@ -140,7 +140,7 @@ if !isdefined(Main, :_ssh_e2e_enabled)
     """Version of the Julia shim beside the kit parent's juliaup."""
     function _ssh_e2e_local_juliaup_julia_version()::VersionNumber
         ju = _ssh_e2e_local_juliaup()
-        jl = DistSSHRun._local_julia_beside_juliaup(ju)
+        jl = DistSSHBase._local_julia_beside_juliaup(ju)
         isfile(jl) || error("Julia not found beside juliaup: $jl")
         ver = DistSSHKit.parse_julia_version(read(`$jl --version`, String))
         ver === nothing && error("unparseable julia --version from $jl")
