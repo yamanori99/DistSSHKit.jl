@@ -35,6 +35,33 @@ if !isdefined(Main, :_run_kit_setup)
         end
     end
 
+    """`up add` then `up default` for the same channel and hosts.
+
+    The old host-only `up` aligned in one shot. Verbs are separate: install the
+    kit channel, then switch the default. `default` confirms unless
+    `DISTSSHKIT_YES` is set (`_run_kit_setup` sets it).
+    """
+    function _run_kit_up_align(
+            tail::AbstractVector;
+            project_root,
+            extra_env::Dict{String, String},
+        )
+        proc_add, out_add = _run_kit_setup(;
+            command = "up",
+            setup_args = ["add", tail...],
+            project_root = project_root,
+            extra_env = extra_env,
+        )
+        proc_add.exitcode == 0 || return proc_add, out_add
+        proc_def, out_def = _run_kit_setup(;
+            command = "up",
+            setup_args = ["default", tail...],
+            project_root = project_root,
+            extra_env = extra_env,
+        )
+        return proc_def, out_add * out_def
+    end
+
     function _fake_setup_remote_env(state_dir)::Dict{String, String}
         return Dict{String, String}(
             "DISTSSHKIT_TEST_SSH" => _fixture("fake_setup_ssh.jl"),

@@ -142,9 +142,8 @@ end
                 @test occursin("mismatch", lowercase(out_bad)) ||
                     occursin("version", lowercase(out_bad))
 
-                proc_up, out_up = _run_kit_setup(;
-                    command = "up",
-                    setup_args = [setup_hosts...],
+                proc_up, out_up = _run_kit_up_align(
+                    [ch.default, setup_hosts...];
                     project_root = proj,
                     extra_env = merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
                 )
@@ -205,9 +204,8 @@ end
                 @test parent_alt.minor == parse(Int, alt_parts[2])
                 @test DistSSHKit.julia_version_mismatch_kind(VERSION, parent_alt) == :minor
 
-                proc_up, out_up = _run_kit_setup(;
-                    command = "up",
-                    setup_args = ["parent", DistSSHKit.setup_cli_host_token(host)],
+                proc_up, out_up = _run_kit_up_align(
+                    [ch.default, "parent", DistSSHKit.setup_cli_host_token(host)];
                     project_root = proj,
                     extra_env = merge(_e2e_base_env(), Dict("DISTSSHKIT_QUIET" => "0")),
                 )
