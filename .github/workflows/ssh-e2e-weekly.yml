@@ -160,7 +160,20 @@ jobs:
       - name: Colima
         run: ./testenv/docker-ssh/scripts/setup-colima-ci.sh
       - name: Log in to GHCR
-        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+        run: |
+          attempt=1
+          max=5
+          delay=5
+          until echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin; do
+            if (( attempt >= max )); then
+              echo "docker login failed after ${max} attempts" >&2
+              exit 1
+            fi
+            echo "docker login failed (${attempt}/${max}); retrying in ${delay}s" >&2
+            sleep "$delay"
+            attempt=$((attempt + 1))
+            delay=$((delay * 2))
+          done
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
