@@ -91,10 +91,31 @@ echo "::endgroup::"
 COLIMA_CPU="${COLIMA_CPU:-3}"
 COLIMA_MEMORY_GB="${COLIMA_MEMORY_GB:-8}"
 # localhost port publish is enough for our compose stack (macOS 15 LNP).
-colima_args=(--cpu "$COLIMA_CPU" --memory "$COLIMA_MEMORY_GB" --arch x86_64 --vm-type=vz --mount-type=virtiofs)
+# Lima's slirp DNS (192.168.5.1) times out on macos-15-intel. --dns is used
+# by dnsmasq when the image has it; the block below covers images that still
+# point resolv.conf at the slirp stub.
+COLIMA_DNS_1="${COLIMA_DNS_1:-1.1.1.1}"
+COLIMA_DNS_2="${COLIMA_DNS_2:-8.8.8.8}"
+colima_args=(
+  --cpu "$COLIMA_CPU" --memory "$COLIMA_MEMORY_GB" --arch x86_64
+  --vm-type=vz --mount-type=virtiofs
+  --dns "$COLIMA_DNS_1" --dns "$COLIMA_DNS_2"
+)
 
 echo "::group::Start Colima ${colima_args[*]}"
 colima start "${colima_args[@]}"
+echo "::endgroup::"
+
+echo "::group::Guest DNS"
+resolv="$(colima ssh -- cat /etc/resolv.conf)"
+printf '%s\n' "$resolv"
+if grep -Eq '^nameserver 192\.168\.5\.' <<<"$resolv"; then
+  echo "replacing Lima slirp DNS with ${COLIMA_DNS_1} and ${COLIMA_DNS_2}"
+  colima ssh -- sudo sh -c \
+    "rm -f /etc/resolv.conf; printf '%s\n' 'nameserver ${COLIMA_DNS_1}' 'nameserver ${COLIMA_DNS_2}' > /etc/resolv.conf"
+  colima ssh -- sudo systemctl restart docker
+fi
+retry colima ssh -- getent hosts ghcr.io
 echo "::endgroup::"
 
 docker version
