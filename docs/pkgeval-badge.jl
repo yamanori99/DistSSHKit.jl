@@ -2,14 +2,15 @@
 #
 #   julia --startup-file=no docs/pkgeval-badge.jl PACKAGE docs/src/assets/pkgeval.svg
 #
-# Corners are square and the gloss gradient is removed. The status color
-# stays whatever Nanosoldier drew (`passing`, `failed`, `skipped`, …).
+# Source is Nanosoldier's square badge (`PACKAGE.square.svg`, corner radius 0).
+# The gloss gradient is removed. The status color stays whatever Nanosoldier
+# drew (`passing`, `failed`, `skipped`, …).
 # A missing badge does not write the destination and is not an error.
 
 using Downloads
 
 function refresh_pkgeval_badge(package::AbstractString, dest::AbstractString)::Bool
-    url = "https://juliaci.github.io/NanosoldierReports/pkgeval_badges/$(first(package))/$(package).svg"
+    url = "https://juliaci.github.io/NanosoldierReports/pkgeval_badges/$(first(package))/$(package).square.svg"
     svg = try
         String(take!(Downloads.download(url, IOBuffer(); timeout = 20)))
     catch e
@@ -20,7 +21,6 @@ function refresh_pkgeval_badge(package::AbstractString, dest::AbstractString)::B
         @warn "PkgEval badge missing" package url
         return false
     end
-    svg = replace(svg, r"rx=\"\d+\"" => "rx=\"0\"")
     svg = replace(svg, r"<linearGradient[\s\S]*?</linearGradient>" => "")
     svg = replace(svg, r"<rect[^>]*fill=\"url\(#s\)\"[^>]*/>" => "")
     if isfile(dest) && read(dest, String) == svg
