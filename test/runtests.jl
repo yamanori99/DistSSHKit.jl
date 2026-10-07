@@ -172,18 +172,22 @@ const _VENDORED = (
         child_env = copy(ENV)
         delete!(child_env, "JULIA_LOAD_PATH")
         delete!(child_env, "JULIA_PROJECT")
-        run(pipeline(
-            setenv(`$julia --startup-file=no --project=$app -e "using Pkg; Pkg.instantiate()"`, child_env);
-            stdout = devnull,
-            stderr = devnull,
-        ))
+        run(
+            pipeline(
+                setenv(`$julia --startup-file=no --project=$app -e "using Pkg; Pkg.instantiate()"`, child_env);
+                stdout = devnull,
+                stderr = devnull,
+            )
+        )
         mktemp() do out_path, out_io
             mktemp() do err_path, err_io
-                run(pipeline(
-                    setenv(`$julia --startup-file=no --project=$app -m DistSSHKit drive -h`, child_env);
-                    stdout = out_io,
-                    stderr = err_io,
-                ))
+                run(
+                    pipeline(
+                        setenv(`$julia --startup-file=no --project=$app -m DistSSHKit drive -h`, child_env);
+                        stdout = out_io,
+                        stderr = err_io,
+                    )
+                )
                 flush(out_io)
                 flush(err_io)
                 out = read(out_path, String)
