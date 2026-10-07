@@ -278,6 +278,19 @@ function _version_flag(arg::AbstractString)::Bool
 end
 
 """
+Bind `DistSSHRun` in `Main` before its CLI scripts run.
+
+Those scripts `import DistSSHRun` into `Main`. An app that only lists
+DistSSHKit in `[deps]` cannot load that name, even though this package
+already loaded the module.
+"""
+function _bind_run_in_main!()
+    isdefined(Main, :DistSSHRun) && return nothing
+    Core.eval(Main, Expr(:const, Expr(:(=), :DistSSHRun, DistSSHRun)))
+    return nothing
+end
+
+"""
     main(args::Vector{String}=copy(ARGS))
 
 CLI entry. Prefer Julia 1.13+ and `julia -m DistSSHKit SUBCOMMAND …`.
@@ -328,6 +341,7 @@ function _main(args::Vector{String})::Cint
             println_kit_version()
             return 0
         end
+        _bind_run_in_main!()
         return DistSSHRun.main(args)
     end
     if any(endswith(String(a), ".jl") for a in args)

@@ -148,4 +148,49 @@ const _VENDORED = (
             @test !occursin("could not resolve hostname", lowercase(combined))
         end
     end
+
+    # An app lists only DistSSHKit. Run's CLI scripts still `import DistSSHRun`
+    # into Main, so `main` must bind that already-loaded module first.
+    @testset "app project" begin
+        app = mktempdir()
+        kit = something(pkgdir(DistSSHKit), pwd())
+        write(
+            joinpath(app, "Project.toml"),
+            """
+            name = "AppOnlyKit"
+            uuid = "bbbbbbbb-bbbb-4ccc-8ddd-eeeeeeeeeeee"
+            version = "0.0.1"
+
+            [deps]
+            DistSSHKit = "ceec0504-c968-4be5-b215-667cae0e8f81"
+
+            [sources]
+            DistSSHKit = {path = $(repr(kit))}
+            """,
+        )
+        julia = joinpath(Sys.BINDIR, "julia")
+        child_env = copy(ENV)
+        delete!(child_env, "JULIA_LOAD_PATH")
+        delete!(child_env, "JULIA_PROJECT")
+        run(pipeline(
+            setenv(`$julia --startup-file=no --project=$app -e "using Pkg; Pkg.instantiate()"`, child_env);
+            stdout = devnull,
+            stderr = devnull,
+        ))
+        mktemp() do out_path, out_io
+            mktemp() do err_path, err_io
+                run(pipeline(
+                    setenv(`$julia --startup-file=no --project=$app -m DistSSHKit drive -h`, child_env);
+                    stdout = out_io,
+                    stderr = err_io,
+                ))
+                flush(out_io)
+                flush(err_io)
+                out = read(out_path, String)
+                err = read(err_path, String)
+                @test occursin("DistSSHKit drive", out)
+                @test !occursin("Package DistSSHRun not found", err)
+            end
+        end
+    end
 end
