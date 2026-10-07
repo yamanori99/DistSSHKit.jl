@@ -7,9 +7,8 @@ This module reexports their public names and keeps `julia -m DistSSHKit`.
 module DistSSHKit
 
 using DistSSHQueue
-using DistSSHRun
-import DistSSHUp
-import DistSSHBase
+import DistSSHRun
+using SHA
 
 # Names this module defines itself. Do not import them from a dependency.
 const _OWN = (
@@ -32,7 +31,12 @@ end
 
 const _FROM = Dict{Symbol, Module}()
 
-"""Reexport names `mod` already exports. Private names stay there."""
+"""Reexport names `mod` already exports. Private names stay there.
+
+A name this module already defines (vendored `base/` and `up/`) is exported
+here and not imported. `_OWN` is excluded even when not yet defined, because
+`println_kit_version` is declared after this pass and Run also exports it.
+"""
 function _adopt!(mod::Module)
     for n in names(mod)
         n === nameof(mod) && continue
@@ -41,11 +45,32 @@ function _adopt!(mod::Module)
             _FROM[n] === mod && continue
             error("DistSSHKit cannot take `$n` from both $(nameof(mod)) and $(nameof(_FROM[n]))")
         end
+        if isdefined(@__MODULE__, n)
+            Core.eval(@__MODULE__, Expr(:export, n))
+            _FROM[n] = @__MODULE__
+            continue
+        end
         _bind!(mod, n; export_name = true)
         _FROM[n] = mod
     end
     return nothing
 end
+
+include("DistSSHKit/base/paths.jl")
+include("DistSSHKit/base/explain.jl")
+include("DistSSHKit/base/argv.jl")
+include("DistSSHKit/base/hosts.jl")
+include("DistSSHKit/base/host_tokens.jl")
+include("DistSSHKit/base/cli_entry.jl")
+include("DistSSHKit/base/help.jl")
+include("DistSSHKit/base/ssh.jl")
+include("DistSSHKit/base/julia_where.jl")
+include("DistSSHKit/base/namespace.jl")
+include("DistSSHKit/up/version.jl")
+include("DistSSHKit/up/status.jl")
+include("DistSSHKit/up/remote.jl")
+include("DistSSHKit/up/local.jl")
+include("DistSSHKit/up/hosts.jl")
 
 _adopt!(DistSSHRun)
 _adopt!(DistSSHQueue)
@@ -72,31 +97,6 @@ const _QUALIFIED = (
 for _n in _QUALIFIED
     isdefined(@__MODULE__, _n) && continue
     _bind!(DistSSHRun, _n; export_name = false)
-end
-
-# Host talking lives on DistSSHBase. Not exported.
-const _QUALIFIED_BASE = (
-    :clear_detect_julia_path_cache!,
-    :find_local_juliaup,
-    :get_remote_julia_version,
-    :parse_julia_version,
-    :resolve_remote_julia,
-)
-
-for _n in _QUALIFIED_BASE
-    isdefined(@__MODULE__, _n) && continue
-    _bind!(DistSSHBase, _n; export_name = false)
-end
-
-# Channel names live on DistSSHUp. Not exported.
-const _QUALIFIED_UP = (
-    :julia_version_mismatch_kind,
-    :juliaup_channel,
-)
-
-for _n in _QUALIFIED_UP
-    isdefined(@__MODULE__, _n) && continue
-    _bind!(DistSSHUp, _n; export_name = false)
 end
 
 function _project_version()::VersionNumber
@@ -159,12 +159,12 @@ const _QUEUE_HELP_TOPICS = ("client", "qhost", "queue", "queue-host")
 
 """Top-level `julia -m DistSSHKit` usage (no subcommand)."""
 function print_kit_root_usage(io::IO = stderr)
-    DistSSHBase.print_help_chrome(string(DistSSHBase.cli_entry()); io = io)
-    DistSSHBase.print_help_section("Usage"; io = io)
-    DistSSHBase.print_help_lines(io, "  $(DistSSHBase.cli_m()) <command> [args...]")
-    DistSSHBase.print_help_blank(io)
-    DistSSHBase.print_help_section("Run"; io = io)
-    DistSSHBase.print_help_lines(
+    print_help_chrome(string(cli_entry()); io = io)
+    print_help_section("Usage"; io = io)
+    print_help_lines(io, "  $(cli_m()) <command> [args...]")
+    print_help_blank(io)
+    print_help_section("Run"; io = io)
+    print_help_lines(
         io,
         "  setup              Clone / sync / check remotes",
         "  up                 juliaup add / default / update / status",
@@ -177,9 +177,9 @@ function print_kit_root_usage(io::IO = stderr)
         "  demo               Install or list example scripts",
         "  progress           Phase seconds from kit.progress",
     )
-    DistSSHBase.print_help_blank(io)
-    DistSSHBase.print_help_section("Client"; io = io)
-    DistSSHBase.print_help_lines(
+    print_help_blank(io)
+    print_help_section("Client"; io = io)
+    print_help_lines(
         io,
         "  submit             Enqueue go / ride / drive",
         "  status             Snapshot of the store",
@@ -191,9 +191,9 @@ function print_kit_root_usage(io::IO = stderr)
         "  teardown           Stop serve and remove ~/.distsshqueue",
         "  qhost:HOST         SSH that client command to the queue host",
     )
-    DistSSHBase.print_help_blank(io)
-    DistSSHBase.print_help_section("Queue host"; io = io)
-    DistSSHBase.print_help_lines(
+    print_help_blank(io)
+    print_help_section("Queue host"; io = io)
+    print_help_lines(
         io,
         "  qhost setup        Write config.toml if missing",
         "  qhost up           juliaup verbs on config hosts",
@@ -205,22 +205,22 @@ function print_kit_root_usage(io::IO = stderr)
         "  qhost service      Queue host service",
         "  qhost size         size / plan / pool on the queue host",
     )
-    DistSSHBase.print_help_blank(io)
-    DistSSHBase.print_help_section("Examples"; io = io)
-    DistSSHBase.print_help_lines(
+    print_help_blank(io)
+    print_help_section("Examples"; io = io)
+    print_help_lines(
         io,
-        "  $(DistSSHBase.cli_m_project()) setup --check child:host1",
-        "  $(DistSSHBase.cli_m_project()) up child:host1",
-        "  $(DistSSHBase.cli_m_project()) go SCRIPT.jl",
-        "  $(DistSSHBase.cli_m_project()) ride parent:2 SCRIPT.jl",
-        "  $(DistSSHBase.cli_m_project()) drive parent:2 SCRIPT.jl",
-        "  $(DistSSHBase.cli_m_project()) plan SCRIPT.jl",
-        "  $(DistSSHBase.cli_m_project()) qhost:HOST submit drive parent:4 SCRIPT.jl",
-        "  $(DistSSHBase.cli_m_project()) qhost setup",
-        "  $(DistSSHBase.cli_m_project()) qhost up",
+        "  $(cli_m_project()) setup --check child:host1",
+        "  $(cli_m_project()) up child:host1",
+        "  $(cli_m_project()) go SCRIPT.jl",
+        "  $(cli_m_project()) ride parent:2 SCRIPT.jl",
+        "  $(cli_m_project()) drive parent:2 SCRIPT.jl",
+        "  $(cli_m_project()) plan SCRIPT.jl",
+        "  $(cli_m_project()) qhost:HOST submit drive parent:4 SCRIPT.jl",
+        "  $(cli_m_project()) qhost setup",
+        "  $(cli_m_project()) qhost up",
     )
-    DistSSHBase.print_help_blank(io)
-    println(io, "Run `$(DistSSHBase.cli_m()) <command> -h` for flags.")
+    print_help_blank(io)
+    println(io, "Run `$(cli_m()) <command> -h` for flags.")
     return nothing
 end
 
@@ -288,8 +288,12 @@ Run commands (`setup`, `up`, `go`, `ride`, `drive`, `plan`, `size`, `pool`,
 `qhost up`, `qhost serve`, `qhost size`).
 """
 function main(args::Vector{String} = copy(ARGS))::Cint
-    return DistSSHBase.with_cli_entry(:DistSSHKit) do
-        _main(args)
+    return with_cli_entry(:DistSSHKit) do
+        DistSSHRun.with_cli_entry(:DistSSHKit) do
+            DistSSHQueue.with_cli_entry(:DistSSHKit) do
+                _main(args)
+            end
+        end
     end
 end
 

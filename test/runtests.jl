@@ -24,14 +24,41 @@ function _main_capture(args)
     end
 end
 
+# Run exports these, and this package's `base/` defines the same names.
+const _VENDORED = (
+    :cache_file,
+    :cache_path,
+    :cache_relpath,
+    :canonical_local_path,
+    :file_sha256,
+    :host_tokens,
+    :is_parent_host_name,
+    :print_colored,
+    :print_help_blank,
+    :print_help_chrome,
+    :print_help_lines,
+    :print_help_section,
+    :resolve_controller_julia,
+    :resolve_pkg_env,
+    :resolve_pkg_project_dir,
+    :run_on_host,
+    :short_path,
+    :ssh_opts,
+    :stored_path,
+)
+
 @testset "DistSSHKit" verbose = true begin
     @testset "reexport" begin
         for n in names(DistSSHRun)
             n === :DistSSHRun && continue
             n === :println_kit_version && continue
             @test isdefined(DistSSHKit, n)
-            @test getproperty(DistSSHKit, n) === getproperty(DistSSHRun, n)
             @test n in names(DistSSHKit)
+            if n in _VENDORED
+                @test parentmodule(getproperty(DistSSHKit, n)) === DistSSHKit
+            else
+                @test getproperty(DistSSHKit, n) === getproperty(DistSSHRun, n)
+            end
         end
         for n in names(DistSSHQueue)
             n === :DistSSHQueue && continue
@@ -40,7 +67,8 @@ end
             @test n in names(DistSSHKit)
         end
         @test !isdefined(DistSSHKit, :_read_kit_pid_record)
-        @test !isdefined(DistSSHKit, :_juliaup_default_channel_from_status)
+        @test isdefined(DistSSHKit, :_juliaup_default_channel_from_status)
+        @test :_juliaup_default_channel_from_status ∉ names(DistSSHKit)
         @test DistSSHKit.dist_ssh_kit_version() == v"0.9.0"
         @test DistSSHKit.dist_ssh_kit_version() != DistSSHRun.dist_ssh_kit_version()
         @test DistSSHKit.go! === DistSSHRun.go!

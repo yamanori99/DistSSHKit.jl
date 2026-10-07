@@ -8,22 +8,18 @@ authors = ["Yamamoto, Takanori <takanori.yamamoto.99@gmail.com>", "Ampuku, Honok
 projects = ["test", "docs"]
 
 [deps]
-DistSSHBase = "f0a69307-14e5-4272-8c28-20680d05bac8"
 DistSSHQueue = "24254401-70d8-4a51-8ea4-cfab19f5bc73"
 DistSSHRun = "b568025c-2759-4ef1-8b14-17d00e2cd000"
-DistSSHUp = "76a6745a-cbcc-444e-a19a-dcac12a79e7c"
+SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 
 [sources]
-DistSSHBase = {rev = "cc4d354c02bcb0ec1d28fec59479ad8dd0e5d93b", url = "https://github.com/yamanori99/DistSSHBase.jl"}
-DistSSHQueue = {rev = "22313336a73e42c09ff3b0905e1cd0bf02f949c3", url = "https://github.com/yamanori99/DistSSHQueue.jl"}
-DistSSHRun = {rev = "0a2ebf01ee0aeb646c2e73948c48fb02905d61c6", url = "https://github.com/yamanori99/DistSSHRun.jl"}
-DistSSHUp = {rev = "982025e01f88377c4068b3fde428c6dcdc9127f3", url = "https://github.com/yamanori99/DistSSHUp.jl"}
+DistSSHQueue = {rev = "5bf3827e9e311dd4333732a80f08d99d2e327463", url = "https://github.com/yamanori99/DistSSHQueue.jl"}
+DistSSHRun = {rev = "f4c66f1d3fd3f6e9a070b5e0425862294d39ff26", url = "https://github.com/yamanori99/DistSSHRun.jl"}
 
 [compat]
-DistSSHBase = "0.1"
 DistSSHQueue = "0.8"
 DistSSHRun = "0.1"
-DistSSHUp = "0.1"
+SHA = "1"
 julia = "1.13"
 
 [apps.distsshkit]
