@@ -23,10 +23,7 @@ SSH 分散実行の手順を簡単にし、揃えることで、再現しやす�
 DistSSHKit は、それらをまとめて小さな計算ノードとして使うためのものである。
 
 > [!TIP]
-> 計算に使うマシンを常時起動しておきたい場合 (単一でも複数でも) や、
-> その計算資源を研究室の他のメンバーと共有したい場合は、
-> [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
-> (`pkg> add DistSSHQueue`) が使える。各ジョブの実行は、これまでどおり DistSSHKit が担う。
+> 計算に使うマシンを常時起動しておきたい場合や、その計算資源を研究室の他のメンバーと共有したい場合は、キューも DistSSHKit に入っている。`pkg> add DistSSHKit` がインストールになる。
 
 ## インストール
 
@@ -160,14 +157,13 @@ CLI のオプションと Julia API は1対1である。
   (push せず pull だけ)、または再度 `--rsync`
 - その他
   - `--check` (SSH / Julia / 依存関係の疎通確認)
-  - `--juliaup` (juliaup で `child:NAME` や `parent` の Julia を揃える。確認あり。`-y` で省略)
-  - `--juliaup-update` (それらのホストで `juliaup update`。確認あり。`-y` で省略)
+  - `up` / `up update` (juliaup でチャネルを揃える。`setup` のフラグではない。確認あり。`-y` で省略)
   - `--prune` (`.distsshkit` の go / drive / setup / runs を消す。配置ツリーは残す)
   - `--cleanup` (残っているワーカープロセスの掃除)
   - `--delete` (リモートのプロジェクトディレクトリを削除。破壊的操作)
 
 `--rsync` / `--clone` / `--sync` / `--pull` / `--delete` / `--prune` /
-`--juliaup` / `--juliaup-update` は実行前に確認する。
+`up` / `up update` は実行前に確認する。
 スクリプトなどで非対話に実行したい場合は `-y` / `--yes` を付ける。
 
 詳細: [setup](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/setup/)。

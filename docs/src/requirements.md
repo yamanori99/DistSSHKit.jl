@@ -29,7 +29,7 @@ jobs.
     `/opt/homebrew/bin/julia` / `/usr/local/bin/julia`). Otherwise put a
     1.13+ binary at a usual OS path ([Checks](@ref)) or set `--julia` /
     `JULIA_DISTRIBUTED_EXE`. On major.minor mismatch, use
-    [`setup --juliaup`](@ref Manual-setup) when juliaup is already on the
+    [`up`](@ref Manual-setup) when juliaup is already on the
     host (official install or Homebrew; see [Checks](@ref)). Missing path
     or a related bug:
     [open an Issue](https://github.com/yamanori99/DistSSHKit.jl/issues).
@@ -174,9 +174,9 @@ If the major.minor does not match the kit machine, align with juliaup
 (changes that host's **default** Julia):
 
 ```bash
-julia --project=. -m DistSSHKit setup --juliaup child:USER@HOST
-julia --project=. -m DistSSHKit setup --juliaup parent   # this machine
-julia --project=. -m DistSSHKit setup --juliaup-update child:USER@HOST
+julia --project=. -m DistSSHKit up child:USER@HOST
+julia --project=. -m DistSSHKit up parent   # this machine
+julia --project=. -m DistSSHKit up update child:USER@HOST
 # or manually (official install or macOS Homebrew):
 # ssh USER@HOST '$HOME/.juliaup/bin/juliaup add 1.13 &&
 #   $HOME/.juliaup/bin/juliaup update 1.13 &&
@@ -200,7 +200,7 @@ with `setup --check` (this **is** a DistSSHKit command):
 julia --project=. -m DistSSHKit setup --check child:USER@HOST
 ```
 
-`setup --check` prints a `--juliaup` Fix when Julia is missing or the
+`setup --check` prints an `up` Fix when Julia is missing or the
 major.minor differs.
 
 Example — `git` only if that host will clone / pull:

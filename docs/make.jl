@@ -1,6 +1,9 @@
 using Documenter
 using DistSSHKit
+using DistSSHQueue
+using DistSSHRun
 using Base64
+using Pkg
 
 include(joinpath(@__DIR__, "pkgeval-badge.jl"))
 
@@ -11,8 +14,32 @@ refresh_pkgeval_badge("DistSSHKit", joinpath(@__DIR__, "src", "assets", "pkgeval
 const FAVICON_PNG_B64 = base64encode(read(joinpath(@__DIR__, "src", "assets", "favicon.png")))
 const FAVICON_DARK_PNG_B64 = base64encode(read(joinpath(@__DIR__, "src", "assets", "favicon-dark.png")))
 
+function _dep_git_rev(name::AbstractString)::String
+    for dep in values(Pkg.dependencies())
+        dep.name == name || continue
+        rev = dep.git_revision
+        rev === nothing && break
+        return rev
+    end
+    return "main"
+end
+
+function _pkg_root(mod::Module)::String
+    src = pathof(mod)
+    src === nothing && error("$(nameof(mod)) has no source path")
+    return dirname(dirname(src))
+end
+
 makedocs(;
-    modules = [DistSSHKit],
+    modules = [DistSSHKit, DistSSHRun, DistSSHQueue],
+    remotes = Dict(
+        _pkg_root(DistSSHRun) => (
+            Remotes.GitHub("yamanori99", "DistSSHRun.jl"), _dep_git_rev("DistSSHRun"),
+        ),
+        _pkg_root(DistSSHQueue) => (
+            Remotes.GitHub("yamanori99", "DistSSHQueue.jl"), _dep_git_rev("DistSSHQueue"),
+        ),
+    ),
     authors = "Takanori Yamamoto, Honoka Ampuku, and contributors",
     sitename = "DistSSHKit.jl",
     format = Documenter.HTML(;
@@ -40,6 +67,9 @@ makedocs(;
             "Requirements" => "requirements.md",
             "Prepare" => "tutorial/prepare.md",
             "Demo" => "tutorial/demo.md",
+            "Queue host" => "tutorial/queue-prepare.md",
+            "First job" => "tutorial/queue-client.md",
+            "Walkthrough" => "tutorial/queue-walkthrough.md",
         ],
         "User Guide" => [
             "Overview" => "manual/index.md",
@@ -53,6 +83,14 @@ makedocs(;
             "paths" => "manual/paths.md",
             "demo" => "manual/demo.md",
             "distsshkit" => "manual/distsshkit.md",
+            "Queue" => "queue/index.md",
+            "Artifacts and paths" => "queue/artifacts.md",
+            "submit" => "queue/submit.md",
+            "status" => "queue/status.md",
+            "fetch" => "queue/fetch.md",
+            "hosts" => "queue/hosts.md",
+            "serve" => "queue/serve.md",
+            "Queue setup" => "queue/setup.md",
         ],
         "API" => "api.md",
     ],

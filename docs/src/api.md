@@ -399,3 +399,34 @@ methods in the same session.
 ```@docs
 worker_pmap
 ```
+
+## Queue
+
+The queue ships in this package. A client runs
+`julia -m DistSSHKit submit …`, with `qhost:HOST` when the queue is
+another machine. On the queue host, `julia -m DistSSHKit qhost setup`
+and `julia -m DistSSHKit qhost serve`. `qhost size` / `qhost plan` /
+`qhost pool` are that machine's inventory. Bare `setup` / `size` /
+`plan` / `pool` stay the run commands.
+
+```julia
+q = Queue(; store=default_store_path(), follow_config=true)
+id = submit!(q, "SCRIPT.jl", "child:host1:4"; kind=:go)
+cancel!(q, id)
+serve!(q)
+```
+
+```@docs
+Queue
+Job
+submit!
+cancel!
+jobs
+job
+load!
+step!
+serve!
+serve
+job_project
+default_store_path
+```

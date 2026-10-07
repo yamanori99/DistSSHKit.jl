@@ -8,18 +8,18 @@ authors = ["Yamamoto, Takanori <takanori.yamamoto.99@gmail.com>", "Ampuku, Honok
 projects = ["test", "docs"]
 
 [deps]
-Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
-Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
-Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+DistSSHQueue = "24254401-70d8-4a51-8ea4-cfab19f5bc73"
+DistSSHRun = "b568025c-2759-4ef1-8b14-17d00e2cd000"
 SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
-TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+
+[sources]
+DistSSHQueue = {rev = "5bf3827e9e311dd4333732a80f08d99d2e327463", url = "https://github.com/yamanori99/DistSSHQueue.jl"}
+DistSSHRun = {rev = "f4c66f1d3fd3f6e9a070b5e0425862294d39ff26", url = "https://github.com/yamanori99/DistSSHRun.jl"}
 
 [compat]
-Dates = "1.11"
-Distributed = "1.11"
-Pkg = "1.13"
+DistSSHQueue = "0.8"
+DistSSHRun = "0.1"
 SHA = "1"
-TOML = "1"
 julia = "1.13"
 
 [apps.distsshkit]

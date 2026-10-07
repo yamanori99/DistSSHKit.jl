@@ -6,9 +6,9 @@ Supported on **macOS, Linux, and WSL2 Ubuntu** (not native Windows).
 
 !!! tip
     If you want to keep the machines you use for compute (one or several)
-    always on, or to share that compute with other members of your lab, use
-    [DistSSHQueue.jl](https://yamanori99.github.io/DistSSHQueue.jl/stable/)
-    (`pkg> add DistSSHQueue`). DistSSHKit still runs each job.
+    always on, or to share that compute with other members of your lab, the
+    queue is part of this package
+    ([Queue](@ref Queue-manual)). `pkg> add DistSSHKit` is the install.
 
 ## What is DistSSHKit?
 

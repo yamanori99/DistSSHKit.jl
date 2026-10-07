@@ -22,6 +22,13 @@ files=(
     test/e2e.jl
     test/fixtures/*.jl
 )
+# Worker script. It `using JSON`, which this package project does not depend on.
+filtered=()
+for f in "${files[@]}"; do
+    [[ "$f" == "test/fixtures/pkg_driver_smoke.jl" ]] && continue
+    filtered+=("$f")
+done
+files=("${filtered[@]}")
 
 if ((${#files[@]} == 0)); then
     echo "jetls-check: no entry files matched" >&2

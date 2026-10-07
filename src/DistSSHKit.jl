@@ -1,335 +1,323 @@
 """
-DistSSHKit — local + SSH Julia runs (`go` / `plan` / `ride` / `drive` / `setup`) and a small API
-(`go!`, `plan`, `ride!`, `pool!`, `drive!`, `pipeline!`, …).
+DistSSHKit — meta-package for one run and the queue.
 
-Package entry: exports, version, `include`s, `main` (`@main` on Julia 1.13+).
-CLI entries live under `src/cli/`; argv parsers under `src/DistSSHKit/argv/`.
+Users add this package. DistSSHRun is one run. DistSSHQueue is the queue.
+This module reexports their public names and keeps `julia -m DistSSHKit`.
 """
 module DistSSHKit
 
-using Dates
-using Distributed
-using Pkg
+using DistSSHQueue
+import DistSSHRun
 using SHA
-using TOML
 
-# Public surface. Prefer `julia -m DistSSHKit …` for day-to-day CLI.
-#   user — go! / ride! / drive! / plan / pool! / size! / setup! / pipeline!
-#   occupancy — size! (RSS WorkerPlan; CLI size / pool; not implied by omit :N)
-#   queue — execute!(; detached=true), parsers, paths, help chrome
-#   argv wrappers `go` / `drive` stay unexported (`main` / tests)
-export worker_pmap
-export KitSession
-export HostResult
-export SyncResult
-export WorkerPlan
-export host_tokens
-export is_parent_host_name
-export DriveResult
-export HostRunResult
-export DriveHostStatus
-export CollectResult
-export KitRunResult
-export KitProcess
-export kit_run_result
-export PipelineConfig
-export PipelineResult
-export sync!
-export instantiate!
-export setup!
-export size!
-export pool!
-export ResourcePool
-export HostInventory
-export print_pool
-export plan
-export KitPlan
-export PlanFinding
-export print_plan
-export ns_path
-export file_sha256
-export cache_file
-export cache_path
-export cache_relpath
-export push_cache!
-export cache_remote_dir
-export drive!
-export collect!
-export pipeline!
-export pipeline_config_from_env
-export report_pipeline_errors
-export report_run_errors
-export go!
-export GoResult
-export report_go_errors
-export ride!
-export RideResult
-export print_ride
-export execute!
-export allocate_output_dir
-export allocate_run_dir
-export kit_run_dir
-export read_kit_run_toml
-export execute_detached_accepts
-export execute_kwargs_from_parsed
-export kit_pid_file_running
-export terminate!
-export terminate_run!
-export kit_result_from_dir
-export drive_host_status
-export parse_go_args
-export parse_drive_args
-export show_go_usage
-export show_drive_usage
+# Names this module defines itself. Do not import them from a dependency.
+const _OWN = (
+    :dist_ssh_kit_version,
+    :main,
+    :print_kit_root_usage,
+    :println_kit_version,
+)
+
+"""Import `n` from `mod`. `export_name` reexports it."""
+function _bind!(mod::Module, n::Symbol; export_name::Bool)
+    Core.eval(
+        @__MODULE__,
+        Expr(:import, Expr(:(:), Expr(:., nameof(mod)), Expr(:., n))),
+    )
+    export_name || return nothing
+    Core.eval(@__MODULE__, Expr(:export, n))
+    return nothing
+end
+
+const _FROM = Dict{Symbol, Module}()
+
+"""Reexport names `mod` already exports. Private names stay there.
+
+A name this module already defines (vendored `base/` and `up/`) is exported
+here and not imported. `_OWN` is excluded even when not yet defined, because
+`println_kit_version` is declared after this pass and Run also exports it.
+"""
+function _adopt!(mod::Module)
+    for n in names(mod)
+        n === nameof(mod) && continue
+        n in _OWN && continue
+        if haskey(_FROM, n)
+            _FROM[n] === mod && continue
+            error("DistSSHKit cannot take `$n` from both $(nameof(mod)) and $(nameof(_FROM[n]))")
+        end
+        if isdefined(@__MODULE__, n)
+            Core.eval(@__MODULE__, Expr(:export, n))
+            _FROM[n] = @__MODULE__
+            continue
+        end
+        _bind!(mod, n; export_name = true)
+        _FROM[n] = mod
+    end
+    return nothing
+end
+
+include("DistSSHKit/base/paths.jl")
+include("DistSSHKit/base/explain.jl")
+include("DistSSHKit/base/argv.jl")
+include("DistSSHKit/base/hosts.jl")
+include("DistSSHKit/base/host_tokens.jl")
+include("DistSSHKit/base/cli_entry.jl")
+include("DistSSHKit/base/help.jl")
+include("DistSSHKit/base/ssh.jl")
+include("DistSSHKit/base/julia_where.jl")
+include("DistSSHKit/base/namespace.jl")
+include("DistSSHKit/up/version.jl")
+include("DistSSHKit/up/status.jl")
+include("DistSSHKit/up/remote.jl")
+include("DistSSHKit/up/local.jl")
+include("DistSSHKit/up/hosts.jl")
+
+_adopt!(DistSSHRun)
+_adopt!(DistSSHQueue)
+
+# Qualified names this repo's demos and SSH checks still call. Not exported.
+const _QUALIFIED = (
+    :KIT_PROGRESS,
+    :KIT_PROGRESS_SUSPEND,
+    :KitCliSession,
+    :KitProgressState,
+    :apply_kit_cli_session!,
+    :close_log_file,
+    :get_local_git_hash,
+    :kit_job_mark_comment,
+    :kit_job_pkill_pattern,
+    :kit_progress_done!,
+    :kit_progress_latest,
+    :kit_verbosity,
+    :resolve_distributed_output_dir!,
+    :set_kit_verbosity!,
+    :setup_cli_host_token,
+)
+
+for _n in _QUALIFIED
+    isdefined(@__MODULE__, _n) && continue
+    _bind!(DistSSHRun, _n; export_name = false)
+end
+
+function _project_version()::VersionNumber
+    root = pkgdir(@__MODULE__)
+    root === nothing && return v"0.0.0"
+    for line in eachline(joinpath(root, "Project.toml"))
+        m = match(r"^version\s*=\s*\"([^\"]+)\"", line)
+        m === nothing && continue
+        cap = m.captures[1]
+        cap === nothing && continue
+        return VersionNumber(String(cap))
+    end
+    return v"0.0.0"
+end
+
+"""Version of this meta-package, from its `Project.toml`."""
+dist_ssh_kit_version()::VersionNumber = _project_version()
+
+"""
+    println_kit_version(io::IO=stdout)
+
+Print `DistSSHKit` and this package's version.
+"""
+function println_kit_version(io::IO = stdout)
+    println(io, "DistSSHKit $(dist_ssh_kit_version())")
+    return nothing
+end
+
 export println_kit_version
-export ssh_opts
-export run_on_host
-export resolve_controller_julia
-export canonical_local_path
-export short_path
-export resolve_pkg_project_dir
-export resolve_pkg_env
-export explain_script_not_found
-export print_cli_error
-export print_help_chrome
-export print_help_section
-export print_help_lines
-export print_help_blank
-export print_colored
-export SPINNER_FRAMES
-# `_print_colored` remains an alias of `print_colored`.
 
-
-# Implementation
-
-include("DistSSHKit/display.jl")
-include("DistSSHKit/namespace.jl")
-include("DistSSHKit/explain.jl")
-include("DistSSHKit/argv/args.jl")
-include("DistSSHKit/argv/session.jl")
-include("DistSSHKit/hosts.jl")
-include("DistSSHKit/remote.jl")
-include("DistSSHKit/demos.jl")
-include("DistSSHKit/distributed.jl")
-include("DistSSHKit/drive/types.jl")
-include("DistSSHKit/run_manifest.jl")
-include("DistSSHKit/size/measure.jl")
-include("DistSSHKit/setup.jl")
-include("DistSSHKit/argv/drive_args.jl")
-include("DistSSHKit/argv/go_args.jl")
-include("DistSSHKit/argv/plan_args.jl")
-include("DistSSHKit/argv/setup_args.jl")
-include("DistSSHKit/argv/size_args.jl")
-include("DistSSHKit/argv/pool_args.jl")
-include("DistSSHKit/argv/ride_args.jl")
-include("DistSSHKit/drive.jl")
-include("DistSSHKit/namespace_sync.jl")
-include("DistSSHKit/pool.jl")
-include("DistSSHKit/drive/runtime/heartbeat.jl")
-include("DistSSHKit/drive/runtime/_common.jl")
-include("DistSSHKit/drive/runtime/checks.jl")
-include("DistSSHKit/drive/runtime/collect_tree.jl")
-include("DistSSHKit/drive/runtime/workers.jl")
-include("DistSSHKit/drive/runtime/init.jl")
-include("DistSSHKit/drive/runtime/results.jl")
-include("DistSSHKit/drive/runtime/run.jl")
-include("DistSSHKit/argv/size_report.jl")
-include("DistSSHKit/plan.jl")
-include("DistSSHKit/go.jl")
-include("DistSSHKit/ride.jl")
-include("DistSSHKit/execute.jl")
-
-const _KIT_ROOT = dirname(@__DIR__)
-
-# Kit version (from Project.toml).
-# `@__DIR__` is `src/` — keep path resolution here, not in included files.
-
-"""Read `version` from `path` (`Project.toml`); return `nothing` if missing or invalid."""
-function _project_toml_version(path::AbstractString)::Union{Nothing, VersionNumber}
-    p = String(path)
-    isfile(p) || return nothing
-    try
-        raw = get(TOML.parsefile(p), "version", nothing)
-        raw isa AbstractString || return nothing
-        return VersionNumber(String(raw))
-    catch
-        return nothing
-    end
-end
-
-const _DIST_SSH_KIT_PROJECT_TOML = joinpath(@__DIR__, "..", "Project.toml")
-
-"""Semantic version of this vendored kit (from kit `Project.toml`)."""
-const DIST_SSH_KIT_VERSION = something(
-    _project_toml_version(_DIST_SSH_KIT_PROJECT_TOML),
-    v"0.0.0",
+const _RUN_COMMANDS = (
+    "demo",
+    "drive",
+    "go",
+    "plan",
+    "pool",
+    "progress",
+    "ride",
+    "setup",
+    "size",
+    "up",
 )
-
-dist_ssh_kit_version()::VersionNumber = DIST_SSH_KIT_VERSION
-
-# CLI: load `src/cli/*.jl` into Main and run `*_main`.
-#   julia --project=. -m DistSSHKit drive parent:2 script.jl
-
-const _KIT_CLI_LOADED = Set{String}()
-const _KIT_CLI_SCRIPTS = ("drive.jl", "go.jl", "plan.jl", "pool.jl", "ride.jl", "setup.jl", "size.jl")
-
-const _KIT_CLI_MAIN = Dict(
-    "drive.jl" => :drive_main,
-    "go.jl" => :go_main,
-    "plan.jl" => :plan_main,
-    "pool.jl" => :pool_main,
-    "ride.jl" => :ride_main,
-    "setup.jl" => :setup_main,
-    "size.jl" => :size_main,
+const _QUEUE_ONLY = (
+    "add-host",
+    "cancel",
+    "disable",
+    "enable",
+    "fetch",
+    "list-host",
+    "remove-host",
+    "serve",
+    "service",
+    "status",
+    "stop",
+    "submit",
+    "teardown",
+    "watch",
 )
+const _QUEUE_HELP_TOPICS = ("client", "qhost", "queue", "queue-host")
 
-function _kit_cli_run_entry(script_base::String)::Cint
-    sym = get(_KIT_CLI_MAIN, script_base, nothing)
-    sym === nothing && return 0
-    return Base.invokelatest() do
-        result = getfield(Main, sym)()
-        return result isa Cint ? result : 0
-    end
+"""Top-level `julia -m DistSSHKit` usage (no subcommand)."""
+function print_kit_root_usage(io::IO = stderr)
+    print_help_chrome(string(cli_entry()); io = io)
+    print_help_section("Usage"; io = io)
+    print_help_lines(io, "  $(cli_m()) <command> [args...]")
+    print_help_blank(io)
+    print_help_section("Run"; io = io)
+    print_help_lines(
+        io,
+        "  setup              Clone / sync / check remotes",
+        "  up                 juliaup add / default / update / status",
+        "  go                 Run an as-is complete job",
+        "  ride               Experimental auto-split of map / filter",
+        "  drive              Distributed workers + collect",
+        "  plan               Inspect a script; do not run",
+        "  size               Estimate worker counts",
+        "  pool               Cluster cores / health (no job)",
+        "  demo               Install or list example scripts",
+        "  progress           Phase seconds from kit.progress",
+    )
+    print_help_blank(io)
+    print_help_section("Client"; io = io)
+    print_help_lines(
+        io,
+        "  submit             Enqueue go / ride / drive",
+        "  status             Snapshot of the store",
+        "  watch              Live status",
+        "  cancel             Drop queued or stop running",
+        "  fetch              Copy a finished leaf",
+        "  list-host          Inventory",
+        "  stop               Stop serve, keep files",
+        "  teardown           Stop serve and remove ~/.distsshqueue",
+        "  qhost:HOST         SSH that client command to the queue host",
+    )
+    print_help_blank(io)
+    print_help_section("Queue host"; io = io)
+    print_help_lines(
+        io,
+        "  qhost setup        Write config.toml if missing",
+        "  qhost up           juliaup verbs on config hosts",
+        "  qhost add-host     Add host tokens",
+        "  qhost remove-host  Drop host tokens",
+        "  qhost serve        Run serve in this terminal",
+        "  qhost enable       Start serve after reboot",
+        "  qhost disable      Remove that OS registration",
+        "  qhost service      Queue host service",
+        "  qhost size         size / plan / pool on the queue host",
+    )
+    print_help_blank(io)
+    print_help_section("Examples"; io = io)
+    print_help_lines(
+        io,
+        "  $(cli_m_project()) setup --check child:host1",
+        "  $(cli_m_project()) up child:host1",
+        "  $(cli_m_project()) go SCRIPT.jl",
+        "  $(cli_m_project()) ride parent:2 SCRIPT.jl",
+        "  $(cli_m_project()) drive parent:2 SCRIPT.jl",
+        "  $(cli_m_project()) plan SCRIPT.jl",
+        "  $(cli_m_project()) qhost:HOST submit drive parent:4 SCRIPT.jl",
+        "  $(cli_m_project()) qhost setup",
+        "  $(cli_m_project()) qhost up",
+    )
+    print_help_blank(io)
+    println(io, "Run `$(cli_m()) <command> -h` for flags.")
+    return nothing
 end
 
-function _append_script_arg_prelude!(args::Vector{String})
-    raw = get(ENV, "DISTSSHKIT_SCRIPT_ARG_PRELUDE", "")
-    isempty(raw) && return
-    delete!(ENV, "DISTSSHKIT_SCRIPT_ARG_PRELUDE")
-    for line in split(raw, '\n')
-        s = strip(String(line))
-        !isempty(s) && push!(args, s)
-    end
-    return
-end
-
-function _merge_script_arg_prelude(rest::Vector{String})::Vector{String}
-    merged = collect(String, rest)
-    _append_script_arg_prelude!(merged)
-    return merged
-end
-
-function _mark_kit_cli_subcommand_done!()
-    return ENV["DISTSSHKIT_CLI_SUBCOMMAND_DONE"] = "1"
-end
-
-function _consume_kit_cli_subcommand_done!()::Bool
-    if get(ENV, "DISTSSHKIT_CLI_SUBCOMMAND_DONE", "") == "1"
-        delete!(ENV, "DISTSSHKIT_CLI_SUBCOMMAND_DONE")
-        return true
-    end
-    return false
-end
-
-"""Run a kit CLI script under `src/cli/` (`drive.jl`, `setup.jl`, …) with `ARGS` set."""
-function _run_kit_cli_script(script_name::AbstractString, args::Vector{String})::Cint
-    haskey(ENV, "DISTRIBUTED_PROJECT_ROOT") || (ENV["DISTRIBUTED_PROJECT_ROOT"] = pwd())
-    # `args` may alias `ARGS` (the app launcher can pass `ARGS` directly).
-    args_snapshot = collect(String, args)
-    empty!(ARGS)
-    append!(ARGS, args_snapshot)
-    script_path::String = if isabspath(script_name)
-        String(script_name)
-    else
-        joinpath(@__DIR__, "cli", String(script_name))
-    end
-    script_base = basename(script_path)
-    prev_include = get(ENV, "DIST_SSH_KIT_CLI_INCLUDE", nothing)
-    ENV["DIST_SSH_KIT_CLI_INCLUDE"] = "1"
-    try
-        if script_base in _KIT_CLI_SCRIPTS
-            if !(script_base in _KIT_CLI_LOADED)
-                Core.include(Main, script_path)
-                push!(_KIT_CLI_LOADED, script_base)
-            end
-            return _kit_cli_run_entry(script_base)
-        end
-        Core.include(Main, script_path)
-        return 0
-    finally
-        if prev_include === nothing
-            delete!(ENV, "DIST_SSH_KIT_CLI_INCLUDE")
+function _leading_command(args::Vector{String})
+    saw = false
+    i = 1
+    while i <= length(args)
+        a = args[i]
+        if a == "--remote-julia" && i < length(args)
+            saw = true
+            i += 2
+        elseif a == "--queue-env" && i < length(args)
+            saw = true
+            i += 2
+        elseif startswith(a, "qhost:")
+            saw = true
+            i += 1
+        elseif a == "--qhost" || a == "--project" || startswith(a, "--project=")
+            saw = true
+            break
         else
-            ENV["DIST_SSH_KIT_CLI_INCLUDE"] = prev_include
+            break
         end
-        _mark_kit_cli_subcommand_done!()
     end
+    sub = i <= length(args) ? String(args[i]) : ""
+    if !saw && length(args) >= 2 && startswith(args[2], "qhost:")
+        saw = true
+        sub = String(args[1])
+    end
+    return sub, saw
+end
+
+"""Drop a leading `qhost` group word. `qhost:HOST` is a client hop and stays."""
+function _without_qhost_group(args::Vector{String})::Union{Nothing, Vector{String}}
+    i = 1
+    while i <= length(args)
+        a = args[i]
+        if a == "--remote-julia" && i < length(args)
+            i += 2
+        elseif a == "--queue-env" && i < length(args)
+            i += 2
+        elseif startswith(a, "qhost:")
+            return nothing
+        else
+            break
+        end
+    end
+    i <= length(args) || return nothing
+    String(args[i]) == "qhost" || return nothing
+    return [args[1:(i - 1)]; args[(i + 1):end]]
+end
+
+function _version_flag(arg::AbstractString)::Bool
+    return arg in ("--version", "-v", "-V")
 end
 
 """
-    drive(args::Vector{String}=copy(ARGS))
+Bind `DistSSHRun` in `Main` before its CLI scripts run.
 
-Run `drive.jl` with `args` (same as `julia -m DistSSHKit drive …`).
+Those scripts `import DistSSHRun` into `Main`. An app that only lists
+DistSSHKit in `[deps]` cannot load that name, even though this package
+already loaded the module.
 """
-drive(args::Vector{String} = copy(ARGS))::Cint = _run_kit_cli_script("drive.jl", args)
-
-"""
-    go(args::Vector{String}=copy(ARGS))
-
-Run `go.jl` with `args` (same as `julia -m DistSSHKit go …`).
-"""
-go(args::Vector{String} = copy(ARGS))::Cint = _run_kit_cli_script("go.jl", args)
-
-"""
-    setup(args::Vector{String}=copy(ARGS))
-
-Run `setup.jl` (clone / sync / cleanup) with `args` (same as `julia -m DistSSHKit setup …`).
-"""
-setup(args::Vector{String} = copy(ARGS))::Cint = _run_kit_cli_script("setup.jl", args)
-
-"""
-    run_size(args::Vector{String}=copy(ARGS))
-
-Run the `size` CLI (`size.jl`) with `args`. Named `run_size` so it does not
-shadow `Base.size`. Prefer `julia -m DistSSHKit size …` day-to-day.
-"""
-run_size(args::Vector{String} = copy(ARGS))::Cint = _run_kit_cli_script("size.jl", args)
-
-"""
-    run_pool(args::Vector{String}=copy(ARGS))
-
-Run the `pool` CLI (`pool.jl`) with `args`. Prefer `julia -m DistSSHKit pool …`.
-"""
-run_pool(args::Vector{String} = copy(ARGS))::Cint = _run_kit_cli_script("pool.jl", args)
-
-"""
-    run_ride(args::Vector{String}=copy(ARGS))
-
-Run the `ride` CLI (`ride.jl`) with `args`. Prefer `julia -m DistSSHKit ride …`.
-"""
-run_ride(args::Vector{String} = copy(ARGS))::Cint = _run_kit_cli_script("ride.jl", args)
-
-"""
-    run_plan(args::Vector{String}=copy(ARGS))
-
-Run the `plan` CLI (`plan.jl`) with `args`. Prefer `julia -m DistSSHKit plan …`.
-"""
-run_plan(args::Vector{String} = copy(ARGS))::Cint = _run_kit_cli_script("plan.jl", args)
+function _bind_run_in_main!()
+    isdefined(Main, :DistSSHRun) && return nothing
+    Core.eval(Main, Expr(:const, Expr(:(=), :DistSSHRun, DistSSHRun)))
+    return nothing
+end
 
 """
     main(args::Vector{String}=copy(ARGS))
 
-CLI entry. Prefer Julia 1.13+ and `julia -m DistSSHKit SUBCOMMAND …`:
+CLI entry. Prefer Julia 1.13+ and `julia -m DistSSHKit SUBCOMMAND …`.
 
-    julia --project=. -m DistSSHKit setup --clone child:host1 child:host2
-    julia --project=. -m DistSSHKit go SCRIPT.jl
-    julia --project=. -m DistSSHKit ride parent:2 SCRIPT.jl
-    julia --project=. -m DistSSHKit drive parent:2 script.jl
-    julia --project=. -m DistSSHKit plan SCRIPT.jl
-    julia --project=. -m DistSSHKit size parent child:host1
-    julia --project=. -m DistSSHKit pool parent child:host1
-    julia --project=. -m DistSSHKit progress DIR
-
-`main` remains for wrappers and tests; prefer `-m` day-to-day.
-A `.jl` path with no command is not implicit `go`.
+Run commands (`setup`, `up`, `go`, `ride`, `drive`, `plan`, `size`, `pool`,
+`demo`, `progress`) stay the run surface. Client commands take an optional
+`qhost:HOST`. Queue-host commands start with `qhost` (`qhost setup`,
+`qhost up`, `qhost serve`, `qhost size`).
 """
 function main(args::Vector{String} = copy(ARGS))::Cint
-    if _consume_kit_cli_subcommand_done!()
-        return 0
+    return with_cli_entry(:DistSSHKit) do
+        DistSSHRun.with_cli_entry(:DistSSHKit) do
+            DistSSHQueue.with_cli_entry(:DistSSHKit) do
+                _main(args)
+            end
+        end
     end
-    if length(args) == 1 && args[1] in ("--version", "-v", "-V")
+end
+
+function _main(args::Vector{String})::Cint
+    if length(args) == 1 && _version_flag(args[1])
         println_kit_version()
         return 0
+    end
+    if length(args) == 2 && args[1] in ("-h", "--help", "help") &&
+            args[2] in _QUEUE_HELP_TOPICS
+        return DistSSHQueue.main(args)
     end
     if length(args) == 1 && args[1] in ("-h", "--help", "help")
         print_kit_root_usage()
@@ -339,46 +327,45 @@ function main(args::Vector{String} = copy(ARGS))::Cint
         print_kit_root_usage()
         return 1
     end
-    subcommand, rest = args[1], args[2:end]
-    if subcommand in ("drive", "go") &&
-            any(endswith(String(a), ".jl") for a in rest)
-        _mark_kit_cli_subcommand_done!()
+    stripped = _without_qhost_group(args)
+    if stripped !== nothing
+        return DistSSHQueue.main(stripped)
     end
-    if subcommand == "drive"
-        return drive(_merge_script_arg_prelude(rest))
-    elseif subcommand == "go"
-        return go(_merge_script_arg_prelude(rest))
-    elseif subcommand == "demo"
-        return demo(rest)
-    elseif subcommand == "setup"
-        return setup(rest)
-    elseif subcommand == "plan"
-        return run_plan(rest)
-    elseif subcommand == "ride"
-        return run_ride(rest)
-    elseif subcommand == "size"
-        return run_size(rest)
-    elseif subcommand == "pool"
-        return run_pool(rest)
-    elseif subcommand == "progress"
-        return progress(rest)
-    else
-        if any(endswith(String(a), ".jl") for a in args)
-            print_cli_error(
-                "No command (got $(repr(subcommand))). Kit does not infer go / ride / drive.",
-            )
-            println(stderr, "  go SCRIPT.jl      as-is complete job (timing without rewrite)")
-            println(stderr, "  ride … SCRIPT.jl  experimental map / filter")
-            println(stderr, "  drive … SCRIPT.jl Distributed")
-            println(stderr, "  plan SCRIPT.jl    inspect; do not run")
-        else
-            print_cli_error("Unknown subcommand: $subcommand")
-            println(stderr, "Expected: setup | go | ride | drive | plan | size | pool | demo | progress")
+    sub, saw_queue = _leading_command(args)
+    if saw_queue || sub in _QUEUE_ONLY
+        return DistSSHQueue.main(args)
+    end
+    if sub in _RUN_COMMANDS
+        rest = args[2:end]
+        if length(rest) == 1 && _version_flag(rest[1])
+            println_kit_version()
+            return 0
         end
-        println(stderr)
-        print_kit_root_usage()
-        return 1
+        _bind_run_in_main!()
+        return DistSSHRun.main(args)
     end
+    if any(endswith(String(a), ".jl") for a in args)
+        DistSSHRun.print_cli_error(
+            "No command (got $(repr(sub))). Kit does not infer go / ride / drive.",
+        )
+        println(stderr, "  go SCRIPT.jl      as-is complete job (timing without rewrite)")
+        println(stderr, "  ride … SCRIPT.jl  experimental map / filter")
+        println(stderr, "  drive … SCRIPT.jl Distributed")
+        println(stderr, "  plan SCRIPT.jl    inspect; do not run")
+    else
+        DistSSHRun.print_cli_error("Unknown subcommand: $sub")
+        println(
+            stderr,
+            "Expected: setup | up | go | ride | drive | plan | size | pool | demo | progress",
+        )
+        println(
+            stderr,
+            "Queue: submit | status | watch | cancel | fetch | list-host | add-host | remove-host | serve | stop | enable | disable | service | teardown",
+        )
+    end
+    println(stderr)
+    print_kit_root_usage()
+    return 1
 end
 
 Base.eval(@__MODULE__, :(@main))

@@ -4,8 +4,7 @@ Prepare SSH hosts before [`go`](@ref Manual-go) / [`drive`](@ref Manual-drive).
 
 ```bash
 julia --project=. -m DistSSHKit setup [options] [child:NAME]
-# Repeat child:NAME for more hosts. --juliaup / --juliaup-update also accept parent / parent:N
-# (:N ignored).
+# Repeat child:NAME for more hosts. (:N ignored). parent is `up`, not setup.
 ```
 
 From Julia, use [`setup!`](@ref) for the same modes as this CLI
@@ -49,18 +48,9 @@ Pick **one mode** per invocation (except shared options).
 - `--pull`: `git pull` on laptop first, then remotes (no push; confirm
   unless `-y`)
 - `--instantiate`: `Pkg.instantiate` on remotes after deploy
-- `--juliaup`: align Julia via juliaup to the kit parent major.minor
-  (`add` / `update` / `default`; confirm unless `-y`; changes host
-  default). Targets: `child:NAME` and/or `parent` (this machine; `:N`
-  ignored). Requires juliaup already on the target
-  (`$HOME/.juliaup/bin/juliaup` or macOS Homebrew
-  `/opt/homebrew/bin/juliaup` / `/usr/local/bin/juliaup`). Does
-  not change the Julia process already running the kit. If remotes land
-  on a newer patch than the kit parent, prints a Tip pointing at
-  `setup --juliaup parent`
-- `--juliaup-update`: `juliaup update` on those hosts (all installed
-  channels; confirm unless `-y`). Does **not** `add` or `default`.
-  Use `--juliaup` to align the default channel
+- `up` / `up update`: align a Julia channel with juliaup. Not a setup
+  flag. `up child:NAME` and `up parent` run `add` / `update` /
+  `default`. `up update` runs `juliaup update` and leaves the default
 - `--runtest`: `Pkg.test()` of the **job** project on remotes (not
   DistSSHKit's tests)
 - `--prune`: delete `.distsshkit/{go,drive,setup,runs}` leaves on localhost
@@ -85,8 +75,8 @@ Pick **one mode** per invocation (except shared options).
 - `--progress`: live status (TTY default)
 - `--verbose`: full detail (non-TTY default)
 - `-y` / `--yes`: accept confirmation prompts non-interactively
-- `--hosts CSV`: comma-separated `child:NAME[:N]` (`:N` stripped). With
-  `--juliaup` / `--juliaup-update`, also `parent` / `parent:N`
+- `--hosts CSV`: comma-separated `child:NAME[:N]` (`:N` stripped).
+  `parent` / `parent:N` belong to `up`, not `setup`
 - `--hosts-file PATH`: append the same tokens (`:N` stripped)
 - `-v` / `--version`: print DistSSHKit version and exit
 - `-h` / `--help`: full help

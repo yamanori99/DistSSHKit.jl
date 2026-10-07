@@ -26,9 +26,8 @@ compute nodes.
 
 > [!TIP]
 > If you want to keep the machines you use for compute (one or several)
-> always on, or to share that compute with other members of your lab, use
-> [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
-> (`pkg> add DistSSHQueue`). DistSSHKit still runs each job.
+> always on, or to share that compute with other members of your lab, the
+> queue is part of DistSSHKit. `pkg> add DistSSHKit` is the install.
 
 ## Install
 
@@ -184,16 +183,12 @@ remote, `go --rsync` / `drive --rsync` can copy and instantiate in one shot
   `--pull` (`pull` only, no push), or `--rsync` again
 - Other modes:
   - `--check` (verify SSH / Julia / dependencies)
-  - `--juliaup` (align Julia via juliaup on `child:NAME` and/or
-    `parent`; confirm unless `-y`)
-  - `--juliaup-update` (`juliaup update` on those hosts; confirm unless
-    `-y`)
   - `--cleanup` (kill leftover worker processes)
   - `--prune` (remove `.distsshkit` go/drive/setup/runs leaves; keeps the deploy)
   - `--delete` (remove the remote project directory — destructive)
 
 `--rsync` / `--clone` / `--sync` / `--pull` / `--delete` / `--prune` /
-`--juliaup` / `--juliaup-update` all ask for confirmation before running. Pass `-y` / `--yes` to run
+`up` / `up update` all ask for confirmation before running. Pass `-y` / `--yes` to run
 non-interactively, e.g. from a script.
 
 Details:

@@ -11,8 +11,9 @@ From the kit checkout root:
 julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
-That is `test/runtests.jl` (unit + integration), sequential `@testset`s,
-`test/Project.toml`. Aqua is a separate CI job, not `Pkg.test()`.
+That is `test/runtests.jl`: public reexports and `julia -m DistSSHKit`
+routing. The run-surface suite lives in DistSSHRun. The queue suite lives
+in DistSSHQueue. Aqua is a separate CI job, not `Pkg.test()`.
 `Pkg.test()` must pass on a Registry install (no kit `Manifest.toml`, often
 mode 444): job smokes pass `-y`; real `ssh` / `git` spawn runs only when that
 binary is on `PATH`; real SSH clusters stay in `e2e.jl`. Occasional copy

@@ -1,140 +1,200 @@
 #!/usr/bin/env julia
-# DistSSHKit Pkg.test() entry: unit + integration (Aqua is CI-only).
-# Does not include test/e2e.jl (real SSH; DISTSSHKIT_SSH_E2E=1 / up.sh --e2e).
-# From a standalone kit checkout (this directory as the active project):
-#   julia --project=. -e 'using Pkg; Pkg.test()'
-#   julia --project=. test/runtests.jl
-#
-# Top-level `include`s (inside `@testset`s, not functions) so JETLS follows them.
-# Each file already has a `@testset`; do not wrap another around `include`.
-# New unit/integration files must be added here. Maintainer checks:
-#   CONTRIBUTING.md ("Before opening a PR")
-#   ./.github/jetls-check.sh
+# Meta-package checks. The run surface is tested in DistSSHRun, the queue in
+# DistSSHQueue. This suite checks reexports and `julia -m DistSSHKit` routing.
 
 using Test
 using DistSSHKit
+using DistSSHQueue
+using DistSSHRun
 
-include(joinpath(@__DIR__, "support.jl"))
-
-# In-process default matches TTY CLI (`:progress`), not module-load `:verbose`
-# or a pipe. Child CLI processes still auto-detect their own stdout.
-DistSSHKit.set_kit_verbosity!(:progress)
-
-# Keep `include(joinpath(@__DIR__, …))` at this top level (JETLS). Only the
-# banner is counted. Update `_RUNTEST_N` when adding a file below.
-const _RUNTEST_N = 50
-const _RUNTEST_I = Ref(0)
-function _runtest_announce(rel::AbstractString)
-    _RUNTEST_I[] += 1
-    println("[$(_RUNTEST_I[])/$_RUNTEST_N]  $rel")
-    flush(stdout)
-    return nothing
+function _main_capture(args)
+    return mktemp() do out_path, out_io
+        mktemp() do err_path, err_io
+            code = withenv("DISTSSHKIT_CLI_SUBCOMMAND_DONE" => "") do
+                redirect_stdout(out_io) do
+                    redirect_stderr(err_io) do
+                        DistSSHKit.main(args)
+                    end
+                end
+            end
+            flush(out_io)
+            flush(err_io)
+            return code, read(out_path, String), read(err_path, String)
+        end
+    end
 end
 
+# Run exports these, and this package's `base/` defines the same names.
+const _VENDORED = (
+    :cache_file,
+    :cache_path,
+    :cache_relpath,
+    :canonical_local_path,
+    :file_sha256,
+    :host_tokens,
+    :is_parent_host_name,
+    :print_colored,
+    :print_help_blank,
+    :print_help_chrome,
+    :print_help_lines,
+    :print_help_section,
+    :resolve_controller_julia,
+    :resolve_pkg_env,
+    :resolve_pkg_project_dir,
+    :run_on_host,
+    :short_path,
+    :ssh_opts,
+    :stored_path,
+)
+
 @testset "DistSSHKit" verbose = true begin
-    @testset "unit" verbose = true begin
-        _runtest_announce("unit/DistSSHKit/display.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "display.jl"))
-        _runtest_announce("unit/DistSSHKit/explain.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "explain.jl"))
-        _runtest_announce("unit/DistSSHKit/remote.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "remote.jl"))
-        _runtest_announce("unit/DistSSHKit/distributed.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "distributed.jl"))
-        _runtest_announce("unit/DistSSHKit/drive.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "drive.jl"))
-        _runtest_announce("unit/DistSSHKit/drive/collect_tree.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "drive", "collect_tree.jl"))
-        _runtest_announce("unit/DistSSHKit/drive/workers.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "drive", "workers.jl"))
-        _runtest_announce("unit/DistSSHKit/size.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "size.jl"))
-        _runtest_announce("unit/DistSSHKit/go.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "go.jl"))
-        _runtest_announce("unit/DistSSHKit/plan.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "plan.jl"))
-        _runtest_announce("unit/DistSSHKit/ride.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "ride.jl"))
-        _runtest_announce("unit/DistSSHKit/namespace.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "namespace.jl"))
-        _runtest_announce("unit/DistSSHKit/pool.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "pool.jl"))
-        _runtest_announce("unit/DistSSHKit/module.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "module.jl"))
-        _runtest_announce("unit/DistSSHKit/execute.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "execute.jl"))
-        _runtest_announce("unit/DistSSHKit/argv/args.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "argv", "args.jl"))
-        _runtest_announce("unit/DistSSHKit/argv/session.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "argv", "session.jl"))
-        _runtest_announce("unit/DistSSHKit/hosts.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "hosts.jl"))
-        _runtest_announce("unit/DistSSHKit/main_dispatch.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "main_dispatch.jl"))
-        _runtest_announce("unit/DistSSHKit/demos.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "demos.jl"))
-        _runtest_announce("unit/DistSSHKit/host_project_toml.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "host_project_toml.jl"))
-        _runtest_announce("unit/DistSSHKit/setup_api.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "setup_api.jl"))
-        _runtest_announce("unit/DistSSHKit/setup/checks.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "setup", "checks.jl"))
-        _runtest_announce("unit/DistSSHKit/setup/hosts.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "setup", "hosts.jl"))
-        _runtest_announce("unit/DistSSHKit/setup/git.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "setup", "git.jl"))
-        _runtest_announce("unit/DistSSHKit/setup/rsync.jl")
-        include(joinpath(@__DIR__, "unit", "DistSSHKit", "setup", "rsync.jl"))
-        _runtest_announce("unit/cli/drive/args.jl")
-        include(joinpath(@__DIR__, "unit", "cli", "drive", "args.jl"))
-        _runtest_announce("unit/cli/go/args.jl")
-        include(joinpath(@__DIR__, "unit", "cli", "go", "args.jl"))
-        _runtest_announce("unit/cli/plan/args.jl")
-        include(joinpath(@__DIR__, "unit", "cli", "plan", "args.jl"))
-        _runtest_announce("unit/cli/setup/args.jl")
-        include(joinpath(@__DIR__, "unit", "cli", "setup", "args.jl"))
-        _runtest_announce("unit/cli/setup/using_guard.jl")
-        include(joinpath(@__DIR__, "unit", "cli", "setup", "using_guard.jl"))
-        _runtest_announce("unit/cli/setup/main.jl")
-        include(joinpath(@__DIR__, "unit", "cli", "setup", "main.jl"))
-        _runtest_announce("unit/cli/size/args.jl")
-        include(joinpath(@__DIR__, "unit", "cli", "size", "args.jl"))
-        _runtest_announce("unit/cli/pool/args.jl")
-        include(joinpath(@__DIR__, "unit", "cli", "pool", "args.jl"))
-        _runtest_announce("unit/cli/ride/args.jl")
-        include(joinpath(@__DIR__, "unit", "cli", "ride", "args.jl"))
+    @testset "reexport" begin
+        for n in names(DistSSHRun)
+            n === :DistSSHRun && continue
+            n === :println_kit_version && continue
+            @test isdefined(DistSSHKit, n)
+            @test n in names(DistSSHKit)
+            if n in _VENDORED
+                @test parentmodule(getproperty(DistSSHKit, n)) === DistSSHKit
+            else
+                @test getproperty(DistSSHKit, n) === getproperty(DistSSHRun, n)
+            end
+        end
+        for n in names(DistSSHQueue)
+            n === :DistSSHQueue && continue
+            @test isdefined(DistSSHKit, n)
+            @test getproperty(DistSSHKit, n) === getproperty(DistSSHQueue, n)
+            @test n in names(DistSSHKit)
+        end
+        @test !isdefined(DistSSHKit, :_read_kit_pid_record)
+        @test isdefined(DistSSHKit, :_juliaup_default_channel_from_status)
+        @test :_juliaup_default_channel_from_status ∉ names(DistSSHKit)
+        @test DistSSHKit.dist_ssh_kit_version() == v"0.9.0"
+        @test DistSSHKit.dist_ssh_kit_version() != DistSSHRun.dist_ssh_kit_version()
+        @test DistSSHKit.go! === DistSSHRun.go!
+        @test DistSSHKit.submit! === DistSSHQueue.submit!
     end
 
-    @testset "integration" verbose = true begin
-        _runtest_announce("integration/cli/help.jl")
-        include(joinpath(@__DIR__, "integration", "cli", "help.jl"))
-        _runtest_announce("integration/setup/exit.jl")
-        include(joinpath(@__DIR__, "integration", "setup", "exit.jl"))
-        _runtest_announce("integration/go/cli.jl")
-        include(joinpath(@__DIR__, "integration", "go", "cli.jl"))
-        _runtest_announce("integration/go/overlap.jl")
-        include(joinpath(@__DIR__, "integration", "go", "overlap.jl"))
-        _runtest_announce("integration/size/measure.jl")
-        include(joinpath(@__DIR__, "integration", "size", "measure.jl"))
-        _runtest_announce("integration/drive/local.jl")
-        include(joinpath(@__DIR__, "integration", "drive", "local.jl"))
-        _runtest_announce("integration/drive/api.jl")
-        include(joinpath(@__DIR__, "integration", "drive", "api.jl"))
-        _runtest_announce("integration/drive/execute.jl")
-        include(joinpath(@__DIR__, "integration", "drive", "execute.jl"))
-        _runtest_announce("integration/drive/fail.jl")
-        include(joinpath(@__DIR__, "integration", "drive", "fail.jl"))
-        _runtest_announce("integration/drive/pkg.jl")
-        include(joinpath(@__DIR__, "integration", "drive", "pkg.jl"))
-        _runtest_announce("integration/drive/log_via_script.jl")
-        include(joinpath(@__DIR__, "integration", "drive", "log_via_script.jl"))
-        _runtest_announce("integration/drive/log_via_module.jl")
-        include(joinpath(@__DIR__, "integration", "drive", "log_via_module.jl"))
-        _runtest_announce("integration/drive/pkg_develop.jl")
-        include(joinpath(@__DIR__, "integration", "drive", "pkg_develop.jl"))
-        _runtest_announce("integration/demos/with_kit.jl")
-        include(joinpath(@__DIR__, "integration", "demos", "with_kit.jl"))
-        _runtest_announce("integration/demos/without_kit.jl")
-        include(joinpath(@__DIR__, "integration", "demos", "without_kit.jl"))
+    @testset "main" begin
+        let (code, _, err) = _main_capture(String[])
+            @test code == 1
+            @test occursin("Usage", err)
+            @test occursin("julia -m DistSSHKit <command>", err)
+            @test occursin("submit", err)
+        end
+        let (code, _, err) = _main_capture(["bogus"])
+            @test code == 1
+            @test occursin("Unknown subcommand: bogus", err)
+            @test occursin("submit", err)
+        end
+        let (code, _, err) = _main_capture(["map_echo.jl"])
+            @test code == 1
+            @test occursin("does not infer go / ride / drive", err)
+            @test occursin("go SCRIPT.jl", err)
+            @test !occursin("Unknown subcommand", err)
+        end
+        let (code, _, err) = _main_capture(["parent:2", "job.jl"])
+            @test code == 1
+            @test occursin("does not infer go / ride / drive", err)
+        end
+        let (code, out, err) = _main_capture(["--help"])
+            @test code == 0
+            @test occursin("Usage", err)
+            @test occursin("progress", err)
+            @test occursin("submit", err)
+            @test occursin("qhost setup", err)
+            @test !occursin("julia -m DistSSHQueue", err)
+            @test isempty(out)
+        end
+        let (code, out, _) = _main_capture(["--version"])
+            @test code == 0
+            @test out == "DistSSHKit $(DistSSHKit.dist_ssh_kit_version())\n"
+        end
+        let (code, out, _) = _main_capture(["go", "--version"])
+            @test code == 0
+            @test out == "DistSSHKit $(DistSSHKit.dist_ssh_kit_version())\n"
+        end
+        let (code, out, err) = _main_capture(["go", "--help"])
+            combined = out * err
+            @test code == 0
+            @test occursin("Usage", combined)
+        end
+        let (code, out, err) = _main_capture(["setup", "--help"])
+            combined = out * err
+            @test code == 0
+            @test occursin("clone", lowercase(combined))
+        end
+        let (code, out, err) = _main_capture(["submit", "--help"])
+            combined = out * err
+            @test code == 0
+            @test occursin("submit", lowercase(combined))
+        end
+        let (code, out, err) = _main_capture(["--help", "client"])
+            combined = out * err
+            @test code == 0
+            @test occursin("submit", lowercase(combined))
+            @test occursin("Jobs", combined)
+        end
+        let (code, out, err) = _main_capture(["qhost", "setup", "--help"])
+            combined = out * err
+            @test code == 0
+            @test occursin("--force", combined)
+            @test !occursin("clone", lowercase(combined))
+        end
+        let (code, out, err) = _main_capture(["qhost:HOST", "submit", "--help"])
+            combined = out * err
+            @test code == 0
+            @test occursin("submit", lowercase(combined))
+            @test !occursin("could not resolve hostname", lowercase(combined))
+        end
+    end
+
+    # An app lists only DistSSHKit. Run's CLI scripts still `import DistSSHRun`
+    # into Main, so `main` must bind that already-loaded module first.
+    @testset "app project" begin
+        app = mktempdir()
+        kit = something(pkgdir(DistSSHKit), pwd())
+        write(
+            joinpath(app, "Project.toml"),
+            """
+            name = "AppOnlyKit"
+            uuid = "bbbbbbbb-bbbb-4ccc-8ddd-eeeeeeeeeeee"
+            version = "0.0.1"
+
+            [deps]
+            DistSSHKit = "ceec0504-c968-4be5-b215-667cae0e8f81"
+
+            [sources]
+            DistSSHKit = {path = $(repr(kit))}
+            """,
+        )
+        julia = joinpath(Sys.BINDIR, "julia")
+        child_env = copy(ENV)
+        delete!(child_env, "JULIA_LOAD_PATH")
+        delete!(child_env, "JULIA_PROJECT")
+        run(
+            pipeline(
+                setenv(`$julia --startup-file=no --project=$app -e "using Pkg; Pkg.instantiate()"`, child_env);
+                stdout = devnull,
+                stderr = devnull,
+            )
+        )
+        mktemp() do out_path, out_io
+            mktemp() do err_path, err_io
+                run(
+                    pipeline(
+                        setenv(`$julia --startup-file=no --project=$app -m DistSSHKit drive -h`, child_env);
+                        stdout = out_io,
+                        stderr = err_io,
+                    )
+                )
+                flush(out_io)
+                flush(err_io)
+                out = read(out_path, String)
+                err = read(err_path, String)
+                @test occursin("DistSSHKit drive", out)
+                @test !occursin("Package DistSSHRun not found", err)
+            end
+        end
     end
 end

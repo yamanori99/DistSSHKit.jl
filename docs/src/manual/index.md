@@ -22,6 +22,7 @@ Each command page starts with **Flags** for that command.
 - [demo](@ref Manual-demo): install or list bundled example scripts
 - [distsshkit](@ref Manual-distsshkit): optional terminal command
   (`pkg> app add`; experimental)
+- [Queue](@ref Queue-manual): enqueue `go` / `ride` / `drive`, then serve
 
 ## go vs drive (pick one)
 
@@ -81,7 +82,7 @@ Same **names** are shared on purpose; a few meanings differ by command:
 
 `setup` / `size` / `pool` strip `:N` and use host names only. Bare SSH names are
 not accepted on setup (use `child:NAME`). On setup, `parent` /
-`parent:N` are only for `--juliaup`; other modes take `child:NAME`
+`parent:N` are only for `up`; other modes take `child:NAME`
 only.
 
 **Jobs.** `DISTSSHKIT_JOBS` (default 1) is the max concurrent SSH host jobs
