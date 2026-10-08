@@ -1,6 +1,6 @@
 if !isdefined(Main, :_write_host_project!)
 
-    """Write a minimal loadable host package (`Project.toml` + `src/Name.jl`)."""
+    # Write a minimal loadable host package (`Project.toml` + `src/Name.jl`).
     function _write_host_project!(
             proj,
             name::String;
@@ -19,7 +19,7 @@ if !isdefined(Main, :_write_host_project!)
         return nothing
     end
 
-    """Isolated temp directory removed after `f(path)` returns."""
+    # Isolated temp directory removed after `f(path)` returns.
     function _with_tempdir(f::Function)
         path = abspath(string(mktempdir()))
         try

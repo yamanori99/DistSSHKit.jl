@@ -1,17 +1,17 @@
 if !isdefined(Main, :_run_kit_drive)
 
-    """Normalize a host project path for drive subprocesses."""
+    # Normalize a host project path for drive subprocesses.
     function _drive_host_root(path)::String
         return abspath(string(path))
     end
 
-    """Prepend `-y` unless the flags already include `-y` / `--yes`."""
+    # Prepend `-y` unless the flags already include `-y` / `--yes`.
     function _drive_yes_flags(drive_flags::Vector{String})::Vector{String}
         any(f -> f == "-y" || f == "--yes", drive_flags) && return drive_flags
         return vcat(["-y"], drive_flags)
     end
 
-    """Run the kit `drive` CLI with a host `DISTRIBUTED_PROJECT_ROOT`."""
+    # Run the kit `drive` CLI with a host `DISTRIBUTED_PROJECT_ROOT`.
     function _run_kit_drive(;
             script::AbstractString,
             host_root,
@@ -49,7 +49,7 @@ if !isdefined(Main, :_run_kit_drive)
         return _run_subprocess(setenv(cmd, env))
     end
 
-    """Run `drive --collect-missing|--collect-overwrite ROOT HOST...` as a child CLI."""
+    # Run `drive --collect-missing|--collect-overwrite ROOT HOST...` as a child CLI.
     function _run_kit_drive_collect(;
             collect_root::AbstractString,
             hosts::Vector{String},
@@ -76,7 +76,7 @@ if !isdefined(Main, :_run_kit_drive)
         return _run_subprocess(setenv(cmd, env))
     end
 
-    """Run `drive.jl` with `--project` set to a host package."""
+    # Run `drive.jl` with `--project` set to a host package.
     function _run_host_drive(;
             script::AbstractString,
             host_project,
@@ -106,7 +106,7 @@ if !isdefined(Main, :_run_kit_drive)
         return _run_subprocess(setenv(cmd, env))
     end
 
-    """Run a local drive subprocess with logging enabled; assert console + log contents."""
+    # Run a local drive subprocess with logging enabled; assert console + log contents.
     function _assert_drive_log_output(; cmd::Cmd, log_dir::String)
         proc, combined = _run_subprocess(cmd)
 

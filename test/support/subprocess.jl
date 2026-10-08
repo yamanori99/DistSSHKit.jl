@@ -1,10 +1,8 @@
 if !isdefined(Main, :_child_julia_env)
 
-    """ENV for child `julia` / `drive` processes.
-
-    Drop `Pkg.test`'s `JULIA_LOAD_PATH` so `--project=` resolves packages (and
-    stdlibs like Serialization) like a normal user invocation.
-    """
+    # ENV for child `julia` / `drive` processes.
+    # Drop `Pkg.test`'s `JULIA_LOAD_PATH` so `--project=` resolves packages (and
+    # stdlibs like Serialization) like a normal user invocation.
     function _child_julia_env(extra::AbstractDict = Dict{String, String}())
         # In-process `_run_kit_cli_script` sets DISTSSHKIT_CLI_SUBCOMMAND_DONE so a
         # nested `main` does not run twice. Children must not inherit that, or
@@ -35,7 +33,7 @@ if !isdefined(Main, :_child_julia_env)
     end
 
 
-    """Assert subprocess exit code 0; on failure print captured output first."""
+    # Assert subprocess exit code 0; on failure print captured output first.
     function _assert_proc_ok(proc, combined::AbstractString; label::AbstractString = "subprocess")
         if proc.exitcode != 0
             println(stderr, "──── $(label) failed (exit=$(proc.exitcode)) ────")
