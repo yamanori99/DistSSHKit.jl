@@ -12,12 +12,8 @@ DistSSHQueue = "24254401-70d8-4a51-8ea4-cfab19f5bc73"
 DistSSHRun = "b568025c-2759-4ef1-8b14-17d00e2cd000"
 SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 
-[sources]
-DistSSHQueue = {rev = "5bf3827e9e311dd4333732a80f08d99d2e327463", url = "https://github.com/yamanori99/DistSSHQueue.jl"}
-DistSSHRun = {rev = "f4c66f1d3fd3f6e9a070b5e0425862294d39ff26", url = "https://github.com/yamanori99/DistSSHRun.jl"}
-
 [compat]
-DistSSHQueue = "0.8"
+DistSSHQueue = "0.9"
 DistSSHRun = "0.1"
 SHA = "1"
 julia = "1.13"
