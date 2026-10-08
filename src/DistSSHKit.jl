@@ -200,10 +200,13 @@ function print_kit_root_usage(io::IO = stderr)
         "  qhost add-host     Add host tokens",
         "  qhost remove-host  Drop host tokens",
         "  qhost serve        Run serve in this terminal",
+        "  qhost stop         Stop serve, keep files",
         "  qhost enable       Start serve after reboot",
         "  qhost disable      Remove that OS registration",
-        "  qhost service      Queue host service",
-        "  qhost size         size / plan / pool on the queue host",
+        "  qhost teardown     Stop serve and remove ~/.distsshqueue",
+        "  qhost size         Estimate worker counts on the queue host",
+        "  qhost plan         Inspect a script on the queue host",
+        "  qhost pool         Cluster cores and RAM on the queue host",
     )
     print_help_blank(io)
     print_help_section("Examples"; io = io)
@@ -220,7 +223,7 @@ function print_kit_root_usage(io::IO = stderr)
         "  $(cli_m_project()) qhost up",
     )
     print_help_blank(io)
-    println(io, "Run `$(cli_m()) <command> -h` for flags.")
+    println(io, "Run $(cli_m()) <command> -h for flags.")
     return nothing
 end
 
