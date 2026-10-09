@@ -47,19 +47,11 @@ WSL2 is Linux, with a few extra rules:
 No hard limit on remote hosts. More remotes means more SSH and deploy time —
 start with a few.
 
-!!! tip
-    DistSSHKit runs a job over an SSH connection from your development
-    environment to the compute environment.
-    [DistSSHQueue.jl](https://yamanori99.github.io/DistSSHQueue.jl/stable/)
-    (`pkg> add DistSSHQueue`) lets you queue jobs on an always-on machine and
-    run them one after another automatically. Install it on a compute machine
-    that is set up separately from your development environment, and jobs will
-    not be interrupted even if a laptop or other development environment loses
-    its connection. DistSSHKit still runs each job.
-
-    If you only want to keep a session alive, you can use `tmux` or a similar
-    tool to keep a DistSSHKit run going (the SSH connection must still be
-    kept open).
+A job started from your machine keeps that SSH connection open until it
+finishes. On an always-on machine, the same `pkg> add DistSSHKit` holds jobs
+and runs them in order after that connection drops. `tmux` can keep the
+session for a job you started yourself, and that SSH connection still has to
+stay open.
 
 When you use SSH hosts (not just `parent:N`):
 

@@ -1,3 +1,5 @@
+<!-- markdownlint-configure-file { "MD024": { "siblings_only": true } } -->
+
 # News
 
 User-facing changes.

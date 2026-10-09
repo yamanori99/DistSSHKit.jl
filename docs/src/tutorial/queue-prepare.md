@@ -15,12 +15,12 @@ refuse `qhost:` — log in to the queue host and run them there.
 
 ## Config and inventory
 
-Queue must be loadable here. `setup` does not install the package and
+DistSSHKit must be loadable here. `setup` does not install the package and
 does not create `~/.distsshqueue/env`. It writes
 `~/.distsshqueue/config.toml` if missing. That tree (config / store) is
 not the same as `julia --project=`.
 
-Default Julia env (`pkg> add DistSSHQueue` there):
+Default Julia env (`pkg> add DistSSHKit` there):
 
 ```bash
 julia -m DistSSHKit qhost setup
@@ -51,7 +51,7 @@ Do not `cd` the stage tree and run DistSSHKit `setup` by hand. `serve`
 (`rsync` → `instantiate` → `check`)
 on `child:` hosts, unless
 `DISTSSHQUEUE_NO_KIT_SETUP=1`. A `qhost:` stage omits `.git/`;
-DistSSHKit **0.7.3+** warns on a missing local git commit instead of
+a missing local git commit warns instead of
 failing `:check`. Leave
 `DISTRIBUTED_REMOTE_PROJECT_ROOT` unset in queue `config.toml` so a
 `qhost:` `child:` copy stays `~/stage/<uuid>`. `parent` uses the stage
@@ -65,7 +65,7 @@ To align Julia versions, Queue `qhost up` on the queue host
 Create `~/.distsshqueue/env` when clients `qhost:` (`qhost:` defaults to
 `--project=~/.distsshqueue/env`) or when `enable` should not pin a
 checkout. Skip it if you only `setup` / `add-host` / `serve` from an env
-that already has DistSSHQueue. `--queue-env @` is the remote default
+that already has DistSSHKit. `--queue-env @` is the remote default
 Julia env (no `--project=`).
 
 ```bash
@@ -75,10 +75,10 @@ julia --project=.
 ```
 
 ```julia
-pkg> add DistSSHQueue
+pkg> add DistSSHKit
 ```
 
-That pulls DistSSHKit **0.9.x** from General. A different dir is
+That pulls DistSSHQueue and DistSSHRun from General. A different dir is
 `--queue-env DIR` on `enable` and on client `qhost:`.
 
 ## Survive reboot (optional)

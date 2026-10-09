@@ -4,7 +4,7 @@ Enqueue a DistSSHKit `go`, `ride`, or `drive`. Starts `serve` if none is
 running. That `serve` instantiates the job project on the queue host
 and runs Kit `setup!` on `child:` hosts before `execute!` (not a
 hand-run DistSSHKit `setup` on the stage tree). Kit `:check` always
-runs on `child:` hosts (DistSSHKit **0.7.3+** warns if a `qhost:`
+runs on `child:` hosts (warns if a `qhost:`
 stage has no `.git/`).
 
 Type the line on a **client**, in the **job directory** (Queue must be

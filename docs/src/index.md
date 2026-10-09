@@ -4,11 +4,15 @@ DistSSHKit runs the same Julia project on this machine and over SSH, then
 collects the results. It uses Distributed.jl processes, not threads.
 Supported on **macOS, Linux, and WSL2 Ubuntu** (not native Windows).
 
-!!! tip
-    If you want to keep the machines you use for compute (one or several)
-    always on, or to share that compute with other members of your lab, the
-    queue is part of this package
-    ([Queue](@ref Queue-manual)). `pkg> add DistSSHKit` is the install.
+`pkg> add DistSSHKit` is all you need to install it. It covers running a job
+immediately and running jobs from a queue. This site explains both. The
+command is `julia -m DistSSHKit`.
+
+Start a job from this machine, and the SSH connection stays open until it
+finishes. `tmux` can hold that session. The connection still has to stay up.
+
+To queue jobs and run them one after another, put the same install on an
+always-on machine. A dropped laptop does not stop a job already queued there.
 
 ## What is DistSSHKit?
 
