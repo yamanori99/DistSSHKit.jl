@@ -1,6 +1,6 @@
 if !isdefined(Main, :_stage_with_kit_demos)
 
-    """Copy bundled `demos/with_kit/*.jl` into a temp host project for drive tests."""
+    # Copy bundled `demos/with_kit/*.jl` into a temp host project for drive tests.
     function _stage_with_kit_demos!(demos_dir::String, kit_root::String)
         host_root = dirname(demos_dir)
         _write_host_project!(

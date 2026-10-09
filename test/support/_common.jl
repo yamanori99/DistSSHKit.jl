@@ -14,13 +14,13 @@ if !isdefined(Main, :_test_root)
     _julia_exe()::String = joinpath(Sys.BINDIR, Base.julia_exename())
     _fixture(name::AbstractString) = joinpath(_test_root(), "fixtures", name)
 
-    """`--code-coverage=user` when the parent Julia process is collecting coverage."""
+    # `--code-coverage=user` when the parent Julia process is collecting coverage.
     function _julia_coverage_args()::Vector{String}
         Base.JLOptions().code_coverage == 0 && return String[]
         return ["--code-coverage=user"]
     end
 
-    """Kit CLI as a child `julia -m DistSSHKit`."""
+    # Kit CLI as a child `julia -m DistSSHKit`.
     function _kit_cli_cmd(
             args::AbstractVector{<:AbstractString};
             julia::AbstractString = _julia_exe(),
@@ -36,7 +36,7 @@ if !isdefined(Main, :_test_root)
         return Cmd(vcat(prefix, ["-m", "DistSSHKit"], argv))
     end
 
-    """Temp go/drive/size/setup hosts file: comment, `child:host-a`, `child:host-b:4`."""
+    # Temp go/drive/size/setup hosts file: comment, `child:host-a`, `child:host-b:4`.
     function _sample_hosts_file()::String
         path, io = mktemp()
         try
@@ -52,7 +52,7 @@ if !isdefined(Main, :_test_root)
 
     const _sample_setup_hosts_file = _sample_hosts_file
 
-    """Last `progress:` in `dir` (`kit.progress` even with `--no-log`) is `done`."""
+    # Last `progress:` in `dir` (`kit.progress` even with `--no-log`) is `done`.
     function _assert_kit_progress_done(dir::AbstractString; kind::Symbol)
         rec = DistSSHKit.kit_progress_latest(dir)
         @test rec !== nothing
