@@ -11,7 +11,7 @@ For a hands-on path, use First Steps
 
 Root `--help` defines Client vs Queue host (`qhost:HOST`), then Usage,
 then `--help client` / `--help qhost`. Version is
-`DistSSHQueue X (DistSSHKit Y)`. `--help client` is Jobs then Hosts;
+`DistSSHQueue X (DistSSHRun Y)`. `--help client` is Jobs then Hosts;
 `--help qhost` is Setup, Serve, then Danger (`teardown`; needs `-y`;
 job trees stay). `<command> -h` is that verb's Usage and Flags,
 not how to invoke DistSSHQueue. Kit argv is on

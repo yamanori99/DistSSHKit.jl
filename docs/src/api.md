@@ -402,7 +402,20 @@ worker_pmap
 
 ## Queue
 
-The queue ships in this package. A client runs
+`pkg> add DistSSHKit` is all you need to install it. It covers running a
+job immediately and running jobs from a queue. DistSSHKit is made of the
+following two packages, and the command is `julia -m DistSSHKit`. Public
+names are reexported.
+
+- **[DistSSHRun](https://yamanori99.github.io/DistSSHRun.jl/stable/)** runs a job
+  now, from the machine where you start it. The SSH connection stays open
+  until that job finishes. The commands are `setup`, `go`, `ride`, `drive`,
+  `plan`, `size`, and `pool`.
+- **[DistSSHQueue](https://yamanori99.github.io/DistSSHQueue.jl/stable/)** stores
+  jobs on an always-on machine and runs them one after another. A dropped
+  laptop does not stop a job already queued there.
+
+A client runs
 `julia -m DistSSHKit submit …`, with `qhost:HOST` when the queue is
 another machine. On the queue host, `julia -m DistSSHKit qhost setup`
 and `julia -m DistSSHKit qhost serve`. `qhost size` / `qhost plan` /

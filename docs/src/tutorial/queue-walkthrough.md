@@ -10,7 +10,7 @@ Names here: queue host SSH `HOST`, worker SSH `host1`. Swap them.
 ## Queue host (once)
 
 Always-on **macOS or Linux**. Default Julia env is enough
-(`pkg> add DistSSHQueue` there). `setup` writes `config.toml` only.
+(`pkg> add DistSSHKit` there). `setup` writes `config.toml` only.
 `parent` is this box. Dedicated `~/.distsshqueue/env` is optional
 until a client uses `qhost:` (`qhost:` defaults to
 `--project=~/.distsshqueue/env`).
@@ -24,18 +24,18 @@ julia -m DistSSHKit qhost serve
 
 `add-host` does not deploy. `serve` instantiates the job project on
 this host, then Kit `setup!` (rsync / instantiate / `check`) on
-`child:` hosts. A `qhost:` stage has no `.git/`; DistSSHKit **0.7.3+**
-warns on that instead of failing `:check`. Optional: `qhost up`
+`child:` hosts. A `qhost:` stage has no `.git/`; a missing local git
+commit warns instead of failing `:check`. Optional: `qhost up`
 when major.minor differs.
 
-From a client: create the env, then `pkg> add DistSSHQueue` in it
+From a client: create the env, then `pkg> add DistSSHKit` in it
 (Prepare). `enable` is optional (survive reboot). Every client verb
 needs `qhost:HOST` on the command line.
 
 ## Client: go on parent
 
-Job directory. Queue loadable (`julia --project=.`). DistSSHKit **0.9.x**
-comes with Queue. `demo install` copies into `distsshkit_demos/`.
+Job directory. DistSSHKit in this project (`julia --project=.`) brings
+the queue. `demo install` copies into `distsshkit_demos/`.
 Listed `parent` / `child:NAME` need `:N`.
 
 ```bash

@@ -19,8 +19,8 @@ the job project on this host, then Kit `setup!` (`rsync` →
 `child:` hosts, unless
 `DISTSSHQUEUE_NO_KIT_SETUP=1`. Kit `setup!` does not instantiate
 `parent`. Child `instantiate` / `check` failure fails the job.
-A `qhost:` stage omits `.git/` (Kit rsync); DistSSHKit **0.7.3+**
-warns on a missing local git commit instead of failing `:check`
+A `qhost:` stage omits `.git/` (Kit rsync); a missing local git commit
+warns instead of failing `:check`
 ([DistSSHKit#370](https://github.com/yamanori99/DistSSHKit.jl/issues/370)). A
 later job's `rsync` onto a nonempty worker path is Kit's no-overwrite
 rule; `instantiate` still runs.
