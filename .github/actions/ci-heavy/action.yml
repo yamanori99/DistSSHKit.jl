@@ -39,8 +39,6 @@ runs:
             - "!.coderabbit.yaml"
             - "!docs/**"
             - "!test/**/*.md"
-            - "!demos/**/*.md"
-            - "!testenv/**/*.md"
           docs:
             - "docs/**"
             - "README.md"

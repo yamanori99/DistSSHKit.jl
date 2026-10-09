@@ -5,7 +5,6 @@
 #   ./.github/jetls-check.sh --progress=none
 #   ./.github/jetls-check.sh --print-files   # CI file list
 #
-# `test/e2e.jl` is a second test entry (not included from `runtests.jl`).
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -14,21 +13,8 @@ shopt -s nullglob
 
 files=(
     src/DistSSHKit.jl
-    src/cli/*.jl
-    src/cli/*/*.jl
-    demos/with_kit/*.jl
-    demos/without_kit/*.jl
     test/runtests.jl
-    test/e2e.jl
-    test/fixtures/*.jl
 )
-# Worker script. It `using JSON`, which this package project does not depend on.
-filtered=()
-for f in "${files[@]}"; do
-    [[ "$f" == "test/fixtures/pkg_driver_smoke.jl" ]] && continue
-    filtered+=("$f")
-done
-files=("${filtered[@]}")
 
 if ((${#files[@]} == 0)); then
     echo "jetls-check: no entry files matched" >&2

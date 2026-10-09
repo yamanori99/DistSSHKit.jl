@@ -8,9 +8,11 @@ julia --project=. -m DistSSHKit setup [options] [child:NAME]
 ```
 
 From Julia, use [`setup!`](@ref) for the same modes as this CLI
-(`:delete`, `:rsync`, `:clone`, `:instantiate`, `:juliaup`, `:juliaup_update`, `:check`, `:runtest`,
+(`:delete`, `:rsync`, `:clone`, `:instantiate`, `:check`, `:runtest`,
 `:prune`, …), or the shorter [`sync!`](@ref) / [`instantiate!`](@ref) aliases
 ([API](@ref API), [First Steps · Prepare](@ref Tutorial-Prepare)).
+Channel alignment is `up` / `up update` (below). The setup parser still
+accepts `--juliaup` and `--juliaup-update`.
 `setup!(session, :clone)` requires an explicit `repo=` URL (clone runs
 on the remote).
 

@@ -29,7 +29,17 @@ jobs:
       - name: Check labeler.yml is generated
         run: ./.github/gen-labeler.sh --check
 
+      - name: Area rules
+        id: areas
+        run: |
+          if grep -q '^"area:' .github/labeler.yml; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Snapshot non-area labels
+        if: steps.areas.outputs.run == 'true'
         uses: actions/github-script@v9
         id: snap
         with:
@@ -45,10 +55,12 @@ jobs:
             core.setOutput("keep", keep.join(","));
 
       - uses: actions/labeler@v7
+        if: steps.areas.outputs.run == 'true'
         with:
           sync-labels: true
 
       - name: Restore non-area labels
+        if: steps.areas.outputs.run == 'true'
         uses: actions/github-script@v9
         with:
           script: |

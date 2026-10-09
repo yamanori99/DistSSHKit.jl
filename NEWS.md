@@ -17,8 +17,9 @@ GitHub Releases may copy these sections (`Release notes:` on
   `status`, `watch`, `cancel`, `fetch`, `list-host`, `stop`, `teardown`)
   take an optional `qhost:HOST`. Queue-host commands are `qhost setup`,
   `qhost serve`, `qhost add-host`, `qhost remove-host`, `qhost enable`,
-  `qhost disable`, and `qhost service`, plus `qhost size` / `qhost plan` /
-  `qhost pool` on that machine (#420).
+  `qhost disable`, plus `qhost size` / `qhost plan` / `qhost pool` on
+  that machine (#420). `service` stays a route: `service -h` says it is
+  gone. Root help does not list it.
 - DistSSHBase and DistSSHUp are no longer dependencies. Host talking and
   juliaup verbs live in this package's `base/` and `up/`.
 - `ride` compares a rewritten `map` / `filter`, including values from

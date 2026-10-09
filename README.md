@@ -167,9 +167,8 @@ them. `plan` may even suggest `ride` right away.
 
 CLI flags map one-to-one onto the Julia API. For example, `setup --rsync`
 corresponds to `setup!(session, :rsync)`.
-See [`demos/with_kit/pipeline_square.jl`](demos/with_kit/pipeline_square.jl) and
-[`demos/without_kit/pipeline_pi.jl`](demos/without_kit/pipeline_pi.jl) for
-examples.
+After `demo install`, see `distsshkit_demos/with_kit/pipeline_square.jl` and
+`distsshkit_demos/without_kit/pipeline_pi.jl` for examples.
 
 Both approaches do the same thing; only the way you call them differs. The CLI
 is the easiest place to start.

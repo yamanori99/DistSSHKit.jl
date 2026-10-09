@@ -17,24 +17,6 @@ body:
       label: How to reproduce? (optional)
       description: Commands, script path, Julia version, local vs remote.
       placeholder: |
-        julia --project=. -m DistSSHKit drive local:2 demos/with_kit/square_file.jl
-    validations:
-      required: false
-  - type: dropdown
-    id: area
-    attributes:
-      label: Area (optional)
-      description: Same vocabulary as PR path labels. Add matching area:* labels after submit if useful.
-      multiple: true
-      options:
-        - demos
-        - drive
-        - explain
-        - go
-        - plan
-        - pool
-        - ride
-        - setup
-        - size
+        julia --project=. -m DistSSHKit drive parent:2 distsshkit_demos/with_kit/square_file.jl
     validations:
       required: false

@@ -3,11 +3,8 @@
 #
 # Convention: path labels are CLI commands only.
 #   - each directory under src/cli/<area>/ → area:<area>
-#   - src/DistSSHKit/argv/<area>* → same area (drive_args.jl, size_report.jl, …)
-#   - kit modules explain / demos → area:explain, area:demos
-#   - product tests under test/unit and test/integration → that area
-#   - shared kit, test harness (including test/e2e.jl), docs, README/NEWS,
-#     and .github stay unlabeled
+#   - this repo has no src/cli/, so it emits no area rules
+#   - shared kit, docs, README/NEWS, and .github stay unlabeled
 # Do not emit `!` globs: labeler ORs them as "not this path" and tags
 # unrelated files.
 #
@@ -28,9 +25,11 @@ for dir in "${ROOT}/src/cli"/*/; do
   [[ "$name" == _* ]] && continue
   areas+=("$name")
 done
-# Modules without src/cli/<area>/ — still first-class path areas.
-areas+=(explain demos)
-IFS=$'\n' areas_sorted=($(printf '%s\n' "${areas[@]:-}" | LC_ALL=C sort -u))
+if ((${#areas[@]})); then
+  IFS=$'\n' areas_sorted=($(printf '%s\n' "${areas[@]}" | LC_ALL=C sort -u))
+else
+  areas_sorted=()
+fi
 unset IFS
 
 tmp="$(mktemp)"
@@ -44,7 +43,8 @@ trap 'rm -f "$tmp"' EXIT
 EOF
 
   shopt -s nullglob
-  for area in "${areas_sorted[@]:-}"; do
+  if ((${#areas_sorted[@]})); then
+  for area in "${areas_sorted[@]}"; do
     cat <<EOF
 
 "area:${area}":
@@ -59,13 +59,8 @@ EOF
           - "test/**/${area}.*"
           - "test/fixtures/${area}*"
 EOF
-    # Bundled demos live under repo-root demos/ (not only DistSSHKit/demos.jl).
-    if [[ "$area" == "demos" ]]; then
-      cat <<'EOF'
-          - "demos/**"
-EOF
-    fi
   done
+  fi
 } >"$tmp"
 
 # Each src/cli/<area> file must match that area. Other paths may stay unlabeled.
@@ -97,8 +92,7 @@ for line in text.splitlines():
     if m and current:
         by_label[current].append(m.group(1))
 if not by_label:
-    print("no area rules in generated labeler.yml", file=sys.stderr)
-    sys.exit(1)
+    sys.exit(0)
 
 def to_re(glob):
     i, out = 0, []

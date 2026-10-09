@@ -39,8 +39,6 @@ WSL2 is Linux, with a few extra rules:
 - Run the kit **inside** the distro, not PowerShell
 - Keep the project on the Linux filesystem (`~/…`), not `/mnt/c/…`
 - Install `ssh` / `rsync` / Julia inside WSL
-- SSH E2E uses the same `./testenv/docker-ssh/scripts/up.sh --e2e` as Linux
-  (Docker Compose must be visible from WSL)
 
 ## Remotes
 
