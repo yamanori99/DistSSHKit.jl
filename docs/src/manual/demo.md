@@ -14,11 +14,11 @@ Examples: [First Steps · Demo](@ref Tutorial-Demo).
 ## Flags / subcommands
 
 - `demo list`: show demo ids and package paths
-- `demo install with_kit`: copy package `demos/with_kit/` into
+- `demo install with_kit`: copy the `with_kit` family into
   `./distsshkit_demos/`
-- `demo install without_kit`: copy package `demos/without_kit/` into
+- `demo install without_kit`: copy the `without_kit` family into
   `./distsshkit_demos/`
-- `demo install ride`: copy package `demos/ride/` into
+- `demo install ride`: copy the `ride` family into
   `./distsshkit_demos/`
 - `--dest DIR`: install under `DIR/distsshkit_demos/` instead of
   `./distsshkit_demos/`
@@ -35,8 +35,8 @@ Bare `demo install` (no family) is refused. Layout under
 - `ride/`: plain scripts for [`plan`](@ref Manual-plan) /
   [`ride`](@ref Manual-ride) (or `go`)
 
-The package tree stays `demos/with_kit/`, `demos/without_kit/`, and
-`demos/ride/`. Install does not use `.distsshkit/` (rsync excludes it).
+The sources ship with DistSSHRun. Install does not use `.distsshkit/`
+(rsync excludes it).
 
 Refuses `dest` equal to the DistSSHKit package root. Prefer `--dest DIR`
 when developing the kit itself.

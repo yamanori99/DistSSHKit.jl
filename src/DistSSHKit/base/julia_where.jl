@@ -1,4 +1,4 @@
-# Where juliaup is. Channel add / update / default stays in setup.
+# Where juliaup is. Channel add / update / default is `up`.
 
 """Official install path for remote juliaup (non-interactive SSH has no login PATH)."""
 const _JULIAUP_REMOTE_BIN_HOME = raw"$HOME/.juliaup/bin/juliaup"

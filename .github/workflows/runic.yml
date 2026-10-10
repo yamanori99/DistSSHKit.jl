@@ -56,7 +56,7 @@ jobs:
           if [ "$FAILED" = "true" ]; then
             body="Latest run: $RUN_URL
 
-          Not a PR check. \`runic --inplace src test\` (and \`demos/\` / \`docs/*.jl\` if needed), then push. Runic \`version: '1'\` can move."
+          Not a PR check. \`runic --inplace src test\` (and \`docs/*.jl\` if needed), then push. Runic \`version: '1'\` can move."
             if [ -n "$existing" ]; then
               gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
             else

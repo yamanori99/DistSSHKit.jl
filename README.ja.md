@@ -157,8 +157,9 @@ go 単体でも十分に実用的である。まず go で単独実行を確認�
 
 CLI のオプションと Julia API は1対1に対応している。
 例えば、CLI の `setup --rsync` は `setup!(session, :rsync)` に相当する。
-具体例は [`demos/with_kit/pipeline_square.jl`](demos/with_kit/pipeline_square.jl) と
-[`demos/without_kit/pipeline_pi.jl`](demos/without_kit/pipeline_pi.jl) を参照されたい。
+具体例は `demo install with_kit` と `demo install without_kit` のあと
+`distsshkit_demos/with_kit/pipeline_square.jl` と
+`distsshkit_demos/without_kit/pipeline_pi.jl` を参照されたい。
 
 どちらの方法でも実行内容は同じで、呼び出し方が異なるだけである。まずは CLI から試すと理解しやすい。
 

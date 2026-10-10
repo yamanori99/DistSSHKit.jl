@@ -42,7 +42,8 @@ Same steps from Julia:
 ```julia
 session = KitSession(workers=["child:YourHost1", "child:YourHost2"], yes=true)
 setup!(session, :rsync, :instantiate)
-# optional: setup!(session, :check); setup!(session, :juliaup); setup!(session, :runtest)
+# optional: setup!(session, :check); setup!(session, :runtest)
+# Julia channel: `up` / `up parent` / `up update` (CLI below)
 # git remotes: setup!(session, :clone; repo="https://…") then :instantiate
 # later updates: setup!(session, :sync)
 ```

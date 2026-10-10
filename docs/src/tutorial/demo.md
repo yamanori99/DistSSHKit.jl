@@ -22,8 +22,7 @@ julia --project=. -m DistSSHKit demo install ride
     `ride` is experimental ([User Guide · ride](@ref Manual-ride)).
 
 That copies each family into `./distsshkit_demos/` (not `./demos/`, so a
-job's own `demos/` is untouched). Package sources stay `demos/with_kit/`,
-`demos/without_kit/`, and `demos/ride/`.
+job's own `demos/` is untouched). The sources ship with DistSSHRun.
 
 ```text
 distsshkit_demos/

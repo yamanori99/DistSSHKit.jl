@@ -58,15 +58,16 @@ session = KitSession(
 )
 setup!(session, :delete, :rsync, :instantiate)
 setup!(session, :check; ignore_julia_version=true)  # optional
-setup!(session, :juliaup)  # optional: align Julia via juliaup (child:… and/or parent)
-setup!(session, :juliaup_update)  # optional: juliaup update (no default)
+# Julia channel: `julia -m DistSSHKit up` and `up parent`.
+# `up update` refreshes channels and leaves the default.
 setup!(session, :runtest)  # optional: job Pkg.test() on remotes
 # git trees: setup!(session, :clone; repo="https://…") instead of :rsync
 ```
 
 [`setup!`](@ref) mirrors `julia -m DistSSHKit setup --…` (`:delete`, `:rsync`,
-`:clone`, `:sync`, `:pull`, `:instantiate`, `:juliaup`, `:juliaup_update`, `:check`, `:runtest`, `:cleanup`,
-`:prune`).
+`:clone`, `:sync`, `:pull`, `:instantiate`, `:check`, `:runtest`, `:cleanup`,
+`:prune`). Channel alignment is `up` / `up update`. The setup parser still
+accepts `--juliaup` and `--juliaup-update`.
 Confirmations follow `session.yes`. **`:clone` requires `repo=`** — no silent
 `origin` lookup; clone runs on the remote.
 [`sync!`](@ref) / [`instantiate!`](@ref)

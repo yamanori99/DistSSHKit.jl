@@ -363,7 +363,7 @@ function _main(args::Vector{String})::Cint
         )
         println(
             stderr,
-            "Queue: submit | status | watch | cancel | fetch | list-host | add-host | remove-host | serve | stop | enable | disable | service | teardown",
+            "Queue: submit | status | watch | cancel | fetch | list-host | add-host | remove-host | serve | stop | enable | disable | teardown",
         )
     end
     println(stderr)

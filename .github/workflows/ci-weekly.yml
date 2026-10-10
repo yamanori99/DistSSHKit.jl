@@ -3,9 +3,10 @@ name: CI weekly
 # Not on pull_request: insurance for 1.13 / 1.14-nightly / Aqua / JETLS
 # @release drift when no PR ran that week. PR / main push stay the gate.
 # tip jobs are continue-on-error and omitted from notify.
+# macos-latest Pkg.test is included (no coverage), same as a PR.
 on:
   workflow_dispatch:
-  # Sunday 10:00 JST (UTC 01:00). Misses E2E weekly (Saturday 19:00 UTC).
+  # Sunday 10:00 JST (UTC 01:00).
   schedule:
     - cron: "0 1 * * 0"
 
@@ -21,6 +22,21 @@ jobs:
     name: Pkg.test - 1.13 - ubuntu-latest
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/julia-slot
+        with:
+          version: "1.13"
+      - uses: julia-actions/cache@v3
+        with:
+          cache-scratchspaces: false
+          delete-old-caches: false
+      - uses: ./.github/actions/pkg-test
+
+  test-macos:
+    name: Pkg.test - 1.13 - macos-latest
+    runs-on: macos-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/julia-slot
@@ -103,6 +119,7 @@ jobs:
   cache-gc:
     needs:
       - test
+      - test-macos
       - jetls
       - aqua
     if: always()
@@ -122,6 +139,7 @@ jobs:
   notify:
     needs:
       - test
+      - test-macos
       - jetls
       - aqua
       - cache-gc

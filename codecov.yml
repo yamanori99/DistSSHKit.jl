@@ -10,8 +10,7 @@ coverage:
 # GitHub emails every subscriber when Codecov posts a *new* PR comment.
 comment: false
 
-# Pkg.test (flag pkgtest) uploads on main push (1.13 only).
-# E2E (flag e2e) uploads on E2E weekly and version-cut PRs — not ordinary PR E2E.
+# Pkg.test (flag pkgtest) uploads on main push (Ubuntu 1.13 only).
 # Carryforward: docs-only PRs skip heavy CI and would otherwise drop line hits.
 flag_management:
   default_rules:
@@ -19,8 +18,5 @@ flag_management:
   individual_flags:
     - name: pkgtest
       carryforward: true
-    - name: e2e
-      carryforward: true
 
 # No `ignore` list: CLI entry points stay in coverage reports.
-# Local drive: Pkg.test integration. Remote SSH: E2E job `--code-coverage`.
