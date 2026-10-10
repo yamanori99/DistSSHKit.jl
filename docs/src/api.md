@@ -442,8 +442,6 @@ cancel!(q, id)
 serve!(q)
 ```
 
-`default_store_path()` is `~/.distsshqueue/jobs.toml`. `serve` runs [`serve!`](@ref) on that file.
-
 ```@docs
 Queue
 Job
@@ -454,5 +452,7 @@ job
 load!
 step!
 serve!
+serve
+default_store_path
 job_project
 ```
