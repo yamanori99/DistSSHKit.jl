@@ -36,7 +36,7 @@ end
 # a docstring only when its defining module is in that list. This method drops
 # them from the missing-docs set. Documenter 1.19's untyped `allbindings`
 # walks each module and does not call this `Set{Module}` method, so the
-# Vector call below is not recursive. `docs/Project.toml` pins that release.
+# Vector call below is not recursive. `docs/Project.toml` allows 1.19.x only (`~1.19`).
 function Documenter.allbindings(checkdocs::Symbol, mods::Set{Module})
     skip = Set{Module}([DistSSHRun, DistSSHQueue])
     kept = Module[m for m in mods if m ∉ skip]
