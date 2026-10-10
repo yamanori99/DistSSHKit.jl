@@ -13,11 +13,9 @@
 [![Discussions](https://img.shields.io/badge/GitHub-Discussions-blueviolet?style=flat-square&logo=github)](https://github.com/yamanori99/DistSSHKit.jl/discussions)
 <!-- markdownlint-enable MD013 -->
 
-追加するパッケージは DistSSHKit である。Julia のプロジェクトを、共有マシンへ SSH して、今すぐかあとで実行する。
+DistSSHKit は、複数のマシンへ SSH して Julia の計算を実行するツールキットである。
+ワークステーション 2 台でも、研究室のより多くのマシンでも、同じように使える。
 対応環境は **macOS、Linux、WSL2 Ubuntu** である (ネイティブ Windows は対象外)。
-
-小規模な研究室や個人でも、高性能なマシンやワークステーションを複数台所有していることは少なくない。
-DistSSHKit は、それらを束ねて小さな計算ノード群として活用するためのものである。
 
 必要な操作は `pkg> add DistSSHKit` のみである。
 ジョブの即時実行にも、キューによる実行にも、このパッケージだけで対応できる。

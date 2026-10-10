@@ -72,8 +72,8 @@ const GROUP_W = MARK_SIZE + MARK_GAP + TEXT_W
 const MARK_X = clamp((SOCIAL_W - GROUP_W) ÷ 2, SAFE_X, SOCIAL_W - SAFE_X - MARK_SIZE)
 const TEXT_X = MARK_X + MARK_SIZE + MARK_GAP
 const MARK_Y = clamp((SOCIAL_H - MARK_SIZE) ÷ 2, SAFE_Y, SOCIAL_H - SAFE_Y - MARK_SIZE)
-const TAGLINE_1 = "The package you add to run a Julia project"
-const TAGLINE_2 = "now or later, on shared machines over SSH."
+const TAGLINE_1 = "A toolkit for running Julia computations"
+const TAGLINE_2 = "across multiple machines over SSH."
 # Vertically center title+taglines against the mark (not top-align).
 const TEXT_BLOCK_H = 168
 const TEXT_TOP = MARK_Y + (MARK_SIZE - TEXT_BLOCK_H) ÷ 2
