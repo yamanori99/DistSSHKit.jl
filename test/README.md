@@ -39,8 +39,8 @@ Green on one layer does not imply the others. Child CLI uses
 - **Aqua** (~5 s): ambiguities, exports, compat (latest registry Aqua).
   Not CLI / workers.
 - **Pkg.test**: reexports and `julia -m DistSSHKit` routing
-  (`test/runtests.jl`). Ubuntu and `macos-latest`. The macOS job is not
-  a required check.
+  (`test/runtests.jl`). Ubuntu, `macos-latest`, and WSL2 Ubuntu.
+  All three are required checks.
 - **unit / integration / SSH E2E**: DistSSHRun. Not this repo's
   `Pkg.test()`.
 - **doctests** (~5 s): `src/` docstring examples (Documenter, Julia 1.13).

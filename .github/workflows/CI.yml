@@ -98,9 +98,10 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
-      actions: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: Vampire/setup-wsl@d1da7f2c0322a5ee4f24975344f67fc0f5baf364 # v7
         with:
           distribution: Ubuntu-24.04
@@ -159,9 +160,10 @@ jobs:
     continue-on-error: true
     permissions:
       contents: read
-      actions: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: Vampire/setup-wsl@d1da7f2c0322a5ee4f24975344f67fc0f5baf364 # v7
         with:
           distribution: Ubuntu-24.04
@@ -261,9 +263,10 @@ jobs:
     continue-on-error: true
     permissions:
       contents: read
-      actions: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: Vampire/setup-wsl@d1da7f2c0322a5ee4f24975344f67fc0f5baf364 # v7
         with:
           distribution: Ubuntu-24.04
