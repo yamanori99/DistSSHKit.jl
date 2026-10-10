@@ -10,6 +10,10 @@ Day-to-day: CLI (`julia --project=. -m DistSSHKit …`); see
 [First Steps](@ref Tutorial-Prepare), and the [User Guide](@ref Manual).
 REPL help also works (`?DistSSHKit.go!`).
 
+```@docs
+DistSSHKit
+```
+
 The shape mirrors the CLI: **`go!`** for as-is scripts, **`drive!`**
 (and friends) for Distributed drivers. **`pipeline!`** is an optional
 one-shot for the usual remote order. Worker placement uses the
@@ -207,7 +211,7 @@ wait(execute!(:go, "job.jl", ["parent:1"]; detached=true, args=["8"]))
   `output_dir` when known **before spawn**. Detached `:drive` without
   `output_dir=` / inherited `DISTRIBUTED_OUTPUT_DIR` leaves `kp.output_dir`
   as `nothing`. [`wait`](@ref) does **not** write back into `kp`; the
-  resolved leaf is [`KitRunResult.output_dir`](@ref) (from `kit.result` /
+  resolved leaf is [`KitRunResult`](@ref) `output_dir` (from `kit.result` /
   `run.toml`)
 - `wait` converts it to [`KitRunResult`](@ref). If the child wrote `kit.result`,
   that file wins (including `go!` `failed_step`). Otherwise a non-zero child
@@ -223,6 +227,7 @@ read_kit_run_toml
 execute_detached_accepts
 execute_kwargs_from_parsed
 KitProcess
+wait(::KitProcess)
 kit_pid_file_running
 terminate!
 terminate_run!
@@ -274,7 +279,7 @@ yourself.
 
 #### Sidecar files
 
-Detached stdio (`kit.out` / `kit.err`) lives in [`KitProcess.run_dir`](@ref).
+Detached stdio (`kit.out` / `kit.err`) lives in [`KitProcess`](@ref) `run_dir`.
 `kit.pid`, `kit.job`, `kit.hosts`, `kit.hosts.status`, and `kit.result` are
 written under `run_dir`, and also under `output_dir` / `log_dir` when those
 paths are known at write time. `.kit.lock` stays on the artifact `output_dir`
@@ -448,6 +453,6 @@ load!
 step!
 serve!
 serve
-job_project
 default_store_path
+job_project
 ```

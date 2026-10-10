@@ -30,6 +30,45 @@ function _pkg_root(mod::Module)::String
     return dirname(dirname(src))
 end
 
+# Documenter 1.19 checks every module in `modules`. `checkdocs_ignored_modules`
+# only skips submodules found while walking, so it does not drop DistSSHRun or
+# DistSSHQueue when they are also in `modules`. They stay there: `@docs` keeps
+# a docstring only when its defining module is in that list. This method drops
+# them from the missing-docs set. Documenter 1.19's untyped `allbindings`
+# walks each module and does not call this `Set{Module}` method, so the
+# Vector call below is not recursive. `docs/Project.toml` allows 1.19.x only (`~1.19`).
+# When upgrading Documenter, check whether this override is still required.
+# If `checkdocs_ignored_modules` ignores a top-level module listed in `modules`, delete it.
+function Documenter.allbindings(checkdocs::Symbol, mods::Set{Module})
+    skip = Set{Module}([DistSSHRun, DistSSHQueue])
+    kept = Module[m for m in mods if m ∉ skip]
+    return Documenter.allbindings(checkdocs, kept)
+end
+
+# The docs build loads the released DistSSHRun, whose docstrings `@ref` names
+# this manual cannot link. Kit and Run each define `host_tokens` and
+# `cache_relpath`, so a `@ref` inside a Run docstring does not land on Kit's
+# copy. These two stay until that duplication is gone.
+const _DOC_REF_REWRITES = (
+    "[`host_tokens`](@ref)" => "`host_tokens`",
+    "[`cache_relpath`](@ref)" => "`cache_relpath`",
+)
+
+function _retarget_doc_refs!(mod::Module)
+    for (_, multidoc) in Docs.meta(mod)
+        multidoc isa Docs.MultiDoc || continue
+        for docstr in values(multidoc.docs)
+            text = docstr.text
+            newtext = Any[part isa String ? replace(part, _DOC_REF_REWRITES...) : part for part in text]
+            newtext == collect(Any, text) && continue
+            docstr.text = Core.svec(newtext...)
+        end
+    end
+    return nothing
+end
+
+_retarget_doc_refs!(DistSSHRun)
+
 makedocs(;
     modules = [DistSSHKit, DistSSHRun, DistSSHQueue],
     remotes = Dict(
@@ -104,8 +143,7 @@ makedocs(;
         ],
         "API" => "api.md",
     ],
-    checkdocs = :none,
-    warnonly = [:missing_docs, :docs_block, :cross_references],
+    checkdocs = :exports,
 )
 
 # Documenter :ico always writes type=image/x-icon first. HTML5 keeps the first type,

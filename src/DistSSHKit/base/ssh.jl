@@ -315,7 +315,7 @@ end
     run_on_host(host, argv; julia=nothing, detect=true, tty=false, wait=true) -> Base.Process
 
 One SSH connection: resolve remote Julia the same way as
-[`resolve_remote_julia`](@ref) / `detect_julia_path`, then `exec` it
+`resolve_remote_julia` / `detect_julia_path`, then `exec` it
 with `argv` (Julia flags / script / args). Does not replace
 `resolve_remote_julia` when the caller only needs the path.
 
