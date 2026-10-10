@@ -4,7 +4,7 @@ Submit from a **client** after the queue host is up
 ([Prepare](@ref Queue-Tutorial-Prepare)). Commands in order:
 [Walkthrough](@ref Queue-Tutorial-Walkthrough). Also see
 [User Guide · submit](@ref Queue-submit), [status](@ref Queue-status),
-[fetch](@ref Queue-fetch), [Where files live](@ref Requirements), and
+[fetch](@ref Queue-fetch), [Where files live](@ref where-files-live), and
 [Artifacts and paths](@ref Queue-artifacts).
 
 ## Point at the queue host

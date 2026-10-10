@@ -201,4 +201,99 @@ ssh -o ConnectTimeout=5 -o BatchMode=yes \
   -o StrictHostKeyChecking=accept-new USER@HOST 'which git'
 ```
 
+## Queue host and client
+
+A **queue host** is the always-on macOS or Linux machine that holds
+`~/.distsshqueue` and runs `serve`. WSL2 is a client or a worker, not
+this role. A client submits, watches, fetches, or cancels. The run
+starts on the queue host, not on the client.
+
+The queue host needs passwordless **`ssh`** to each worker, plus
+**`rsync`**. **`git`** is only for a git deploy. A client also needs
+**`ssh`** and **`rsync`**: `qhost:` submit copies the job tree to the
+queue host, and `fetch` copies the finished leaf back. The client's
+Julia major.minor does not have to match the queue host. Workers must
+match the queue host (`setup --check`; patch-only differences warn).
+A mismatch between this process and the queue host's DistSSHQueue
+prints a `!` note on stderr (`DISTSSHKIT_QUIET` hides it).
+
+Anyone who can `submit` as the queue-host user can run arbitrary Julia
+as that user, and the run then uses passwordless SSH to every listed
+worker. That is one trust domain: shared shell access, not a place for
+untrusted submitters. See the trust note under [Remotes](@ref) above.
+
+After `qhost up` changes the queue host's default Julia, stop `serve`
+and start it again. If `enable` is in use, run `enable` again so the
+OS unit picks up the new path, then restart `serve`. A job that is
+already running keeps its old binary.
+
+## [Where files live](@id where-files-live)
+
+`qhost:` is an SSH name, not a storage prefix. The queue's table and
+the run's result dirs accumulate on the queue host. `qhost:` submit
+rsyncs the client job tree to `~/.distsshqueue/stage/<uuid>`. The run
+still copies that tree to workers. `teardown` removes
+`~/.distsshqueue` (including `stage/`). It does not remove a git clone
+or `.distsshkit/` outside that directory. Ownership is in
+[Artifacts and paths](@ref Queue-artifacts).
+
+`parent` runs `stage/<uuid>/` in place. Leave
+`DISTRIBUTED_REMOTE_PROJECT_ROOT` unset in shared `config.toml` so each
+`child:` copy stays `~/stage/<uuid>`.
+
+### Client tree
+
+No `~/.distsshqueue` on the client. The job env only needs the queue
+commands loadable.
+
+```text
+~/my-job/
+  Project.toml          DistSSHKit or DistSSHQueue
+  Manifest.toml
+  SCRIPT.jl             rsync'd on qhost: submit
+  .distsshqueue/tickets/<uuid>           after each qhost: submit
+  .distsshqueue/<kind>/<stem>_<id8>/     after fetch
+    .distsshqueue-fetch-id
+    ...                                  primary artifact copy
+```
+
+### Queue-host tree
+
+```text
+~/.distsshqueue/
+  config.toml
+  jobs.toml             every row (no prune)
+  jobs.toml.log
+  jobs.toml.pid         while serve is up
+  jobs.toml.stopped     after stop, until serve
+  env/                  qhost: default --project=; enable if present
+  stage/<uuid>/         client tree after each qhost: submit
+    Project.toml
+    SCRIPT.jl
+    .distsshkit/runs/<kind>/<run>/       run.toml, kit.pid, kit.result
+    .distsshkit/<kind>/SCRIPT_<UTC>_<id>/  the run or the script picks it
+    .distsshkit/setup/*.log
+```
+
+`enable` writes a user unit (no root). `disable` removes that file.
+The table and the run's dirs stay.
+
+- **macOS** — `~/Library/LaunchAgents/org.distsshqueue.serve.plist`
+- **Linux / WSL2** — `~/.config/systemd/user/distsshqueue.serve.service`
+
+### Worker tree
+
+`parent` is the queue host. It runs the stage tree in place, and the
+queue's table stays next to it. A `child:` host has no queue table.
+The run rsyncs the job project there and instantiates it before the
+run. Artifacts do not stay on the worker: the run collects them back
+to the queue host.
+
+```text
+~/stage/<uuid>/         child: copy after qhost: submit (this uuid only)
+  Project.toml
+  Manifest.toml
+  SCRIPT.jl
+```
+
 Next: [Home](@ref DistSSHKit.jl) · [Prepare](@ref Tutorial-Prepare).
