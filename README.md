@@ -14,12 +14,9 @@
 [![Discussions](https://img.shields.io/badge/GitHub-Discussions-blueviolet?style=flat-square&logo=github)](https://github.com/yamanori99/DistSSHKit.jl/discussions)
 <!-- markdownlint-enable MD013 -->
 
-DistSSHKit is a toolkit for running the same Julia project on your local
-machine and on remote machines over SSH, and for collecting the results. It
-simplifies and standardizes the steps of SSH-distributed execution, which makes
-runs easier to reproduce. It parallelizes with Distributed.jl processes rather
-than threads. Supported platforms are **macOS, Linux, and WSL2 Ubuntu** (native
-Windows is not supported).
+The package you add to run a Julia project now or later, on shared
+machines over SSH. Supported platforms are **macOS, Linux, and WSL2
+Ubuntu** (native Windows is not supported).
 
 Even small labs and individual researchers often own a few high-performance
 machines or workstations. DistSSHKit lets you combine them into a small compute
@@ -31,8 +28,9 @@ consists of two parts, and the command is `julia -m DistSSHKit`.
 
 - **[DistSSHRun](https://yamanori99.github.io/DistSSHRun.jl/stable/)** runs a
   job immediately from the machine where you launch it. The SSH connection
-  stays open until the job finishes. Its commands are `setup`, `go`, `ride`,
-  `drive`, `plan`, `size`, and `pool`. You can keep the session alive with
+  stays open until the job finishes. Its commands are `setup`, `up`,
+  `go`, `ride`, `drive`, `plan`, `size`, `pool`, `demo`, and
+  `progress`. You can keep the session alive with
   `tmux`, but the connection itself must stay up as well.
 - **[DistSSHQueue](https://yamanori99.github.io/DistSSHQueue.jl/stable/)**
   accumulates jobs on an always-on machine and runs them one after another.
@@ -361,7 +359,7 @@ For details, see [Prepare][q-prepare], [Walkthrough][q-walk], and
 - User Guide:
   [User Guide](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/)
 - API: [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/)
-- News: [NEWS.md](NEWS.md)
+- News: [NEWS.md](NEWS.md). Through 0.9.0: [HISTORY.md](HISTORY.md).
 
 ## Contributing
 

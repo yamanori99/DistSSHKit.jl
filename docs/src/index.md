@@ -1,7 +1,7 @@
 # [DistSSHKit.jl](@id DistSSHKit.jl)
 
-DistSSHKit runs the same Julia project on this machine and over SSH, then
-collects the results. It uses Distributed.jl processes, not threads.
+The package you add to run a Julia project now or later, on shared
+machines over SSH.
 Supported on **macOS, Linux, and WSL2 Ubuntu** (not native Windows).
 
 `pkg> add DistSSHKit` is all you need to install it. It covers running a job

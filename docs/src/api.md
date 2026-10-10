@@ -410,18 +410,19 @@ names are reexported.
 
 - **[DistSSHRun](https://yamanori99.github.io/DistSSHRun.jl/stable/)** runs a job
   now, from the machine where you start it. The SSH connection stays open
-  until that job finishes. The commands are `setup`, `go`, `ride`, `drive`,
-  `plan`, `size`, and `pool`.
+  until that job finishes. The commands are `setup`, `up`, `go`, `ride`,
+  `drive`, `plan`, `size`, `pool`, `demo`, and `progress`.
 - **[DistSSHQueue](https://yamanori99.github.io/DistSSHQueue.jl/stable/)** stores
   jobs on an always-on machine and runs them one after another. A dropped
   laptop does not stop a job already queued there.
 
 A client runs
 `julia -m DistSSHKit submit …`, with `qhost:HOST` when the queue is
-another machine. On the queue host, `julia -m DistSSHKit qhost setup`
-and `julia -m DistSSHKit qhost serve`. `qhost size` / `qhost plan` /
-`qhost pool` are that machine's inventory. Bare `setup` / `size` /
-`plan` / `pool` stay the run commands.
+another machine. On the queue host the commands are `qhost setup`, `qhost up`,
+`qhost add-host`, `qhost remove-host`, `qhost serve`, `qhost stop`,
+`qhost enable`, `qhost disable`, `qhost teardown`, plus `qhost size` /
+`qhost plan` / `qhost pool`. Bare `setup` / `up` / `size` / `plan` /
+`pool` stay the run commands.
 
 ```julia
 q = Queue(; store=default_store_path(), follow_config=true)
