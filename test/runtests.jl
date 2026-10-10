@@ -24,6 +24,21 @@ function _main_capture(args)
     end
 end
 
+# Same read as `dist_ssh_kit_version`, without pinning a number. `pkgdir` can
+# be `nothing`, so the nothing checks stay or JETLS reports a method error.
+function _project_toml_version()::VersionNumber
+    root = pkgdir(DistSSHKit)
+    root === nothing && return v"0.0.0"
+    for line in eachline(joinpath(root, "Project.toml"))
+        m = match(r"^version\s*=\s*\"([^\"]+)\"", line)
+        m === nothing && continue
+        cap = m.captures[1]
+        cap === nothing && continue
+        return VersionNumber(String(cap))
+    end
+    return v"0.0.0"
+end
+
 # Run exports these, and this package's `base/` defines the same names.
 const _VENDORED = (
     :cache_file,
@@ -69,8 +84,9 @@ const _VENDORED = (
         @test !isdefined(DistSSHKit, :_read_kit_pid_record)
         @test isdefined(DistSSHKit, :_juliaup_default_channel_from_status)
         @test :_juliaup_default_channel_from_status ∉ names(DistSSHKit)
-        @test DistSSHKit.dist_ssh_kit_version() == v"0.9.0"
-        @test DistSSHKit.dist_ssh_kit_version() != DistSSHRun.dist_ssh_kit_version()
+        ver = DistSSHKit.dist_ssh_kit_version()
+        @test ver == _project_toml_version()
+        @test ver != DistSSHRun.dist_ssh_kit_version()
         @test DistSSHKit.go! === DistSSHRun.go!
         @test DistSSHKit.submit! === DistSSHQueue.submit!
     end

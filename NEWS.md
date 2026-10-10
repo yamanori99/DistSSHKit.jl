@@ -9,6 +9,11 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
 
 ## Unreleased
 
+## 0.10.0
+
+Breaking cut after `0.9.0`. Users add DistSSHKit. It depends on
+DistSSHRun and DistSSHQueue and reexports their public names.
+
 ### Breaking
 
 - DistSSHKit depends on DistSSHRun and DistSSHQueue and reexports their
@@ -22,8 +27,6 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
   `qhost teardown`, plus `qhost size` / `qhost plan` / `qhost pool` on
   that machine (#420). `service` stays a route: `service -h` says it is
   gone. Root help does not list it.
-- DistSSHBase and DistSSHUp are no longer dependencies. Host talking and
-  juliaup verbs live in this package's `base/` and `up/`.
 - `ride` compares a rewritten `map` / `filter`, including values from
   an indexed `for`, to a sequential run only when the caller passes
   `--spi-check` / `spi_check=true`. `ride!` and `execute!(:ride)`
@@ -33,5 +36,4 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
 - The experimental `distsshkit` command (`pkg> app add DistSSHKit`) is gone.
   If you installed it, run `pkg> app rm DistSSHKit`.
   Call DistSSHKit with `julia -m DistSSHKit`.
-  Removing that public entry is breaking. The release that includes it
-  should bump the minor (0.10.0).
+  Removing that public entry is breaking.
