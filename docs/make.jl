@@ -37,6 +37,8 @@ end
 # them from the missing-docs set. Documenter 1.19's untyped `allbindings`
 # walks each module and does not call this `Set{Module}` method, so the
 # Vector call below is not recursive. `docs/Project.toml` allows 1.19.x only (`~1.19`).
+# When upgrading Documenter, check whether this override is still required.
+# If `checkdocs_ignored_modules` ignores a top-level module listed in `modules`, delete it.
 function Documenter.allbindings(checkdocs::Symbol, mods::Set{Module})
     skip = Set{Module}([DistSSHRun, DistSSHQueue])
     kept = Module[m for m in mods if m ∉ skip]
