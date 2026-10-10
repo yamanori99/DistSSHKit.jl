@@ -10,5 +10,7 @@ DistSSHKit = {path = ".."}
 [compat]
 DistSSHQueue = "0.9"
 DistSSHRun = "0.1"
+# 1.19.x only. docs/make.jl overrides Documenter for this release.
+# On the first bump, read how this bound was rewritten, then rebuild docs.
 Documenter = "~1.19"
 julia = "1.13"
