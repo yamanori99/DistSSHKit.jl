@@ -13,13 +13,10 @@
 [![Discussions](https://img.shields.io/badge/GitHub-Discussions-blueviolet?style=flat-square&logo=github)](https://github.com/yamanori99/DistSSHKit.jl/discussions)
 <!-- markdownlint-enable MD013 -->
 
-The package you add to run a Julia project now or later, on shared
-machines over SSH. Supported platforms are **macOS, Linux, and WSL2
-Ubuntu** (native Windows is not supported).
-
-Even small labs and individual researchers often own a few high-performance
-machines or workstations. DistSSHKit lets you combine them into a small compute
-cluster.
+DistSSHKit is a toolkit for running Julia computations across multiple
+machines over SSH. It works equally well for a pair of workstations and
+for a larger set of lab machines. Supported platforms are **macOS, Linux,
+and WSL2 Ubuntu** (native Windows is not supported).
 
 A single `pkg> add DistSSHKit` is all you need to install it. That one package
 covers both running a job immediately and running jobs from a queue. DistSSHKit
