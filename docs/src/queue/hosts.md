@@ -93,7 +93,7 @@ Flags:
 
 ## pool
 
-`pool` wraps the same `pool` on the machine that stays on (cwd / project).
+`pool` wraps the same `pool` on the queue host (cwd / project).
 Cores / RAM / slot hint (no RSS). Omit tokens: config
 `hosts` are passed. Does not enqueue. Prints sizing notes and a
 `Suggested submit (template):` footer (always `submit drive`; use `size`

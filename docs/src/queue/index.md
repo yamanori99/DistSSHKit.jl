@@ -9,7 +9,7 @@ For a hands-on path, use First Steps
 ([Requirements](@ref) → [Prepare the machine](@ref Queue-Tutorial-Prepare) →
 [Walkthrough](@ref Queue-Tutorial-Walkthrough)).
 
-Root `--help` defines Client vs the machine that stays on (`qhost:HOST`), then Usage,
+Root `--help` defines Client vs queue host (`qhost:HOST`), then Usage,
 then `--help client` / `--help qhost`. `julia -m DistSSHKit -v` prints
 `DistSSHKit X`. A command on that machine can still print
 `DistSSHQueue X (DistSSHRun Y)`. `--help client` is Jobs then Hosts;
@@ -69,7 +69,7 @@ Each row contains:
 - Output references: `result_path`, `run_dir`, a `run_toml` snapshot,
   and setup log paths when applicable
 
-The waiting list does not keep a second copy of the job's result tree or
+The queue does not keep a second copy of the run's result tree or
 normally pin `output_dir`. See
 [Artifacts and paths](@ref Queue-artifacts) for the output contract.
 
@@ -117,7 +117,7 @@ creates the client copy described in
 | --- | --- |
 | `-q` / `--quiet` | `status` / `watch`: table only. `DISTSSHKIT_QUIET`. |
 | `--progress` / `--verbose` | Accepted (exclusive with `-q`); there is no live run to paint, so they keep chrome. |
-| `-v` / `--version` | Top-level: this package, then DistSSHKit. `submit go -v` is the `go` command only. |
+| `-v` / `--version` | `julia -m DistSSHKit -v` prints `DistSSHKit X`. A queue command such as `status -v` can still print `DistSSHQueue X (DistSSHRun Y)`. `submit go -v` is the `go` command only. |
 | `-y` / `--yes` | `teardown` (or `DISTSSHKIT_YES`). Same values as DistSSHKit. |
 | Ctrl-C | `serve` / `watch`: that process only, never a job that is already running. |
 

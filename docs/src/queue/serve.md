@@ -25,7 +25,7 @@ later job's `rsync` onto a nonempty worker path follows the no-overwrite
 rule; `instantiate` still runs.
 
 For normal jobs, `serve` does not choose `output_dir`. The job owns the
-artifact leaf and run bundle. The waiting list records `run_dir` and a `run.toml`
+artifact leaf and run bundle. The queue records `run_dir` and a `run.toml`
 snapshot on the row for cancel and fetch. See
 [Artifacts and paths](@ref Queue-artifacts) and
 [Job record](@ref Queue-job-record).

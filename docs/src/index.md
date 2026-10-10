@@ -6,15 +6,20 @@ for a larger set of lab machines.
 Supported on **macOS, Linux, and WSL2 Ubuntu** (not native Windows).
 
 `pkg> add DistSSHKit` is all you need to install it. The command is
-`julia -m DistSSHKit`. This site explains three things you do with it.
+`julia -m DistSSHKit`. DistSSHKit bundles DistSSHRun and DistSSHQueue.
+You do not install them separately.
 
-- **This machine.** Start a job here. The SSH connection stays open until
+A job runs in one of two places.
+
+- **This machine.** Start it here. The SSH connection stays open until
   it finishes.
-- **Julia version.** Put the same Julia channel on each machine. The
-  command is `up`.
-- **Always-on machine.** Leave jobs on a machine that stays on, and they
-  run one at a time. A dropped laptop does not stop a job already left
-  there.
+- **Queue host.** An always-on machine. Leave the job there. Jobs run
+  one at a time. A dropped laptop does not stop a job already left there.
+  `qhost` names that machine.
+
+**Prepare hosts** is shared by both. [`setup`](@ref Manual-setup) prepares
+SSH hosts. [`up`](@ref Manual-up) puts the same Julia channel on each
+machine. Do that before you start.
 
 ## What is DistSSHKit?
 
@@ -63,10 +68,12 @@ Also needs **`ssh`**, **`rsync`**, and **`git`** (git deploy only);
 
 - **Host** — a machine, given as a token like `parent` or
   `child:user@hostname`.
-- **Process** — one `julia` OS process with its own memory. A job started
-  from this machine may start several per host (Distributed.jl).
-- **Master** — the process on this machine that plans slots (`go`) or
-  farms work to workers (`drive`) and collects results.
+- **Process** — one `julia` OS process with its own memory. A run may
+  start several per host (Distributed.jl).
+- **The machine the run starts from** — this machine when you run `go` /
+  `drive` here, and the queue host when the job was left there.
+- **Master** — the process on the machine the run starts from. It plans
+  slots (`go`) or farms work to workers (`drive`) and collects results.
 - **Worker** — a process that receives work from the master and runs it.
 
 Example: running `go` / `drive` on your machine makes that machine the one
@@ -115,7 +122,8 @@ On this machine: **[Prepare](@ref Tutorial-Prepare)** and the bundled
 [`go`](@ref Manual-go), [`ride`](@ref Manual-ride), and
 [`drive`](@ref Manual-drive).
 
-On an always-on machine: **[First job](@ref Queue-Tutorial-Client)**.
+On a queue host: **[Prepare the machine](@ref Queue-Tutorial-Prepare)**,
+then **[First job](@ref Queue-Tutorial-Client)**.
 
 Or the **[API](@ref API)** to embed from Julia. The rest of the
 [User Guide](@ref Manual) lists every command.

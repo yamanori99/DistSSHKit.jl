@@ -77,8 +77,11 @@ makedocs(;
         ],
         "User Guide" => [
             "Overview" => "manual/index.md",
-            "This machine" => [
+            "Prepare hosts" => [
                 "setup" => "manual/setup.md",
+                "up" => "manual/up.md",
+            ],
+            "This machine" => [
                 "go" => "manual/go.md",
                 "ride" => "manual/ride.md",
                 "drive" => "manual/drive.md",
@@ -88,7 +91,6 @@ makedocs(;
                 "paths" => "manual/paths.md",
                 "demo" => "manual/demo.md",
             ],
-            "Julia version" => "manual/up.md",
             "Always-on machine" => [
                 "How it runs" => "queue/index.md",
                 "Artifacts and paths" => "queue/artifacts.md",

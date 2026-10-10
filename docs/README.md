@@ -7,8 +7,8 @@ Layout:
 - **Home** — `index.md`
 - **First Steps** — `requirements.md`, then This machine (`tutorial/prepare.md`,
   `tutorial/demo.md`) and Always-on machine (`tutorial/queue-*.md`)
-- **User Guide** — This machine (`manual/`), Julia version (`manual/up.md`),
-  Always-on machine (`queue/`)
+- **User Guide** — Prepare hosts (`manual/setup.md`, `manual/up.md`),
+  This machine (`manual/`), Always-on machine (`queue/`)
 - **API** — `api.md`
 
 Logos and social previews: see [`src/assets/README.md`](src/assets/README.md)

@@ -6,15 +6,15 @@ The three layers have separate responsibilities:
 | Layer | Owns |
 | --- | --- |
 | Script | The files that are the result of the computation |
-| The job | The run bundle, artifact leaf, logs, and collected directories under `.distsshkit/` on the machine that stays on |
-| The waiting list | The job row, and the copy `fetch` makes under `.distsshqueue/` |
+| The run | The run bundle, artifact leaf, logs, and collected directories under `.distsshkit/` on the queue host |
+| The queue | The job row, and the copy `fetch` makes under `.distsshqueue/` |
 
 `serve` normally does not set `output_dir` for `go`, `ride`, or
-`drive`. The job and the script choose the artifact leaf. A script that
+`drive`. The run and the script choose the artifact leaf. A script that
 does not call DistSSHKit still works: the detached process supplies
 the run context around it.
 
-## Always-on machine
+## Queue host
 
 A run has an artifact leaf and a separate sidecar:
 
@@ -31,7 +31,7 @@ A run has an artifact leaf and a separate sidecar:
     setup/*.log              setup logs
 ```
 
-The job owns this tree. The waiting list records enough metadata in the job row to
+The run owns this tree. The queue records enough metadata in the job row to
 schedule, cancel, and fetch without making another copy on that machine:
 
 - `result_path` is the primary artifact path when known.
@@ -43,10 +43,10 @@ schedule, cancel, and fetch without making another copy on that machine:
 The snapshot lets `fetch` recover `output_dir` after the live `runs/`
 tree has gone. `cancel` uses the live `run_dir` when available.
 
-If setup fails before an artifact exists, the waiting list may allocate the
-client-shaped `.distsshqueue/<kind>/<stem>_<id8>/` leaf on that
-machine so the failed row remains fetchable. This is a fetch placeholder,
-not a job artifact. It records all available setup log paths; it
+If setup fails before an artifact exists, the queue may allocate the
+client-shaped `.distsshqueue/<kind>/<stem>_<id8>/` leaf on the queue
+host so the failed row remains fetchable. This is a fetch placeholder,
+not a run artifact. The queue records all available setup log paths; it
 does not choose a newest file and copy it as `setup_failure.log`.
 
 ## Client after fetch

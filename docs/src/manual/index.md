@@ -2,18 +2,26 @@
 
 Command reference. For a hands-on path, use
 [First Steps](@ref Tutorial-Prepare) (Requirements → Prepare → Demo), or
-start on an always-on machine at
+start on a queue host at
+[Prepare the machine](@ref Queue-Tutorial-Prepare), then
 [First job](@ref Queue-Tutorial-Client).
 
 Full flag lists: `julia --project=. -m DistSSHKit {cmd} --help`.
 Each command page starts with **Flags** for that command.
 
-## This machine
+## Prepare hosts
 
-Start a job here. The SSH connection stays open until it finishes.
+Shared by a job you start here and a job you leave on a queue host.
 
 - [setup](@ref Manual-setup): check hosts, clone / rsync / sync,
   instantiate, prune, cleanup
+- [up](@ref Manual-up): the same Julia channel on each machine
+
+## This machine
+
+Start a job here. The SSH connection stays open until it finishes.
+The machine the run starts from is this machine.
+
 - [go](@ref Manual-go): standalone script as-is; one full run per slot
   (`--repeat N` = N runs, spread across listed hosts)
 - [ride](@ref Manual-ride): experimental auto-split of map / filter
@@ -30,14 +38,10 @@ Start a job here. The SSH connection stays open until it finishes.
 `progress` has no page of its own. `julia -m DistSSHKit progress DIR`
 reprints the last phase seconds from a job you started here.
 
-## Julia version
-
-[Julia version](@ref Manual-up): the `up` command puts the same Julia
-channel on each machine. It is not part of `go` or `drive`.
-
 ## Always-on machine
 
-Leave jobs on a machine that stays on. They run one at a time.
+A **queue host** is an always-on machine. Leave jobs there. They run
+one at a time. The machine the run starts from is the queue host.
 
 - [How it runs](@ref Queue-manual)
 - [Artifacts and paths](@ref Queue-artifacts)

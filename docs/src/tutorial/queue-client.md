@@ -20,7 +20,7 @@ queue host. After submit, this job tree has
 `SCRIPT.jl` must exist on
 the **client** in that tree.
 Omit `qhost:`: no rsync; the script is on this machine. The job still
-copies from the machine that stays on to the workers.
+copies from the queue host to the workers.
 
 ```bash
 julia --project=. -m DistSSHKit qhost:HOST list-host
@@ -43,10 +43,10 @@ One line, nested the same way as [User Guide · submit](@ref Queue-submit):
 
 ```text
 julia -m DistSSHKit  [qhost:HOST]  submit  drive  parent:4  SCRIPT.jl
-└── Julia ──┘  └── queue host ──┘  └Queue┘  └──────── DistSSHKit argv ────────┘
+└── Julia ──┘  └── queue host ──┘  └─ submit ┘  └──────── go / ride / drive ────────┘
 ```
 
-The tail is DistSSHKit. Same compute, now, on this machine:
+The tail is `go` / `ride` / `drive`. Same compute, now, on this machine:
 
 ```bash
 julia --project=. -m DistSSHKit drive parent:4 SCRIPT.jl
@@ -62,7 +62,7 @@ julia --project=. -m DistSSHKit qhost:HOST submit \
 `submit` only enqueues that argv for `serve` on the queue host.
 
 The argv is `go child:NAME:N SCRIPT.jl`, or `parent:N`
-when workers are on the machine that stays on. Flags:
+when workers are on the queue host. Flags:
 [go](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/go/),
 [ride](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/ride/),
 [drive](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/drive/).
@@ -91,7 +91,7 @@ Run it from the same directory as `submit`. Drive CSV
 (`square_file.jl`) is in that
 `.distsshqueue/drive/<stem>_<id8>/` leaf, not `output/`.
 
-A `.jl` with no verb for the waiting list is not implicit `go` (same as `go` / `ride` / `drive` on this machine). Top-level
+A `.jl` with no queue verb is not implicit `go` (same as `go` / `ride` / `drive` on this machine). Top-level
 `go` / `ride` / `drive` are DistSSHKit; enqueue with `submit`. `ride` is
 experimental.
 

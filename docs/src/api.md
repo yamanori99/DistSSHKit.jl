@@ -355,7 +355,7 @@ Exported so a rename is a Semver break, not a silent `DistSSHKit._…` change.
 `go` / `drive` argv wrappers stay unexported.
 
 **Parsers / SSH helpers** (`parse_*`, `ssh_opts`, `run_on_host`, …) are for
-callers that share kit CLI behavior.
+callers that share this CLI.
 
 **Help / display helpers** (`print_help_*`, `print_colored`, `SPINNER_FRAMES`)
 are an extension surface aimed at
@@ -364,11 +364,15 @@ are an extension surface aimed at
 exact rendered text, colors, or spinner glyphs — presentation may change
 without a breaking version bump.
 
+`dist_ssh_kit_version`, `println_kit_version`, `ssh_opts`, and the help
+helpers in this section are defined in DistSSHKit.
+
 ```@docs
 parse_go_args
 parse_drive_args
 show_go_usage
 show_drive_usage
+dist_ssh_kit_version
 println_kit_version
 ssh_opts
 run_on_host
@@ -414,9 +418,8 @@ and reexported by DistSSHKit.
 
 ## Always-on machine
 
-Leave jobs on a machine that stays on. They run one at a time. The names
-below are defined in DistSSHQueue and reexported by DistSSHKit.
-`dist_ssh_kit_version` and `println_kit_version` are defined by DistSSHKit.
+Leave jobs on a queue host (an always-on machine). They run one at a time.
+The names below are defined in DistSSHQueue and reexported by DistSSHKit.
 
 A client runs
 `julia -m DistSSHKit submit …`, with `qhost:HOST` when that machine is

@@ -29,7 +29,7 @@ detail lines (`queued` is local wall time at submit, including DST;
 `elapsed` / `wall`, folded `hosts`). `-q` is the first
 line only. `--verbose` keeps the full host token list. While setup is in
 progress, STATE shows `rsync` / `instantiate` / `check` (`instantiate`
-includes the project on the machine that stays on; those steps are `child:` only). A
+includes the queue-host project; those steps are `child:` only). A
 `qhost:` stage still reaches `check`; a missing `.git/` warns
 (the store row stays `:running`). `qhost:HOST` `status` / `watch` use
 `ssh` `-t` when this stdout is a TTY (watch paint). Colors unless

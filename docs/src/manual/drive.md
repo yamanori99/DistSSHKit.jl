@@ -148,13 +148,13 @@ false), not an empty success. Default CLI exit is non-zero unless
 `--best-effort`.
 
 External watchers: `progress: begin` / `step` / `item` always go to
-`kit.progress` (even `-q` / `--no-log`). The kit log still gets those lines
+`kit.progress` (even `-q` / `--no-log`). The log still gets those lines
 only with `--progress` (TTY default) or `DISTSSHKIT_PROGRESS=1`.
 `progress: done` is always in both. Line format: [API](@ref API)
 (Progress lines).
 
 Collect expands remote `~/…` roots on each host before `find` / rsync so the
-this machine never `relpath`s against a tilde base (same ENV as
+machine the run starts from never `relpath`s against a tilde base (same ENV as
 [setup remote path](@ref Manual-setup)).
 
 ## Driver script

@@ -19,17 +19,21 @@ for a larger set of lab machines. Supported platforms are **macOS, Linux,
 and WSL2 Ubuntu** (native Windows is not supported).
 
 A single `pkg> add DistSSHKit` is all you need to install it. The command is
-`julia -m DistSSHKit`. You do three things with it.
+`julia -m DistSSHKit`. DistSSHKit bundles DistSSHRun and DistSSHQueue.
+You do not install them separately.
 
-- **This machine.** Start a job here. The SSH connection stays open until
-  it finishes. The commands are `setup`, `go`, `ride`, `drive`, `plan`,
+A job runs in one of two places.
+
+- **This machine.** Start it here. The SSH connection stays open until
+  it finishes. The commands are `go`, `ride`, `drive`, `plan`,
   `size`, `pool`, `demo`, and `progress`.
-- **Julia version.** Put the same Julia channel on each machine. The
-  command is `up`.
-- **Always-on machine.** Leave jobs on a machine that stays on, and they
-  run one at a time. Install the same package there. A dropped laptop does
+- **Queue host.** An always-on machine. Leave the job there. Jobs run
+  one at a time. Install the same package there. A dropped laptop does
   not stop a job already left there. The commands are `submit`, `status`,
-  `watch`, `cancel`, `fetch`, and `serve`.
+  `watch`, `cancel`, `fetch`, and `serve`. `qhost` names that machine.
+
+**Prepare hosts** is shared. `setup` prepares SSH hosts. `up` puts the
+same Julia channel on each machine. Do that before either place.
 
 ## Install
 

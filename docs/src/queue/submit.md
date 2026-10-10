@@ -64,7 +64,7 @@ julia --project=. -m DistSSHKit  [qhost:HOST]  submit  pool:8  drive  SCRIPT.jl
 #──────────── Julia ────────────┘  └─ qhost ──┘  └─ submit ──┘  └─ go / ride / drive ─┘
 ```
 
-A `.jl` with no verb for the waiting list is not implicit `go` (same as `go` / `ride` / `drive` on this machine). Top-level
+A `.jl` with no queue verb is not implicit `go` (same as `go` / `ride` / `drive` on this machine). Top-level
 `go` / `ride` / `drive` are DistSSHKit; enqueue with `submit`. `ride` is
 experimental.
 
@@ -108,7 +108,7 @@ must join unless `--best-effort`).
 | `go` / `ride` / `drive` | DistSSHKit kind (`execute!`) |
 | Host tokens | `parent[:N]` / `child:NAME[:N]` (not a cap on how many jobs wait) |
 | `pool:N` | Same `:N` on every config host |
-| `--hosts` / `--julia` | Belong to `go` / `ride` / `drive`. Julia on the machine that stays on is `--remote-julia` / `JULIA_DISTRIBUTED_EXE` |
+| `--hosts` / `--julia` | Belong to `go` / `ride` / `drive`. Julia on the queue host is `--remote-julia` / `JULIA_DISTRIBUTED_EXE` |
 | `-v` / `--version` | On `submit go` / `ride` / `drive`: that command only |
 | `-h` / `--help` | Help for that kind |
 

@@ -10,12 +10,16 @@ Internals of this repo.
 
 ## Scope
 
-Users add this package and do three things: start a job on this machine,
-put the same Julia channel on each machine (`up`), or leave jobs on a
-machine that stays on. The first two are implemented in
+Users add this package. A job runs on this machine, or on a queue host
+(an always-on machine). `setup` and `up` prepare hosts for both.
+DistSSHKit reexports the public names of DistSSHRun and DistSSHQueue.
+You do not install those packages separately. `setup`, `up`, `go`,
+`ride`, and `drive` are implemented in
 [DistSSHRun.jl](https://github.com/yamanori99/DistSSHRun.jl).
-Jobs left on a machine that stays on are implemented in
+Jobs left on a queue host are implemented in
 [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl).
+DistSSHRun still has `[apps.distsshrun]` for a checkout of that package
+alone. DistSSHKit does not install a `distsshkit` command.
 
 Happy-path bugs (ordinary `~/` roots, default `drive` / `go` / `setup`);
 CI / Julia slots / Aqua / JETLS / Runic drift. Enhancement Issue first, then a PR.

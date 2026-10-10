@@ -18,15 +18,22 @@ DistSSHKit は、複数のマシンへ SSH して Julia の計算を実行する
 対応環境は **macOS、Linux、WSL2 Ubuntu** である (ネイティブ Windows は対象外)。
 
 必要な操作は `pkg> add DistSSHKit` のみである。
-コマンドは `julia -m DistSSHKit` で呼び出す。使う場面は次の3つである。
+コマンドは `julia -m DistSSHKit` で呼び出す。
+DistSSHKit は DistSSHRun と DistSSHQueue をまとめている。
+それらを別々に入れる必要はない。
+
+ジョブを走らせる場所は次の2つである。
 
 - **このマシン。** ここでジョブを始める。終わるまで SSH は開いたままである。
-  コマンドは `setup`、`go`、`ride`、`drive`、`plan`、`size`、`pool`、
+  コマンドは `go`、`ride`、`drive`、`plan`、`size`、`pool`、
   `demo`、`progress` である。
-- **Julia の版。** 各マシンの Julia を同じチャネルにする。コマンドは `up` である。
-- **つけたままのマシン。** そこにジョブを置いて、1件ずつ走らせる。
+- **キューホスト。** つけたままのマシンである。そこにジョブを置いて、1件ずつ走らせる。
   同じパッケージをそのマシンにも入れる。手元の接続が切れても、置いてあるジョブは止まらない。
   コマンドは `submit`、`status`、`watch`、`cancel`、`fetch`、`serve` である。
+  `qhost` はそのマシンを指す。
+
+**ホストの準備**は両方に共通する。`setup` は SSH 先を準備する。
+`up` は各マシンの Julia を同じチャネルにする。始める前に行う。
 
 ## インストール
 
