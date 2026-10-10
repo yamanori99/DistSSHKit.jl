@@ -3,9 +3,9 @@ name: CI weekly
 # Not on pull_request: insurance for 1.13 / 1.14-nightly / Aqua / JETLS
 # @release drift when no PR ran that week. PR / main push stay the gate.
 # tip jobs are continue-on-error and omitted from notify.
-# macos-latest and WSL2 Pkg.test are included (no coverage), same as a PR.
-# 1.14-nightly Pkg.test and Aqua run on those platforms too, and stay
-# out of notify.
+# 1.13 macos-latest and WSL2 Pkg.test are included (no coverage), same as a PR.
+# 1.14-nightly Pkg.test and Aqua on macOS and WSL2 run here only, and stay
+# out of notify. Ubuntu nightly also runs in Test.
 on:
   workflow_dispatch:
   # Sunday 10:00 JST (UTC 01:00).
