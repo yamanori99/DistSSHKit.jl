@@ -10,10 +10,11 @@ Internals of this repo.
 
 ## Scope
 
-Users add this package. It reexports DistSSHRun (one run) and
-DistSSHQueue (the queue). A run's implementation lands in
+Users add this package and do three things: start a job on this machine,
+put the same Julia channel on each machine (`up`), or leave jobs on a
+machine that stays on. The first two are implemented in
 [DistSSHRun.jl](https://github.com/yamanori99/DistSSHRun.jl).
-The queue's implementation lands in
+Jobs left on a machine that stays on are implemented in
 [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl).
 
 Happy-path bugs (ordinary `~/` roots, default `drive` / `go` / `setup`);
@@ -23,7 +24,7 @@ Windows and GPU-package help stay on the horizon
 ([Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26)).
 
 Chat: [Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions).
-Tracked bugs stay Issues. Direction for the kit as a whole is still
+Tracked bugs stay Issues. Direction for DistSSHKit as a whole is still
 [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26).
 
 ## ride and `:effect_free`
@@ -32,12 +33,12 @@ Tracked bugs stay Issues. Direction for the kit as a whole is still
 them. Safety is borrowed from the discussion on
 [JuliaLang/julia#43910](https://github.com/JuliaLang/julia/issues/43910)
 (`:effect_free` on `f` and `getindex`). That issue is a thread-parallel
-POC; Kit `ride` is process/`pmap` (parent or SSH). Do not describe `ride`
+POC; `ride` is process/`pmap` (parent or SSH). Do not describe `ride`
 as an implementation of that POC in README or contract Discussions.
 
 ## Requirements
 
-macOS, Linux, or WSL2 Ubuntu. Not native Windows (the kit shells out to
+macOS, Linux, or WSL2 Ubuntu. Not native Windows (DistSSHKit shells out to
 `ssh` / `rsync`).
 
 - Library, `Pkg.test()`, `julia -m DistSSHKit`, docs: Julia **1.13+**
@@ -62,9 +63,9 @@ julia --project=/path/to/KitDevEnv.jl \
   -e 'using Pkg; Pkg.develop(path="/path/to/DistSSHKit.jl")'
 ```
 
-Do not `Pkg.develop` the kit from a project you actually run
+Do not `Pkg.develop` DistSSHKit from a project you actually run
 distributed jobs from — the Manifest records an absolute path the
-workers do not have. Keep a separate environment for kit development.
+workers do not have. Keep a separate environment for that development.
 Real jobs `Pkg.add` DistSSHKit from General.
 
 On 1.13+, `julia --project=. -m DistSSHKit …` matches `Pkg.add`.
@@ -348,14 +349,14 @@ domains share a shape.
 **when**, not type or path: every open Issue gets exactly one of
 `when:current` / `when:next` / `when:later`. `julia-next` is optional
 and orthogonal: Julia tip / next stable Base or stdlib drift (keep
-`when:later` until that Julia is the kit contract). Usage questions are
+`when:later` until that Julia is the DistSSHKit contract). Usage questions are
 Discussions. Confirmed bugs are Issues. `breaking` is a PR label.
 Direction:
 [Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26).
 Security: [SECURITY.md](SECURITY.md).
 
 Maintainer memo: [#50](https://github.com/yamanori99/DistSSHKit.jl/issues/50)
-is closed (`not_planned` in-kit). The hall is
+is closed (`not_planned` in this repo). Jobs that wait on a machine that stays on live in
 [DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
 (General). Do not add `schedule` here.
 
@@ -427,7 +428,7 @@ PR type).
 | --- | --- |
 | `when:current` | Broken daily path or CLI that lies; same 0.7 contract |
 | `when:next` | Same contract: chrome, copy, colors |
-| `when:later` | Later cut: DistSSHUp, testitem, citation, comparison docs |
+| `when:later` | Later cut: testitem, citation, comparison docs |
 
 ## Language
 

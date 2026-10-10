@@ -6,7 +6,7 @@ CurrentModule = DistSSHKit
 
 Julia entry points for notebooks and packages.
 Day-to-day: CLI (`julia --project=. -m DistSSHKit …`); see
-[Introduction](@ref DistSSHKit.jl),
+[Home](@ref DistSSHKit.jl),
 [First Steps](@ref Tutorial-Prepare), and the [User Guide](@ref Manual).
 REPL help also works (`?DistSSHKit.go!`).
 
@@ -25,9 +25,15 @@ go!("job.jl", "parent:2"; args=["8"])
 drive!("job.jl", "parent:2"; args=["8"])
 ```
 
+## This machine
+
+Start a job here. The names below are defined in DistSSHRun and reexported
+by DistSSHKit. The Julia channel (`up`) is
+[Julia version](@ref Manual-up), not one of these calls.
+
 ## Run a script as-is — `go!`
 
-No Kit imports in the job file. Each `parent:N` / `child:NAME:N` slot is
+The job file does not call DistSSHKit. Each `parent:N` / `child:NAME:N` slot is
 one full run, concurrent. `repeat=N` is N runs in total (`--repeat N`),
 spread across listed hosts.
 
@@ -117,7 +123,7 @@ CollectResult
 ride!
 RideResult
 print_ride
-ns_path
+stored_path
 file_sha256
 cache_file
 cache_path
@@ -191,10 +197,10 @@ wait(execute!(:go, "job.jl", ["parent:1"]; detached=true, args=["8"]))
 
 `detached=true`:
 
-- Spawns a child `julia -m DistSSHKit go|ride|drive` (not in-process `go!` /
-  `ride!` / `drive!`). `--project=` is the job `project=` when that tree
-  lists DistSSHKit in `Project.toml` `[deps]`; otherwise `pkgdir(DistSSHKit)`
-  (Manifest-only / transitive DistSSHKit does not count)
+- Spawns a child `julia -m` of `go` / `ride` / `drive` (not in-process
+  `go!` / `ride!` / `drive!`). When the chosen project's `[deps]` lists
+  DistSSHKit, the child is `-m DistSSHKit`. Otherwise it is `-m DistSSHRun`.
+  A Manifest-only or transitive name does not count.
 - Keywords are an allow-list; `yes` must stay `true`
 - Child stdio defaults to `kit.out` / `kit.err` in `run_dir`
 - [`KitProcess`](@ref) holds the `Base.Process`, `run_dir`, and artifact
@@ -243,10 +249,10 @@ Each line is space-separated `key=value` fields after the event name.
 - `done`: `kind`, optional `job`, `ok`, `done`, `total`, `t`
 
 `kind` is `go`, `ride`, or `drive`. `job=` is present only when `job_id` /
-`DISTSSHKIT_JOB_ID` is set. Fields are not quoted; labels are kit-chosen
+`DISTSSHKIT_JOB_ID` is set. Fields are not quoted; labels are chosen by the run
 (phase names or slot labels) and do not contain spaces.
 
-Watchers can tail `kit.progress` (or the kit log) and use
+Watchers can tail `kit.progress` (or the log next to it) and use
 `julia -m DistSSHKit progress DIR`.
 `DISTSSHKIT_PROGRESS=1` is `--progress` verbosity on the child, not a watcher.
 Slot-level `go` artifacts (`go_manifest.txt`, `{slot}/go.exitcode`) remain
@@ -272,7 +278,7 @@ Detached stdio (`kit.out` / `kit.err`) lives in [`KitProcess.run_dir`](@ref).
 `kit.pid`, `kit.job`, `kit.hosts`, `kit.hosts.status`, and `kit.result` are
 written under `run_dir`, and also under `output_dir` / `log_dir` when those
 paths are known at write time. `.kit.lock` stays on the artifact `output_dir`
-(exclusive run against that leaf). Kit logs (`go_*.log` / `drive_*.log`)
+(exclusive run against that leaf). Logs (`go_*.log` / `drive_*.log`)
 default to `run_dir` for drive when `DISTSSHKIT_RUN_DIR` is set; go still
 writes `go_*.log` next to the batch.
 
@@ -280,8 +286,7 @@ On-disk contract:
 
 - `.kit.lock`: pid of the process holding the **artifact** dir. A second
   **process** against the same path raises `ArgumentError`. A lock left by a
-  dead pid is reclaimed. Two in-process runs share a pid, so Kit also rejects
-  overlapping
+  dead pid is reclaimed. Two in-process runs share a pid, so overlapping calls are also rejected:
   `go!` / `drive!` / `ride!` / `size!` / `pool!` / `setup!` / `sync!` /
   `instantiate!` / `collect!` / `push_cache!` / `pipeline!` (same-task nesting is ok).
 - `kit.out` / `kit.err`: detached child stdio when `stdout` / `stderr` were
@@ -325,7 +330,7 @@ Without `job_id`, only the child pid is signaled.
   `ride` default is still `{script}/.distsshkit/<kind>/<stem>_<UTC>/`.
   Detached `drive` does not pin that path before spawn, so
   `init_output_dir!` can set `DISTRIBUTED_OUTPUT_DIR`.
-- [`allocate_run_dir`](@ref): Kit run bundle
+- [`allocate_run_dir`](@ref): run bundle
   `{script}/.distsshkit/runs/<kind>/<stem>_<UTC>/` (`run.toml`, pid, stdio).
   Falls back to `{project}/.distsshkit/runs/…` then
   `tempdir()/distsshkit-runs/…` when the script directory is not writable.
@@ -401,28 +406,25 @@ methods in the same session.
 worker_pmap
 ```
 
-## Queue
+## Julia version
 
-`pkg> add DistSSHKit` is all you need to install it. It covers running a
-job immediately and running jobs from a queue. DistSSHKit is made of the
-following two packages, and the command is `julia -m DistSSHKit`. Public
-names are reexported.
+`up` puts the same Julia channel on each machine. See
+[Julia version](@ref Manual-up). Those functions are defined in DistSSHRun
+and reexported by DistSSHKit.
 
-- **[DistSSHRun](https://yamanori99.github.io/DistSSHRun.jl/stable/)** runs a job
-  now, from the machine where you start it. The SSH connection stays open
-  until that job finishes. The commands are `setup`, `up`, `go`, `ride`,
-  `drive`, `plan`, `size`, `pool`, `demo`, and `progress`.
-- **[DistSSHQueue](https://yamanori99.github.io/DistSSHQueue.jl/stable/)** stores
-  jobs on an always-on machine and runs them one after another. A dropped
-  laptop does not stop a job already queued there.
+## Always-on machine
+
+Leave jobs on a machine that stays on. They run one at a time. The names
+below are defined in DistSSHQueue and reexported by DistSSHKit.
+`dist_ssh_kit_version` and `println_kit_version` are defined by DistSSHKit.
 
 A client runs
-`julia -m DistSSHKit submit …`, with `qhost:HOST` when the queue is
-another machine. On the queue host the commands are `qhost setup`, `qhost up`,
+`julia -m DistSSHKit submit …`, with `qhost:HOST` when that machine is
+another computer. On that machine the commands are `qhost setup`, `qhost up`,
 `qhost add-host`, `qhost remove-host`, `qhost serve`, `qhost stop`,
 `qhost enable`, `qhost disable`, `qhost teardown`, plus `qhost size` /
 `qhost plan` / `qhost pool`. Bare `setup` / `up` / `size` / `plan` /
-`pool` stay the run commands.
+`pool` stay the commands you run on this machine.
 
 ```julia
 q = Queue(; store=default_store_path(), follow_config=true)

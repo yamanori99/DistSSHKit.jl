@@ -2,11 +2,13 @@
 
 Documenter site for DistSSHKit.jl. Sources live in `docs/src/`.
 
-Layout (same idea as [DataFrames.jl](https://dataframes.juliadata.org/stable/)):
+Layout:
 
-- **Introduction** — `index.md`
-- **First Steps** — `requirements.md`, `tutorial/`
-- **User Guide** — `manual/`
+- **Home** — `index.md`
+- **First Steps** — `requirements.md`, then This machine (`tutorial/prepare.md`,
+  `tutorial/demo.md`) and Always-on machine (`tutorial/queue-*.md`)
+- **User Guide** — This machine (`manual/`), Julia version (`manual/up.md`),
+  Always-on machine (`queue/`)
 - **API** — `api.md`
 
 Logos and social previews: see [`src/assets/README.md`](src/assets/README.md)

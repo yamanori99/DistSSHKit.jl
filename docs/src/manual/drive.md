@@ -76,7 +76,7 @@ include(DEMO_JL)
   as size)
 - `--output-dir PATH`: **result root** → `DISTRIBUTED_OUTPUT_DIR` (not go
   batch root). Omitted: the driver may set it in `init_output_dir!`;
-  otherwise Kit allocates `{script}/.distsshkit/drive/<stem>_<UTC>/`.
+  otherwise the job allocates `{script}/.distsshkit/drive/<stem>_<UTC>/`.
   Detached `execute!(:drive)` does not pin `--output-dir` unless you pass
   `output_dir=` (or inherit `DISTRIBUTED_OUTPUT_DIR`).
 - Run sidecars (`kit.pid`, `kit.out` / `kit.err`, `run.toml`) live under
@@ -120,7 +120,7 @@ post-run collect, and `size` Julia-path detection.
 Run [`setup --check`](@ref Manual-setup) on new clusters. Remotes need the
 project tree and an instantiate (`setup --instantiate`, or `drive --rsync`
 onto an empty path). Prefer matching Julia **major.minor**; align with
-[`up`](@ref Manual-setup) when juliaup is already on the host
+[`up`](@ref Manual-up) when juliaup is already on the host
 ([Requirements](@ref)).
 
 ## Workers
@@ -154,7 +154,7 @@ only with `--progress` (TTY default) or `DISTSSHKIT_PROGRESS=1`.
 (Progress lines).
 
 Collect expands remote `~/…` roots on each host before `find` / rsync so the
-kit parent never `relpath`s against a tilde base (same ENV as
+this machine never `relpath`s against a tilde base (same ENV as
 [setup remote path](@ref Manual-setup)).
 
 ## Driver script

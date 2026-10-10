@@ -1,10 +1,10 @@
 # [fetch](@id Queue-fetch)
 
-Copy one finished Kit result leaf onto this job tree. Inverse of
-`qhost:` stage (Kit rsync excludes: `.gitignore`, `.git/`, `.distsshkit/`,
+Copy one finished result leaf onto this job tree. Inverse of
+`qhost:` stage (rsync excludes: `.gitignore`, `.git/`, `.distsshkit/`,
 `.distsshqueue/`). `qhost:` submit leaves
 `.distsshqueue/tickets/<uuid>` on this tree (one file per job, kept).
-That file is not the Kit leaf.
+That file is not the result leaf.
 For the ownership boundary and both directory trees, see
 [Artifacts and paths](@ref Queue-artifacts).
 
@@ -28,7 +28,7 @@ Run it from the same `cwd` / `DISTRIBUTED_PROJECT_ROOT` as `submit`.
 - stdout: the destination path, one line
 
 `--into` may point outside the job project. The destination is not the
-Kit source under `{project}/.distsshkit/{kind}/…`.
+result under `{project}/.distsshkit/{kind}/…`.
 
 ## Existing destination
 
@@ -49,8 +49,8 @@ still matches it.
 
 `qhost:` fetch copies more than the primary artifact:
 
-- Kit `logs` and recorded setup logs go to `.distsshkit/logs/`.
-- Kit `collect_dirs` go to `.distsshkit/collect/`.
+- `logs` and recorded setup logs go to `.distsshkit/logs/`.
+- `collect_dirs` go to `.distsshkit/collect/`.
 
 The transfer prints `rsync ← HOST:…` on stderr.
 `DISTSSHKIT_QUIET` hides that line.
@@ -62,7 +62,7 @@ the persisted `result_path` or `run.toml` `output_dir`; it may be
 outside the job project.
 
 Failed and cancelled jobs are fetchable when a primary artifact or
-recorded extra exists. If Kit `setup!` failed before `execute!`, the
+recorded extra exists. If `setup!` failed before `execute!`, the
 row contains setup `*.log` paths in `setup_logs`; Queue does not create
 `setup_failure.log`.
 
@@ -84,11 +84,11 @@ prefix from `status`.
 | `--progress` | `qhost:` rsync `--info=progress2` (`DISTSSHKIT_PROGRESS`) |
 | `-h` / `--help` | Queue usage |
 
-No `--output-dir`. Kit worker collect is not repeated.
+No `--output-dir`. Collecting worker files is not repeated.
 
 ## Refused
 
-`:queued`, `:running`, and a row with no Kit `output_dir` / `result_path`
+`:queued`, `:running`, and a row with no `output_dir` / `result_path`
 and no recorded extras. Source is the persisted job (`run.toml` snapshot
 or `result_path`), not a client-side path check. Dest is still
 `{kind}/{stem}_{id8}` unless `--into`.

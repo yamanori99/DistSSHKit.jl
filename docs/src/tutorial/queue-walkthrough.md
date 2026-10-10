@@ -23,7 +23,7 @@ julia -m DistSSHKit qhost serve
 ```
 
 `add-host` does not deploy. `serve` instantiates the job project on
-this host, then Kit `setup!` (rsync / instantiate / `check`) on
+this host, then `setup!` (rsync / instantiate / `check`) on
 `child:` hosts. A `qhost:` stage has no `.git/`; a missing local git
 commit warns instead of failing `:check`. Optional: `qhost up`
 when major.minor differs.
@@ -45,7 +45,7 @@ julia --project=. -m DistSSHKit qhost:HOST submit go parent:1 distsshkit_demos/w
 
 `qhost:` rsyncs this tree to `~/.distsshqueue/stage/<uuid>` on `HOST`
 (excludes `.gitignore`, `.git/`, `.distsshkit/`, `.distsshqueue/`). Stdout is the job UUID. This client has
-`.distsshqueue/tickets/<uuid>` only; the Kit leaf is not here yet.
+`.distsshqueue/tickets/<uuid>` only; the result leaf is not here yet.
 
 ```bash
 julia --project=. -m DistSSHKit qhost:HOST status
@@ -53,9 +53,9 @@ julia --project=. -m DistSSHKit qhost:HOST fetch <id>  # 8-char prefix or full U
 julia --project=. -m DistSSHKit qhost:HOST fetch .distsshqueue/tickets/<uuid>
 ```
 
-`fetch` copies the Kit leaf onto
+`fetch` copies the result leaf onto
 `{project}/.distsshqueue/go/<stem>_<id8>/` on this job tree (on `HOST`,
-Kit writes under the stage tree's `.distsshkit/`). Run it from the
+the job writes under the stage tree's `.distsshkit/`). Run it from the
 same directory as `submit`.
 
 ## Worker (`child:NAME`)

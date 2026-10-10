@@ -6,15 +6,15 @@ The three layers have separate responsibilities:
 | Layer | Owns |
 | --- | --- |
 | Script | The files that are the result of the computation |
-| DistSSHKit | The queue-host run bundle, artifact leaf, logs, and collected directories under `.distsshkit/` |
-| DistSSHQueue | The job row and the client-side copy made by `fetch` under `.distsshqueue/` |
+| The job | The run bundle, artifact leaf, logs, and collected directories under `.distsshkit/` on the machine that stays on |
+| The waiting list | The job row, and the copy `fetch` makes under `.distsshqueue/` |
 
 `serve` normally does not set `output_dir` for `go`, `ride`, or
-`drive`. Kit and the script choose the artifact leaf. A script that
-does not load DistSSHKit still works: the detached Kit process supplies
+`drive`. The job and the script choose the artifact leaf. A script that
+does not call DistSSHKit still works: the detached process supplies
 the run context around it.
 
-## Queue host
+## Always-on machine
 
 A run has an artifact leaf and a separate sidecar:
 
@@ -22,36 +22,36 @@ A run has an artifact leaf and a separate sidecar:
 <job project>/
   SCRIPT.jl
   .distsshkit/
-    runs/<kind>/<run>/       Kit run bundle
+    runs/<kind>/<run>/       run bundle
       run.toml               output_dir, logs, collect_dirs, ...
       kit.pid
       kit.result
-    <kind>/SCRIPT_<UTC>_<id>/  primary artifact (Kit/script picks the leaf)
-      ...                    files written by the script / Kit
-    setup/*.log              Kit setup logs
+    <kind>/SCRIPT_<UTC>_<id>/  primary artifact (the job or the script picks the leaf)
+      ...                    files written by the script or the job
+    setup/*.log              setup logs
 ```
 
-Kit owns this tree. Queue records enough metadata in the job row to
-schedule, cancel, and fetch without making another queue-host copy:
+The job owns this tree. The waiting list records enough metadata in the job row to
+schedule, cancel, and fetch without making another copy on that machine:
 
 - `result_path` is the primary artifact path when known.
-- `kwargs.run_dir` identifies the live Kit sidecar.
-- `kwargs.run_toml` is a snapshot of Kit's manifest, including
+- `kwargs.run_dir` identifies the live sidecar.
+- `kwargs.run_toml` is a snapshot of the run manifest, including
   `output_dir`, `logs`, and `collect_dirs`.
-- `kwargs.setup_logs` lists setup logs when Kit setup fails.
+- `kwargs.setup_logs` lists setup logs when setup fails.
 
 The snapshot lets `fetch` recover `output_dir` after the live `runs/`
 tree has gone. `cancel` uses the live `run_dir` when available.
 
-If Kit setup fails before an artifact exists, Queue may allocate the
-client-shaped `.distsshqueue/<kind>/<stem>_<id8>/` leaf on the queue
-host so the failed row remains fetchable. This is a fetch placeholder,
-not a Kit artifact. Queue records all available setup log paths; it
+If setup fails before an artifact exists, the waiting list may allocate the
+client-shaped `.distsshqueue/<kind>/<stem>_<id8>/` leaf on that
+machine so the failed row remains fetchable. This is a fetch placeholder,
+not a job artifact. It records all available setup log paths; it
 does not choose a newest file and copy it as `setup_failure.log`.
 
 ## Client after fetch
 
-The default destination is stable across Kit's timestamped leaf names:
+The default destination is stable across the timestamped leaf names:
 
 ```text
 <client job project>/
@@ -61,8 +61,8 @@ The default destination is stable across Kit's timestamped leaf names:
       .distsshqueue-fetch-id          canonical job UUID
       ...                             primary artifact copy
       .distsshkit/
-        logs/...                      Kit logs and setup logs
-        collect/...                   Kit collect_dirs
+        logs/...                      logs and setup logs
+        collect/...                   collect_dirs
 ```
 
 `--into PATH` makes `PATH` itself the destination leaf. It may be
@@ -89,5 +89,5 @@ syntax, retry rules, `--into`, and refusal cases.
 `qhost:` submit copies the client project to
 `~/.distsshqueue/stage/<uuid>` and leaves a ticket at
 `.distsshqueue/tickets/<uuid>` on the client. The stage is the job
-project used by Queue and Kit; the ticket is an identifier. Neither is
+project used by the job; the ticket is an identifier. Neither is
 the result leaf.

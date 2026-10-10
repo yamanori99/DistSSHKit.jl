@@ -16,11 +16,11 @@ That `--project=.` stays on the **client**. `qhost:` defaults to
 `qhost:` **rsync**s the client job tree (`cwd` /
 `DISTRIBUTED_PROJECT_ROOT`) to `~/.distsshqueue/stage/<uuid>` on the
 queue host. After submit, this job tree has
-`.distsshqueue/tickets/<uuid>` (not the Kit leaf; every submit stays).
+`.distsshqueue/tickets/<uuid>` (not the result leaf; every submit stays).
 `SCRIPT.jl` must exist on
 the **client** in that tree.
-Omit `qhost:`: no rsync; the script is on this machine. Kit still
-copies queue host → workers.
+Omit `qhost:`: no rsync; the script is on this machine. The job still
+copies from the machine that stays on to the workers.
 
 ```bash
 julia --project=. -m DistSSHKit qhost:HOST list-host
@@ -33,7 +33,7 @@ One queue host: still pass `qhost:HOST` (or `status qhost:HOST`).
 `DISTSSHQUEUE_HOST` is not enough. Local trial without `qhost:`:
 `DISTSSHQUEUE_LOCAL=1`. Several clusters: pass `qhost:` each time.
 
-`list-host` is not Kit `--hosts`. One row: NAME / TOKEN / MAX / JULIA / SSH
+`list-host` is not `--hosts`. One row: NAME / TOKEN / MAX / JULIA / SSH
 (`user@hostname`, `:port` when not 22). `ssh -G` runs on the queue host.
 `size` / `plan` / `pool` are DistSSHKit inspect verbs there (do not enqueue).
 
@@ -61,11 +61,11 @@ julia --project=. -m DistSSHKit qhost:HOST submit \
 
 `submit` only enqueues that argv for `serve` on the queue host.
 
-Kit argv is DistSSHKit's (`go child:NAME:N SCRIPT.jl`, or `parent:N`
-when workers are on the queue host). Flags:
-[kit go](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/go/),
-[kit ride](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/ride/),
-[kit drive](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/drive/).
+The argv is `go child:NAME:N SCRIPT.jl`, or `parent:N`
+when workers are on the machine that stays on. Flags:
+[go](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/go/),
+[ride](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/ride/),
+[drive](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/drive/).
 
 ```bash
 julia --project=. -m DistSSHKit qhost:HOST submit go child:host1:4 SCRIPT.jl
@@ -77,8 +77,8 @@ julia --project=. -m DistSSHKit qhost:HOST fetch .distsshqueue/tickets/<uuid>
 ```
 
 `submit` starts `serve` if none is running. `serve` instantiates the
-job project on the queue host and runs Kit `setup!` on `child:` hosts
-before `execute!`. Kit `:check` always runs on `child:` hosts
+job project on the queue host and runs `setup!` on `child:` hosts
+before `execute!`. `:check` always runs on `child:` hosts
 (warns if a `qhost:` stage has no `.git/`). `status` / `watch` print
 `qhost` (or `local (hostname)` when you omitted it). `watch` is
 `status --interval` until Ctrl-C; it does not stop `serve`. Job ids print as a bare
@@ -88,10 +88,10 @@ it starts (fetch: `rsync ←`). After `qhost:` submit,
 `.distsshqueue/tickets/<uuid>` marks the job on this client. `fetch`
 copies the finished result to `.distsshqueue/<kind>/<stem>_<id8>/`.
 Run it from the same directory as `submit`. Drive CSV
-(Kit `square_file.jl`) is in that
+(`square_file.jl`) is in that
 `.distsshqueue/drive/<stem>_<id8>/` leaf, not `output/`.
 
-A `.jl` with no Queue verb is not implicit `go` (same as Kit). Top-level
+A `.jl` with no verb for the waiting list is not implicit `go` (same as `go` / `ride` / `drive` on this machine). Top-level
 `go` / `ride` / `drive` are DistSSHKit; enqueue with `submit`. `ride` is
 experimental.
 

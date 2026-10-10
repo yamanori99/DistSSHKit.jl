@@ -5,27 +5,31 @@ machines over SSH. It works equally well for a pair of workstations and
 for a larger set of lab machines.
 Supported on **macOS, Linux, and WSL2 Ubuntu** (not native Windows).
 
-`pkg> add DistSSHKit` is all you need to install it. It covers running a job
-immediately and running jobs from a queue. This site explains both. The
-command is `julia -m DistSSHKit`.
+`pkg> add DistSSHKit` is all you need to install it. The command is
+`julia -m DistSSHKit`. This site explains three things you do with it.
 
-Start a job from this machine, and the SSH connection stays open until it
-finishes.
-
-To queue jobs and run them one after another, put the same install on an
-always-on machine. A dropped laptop does not stop a job already queued there.
+- **This machine.** Start a job here. The SSH connection stays open until
+  it finishes.
+- **Julia version.** Put the same Julia channel on each machine. The
+  command is `up`.
+- **Always-on machine.** Leave jobs on a machine that stays on, and they
+  run one at a time. A dropped laptop does not stop a job already left
+  there.
 
 ## What is DistSSHKit?
 
-Two ways to run a script:
+On this machine, three ways to run a script:
 
 - **Same script on each machine** (`go`) — each host runs your `.jl` end to
   end. Prefer when every run is already a complete job.
+- **Split map / filter** (`ride`) — experimental split of `map`, `filter`,
+  and simple comprehensions.
 - **One machine coordinates** (`drive`) — the main process farms work to
   the others ([Distributed.jl][dist-jl]).
 
-The kit also covers remote project setup, sync, and collecting outputs —
-from the terminal or from Julia / notebooks.
+Match Julia versions with [`up`](@ref Manual-up) before you start. Remote
+project setup, sync, and collecting outputs are the same from the terminal
+or from Julia / notebooks.
 
 Call paths:
 
@@ -35,11 +39,6 @@ Call paths:
   Julia `size!`; paste the printed tokens.
 - **CLI** — `julia --project=. -m DistSSHKit go …` / `ride …` / `drive …` /
   `plan …` (and `setup`, `demo`, …)
-- **`distsshkit` (experimental)** — after `pkg> app add DistSSHKit`, a
-  `distsshkit` command on the terminal. Same flags as `-m`, but always the
-  Apps copy, not `--project=.`. Use for `go` / `setup` / `demo`; keep `drive`,
-  `size`, and `pool` on `julia --project=. -m DistSSHKit`. When to use it:
-  [User Guide](@ref Manual-distsshkit).
 
 All of these need **Julia 1.13+** ([Requirements](@ref)).
 
@@ -57,9 +56,6 @@ pkg> add DistSSHKit
 
 Or: `import Pkg; Pkg.add("DistSSHKit")`.
 
-Optional `distsshkit` command (**1.13+**, experimental):
-[User Guide](@ref Manual-distsshkit).
-
 Also needs **`ssh`**, **`rsync`**, and **`git`** (git deploy only);
 `pkg> add` does not install them. [Requirements](@ref).
 
@@ -67,15 +63,15 @@ Also needs **`ssh`**, **`rsync`**, and **`git`** (git deploy only);
 
 - **Host** — a machine, given as a token like `parent` or
   `child:user@hostname`.
-- **Process** — one `julia` OS process with its own memory. The kit may
-  start several per machine (Distributed.jl).
-- **Master** — the process on the kit parent that plans slots (`go`) or
-  farms work to workers (`drive`) and collects results. The kit parent is
-  the machine that started that process.
+- **Process** — one `julia` OS process with its own memory. A job started
+  from this machine may start several per host (Distributed.jl).
+- **Master** — the process on this machine that plans slots (`go`) or
+  farms work to workers (`drive`) and collects results.
 - **Worker** — a process that receives work from the master and runs it.
 
-Example: running `go` / `drive` on your machine makes that machine the kit
-parent. Each host can run several workers (including zero on the parent).
+Example: running `go` / `drive` on your machine makes that machine the one
+the job started from. Each host can run several workers (including zero
+on this machine).
 Remotes are optional.
 
 ```@raw html
@@ -89,13 +85,13 @@ Remotes are optional.
 </p>
 ```
 
-The diagram is **drive**. One master on the kit parent, workers on each host.
+The diagram is **drive**. One master on this machine, workers on each host.
 **go** uses the same host tokens, but there is no
 master/worker: each host runs the script on its own.
 
 ```text
-parent                 # kit parent
-parent:2               # two on the kit parent
+parent                 # this machine
+parent:2               # two on this machine
 child:user@hostname    # SSH child (user@host, IP, or Host alias)
 child:user@hostname:4  # four on that child
 ```
@@ -103,20 +99,26 @@ child:user@hostname:4  # four on that child
 No hard limit on SSH hosts; more remotes means more SSH and deploy time —
 start with a few. Each SSH host needs:
 
-- Passwordless SSH from the kit parent
-- Julia with the same major.minor version as the kit parent
-  (`setup --check` verifies this)
+- Passwordless SSH from this machine
+- Julia with the same major.minor version as this machine
+  (`setup --check` verifies this). Match the channel with
+  [`up`](@ref Manual-up) first.
 
 Details: [Requirements](@ref).
 
 ## Next
 
-Start at **[Requirements](@ref)**, then **[Prepare](@ref Tutorial-Prepare)**
-(remotes) and the bundled **[Demo](@ref Tutorial-Demo)**.
+Start at **[Requirements](@ref)**.
 
-Later: [`setup`](@ref Manual-setup), [`go`](@ref Manual-go),
-[`drive`](@ref Manual-drive), and the rest of the
-[User Guide](@ref Manual); or the **[API](@ref API)** to embed from Julia.
+On this machine: **[Prepare](@ref Tutorial-Prepare)** and the bundled
+**[Demo](@ref Tutorial-Demo)**, then [`setup`](@ref Manual-setup),
+[`go`](@ref Manual-go), [`ride`](@ref Manual-ride), and
+[`drive`](@ref Manual-drive).
+
+On an always-on machine: **[First job](@ref Queue-Tutorial-Client)**.
+
+Or the **[API](@ref API)** to embed from Julia. The rest of the
+[User Guide](@ref Manual) lists every command.
 
 ## Contributing
 

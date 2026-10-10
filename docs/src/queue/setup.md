@@ -39,7 +39,7 @@ still applies.
 ## teardown
 
 Stops `serve`, removes the OS unit and `~/.distsshqueue`. Does
-not `Pkg.rm`, and never deletes a git clone or Kit `.distsshkit/`
+not `Pkg.rm`, and never deletes a git clone or `.distsshkit/`
 results. Trees: [Where files live](@ref Requirements). Still removes leftover
 `~/.distsshkitqueue`, old `org.distsshkitqueue.serve` units, and
 `~/.local/bin/dskq` if present.
@@ -63,7 +63,7 @@ store = "~/.distsshqueue/jobs.toml"
 | Key | Meaning |
 | --- | --- |
 | `store` | Job table path (`DISTSSHQUEUE_STORE`) |
-| `hosts` | Kit tokens; missing = CLI needs `add-host` before a named token; `[]` = allow none |
+| `hosts` | host tokens; missing = CLI needs `add-host` before a named token; `[]` = allow none |
 | `[env]` | Default ENV for this host (not `DISTSSHQUEUE_HOST`). Skip `DISTRIBUTED_REMOTE_PROJECT_ROOT` unless this box is one job |
 
 CLI `submit` re-reads `hosts` each time
