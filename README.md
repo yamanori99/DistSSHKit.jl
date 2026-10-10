@@ -29,8 +29,7 @@ consists of two parts, and the command is `julia -m DistSSHKit`.
   job immediately from the machine where you launch it. The SSH connection
   stays open until the job finishes. Its commands are `setup`, `up`,
   `go`, `ride`, `drive`, `plan`, `size`, `pool`, `demo`, and
-  `progress`. You can keep the session alive with
-  `tmux`, but the connection itself must stay up as well.
+  `progress`.
 - **[DistSSHQueue](https://yamanori99.github.io/DistSSHQueue.jl/stable/)**
   accumulates jobs on an always-on machine and runs them one after another.
   Install the same package there. Once a job is in the queue, it keeps running
