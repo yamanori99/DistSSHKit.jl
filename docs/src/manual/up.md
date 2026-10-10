@@ -20,7 +20,7 @@ runs `juliaup update` and leaves the default channel alone.
 The setup parser still accepts `--juliaup` and `--juliaup-update`. Those
 flags do the same work and tell you to use `up` / `up update` instead.
 
-On an always-on machine the same verbs are `qhost up` and
+On a queue host the same verbs are `qhost up` and
 `qhost up update` ([setup](@ref Queue-setup)).
 
 Also: [Requirements](@ref), `up --help`.

@@ -303,7 +303,7 @@ julia --project=. -m DistSSHKit go parent:2 distsshkit_demos/without_kit/pi_file
 
 **キューホスト。** 常時稼働している macOS または Linux のマシンにログインし、
 同じ `pkg> add DistSSHKit` を実行して導入する。
-このマシンで実行するコマンドは、すべて `qhost` で始まる。
+キューホストで実行するコマンドは、すべて `qhost` で始まる。
 `qhost:HOST` の形式は受け付けない。
 既定の Julia 環境で動作するため、`--project=.` は付けない。
 

@@ -1,8 +1,8 @@
 # [How it runs](@id Queue-manual)
 
-Leave jobs on a machine that stays on. They run one at a time.
+Leave jobs on a queue host. They run one at a time.
 `julia -m DistSSHKit` accepts `submit`, `serve`, `status`, and the rest
-of this section. On that machine, `setup`, and `size` / `plan` / `pool`,
+of this section. On the queue host, `setup`, and `size` / `plan` / `pool`,
 stay `julia -m DistSSHKit`.
 
 For a hands-on path, use First Steps
