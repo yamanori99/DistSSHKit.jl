@@ -1,7 +1,7 @@
 # [hosts](@id Queue-hosts)
 
 Lab inventory and DistSSHKit `size` / `plan` / `pool` on the queue host. These verbs do
-not enqueue. Not Kit `--hosts` (that still names workers on `go` /
+not enqueue. Not `--hosts` (that still names workers on `go` /
 `ride` / `drive`).
 
 ```bash
@@ -23,13 +23,13 @@ Also: [Prepare](@ref Queue-Tutorial-Prepare), [submit](@ref Queue-submit),
 
 ## add-host / remove-host
 
-Write Kit tokens into config `hosts`
+Write host tokens into config `hosts`
 (`parent[:N]` / `child:NAME[:N]`). `parent` is slots on this queue
 host, not an SSH Host named parent. `child:NAME` is SSH `Host NAME`.
 `add-host child:` prints a warning: anyone who can `submit` as this
 queue-host user (including `qhost:`) can use those names via DistSSHKit
 (`DISTSSHKIT_QUIET` hides it). A second line: those hosts need outbound
-internet for Kit `instantiate` unless the Julia depot already has the
+internet for `instantiate` unless the Julia depot already has the
 registry and packages. SSH/rsync success is not enough if instantiate
 still has to fetch. A nonempty `~/.julia` is not that test. See
 [Requirements](@ref) (one trust
@@ -43,7 +43,7 @@ domain). Optional `:N` is a per-name max.
 | Leftover `allowed` | Inventory until `add-host` rewrites it to `hosts` |
 
 No `serve` restart. Next [`submit`](@ref Queue-submit) re-reads the
-file. A `:running` Kit job is not stopped.
+file. A job that is already `:running` is not stopped.
 
 ## list-host
 
@@ -73,9 +73,9 @@ julia -m DistSSHKit qhost:HOST size
 julia -m DistSSHKit qhost:HOST size --gb-per-worker 1.5 parent child:host1
 ```
 
-Kit flags (`--probe`, `--gb-per-worker`, …):
-[kit size](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/size/).
-`size --help` adds a Queue note under the Kit help.
+Flags (`--probe`, `--gb-per-worker`, …):
+[size](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/size/).
+`size --help` adds a note under that command's help.
 
 ## plan
 
@@ -87,23 +87,23 @@ and suggests `go` / `ride` / `drive`. Does not enqueue. Prints a
 julia -m DistSSHKit qhost:HOST plan SCRIPT.jl
 ```
 
-Kit flags:
-[kit plan](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/plan/).
-`plan --help` adds a Queue note under the Kit help.
+Flags:
+[plan](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/plan/).
+`plan --help` adds a note under that command's help.
 
 ## pool
 
-Queue `pool` wraps DistSSHKit `pool` on the queue host (cwd / project).
-Cores / RAM / slot hint (no RSS). Omit tokens: Queue passes config
-`hosts`. Does not enqueue. Prints sizing notes and a
+`pool` wraps the same `pool` on the queue host (cwd / project).
+Cores / RAM / slot hint (no RSS). Omit tokens: config
+`hosts` are passed. Does not enqueue. Prints sizing notes and a
 `Suggested submit (template):` footer (always `submit drive`; use `size`
-to measure RSS). Same nesting as submit: Queue verb, then DistSSHKit
+to measure RSS). Same nesting as submit: the verb, then host
 tokens. Enqueue with the same `:N` on every config host is
 `submit pool:N` ([submit](@ref Queue-submit)).
 
 ```text
 julia -m DistSSHKit  [qhost:HOST]  pool  parent  child:host1
-└── Julia ──┘  └── queue host ──┘  └Queue┘  └──── DistSSHKit argv ────┘
+└── Julia ──┘  └── queue host ──┘  └─ pool ┘  └──── host tokens ────────┘
 ```
 
 ```bash
@@ -111,6 +111,6 @@ julia -m DistSSHKit qhost:HOST pool
 julia -m DistSSHKit qhost:HOST pool parent child:host1
 ```
 
-Kit flags:
-[kit pool](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/pool/).
-`pool --help` adds a Queue note under the Kit help.
+Flags:
+[pool](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/pool/).
+`pool --help` adds a note under that command's help.

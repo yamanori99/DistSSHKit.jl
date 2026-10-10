@@ -27,12 +27,12 @@ Bare `status` is a snapshot. `watch` is `status` `--interval` (default
 `--tail` is full). Each job is a card: ID, STATE, KIND, SCRIPT, then
 detail lines (`queued` is local wall time at submit, including DST;
 `elapsed` / `wall`, folded `hosts`). `-q` is the first
-line only. `--verbose` keeps the full host token list. While Kit setup is in
+line only. `--verbose` keeps the full host token list. While setup is in
 progress, STATE shows `rsync` / `instantiate` / `check` (`instantiate`
-includes the queue-host project; Kit steps are `child:` only). A
+includes the queue-host project; those steps are `child:` only). A
 `qhost:` stage still reaches `check`; a missing `.git/` warns
 (the store row stays `:running`). `qhost:HOST` `status` / `watch` use
-`ssh` `-t` when this stdout is a TTY (watch paint). Kit colors unless
+`ssh` `-t` when this stdout is a TTY (watch paint). Colors unless
 this client has
 `NO_COLOR` (copied onto the hop). Watch redraws with `\e[H\e[J` then
 the frame (clear the screen first) and skips identical frames. A pipe
@@ -51,7 +51,7 @@ Live does not stop `serve`. Ctrl-C leaves it running.
 | `--progress` / `--verbose` | Keep chrome (exclusive with `-q`). `--verbose` also unfolds `hosts` |
 | `--interval S` | Live redraw (`watch` default `0.5`) |
 | `--tail N\|full` | Last N jobs; omit or `full` for all |
-| `-h` / `--help` | Queue usage |
+| `-h` / `--help` | Usage |
 
 `DISTSSHQUEUE_WATCH_TICKS` is a test harness (finite frames), not a
 product flag.
@@ -59,7 +59,7 @@ product flag.
 ## cancel
 
 `:queued` is dropped. `:running` uses DistSSHKit `terminate_run!` when
-the live Kit `run_dir` is known (or a recorded artifact sidecar can be
+the live `run_dir` is known (or a recorded artifact sidecar can be
 resolved). Queue does not allocate a normal job's `output_dir` at
 start. Finished rows and unknown ids print
 `cannot be cancelled` (exit 1). A successful cancel prints the id.

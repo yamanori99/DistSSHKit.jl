@@ -1,6 +1,6 @@
 # [go](@id Manual-go)
 
-Run a **standalone** script as-is (no Kit APIs in the job file). Each
+Run a **standalone** script as-is (the job file does not call DistSSHKit). Each
 `parent:N` / `child:NAME:N` slot is one full script run, started
 **concurrently** — not Distributed workers.
 
@@ -71,9 +71,9 @@ Default batch root (next to the script):
 ```
 
 If the script is outside the project, `{project}/.distsshkit/go/{stem}_{UTC}/`.
-`--output-dir PATH` replaces the **batch root**. Kit sets
+`--output-dir PATH` replaces the **batch root**. The run sets
 `DISTRIBUTED_OUTPUT_DIR` to each slot directory.
-Kit sidecars for that invocation (`run.toml`, pid, stdio) live under
+Sidecars for that invocation (`run.toml`, pid, stdio) live under
 `{script}/.distsshkit/runs/go/{stem}_{UTC}/`, not in the batch root.
 If that path is not writable, `{project}/.distsshkit/runs/go/…`, then
 `tempdir()/distsshkit-runs/go/…`.

@@ -30,3 +30,8 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
   default `spi_check=false`. Detached `execute!` passes `--spi-check` when
   that keyword is true and `--no-spi-check` when it is false, so an older
   child does not fall back to its own default (#421).
+- The experimental `distsshkit` command (`pkg> app add DistSSHKit`) is gone.
+  If you installed it, run `pkg> app rm DistSSHKit`.
+  Call DistSSHKit with `julia -m DistSSHKit`.
+  Removing that public entry is breaking. The release that includes it
+  should bump the minor (0.10.0).

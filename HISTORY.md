@@ -5,6 +5,9 @@
 Release notes through 0.9.0, when DistSSHKit itself ran the job.
 Current notes are in [NEWS.md](NEWS.md).
 
+Do not rewrite this file to match later names or wording.
+New user-facing changes go in NEWS.md.
+
 ## 0.9.0
 
 Breaking cut after `0.8.0`. DistSSHQueue still pins Kit **0.7.3** until

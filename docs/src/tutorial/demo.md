@@ -115,7 +115,7 @@ Driver contract (`init_output_dir!` / `main`) and further topics: see
 
 ## Plain scripts for `ride` (`ride/`)
 
-Same family as `without_kit/`: no DistSSHKit import, no `pmap`. Kit may
+Same family as `without_kit/`: no DistSSHKit import, no `pmap`. The run may
 split independent `map` / `filter` / indexed `for`. Experimental; details
 in [User Guide · ride](@ref Manual-ride).
 

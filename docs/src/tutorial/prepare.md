@@ -4,7 +4,7 @@ First-time remotes before the [Demo](@ref Tutorial-Demo).
 Local-only demos can skip this page.
 
 Also see [Requirements](@ref), [User Guide · setup](@ref Manual-setup),
-[Introduction](@ref DistSSHKit.jl).
+[Home](@ref DistSSHKit.jl).
 
 ## [First-time remotes](@id first-time-remotes)
 
@@ -57,7 +57,7 @@ parity by default. Optional one-shot onto an empty/missing remote:
 `go --rsync` / `drive --rsync` (instantiates if needed). Later git updates
 (`go --sync` / `drive --sync`) need a `--clone` / git-managed remote, not an
 rsync tree. Commit parity is drive-only:
-`drive --require-git` on git-managed remotes. Kit logs for setup land under
+`drive --require-git` on git-managed remotes. Setup logs land under
 `{project}/.distsshkit/setup/`. Put `.distsshkit/` in the job `.gitignore`
 ([User Guide](@ref Manual)).
 

@@ -8,7 +8,7 @@ someone already set that box up.
 Also see [Requirements](@ref), [Where files live](@ref Requirements),
 [Artifacts and paths](@ref Queue-artifacts),
 [User Guide · setup](@ref Queue-setup),
-[Introduction](@ref Queue-manual).
+[How it runs](@ref Queue-manual).
 
 `setup` / `serve` / `enable` / `disable` / `add-host` / `remove-host`
 refuse `qhost:` — log in to the queue host and run them there.
@@ -34,7 +34,7 @@ From a checkout of this package, the same verbs with `--project=.`.
 Defaults work without `config.toml`. `--force` rewrites it. Use it for
 `store=` or `[env]`.
 
-`add-host` writes Kit tokens into config `hosts`
+`add-host` writes host tokens into config `hosts`
 (`parent[:N]` / `child:NAME[:N]`). `parent` is this queue host;
 `child:NAME` is SSH. `add-host child:` warns that submitters as this user
 can reach that SSH name, and that the child needs outbound internet for
@@ -47,7 +47,7 @@ TOKEN stays `parent`. JULIA is that host's `juliaup default` patch
 (`1.12.7`; `-` if missing, SSH/`status` fails, or no Version on the `*` row).
 
 Do not `cd` the stage tree and run DistSSHKit `setup` by hand. `serve`
-`Pkg.instantiate`s that tree on the queue host, then Kit `setup!`
+`Pkg.instantiate`s that tree on the queue host, then `setup!`
 (`rsync` → `instantiate` → `check`)
 on `child:` hosts, unless
 `DISTSSHQUEUE_NO_KIT_SETUP=1`. A `qhost:` stage omits `.git/`;
@@ -56,8 +56,8 @@ failing `:check`. Leave
 `DISTRIBUTED_REMOTE_PROJECT_ROOT` unset in queue `config.toml` so a
 `qhost:` `child:` copy stays `~/stage/<uuid>`. `parent` uses the stage
 on the queue host.
-[kit Prepare](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/prepare/).
-To align Julia versions, Queue `qhost up` on the queue host
+[Prepare](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/prepare/).
+To align Julia versions, `qhost up` on the queue host
 (config `hosts` only; see [Requirements](@ref)).
 
 ## Dedicated env (optional)
@@ -88,7 +88,7 @@ julia --project=. -m DistSSHKit qhost enable --queue-env ~/.distsshqueue/env
 ```
 
 `--queue-env` is the env that loads Queue in the OS unit, not Julia
-`--project=` / the Kit project. After that, clients only `submit`. You do
+`--project=` / the job project. After that, clients only `submit`. You do
 not leave a `serve` terminal open. If there is no dedicated dir,
 `enable` uses the Manifest directory of the active project (the workspace
 root when this checkout is a member).

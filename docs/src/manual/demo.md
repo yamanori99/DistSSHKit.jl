@@ -39,4 +39,4 @@ The sources ship with DistSSHRun. Install does not use `.distsshkit/`
 (rsync excludes it).
 
 Refuses `dest` equal to the DistSSHKit package root. Prefer `--dest DIR`
-when developing the kit itself.
+when developing DistSSHKit itself.

@@ -11,8 +11,9 @@ From Julia, use [`setup!`](@ref) for the same modes as this CLI
 (`:delete`, `:rsync`, `:clone`, `:instantiate`, `:check`, `:runtest`,
 `:prune`, …), or the shorter [`sync!`](@ref) / [`instantiate!`](@ref) aliases
 ([API](@ref API), [First Steps · Prepare](@ref Tutorial-Prepare)).
-Channel alignment is `up` / `up update` (below). The setup parser still
-accepts `--juliaup` and `--juliaup-update`.
+The Julia channel is [`up`](@ref Manual-up), not a setup mode. The setup
+parser still accepts `--juliaup` and `--juliaup-update`; they do the same
+work as `up` / `up update`.
 `setup!(session, :clone)` requires an explicit `repo=` URL (clone runs
 on the remote).
 
@@ -50,8 +51,8 @@ Pick **one mode** per invocation (except shared options).
 - `--pull`: `git pull` on laptop first, then remotes (no push; confirm
   unless `-y`)
 - `--instantiate`: `Pkg.instantiate` on remotes after deploy
-- `up` / `up update`: align a Julia channel with juliaup. Not a setup
-  flag. `up child:NAME` and `up parent` run `add` / `update` /
+- `up` / `up update`: not a setup flag. See [`up`](@ref Manual-up).
+  `up child:NAME` and `up parent` run `add` / `update` /
   `default`. `up update` runs `juliaup update` and leaves the default
 - `--runtest`: `Pkg.test()` of the **job** project on remotes (not
   DistSSHKit's tests)
@@ -103,6 +104,6 @@ host** to an absolute path. Prefer an absolute remote root when you can.
 
 No remote `.git/` — that is fine. `go` / `drive` do not pre-run sync or
 require git parity by default. `go --rsync` / `drive --rsync` on an empty
-path instantiate if deps are still missing. Kit logs:
+path instantiate if deps are still missing. Setup logs:
 `{project}/.distsshkit/setup/`.
 `setup --rsync` skips `.distsshkit/` even if the job `.gitignore` is missing.

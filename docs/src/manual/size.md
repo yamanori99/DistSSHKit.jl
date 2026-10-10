@@ -31,9 +31,9 @@ Flag vocabulary: [User Guide](@ref Manual).
 
 The CPU term prefers the OS core count: remotes use `hw.ncpu` (macOS) or
 `nproc` (Linux); the local host prefers `hw.ncpu` and falls back to
-`Sys.CPU_THREADS` when that query fails (typical on Linux kit parents).
+`Sys.CPU_THREADS` when that query fails (typical when the local host is Linux).
 Parent hosts reserve 2 cores, children reserve 1. The formula does not
-change with the Julia minor. Kit sizes **process** counts; it does not set
+change with the Julia minor. The estimate is a **process** count; it does not set
 `--threads=auto` or worker thread pools.
 
 Drive preflight uses the same RAM fraction, `parent_gb`, and CPU reserve as

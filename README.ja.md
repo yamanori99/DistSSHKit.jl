@@ -18,18 +18,22 @@ DistSSHKit は、複数のマシンへ SSH して Julia の計算を実行する
 対応環境は **macOS、Linux、WSL2 Ubuntu** である (ネイティブ Windows は対象外)。
 
 必要な操作は `pkg> add DistSSHKit` のみである。
-ジョブの即時実行にも、キューによる実行にも、このパッケージだけで対応できる。
-DistSSHKit は次の2つの仕組みから成り、コマンドは `julia -m DistSSHKit` で呼び出す。
+コマンドは `julia -m DistSSHKit` で呼び出す。
+DistSSHKit は DistSSHRun と DistSSHQueue をまとめている。
+それらを別々に入れる必要はない。
 
-- **[DistSSHRun](https://yamanori99.github.io/DistSSHRun.jl/stable/)**
-  は、起動したマシンからジョブを即座に実行する。
-  ジョブが終了するまで SSH 接続は維持される。
-  コマンドは `setup`、`up`、`go`、`ride`、`drive`、`plan`、`size`、
-  `pool`、`demo`、`progress` である。
-- **[DistSSHQueue](https://yamanori99.github.io/DistSSHQueue.jl/stable/)**
-  は、常時稼働しているマシンにジョブを蓄積し、順番に実行する。
-  このマシンにも同じパッケージを導入する。
-  手元の接続が切れても、キューに投入済みのジョブは停止しない。
+ジョブを走らせる場所は次の2つである。
+
+- **このマシン。** ここでジョブを始める。終わるまで SSH は開いたままである。
+  コマンドは `go`、`ride`、`drive`、`plan`、`size`、`pool`、
+  `demo`、`progress` である。
+- **キューホスト。** つけたままのマシンである。そこにジョブを置いて、1件ずつ走らせる。
+  同じパッケージをそのマシンにも入れる。手元の接続が切れても、置いてあるジョブは止まらない。
+  コマンドは `submit`、`status`、`watch`、`cancel`、`fetch`、`serve` である。
+  `qhost` はそのマシンを指す。
+
+**ホストの準備**は両方に共通する。`setup` は SSH 先を準備する。
+`up` は各マシンの Julia を同じチャネルにする。始める前に行う。
 
 ## インストール
 
@@ -61,13 +65,13 @@ git によるデプロイを使う場合は、さらに **`git`** も必要と�
 
 - **ホスト** — 計算を行うマシン。`parent` や `child:user@hostname` のようなトークンで指定する。
 - **プロセス** — 起動された `julia` の1つ分の実体。それぞれが独立したメモリを持ち、OS 上で別々に動作する。
-  (本キットは1台のマシン上でも複数の `julia` プロセスを起動し、並列に実行する。基盤は Distributed.jl である)
-- **マスター** — キット起動側のプロセス。`go` ではスロットの割り当てを計画し、`drive` ではワーカーに処理を割り振って結果を回収する。
-  キット起動側とは、そのプロセスを起動したマシンを指す。
+  (このマシンから始めたジョブは、1台のマシン上でも複数の `julia` プロセスを起動し、並列に実行する。基盤は Distributed.jl である)
+- **マスター** — 実行が始まるマシン上のプロセス。`go` ではスロットの割り当てを計画し、`drive` ではワーカーに処理を割り振って結果を回収する。
+  手元で `go` / `drive` するときはこのマシン、ジョブを置いたときはキューホストである。
 - **ワーカー** — マスターから処理を受け取って実行するプロセス。
 
-例えば手元で `go` や `drive` を実行した場合、そのマシンがキット起動側となる。
-ワーカーは1台のマシンに複数起動できる (キット起動側のワーカー数は0でもよい)。リモートマシンも台数に制限なく追加できる。
+例えば手元で `go` や `drive` を実行した場合、そのマシンがジョブを始めた側となる。
+ワーカーは1台のマシンに複数起動できる (このマシンのワーカー数は0でもよい)。リモートマシンも台数に制限なく追加できる。
 
 <!-- markdownlint-disable MD033 MD013 -->
 <p align="center">
@@ -85,12 +89,12 @@ git によるデプロイを使う場合は、さらに **`git`** も必要と�
 </p>
 <!-- markdownlint-enable MD033 MD013 -->
 
-上図は **drive** の構成である。キット起動側に1つのマスターがあり、各ホストにワーカーが配置される。
+上図は **drive** の構成である。このマシンに1つのマスターがあり、各ホストにワーカーが配置される。
 **go** でもホストの指定方法は同じだが、マスターとワーカーの関係はなく、各ホストが独立してスクリプトを実行する。
 
 ```text
-parent                 # キット起動側
-parent:2               # キット起動側でワーカーを2つ起動
+parent                 # このマシン
+parent:2               # このマシンでワーカーを2つ起動
 child:user@hostname    # SSH 先 (user@host / IP / Host エイリアス)
 child:user@hostname:4  # SSH 先でワーカーを4つ起動
 ```
@@ -99,20 +103,20 @@ SSH 先の台数に上限はない。ただし、台数が増えるほど SSH �
 
 利用にあたっては、各 SSH 先が次の条件を満たしている必要がある。
 
-- キット起動側からパスワードなしで SSH ログインできること
-- Julia がインストールされており、キット起動側と **メジャー.マイナーバージョンが一致**していること
-  (`setup --check` で確認できる)
+- 実行が始まるマシンからパスワードなしで SSH ログインできること
+- Julia がインストールされており、そのマシンと **メジャー.マイナーバージョンが一致**していること
+  (`setup --check` で確認できる。チャネルは `up` で揃える)
 
 詳細は
 [Requirements](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)
 を参照されたい。
 
-### 即時実行: go、ride、drive
+### このマシン: go、ride、drive
 
 実行方式は次の3種類である。
 
 - **go** — 各ホストが、指定された `.jl` ファイルをそのまま最初から最後まで実行する
-- **ride** — キットが、互いに独立な `map`、filter、内包表記、添字 `for` を分割して実行する
+- **ride** — DistSSHKit が、互いに独立な `map`、filter、内包表記、添字 `for` を分割して実行する
   (実験的機能。parent または SSH 先で利用可能)
 - **drive** — 1つのマスターがワーカーに処理を割り振る (Distributed.jl ベース)
 
@@ -143,12 +147,6 @@ go 単体でも十分に実用的である。まず go で単独実行を確認�
   手早く試したい場合や、シェルスクリプトに組み込みたい場合に向いている
 - **Julia** — 自作の Julia コード (スクリプト、REPL、他のパッケージなど) の中から関数として呼び出す方法。
   `setup!`、`go!`、`plan`、`pool!`、`drive!` などの関数を用いる (`plan` には bang が付かない)
-- **`distsshkit` (実験的)** — `pkg> app add DistSSHKit` を実行すると、ターミナルで
-  `distsshkit` コマンドを使えるようになる。
-  フラグは `-m` と同じだが、常に Apps 側にあるコピーを使用する (`--project=.` ではない)。
-  `go`、`setup`、`demo` は `distsshkit` で実行できるが、`drive`、`size`、`pool` は
-  `julia --project=. -m DistSSHKit` を使用すること。
-  使い分けについては [distsshkit のページ][ug-app] を参照されたい。
 
 CLI のオプションと Julia API は1対1に対応している。
 例えば、CLI の `setup --rsync` は `setup!(session, :rsync)` に相当する。
@@ -218,7 +216,7 @@ julia --project=. -m DistSSHKit setup --delete child:user@host1 child:user@host2
 事前準備ののち、次のように実行する。
 
 **CLI による go の例。** 各スロットで `script.jl` を最初から最後まで1回ずつ実行する。
-`child:user@host:1` はそのホストで1回、`parent:N` はキット起動側で N 回の実行を意味する。
+`child:user@host:1` はそのホストで1回、`parent:N` はこのマシンで N 回の実行を意味する。
 `--repeat N` は合計 N 回の実行を指定する。ホストを併記した場合は、そのホストに割り振られる。
 
 ```bash
@@ -268,7 +266,7 @@ setup!(session, :sync)  # 2回目以降の更新
 
 ### デモの実行
 
-自分でスクリプトを書く前に、キットの動作を試すことができる。
+自分でスクリプトを書く前に、DistSSHKit の動作を試すことができる。
 `with_kit` は drive、`without_kit` は単独実行および go のデモである。
 
 デモは、ジョブ側のプロジェクト (`pkg> add DistSSHKit` を実行済みのもの) で実行する。
@@ -288,7 +286,7 @@ julia --project=. -m DistSSHKit go parent:2 distsshkit_demos/without_kit/pi_file
 [Demo](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/demo/)
 を参照されたい。
 
-### キュー
+### キューホスト
 
 ```text
   client (dev machine, no cap)            queue host (always on, log in here)
@@ -328,17 +326,17 @@ julia --project=. -m DistSSHKit qhost:HOST submit go parent:1 distsshkit_demos/w
 ```
 
 詳細は [Prepare][q-prepare]、[Walkthrough][q-walk]、
-[Queue][q-manual] を参照されたい。
+[How it runs][q-manual] を参照されたい。
 
 ## ドキュメント
 
 公式ドキュメントの本体は英語である。
 
-- Introduction:
-  [Introduction](https://yamanori99.github.io/DistSSHKit.jl/stable/)
+- Home:
+  [Home](https://yamanori99.github.io/DistSSHKit.jl/stable/)
 - First Steps:
   [First Steps](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)
-- Queue: [Walkthrough][q-walk]
+- キューホスト: [Walkthrough][q-walk]
 - User Guide:
   [User Guide](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/)
 - API: [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/)
@@ -364,7 +362,6 @@ DistSSHKit では、これを改変して使用している。
 [julia-logo-graphics](https://github.com/JuliaLang/julia-logo-graphics) を参照されたい。
 
 <!-- markdownlint-disable MD013 -->
-[ug-app]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/distsshkit/
 [q-prepare]: https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/queue-prepare/
 [q-walk]: https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/queue-walkthrough/
 [q-manual]: https://yamanori99.github.io/DistSSHKit.jl/stable/queue/

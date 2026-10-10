@@ -18,19 +18,22 @@ machines over SSH. It works equally well for a pair of workstations and
 for a larger set of lab machines. Supported platforms are **macOS, Linux,
 and WSL2 Ubuntu** (native Windows is not supported).
 
-A single `pkg> add DistSSHKit` is all you need to install it. That one package
-covers both running a job immediately and running jobs from a queue. DistSSHKit
-consists of two parts, and the command is `julia -m DistSSHKit`.
+A single `pkg> add DistSSHKit` is all you need to install it. The command is
+`julia -m DistSSHKit`. DistSSHKit bundles DistSSHRun and DistSSHQueue.
+You do not install them separately.
 
-- **[DistSSHRun](https://yamanori99.github.io/DistSSHRun.jl/stable/)** runs a
-  job immediately from the machine where you launch it. The SSH connection
-  stays open until the job finishes. Its commands are `setup`, `up`,
-  `go`, `ride`, `drive`, `plan`, `size`, `pool`, `demo`, and
-  `progress`.
-- **[DistSSHQueue](https://yamanori99.github.io/DistSSHQueue.jl/stable/)**
-  accumulates jobs on an always-on machine and runs them one after another.
-  Install the same package there. Once a job is in the queue, it keeps running
-  even if your laptop disconnects.
+A job runs in one of two places.
+
+- **This machine.** Start it here. The SSH connection stays open until
+  it finishes. The commands are `go`, `ride`, `drive`, `plan`,
+  `size`, `pool`, `demo`, and `progress`.
+- **Queue host.** An always-on machine. Leave the job there. Jobs run
+  one at a time. Install the same package there. A dropped laptop does
+  not stop a job already left there. The commands are `submit`, `status`,
+  `watch`, `cancel`, `fetch`, and `serve`. `qhost` names that machine.
+
+**Prepare hosts** is shared. `setup` prepares SSH hosts. `up` puts the
+same Julia channel on each machine. Do that before either place.
 
 ## Install
 
@@ -46,7 +49,7 @@ Or, equivalently, use the `Pkg` API:
 julia> import Pkg; Pkg.add("DistSSHKit")
 ```
 
-The machine that runs the kit also needs **`ssh`** and **`rsync`**, as well as
+The machine you start from also needs **`ssh`** and **`rsync`**, as well as
 **`git`** if you use git deployment. `pkg> add` does not install these. For the
 full list of requirements, see
 [Requirements](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/).
@@ -62,15 +65,16 @@ For everything else, see the
   such as `parent` or `child:user@hostname`.
 - **Process** — a single running `julia` instance. Each process has its own
   memory and runs independently at the OS level.
-  (The kit launches multiple `julia` processes to run work in parallel, even on
-  a single machine. It is built on Distributed.jl.)
-- **Master** — the process on the kit parent. With `go`, it plans the slots;
-  with `drive`, it hands work to the workers and collects the results. The kit
-  parent is the machine that started this process.
+  (A job started from this machine launches multiple `julia` processes to run
+  work in parallel, even on a single machine. It is built on Distributed.jl.)
+- **Master** — the process on the machine the run starts from. With `go`,
+  it plans the slots; with `drive`, it hands work to the workers and
+  collects the results. That machine is this machine when you run `go` /
+  `drive` here, and the queue host when the job was left there.
 - **Worker** — a process that receives work from the master and runs it.
 
 For example, if you run `go` or `drive` on your own machine, that machine is the
-kit parent. Each machine can run several workers (the kit parent may run none),
+one the job started from. Each machine can run several workers (this machine may run none),
 and you can add as many remote machines as you like.
 
 <!-- markdownlint-disable MD033 MD013 -->
@@ -89,13 +93,13 @@ and you can add as many remote machines as you like.
 </p>
 <!-- markdownlint-enable MD033 MD013 -->
 
-The diagram shows **drive**: one master on the kit parent and workers on each
+The diagram shows **drive**: one master on this machine and workers on each
 host. **go** uses the same host tokens, but there is no master/worker
 relationship; each host runs the script on its own.
 
 ```text
-parent                 # kit parent
-parent:2               # two on the kit parent
+parent                 # this machine
+parent:2               # two on this machine
 child:user@hostname    # SSH child (user@host, IP, or Host alias)
 child:user@hostname:4  # four on that child
 ```
@@ -106,19 +110,19 @@ up from there.
 
 Before you use an SSH host, make sure it meets the following conditions:
 
-- You can log in from the kit parent over SSH without a password.
-- Julia is installed, with the **same major.minor version** as on the kit parent
-  (`setup --check` verifies this).
+- You can log in from this machine over SSH without a password.
+- Julia is installed, with the **same major.minor version** as on this machine
+  (`setup --check` verifies this). Match the channel with `up` first.
 
 For details, see
 [Requirements](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/).
 
-### Run now: go, ride, drive
+### This machine: go, ride, drive
 
 There are three ways to run a script:
 
 - **go** — each host runs your `.jl` file as is, from start to finish.
-- **ride** — the kit splits up independent `map`, filter, comprehension, or
+- **ride** — DistSSHKit splits up independent `map`, filter, comprehension, or
   indexed `for` work (experimental; works on the parent or SSH workers).
 - **drive** — one master distributes work to workers (built on Distributed.jl).
 
@@ -142,21 +146,14 @@ these is a dashboard.
 run with `go` first, then move on to `drive` and Distributed.jl when you need
 them. `plan` may even suggest `ride` right away.
 
-### Ways to call the kit
+### Ways to call DistSSHKit
 
-- **CLI** — run the kit directly from the terminal.
+- **CLI** — run DistSSHKit from the terminal.
   Example: `julia --project=. -m DistSSHKit go child:user@host1:1 script.jl`.
   This suits quick experiments and shell scripts.
 - **Julia** — call functions from your own Julia code (a script, the REPL, or
   another package): `setup!`, `go!`, `drive!`, `plan` (no bang), `pool!`, and
   the other `!` functions.
-- **`distsshkit` (experimental)** — after `pkg> app add DistSSHKit`, you get a
-  `distsshkit` command in the terminal. It takes the same flags as `-m`, but it
-  always uses the copy installed as an app, not `--project=.`. It works for
-  `go`,
-  `setup`, and `demo`; for `drive`, `size`, and `pool`, keep using
-  `julia --project=. -m DistSSHKit`. For guidance on when to use it, see
-  [the distsshkit page][ug-app].
 
 CLI flags map one-to-one onto the Julia API. For example, `setup --rsync`
 corresponds to `setup!(session, :rsync)`.
@@ -232,7 +229,7 @@ After setup, run your scripts as follows.
 
 **CLI, go.** Each slot runs `script.jl` once, from start to finish.
 `child:user@host:1` means one run on that host, and `parent:N` means N runs on
-the kit parent. `--repeat N` means N runs in total, spread across the listed
+this machine. `--repeat N` means N runs in total, spread across the listed
 hosts.
 
 ```bash
@@ -284,7 +281,7 @@ For details, see [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/).
 
 ### Try a demo
 
-The bundled demos let you try the kit before writing a script of your own.
+The bundled demos let you try DistSSHKit before writing a script of your own.
 `with_kit` demonstrates drive; `without_kit` demonstrates standalone runs
 and go.
 
@@ -304,7 +301,7 @@ julia --project=. -m DistSSHKit go parent:2 distsshkit_demos/without_kit/pi_file
 For a walkthrough, see
 [Demo](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/demo/).
 
-### Queue
+### Queue host
 
 ```text
   client (dev machine, no cap)            queue host (always on, log in here)
@@ -319,7 +316,7 @@ For a walkthrough, see
                                           -> workers (parent / child:)
 ```
 
-**Queue host.** Log in to the always-on macOS or Linux machine and install the
+**Queue host.** Log in to the macOS or Linux machine that stays on and install the
 same package there with `pkg> add DistSSHKit`. Every command you run on this
 machine starts with the word `qhost`, and a `qhost:HOST` token is rejected. The
 default Julia environment is enough, so do not pass `--project=.`:
@@ -342,15 +339,15 @@ julia --project=. -m DistSSHKit qhost:HOST submit go parent:1 distsshkit_demos/w
 ```
 
 For details, see [Prepare][q-prepare], [Walkthrough][q-walk], and
-[Queue][q-manual].
+[How it runs][q-manual].
 
 ## Documentation
 
-- Introduction:
-  [Introduction](https://yamanori99.github.io/DistSSHKit.jl/stable/)
+- Home:
+  [Home](https://yamanori99.github.io/DistSSHKit.jl/stable/)
 - First Steps:
   [First Steps](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)
-- Queue: [Walkthrough][q-walk]
+- Queue host: [Walkthrough][q-walk]
 - User Guide:
   [User Guide](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/)
 - API: [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/)
@@ -374,7 +371,6 @@ DistSSHKit uses an adapted version of them. For details, see
 [LICENSE](LICENSE) and
 [julia-logo-graphics](https://github.com/JuliaLang/julia-logo-graphics).
 
-[ug-app]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/distsshkit/
 <!-- markdownlint-disable MD013 -->
 [q-prepare]: https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/queue-prepare/
 [q-walk]: https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/queue-walkthrough/

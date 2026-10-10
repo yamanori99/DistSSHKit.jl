@@ -3,20 +3,21 @@
 How this repo tests DistSSHKit. Maintainer checklist:
 [CONTRIBUTING.md](../CONTRIBUTING.md).
 
-## Run
+## How to run
 
-From the kit checkout root:
+From this checkout's root:
 
 ```bash
 julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
 That is `test/runtests.jl`: public reexports and `julia -m DistSSHKit`
-routing. The run-surface suite lives in DistSSHRun. The queue suite lives
-in DistSSHQueue. Aqua is a separate CI job, not `Pkg.test()`.
-`Pkg.test()` must pass on a Registry install (no kit `Manifest.toml`, often
-mode 444). Real SSH is DistSSHRun's E2E, not this repo. Occasional copy
-recipe: [Registry tree](#registry-tree).
+routing. Tests for a job started on this machine live in DistSSHRun.
+Tests for jobs left on a machine that stays on live in DistSSHQueue.
+Aqua is a separate CI job, not `Pkg.test()`.
+`Pkg.test()` must pass on a Registry install (that tree has no
+`Manifest.toml`, and `pkgdir` is often mode 444). Real SSH is DistSSHRun's
+E2E, not this repo. Occasional copy recipe: [Registry tree](#registry-tree).
 
 ## Layout
 
@@ -41,8 +42,8 @@ Green on one layer does not imply the others. Child CLI uses
 - **Pkg.test**: reexports and `julia -m DistSSHKit` routing
   (`test/runtests.jl`). Ubuntu, `macos-latest`, and WSL2 Ubuntu.
   All three are required checks.
-- **unit / integration / SSH E2E**: DistSSHRun. Not this repo's
-  `Pkg.test()`.
+- **unit / integration / SSH E2E**: a job started on this machine, in
+  DistSSHRun. Not this repo's `Pkg.test()`.
 - **doctests** (~5 s): `src/` docstring examples (Documenter, Julia 1.13).
   Not workers / SSH.
 
@@ -54,7 +55,7 @@ a Registry tarball, not this checkout. This package:
 <https://juliaci.github.io/NanosoldierReports/pkgeval_badges/D/DistSSHKit.html>
 Latest ecosystem report:
 <https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html>
-Reproduce that tree: copy without kit `.git` / `Manifest.toml`, `Pkg.add`
+Reproduce that tree: copy without this checkout's `.git` / `Manifest.toml`, `Pkg.add`
 from a **bare** `file://` git (so the installed package dir has no `.git` —
 DistSSHKit talks to git for jobs, not for its own install), `chmod a-w` on
 `pkgdir`, then `Pkg.test`. Do this after changing the gates above, and
@@ -78,8 +79,8 @@ rsync -a \
 
 This machine (**1.13**, and `+nightly`). Distro `ssh` / `git` stay on `PATH`.
 On Linux this is enough for the tree; it does not reproduce a missing
-`ssh`. Do not `git init` inside the copy (that would put `.git` on the kit
-tree). Use a bare repo, then `Pkg.add(; url=)`.
+`ssh`. Do not `git init` inside the copy (that would put `.git` on this
+package tree). Use a bare repo, then `Pkg.add(; url=)`.
 
 ```bash
 BARE=$(mktemp -d "$HOME/dsk.git.XXXXXX")
@@ -135,9 +136,9 @@ docker run --rm \
 
 ## Writing tests
 
-1. Meta-package checks go in `test/runtests.jl`. Run-surface unit,
-   integration, and SSH tests go in DistSSHRun. Queue tests go in
-   DistSSHQueue.
+1. Meta-package checks go in `test/runtests.jl`. Unit, integration, and
+   SSH tests for a job started on this machine go in DistSSHRun. Tests
+   for jobs left on a machine that stays on go in DistSSHQueue.
 2. Do not add an SSH suite here. `Pkg.test` must not start Docker.
 3. Short Oracle / non-guarantee comment at the top of the file.
 

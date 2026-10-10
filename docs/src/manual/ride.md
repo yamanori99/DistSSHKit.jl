@@ -1,7 +1,7 @@
 # [ride](@id Manual-ride)
 
 Experimental. Run a **plain** script (`map` / `filter` / simple
-comprehensions / independent indexed `for`). Kit rewrites those forms and
+comprehensions / independent indexed `for`). DistSSHKit rewrites those forms and
 may `pmap` them on Distributed workers (parent and SSH `child:`). Inspect
 first with [`plan`](@ref).
 
@@ -45,7 +45,7 @@ if `f` and `getindex` are `:effect_free`, parallel map does not introduce
 new data races. Thread-parallel POC and this SSH/process `ride` are not
 the same implementation.
 
-Default artifacts: `{script}/.distsshkit/ride/{stem}_{UTC}/`. Kit sidecars
+Default artifacts: `{script}/.distsshkit/ride/{stem}_{UTC}/`. Sidecars
 (`run.toml`, pid, stdio): `{script}/.distsshkit/runs/ride/{stem}_{UTC}/`
 (same project / `tempdir()` fallbacks as go when the script dir is not
 writable).

@@ -1,13 +1,27 @@
 # [User Guide](@id Manual)
 
 Command reference. For a hands-on path, use
-[First Steps](@ref Tutorial-Prepare) (Requirements → Prepare → Demo).
+[First Steps](@ref Tutorial-Prepare) (Requirements → Prepare → Demo), or
+start on a queue host at
+[Prepare the machine](@ref Queue-Tutorial-Prepare), then
+[First job](@ref Queue-Tutorial-Client).
 
 Full flag lists: `julia --project=. -m DistSSHKit {cmd} --help`.
 Each command page starts with **Flags** for that command.
 
-- [setup](@ref Manual-setup): check hosts, juliaup align, clone / rsync /
-  sync, instantiate, prune, cleanup
+## Prepare hosts
+
+Shared by a job you start here and a job you leave on a queue host.
+
+- [setup](@ref Manual-setup): check hosts, clone / rsync / sync,
+  instantiate, prune, cleanup
+- [up](@ref Manual-up): the same Julia channel on each machine
+
+## This machine
+
+Start a job here. The SSH connection stays open until it finishes.
+The machine the run starts from is this machine.
+
 - [go](@ref Manual-go): standalone script as-is; one full run per slot
   (`--repeat N` = N runs, spread across listed hosts)
 - [ride](@ref Manual-ride): experimental auto-split of map / filter
@@ -18,18 +32,32 @@ Each command page starts with **Flags** for that command.
   (does not run)
 - [size](@ref Manual-size): estimate worker counts from RAM / CPU
 - [pool](@ref Manual-pool): cluster cores / health; no job
-- [paths](@ref Manual-paths): `ns_path` / content-hash cache / `push_cache!`
+- [paths](@ref Manual-paths): `stored_path` / content-hash cache / `push_cache!`
 - [demo](@ref Manual-demo): install or list bundled example scripts
-- [distsshkit](@ref Manual-distsshkit): optional terminal command
-  (`pkg> app add`; experimental)
-- [Queue](@ref Queue-manual): enqueue `go` / `ride` / `drive`, then serve
+
+`progress` has no page of its own. `julia -m DistSSHKit progress DIR`
+reprints the last phase seconds from a job you started here.
+
+## Always-on machine
+
+A **queue host** is an always-on machine. Leave jobs there. They run
+one at a time. The machine the run starts from is the queue host.
+
+- [How it runs](@ref Queue-manual)
+- [Artifacts and paths](@ref Queue-artifacts)
+- [submit](@ref Queue-submit): leave `go` / `ride` / `drive` there
+- [status](@ref Queue-status)
+- [fetch](@ref Queue-fetch)
+- [hosts](@ref Queue-hosts)
+- [serve](@ref Queue-serve)
+- [setup](@ref Queue-setup)
 
 ## go vs drive (pick one)
 
 Both share host tokens (`parent:N`, `child:NAME:N`) and optional `--sync` /
 `--rsync`. The difference is **what the script is**:
 
-- **Script:** go is ordinary `.jl` (no Kit APIs). Drive is a driver with
+- **Script:** go is ordinary `.jl` (the job file does not call DistSSHKit). Drive is a driver with
   `init_output_dir!` / `main`.
 - **`child:NAME:N`:** go is N **concurrent full script runs**. Omit `:N`
   only with `--repeat` (uncapped). Drive is N **Distributed workers**;
@@ -95,7 +123,7 @@ Worker `addprocs` stays sequential.
   `NO_COLOR`
 - `-q` hides terminal detail; `--verbose` forces full detail — at most one
   (`DISTSSHKIT_QUIET` / `DISTSSHKIT_PROGRESS` / `DISTSSHKIT_VERBOSE`)
-- Kit / slot logs still write regardless; fatals stay on the terminal
+- Slot logs still write regardless; fatals stay on the terminal
 - Confirm prompts always print (`-y` / `DISTSSHKIT_YES` skips them)
 
 **Stale workers.**
@@ -113,7 +141,7 @@ Worker `addprocs` stays sequential.
   `-L` a no-op file of that name so the script still runs; drive workers
   get `--eval=#distsshkit-job:<id>`
 
-**Kit files.** Setup logs: `{project}/.distsshkit/setup/` (or the current
+**Files on disk.** Setup logs: `{project}/.distsshkit/setup/` (or the current
 run dir when `DISTSSHKIT_RUN_DIR` is set). Artifacts: go
 `{script}/.distsshkit/go/{stem}_{UTC}/`; drive (no `--output-dir` and no
 `init_output_dir!`): `{script}/.distsshkit/drive/{stem}_{UTC}/`. Sidecars
