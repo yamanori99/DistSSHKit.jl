@@ -30,19 +30,27 @@ function _pkg_root(mod::Module)::String
     return dirname(dirname(src))
 end
 
-# Documenter still checks a module listed in `modules`, even when that same
-# module is in `checkdocs_ignored_modules` (the ignore list only skips
-# submodules found while walking). Run and Queue stay in `modules` so `@docs`
-# and `@ref` can see them. Drop them from the missing-docs set here.
+# Documenter 1.19 checks every module in `modules`. `checkdocs_ignored_modules`
+# only skips submodules found while walking, so it does not drop DistSSHRun or
+# DistSSHQueue when they are also in `modules`. They stay there: `@docs` keeps
+# a docstring only when its defining module is in that list. This method drops
+# them from the missing-docs set. Documenter 1.19's untyped `allbindings`
+# walks each module and does not call this `Set{Module}` method, so the
+# Vector call below is not recursive. `docs/Project.toml` pins that release.
 function Documenter.allbindings(checkdocs::Symbol, mods::Set{Module})
     skip = Set{Module}([DistSSHRun, DistSSHQueue])
     kept = Module[m for m in mods if m ∉ skip]
     return Documenter.allbindings(checkdocs, kept)
 end
 
-# Docstrings defined in DistSSHRun point `@ref` at that module's binding.
-# Kit documents its own copy of the same name, and a field is not a binding.
-# Retarget those links in the loaded docstrings so this manual resolves them.
+# The docs build loads the released DistSSHRun, whose docstrings `@ref` names
+# this manual cannot link.
+# - `DriveResult.hosts`: a field is not a binding. Run's source now links
+#   `DriveResult` instead. Drop this pair once the docs env resolves a
+#   DistSSHRun release that contains that docstring.
+# - `host_tokens`, `cache_relpath`: Kit and Run each define the name, so a
+#   `@ref` inside a Run docstring does not land on Kit's copy. These two stay
+#   until that duplication is gone.
 const _DOC_REF_REWRITES = (
     "[`DriveResult.hosts`](@ref)" => "[`DriveResult`](@ref) `hosts`",
     "[`host_tokens`](@ref)" => "`host_tokens`",
@@ -139,7 +147,6 @@ makedocs(;
         "API" => "api.md",
     ],
     checkdocs = :exports,
-    checkdocs_ignored_modules = [DistSSHRun, DistSSHQueue],
 )
 
 # Documenter :ico always writes type=image/x-icon first. HTML5 keeps the first type,

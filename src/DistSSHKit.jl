@@ -1,8 +1,9 @@
 """
-DistSSHKit — meta-package for one run and the queue.
+DistSSHKit — meta-package for the run and the queue.
 
-Users add this package. DistSSHRun is one run. DistSSHQueue is the queue.
-This module reexports their public names and keeps `julia -m DistSSHKit`.
+Users add this package. The command is `julia -m DistSSHKit`.
+DistSSHRun is the run. DistSSHQueue is the queue, started on a queue host.
+This module reexports their public names.
 """
 module DistSSHKit
 

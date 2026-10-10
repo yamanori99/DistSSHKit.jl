@@ -227,7 +227,7 @@ read_kit_run_toml
 execute_detached_accepts
 execute_kwargs_from_parsed
 KitProcess
-wait
+wait(::KitProcess)
 kit_pid_file_running
 terminate!
 terminate_run!
@@ -441,6 +441,8 @@ id = submit!(q, "SCRIPT.jl", "child:host1:4"; kind=:go)
 cancel!(q, id)
 serve!(q)
 ```
+
+`default_store_path()` is `~/.distsshqueue/jobs.toml`. `serve` runs [`serve!`](@ref) on that file.
 
 ```@docs
 Queue
