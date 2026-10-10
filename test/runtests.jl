@@ -69,7 +69,7 @@ const _VENDORED = (
         @test !isdefined(DistSSHKit, :_read_kit_pid_record)
         @test isdefined(DistSSHKit, :_juliaup_default_channel_from_status)
         @test :_juliaup_default_channel_from_status ∉ names(DistSSHKit)
-        @test DistSSHKit.dist_ssh_kit_version() == v"0.10.0"
+        @test DistSSHKit.dist_ssh_kit_version() == v"0.9.0"
         @test DistSSHKit.dist_ssh_kit_version() != DistSSHRun.dist_ssh_kit_version()
         @test DistSSHKit.go! === DistSSHRun.go!
         @test DistSSHKit.submit! === DistSSHQueue.submit!
