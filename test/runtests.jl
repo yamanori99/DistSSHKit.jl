@@ -70,10 +70,12 @@ const _VENDORED = (
         @test isdefined(DistSSHKit, :_juliaup_default_channel_from_status)
         @test :_juliaup_default_channel_from_status ∉ names(DistSSHKit)
         ver = DistSSHKit.dist_ssh_kit_version()
-        project_ver = VersionNumber(match(
-            r"^version\s*=\s*\"([^\"]+)\""m,
-            read(joinpath(pkgdir(DistSSHKit), "Project.toml"), String),
-        ).captures[1])
+        project_ver = VersionNumber(
+            match(
+                r"^version\s*=\s*\"([^\"]+)\""m,
+                read(joinpath(pkgdir(DistSSHKit), "Project.toml"), String),
+            ).captures[1]
+        )
         @test ver == project_ver
         @test ver != DistSSHRun.dist_ssh_kit_version()
         @test DistSSHKit.go! === DistSSHRun.go!
