@@ -1,7 +1,9 @@
 # Require a type label on every PR: bug | enhancement | breaking | chore.
 # If missing: unique type on a closing issue (`Fixes #N`) first, else branch prefix
 # (`feat/` → enhancement, `fix/` → bug, …). Dependabot is exempt (`dependencies`).
-# A version increase is not a label. Test reads Project.toml (version-cut.sh).
+# Labels adds `cut` only when the version rises above the base.
+# A removed `cut` stays off until the next rise. This workflow does not
+# add it. CI still reads Project.toml (version-cut.sh).
 name: Type
 
 on:
