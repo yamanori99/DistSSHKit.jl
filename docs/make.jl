@@ -30,6 +30,40 @@ function _pkg_root(mod::Module)::String
     return dirname(dirname(src))
 end
 
+# Documenter still checks a module listed in `modules`, even when that same
+# module is in `checkdocs_ignored_modules` (the ignore list only skips
+# submodules found while walking). Run and Queue stay in `modules` so `@docs`
+# and `@ref` can see them. Drop them from the missing-docs set here.
+function Documenter.allbindings(checkdocs::Symbol, mods::Set{Module})
+    skip = Set{Module}([DistSSHRun, DistSSHQueue])
+    kept = Module[m for m in mods if m ∉ skip]
+    return Documenter.allbindings(checkdocs, kept)
+end
+
+# Docstrings defined in DistSSHRun point `@ref` at that module's binding.
+# Kit documents its own copy of the same name, and a field is not a binding.
+# Retarget those links in the loaded docstrings so this manual resolves them.
+const _DOC_REF_REWRITES = (
+    "[`DriveResult.hosts`](@ref)" => "[`DriveResult`](@ref) `hosts`",
+    "[`host_tokens`](@ref)" => "`host_tokens`",
+    "[`cache_relpath`](@ref)" => "`cache_relpath`",
+)
+
+function _retarget_doc_refs!(mod::Module)
+    for (_, multidoc) in Docs.meta(mod)
+        multidoc isa Docs.MultiDoc || continue
+        for docstr in values(multidoc.docs)
+            text = docstr.text
+            newtext = Any[part isa String ? replace(part, _DOC_REF_REWRITES...) : part for part in text]
+            newtext == collect(Any, text) && continue
+            docstr.text = Core.svec(newtext...)
+        end
+    end
+    return nothing
+end
+
+_retarget_doc_refs!(DistSSHRun)
+
 makedocs(;
     modules = [DistSSHKit, DistSSHRun, DistSSHQueue],
     remotes = Dict(
@@ -104,8 +138,8 @@ makedocs(;
         ],
         "API" => "api.md",
     ],
-    checkdocs = :none,
-    warnonly = [:missing_docs, :docs_block, :cross_references],
+    checkdocs = :exports,
+    checkdocs_ignored_modules = [DistSSHRun, DistSSHQueue],
 )
 
 # Documenter :ico always writes type=image/x-icon first. HTML5 keeps the first type,

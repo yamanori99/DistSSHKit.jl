@@ -1,5 +1,9 @@
 # [paths](@id Manual-paths)
 
+```@meta
+CurrentModule = DistSSHKit
+```
+
 Scripts should use [`stored_path`](@ref) so the same relative name resolves on
 the machine the run starts from and on workers.
 
