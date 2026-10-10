@@ -178,13 +178,13 @@ JETLS, Aqua, and Documenter all run. Register when the required checks
 below are green. Do not wait on DistSSHRun's E2E.
 
 Required to merge (branch protection uses these names). Tip jobs and
-`Pkg.test - 1.13 - macos-latest` are not in this list. A job skipped by
-the heavy gate shows as skipping (not a green empty run).
+`Pkg.test (1.13, macos-latest, aarch64)` are not in this list.
+A job skipped by the heavy gate shows as skipping (not a green empty run).
 
-- `Pkg.test - 1.13 - ubuntu-latest`
-- `JETLS - 1.13 - ubuntu-latest`
-- `Aqua - 1.13 - ubuntu-latest`
-- `Documenter - 1.13 - ubuntu-latest`
+- `Pkg.test (1.13, ubuntu-latest, x64)`
+- `JETLS (1.13, ubuntu-latest, x64)`
+- `Aqua (1.13, ubuntu-latest, x64)`
+- `Documenter (1.13, ubuntu-latest, x64)`
 - `Gitleaks`
 - `PR label`
 

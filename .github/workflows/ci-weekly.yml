@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   test:
-    name: Pkg.test - 1.13 - ubuntu-latest
+    name: Pkg.test (1.13, ubuntu-latest, x64)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -34,7 +34,7 @@ jobs:
       - uses: ./.github/actions/pkg-test
 
   test-macos:
-    name: Pkg.test - 1.13 - macos-latest
+    name: Pkg.test (1.13, macos-latest, aarch64)
     runs-on: macos-latest
     timeout-minutes: 45
     steps:
@@ -49,7 +49,7 @@ jobs:
       - uses: ./.github/actions/pkg-test
 
   test-tip:
-    name: Pkg.test - 1.14-nightly - ubuntu-latest
+    name: Pkg.test (1.14-nightly, ubuntu-latest, x64)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     continue-on-error: true
@@ -65,7 +65,7 @@ jobs:
       - uses: ./.github/actions/pkg-test
 
   jetls:
-    name: JETLS - 1.13 - ubuntu-latest
+    name: JETLS (1.13, ubuntu-latest, x64)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -84,7 +84,7 @@ jobs:
           files: ${{ steps.files.outputs.list }}
 
   aqua:
-    name: Aqua - 1.13 - ubuntu-latest
+    name: Aqua (1.13, ubuntu-latest, x64)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -100,7 +100,7 @@ jobs:
         run: ./.github/aqua-check.sh
 
   aqua-tip:
-    name: Aqua - 1.14-nightly - ubuntu-latest
+    name: Aqua (1.14-nightly, ubuntu-latest, x64)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     continue-on-error: true

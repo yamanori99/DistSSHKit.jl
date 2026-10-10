@@ -58,7 +58,7 @@ Reproduce that tree: copy without kit `.git` / `Manifest.toml`, `Pkg.add`
 from a **bare** `file://` git (so the installed package dir has no `.git` —
 DistSSHKit talks to git for jobs, not for its own install), `chmod a-w` on
 `pkgdir`, then `Pkg.test`. Do this after changing the gates above, and
-before a General cut. CI: `Pkg.test - registry tree` on **main** and
+before a General cut. CI: `Pkg.test (registry, ubuntu-latest, x64)` on **main** and
 a version-cut PR (slot tip, no `ssh`; not a required check). Not
 ordinary PRs.
 

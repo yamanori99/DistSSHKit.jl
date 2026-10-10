@@ -49,7 +49,7 @@ jobs:
         id: heavy
 
   test:
-    name: Pkg.test - 1.13 - ubuntu-latest
+    name: Pkg.test (1.13, ubuntu-latest, x64)
     needs: detect
     if: github.event_name != 'pull_request' || needs.detect.outputs.heavy == 'true'
     runs-on: ubuntu-latest
@@ -72,7 +72,7 @@ jobs:
           upload: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
   test-macos:
-    name: Pkg.test - 1.13 - macos-latest
+    name: Pkg.test (1.13, macos-latest, aarch64)
     needs: detect
     if: github.event_name != 'pull_request' || needs.detect.outputs.heavy == 'true'
     runs-on: macos-latest
@@ -91,7 +91,7 @@ jobs:
       - uses: ./.github/actions/pkg-test
 
   test-tip:
-    name: Pkg.test - 1.14-nightly - ubuntu-latest
+    name: Pkg.test (1.14-nightly, ubuntu-latest, x64)
     needs: detect
     if: github.event_name != 'pull_request' || needs.detect.outputs.version_cut == 'true'
     runs-on: ubuntu-latest
@@ -110,7 +110,7 @@ jobs:
 
   # Not a Julia slot. Not required to merge. Catches checkout-only Pkg.test assumptions.
   test-registry-tree:
-    name: Pkg.test - registry tree - ubuntu-latest
+    name: Pkg.test (registry, ubuntu-latest, x64)
     needs: detect
     if: github.event_name != 'pull_request' || needs.detect.outputs.version_cut == 'true'
     runs-on: ubuntu-latest
@@ -130,7 +130,7 @@ jobs:
       - uses: ./.github/actions/registry-tree-test
 
   aqua:
-    name: Aqua - 1.13 - ubuntu-latest
+    name: Aqua (1.13, ubuntu-latest, x64)
     needs: detect
     if: github.event_name != 'pull_request' || needs.detect.outputs.heavy == 'true'
     runs-on: ubuntu-latest
@@ -148,7 +148,7 @@ jobs:
         run: ./.github/aqua-check.sh
 
   aqua-tip:
-    name: Aqua - 1.14-nightly - ubuntu-latest
+    name: Aqua (1.14-nightly, ubuntu-latest, x64)
     needs: detect
     if: github.event_name != 'pull_request' || needs.detect.outputs.version_cut == 'true'
     runs-on: ubuntu-latest
@@ -169,7 +169,7 @@ jobs:
   # Literal name: a skipped job must still be this string.
   # 1.13 only. Add another job when JETLS does not list that version.
   jetls:
-    name: JETLS - 1.13 - ubuntu-latest
+    name: JETLS (1.13, ubuntu-latest, x64)
     needs: detect
     if: github.event_name != 'pull_request' || needs.detect.outputs.heavy == 'true'
     runs-on: ubuntu-latest
