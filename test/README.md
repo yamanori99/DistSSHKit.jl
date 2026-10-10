@@ -39,8 +39,8 @@ Green on one layer does not imply the others. Child CLI uses
 - **Aqua** (~5 s): ambiguities, exports, compat (latest registry Aqua).
   Not CLI / workers.
 - **Pkg.test**: reexports and `julia -m DistSSHKit` routing
-  (`test/runtests.jl`). Ubuntu and `macos-latest`. The macOS job is not
-  a required check.
+  (`test/runtests.jl`). Ubuntu, `macos-latest`, and WSL2 Ubuntu.
+  All three are required checks.
 - **unit / integration / SSH E2E**: DistSSHRun. Not this repo's
   `Pkg.test()`.
 - **doctests** (~5 s): `src/` docstring examples (Documenter, Julia 1.13).
@@ -58,7 +58,7 @@ Reproduce that tree: copy without kit `.git` / `Manifest.toml`, `Pkg.add`
 from a **bare** `file://` git (so the installed package dir has no `.git` —
 DistSSHKit talks to git for jobs, not for its own install), `chmod a-w` on
 `pkgdir`, then `Pkg.test`. Do this after changing the gates above, and
-before a General cut. CI: `Pkg.test - registry tree` on **main** and
+before a General cut. CI: `Pkg.test (registry, ubuntu-latest, x64)` on **main** and
 a version-cut PR (slot tip, no `ssh`; not a required check). Not
 ordinary PRs.
 
