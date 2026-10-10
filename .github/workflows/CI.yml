@@ -112,28 +112,7 @@ jobs:
           key: wsl-julia-1.13-${{ hashFiles('Project.toml', 'test/Project.toml', '.github/julia-slots.env') }}
       - name: Pkg.test in WSL2
         shell: wsl-bash {0}
-        run: |
-          set -euo pipefail
-          src="$(pwd)"
-          dest="$HOME/DistSSHKit.jl"
-          cache="$src/.ci-cache/wsl-julia"
-          mkdir -p "$cache"
-          rm -rf "$dest"
-          git clone "$src" "$dest"
-          if [[ -f "$cache/julia.tgz" ]]; then
-            tar -xzf "$cache/julia.tgz" -C "$HOME"
-          else
-            curl --retry 5 --retry-delay 5 --retry-connrefused --connect-timeout 10 \
-              -fsSL https://install.julialang.org | sh -s -- --yes --default-channel 1.13
-          fi
-          export PATH="$HOME/.juliaup/bin:$PATH"
-          cd "$dest"
-          julia --project=. -e 'using Pkg; Pkg.test()'
-          if [[ -d "$HOME/.julia" ]]; then
-            tar -czf "$cache/julia.tgz" -C "$HOME" .juliaup .julia
-          else
-            tar -czf "$cache/julia.tgz" -C "$HOME" .juliaup
-          fi
+        run: ./.github/wsl-julia.sh 1.13 julia --project=. -e 'using Pkg; Pkg.test()'
 
   test-tip:
     name: Pkg.test (1.14-nightly, ubuntu-latest, x64)
@@ -152,6 +131,49 @@ jobs:
           cache-scratchspaces: false
           delete-old-caches: false
       - uses: ./.github/actions/pkg-test
+
+  test-tip-macos:
+    name: Pkg.test (1.14-nightly, macos-latest, aarch64)
+    needs: detect
+    if: github.event_name != 'pull_request' || needs.detect.outputs.version_cut == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 45
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/julia-slot
+        with:
+          version: "1.14-nightly"
+      - uses: julia-actions/cache@v3
+        with:
+          cache-scratchspaces: false
+          delete-old-caches: false
+      - uses: ./.github/actions/pkg-test
+
+  test-tip-wsl:
+    name: Pkg.test (1.14-nightly, WSL2 ubuntu-24.04, x64)
+    needs: detect
+    if: github.event_name != 'pull_request' || needs.detect.outputs.version_cut == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 45
+    continue-on-error: true
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: Vampire/setup-wsl@d1da7f2c0322a5ee4f24975344f67fc0f5baf364 # v7
+        with:
+          distribution: Ubuntu-24.04
+          wsl-version: 2
+          additional-packages: ca-certificates curl git
+      - uses: actions/cache@v6
+        with:
+          path: .ci-cache/wsl-julia
+          key: wsl-julia-1.14-nightly-${{ hashFiles('Project.toml', 'test/Project.toml', '.github/julia-slots.env') }}
+      - name: Pkg.test in WSL2
+        shell: wsl-bash {0}
+        run: ./.github/wsl-julia.sh 1.14-nightly julia --project=. -e 'using Pkg; Pkg.test()'
 
   # Not a Julia slot. Not required to merge. Catches checkout-only Pkg.test assumptions.
   test-registry-tree:
@@ -210,6 +232,50 @@ jobs:
           delete-old-caches: false
       - name: Aqua.test_all (latest Aqua)
         run: ./.github/aqua-check.sh
+
+  aqua-tip-macos:
+    name: Aqua (1.14-nightly, macos-latest, aarch64)
+    needs: detect
+    if: github.event_name != 'pull_request' || needs.detect.outputs.version_cut == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 45
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/julia-slot
+        with:
+          version: "1.14-nightly"
+      - uses: julia-actions/cache@v3
+        with:
+          cache-scratchspaces: false
+          delete-old-caches: false
+      - name: Aqua.test_all (latest Aqua)
+        run: ./.github/aqua-check.sh
+
+  aqua-tip-wsl:
+    name: Aqua (1.14-nightly, WSL2 ubuntu-24.04, x64)
+    needs: detect
+    if: github.event_name != 'pull_request' || needs.detect.outputs.version_cut == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 45
+    continue-on-error: true
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: Vampire/setup-wsl@d1da7f2c0322a5ee4f24975344f67fc0f5baf364 # v7
+        with:
+          distribution: Ubuntu-24.04
+          wsl-version: 2
+          additional-packages: ca-certificates curl git
+      - uses: actions/cache@v6
+        with:
+          path: .ci-cache/wsl-julia
+          key: wsl-julia-1.14-nightly-${{ hashFiles('Project.toml', 'test/Project.toml', '.github/julia-slots.env') }}
+      - name: Aqua.test_all (latest Aqua)
+        shell: wsl-bash {0}
+        run: ./.github/wsl-julia.sh 1.14-nightly ./.github/aqua-check.sh
 
   # Literal name: a skipped job must still be this string.
   # 1.13 only. Add another job when JETLS does not list that version.

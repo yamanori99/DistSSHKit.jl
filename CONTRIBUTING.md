@@ -119,8 +119,8 @@ a second stable line.
 - **1.13** (required): `Project.toml` julia floor, the maintained
   stable. Pkg.test on Ubuntu, macOS, and WSL2 Ubuntu, plus Aqua, JETLS,
   Documenter, bake. Codecov `pkgtest` on **main push**, Ubuntu only
-- **1.14-nightly** (not required): next-minor nightly. Pkg.test, Aqua.
-  `continue-on-error`
+- **1.14-nightly** (not required): next-minor nightly. Pkg.test and Aqua
+  on Ubuntu, macOS, and WSL2 Ubuntu. `continue-on-error`
 
 This package feels SSH hosts, Pkg, and lockfiles more than a compute-model
 library does. When Julia announces that it has stopped maintaining the
@@ -150,8 +150,9 @@ in `Project.toml`). macOS (`macos-latest`) and WSL2 Ubuntu 24.04:
 Documenter 1.13 is
 [`.github/workflows/Documentation.yml`](.github/workflows/Documentation.yml).
 Tip `Pkg.test` / Aqua stay on **main**, **CI weekly**, and a version-cut
-PR. Registry tree stays on **main** and a version-cut PR, not ordinary
-PRs. SSH is DistSSHRun's E2E, not a check on this repo.
+PR, on Ubuntu, macOS, and WSL2. Registry tree stays on **main** and a
+version-cut PR, not ordinary PRs. SSH is DistSSHRun's E2E, not a check
+on this repo.
 
 [Runic](https://github.com/fredrikekre/Runic.jl) is a separate light
 workflow ([`.github/workflows/runic.yml`](.github/workflows/runic.yml)).
@@ -234,9 +235,9 @@ not rewrite files you did not mean to touch.
 ### Scheduled CI
 
 **CI weekly** (Sunday 10:00 JST, or Run workflow): same `Pkg.test` /
-JETLS / Aqua as a PR, including `macos-latest` (no coverage). Not a PR
-check. Catches 1.13 / Aqua / JETLS `@release` drift when nothing merged
-that week. Failure of the 1.13 jobs opens Issue `CI weekly failed`
+JETLS / Aqua as a PR, including `macos-latest` and WSL2 (no coverage).
+Not a PR check. Catches 1.13 / Aqua / JETLS `@release` drift when nothing
+merged that week. Failure of the 1.13 jobs opens Issue `CI weekly failed`
 (`alert`); 1.14-nightly is omitted from that notify.
 
 **Runic monthly** (1st 10:00 JST, or Run workflow): `runic --check` on
