@@ -124,8 +124,9 @@ a second stable line.
 - **1.13** (required): `Project.toml` julia floor, the maintained
   stable. Pkg.test on Ubuntu, macOS, and WSL2 Ubuntu, plus Aqua, JETLS,
   Documenter, bake. Codecov `pkgtest` on **main push**, Ubuntu only
-- **1.14-nightly** (not required): next-minor nightly. Pkg.test and Aqua
-  on Ubuntu, macOS, and WSL2 Ubuntu. `continue-on-error`
+- **1.14-nightly** (not required): next-minor nightly. Ubuntu Pkg.test
+  and Aqua on **main**, **CI weekly**, and a version-cut PR. macOS and
+  WSL2 Pkg.test and Aqua on **CI weekly** only. `continue-on-error`
 
 This package feels SSH hosts, Pkg, and lockfiles more than a compute-model
 library does. When Julia announces that it has stopped maintaining the
@@ -154,8 +155,9 @@ in `Project.toml`). macOS (`macos-latest`) and WSL2 Ubuntu 24.04:
 `Pkg.test` 1.13, same heavy gate, no coverage upload. Both are required.
 Documenter 1.13 is
 [`.github/workflows/Documentation.yml`](.github/workflows/Documentation.yml).
-Tip `Pkg.test` / Aqua stay on **main**, **CI weekly**, and a version-cut
-PR, on Ubuntu, macOS, and WSL2. Registry tree stays on **main** and a
+Ubuntu tip `Pkg.test` / Aqua stay on **main**, **CI weekly**, and a
+version-cut PR. macOS and WSL2 tip stay on **CI weekly** only. Registry
+tree stays on **main** and a
 version-cut PR, not ordinary PRs. SSH is DistSSHRun's E2E, not a check
 on this repo.
 
