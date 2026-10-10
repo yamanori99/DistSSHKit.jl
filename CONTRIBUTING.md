@@ -304,7 +304,8 @@ two-week rule above unless a General user needs them sooner.
 
 1. Register when the required checks on the version-cut PR are green
    (`Pkg.test` 1.13 on Ubuntu, macOS, and WSL2 Ubuntu, plus JETLS, Aqua,
-   Documenter, Gitleaks, PR label). Do not wait on DistSSHRun's E2E.
+   Documenter, Gitleaks, PR label). A squash of only `Project.toml` and
+   `NEWS.md` does not re-run Test. Do not wait on DistSSHRun's E2E.
    Do not lower `version`.
 2. Register on the merge commit (not the PR body). Paste the NEWS
    section under `Release notes:`.
