@@ -39,6 +39,16 @@ function _project_toml_version()::VersionNumber
     return v"0.0.0"
 end
 
+# Two lines from `println_kit_version`, built here so the CLI test locks the text.
+function _kit_version_text()::String
+    run_ver = pkgversion(DistSSHRun)
+    queue_ver = pkgversion(DistSSHQueue)
+    run_s = run_ver === nothing ? "0.0.0" : string(run_ver)
+    queue_s = queue_ver === nothing ? "0.0.0" : string(queue_ver)
+    kit = DistSSHKit.dist_ssh_kit_version()
+    return "DistSSHKit $(kit)\nDistSSHRun $(run_s), DistSSHQueue $(queue_s)\n"
+end
+
 # Run exports these, and this package's `base/` defines the same names.
 const _VENDORED = (
     :cache_file,
@@ -124,11 +134,11 @@ const _VENDORED = (
         end
         let (code, out, _) = _main_capture(["--version"])
             @test code == 0
-            @test out == "DistSSHKit $(DistSSHKit.dist_ssh_kit_version())\n"
+            @test out == _kit_version_text()
         end
         let (code, out, _) = _main_capture(["go", "--version"])
             @test code == 0
-            @test out == "DistSSHKit $(DistSSHKit.dist_ssh_kit_version())\n"
+            @test out == _kit_version_text()
         end
         let (code, out, err) = _main_capture(["go", "--help"])
             combined = out * err

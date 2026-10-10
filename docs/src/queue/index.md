@@ -11,8 +11,9 @@ For a hands-on path, use First Steps
 
 Root `--help` defines Client vs queue host (`qhost:HOST`), then Usage,
 then `--help client` / `--help qhost`. `julia -m DistSSHKit -v` prints
-`DistSSHKit X`. A command on that machine can still print
-`DistSSHQueue X (DistSSHRun Y)`. `--help client` is Jobs then Hosts;
+`DistSSHKit X`, then `DistSSHRun Y, DistSSHQueue Z`. A queue command
+on that machine prints `DistSSHQueue X`, then `DistSSHRun Y`.
+`--help client` is Jobs then Hosts;
 `--help qhost` is Setup, Serve, then Danger (`teardown`; needs `-y`;
 job trees stay). `<command> -h` is that verb's Usage and Flags.
 Command argv is on
@@ -117,7 +118,7 @@ creates the client copy described in
 | --- | --- |
 | `-q` / `--quiet` | `status` / `watch`: table only. `DISTSSHKIT_QUIET`. |
 | `--progress` / `--verbose` | Accepted (exclusive with `-q`); there is no live run to paint, so they keep chrome. |
-| `-v` / `--version` | `julia -m DistSSHKit -v` prints `DistSSHKit X`. A queue command such as `status -v` can still print `DistSSHQueue X (DistSSHRun Y)`. `submit go -v` is the `go` command only. |
+| `-v` / `--version` | `julia -m DistSSHKit -v` prints `DistSSHKit X`, then `DistSSHRun Y, DistSSHQueue Z`. A queue command such as `status -v` prints `DistSSHQueue X`, then `DistSSHRun Y`. `submit go -v` is the `go` command only. |
 | `-y` / `--yes` | `teardown` (or `DISTSSHKIT_YES`). Same values as DistSSHKit. |
 | Ctrl-C | `serve` / `watch`: that process only, never a job that is already running. |
 
