@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   test:
-    name: Pkg.test(1.13,ubuntu-latest,x64)
+    name: Pkg.test (1.13, ubuntu-latest, x64)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -36,7 +36,7 @@ jobs:
       - uses: ./.github/actions/pkg-test
 
   test-macos:
-    name: Pkg.test(1.13,macos-latest,aarch64)
+    name: Pkg.test (1.13, macos-latest, aarch64)
     runs-on: macos-latest
     timeout-minutes: 45
     steps:
@@ -51,7 +51,7 @@ jobs:
       - uses: ./.github/actions/pkg-test
 
   test-wsl:
-    name: Pkg.test(1.13,WSL2-ubuntu-24.04,x64)
+    name: Pkg.test (1.13, WSL2 ubuntu-24.04, x64)
     runs-on: windows-latest
     timeout-minutes: 45
     permissions:
@@ -74,7 +74,7 @@ jobs:
         run: ./.github/wsl-julia.sh 1.13 julia --project=. -e 'using Pkg; Pkg.test()'
 
   test-tip:
-    name: Pkg.test(1.14-nightly,ubuntu-latest,x64)
+    name: Pkg.test (1.14-nightly, ubuntu-latest, x64)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     continue-on-error: true
@@ -90,7 +90,7 @@ jobs:
       - uses: ./.github/actions/pkg-test
 
   test-tip-macos:
-    name: Pkg.test(1.14-nightly,macos-latest,aarch64)
+    name: Pkg.test (1.14-nightly, macos-latest, aarch64)
     runs-on: macos-latest
     timeout-minutes: 45
     continue-on-error: true
@@ -106,7 +106,7 @@ jobs:
       - uses: ./.github/actions/pkg-test
 
   test-tip-wsl:
-    name: Pkg.test(1.14-nightly,WSL2-ubuntu-24.04,x64)
+    name: Pkg.test (1.14-nightly, WSL2 ubuntu-24.04, x64)
     runs-on: windows-latest
     timeout-minutes: 45
     continue-on-error: true
@@ -130,7 +130,7 @@ jobs:
         run: ./.github/wsl-julia.sh 1.14-nightly julia --project=. -e 'using Pkg; Pkg.test()'
 
   jetls:
-    name: JETLS(1.13,ubuntu-latest,x64)
+    name: JETLS (1.13, ubuntu-latest, x64)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -149,7 +149,7 @@ jobs:
           files: ${{ steps.files.outputs.list }}
 
   aqua:
-    name: Aqua(1.13,ubuntu-latest,x64)
+    name: Aqua (1.13, ubuntu-latest, x64)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -165,7 +165,7 @@ jobs:
         run: ./.github/aqua-check.sh
 
   aqua-tip:
-    name: Aqua(1.14-nightly,ubuntu-latest,x64)
+    name: Aqua (1.14-nightly, ubuntu-latest, x64)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     continue-on-error: true
@@ -182,7 +182,7 @@ jobs:
         run: ./.github/aqua-check.sh
 
   aqua-tip-macos:
-    name: Aqua(1.14-nightly,macos-latest,aarch64)
+    name: Aqua (1.14-nightly, macos-latest, aarch64)
     runs-on: macos-latest
     timeout-minutes: 45
     continue-on-error: true
@@ -199,7 +199,7 @@ jobs:
         run: ./.github/aqua-check.sh
 
   aqua-tip-wsl:
-    name: Aqua(1.14-nightly,WSL2-ubuntu-24.04,x64)
+    name: Aqua (1.14-nightly, WSL2 ubuntu-24.04, x64)
     runs-on: windows-latest
     timeout-minutes: 45
     continue-on-error: true

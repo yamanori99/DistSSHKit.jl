@@ -183,12 +183,12 @@ Required to merge (branch protection uses these names). Tip jobs are not
 in this list. A job skipped by the heavy gate shows as skipping (not a
 green empty run).
 
-- `Pkg.test(1.13,ubuntu-latest,x64)`
-- `Pkg.test(1.13,macos-latest,aarch64)`
-- `Pkg.test(1.13,WSL2-ubuntu-24.04,x64)`
-- `JETLS(1.13,ubuntu-latest,x64)`
-- `Aqua(1.13,ubuntu-latest,x64)`
-- `Documenter(1.13,ubuntu-latest,x64)`
+- `Pkg.test (1.13, ubuntu-latest, x64)`
+- `Pkg.test (1.13, macos-latest, aarch64)`
+- `Pkg.test (1.13, WSL2 ubuntu-24.04, x64)`
+- `JETLS (1.13, ubuntu-latest, x64)`
+- `Aqua (1.13, ubuntu-latest, x64)`
+- `Documenter (1.13, ubuntu-latest, x64)`
 - `Gitleaks`
 - `PR label`
 
