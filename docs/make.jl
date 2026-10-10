@@ -47,12 +47,16 @@ end
 
 # The docs build loads the released DistSSHRun, whose docstrings `@ref` names
 # this manual cannot link.
-# - `DriveResult.hosts`: a field is not a binding. Run's source now links
-#   `DriveResult` instead. Drop this pair once the docs env resolves a
-#   DistSSHRun release that contains that docstring.
+# - `DriveResult.hosts`: a field is not a binding. DistSSHRun 0.1.5 links
+#   `DriveResult` instead (DistSSHRun.jl#34). Drop this pair once docs
+#   resolves that release.
 # - `host_tokens`, `cache_relpath`: Kit and Run each define the name, so a
 #   `@ref` inside a Run docstring does not land on Kit's copy. These two stay
 #   until that duplication is gone.
+# DistSSHQueue 0.9.3 documents `serve` and `default_store_path`
+# (DistSSHQueue.jl#324). Once docs resolves that release, put both names back
+# in the Queue `@docs` block in `docs/src/api.md` and delete the sentence
+# above that block.
 const _DOC_REF_REWRITES = (
     "[`DriveResult.hosts`](@ref)" => "[`DriveResult`](@ref) `hosts`",
     "[`host_tokens`](@ref)" => "`host_tokens`",
