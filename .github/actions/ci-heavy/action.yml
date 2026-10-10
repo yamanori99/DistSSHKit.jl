@@ -59,6 +59,36 @@ runs:
         fi
         cut="$(./.github/version-cut.sh "$BASE" "$HEAD")"
         echo "cut=${cut}" >> "$GITHUB_OUTPUT"
+    - id: release
+      if: github.event_name == 'push'
+      shell: bash
+      env:
+        BEFORE: ${{ github.event.before }}
+      run: |
+        set -euo pipefail
+        zeros="$(printf '0%.0s' {1..40})"
+        only=false
+        if [ -n "${BEFORE:-}" ] && [ "$BEFORE" != "$zeros" ]; then
+          if ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            git fetch --depth=1 origin "$BEFORE" || true
+          fi
+          if git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            cut="$(./.github/version-cut.sh "$BEFORE" "$GITHUB_SHA")"
+            names="$(git diff --name-only "$BEFORE" "$GITHUB_SHA")"
+            if [ "$cut" = "true" ] && [ -n "$names" ]; then
+              only=true
+              while IFS= read -r f; do
+                [ -z "$f" ] && continue
+                case "$f" in
+                  Project.toml|NEWS.md) ;;
+                  *) only=false ;;
+                esac
+              done <<<"$names"
+            fi
+          fi
+        fi
+        echo "only=${only}" >> "$GITHUB_OUTPUT"
+        echo "release-only=${only}"
     - id: out
       shell: bash
       env:
@@ -66,11 +96,18 @@ runs:
         DOCS: ${{ steps.filter.outputs.docs }}
         # Project.toml version went up. Path skips do not apply.
         CUT: ${{ steps.version.outputs.cut }}
+        RELEASE_ONLY: ${{ steps.release.outputs.only }}
       run: |
         if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
-          echo "heavy=true" >> "$GITHUB_OUTPUT"
-          echo "docs=true" >> "$GITHUB_OUTPUT"
-          echo "non-PR: heavy=true docs=true"
+          if [ "${RELEASE_ONLY}" = "true" ]; then
+            echo "heavy=false" >> "$GITHUB_OUTPUT"
+            echo "docs=true" >> "$GITHUB_OUTPUT"
+            echo "release-only push: heavy=false docs=true"
+          else
+            echo "heavy=true" >> "$GITHUB_OUTPUT"
+            echo "docs=true" >> "$GITHUB_OUTPUT"
+            echo "non-PR: heavy=true docs=true"
+          fi
         elif [ "${CUT}" = "true" ]; then
           echo "heavy=true" >> "$GITHUB_OUTPUT"
           echo "docs=true" >> "$GITHUB_OUTPUT"
