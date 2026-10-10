@@ -116,10 +116,9 @@ Versions are lines in
 (`1.13`, `1.14-nightly`). The job name uses that same string. Do not add
 a second stable line.
 
-- **1.13** (required on Ubuntu): `Project.toml` julia floor, the maintained
-  stable. Pkg.test, Aqua, JETLS, Documenter, bake. `Pkg.test` also runs
-  on `macos-latest` (not a required check, no Codecov). Codecov
-  `pkgtest` on **main push**, Ubuntu only
+- **1.13** (required): `Project.toml` julia floor, the maintained
+  stable. Pkg.test on Ubuntu, macOS, and WSL2 Ubuntu, plus Aqua, JETLS,
+  Documenter, bake. Codecov `pkgtest` on **main push**, Ubuntu only
 - **1.14-nightly** (not required): next-minor nightly. Pkg.test, Aqua.
   `continue-on-error`
 
@@ -146,8 +145,9 @@ and the main ruleset in the same PR.
 These run as jobs of the `Test` workflow
 ([`.github/workflows/CI.yml`](.github/workflows/CI.yml)). Ubuntu:
 `Pkg.test` 1.13, JETLS 1.13, Aqua 1.13, Gitleaks (also rejects `< 0.0.1`
-in `Project.toml`). macOS (`macos-latest`): `Pkg.test` 1.13, same heavy
-gate, no coverage upload. It is not a required check. Documenter 1.13 is
+in `Project.toml`). macOS (`macos-latest`) and WSL2 Ubuntu 24.04:
+`Pkg.test` 1.13, same heavy gate, no coverage upload. Both are required.
+Documenter 1.13 is
 [`.github/workflows/Documentation.yml`](.github/workflows/Documentation.yml).
 Tip `Pkg.test` / Aqua stay on **main**, **CI weekly**, and a version-cut
 PR. Registry tree stays on **main** and a version-cut PR, not ordinary
@@ -159,8 +159,9 @@ It is not a substitute for `Pkg.test`. Soft on PRs (not in the
 required-name list). Monthly cron on `main` opens Issue
 `Runic monthly failed` (`alert`) when `--check` is red.
 
-These files **alone** skip the heavy jobs (UI: skipping; Pkg.test /
-JETLS / Aqua do not start). Documenter still runs when `docs/**`, README,
+These files **alone** skip the heavy jobs (UI: skipping; Pkg.test on
+Ubuntu, macOS, and WSL2, plus JETLS / Aqua, do not start). Documenter
+still runs when `docs/**`, README,
 `src/**`, or `Project.toml` changed; otherwise it is skipped too.
 Allowlisted markdown-only PRs skip the heavy jobs (skipping UI):
 
@@ -173,15 +174,17 @@ Allowlisted markdown-only PRs skip the heavy jobs (skipping UI):
 
 A new root markdown file stays heavy until listed in
 [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml).
-A version increase skips none of this: Pkg.test (Ubuntu and macOS),
+A version increase skips none of this: Pkg.test (Ubuntu, macOS, and WSL2),
 JETLS, Aqua, and Documenter all run. Register when the required checks
 below are green. Do not wait on DistSSHRun's E2E.
 
-Required to merge (branch protection uses these names). Tip jobs and
-`Pkg.test (1.13, macos-latest, aarch64)` are not in this list.
-A job skipped by the heavy gate shows as skipping (not a green empty run).
+Required to merge (branch protection uses these names). Tip jobs are not
+in this list. A job skipped by the heavy gate shows as skipping (not a
+green empty run).
 
 - `Pkg.test (1.13, ubuntu-latest, x64)`
+- `Pkg.test (1.13, macos-latest, aarch64)`
+- `Pkg.test (1.13, WSL2 ubuntu-24.04, x64)`
 - `JETLS (1.13, ubuntu-latest, x64)`
 - `Aqua (1.13, ubuntu-latest, x64)`
 - `Documenter (1.13, ubuntu-latest, x64)`
@@ -292,9 +295,9 @@ two-week rule above unless a General user needs them sooner.
 ### After a cut merges
 
 1. Register when the required checks on the version-cut PR are green
-   (`Pkg.test` 1.13 Ubuntu, JETLS, Aqua, Documenter, Gitleaks, PR label).
-   `Pkg.test` on `macos-latest` is not required. Do not wait on
-   DistSSHRun's E2E. Do not lower `version`.
+   (`Pkg.test` 1.13 on Ubuntu, macOS, and WSL2 Ubuntu, plus JETLS, Aqua,
+   Documenter, Gitleaks, PR label). Do not wait on DistSSHRun's E2E.
+   Do not lower `version`.
 2. Register on the merge commit (not the PR body). Paste the NEWS
    section under `Release notes:`.
 3. TagBot tags once General has the release.

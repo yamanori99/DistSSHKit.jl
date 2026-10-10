@@ -3,7 +3,7 @@ name: CI weekly
 # Not on pull_request: insurance for 1.13 / 1.14-nightly / Aqua / JETLS
 # @release drift when no PR ran that week. PR / main push stay the gate.
 # tip jobs are continue-on-error and omitted from notify.
-# macos-latest Pkg.test is included (no coverage), same as a PR.
+# macos-latest and WSL2 Pkg.test are included (no coverage), same as a PR.
 on:
   workflow_dispatch:
   # Sunday 10:00 JST (UTC 01:00).
@@ -47,6 +47,49 @@ jobs:
           cache-scratchspaces: false
           delete-old-caches: false
       - uses: ./.github/actions/pkg-test
+
+  test-wsl:
+    name: Pkg.test (1.13, WSL2 ubuntu-24.04, x64)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: Vampire/setup-wsl@d1da7f2c0322a5ee4f24975344f67fc0f5baf364 # v7
+        with:
+          distribution: Ubuntu-24.04
+          wsl-version: 2
+          additional-packages: ca-certificates curl git
+      - uses: actions/cache@v6
+        with:
+          path: .ci-cache/wsl-julia
+          key: wsl-julia-1.13-${{ hashFiles('Project.toml', 'test/Project.toml', '.github/julia-slots.env') }}
+      - name: Pkg.test in WSL2
+        shell: wsl-bash {0}
+        run: |
+          set -euo pipefail
+          src="$(pwd)"
+          dest="$HOME/DistSSHKit.jl"
+          cache="$src/.ci-cache/wsl-julia"
+          mkdir -p "$cache"
+          rm -rf "$dest"
+          git clone "$src" "$dest"
+          if [[ -f "$cache/julia.tgz" ]]; then
+            tar -xzf "$cache/julia.tgz" -C "$HOME"
+          else
+            curl --retry 5 --retry-delay 5 --retry-connrefused --connect-timeout 10 \
+              -fsSL https://install.julialang.org | sh -s -- --yes --default-channel 1.13
+          fi
+          export PATH="$HOME/.juliaup/bin:$PATH"
+          cd "$dest"
+          julia --project=. -e 'using Pkg; Pkg.test()'
+          if [[ -d "$HOME/.julia" ]]; then
+            tar -czf "$cache/julia.tgz" -C "$HOME" .juliaup .julia
+          else
+            tar -czf "$cache/julia.tgz" -C "$HOME" .juliaup
+          fi
 
   test-tip:
     name: Pkg.test (1.14-nightly, ubuntu-latest, x64)

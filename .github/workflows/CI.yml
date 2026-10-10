@@ -18,11 +18,11 @@ permissions:
   contents: read
 
 jobs:
-  # `Pkg.test` 1.13 runs on ubuntu-latest and macos-latest. The macOS job
-  # is not a required check and does not upload coverage. SSH E2E lives in
+  # `Pkg.test` 1.13 runs on ubuntu-latest, macos-latest, and WSL2 Ubuntu.
+  # macOS and WSL are required. Coverage uploads from Ubuntu only. SSH E2E lives in
   # DistSSHRun and DistSSHQueue, not this repo.
   # One detect job; markdown-only / allowlisted PRs skip heavy jobs (UI: skipping).
-  # Required check names do not include a Julia version.
+  # Required check names include the Julia version and the architecture.
   # Codecov (flag pkgtest): main push, Ubuntu 1.13 only — not macos-latest,
   # not on pull_request.
   # cache-scratchspaces: false — registry_updates.toml in scratchspaces can
@@ -89,6 +89,51 @@ jobs:
           cache-scratchspaces: false
           delete-old-caches: false
       - uses: ./.github/actions/pkg-test
+
+  test-wsl:
+    name: Pkg.test (1.13, WSL2 ubuntu-24.04, x64)
+    needs: detect
+    if: github.event_name != 'pull_request' || needs.detect.outputs.heavy == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: Vampire/setup-wsl@d1da7f2c0322a5ee4f24975344f67fc0f5baf364 # v7
+        with:
+          distribution: Ubuntu-24.04
+          wsl-version: 2
+          additional-packages: ca-certificates curl git
+      - uses: actions/cache@v6
+        with:
+          path: .ci-cache/wsl-julia
+          key: wsl-julia-1.13-${{ hashFiles('Project.toml', 'test/Project.toml', '.github/julia-slots.env') }}
+      - name: Pkg.test in WSL2
+        shell: wsl-bash {0}
+        run: |
+          set -euo pipefail
+          src="$(pwd)"
+          dest="$HOME/DistSSHKit.jl"
+          cache="$src/.ci-cache/wsl-julia"
+          mkdir -p "$cache"
+          rm -rf "$dest"
+          git clone "$src" "$dest"
+          if [[ -f "$cache/julia.tgz" ]]; then
+            tar -xzf "$cache/julia.tgz" -C "$HOME"
+          else
+            curl --retry 5 --retry-delay 5 --retry-connrefused --connect-timeout 10 \
+              -fsSL https://install.julialang.org | sh -s -- --yes --default-channel 1.13
+          fi
+          export PATH="$HOME/.juliaup/bin:$PATH"
+          cd "$dest"
+          julia --project=. -e 'using Pkg; Pkg.test()'
+          if [[ -d "$HOME/.julia" ]]; then
+            tar -czf "$cache/julia.tgz" -C "$HOME" .juliaup .julia
+          else
+            tar -czf "$cache/julia.tgz" -C "$HOME" .juliaup
+          fi
 
   test-tip:
     name: Pkg.test (1.14-nightly, ubuntu-latest, x64)
