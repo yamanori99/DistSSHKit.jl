@@ -266,7 +266,9 @@ with `setup --delete`. First deploy `--rsync`; later git `--sync` /
   bump. About behavior, not the bump.
 - version cut: `Project.toml` `version` went up. CI compares that
   file with the base. Other `Project.toml` edits do not. The PR suite
-  does not path-skip. There is no `cut` label. Do not lower `version`;
+  does not path-skip. Labels adds `cut` when the version rises above
+  the base. Removing it sticks until the next rise. CI still reads the
+  file, not the label. Do not lower `version`;
   General never takes a version down.
 
 On a breaking line bump `x` in `0.x.y`; otherwise bump `y`.

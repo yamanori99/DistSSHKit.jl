@@ -97,3 +97,95 @@ jobs:
               labels: missing,
             });
             core.info(`Restored: ${missing.join(", ")}`);
+
+      # Add `cut` only when the version rises above the base. A removed
+      # label stays off until the next rise. An unreadable `before` does
+      # not add the label and does not fail this job. Restore above keeps
+      # `cut` when the snapshot had it; sync-labels drops it mid-job.
+      - name: Version cut label
+        id: cut
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          PR: ${{ github.event.pull_request.number }}
+          BEFORE: ${{ github.event.before }}
+          ACTION: ${{ github.event.action }}
+        run: |
+          set -euo pipefail
+          set +e
+          now_out=$(./.github/version-cut.sh "$BASE" "$HEAD")
+          now_status=$?
+          set -e
+          if [ "$now_status" -ne 0 ]; then
+            echo "head compare failed; leaving cut unchanged"
+            echo "now=unknown" >> "$GITHUB_OUTPUT"
+            echo "add=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          now=false
+          if printf '%s\n' "$now_out" | grep -qx true; then
+            now=true
+          fi
+          add=false
+          if [ "$now" = true ] && [ "$ACTION" = opened ]; then
+            add=true
+          elif [ "$now" = true ] && [ "$ACTION" = synchronize ]; then
+            if [ -z "${BEFORE}" ]; then
+              echo "before is empty; not adding cut"
+            else
+              set +e
+              prev_out=$(./.github/version-cut.sh "$BASE" "$BEFORE")
+              prev_status=$?
+              set -e
+              if [ "$prev_status" -ne 0 ]; then
+                echo "before is unreadable; not adding cut"
+              elif printf '%s\n' "$prev_out" | grep -qx true; then
+                echo "head was already a cut; not adding"
+              else
+                add=true
+              fi
+            fi
+          fi
+          echo "now=$now" >> "$GITHUB_OUTPUT"
+          echo "add=$add" >> "$GITHUB_OUTPUT"
+
+      - name: Apply version cut label
+        uses: actions/github-script@v9
+        env:
+          ADD: ${{ steps.cut.outputs.add }}
+          NOW: ${{ steps.cut.outputs.now }}
+        with:
+          script: |
+            const now = process.env.NOW;
+            if (now !== "true" && now !== "false") {
+              core.info("cut unchanged");
+              return;
+            }
+            const n = context.issue.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const { data } = await github.rest.issues.listLabelsOnIssue({
+              owner,
+              repo,
+              issue_number: n,
+            });
+            const names = data.map((l) => l.name);
+            if (now === "false" && names.includes("cut")) {
+              await github.rest.issues.removeLabel({
+                owner,
+                repo,
+                issue_number: n,
+                name: "cut",
+              });
+              core.info("Removed cut");
+              return;
+            }
+            if (process.env.ADD === "true" && !names.includes("cut")) {
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number: n,
+                labels: ["cut"],
+              });
+              core.info("Added cut");
+            }
