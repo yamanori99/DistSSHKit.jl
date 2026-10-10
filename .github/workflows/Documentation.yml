@@ -36,7 +36,7 @@ jobs:
         id: heavy
 
   build:
-    name: Documenter (1.13, ubuntu-latest, x64)
+    name: Documenter(1.13,ubuntu-latest,x64)
     needs: detect
     if: github.event_name != 'pull_request' || needs.detect.outputs.heavy == 'true' || needs.detect.outputs.docs == 'true'
     # All deploys write gh-pages. Per-ref workflow concurrency does not cover that.
