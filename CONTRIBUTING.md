@@ -5,20 +5,20 @@ Internals of this repo.
 - Users:
   [stable docs](https://yamanori99.github.io/DistSSHKit.jl/stable/)
   (`docs/`), [README.md](README.md), [README.ja.md](README.ja.md),
-  [NEWS.md](NEWS.md)
+  [NEWS.md](NEWS.md), [HISTORY.md](HISTORY.md)
 - Dev docs: [dev](https://yamanori99.github.io/DistSSHKit.jl/dev/)
 
 ## Scope
 
-This repo is one run (`go` / `ride` / `drive` / `setup` and the bang APIs). Jobs
-that wait in line are
-[DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)
-(`execute!(:go|:ride|:drive, ...; detached=true)`).
+Users add this package. It reexports DistSSHRun (one run) and
+DistSSHQueue (the queue). A run's implementation lands in
+[DistSSHRun.jl](https://github.com/yamanori99/DistSSHRun.jl).
+The queue's implementation lands in
+[DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl).
 
 Happy-path bugs (ordinary `~/` roots, default `drive` / `go` / `setup`);
 CI / Julia slots / Aqua / JETLS / Runic drift. Enhancement Issue first, then a PR.
 
-**Does not land here:** a job queue, or `schedule`, inside Kit.
 Windows and GPU-package help stay on the horizon
 ([Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26)).
 
@@ -165,6 +165,7 @@ JETLS / Aqua do not start). Documenter still runs when `docs/**`, README,
 Allowlisted markdown-only PRs skip the heavy jobs (skipping UI):
 
 - `README.md`, `README.ja.md`, `CONTRIBUTING.md`, `NEWS.md`,
+  `HISTORY.md`,
   `SECURITY.md`, `LICENSE`
 - `.gitignore`, `.git-blame-ignore-revs`,
   `.github/pull_request_template.md`, `.coderabbit.yaml`

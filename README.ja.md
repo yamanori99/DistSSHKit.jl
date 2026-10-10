@@ -14,9 +14,7 @@
 [![Discussions](https://img.shields.io/badge/GitHub-Discussions-blueviolet?style=flat-square&logo=github)](https://github.com/yamanori99/DistSSHKit.jl/discussions)
 <!-- markdownlint-enable MD013 -->
 
-DistSSHKit は、手元のマシンと SSH 先のマシンで同じ Julia プロジェクトを実行し、その結果を回収するためのツールキットである。
-SSH による分散実行の手順を簡略化して統一することで、再現しやすい実行環境を提供する。
-並列化にはスレッドではなく、Distributed.jl のプロセスを用いる。
+追加するパッケージは DistSSHKit である。Julia のプロジェクトを、共有マシンへ SSH して、今すぐかあとで実行する。
 対応環境は **macOS、Linux、WSL2 Ubuntu** である (ネイティブ Windows は対象外)。
 
 小規模な研究室や個人でも、高性能なマシンやワークステーションを複数台所有していることは少なくない。
@@ -29,7 +27,8 @@ DistSSHKit は次の2つの仕組みから成り、コマンドは `julia -m Dis
 - **[DistSSHRun](https://yamanori99.github.io/DistSSHRun.jl/stable/)**
   は、起動したマシンからジョブを即座に実行する。
   ジョブが終了するまで SSH 接続は維持される。
-  コマンドは `setup`、`go`、`ride`、`drive`、`plan`、`size`、`pool` である。
+  コマンドは `setup`、`up`、`go`、`ride`、`drive`、`plan`、`size`、
+  `pool`、`demo`、`progress` である。
   `tmux` によるセッションの維持にも対応し、接続自体も維持される。
 - **[DistSSHQueue](https://yamanori99.github.io/DistSSHQueue.jl/stable/)**
   は、常時稼働しているマシンにジョブを蓄積し、順番に実行する。
@@ -347,7 +346,7 @@ julia --project=. -m DistSSHKit qhost:HOST submit go parent:1 distsshkit_demos/w
 - User Guide:
   [User Guide](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/)
 - API: [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/)
-- News: [NEWS.md](NEWS.md)
+- News: [NEWS.md](NEWS.md). Through 0.9.0: [HISTORY.md](HISTORY.md).
 
 ## 貢献
 
