@@ -65,7 +65,7 @@ For everything else, see the
   such as `parent` or `child:user@hostname`.
 - **Process** — a single running `julia` instance. Each process has its own
   memory and runs independently at the OS level.
-  (A job started from this machine launches multiple `julia` processes to run
+  (A run launches multiple `julia` processes to run
   work in parallel, even on a single machine. It is built on Distributed.jl.)
 - **Master** — the process on the machine the run starts from. With `go`,
   it plans the slots; with `drive`, it hands work to the workers and
@@ -110,8 +110,9 @@ up from there.
 
 Before you use an SSH host, make sure it meets the following conditions:
 
-- You can log in from this machine over SSH without a password.
-- Julia is installed, with the **same major.minor version** as on this machine
+- You can log in from the machine the run starts from over SSH without a
+  password.
+- Julia is installed, with the **same major.minor version** as on that machine
   (`setup --check` verifies this). Match the channel with `up` first.
 
 For details, see
@@ -317,8 +318,8 @@ For a walkthrough, see
 ```
 
 **Queue host.** Log in to the macOS or Linux machine that stays on and install the
-same package there with `pkg> add DistSSHKit`. Every command you run on this
-machine starts with the word `qhost`, and a `qhost:HOST` token is rejected. The
+same package there with `pkg> add DistSSHKit`. Every command you run on the
+queue host starts with the word `qhost`, and a `qhost:HOST` token is rejected. The
 default Julia environment is enough, so do not pass `--project=.`:
 
 ```bash
