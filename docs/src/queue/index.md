@@ -93,7 +93,7 @@ The queue-host table is `~/.distsshqueue/jobs.toml`.
   `serve`.
 
 If writers hang and no Queue process holds the lock, remove a stale
-`jobs.toml.lock`. See [Where files live](@ref Requirements) for all
+`jobs.toml.lock`. See [Where files live](@ref where-files-live) for all
 paths.
 
 ### Recovery after `serve` exits
@@ -120,6 +120,14 @@ creates the client copy described in
 | `-v` / `--version` | `julia -m DistSSHKit -v` prints `DistSSHKit X`. A queue command such as `status -v` can still print `DistSSHQueue X (DistSSHRun Y)`. `submit go -v` is the `go` command only. |
 | `-y` / `--yes` | `teardown` (or `DISTSSHKIT_YES`). Same values as DistSSHKit. |
 | Ctrl-C | `serve` / `watch`: that process only, never a job that is already running. |
+
+## One job at a time
+
+On a shared queue host, one long job holds the whole queue (no
+preemption, no priority, no per-user fairness). A run started on that
+machine with `go` / `drive`, bypassing the queue, competes for the same
+workers and is invisible to the queue. Split long jobs, or agree that
+shared hosts are used only through the queue.
 
 ## Out of scope
 

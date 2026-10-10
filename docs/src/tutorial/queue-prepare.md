@@ -5,7 +5,7 @@ Typed path (submit / fetch / teardown): [Walkthrough](@ref Queue-Tutorial-Walkth
 This box is always-on **macOS or Linux**. Clients can skip this page if
 someone already set that box up.
 
-Also see [Requirements](@ref), [Where files live](@ref Requirements),
+Also see [Requirements](@ref), [Where files live](@ref where-files-live),
 [Artifacts and paths](@ref Queue-artifacts),
 [User Guide · setup](@ref Queue-setup),
 [How it runs](@ref Queue-manual).
