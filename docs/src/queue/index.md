@@ -24,7 +24,7 @@ Each command page starts with **Usage**, then **Flags**.
 
 | | |
 | --- | --- |
-| [Artifacts and paths](@ref Queue-artifacts) | Where the script, the job, and the waiting jobs keep files |
+| [Artifacts and paths](@ref Queue-artifacts) | Where the script and the run keep files |
 | [submit](@ref Queue-submit) | Leave `go` / `ride` / `drive` there |
 | [status](@ref Queue-status) | `status` / `watch` / `cancel` |
 | [fetch](@ref Queue-fetch) | Copy a finished leaf onto this job tree |
@@ -107,7 +107,7 @@ paths.
 For drive, listed `parent` / `child` hosts must join, stay, and collect
 unless the job passed `--best-effort`. See
 [drive](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/drive/).
-`go` / `ride` / `drive` artifacts stay under the job's `.distsshkit/` tree. `fetch`
+`go` / `ride` / `drive` artifacts stay under the run's `.distsshkit/` tree. `fetch`
 creates the client copy described in
 [Artifacts and paths](@ref Queue-artifacts).
 
@@ -127,6 +127,6 @@ A scheduler inside DistSSHKit, weakdeps from Queue to DistSSHKit, a glue
 package, lab-wide slot ceilings or occupancy packing, preemption /
 fair-share / priorities / reservations / backfill, HTTP or a listen
 socket, a client that sleeps as `serve`, auto-retry of crashed
-`:running` jobs, a second copy of the job's result trees, and native
+`:running` jobs, a second copy of the run's result trees, and native
 Windows. Day-to-day consequences of the single FIFO:
 [How it runs](@ref Queue-manual).

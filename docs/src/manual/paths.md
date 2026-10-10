@@ -1,7 +1,7 @@
 # [paths](@id Manual-paths)
 
 Scripts should use [`stored_path`](@ref) so the same relative name resolves on
-this machine and on workers.
+the machine the run starts from and on workers.
 
 - If `DISTRIBUTED_OUTPUT_DIR` is set (go slot / drive result root), that
   join wins when the file exists, and is the default for new writes

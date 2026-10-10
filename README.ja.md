@@ -66,8 +66,8 @@ git によるデプロイを使う場合は、さらに **`git`** も必要と�
 - **ホスト** — 計算を行うマシン。`parent` や `child:user@hostname` のようなトークンで指定する。
 - **プロセス** — 起動された `julia` の1つ分の実体。それぞれが独立したメモリを持ち、OS 上で別々に動作する。
   (このマシンから始めたジョブは、1台のマシン上でも複数の `julia` プロセスを起動し、並列に実行する。基盤は Distributed.jl である)
-- **マスター** — このマシン上のプロセス。`go` ではスロットの割り当てを計画し、`drive` ではワーカーに処理を割り振って結果を回収する。
-  このマシンが、そのプロセスを起動した側である。
+- **マスター** — 実行が始まるマシン上のプロセス。`go` ではスロットの割り当てを計画し、`drive` ではワーカーに処理を割り振って結果を回収する。
+  手元で `go` / `drive` するときはこのマシン、ジョブを置いたときはキューホストである。
 - **ワーカー** — マスターから処理を受け取って実行するプロセス。
 
 例えば手元で `go` や `drive` を実行した場合、そのマシンがジョブを始めた側となる。
@@ -103,8 +103,8 @@ SSH 先の台数に上限はない。ただし、台数が増えるほど SSH �
 
 利用にあたっては、各 SSH 先が次の条件を満たしている必要がある。
 
-- このマシンからパスワードなしで SSH ログインできること
-- Julia がインストールされており、このマシンと **メジャー.マイナーバージョンが一致**していること
+- 実行が始まるマシンからパスワードなしで SSH ログインできること
+- Julia がインストールされており、そのマシンと **メジャー.マイナーバージョンが一致**していること
   (`setup --check` で確認できる。チャネルは `up` で揃える)
 
 詳細は
@@ -286,7 +286,7 @@ julia --project=. -m DistSSHKit go parent:2 distsshkit_demos/without_kit/pi_file
 [Demo](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/demo/)
 を参照されたい。
 
-### つけたままのマシン
+### キューホスト
 
 ```text
   client (dev machine, no cap)            queue host (always on, log in here)
@@ -301,7 +301,7 @@ julia --project=. -m DistSSHKit go parent:2 distsshkit_demos/without_kit/pi_file
                                           -> workers (parent / child:)
 ```
 
-**つけたままのマシン。** 常時稼働している macOS または Linux のマシンにログインし、
+**キューホスト。** 常時稼働している macOS または Linux のマシンにログインし、
 同じ `pkg> add DistSSHKit` を実行して導入する。
 このマシンで実行するコマンドは、すべて `qhost` で始まる。
 `qhost:HOST` の形式は受け付けない。
@@ -336,7 +336,7 @@ julia --project=. -m DistSSHKit qhost:HOST submit go parent:1 distsshkit_demos/w
   [Home](https://yamanori99.github.io/DistSSHKit.jl/stable/)
 - First Steps:
   [First Steps](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)
-- つけたままのマシン: [Walkthrough][q-walk]
+- キューホスト: [Walkthrough][q-walk]
 - User Guide:
   [User Guide](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/)
 - API: [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/)

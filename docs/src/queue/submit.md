@@ -86,7 +86,7 @@ queue host (rsync excludes: `.gitignore`, `.git/`, `.distsshkit/`,
 `SCRIPT.jl` there. The client keeps `.distsshqueue/tickets/<uuid>`
 (every `qhost:` submit from this tree; not an artifact).
 [Artifacts and paths](@ref Queue-artifacts) explains stage, ticket,
-the job's output, and the [`fetch`](@ref Queue-fetch) destination. Omit `qhost:`:
+the run's output, and the [`fetch`](@ref Queue-fetch) destination. Omit `qhost:`:
 the script is checked on this machine. Job id prints as a bare stdout line. CLI `submit` also prints
 `queue: local (HOSTNAME)` (or `qhost: local (HOSTNAME)` on the hopped
 process when you passed `qhost:`) then `Queued  N (no running)` on stderr
@@ -94,7 +94,7 @@ process when you passed `qhost:`) then `Queued  N (no running)` on stderr
 `DISTSSHKIT_QUIET` hides that. A `qhost:` rsync prints `rsync → HOST:…` when it starts (fetch: `rsync ←`). `DISTSSHKIT_PROGRESS` / `--progress` adds rsync `--info=progress2`. Missing config `hosts`: a `parent` / `child:` token is an error (`add-host first`). `hosts = []` allows none.
 
 Two different projects
-that a job from this machine would deploy to the same worker path are refused (no
+that the run would deploy to the same worker path are refused (no
 rename, no `setup --delete`). The same project may be submitted again.
 
 ## Flags

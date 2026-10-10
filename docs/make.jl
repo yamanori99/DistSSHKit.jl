@@ -99,7 +99,7 @@ makedocs(;
                 "fetch" => "queue/fetch.md",
                 "hosts" => "queue/hosts.md",
                 "serve" => "queue/serve.md",
-                "setup" => "queue/setup.md",
+                "qhost setup" => "queue/setup.md",
             ],
         ],
         "API" => "api.md",

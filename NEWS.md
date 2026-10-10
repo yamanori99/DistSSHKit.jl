@@ -34,5 +34,4 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
   If you installed it, run `pkg> app rm DistSSHKit`.
   Call DistSSHKit with `julia -m DistSSHKit`.
   Removing that public entry is breaking. The release that includes it
-  should bump the minor (0.10.0). This pull request does not bump
-  `Project.toml`.
+  should bump the minor (0.10.0).

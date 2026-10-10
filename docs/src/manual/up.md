@@ -1,8 +1,8 @@
-# [Julia version](@id Manual-up)
+# [up](@id Manual-up)
 
 Put the same Julia channel on each machine before
 [`go`](@ref Manual-go) / [`drive`](@ref Manual-drive), or before you leave
-a job on an always-on machine.
+a job on a queue host.
 
 ```bash
 julia --project=. -m DistSSHKit up child:NAME

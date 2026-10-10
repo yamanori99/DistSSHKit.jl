@@ -92,7 +92,8 @@ Remotes are optional.
 </p>
 ```
 
-The diagram is **drive**. One master on this machine, workers on each host.
+The diagram is **drive**. One master on the machine the run starts from,
+workers on each host.
 **go** uses the same host tokens, but there is no
 master/worker: each host runs the script on its own.
 
@@ -106,8 +107,8 @@ child:user@hostname:4  # four on that child
 No hard limit on SSH hosts; more remotes means more SSH and deploy time —
 start with a few. Each SSH host needs:
 
-- Passwordless SSH from this machine
-- Julia with the same major.minor version as this machine
+- Passwordless SSH from the machine the run starts from
+- Julia with the same major.minor version as that machine
   (`setup --check` verifies this). Match the channel with
   [`up`](@ref Manual-up) first.
 

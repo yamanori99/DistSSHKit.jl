@@ -67,9 +67,10 @@ For everything else, see the
   memory and runs independently at the OS level.
   (A job started from this machine launches multiple `julia` processes to run
   work in parallel, even on a single machine. It is built on Distributed.jl.)
-- **Master** — the process on this machine. With `go`, it plans the slots;
-  with `drive`, it hands work to the workers and collects the results. This
-  machine is the one that started that process.
+- **Master** — the process on the machine the run starts from. With `go`,
+  it plans the slots; with `drive`, it hands work to the workers and
+  collects the results. That machine is this machine when you run `go` /
+  `drive` here, and the queue host when the job was left there.
 - **Worker** — a process that receives work from the master and runs it.
 
 For example, if you run `go` or `drive` on your own machine, that machine is the
@@ -300,7 +301,7 @@ julia --project=. -m DistSSHKit go parent:2 distsshkit_demos/without_kit/pi_file
 For a walkthrough, see
 [Demo](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/demo/).
 
-### Queue
+### Queue host
 
 ```text
   client (dev machine, no cap)            queue host (always on, log in here)
@@ -315,7 +316,7 @@ For a walkthrough, see
                                           -> workers (parent / child:)
 ```
 
-**Always-on machine.** Log in to the macOS or Linux machine that stays on and install the
+**Queue host.** Log in to the macOS or Linux machine that stays on and install the
 same package there with `pkg> add DistSSHKit`. Every command you run on this
 machine starts with the word `qhost`, and a `qhost:HOST` token is rejected. The
 default Julia environment is enough, so do not pass `--project=.`:
@@ -346,7 +347,7 @@ For details, see [Prepare][q-prepare], [Walkthrough][q-walk], and
   [Home](https://yamanori99.github.io/DistSSHKit.jl/stable/)
 - First Steps:
   [First Steps](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)
-- Always-on machine: [Walkthrough][q-walk]
+- Queue host: [Walkthrough][q-walk]
 - User Guide:
   [User Guide](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/)
 - API: [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/)

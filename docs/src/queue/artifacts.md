@@ -26,8 +26,8 @@ A run has an artifact leaf and a separate sidecar:
       run.toml               output_dir, logs, collect_dirs, ...
       kit.pid
       kit.result
-    <kind>/SCRIPT_<UTC>_<id>/  primary artifact (the job or the script picks the leaf)
-      ...                    files written by the script or the job
+    <kind>/SCRIPT_<UTC>_<id>/  primary artifact (the run or the script picks the leaf)
+      ...                    files written by the script or the run
     setup/*.log              setup logs
 ```
 
@@ -89,5 +89,5 @@ syntax, retry rules, `--into`, and refusal cases.
 `qhost:` submit copies the client project to
 `~/.distsshqueue/stage/<uuid>` and leaves a ticket at
 `.distsshqueue/tickets/<uuid>` on the client. The stage is the job
-project used by the job; the ticket is an identifier. Neither is
+project used by the run; the ticket is an identifier. Neither is
 the result leaf.

@@ -5,6 +5,10 @@ Prerequisites for [Home](@ref DistSSHKit.jl) and
 pieces when you SSH to other hosts. `pkg> add DistSSHKit` does not install
 **`ssh`**, **`rsync`**, or **`git`**.
 
+On this page, **this machine** means the machine the run starts from:
+the computer where you run `go` or `drive`, or the queue host when the
+job was left there.
+
 Runs need **SSH between machines** (LAN or VPN is enough). Constant
 internet is not required; you mainly need it for `Pkg.add` /
 `instantiate`, outbound `git clone` / `git pull`, or installing Julia.
@@ -53,9 +57,9 @@ When you use SSH hosts (not just `parent:N`):
 Passwordless SSH means this machine and those hosts are **one trust
 domain**: whoever can start a job as you, can run arbitrary Julia on each
 listed host as that remote user. That is the intended lab premise (shared
-shell access). With
-[DistSSHQueue.jl](https://yamanori99.github.io/DistSSHQueue.jl/stable/),
-the queue host widens who can trigger those runs.
+shell access). A
+[queue host](@ref Queue-manual)
+widens who can trigger those runs.
 
 **This machine** — also install:
 

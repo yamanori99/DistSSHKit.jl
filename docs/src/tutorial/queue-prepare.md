@@ -56,7 +56,7 @@ failing `:check`. Leave
 `DISTRIBUTED_REMOTE_PROJECT_ROOT` unset in queue `config.toml` so a
 `qhost:` `child:` copy stays `~/stage/<uuid>`. `parent` uses the stage
 on the queue host.
-[kit Prepare](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/prepare/).
+[Prepare](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/prepare/).
 To align Julia versions, `qhost up` on the queue host
 (config `hosts` only; see [Requirements](@ref)).
 

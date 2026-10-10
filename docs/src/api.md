@@ -28,8 +28,8 @@ drive!("job.jl", "parent:2"; args=["8"])
 ## This machine
 
 Start a job here. The names below are defined in DistSSHRun and reexported
-by DistSSHKit. The Julia channel (`up`) is
-[Julia version](@ref Manual-up), not one of these calls.
+by DistSSHKit. [`up`](@ref Manual-up) is under Prepare hosts, not one of
+these calls.
 
 ## Run a script as-is — `go!`
 
@@ -410,11 +410,12 @@ methods in the same session.
 worker_pmap
 ```
 
-## Julia version
+## Prepare hosts — `up`
 
-`up` puts the same Julia channel on each machine. See
-[Julia version](@ref Manual-up). Those functions are defined in DistSSHRun
-and reexported by DistSSHKit.
+`up` puts the same Julia channel on each machine. From Julia,
+[`setup!`](@ref)`(session, :juliaup)` does the same work as `up`, and
+`:juliaup_update` does `up update`. See [`up`](@ref Manual-up).
+`setup!` is defined in DistSSHRun and reexported by DistSSHKit.
 
 ## Always-on machine
 

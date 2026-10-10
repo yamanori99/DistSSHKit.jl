@@ -51,7 +51,7 @@ Pick **one mode** per invocation (except shared options).
 - `--pull`: `git pull` on laptop first, then remotes (no push; confirm
   unless `-y`)
 - `--instantiate`: `Pkg.instantiate` on remotes after deploy
-- `up` / `up update`: not a setup flag. See [Julia version](@ref Manual-up).
+- `up` / `up update`: not a setup flag. See [`up`](@ref Manual-up).
   `up child:NAME` and `up parent` run `add` / `update` /
   `default`. `up update` runs `juliaup update` and leaves the default
 - `--runtest`: `Pkg.test()` of the **job** project on remotes (not
