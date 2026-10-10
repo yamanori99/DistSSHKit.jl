@@ -9,7 +9,7 @@ immediately and running jobs from a queue. This site explains both. The
 command is `julia -m DistSSHKit`.
 
 Start a job from this machine, and the SSH connection stays open until it
-finishes. `tmux` can hold that session. The connection still has to stay up.
+finishes.
 
 To queue jobs and run them one after another, put the same install on an
 always-on machine. A dropped laptop does not stop a job already queued there.

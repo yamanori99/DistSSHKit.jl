@@ -47,9 +47,7 @@ start with a few.
 
 A job started from your machine keeps that SSH connection open until it
 finishes. On an always-on machine, the same `pkg> add DistSSHKit` holds jobs
-and runs them in order after that connection drops. `tmux` can keep the
-session for a job you started yourself, and that SSH connection still has to
-stay open.
+and runs them in order after that connection drops.
 
 When you use SSH hosts (not just `parent:N`):
 

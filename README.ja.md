@@ -28,7 +28,6 @@ DistSSHKit は次の2つの仕組みから成り、コマンドは `julia -m Dis
   ジョブが終了するまで SSH 接続は維持される。
   コマンドは `setup`、`up`、`go`、`ride`、`drive`、`plan`、`size`、
   `pool`、`demo`、`progress` である。
-  `tmux` によるセッションの維持にも対応し、接続自体も維持される。
 - **[DistSSHQueue](https://yamanori99.github.io/DistSSHQueue.jl/stable/)**
   は、常時稼働しているマシンにジョブを蓄積し、順番に実行する。
   このマシンにも同じパッケージを導入する。
