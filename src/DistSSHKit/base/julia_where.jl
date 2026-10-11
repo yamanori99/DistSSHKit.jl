@@ -36,7 +36,7 @@ end
 
 """Local juliaup candidates (same layout as remotes; expands `\$HOME`)."""
 function local_juliaup_candidates()::Vector{String}
-    test = strip(get(ENV, "DISTSSHKIT_TEST_LOCAL_JULIAUP", ""))
+    test = _test_doubles_on() ? strip(get(ENV, "DISTSSHKIT_TEST_LOCAL_JULIAUP", "")) : ""
     isempty(test) || return String[test]
     home = joinpath(homedir(), ".juliaup", "bin", "juliaup")
     if Sys.isapple()

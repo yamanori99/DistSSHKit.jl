@@ -936,6 +936,11 @@ function remote_layout_path(
     return ld
 end
 
+"""Test doubles replace ssh, rsync, and local juliaup only when this is `1`."""
+function _test_doubles_on()::Bool
+    return strip(get(ENV, "DISTSSHKIT_TEST", "")) == "1"
+end
+
 """Julia argv for `DISTSSHKIT_TEST_SSH` / `.jl` rsync doubles (`--compile=min`)."""
 function _test_double_julia_argv(script::AbstractString)::Vector{String}
     julia = joinpath(Sys.BINDIR, Base.julia_exename())
@@ -943,7 +948,7 @@ function _test_double_julia_argv(script::AbstractString)::Vector{String}
 end
 
 function _host_sync_remote_shell_cmd(host::String, remote_script::String)::Cmd
-    custom = strip(get(ENV, "DISTSSHKIT_TEST_SSH", ""))
+    custom = _test_doubles_on() ? strip(get(ENV, "DISTSSHKIT_TEST_SSH", "")) : ""
     if !isempty(custom)
         return Cmd(vcat(_test_double_julia_argv(custom), [host, remote_script]))
     end
