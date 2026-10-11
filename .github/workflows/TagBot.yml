@@ -21,7 +21,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  TagBot:
+  TagBot: # zizmor: ignore[excessive-permissions] TagBot troubleshooting: do not set permissions here
     if: github.event_name == 'workflow_dispatch' || github.actor == 'JuliaTagBot'
     runs-on: ubuntu-latest
     steps:

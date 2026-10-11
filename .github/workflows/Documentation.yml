@@ -79,6 +79,7 @@ jobs:
     concurrency:
       group: docs-gh-pages
       cancel-in-progress: false
+      # actionlint 1.7.12 does not know concurrency.queue yet. GitHub does.
       queue: max
     runs-on: ubuntu-latest
     timeout-minutes: 20

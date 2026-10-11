@@ -14,7 +14,7 @@ runs:
     # Official aviatesk/JETLS.jl check@release nests cache with no opt-out.
     - name: Install jetls
       shell: bash
-      run: |
+      run: | # zizmor: ignore[github-env] constant "$HOME/.julia/bin", not attacker input
         set -euo pipefail
         mkdir -p "$HOME/.julia/bin"
         echo "$HOME/.julia/bin" >> "$GITHUB_PATH"

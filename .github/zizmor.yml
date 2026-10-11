@@ -1,0 +1,13 @@
+rules:
+  # SHA pinning is the next change. This rule comes back with that.
+  unpinned-uses:
+    disable: true
+  # persist-credentials on existing checkouts is not this lint.
+  artipacked:
+    disable: true
+  # Local actions stay `./.github/actions/...`.
+  self-repository:
+    disable: true
+  # Cooldown is a Dependabot policy, not a workflow defect.
+  dependabot-cooldown:
+    disable: true

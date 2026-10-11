@@ -1,0 +1,60 @@
+name: Actions lint
+
+# actionlint and zizmor on workflow files. Release binaries, not third-party
+# actions. No token: zizmor stays offline. Unpinned `uses:` waits for pinact
+# (see .github/zizmor.yml).
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: actionlint, zizmor
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: actionlint and zizmor
+        shell: bash
+        run: |
+          set -euo pipefail
+          dest="${RUNNER_TEMP}/actions-lint"
+          mkdir -p "$dest"
+          fetch() {
+            local url="$1" sum="$2" archive="$3"
+            curl -fsSL -o "$archive" "$url"
+            echo "${sum}  ${archive}" | sha256sum -c -
+          }
+          fetch \
+            "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz" \
+            "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8" \
+            "${dest}/actionlint.tar.gz"
+          tar -xzf "${dest}/actionlint.tar.gz" -C "$dest" actionlint
+          fetch \
+            "https://github.com/zizmorcore/zizmor/releases/download/v1.30.1/zizmor-x86_64-unknown-linux-gnu.tar.gz" \
+            "e65324f4430c2717591937edcec90ccbefaf14c174f8ec9415e03ca875b46e1a" \
+            "${dest}/zizmor.tar.gz"
+          tar -xzf "${dest}/zizmor.tar.gz" -C "$dest" zizmor
+          fetch \
+            "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz" \
+            "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198" \
+            "${dest}/shellcheck.tar.xz"
+          tar -xJf "${dest}/shellcheck.tar.xz" -C "$dest" --strip-components=1 shellcheck-v0.11.0/shellcheck
+          chmod +x "${dest}/actionlint" "${dest}/zizmor" "${dest}/shellcheck"
+          export PATH="${dest}:${PATH}"
+          # 1.7.12 rejects concurrency.queue, which Documentation.yml uses on purpose.
+          actionlint -ignore 'unexpected key "queue" for "concurrency"'
+          zizmor --offline --no-progress .github
