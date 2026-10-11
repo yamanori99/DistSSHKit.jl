@@ -1,6 +1,7 @@
 name: Actions lint
 
-# actionlint, zizmor, and pinact on workflow files. Release binaries, not
+# actionlint, zizmor, and pinact on workflow files. The generated job
+# shellchecks remote sh from this package's ssh.jl. Release binaries, not
 # third-party actions. No token: zizmor stays offline, and pinact only checks
 # that each uses: is a full commit SHA.
 
@@ -66,3 +67,47 @@ jobs:
           # v5 rejects `pinact run --check --no-api`. --check is the alias, but
           # --no-api still requires --fix=false.
           pinact run --fix=false --no-api
+
+  generated:
+    name: shellcheck generated
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/julia-slot
+        with:
+          version: "1.13"
+      - name: shellcheck generated remote sh
+        shell: bash
+        run: |
+          set -euo pipefail
+          dest="${RUNNER_TEMP}/shellcheck"
+          mkdir -p "$dest"
+          archive="${dest}/shellcheck.tar.xz"
+          curl -fsSL -o "$archive" \
+            "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz"
+          echo "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198  ${archive}" | sha256sum -c -
+          tar -xJf "$archive" -C "$dest" --strip-components=1 shellcheck-v0.11.0/shellcheck
+          chmod +x "${dest}/shellcheck"
+          out="${RUNNER_TEMP}/generated-sh"
+          mkdir -p "$out"
+          julia --project=. --startup-file=no -e 'using Pkg; Pkg.instantiate()'
+          julia --project=. --startup-file=no .github/shellcheck-generated.jl "$out"
+          shopt -s nullglob
+          files=("$out"/*.sh)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "no generated scripts" >&2
+            exit 1
+          fi
+          fail=0
+          for f in "${files[@]}"; do
+            echo "== $(basename "$f") =="
+            # SC2016 notes that $(...) inside single quotes does not expand.
+            # The fixtures include that text so a missing quote is a parse error.
+            if ! "${dest}/shellcheck" -s sh -e SC2016 - < "$f"; then
+              fail=1
+            fi
+          done
+          exit "$fail"
