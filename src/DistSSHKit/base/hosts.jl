@@ -125,6 +125,9 @@ function parse_placement_token(
         isempty(rest) && throw(ArgumentError("$(repr(s)): missing SSH name after `child:`"))
         name, n = _placement_count_suffix(rest)
         isempty(name) && throw(ArgumentError("$(repr(s)): missing SSH name after `child:`"))
+        startswith(name, "-") && throw(
+            ArgumentError("$(repr(s)): SSH name must not start with '-'"),
+        )
         is_parent_host_name(name) && throw(
             ArgumentError(
                 "$(repr(s)): Kit side is `parent`, not `child:parent`",

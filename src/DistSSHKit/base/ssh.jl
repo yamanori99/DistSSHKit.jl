@@ -65,6 +65,11 @@ end
 
 _git_cmd(args::AbstractVector)::Cmd = _host_tool_cmd("git", args)
 _ssh_cmd(args::AbstractVector)::Cmd = _host_tool_cmd("ssh", args)
+
+"""`--` then `host`, then `args`. A name that starts with `-` stays a destination."""
+function _ssh_host_args(host::AbstractString, args::AbstractString...)::Vector{String}
+    return String["--", String(host), String.(args)...]
+end
 _scp_cmd(args::AbstractVector)::Cmd = _host_tool_cmd("scp", args)
 
 """
@@ -79,7 +84,7 @@ function ssh_config_user(host::AbstractString)::Union{Nothing, String}
     isempty(h) && return nothing
     try
         # -n: no stdin; -G dumps effective config (User, HostName, …).
-        out = read(_ssh_cmd(["-n", ssh_opts()..., "-G", h]), String)
+        out = read(_ssh_cmd(["-n", ssh_opts()..., "-G", _ssh_host_args(h)...]), String)
         for line in eachsplit(out, '\n'; keepempty = false)
             if startswith(line, "user ")
                 u = strip(SubString(line, 6))
@@ -144,7 +149,7 @@ end
 Returns `nothing` on any failure (SSH, missing binary, unparseable output)."""
 function get_remote_julia_version(host::String, julia_path::AbstractString)::Union{Nothing, VersionNumber}
     try
-        result = read(pipeline(_ssh_cmd([ssh_opts()..., host, String(julia_path), "--version"]); stderr = devnull), String)
+        result = read(pipeline(_ssh_cmd([ssh_opts()..., _ssh_host_args(host, String(julia_path), "--version")...]); stderr = devnull), String)
         return parse_julia_version(result)
     catch
         return nothing
@@ -228,7 +233,7 @@ function _remote_julia_path_sh(path::AbstractString)::String
     if startswith(s, raw"$HOME") || startswith(s, "\$HOME")
         return string("\"", s, "\"")
     end
-    return Base.shell_escape(s)
+    return _remote_sh_quote(s)
 end
 
 function _remote_julia_candidates_sh(uname_s::AbstractString)::String
@@ -303,7 +308,7 @@ function _run_on_host_remote_sh(
             "run_on_host: detect=false requires julia= to a remote path (not auto)",
         )
     )
-    q = Base.shell_escape(path)
+    q = _remote_sh_quote(path)
     return sprint() do io
         print(io, "JULIA="); print(io, q)
         print(io, "; [ -x \"\$JULIA\" ] && \"\$JULIA\" --version 2>/dev/null | grep -q 'julia version' || exit 127; exec \"\$JULIA\"")
@@ -340,7 +345,7 @@ function run_on_host(
     inner = _run_on_host_remote_sh(argv; julia = julia, detect = detect)
     args = String[ssh_opts(; request_tty = tty)...]
     tty && push!(args, "-t")
-    push!(args, h, inner)
+    append!(args, _ssh_host_args(h, inner))
     return run(ignorestatus(_ssh_cmd(args)); wait = wait)
 end
 
@@ -434,23 +439,26 @@ end
 """
 Shell word for `path` on the remote login shell.
 
-A `~` / `~user` prefix stays unquoted so the remote shell expands it. The rest
-of a `~/…` path is `Base.shell_escape`d (`~/'Repo With Spaces'`). Other paths
-are escaped in full.
+A `~` / `~user` prefix stays unquoted so the remote shell expands it, when the
+prefix is only `~` and letters, digits, `.`, `_`, or `-`. The rest of a `~/…`
+path is passed through [`_remote_sh_quote`](@ref). Other paths are quoted in full.
 """
+function _remote_tilde_prefix_bare(prefix::AbstractString)::Bool
+    return occursin(r"^~[A-Za-z0-9._-]*$", prefix)
+end
+
 function _remote_shell_path_word(path::AbstractString)::String
     p = strip(String(path))
-    startswith(p, "~") || return Base.shell_escape(p)
+    startswith(p, "~") || return _remote_sh_quote(p)
     slash = findfirst('/', p)
     if slash === nothing
-        occursin(r"[\s'\"\\]", p) && return Base.shell_escape(p)
-        return p
+        return _remote_tilde_prefix_bare(p) ? p : _remote_sh_quote(p)
     end
     prefix = p[1:(slash - 1)]
     rest = p[(slash + 1):end]
-    occursin(r"[\s'\"\\]", prefix) && return Base.shell_escape(p)
+    _remote_tilde_prefix_bare(prefix) || return _remote_sh_quote(p)
     isempty(rest) && return prefix * "/"
-    return prefix * "/" * Base.shell_escape(rest)
+    return prefix * "/" * _remote_sh_quote(rest)
 end
 
 """
@@ -512,7 +520,7 @@ function resolve_remote_abs_path_on_host(host::String, remote_path::AbstractStri
     startswith(path, "/") && return path
     try
         inner = _remote_abs_path_resolve_shell(path)
-        s = strip(read(pipeline(_ssh_cmd([ssh_opts()..., host, inner]); stderr = devnull), String))
+        s = strip(read(pipeline(_ssh_cmd([ssh_opts()..., _ssh_host_args(host, inner)...]); stderr = devnull), String))
         isempty(s) && return nothing
         return String(s)
     catch
@@ -544,7 +552,7 @@ otherwise uses `git -C DIR rev-parse …` (absolute path on the remote, same lay
 function get_remote_git_hash(host::String, remote_repo_dir::AbstractString; short::Union{Nothing, Int} = nothing)::Union{Nothing, String}
     try
         inner = _remote_git_hash_inner(remote_repo_dir; short = short)
-        s = strip(read(pipeline(_ssh_cmd([ssh_opts()..., host, inner]); stderr = devnull), String))
+        s = strip(read(pipeline(_ssh_cmd([ssh_opts()..., _ssh_host_args(host, inner)...]); stderr = devnull), String))
         return isempty(s) ? nothing : s
     catch
         return nothing
@@ -561,7 +569,7 @@ function get_remote_total_gb(host::String)
                 pipeline(
                     _ssh_cmd(
                         [
-                            ssh_opts()..., host,
+                            ssh_opts()..., _ssh_host_args(host)...,
                             "sysctl -n hw.memsize 2>/dev/null || awk '/MemTotal/{print \$2*1024}' /proc/meminfo 2>/dev/null",
                         ]
                     );
@@ -583,7 +591,7 @@ function get_remote_nproc(host::String)
                 pipeline(
                     _ssh_cmd(
                         [
-                            ssh_opts()..., host,
+                            ssh_opts()..., _ssh_host_args(host)...,
                             "sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null",
                         ]
                     ); stderr = devnull
@@ -718,13 +726,20 @@ function remote_git_clone_dest(
     env = resolve_pkg_env(local_project_root)
     deploy = _remote_tree_root(env.env_dir; cli_override = cli_override)
     top = git_work_tree(env.project_dir)
-    top isa String || return resolve_remote_project_root(local_project_root; cli_override = cli_override)
+    top isa String || return _checked_remote_dest(
+        resolve_remote_project_root(local_project_root; cli_override = cli_override),
+    )
     # `git rev-parse` may return `/private/var/...` while Julia's temp path is `/var/...`.
     env_root = canonical_local_path(realpath(env.env_dir))
     top_root = canonical_local_path(realpath(top))
-    _path_is_under(env_root, top_root) ||
-        return resolve_remote_project_root(local_project_root; cli_override = cli_override)
-    return _remote_ancestor(deploy, relpath(env_root, top_root))
+    _path_is_under(env_root, top_root) || return _checked_remote_dest(
+        resolve_remote_project_root(local_project_root; cli_override = cli_override),
+    )
+    rel = relpath(env_root, top_root)
+    walked = _remote_ancestor_walk(deploy, rel)
+    walked === nothing && return _remote_ancestor(deploy, rel)
+    dest = _remote_path_forbidden(walked) ? deploy : walked
+    return _checked_remote_dest(dest)
 end
 
 """
@@ -734,6 +749,9 @@ When the git work tree contains `env_dir` and the deploy path ends with that
 relative path, this is [`remote_git_clone_dest`](@ref), so a clone that landed
 above the deploy root is removed with `.git`. An override that cannot express
 that parent, or no git work tree, removes [`remote_deploy_root`](@ref).
+A result of `~`, `~user`, `/`, a single directory under `/`, or this machine's
+home is refused. A walk that would land there uses the deploy root instead,
+unless that root is itself refused.
 """
 function remote_delete_root(
         local_project_root::AbstractString;
@@ -742,12 +760,38 @@ function remote_delete_root(
     env = resolve_pkg_env(local_project_root)
     deploy = _remote_tree_root(env.env_dir; cli_override = cli_override)
     top = git_work_tree(env.project_dir)
-    top isa String || return deploy
+    top isa String || return _checked_remote_dest(deploy)
     env_root = canonical_local_path(realpath(env.env_dir))
     top_root = canonical_local_path(realpath(top))
-    _path_is_under(env_root, top_root) || return deploy
+    _path_is_under(env_root, top_root) || return _checked_remote_dest(deploy)
     mapped = _remote_ancestor_or_nothing(deploy, relpath(env_root, top_root))
-    return mapped === nothing ? deploy : mapped
+    return _checked_remote_dest(mapped === nothing ? deploy : mapped)
+end
+
+"""True for `~`, `~user`, `/`, one directory under `/`, or this machine's home."""
+function _remote_path_forbidden(path::AbstractString)::Bool
+    p = strip(String(path))
+    isempty(p) && return true
+    p = rstrip(p, '/')
+    isempty(p) && return true
+    occursin(r"^~[^/]*$", p) && return true
+    if startswith(p, "/")
+        parts = split(p, '/'; keepempty = false)
+        length(parts) <= 1 && return true
+    end
+    home = strip(homedir())
+    return !isempty(home) && p == rstrip(home, '/')
+end
+
+"""Throw when [`_remote_path_forbidden`](@ref) is true. Returns `path` otherwise."""
+function _checked_remote_dest(path::AbstractString)::String
+    _remote_path_forbidden(path) || return String(path)
+    throw(
+        ArgumentError(
+            "refusing remote path $(repr(strip(String(path)))); " *
+                "it is ~, /, a single directory under /, or this machine's home",
+        )
+    )
 end
 
 """Drop `rel` from the end of a remote layout path. `rel` of `.` returns `remote_path`."""
@@ -761,8 +805,8 @@ function _remote_ancestor(remote_path::AbstractString, rel::AbstractString)::Str
     return mapped
 end
 
-"""`_remote_ancestor`, or `nothing` when `remote_path` does not end with `rel`."""
-function _remote_ancestor_or_nothing(
+"""Walk `rel` off `remote_path`, including a result this package will not delete."""
+function _remote_ancestor_walk(
         remote_path::AbstractString,
         rel::AbstractString,
     )::Union{Nothing, String}
@@ -777,6 +821,16 @@ function _remote_ancestor_or_nothing(
         p = parent
     end
     return p
+end
+
+"""`_remote_ancestor_walk`, or `nothing` when `rel` does not fit or the result is refused."""
+function _remote_ancestor_or_nothing(
+        remote_path::AbstractString,
+        rel::AbstractString,
+    )::Union{Nothing, String}
+    p = _remote_ancestor_walk(remote_path, rel)
+    p === nothing && return nothing
+    return _remote_path_forbidden(p) ? nothing : p
 end
 
 """Layout path for `DISTRIBUTED_REMOTE_PROJECT_ROOT` (kit parent ENV / `execute!`).
@@ -886,7 +940,7 @@ function _host_sync_remote_shell_cmd(host::String, remote_script::String)::Cmd
         return Cmd(vcat(_test_double_julia_argv(custom), [host, remote_script]))
     end
     # `-n`: do not forward kit stdin (juliaup/git must not wait on a TTY pipe).
-    return _ssh_cmd(["-n", ssh_opts()..., host, remote_script])
+    return _ssh_cmd(["-n", ssh_opts()..., _ssh_host_args(host, remote_script)...])
 end
 
 
