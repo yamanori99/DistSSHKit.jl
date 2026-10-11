@@ -235,4 +235,6 @@ const _VENDORED = (
             @test "BatchMode=yes" in DistSSHKit.ssh_opts()
         end
     end
+
+    include(joinpath(@__DIR__, "shell_quote.jl"))
 end

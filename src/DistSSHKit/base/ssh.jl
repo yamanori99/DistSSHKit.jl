@@ -837,7 +837,9 @@ function _remote_ancestor(remote_path::AbstractString, rel::AbstractString)::Str
     mapped = _remote_ancestor_or_nothing(remote_path, rel)
     mapped === nothing && throw(
         ArgumentError(
-            "Remote path $remote_path does not end with $rel, so clone cannot keep the Manifest directory there.",
+            "Remote path $remote_path does not end with $rel, " *
+                "so clone cannot keep the Manifest directory there. " *
+                "Pass --remote-path for the remote path of the git root.",
         ),
     )
     return mapped
