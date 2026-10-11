@@ -26,13 +26,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/julia-slot
         with:
           version: "1.13"
-      - uses: fredrikekre/runic-action@v1
+      - uses: fredrikekre/runic-action@b4dbd650db5cc684baae27fea45d22daf41693c2 # v1.5.0
         with:
           version: '1'
 

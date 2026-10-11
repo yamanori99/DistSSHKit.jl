@@ -1,8 +1,8 @@
 name: Actions lint
 
-# actionlint and zizmor on workflow files. Release binaries, not third-party
-# actions. No token: zizmor stays offline. Unpinned `uses:` waits for pinact
-# (see .github/zizmor.yml).
+# actionlint, zizmor, and pinact on workflow files. Release binaries, not
+# third-party actions. No token: zizmor stays offline, and pinact only checks
+# that each uses: is a full commit SHA.
 
 on:
   push:
@@ -20,14 +20,14 @@ permissions:
 
 jobs:
   lint:
-    name: actionlint, zizmor
+    name: actionlint, zizmor, pinact
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: actionlint and zizmor
+      - name: actionlint, zizmor, and pinact
         shell: bash
         run: |
           set -euo pipefail
@@ -53,8 +53,16 @@ jobs:
             "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198" \
             "${dest}/shellcheck.tar.xz"
           tar -xJf "${dest}/shellcheck.tar.xz" -C "$dest" --strip-components=1 shellcheck-v0.11.0/shellcheck
-          chmod +x "${dest}/actionlint" "${dest}/zizmor" "${dest}/shellcheck"
+          fetch \
+            "https://github.com/suzuki-shunsuke/pinact/releases/download/v5.0.0/pinact_linux_amd64.tar.gz" \
+            "d005bbb85da80dacdc07816f24a5da723a9f6d1e9f3d3e7e73df33f9caa1358f" \
+            "${dest}/pinact.tar.gz"
+          tar -xzf "${dest}/pinact.tar.gz" -C "$dest" pinact
+          chmod +x "${dest}/actionlint" "${dest}/zizmor" "${dest}/shellcheck" "${dest}/pinact"
           export PATH="${dest}:${PATH}"
           # 1.7.12 rejects concurrency.queue, which Documentation.yml uses on purpose.
           actionlint -ignore 'unexpected key "queue" for "concurrency"'
           zizmor --offline --no-progress .github
+          # v5 rejects `pinact run --check --no-api`. --check is the alias, but
+          # --no-api still requires --fix=false.
+          pinact run --fix=false --no-api

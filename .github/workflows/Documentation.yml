@@ -29,7 +29,7 @@ jobs:
       heavy: ${{ steps.heavy.outputs.heavy }}
       docs: ${{ steps.heavy.outputs.docs }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/ci-heavy
@@ -44,13 +44,13 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/julia-slot
         with:
           version: "1.13"
-      - uses: julia-actions/cache@v3
+      - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
         with:
           cache-scratchspaces: false
       - name: Install docs dependencies
@@ -87,11 +87,11 @@ jobs:
       contents: write
       statuses: write
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/julia-slot
         with:
           version: "1.13"
-      - uses: julia-actions/cache@v3
+      - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
         with:
           cache-scratchspaces: false
       - name: Install docs dependencies
