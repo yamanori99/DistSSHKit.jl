@@ -12,7 +12,8 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
 - `julia -m DistSSHKit -v` prints two lines: this package, then
   DistSSHRun and DistSSHQueue.
 - `setup --delete` and `setup --clone` refuse `~`, `/`, and a single
-  directory under `/`. An SSH name that starts with `-` is rejected.
+  directory under `/`. `setup --clone` also refuses when the git root
+  would land on one of those. An SSH name that starts with `-` is rejected.
 
 ## 0.10.0
 

@@ -716,7 +716,9 @@ Directory `git clone` should create.
 When the git work tree root is [`resolve_pkg_env`](@ref) `env_dir`, this is
 [`remote_deploy_root`](@ref). When `env_dir` sits under that work tree, the
 destination is the ancestor of the deploy root by the same relative path, so
-the Manifest directory still lands on the deploy root. No git work tree keeps
+the Manifest directory still lands on the deploy root. That ancestor is refused
+when it is `~`, `/`, or a single directory under `/`. Pass `--remote-path` so
+the git root stays below those. No git work tree keeps
 [`resolve_remote_project_root`](@ref) (the member).
 """
 function remote_git_clone_dest(
@@ -738,8 +740,13 @@ function remote_git_clone_dest(
     rel = relpath(env_root, top_root)
     walked = _remote_ancestor_walk(deploy, rel)
     walked === nothing && return _remote_ancestor(deploy, rel)
-    dest = _remote_path_forbidden(walked) ? deploy : walked
-    return _checked_remote_dest(dest)
+    _remote_path_forbidden(walked) && throw(
+        ArgumentError(
+            "refusing to clone into $(repr(walked)); " *
+                "pass --remote-path so the git root is not ~, /, or a single directory under /",
+        ),
+    )
+    return _checked_remote_dest(walked)
 end
 
 """
@@ -768,16 +775,17 @@ function remote_delete_root(
     return _checked_remote_dest(mapped === nothing ? deploy : mapped)
 end
 
-"""True for `~`, `~user`, `/`, one directory under `/`, or this machine's home."""
+"""True for `~`, `~user`, `/`, one directory under `/`, this machine's home, or a `.` or `..` component."""
 function _remote_path_forbidden(path::AbstractString)::Bool
     p = strip(String(path))
     isempty(p) && return true
     p = rstrip(p, '/')
     isempty(p) && return true
     occursin(r"^~[^/]*$", p) && return true
-    if startswith(p, "/")
-        parts = split(p, '/'; keepempty = false)
-        length(parts) <= 1 && return true
+    parts = split(p, '/'; keepempty = false)
+    any(part -> part == "." || part == "..", parts) && return true
+    if startswith(p, "/") && length(parts) <= 1
+        return true
     end
     home = strip(homedir())
     return !isempty(home) && p == rstrip(home, '/')
@@ -789,7 +797,7 @@ function _checked_remote_dest(path::AbstractString)::String
     throw(
         ArgumentError(
             "refusing remote path $(repr(strip(String(path)))); " *
-                "it is ~, /, a single directory under /, or this machine's home",
+                "it is ~, /, a single directory under /, this machine's home, or contains . or ..",
         )
     )
 end
