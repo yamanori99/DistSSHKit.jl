@@ -9,8 +9,8 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
 
 ## Unreleased
 
-- `setup --delete` and `setup --prune` delete when `--confirm-path` matches the computed path. A mismatch names that path in single quotes and exits 1. Without `--confirm-path`, `-y` and `DISTSSHKIT_YES` still skip the prompt and delete. That skip stops in 0.2. With neither, they ask for `delete` or `prune`.
-- `teardown` deletes when every existing path is passed with `--confirm-path`. Without that it prints `Would remove` and exits 0. `-y` and `DISTSSHKIT_YES` (process or config `[env]`) still delete. That skip stops in 0.10.
+- `setup --delete` and `setup --prune` delete when `--confirm-path` matches the computed path. A mismatch names that path in single quotes and exits 1. Without `--confirm-path`, `-y` and `DISTSSHKIT_YES` still skip the prompt and delete. That skip stops in DistSSHKit 0.11 (DistSSHRun 0.2). With neither, they ask for `delete` or `prune`.
+- `teardown` deletes when every existing path is passed with `--confirm-path`. Without that it prints `Would remove` and exits 0. `-y` and `DISTSSHKIT_YES` (process or config `[env]`) still delete. That skip stops in DistSSHKit 0.11 (DistSSHQueue 0.10).
 - `julia -m DistSSHKit -v` prints two lines: this package, then
   DistSSHRun and DistSSHQueue.
 - `setup --delete` and `setup --clone` refuse `~`, `/`, and a single

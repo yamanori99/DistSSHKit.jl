@@ -60,7 +60,7 @@ Pick **one mode** per invocation (except shared options).
   (job project) and remotes. `--confirm-path` equal to the remote path
   deletes without a prompt. Without it, the command asks for `prune`.
   `-y` and `DISTSSHKIT_YES` still skip that prompt and delete. That skip
-  stops in 0.2. Does not `--delete` the deploy tree. `--older-than DAYS`
+  stops in DistSSHKit 0.11 (DistSSHRun 0.2). Does not `--delete` the deploy tree. `--older-than DAYS`
   (mtime). `--id TOKEN` (go batch or `runs/<kind>/<leaf>` name contains
   TOKEN; skips drive/setup)
 - `--cleanup`: kill stale Julia worker processes (local + remotes;
@@ -69,7 +69,7 @@ Pick **one mode** per invocation (except shared options).
 - `--delete`: remove the remote tree. `--confirm-path` equal to the
   computed path deletes without a prompt. Without it, the command asks
   for `delete`. `-y` and `DISTSSHKIT_YES` still skip that prompt and
-  delete. That skip stops in 0.2.
+  delete. That skip stops in DistSSHKit 0.11 (DistSSHRun 0.2).
   A git checkout removes the clone destination when that path sits above
   the deploy root. A `--remote-path` that cannot express that parent, and
   a tree with no git work tree, remove the rsync deploy root.
@@ -84,7 +84,7 @@ Pick **one mode** per invocation (except shared options).
 - `--progress`: live status (TTY default)
 - `--verbose`: full detail (non-TTY default)
 - `-y` / `--yes`: accept confirmation prompts non-interactively.
-  For `--delete` and `--prune`, this still skips the prompt. That skip stops in 0.2
+  For `--delete` and `--prune`, this still skips the prompt. That skip stops in DistSSHKit 0.11 (DistSSHRun 0.2)
 - `--confirm-path PATH`: run `--delete` (the computed remote path) or
   `--prune` (the remote path) without the typed prompt. Quote a path that
   contains `~` (`--confirm-path '~/Parent/Repo'`) so the shell does not

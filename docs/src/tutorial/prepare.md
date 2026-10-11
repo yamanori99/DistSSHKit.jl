@@ -77,7 +77,7 @@ julia --project=. -m DistSSHKit up parent   # this machine too
 ```
 
 Clean slate. The first command asks you to type `delete` and does not delete until you do.
-`-y` still skips that prompt until 0.2. Pass the path as `--confirm-path` to delete without the prompt:
+`-y` still skips that prompt until DistSSHKit 0.11 (DistSSHRun 0.2). Pass the path as `--confirm-path` to delete without the prompt:
 
 ```bash
 julia --project=. -m DistSSHKit setup --delete child:YourHost1 child:YourHost2

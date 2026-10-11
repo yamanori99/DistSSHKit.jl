@@ -180,8 +180,8 @@ CLI のオプションと Julia API は1対1に対応している。
 
 `--rsync`、`--clone`、`--sync`、`--pull`、`up`、`up update` は、実行前に確認プロンプトが表示される。
 スクリプトなどで非対話的に実行する場合は、`-y` または `--yes` を付ける。
-`--delete` と `--prune` は `delete` または `prune` の入力を求める。`-y` と `DISTSSHKIT_YES` は、その確認を飛ばしてまだ削除する。これは 0.2 でやめる。残る手順は `--confirm-path` である。
-`teardown` は `--confirm-path` が無いとき `Would remove` を表示して削除しない。ただし `-y` と `DISTSSHKIT_YES` ではまだ削除する。これは 0.10 でやめる。
+`--delete` と `--prune` は `delete` または `prune` の入力を求める。`-y` と `DISTSSHKIT_YES` は、その確認を飛ばしてまだ削除する。これは DistSSHKit 0.11 (DistSSHRun 0.2) でやめる。残る手順は `--confirm-path` である。
+`teardown` は `--confirm-path` が無いとき `Would remove` を表示して削除しない。ただし `-y` と `DISTSSHKIT_YES` ではまだ削除する。これは DistSSHKit 0.11 (DistSSHQueue 0.10) でやめる。
 
 詳細は
 [setup](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/setup/)
@@ -212,7 +212,7 @@ julia --project=. -m DistSSHKit setup --check child:user@host1 child:user@host2
 julia --project=. -m DistSSHKit setup --prune child:user@host1 child:user@host2
 # 残っている古いワーカープロセスを掃除する
 julia --project=. -m DistSSHKit setup --cleanup child:user@host1 child:user@host2
-# 全部やり直したいとき (delete の入力を求める。-y は 0.2 まで削除する)
+# 全部やり直したいとき (delete の入力を求める。-y は DistSSHKit 0.11 まで削除する)
 julia --project=. -m DistSSHKit setup --delete child:user@host1 child:user@host2
 ```
 
