@@ -14,7 +14,7 @@ then `--help client` / `--help qhost`. `julia -m DistSSHKit -v` prints
 `DistSSHKit X`, then `DistSSHRun Y, DistSSHQueue Z`. A queue command
 on that machine prints `DistSSHQueue X`, then `DistSSHRun Y`.
 `--help client` is Jobs then Hosts;
-`--help qhost` is Setup, Serve, then Danger (`teardown`; needs `--confirm-path`;
+`--help qhost` is Setup, Serve, then Danger (`teardown`; `--confirm-path`, or `-y` until 0.10;
 job trees stay). `<command> -h` is that verb's Usage and Flags.
 Command argv is on
 `--help client`. Flags and FAQ:
@@ -119,7 +119,7 @@ creates the client copy described in
 | `-q` / `--quiet` | `status` / `watch`: table only. `DISTSSHKIT_QUIET`. |
 | `--progress` / `--verbose` | Accepted (exclusive with `-q`); there is no live run to paint, so they keep chrome. |
 | `-v` / `--version` | `julia -m DistSSHKit -v` prints `DistSSHKit X`, then `DistSSHRun Y, DistSSHQueue Z`. A queue command such as `status -v` prints `DistSSHQueue X`, then `DistSSHRun Y`. `submit go -v` is the `go` command only. |
-| `-y` / `--yes` | Ignored by `teardown`. `up default` still honors it, including `DISTSSHKIT_YES`. |
+| `-y` / `--yes` | `teardown` still deletes. That stops in 0.10. `up default` still honors it, including `DISTSSHKIT_YES`. |
 | Ctrl-C | `serve` / `watch`: that process only, never a job that is already running. |
 
 ## One job at a time

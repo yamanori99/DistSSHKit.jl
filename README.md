@@ -191,9 +191,12 @@ already prepared).
 
 `--rsync`, `--clone`, `--sync`, `--pull`, `up`, and `up update` ask for
 confirmation before running. Pass `-y` or `--yes` to run those
-non-interactively, for example from a script. `--delete`, `--prune`, and
-`teardown` do not honor `-y` or `DISTSSHKIT_YES`. Without `--confirm-path`
-they print `Would remove` and delete nothing.
+non-interactively, for example from a script. `--delete` and `--prune`
+ask for `delete` or `prune`. `-y` and `DISTSSHKIT_YES` still skip that
+prompt and delete. That skip stops in 0.2. Pass `--confirm-path` for the
+way that remains. `teardown` without `--confirm-path` prints `Would remove`
+and deletes nothing, unless `-y` or `DISTSSHKIT_YES` is set. That skip
+stops in 0.10.
 
 For details, see
 [setup](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/setup/).
@@ -226,7 +229,7 @@ Other commands that come in handy:
 julia --project=. -m DistSSHKit setup --prune child:user@host1 child:user@host2
 # Clean up leftover worker processes
 julia --project=. -m DistSSHKit setup --cleanup child:user@host1 child:user@host2
-# Start over from scratch (prints Would remove; pass that path to delete)
+# Start over from scratch (asks for delete; -y still deletes until 0.2)
 julia --project=. -m DistSSHKit setup --delete child:user@host1 child:user@host2
 ```
 

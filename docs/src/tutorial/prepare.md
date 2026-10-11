@@ -76,8 +76,8 @@ julia --project=. -m DistSSHKit up parent   # this machine too
 # julia --project=. -m DistSSHKit up update child:YourHost1
 ```
 
-Clean slate. The first command prints `Would remove` and does not delete.
-Pass that path back as `--confirm-path` to delete:
+Clean slate. The first command asks you to type `delete` and does not delete until you do.
+`-y` still skips that prompt until 0.2. Pass the path as `--confirm-path` to delete without the prompt:
 
 ```bash
 julia --project=. -m DistSSHKit setup --delete child:YourHost1 child:YourHost2

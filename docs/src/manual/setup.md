@@ -57,16 +57,19 @@ Pick **one mode** per invocation (except shared options).
 - `--runtest`: `Pkg.test()` of the **job** project on remotes (not
   DistSSHKit's tests)
 - `--prune`: delete `.distsshkit/{go,drive,setup,runs}` leaves on localhost
-  (job project) and remotes. Without `--confirm-path` equal to the remote
-  path, prints `Would remove` and deletes nothing. Does not `--delete`
-  the deploy tree. `--older-than DAYS` (mtime). `--id TOKEN` (go batch
-  or `runs/<kind>/<leaf>` name contains TOKEN; skips drive/setup)
+  (job project) and remotes. `--confirm-path` equal to the remote path
+  deletes without a prompt. Without it, the command asks for `prune`.
+  `-y` and `DISTSSHKIT_YES` still skip that prompt and delete. That skip
+  stops in 0.2. Does not `--delete` the deploy tree. `--older-than DAYS`
+  (mtime). `--id TOKEN` (go batch or `runs/<kind>/<leaf>` name contains
+  TOKEN; skips drive/setup)
 - `--cleanup`: kill stale Julia worker processes (local + remotes;
   untagged `julia --worker` / `--bind-to`. Drive leftover pkill is
   `job_id`-tagged only; `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` skips that)
-- `--delete`: remove the remote tree. Without `--confirm-path` equal to
-  the computed path, prints `Would remove` and deletes nothing. `-y` and
-  `DISTSSHKIT_YES` do not authorize it.
+- `--delete`: remove the remote tree. `--confirm-path` equal to the
+  computed path deletes without a prompt. Without it, the command asks
+  for `delete`. `-y` and `DISTSSHKIT_YES` still skip that prompt and
+  delete. That skip stops in 0.2.
   A git checkout removes the clone destination when that path sits above
   the deploy root. A `--remote-path` that cannot express that parent, and
   a tree with no git work tree, remove the rsync deploy root.
@@ -81,11 +84,12 @@ Pick **one mode** per invocation (except shared options).
 - `--progress`: live status (TTY default)
 - `--verbose`: full detail (non-TTY default)
 - `-y` / `--yes`: accept confirmation prompts non-interactively.
-  Does not authorize `--delete` or `--prune`
-- `--confirm-path PATH`: required to run `--delete` (the computed remote
-  path) or `--prune` (the remote path). Quote a path that contains `~`
-  (`--confirm-path '~/Parent/Repo'`) so the shell does not expand it.
-  Repeat is not needed; one match is enough. A mismatch exits 1 and deletes nothing
+  For `--delete` and `--prune`, this still skips the prompt. That skip stops in 0.2
+- `--confirm-path PATH`: run `--delete` (the computed remote path) or
+  `--prune` (the remote path) without the typed prompt. Quote a path that
+  contains `~` (`--confirm-path '~/Parent/Repo'`) so the shell does not
+  expand it. Repeat is not needed; one match is enough. A mismatch exits 1
+  and deletes nothing
 - `--hosts CSV`: comma-separated `child:NAME[:N]` (`:N` stripped).
   `parent` / `parent:N` belong to `up`, not `setup`
 - `--hosts-file PATH`: append the same tokens (`:N` stripped)
