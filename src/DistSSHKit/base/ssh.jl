@@ -21,7 +21,17 @@ function build_ssh_opts(; request_tty::Bool = false)
         )
         return opts
     end
-    return split(custom)
+    return _split_ssh_opts(custom)
+end
+
+"""Split `DISTRIBUTED_SSH_OPTS` with shell quoting. Unmatched quotes throw `ArgumentError`."""
+function _split_ssh_opts(custom::AbstractString)::Vector{String}
+    try
+        return String[String(x) for x in Base.shell_split(custom)]
+    catch e
+        e isa ErrorException || rethrow()
+        throw(ArgumentError("DISTRIBUTED_SSH_OPTS: $(e.msg)"))
+    end
 end
 
 """
@@ -33,7 +43,9 @@ Reads `DISTRIBUTED_SSH_OPTS` **live** (not frozen at package precompile). Prefer
 this over a `const` so E2E / ProxyJump overrides apply in the same process.
 
 A non-empty `DISTRIBUTED_SSH_OPTS` **replaces** the default vector (it is not
-merged). `request_tty` only changes the default vector: `false` includes
+merged). It is split with `Base.shell_split`, so a quoted value that contains
+spaces stays one argument. An unmatched quote throws `ArgumentError`.
+`request_tty` only changes the default vector: `false` includes
 `-o RequestTTY=no`; `true` omits it so a caller may put `ssh -t` before or
 after these flags. The ENV replacement is unchanged (if it contains
 `RequestTTY=no`, put `-t` **after** the vector). Use `-o RequestTTY=no`,
@@ -363,7 +375,37 @@ function clear_detect_julia_path_cache!(host::Union{Nothing, AbstractString} = n
     return nothing
 end
 
-"""Detect Julia path on remote host via SSH (executable + parseable `--version`)."""
+"""Run `script` on `host`. Returns `(exitcode, stdout)`.
+
+SSH's own failure (exit 255) throws `ArgumentError` from [`summarize_ssh_error`](@ref).
+Other non-zero exits are returned so a missing command can stay `nothing`.
+"""
+function _remote_shell_status(host::String, script::AbstractString)::Tuple{Int, String}
+    err_buf = IOBuffer()
+    out_buf = IOBuffer()
+    cmd = _host_sync_remote_shell_cmd(host, script)
+    proc = try
+        run(pipeline(ignorestatus(cmd); stdout = out_buf, stderr = err_buf); wait = true)
+    catch e
+        _rethrow_missing_host_tool(e)
+        rethrow()
+    end
+    code = Int(something(proc.exitcode, 1))
+    if code == 255
+        throw(ArgumentError(summarize_ssh_error(
+            Base.ProcessFailedException(Base.Process[proc]);
+            stderr = String(take!(err_buf)),
+        )))
+    end
+    return code, String(take!(out_buf))
+end
+
+"""Detect Julia path on remote host via SSH (executable + parseable `--version`).
+
+Returns `nothing` when the remote shell ran and no Julia was found. That result
+is cached. SSH transport failure (exit 255) throws `ArgumentError` and is not
+cached.
+"""
 function detect_julia_path(host::String)::Union{Nothing, String}
     h = String(strip(host))
     isempty(h) && return nothing
@@ -390,16 +432,8 @@ function _remote_julia_reports_version(host::String, path::AbstractString)::Bool
 end
 
 function _detect_julia_path_uncached(host::String)::Union{Nothing, String}
-    uname_s = try
-        strip(
-            read(
-                pipeline(_host_sync_remote_shell_cmd(host, "uname -s"); stderr = devnull),
-                String,
-            )
-        )
-    catch
-        ""
-    end
+    code, out = _remote_shell_status(host, "uname -s")
+    uname_s = code == 0 ? strip(out) : ""
 
     if !isempty(uname_s)
         for path in remote_julia_candidates(uname_s)
@@ -419,20 +453,12 @@ function _detect_julia_path_uncached(host::String)::Union{Nothing, String}
             end
         end
     end
-    try
-        result = read(
-            pipeline(
-                _host_sync_remote_shell_cmd(host, "command -v julia || which julia");
-                stderr = devnull,
-            ), String
-        )
-        p = strip(result)
-        isempty(p) && return nothing
-        _remote_julia_reports_version(host, p) || return nothing
-        return String(p)
-    catch
-        return nothing
-    end
+    code, out = _remote_shell_status(host, "command -v julia || which julia")
+    code == 0 || return nothing
+    p = strip(out)
+    isempty(p) && return nothing
+    _remote_julia_reports_version(host, p) || return nothing
+    return String(p)
 end
 
 
