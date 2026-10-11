@@ -300,6 +300,28 @@ bump or `@JuliaRegistrator register`.
 Cut happy-path bugs promptly. Opt-in flags, docs, and CI follow the
 two-week rule above unless a General user needs them sooner.
 
+### Dependency floor
+
+`[compat]` for DistSSHRun and DistSSHQueue is a lower bound up to the
+next breaking release. `"0.1.6"` means `0.1.6` or newer, and older than
+`0.2`. A later `0.1` patch installs without another Kit cut. `0.2` waits
+until this file allows it.
+
+Leave the bound open through that next breaking release. Run and Queue
+are separate repositories, so one exact version would need a Kit cut for
+every one of their patches.
+
+Raise the floor when an older release lacks a fix this package promises.
+`julia -m DistSSHKit setup` runs DistSSHRun, so a Run fix reaches that
+command once the floor moves past the release that lacks it. The copies
+under `src/DistSSHKit/base/` are the same logic kept in this repo. They
+are not that command.
+
+Register the Run or Queue release on General first. Then cut Kit and set
+the new floor in that `Project.toml` bump. A new resolve often takes the
+newest release the old floor allows. The raised floor is what stops a
+Manifest from staying on the older release.
+
 ### After a cut merges
 
 1. Register when the required checks on the version-cut PR are green
