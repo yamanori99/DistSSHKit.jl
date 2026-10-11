@@ -78,7 +78,10 @@ setup!(session, :runtest)  # optional: job Pkg.test() on remotes
 `:clone`, `:sync`, `:pull`, `:instantiate`, `:check`, `:runtest`, `:cleanup`,
 `:prune`). Channel alignment is `up` / `up update`. The setup parser still
 accepts `--juliaup` and `--juliaup-update`.
-Confirmations follow `session.yes`. **`:clone` requires `repo=`** — no silent
+Confirmations follow `session.yes`. A matching `confirm_path` on
+`setup!(session, :delete)` or `setup!(session, :prune)` deletes even when
+`yes=false`. Omitting it still follows `session.yes`. Any other mode rejects
+`confirm_path`. **`:clone` requires `repo=`** — no silent
 `origin` lookup; clone runs on the remote.
 [`sync!`](@ref) / [`instantiate!`](@ref)
 remain as short aliases for the common deploy steps.
