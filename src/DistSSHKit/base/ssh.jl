@@ -392,10 +392,14 @@ function _remote_shell_status(host::String, script::AbstractString)::Tuple{Int, 
     end
     code = Int(something(proc.exitcode, 1))
     if code == 255
-        throw(ArgumentError(summarize_ssh_error(
-            Base.ProcessFailedException(Base.Process[proc]);
-            stderr = String(take!(err_buf)),
-        )))
+        throw(
+            ArgumentError(
+                summarize_ssh_error(
+                    Base.ProcessFailedException(Base.Process[proc]);
+                    stderr = String(take!(err_buf)),
+                )
+            )
+        )
     end
     return code, String(take!(out_buf))
 end
