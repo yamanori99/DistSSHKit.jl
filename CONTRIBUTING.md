@@ -305,22 +305,24 @@ two-week rule above unless a General user needs them sooner.
 `[compat]` for DistSSHRun and DistSSHQueue is a lower bound up to the
 next breaking release. `"0.1.6"` means `0.1.6` or newer, and older than
 `0.2`. A later `0.1` patch installs without another Kit cut. `0.2` waits
-until this file allows it.
+until the `[compat]` entry in `Project.toml` allows it.
 
 Leave the bound open through that next breaking release. Run and Queue
 are separate repositories, so one exact version would need a Kit cut for
 every one of their patches.
 
 Raise the floor when an older release lacks a fix this package promises.
-`julia -m DistSSHKit setup` runs DistSSHRun, so a Run fix reaches that
-command once the floor moves past the release that lacks it. The copies
-under `src/DistSSHKit/base/` are the same logic kept in this repo. They
-are not that command.
+A fix reaches users on two paths. `julia -m DistSSHKit setup` runs
+DistSSHRun, so that path needs the DistSSHRun floor to move. `_adopt!`
+keeps a name this package already defines, so
+`DistSSHKit.remote_delete_root` and the other copies under
+`src/DistSSHKit/base/` need a Kit release.
 
 Register the Run or Queue release on General first. Then cut Kit and set
-the new floor in that `Project.toml` bump. A new resolve often takes the
-newest release the old floor allows. The raised floor is what stops a
-Manifest from staying on the older release.
+the new floor in that `Project.toml` bump. The floor does not rewrite an
+existing Manifest. When the user updates Kit, Run and Queue rise to at
+least that floor. For this kind of fix, raise the floor and write
+`NEWS.md`. Leave the older release on General.
 
 ### After a cut merges
 
