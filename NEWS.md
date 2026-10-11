@@ -11,8 +11,8 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
 
 - `setup --delete`, `setup --prune`, and `teardown` delete only when
   `--confirm-path` matches the computed path. Without it they print
-  `Would remove` and exit 0. `-y` and `DISTSSHKIT_YES` do not authorize
-  those three.
+  `Would remove` and exit 0. A path that contains `~` is shown in single
+  quotes. `-y` and `DISTSSHKIT_YES` do not authorize those three.
 - `julia -m DistSSHKit -v` prints two lines: this package, then
   DistSSHRun and DistSSHQueue.
 - `setup --delete` and `setup --clone` refuse `~`, `/`, and a single

@@ -14,7 +14,7 @@ then `--help client` / `--help qhost`. `julia -m DistSSHKit -v` prints
 `DistSSHKit X`, then `DistSSHRun Y, DistSSHQueue Z`. A queue command
 on that machine prints `DistSSHQueue X`, then `DistSSHRun Y`.
 `--help client` is Jobs then Hosts;
-`--help qhost` is Setup, Serve, then Danger (`teardown`; needs `-y`;
+`--help qhost` is Setup, Serve, then Danger (`teardown`; needs `--confirm-path`;
 job trees stay). `<command> -h` is that verb's Usage and Flags.
 Command argv is on
 `--help client`. Flags and FAQ:

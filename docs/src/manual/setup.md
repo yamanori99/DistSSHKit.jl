@@ -83,8 +83,9 @@ Pick **one mode** per invocation (except shared options).
 - `-y` / `--yes`: accept confirmation prompts non-interactively.
   Does not authorize `--delete` or `--prune`
 - `--confirm-path PATH`: required to run `--delete` (the computed remote
-  path) or `--prune` (the remote path). Repeat is not needed; one match
-  is enough. A mismatch exits 1 and deletes nothing
+  path) or `--prune` (the remote path). Quote a path that contains `~`
+  (`--confirm-path '~/Parent/Repo'`) so the shell does not expand it.
+  Repeat is not needed; one match is enough. A mismatch exits 1 and deletes nothing
 - `--hosts CSV`: comma-separated `child:NAME[:N]` (`:N` stripped).
   `parent` / `parent:N` belong to `up`, not `setup`
 - `--hosts-file PATH`: append the same tokens (`:N` stripped)

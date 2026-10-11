@@ -14,7 +14,7 @@ Also: [Prepare](@ref Queue-Tutorial-Prepare), [Walkthrough](@ref Queue-Tutorial-
 `--confirm-path` prints `Would remove` (exit 0) and does not delete.
 Pass `--confirm-path` once for each listed path to wipe. `-y` / `--yes`
 and `DISTSSHKIT_YES` do not. From a client, the same flag is
-`qhost:HOST teardown --confirm-path PATH`.
+`qhost:HOST teardown --confirm-path '~/path'`. Quote the path so the local shell does not expand `~`.
 
 `setup` is optional. Defaults work without `config.toml`. Re-run is a
 no-op unless `--force`. It writes `config.toml` only, not

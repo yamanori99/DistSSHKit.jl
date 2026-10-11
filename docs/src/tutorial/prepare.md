@@ -81,7 +81,7 @@ Pass that path back as `--confirm-path` to delete:
 
 ```bash
 julia --project=. -m DistSSHKit setup --delete child:YourHost1 child:YourHost2
-julia --project=. -m DistSSHKit setup --delete --confirm-path ~/Parent/Repo child:YourHost1 child:YourHost2
+julia --project=. -m DistSSHKit setup --delete --confirm-path '~/Parent/Repo' child:YourHost1 child:YourHost2
 ```
 
 Next: [Demo](@ref Tutorial-Demo).
