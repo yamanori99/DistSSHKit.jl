@@ -18,6 +18,9 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
 - `DISTRIBUTED_SSH_OPTS` is split with shell quoting. A quoted value that
   contains spaces stays one argument. An unmatched quote is an error. A
   non-empty value still replaces the default options.
+- `detect_julia_path` throws when the SSH connection itself fails. That
+  failure is not cached. A host whose shell ran and has no Julia still
+  returns nothing.
 
 ## 0.10.0
 
