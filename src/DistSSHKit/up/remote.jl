@@ -1,7 +1,7 @@
 """Shell that finds the juliaup binary and refuses a build older than [`JULIAUP_MIN`](@ref)."""
 function _juliaup_locate_sh(candidates::Vector{String})::String
     words = join(_juliaup_candidate_sh_word.(candidates), " ")
-    tried = join(candidates, ", ")
+    tried = _remote_sh_quote(join(candidates, ", "))
     floor_major = JULIAUP_MIN.major
     floor_minor = JULIAUP_MIN.minor
     floor = "$(floor_major).$(floor_minor)"
@@ -14,7 +14,7 @@ function _juliaup_locate_sh(candidates::Vector{String})::String
       fi
     done
     if [ -z \"\$JU\" ]; then
-      echo \"juliaup not found (tried: $tried)\" >&2
+      printf 'juliaup not found (tried: %s)\\n' $tried >&2
       exit 127
     fi
     ver=\$( \"\$JU\" --version 2>/dev/null | head -n 1 )

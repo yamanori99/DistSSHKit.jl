@@ -27,11 +27,15 @@ function remote_juliaup_candidates()::Vector{String}
     ]
 end
 
-"""Shell word for a juliaup candidate (`\$HOME/...` expands on the remote)."""
+"""Shell word for a juliaup candidate.
+
+`\$HOME/.juliaup/...` stays double-quoted so the remote shell expands it.
+Every other path is single-quoted.
+"""
 function _juliaup_candidate_sh_word(path::AbstractString)::String
     p = String(path)
     p == _JULIAUP_REMOTE_BIN_HOME && return "\"\$HOME/.juliaup/bin/juliaup\""
-    return p
+    return _remote_sh_quote(p)
 end
 
 """Local juliaup candidates (same layout as remotes; expands `\$HOME`)."""
