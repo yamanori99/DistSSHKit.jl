@@ -9,6 +9,9 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
 
 ## Unreleased
 
+- `julia -m DistSSHKit -v` prints two lines: this package, then
+  DistSSHRun and DistSSHQueue.
+
 ## 0.10.0
 
 Breaking cut after `0.9.0`. Users add DistSSHKit. It depends on

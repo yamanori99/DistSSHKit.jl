@@ -119,10 +119,15 @@ dist_ssh_kit_version()::VersionNumber = _project_version()
 """
     println_kit_version(io::IO=stdout)
 
-Print `DistSSHKit` and this package's version.
+Print two lines: this package, then DistSSHRun and DistSSHQueue.
 """
 function println_kit_version(io::IO = stdout)
+    run_ver = pkgversion(DistSSHRun)
+    queue_ver = pkgversion(DistSSHQueue)
+    run_s = run_ver === nothing ? "0.0.0" : string(run_ver)
+    queue_s = queue_ver === nothing ? "0.0.0" : string(queue_ver)
     println(io, "DistSSHKit $(dist_ssh_kit_version())")
+    println(io, "DistSSHRun $(run_s), DistSSHQueue $(queue_s)")
     return nothing
 end
 
