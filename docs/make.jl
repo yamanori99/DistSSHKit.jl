@@ -177,10 +177,11 @@ end
 
 rewrite_favicon_types!(joinpath(@__DIR__, "build"))
 
-deploydocs(;
-    repo = "github.com/yamanori99/DistSSHKit.jl.git",
-    devbranch = "main",
-    push_preview = true,
-    # stable = latest tagged release; appears after the first v* tag.
-    versions = ["stable" => "v^", "v#.#", "dev" => "dev"],
-)
+if get(ENV, "GITHUB_EVENT_NAME", "") != "pull_request"
+    deploydocs(;
+        repo = "github.com/yamanori99/DistSSHKit.jl.git",
+        devbranch = "main",
+        # stable = latest tagged release; appears after the first v* tag.
+        versions = ["stable" => "v^", "v#.#", "dev" => "dev"],
+    )
+end

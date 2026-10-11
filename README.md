@@ -22,6 +22,10 @@ A single `pkg> add DistSSHKit` is all you need to install it. The command is
 `julia -m DistSSHKit`. DistSSHKit bundles DistSSHRun and DistSSHQueue.
 You do not install them separately.
 
+Package names and UUIDs: DistSSHKit `ceec0504-c968-4be5-b215-667cae0e8f81`,
+DistSSHRun `b568025c-2759-4ef1-8b14-17d00e2cd000`,
+DistSSHQueue `24254401-70d8-4a51-8ea4-cfab19f5bc73`.
+
 A job runs in one of two places.
 
 - **This machine.** Start it here. The SSH connection stays open until
@@ -185,9 +189,11 @@ already prepared).
     deployed tree is kept)
   - `--delete` (removes the remote project directory; destructive)
 
-`--rsync`, `--clone`, `--sync`, `--pull`, `--delete`, `--prune`, `up`, and
-`up update` all ask for confirmation before running. Pass `-y` or `--yes` to run
-them non-interactively, for example from a script.
+`--rsync`, `--clone`, `--sync`, `--pull`, `up`, and `up update` ask for
+confirmation before running. Pass `-y` or `--yes` to run those
+non-interactively, for example from a script. `--delete`, `--prune`, and
+`teardown` do not honor `-y` or `DISTSSHKIT_YES`. Without `--confirm-path`
+they print `Would remove` and delete nothing.
 
 For details, see
 [setup](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/setup/).
@@ -220,7 +226,7 @@ Other commands that come in handy:
 julia --project=. -m DistSSHKit setup --prune child:user@host1 child:user@host2
 # Clean up leftover worker processes
 julia --project=. -m DistSSHKit setup --cleanup child:user@host1 child:user@host2
-# Start over from scratch (asks for confirmation)
+# Start over from scratch (prints Would remove; pass that path to delete)
 julia --project=. -m DistSSHKit setup --delete child:user@host1 child:user@host2
 ```
 

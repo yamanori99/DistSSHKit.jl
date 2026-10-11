@@ -57,13 +57,16 @@ Pick **one mode** per invocation (except shared options).
 - `--runtest`: `Pkg.test()` of the **job** project on remotes (not
   DistSSHKit's tests)
 - `--prune`: delete `.distsshkit/{go,drive,setup,runs}` leaves on localhost
-  (job project) and remotes (confirm unless `-y`). Does not `--delete`
+  (job project) and remotes. Without `--confirm-path` equal to the remote
+  path, prints `Would remove` and deletes nothing. Does not `--delete`
   the deploy tree. `--older-than DAYS` (mtime). `--id TOKEN` (go batch
   or `runs/<kind>/<leaf>` name contains TOKEN; skips drive/setup)
 - `--cleanup`: kill stale Julia worker processes (local + remotes;
   untagged `julia --worker` / `--bind-to`. Drive leftover pkill is
   `job_id`-tagged only; `DISTSSHKIT_SKIP_GLOBAL_WORKER_PKILL=1` skips that)
-- `--delete`: remove the remote tree (destructive; confirm unless `-y`).
+- `--delete`: remove the remote tree. Without `--confirm-path` equal to
+  the computed path, prints `Would remove` and deletes nothing. `-y` and
+  `DISTSSHKIT_YES` do not authorize it.
   A git checkout removes the clone destination when that path sits above
   the deploy root. A `--remote-path` that cannot express that parent, and
   a tree with no git work tree, remove the rsync deploy root.
@@ -77,7 +80,11 @@ Pick **one mode** per invocation (except shared options).
   `.distsshkit/setup/` still written
 - `--progress`: live status (TTY default)
 - `--verbose`: full detail (non-TTY default)
-- `-y` / `--yes`: accept confirmation prompts non-interactively
+- `-y` / `--yes`: accept confirmation prompts non-interactively.
+  Does not authorize `--delete` or `--prune`
+- `--confirm-path PATH`: required to run `--delete` (the computed remote
+  path) or `--prune` (the remote path). Repeat is not needed; one match
+  is enough. A mismatch exits 1 and deletes nothing
 - `--hosts CSV`: comma-separated `child:NAME[:N]` (`:N` stripped).
   `parent` / `parent:N` belong to `up`, not `setup`
 - `--hosts-file PATH`: append the same tokens (`:N` stripped)

@@ -38,10 +38,44 @@ jobs:
   build:
     name: Documenter (1.13, ubuntu-latest, x64)
     needs: detect
-    if: github.event_name != 'pull_request' || needs.detect.outputs.heavy == 'true' || needs.detect.outputs.docs == 'true'
+    if: github.event_name == 'pull_request' && (needs.detect.outputs.heavy == 'true' || needs.detect.outputs.docs == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/julia-slot
+        with:
+          version: "1.13"
+      - uses: julia-actions/cache@v3
+        with:
+          cache-scratchspaces: false
+      - name: Install docs dependencies
+        run: |
+          julia --project=docs -e '
+            using Pkg
+            Pkg.Registry.add("General")
+            Pkg.instantiate()
+          '
+      - name: Doctests
+        run: |
+          julia --project=docs -e '
+            using Documenter, DistSSHKit, Test
+            DocMeta.setdocmeta!(DistSSHKit, :DocTestSetup, :(using DistSSHKit); recursive=true)
+            doctest(DistSSHKit)
+          '
+      - name: Build docs
+        run: julia --project=docs --color=yes docs/make.jl
+
+  deploy:
+    name: Deploy docs
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     # All deploys write gh-pages. Per-ref workflow concurrency does not cover that.
     # queue: max keeps every pending deploy. The default (single) drops the
-    # older pending run when a third one arrives, so a tag or preview can skip.
+    # older pending run when a third one arrives, so a tag can skip.
     concurrency:
       group: docs-gh-pages
       cancel-in-progress: false
@@ -49,11 +83,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
-      # Documenter hosting template: push docs + report documenter/deploy status.
       contents: write
       statuses: write
-      actions: write
-      pull-requests: read
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/julia-slot

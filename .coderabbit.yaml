@@ -3,7 +3,6 @@
 language: en-US
 tone_instructions: >
   Brief. Inline comments only for bugs or regressions in this diff.
-  Do not treat existing remote-shell tilde quoting as a merge blocker.
   Stay inside the PR's stated scope.
 reviews:
   profile: quiet
@@ -23,11 +22,10 @@ reviews:
   path_instructions:
     - path: "**/*.jl"
       instructions: >
-        Paths starting with ~ are left unquoted so the remote shell expands
-        home (_remote_shell_path_word). Flag quoting only if this PR changes
-        that helper. Do not expand the PR into unrelated hardening.
-        Tests (test/**) assert that contract; do not treat those cases as new
-        injection bugs. Stay inside the PR's stated scope.
+        `~` expansion belongs to _remote_shell_path_word. Flag a remote shell
+        string that interpolates a value without _remote_sh_quote or
+        _remote_shell_path_word. Flag delete, prune, and teardown path
+        calculations in this diff. Stay inside the PR's stated scope.
   auto_review:
     enabled: true
     drafts: false

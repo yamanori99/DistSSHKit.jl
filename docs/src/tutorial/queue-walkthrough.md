@@ -84,5 +84,5 @@ julia --project=. -m DistSSHKit qhost:HOST fetch <id>
 ## Teardown (queue host)
 
 ```bash
-julia -m DistSSHKit teardown -y
+julia -m DistSSHKit teardown
 ```

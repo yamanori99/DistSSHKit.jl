@@ -124,7 +124,9 @@ Worker `addprocs` stays sequential.
 - `-q` hides terminal detail; `--verbose` forces full detail — at most one
   (`DISTSSHKIT_QUIET` / `DISTSSHKIT_PROGRESS` / `DISTSSHKIT_VERBOSE`)
 - Slot logs still write regardless; fatals stay on the terminal
-- Confirm prompts always print (`-y` / `DISTSSHKIT_YES` skips them)
+- Confirm prompts always print (`-y` / `DISTSSHKIT_YES` skips them).
+  `setup --delete`, `setup --prune`, and `teardown` ignore that skip and
+  need `--confirm-path`
 
 **Stale workers.**
 
