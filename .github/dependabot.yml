@@ -1,12 +1,18 @@
 version: 2
 updates:
   - package-ecosystem: github-actions
-    directory: /
+    directories:
+      - "/"
+      - "/.github/actions/*"
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
     labels:
       - dependencies
+    groups:
+      github-actions:
+        patterns:
+          - "*"
 
   # Ignore stdlibs and our own packages (DistSSH*), not an allow-list
   # of third-party names. A new registry dep is picked up automatically;
