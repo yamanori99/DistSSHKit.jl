@@ -11,10 +11,10 @@ coverage:
 comment: false
 
 # Pkg.test (flag pkgtest) uploads on main push (Ubuntu 1.13 only).
-# Carryforward: docs-only PRs skip heavy CI and would otherwise drop line hits.
+# Carry forward pkgtest only. Other flags (the old e2e) must not linger.
 flag_management:
   default_rules:
-    carryforward: true
+    carryforward: false
   individual_flags:
     - name: pkgtest
       carryforward: true
