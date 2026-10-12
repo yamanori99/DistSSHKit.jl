@@ -22,10 +22,6 @@ DistSSHKit は、複数のマシンへ SSH して Julia の計算を実行する
 DistSSHKit は DistSSHRun と DistSSHQueue をまとめている。
 それらを別々に入れる必要はない。
 
-パッケージ名と UUID は次のとおりである。DistSSHKit `ceec0504-c968-4be5-b215-667cae0e8f81`、
-DistSSHRun `b568025c-2759-4ef1-8b14-17d00e2cd000`、
-DistSSHQueue `24254401-70d8-4a51-8ea4-cfab19f5bc73`。
-
 ジョブを走らせる場所は次の2つである。
 
 - **このマシン。** ここでジョブを始める。終わるまで SSH は開いたままである。
@@ -335,17 +331,49 @@ julia --project=. -m DistSSHKit qhost:HOST submit go parent:1 distsshkit_demos/w
 
 ## ドキュメント
 
-公式ドキュメントの本体は英語である。
+公式ドキュメントの本体は英語である。ページ名も英語のままである。
 
-- Home:
-  [Home](https://yamanori99.github.io/DistSSHKit.jl/stable/)
-- First Steps:
-  [First Steps](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)
-- キューホスト: [Walkthrough][q-walk]
-- User Guide:
-  [User Guide](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/)
-- API: [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/)
+- [Home][home]
+- First Steps
+  - [Requirements][req]
+  - This machine
+    - [Prepare][t-prepare]
+    - [Demo][t-demo]
+  - Always-on machine
+    - [Prepare the machine][q-prepare]
+    - [First job][q-client]
+    - [Walkthrough][q-walk]
+- User Guide
+  - [Overview][manual]
+  - Prepare hosts
+    - [setup][m-setup]
+    - [up][m-up]
+  - This machine
+    - [go][m-go]
+    - [ride][m-ride]
+    - [drive][m-drive]
+    - [plan][m-plan]
+    - [size][m-size]
+    - [pool][m-pool]
+    - [paths][m-paths]
+    - [demo][m-demo]
+  - Always-on machine
+    - [How it runs][q-manual]
+    - [Artifacts and paths][q-artifacts]
+    - [submit][q-submit]
+    - [status][q-status]
+    - [fetch][q-fetch]
+    - [hosts][q-hosts]
+    - [serve][q-serve]
+    - [qhost setup][q-setup]
+- [API][api]
 - News: [NEWS.md](NEWS.md). Through 0.9.0: [HISTORY.md](HISTORY.md).
+
+## パッケージ
+
+- [DistSSHKit][home] `ceec0504-c968-4be5-b215-667cae0e8f81`
+- [DistSSHRun][run] `b568025c-2759-4ef1-8b14-17d00e2cd000`
+- [DistSSHQueue][queue] `24254401-70d8-4a51-8ea4-cfab19f5bc73`
 
 ## 貢献
 
@@ -367,9 +395,35 @@ DistSSHKit では、これを改変して使用している。
 [julia-logo-graphics](https://github.com/JuliaLang/julia-logo-graphics) を参照されたい。
 
 <!-- markdownlint-disable MD013 -->
+[home]: https://yamanori99.github.io/DistSSHKit.jl/stable/
+[req]: https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/
+[t-prepare]: https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/prepare/
+[t-demo]: https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/demo/
 [q-prepare]: https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/queue-prepare/
+[q-client]: https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/queue-client/
 [q-walk]: https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/queue-walkthrough/
+[manual]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/
+[m-setup]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/setup/
+[m-up]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/up/
+[m-go]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/go/
+[m-ride]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/ride/
+[m-drive]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/drive/
+[m-plan]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/plan/
+[m-size]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/size/
+[m-pool]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/pool/
+[m-paths]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/paths/
+[m-demo]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/demo/
 [q-manual]: https://yamanori99.github.io/DistSSHKit.jl/stable/queue/
+[q-artifacts]: https://yamanori99.github.io/DistSSHKit.jl/stable/queue/artifacts/
+[q-submit]: https://yamanori99.github.io/DistSSHKit.jl/stable/queue/submit/
+[q-status]: https://yamanori99.github.io/DistSSHKit.jl/stable/queue/status/
+[q-fetch]: https://yamanori99.github.io/DistSSHKit.jl/stable/queue/fetch/
+[q-hosts]: https://yamanori99.github.io/DistSSHKit.jl/stable/queue/hosts/
+[q-serve]: https://yamanori99.github.io/DistSSHKit.jl/stable/queue/serve/
+[q-setup]: https://yamanori99.github.io/DistSSHKit.jl/stable/queue/setup/
+[api]: https://yamanori99.github.io/DistSSHKit.jl/stable/api/
+[run]: https://yamanori99.github.io/DistSSHRun.jl/stable/
+[queue]: https://yamanori99.github.io/DistSSHQueue.jl/stable/
 <!-- markdownlint-enable MD013 -->
 
 <!-- markdownlint-disable MD033 MD013 -->
