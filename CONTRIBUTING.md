@@ -274,91 +274,18 @@ with `setup --delete`. First deploy `--rsync`; later git `--sync` /
 
 ## Release
 
-- `breaking`: incompatible behavior. May land **without** a version
-  bump. About behavior, not the bump.
-- version cut: `Project.toml` `version` went up. CI compares that
-  file with the base. Other `Project.toml` edits do not. The PR suite
-  does not path-skip. Labels adds `cut` when the version rises above
-  the base. Removing it sticks until the next rise. CI still reads the
-  file, not the label. Do not lower `version`;
-  General never takes a version down.
+Versioning, when to cut, the dependency floor, and how to register are in
+[docs/src/developers/releasing.md](docs/src/developers/releasing.md) and
+[docs/src/developers/packages.md](docs/src/developers/packages.md).
 
-On a breaking line bump `x` in `0.x.y`; otherwise bump `y`.
+In short: a breaking change raises `x` in `0.x.y`, anything else raises
+`y`. Label a breaking pull request `breaking`. Register on the merge
+commit with the NEWS section as the release notes. Do not lower
+`version`.
 
 ### When to cut
 
-Not a calendar. Cut when [NEWS.md](NEWS.md) **Unreleased** has something
-General users should get. Do not ship an empty cut. Do not automate the
-bump or `@JuliaRegistrator register`.
-
-- Happy-path bug (ordinary `~/` roots, default `drive` / `go` /
-  `setup`): yes, that patch promptly
-- Opt-in flags, docs, CI, labels, internal cache: when someone needs it
-  on General, **or** those items have sat in Unreleased for **two
-  weeks**
-
-Cut happy-path bugs promptly. Opt-in flags, docs, and CI follow the
-two-week rule above unless a General user needs them sooner.
-
-### Dependency floor
-
-`[compat]` for DistSSHRun and DistSSHQueue is a lower bound up to the
-next breaking release. `"0.1.6"` means `0.1.6` or newer, and older than
-`0.2`. A later `0.1` patch installs without another Kit cut. `0.2` waits
-until the `[compat]` entry in `Project.toml` allows it.
-
-Leave the bound open through that next breaking release. Run and Queue
-are separate repositories, so one exact version would need a Kit cut for
-every one of their patches.
-
-Raise the floor when an older release lacks a fix this package promises.
-A fix reaches users on two paths. `julia -m DistSSHKit setup` runs
-DistSSHRun, so that path needs the DistSSHRun floor to move. `_adopt!`
-keeps a name this package already defines, so
-`DistSSHKit.remote_delete_root` and the other copies under
-`src/DistSSHKit/base/` need a Kit release.
-
-Register the Run or Queue release on General first. Then cut Kit and set
-the new floor in that `Project.toml` bump. The floor does not rewrite an
-existing Manifest. When the user updates Kit, Run and Queue rise to at
-least that floor. For this kind of fix, raise the floor and write
-`NEWS.md`. Leave the older release on General.
-
-### After a cut merges
-
-1. Register when the required checks on the version-cut PR are green
-   (`Pkg.test` 1.13 on Ubuntu, macOS, and WSL2 Ubuntu, plus JETLS, Aqua,
-   Documenter, Gitleaks, PR label). A squash of only `Project.toml` and
-   `NEWS.md` does not re-run Test. Do not wait on DistSSHRun's E2E.
-   Do not lower `version`.
-2. Register on the merge commit (not the PR body). Paste the NEWS
-   section under `Release notes:`.
-3. TagBot tags once General has the release.
-
-TagBot uses SSH deploy key secret `DOCUMENTER_KEY` (write deploy key on
-this repo) so the `vX.Y.Z` tag starts Docs and `stable` updates. Docs
-still deploy with `GITHUB_TOKEN`. Do not add a `+doc1` tag unless that
-path failed. Manual rebuild: `gh workflow run Docs --ref vX.Y.Z`.
-
-GitHub Releases need a token that can `POST /repos/.../releases`
-(`Contents: write`). `GITHUB_TOKEN` 403'd on v0.7.1 even though that
-SHA did not touch `.github/workflows`. Keep cut commits to
-`Project.toml` + `NEWS.md` (no workflow files). For Releases, set
-repo secret **`TAGBOT_PAT`**: fine-grained PAT, this repo only,
-Contents read/write, Issues read/write. Add Workflows read/write only
-when the tagged SHA changes `.github/workflows` (GitHub then requires
-it). TagBot reads General with `GITHUB_TOKEN` (`registry_token`); a
-this-repo-only PAT 401s on `GET JuliaRegistries/General`. Empty
-`TAGBOT_PAT` still falls back to `GITHUB_TOKEN` for `token`. Do not put
-`permissions:` on `.github/workflows/TagBot.yml` (TagBot defaults).
-If TagBot opens `TagBot: Manual intervention needed for releases`,
-the tag may already exist; create the Release only
-(`gh release create vX.Y.Z --verify-tag --notes "…"`), then close the
-Issue. `--verify-tag` fails if the tag is missing (plain `gh release
-create` would mint it from the default branch).
-
-Repo Settings → Actions → Workflow permissions: **Read and write**
-(`GITHUB_TOKEN`).
+[docs/src/developers/releasing.md](docs/src/developers/releasing.md#when-to-cut).
 
 ## Errors
 
@@ -418,13 +345,15 @@ Backfill every PR after a vocabulary change:
 
 ### Type labels
 
-Every PR needs one of `bug` / `enhancement` / `chore`. Dependabot skips
-the type check (`dependencies` only). Override with
+Every PR needs one of `bug` / `enhancement` / `breaking` / `chore`.
+Dependabot skips the type check (`dependencies` only). Override with
 `gh pr edit N --add-label …`.
 
 Weekly Dependabot covers `github-actions` and Julia registry deps.
-Stdlib names are `ignore` in [`.github/dependabot.yml`](.github/dependabot.yml)
-(`Dates`, `Distributed`, `Pkg`, `SHA`, `TOML`, `Test`). A new
+Stdlib names and `DistSSH*` are `ignore` in
+[`.github/dependabot.yml`](.github/dependabot.yml)
+(`Dates`, `Distributed`, `Pkg`, `SHA`, `TOML`, `Test`, and our packages).
+Raise a DistSSHRun or DistSSHQueue floor by hand. A new
 third-party `[deps]` entry is picked up with no YAML change; a new
 stdlib must be added to that ignore list. Stdlib `[compat]` stays with
 the Julia floor. The Julia updater otherwise appends `< 0.0.1` for the
@@ -436,8 +365,9 @@ CI infers, in order:
 
 1. A unique type on a closing issue (`Fixes #N`)
 2. Else the branch prefix: `feat/` → enhancement, `fix/` → bug,
-   `breaking/` → breaking, `chore/` / `docs/` / `ci/` / `test/` /
-   anything else → chore
+   `breaking/` → breaking, `chore/` / `docs/` / `ci/` / `test/` → chore.
+   Any other prefix fails the check until someone adds one of the four
+   labels.
 
 `fix/` plus `Fixes` an enhancement issue gets `enhancement`. `breaking`
 may sit next to the type label. After a cut, a human registers when

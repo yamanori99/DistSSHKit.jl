@@ -141,6 +141,10 @@ makedocs(;
                 "qhost setup" => "queue/setup.md",
             ],
         ],
+        "Developers" => [
+            "Releasing" => "developers/releasing.md",
+            "Packages" => "developers/packages.md",
+        ],
         "API" => "api.md",
     ],
     checkdocs = :exports,

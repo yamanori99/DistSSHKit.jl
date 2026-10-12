@@ -1,6 +1,8 @@
 # Require a type label on every PR: bug | enhancement | breaking | chore.
 # If missing: unique type on a closing issue (`Fixes #N`) first, else branch prefix
-# (`feat/` → enhancement, `fix/` → bug, …). Dependabot is exempt (`dependencies`).
+# (`feat/` → enhancement, `fix/` → bug, `chore/` `docs/` `ci/` `test/` → chore).
+# Any other prefix fails until someone adds one of the four labels.
+# Dependabot is exempt (`dependencies`).
 # Labels adds `cut` only when the version rises above the base.
 # A removed `cut` stays off until the next rise. This workflow does not
 # add it. CI still reads Project.toml (version-cut.sh).
@@ -103,6 +105,12 @@ jobs:
               const fromIssue = await typeFromClosingIssues(n);
               const branch = String(context.payload.pull_request.head.ref || "");
               const inferred = fromIssue !== null ? fromIssue : inferType(branch);
+              if (inferred === null) {
+                core.setFailed(
+                  "Add one of these labels: bug, enhancement, breaking, chore.",
+                );
+                return;
+              }
               await addIssueLabels([inferred]);
               if (fromIssue !== null) {
                 core.info(`Applied type label "${inferred}" from a closing issue`);
@@ -155,6 +163,13 @@ jobs:
               if (b.startsWith("fix/") || b.startsWith("bug/") || b.startsWith("hotfix/")) {
                 return "bug";
               }
-              // Known prefixes, and anything else (demos/, wip/, unprefixed).
-              return "chore";
+              if (
+                b.startsWith("chore/") ||
+                b.startsWith("docs/") ||
+                b.startsWith("ci/") ||
+                b.startsWith("test/")
+              ) {
+                return "chore";
+              }
+              return null;
             }

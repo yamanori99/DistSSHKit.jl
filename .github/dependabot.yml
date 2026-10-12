@@ -8,9 +8,10 @@ updates:
     labels:
       - dependencies
 
-  # Ignore stdlibs, not an allow-list of third-party names. A new
-  # registry dep is picked up automatically; a new stdlib [deps]
-  # entry should be added here. The Julia updater appends `< 0.0.1`
+  # Ignore stdlibs and our own packages (DistSSH*), not an allow-list
+  # of third-party names. A new registry dep is picked up automatically;
+  # a new stdlib [deps] entry should be added here. The Julia updater
+  # appends `< 0.0.1`
   # (union with 0.0.0) for the pre-1.10 Pkg.test sandbox. This package
   # is Julia 1.13, so that clause is wrong. Keep stdlib [compat] at
   # the Julia floor by hand.
@@ -30,3 +31,6 @@ updates:
       - dependency-name: SHA
       - dependency-name: TOML
       - dependency-name: Test
+      # Our packages. A later patch on the same minor already matches the
+      # caret bound. A minor bump is a release step, not a Dependabot PR.
+      - dependency-name: "DistSSH*"
