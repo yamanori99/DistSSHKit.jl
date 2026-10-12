@@ -74,7 +74,8 @@ For everything else, see the
 - **Worker** — a process that receives work from the master and runs it.
 
 For example, if you run `go` or `drive` on your own machine, that machine is the
-one the job started from. Each machine can run several workers (this machine may run none),
+one the job started from. Each machine can run several workers
+(this machine may run none),
 and you can add as many remote machines as you like.
 
 <!-- markdownlint-disable MD033 MD013 -->
@@ -189,7 +190,8 @@ already prepared).
 confirmation before running. Pass `-y` or `--yes` to run those
 non-interactively, for example from a script. `--delete` and `--prune`
 ask for `delete` or `prune`. `-y` and `DISTSSHKIT_YES` still skip that
-prompt and delete. That skip stops in DistSSHKit 0.11 (DistSSHRun 0.2). Pass `--confirm-path` for the
+prompt and delete. That skip stops in DistSSHKit 0.11 (DistSSHRun 0.2).
+Pass `--confirm-path` for the
 way that remains. `teardown` without `--confirm-path` prints `Would remove`
 and deletes nothing, unless `-y` or `DISTSSHKIT_YES` is set. That skip
 stops in DistSSHKit 0.11 (DistSSHQueue 0.10).

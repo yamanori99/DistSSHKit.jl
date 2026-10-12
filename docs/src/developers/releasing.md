@@ -178,7 +178,7 @@ Minor:
    minor to say the old form is gone.
 
 On a version-cut pull request, the `Release NEWS` workflow reads the new
-`## X.Y.Z` section (from that heading to the next `## `). A missing
+`## X.Y.Z` section (from that heading to the next level-2 heading). A missing
 section fails. A patch fails if the section contains a heading that is
 exactly `### Breaking`. A breaking bump fails if that heading is missing.
 `### Planned breaking (next minor)` is not that heading. The check warns
@@ -205,7 +205,7 @@ from General.
    weekly. DistSSHKit does not wait on DistSSHRun's E2E.
 2. Comment on the merge commit, not the pull request body. Paste the
    NEWS section unchanged, from `## X.Y.Z` through the line before the
-   next `## `:
+   next level-2 heading:
 
    ```text
    @JuliaRegistrator register
