@@ -115,8 +115,10 @@ or `@JuliaRegistrator register`.
   weeks. Docs-only changes do not get their own tag. They go out with
   the next release.
 - Breaking changes wait and go out together. Do not promise a date.
-  Release DistSSHRun and DistSSHQueue first when both have a minor, then
-  raise DistSSHKit once.
+  The open milestone named `X.Y.0`, with no due date, is that batch.
+  One such milestone per repository. Do not register that version while
+  an issue on it is open. Release DistSSHRun and DistSSHQueue first when
+  both have a minor, then raise DistSSHKit once.
 
 The GitHub Release is the notice for a patch. Do not open a Discussions
 Announcement for a register. For a minor, also tell the lab what changed.
