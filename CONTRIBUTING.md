@@ -24,12 +24,8 @@ alone. DistSSHKit does not install a `distsshkit` command.
 Happy-path bugs (ordinary `~/` roots, default `drive` / `go` / `setup`);
 CI / Julia slots / Aqua / JETLS / Runic drift. Enhancement Issue first, then a PR.
 
-Windows and GPU-package help stay on the horizon
-([Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26)).
-
 Chat: [Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions).
-Tracked bugs stay Issues. Direction for DistSSHKit as a whole is still
-[Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26).
+Tracked bugs stay Issues.
 
 ## ride and `:effect_free`
 
@@ -309,8 +305,6 @@ domains share a shape.
 and orthogonal: Julia tip / next stable Base or stdlib drift (keep
 `when:later` until that Julia is the DistSSHKit contract). Usage questions are
 Discussions. Confirmed bugs are Issues. `breaking` is a PR label.
-Direction:
-[Discussion #26](https://github.com/yamanori99/DistSSHKit.jl/discussions/26).
 Security: [SECURITY.md](SECURITY.md).
 
 Maintainer memo: [#50](https://github.com/yamanori99/DistSSHKit.jl/issues/50)
