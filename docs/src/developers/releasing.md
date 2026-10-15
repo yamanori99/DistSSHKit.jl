@@ -202,10 +202,11 @@ from General.
 1. Register when the checks named for this package on
    [Packages](packages.md) are green. DistSSHRun and DistSSHQueue also
    wait until `cut-hold` is clear. They do not wait for the next E2E
-   weekly. DistSSHKit does not wait on DistSSHRun's E2E. If `Downstream SSH E2E
-   (DistSSHQueue, 1.13)` is red on a DistSSHRun version-cut pull request, do not
-   register until the cause is known, and open a DistSSHQueue issue when the
-   cause is DistSSHQueue.
+   weekly. DistSSHKit does not wait on DistSSHRun's E2E. DistSSHRun also
+   waits, on a version-cut pull request, for `Downstream SSH E2E
+   (DistSSHQueue, 1.13)`. Do not register that DistSSHRun version while
+   the job is red. If the cause is DistSSHQueue, open a DistSSHQueue
+   issue.
 2. Comment on the merge commit, not the pull request body. Paste the
    NEWS section unchanged, from `## X.Y.Z` through the line before the
    next level-2 heading:

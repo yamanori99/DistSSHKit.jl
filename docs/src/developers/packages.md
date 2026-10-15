@@ -9,7 +9,7 @@ DistSSHRun, then DistSSHQueue, then DistSSHKit.
 
 | Package | Depends on | Reexports | Installed on its own | Compat files | Ordinary path | Before register |
 | --- | --- | --- | --- | --- | --- | --- |
-| DistSSHRun | — | — | yes | — | `setup`, `go`, `ride`, `drive` | required checks and the PR's Linux E2E. Do not wait for E2E weekly. No open `cut-hold` |
+| DistSSHRun | — | — | yes | — | `setup`, `go`, `ride`, `drive` | required checks, the PR's Linux E2E, and on a version-cut pull request `Downstream SSH E2E (DistSSHQueue, 1.13)`. Do not register while that job is red; open a DistSSHQueue issue when the cause is DistSSHQueue. Do not wait for E2E weekly. No open `cut-hold` |
 | DistSSHQueue | DistSSHRun | — | yes | `Project.toml`, `test/Project.toml` | FIFO enqueue, `serve` | required checks and the PR's Linux E2E. Do not wait for E2E weekly. No open `cut-hold` |
 | DistSSHKit | DistSSHRun, DistSSHQueue | DistSSHRun, DistSSHQueue | yes (main entry) | `Project.toml`, `test/Project.toml`, `docs/Project.toml` | ordinary `~/` roots, default `drive` / `go` / `setup` | `Pkg.test` 1.13 on Ubuntu, macOS, and WSL2; JETLS; Aqua; Documenter; Gitleaks; PR label. Do not wait on DistSSHRun's E2E |
 
