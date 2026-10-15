@@ -208,14 +208,13 @@ from General.
    the job is red. If the cause is DistSSHQueue, open a DistSSHQueue
    issue.
 2. Comment on the merge commit, not the pull request body. Paste the
-   NEWS section unchanged, from `## X.Y.Z` through the line before the
-   next level-2 heading:
+   NEWS section unchanged, from the line after `## X.Y.Z` through the
+   line before the next level-2 heading:
 
    ```text
    @JuliaRegistrator register
 
    Release notes:
-   ## X.Y.Z
 
    ...the NEWS section...
    ```

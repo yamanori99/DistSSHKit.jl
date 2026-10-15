@@ -3,8 +3,8 @@
 # News
 
 User-facing changes.
-GitHub Releases may copy these sections (`Release notes:` on
-`@JuliaRegistrator register`).
+GitHub Releases may copy the text under each version heading
+(`Release notes:` on `@JuliaRegistrator register`).
 Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
 
 ## 0.10.1
