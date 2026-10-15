@@ -2,6 +2,7 @@
 DistSSHKit = "ceec0504-c968-4be5-b215-667cae0e8f81"
 DistSSHQueue = "24254401-70d8-4a51-8ea4-cfab19f5bc73"
 DistSSHRun = "b568025c-2759-4ef1-8b14-17d00e2cd000"
+TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [sources]
@@ -10,4 +11,5 @@ DistSSHKit = {path = ".."}
 [compat]
 DistSSHQueue = "0.9.5"
 DistSSHRun = "0.1.7"
+TOML = "1"
 Test = "1"

@@ -11,8 +11,9 @@ From this checkout's root:
 julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
-That is `test/runtests.jl`: public reexports and `julia -m DistSSHKit`
-routing. Tests for a job started on this machine live in DistSSHRun.
+That is `test/runtests.jl`, which includes the files under Layout:
+public reexports and `julia -m DistSSHKit` routing. Tests for a job
+started on this machine live in DistSSHRun.
 Tests for jobs left on a machine that stays on live in DistSSHQueue.
 Aqua is a separate CI job, not `Pkg.test()`.
 `Pkg.test()` must pass on a Registry install (that tree has no
@@ -23,7 +24,16 @@ E2E, not this repo. Occasional copy recipe: [Registry tree](#registry-tree).
 
 ```text
 test/
-  runtests.jl     # Pkg.test() — reexports and CLI routing
+  runtests.jl      # Pkg.test() — include only
+  helpers.jl       # _main_capture, _with_fake_ssh, _kit_proc
+  reexport.jl      # public names
+  routing.jl       # main wording and streams
+  consistency.jl   # command lists
+  hop.jl           # qhost: PATH ssh, no real connection
+  version.jl       # Project.toml version text
+  state.jl         # CLI entry and env
+  subprocess.jl    # child exit codes
+  ssh_opts.jl      # DISTRIBUTED_SSH_OPTS
   Project.toml
 ```
 
@@ -40,7 +50,7 @@ Green on one layer does not imply the others. Child CLI uses
 - **Aqua** (~5 s): ambiguities, exports, compat (latest registry Aqua).
   Not CLI / workers.
 - **Pkg.test**: reexports and `julia -m DistSSHKit` routing
-  (`test/runtests.jl`). Ubuntu, `macos-latest`, and WSL2 Ubuntu.
+  (the files under [Layout](#layout)). Ubuntu, `macos-latest`, and WSL2 Ubuntu.
   All three are required checks.
 - **unit / integration / SSH E2E**: a job started on this machine, in
   DistSSHRun. Not this repo's `Pkg.test()`.
@@ -136,9 +146,10 @@ docker run --rm \
 
 ## Writing tests
 
-1. Meta-package checks go in `test/runtests.jl`. Unit, integration, and
-   SSH tests for a job started on this machine go in DistSSHRun. Tests
-   for jobs left on a machine that stays on go in DistSSHQueue.
+1. Meta-package checks go in the files under [Layout](#layout).
+   `test/runtests.jl` only includes them. Unit, integration, and SSH
+   tests for a job started on this machine go in DistSSHRun. Tests for
+   jobs left on a machine that stays on go in DistSSHQueue.
 2. Do not add an SSH suite here. `Pkg.test` must not start Docker.
 3. Short Oracle / non-guarantee comment at the top of the file.
 
