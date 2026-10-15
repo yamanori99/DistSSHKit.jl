@@ -27,7 +27,7 @@ test/
   runtests.jl      # Pkg.test() — include only
   helpers.jl       # _main_capture, _with_fake_ssh, _kit_proc
   reexport.jl      # public names
-  routing.jl       # main wording and streams
+  routing.jl       # main wording, streams, and the _route table
   consistency.jl   # command lists
   hop.jl           # qhost: PATH ssh, no real connection
   version.jl       # Project.toml version text
