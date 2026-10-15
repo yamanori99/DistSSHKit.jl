@@ -7,11 +7,11 @@ GitHub Releases use the notes on `@JuliaRegistrator register`.
 Those notes are often shorter than the section below.
 Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
 
-## 0.10.2
+## Unreleased
 
-- Requires DistSSHRun 0.1.7 and DistSSHQueue 0.9.5.
 - Host SSH and juliaup come from DistSSHRun 0.1.7 (`DistSSHBase` and
-  `DistSSHUp`). The copies in this package are gone.
+  `DistSSHUp`). The copies in this package are gone. DistSSHRun compat is
+  `0.1.7`. DistSSHQueue compat is `0.9.5`.
 - `setup --rsync` inside one git repository also applies `.gitignore`
   files above the send root. That has been true since DistSSHRun 0.1.7.
 - CLI flags, confirmation, and exit codes are unchanged.
