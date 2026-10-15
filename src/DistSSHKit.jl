@@ -313,41 +313,54 @@ function main(args::Vector{String} = copy(ARGS))::Cint
     end
 end
 
-function _main(args::Vector{String})::Cint
+const _Route = Union{
+    Tuple{Symbol, Vector{String}},
+    Tuple{Symbol, Int},
+    Tuple{Symbol, String},
+}
+
+"""Where `main` would send `args`, without I/O or another package's `main`.
+
+`(:version, String[])`, `(:usage, 0)` or `(:usage, 1)`, `(:queue_help, args)`,
+`(:queue, argv)`, `(:run, argv)`, `(:no_command, sub)`, or `(:unknown, sub)`.
+"""
+function _route(args::Vector{String})::_Route
     if length(args) == 1 && _version_flag(args[1])
-        println_kit_version()
-        return 0
+        return (:version, String[])
     end
     if length(args) == 2 && args[1] in ("-h", "--help", "help") &&
             args[2] in _QUEUE_HELP_TOPICS
-        return DistSSHQueue.main(args)
+        return (:queue_help, args)
     end
     if length(args) == 1 && args[1] in ("-h", "--help", "help")
-        print_kit_root_usage()
-        return 0
+        return (:usage, 0)
     end
     if isempty(args)
-        print_kit_root_usage()
-        return 1
+        return (:usage, 1)
     end
     stripped = _without_qhost_group(args)
     if stripped !== nothing
-        return DistSSHQueue.main(stripped)
+        return (:queue, stripped)
     end
     sub, saw_queue = _leading_command(args)
     if saw_queue || sub in _QUEUE_ONLY
-        return DistSSHQueue.main(args)
+        return (:queue, args)
     end
     if sub in _RUN_COMMANDS
         rest = args[2:end]
         if length(rest) == 1 && _version_flag(rest[1])
-            println_kit_version()
-            return 0
+            return (:version, String[])
         end
-        _bind_run_in_main!()
-        return DistSSHRun.main(args)
+        return (:run, args)
     end
     if any(endswith(String(a), ".jl") for a in args)
+        return (:no_command, sub)
+    end
+    return (:unknown, sub)
+end
+
+function _finish_rejected(sub::AbstractString, script::Bool)::Cint
+    if script
         DistSSHRun.print_cli_error(
             "No command (got $(repr(sub))). Kit does not infer go / ride / drive.",
         )
@@ -369,6 +382,26 @@ function _main(args::Vector{String})::Cint
     println(stderr)
     print_kit_root_usage()
     return 1
+end
+
+function _main(args::Vector{String})::Cint
+    kind, payload = _route(args)
+    if kind === :version
+        println_kit_version()
+        return 0
+    elseif kind === :usage
+        print_kit_root_usage()
+        return payload::Int
+    elseif kind === :queue_help || kind === :queue
+        return DistSSHQueue.main(payload::Vector{String})
+    elseif kind === :run
+        _bind_run_in_main!()
+        return DistSSHRun.main(payload::Vector{String})
+    elseif kind === :no_command
+        return _finish_rejected(payload::String, true)
+    else
+        return _finish_rejected(payload::String, false)
+    end
 end
 
 Base.eval(@__MODULE__, :(@main))
