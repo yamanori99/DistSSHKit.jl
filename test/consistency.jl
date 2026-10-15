@@ -9,14 +9,28 @@
     help = sprint(io -> DistSSHKit.print_kit_root_usage(io))
     code, _, err = _main_capture(["bogus"])
     @test code == 1
-    for c in (run_cmds..., queue_cmds...)
+    lines = split(err, '\n')
+    expected = only(filter(startswith("Expected:"), lines))
+    queue = only(filter(startswith("Queue:"), lines))
+    for c in run_cmds
+        @test occursin(Regex("\\b\\Q$c\\E\\b"), expected)
+    end
+    for c in queue_cmds
         word = Regex("\\b\\Q$c\\E\\b")
         if c == "service"
-            @test !occursin(word, help)
-            @test !occursin(word, err)
+            @test !occursin(word, expected)
+            @test !occursin(word, queue)
         else
-            @test occursin(word, help)
-            @test occursin(word, err)
+            @test occursin(word, queue)
+        end
+    end
+    # Command column, not a later mention in prose (`up` inside `juliaup`).
+    for c in (run_cmds..., queue_cmds...)
+        column = Regex("^  (qhost )?\\Q$c\\E\\s{2,}", "m")
+        if c == "service"
+            @test !occursin(column, help)
+        else
+            @test occursin(column, help)
         end
     end
     for c in (run_cmds..., queue_cmds...)

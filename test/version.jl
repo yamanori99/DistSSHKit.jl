@@ -11,9 +11,6 @@ using TOML
         raw isa String && @test DistSSHKit.dist_ssh_kit_version() == VersionNumber(raw)
     end
     @test DistSSHKit.dist_ssh_kit_version() == pkgversion(DistSSHKit)
-    # TODO: DistSSHRun.dist_ssh_kit_version reads DistSSHRun's own Project.toml.
-    # This fails when that number happens to equal DistSSHKit's.
-    @test DistSSHKit.dist_ssh_kit_version() != DistSSHRun.dist_ssh_kit_version()
     code, out, err = _main_capture(["--version"])
     @test code == 0
     @test isempty(err)
