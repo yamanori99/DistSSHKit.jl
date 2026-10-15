@@ -1,7 +1,12 @@
 # Require a type label on every PR: bug | enhancement | breaking | chore.
-# If missing: unique type on a closing issue (`Fixes #N`) first, else branch prefix
-# (`feat/` → enhancement, `fix/` → bug, `chore/` `docs/` `ci/` `test/` → chore).
-# Any other prefix fails until someone adds one of the four labels.
+# If missing, in order: unique type on a closing issue (`Fixes #N`),
+# branch prefix (`feat/` → enhancement, `fix/` → bug,
+# `breaking/` `break/` → breaking, `chore/` `docs/` `ci/` `test/` → chore),
+# Conventional Commit title (`fix:` → bug, `feat:` → enhancement,
+# `!` before the colon → breaking, `docs:` `test:` `ci:` `chore:` → chore,
+# `type(scope):` accepted), else `chore` when the diff has no `src/`,
+# `ext/`, or root `Project.toml`.
+# Anything else fails until someone adds one of the four labels.
 # Dependabot is exempt (`dependencies`).
 # Labels adds `cut` only when the version rises above the base.
 # A removed `cut` stays off until the next rise. This workflow does not
@@ -10,7 +15,7 @@ name: Type
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize, ready_for_review, labeled, unlabeled]
+    types: [opened, edited, reopened, synchronize, ready_for_review, labeled, unlabeled]
 
 # Include event.action so labeled/unlabeled (from path Labels) do not
 # cancel an in-flight opened/synchronize job that is applying the type.
@@ -104,7 +109,27 @@ jobs:
             } else {
               const fromIssue = await typeFromClosingIssues(n);
               const branch = String(context.payload.pull_request.head.ref || "");
-              const inferred = fromIssue !== null ? fromIssue : inferType(branch);
+              const title = String(context.payload.pull_request.title || "");
+              let inferred = fromIssue;
+              let source = fromIssue !== null ? "a closing issue" : null;
+              if (inferred === null) {
+                inferred = inferType(branch);
+                if (inferred !== null) {
+                  source = `branch "${branch}"`;
+                }
+              }
+              if (inferred === null) {
+                inferred = inferTitle(title);
+                if (inferred !== null) {
+                  source = "the pull request title";
+                }
+              }
+              if (inferred === null) {
+                inferred = await typeFromChangedFiles(n);
+                if (inferred !== null) {
+                  source = "changed files";
+                }
+              }
               if (inferred === null) {
                 core.setFailed(
                   "Add one of these labels: bug, enhancement, breaking, chore.",
@@ -112,11 +137,7 @@ jobs:
                 return;
               }
               await addIssueLabels([inferred]);
-              if (fromIssue !== null) {
-                core.info(`Applied type label "${inferred}" from a closing issue`);
-              } else {
-                core.info(`Applied type label "${inferred}" from branch "${branch}"`);
-              }
+              core.info(`Applied type label "${inferred}" from ${source}`);
             }
 
             async function typeFromClosingIssues(num) {
@@ -170,6 +191,65 @@ jobs:
                 b.startsWith("test/")
               ) {
                 return "chore";
+              }
+              return null;
+            }
+
+            function inferTitle(title) {
+              const match = title
+                .trim()
+                .match(/^(feat|fix|docs|test|ci|chore)(\([^)]*\))?(!)?:/i);
+              if (!match) {
+                return null;
+              }
+              if (match[3] === "!") {
+                return "breaking";
+              }
+              const kind = match[1].toLowerCase();
+              if (kind === "fix") {
+                return "bug";
+              }
+              if (kind === "feat") {
+                return "enhancement";
+              }
+              return "chore";
+            }
+
+            async function typeFromChangedFiles(num) {
+              let seen = 0;
+              for (let page = 1; page <= 10; page++) {
+                const { data } = await retryPrNode(() =>
+                  github.rest.pulls.listFiles({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: num,
+                    per_page: 100,
+                    page,
+                  }),
+                );
+                if (!Array.isArray(data) || data.length === 0) {
+                  return seen === 0 ? null : "chore";
+                }
+                for (const file of data) {
+                  seen += 1;
+                  const name = String(file.filename || "");
+                  if (
+                    name === "Project.toml" ||
+                    name.startsWith("src/") ||
+                    name.startsWith("ext/")
+                  ) {
+                    return null;
+                  }
+                }
+                if (data.length < 100) {
+                  return "chore";
+                }
+                if (seen >= 1000) {
+                  core.info(
+                    "Changed-file list is longer than 1000; not inferring chore",
+                  );
+                  return null;
+                }
               }
               return null;
             }

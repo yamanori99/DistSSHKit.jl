@@ -5,7 +5,10 @@
 <!-- What / why -->
 <!-- Type label: closing issue (`Fixes #N`) if unique, else branch prefix
      (feat/ → enhancement, fix/ → bug, breaking/ → breaking,
-     chore/ docs/ ci/ test/ → chore). Any other prefix fails the check.
+     chore/ docs/ ci/ test/ → chore), else a Conventional Commit title
+     (fix: → bug, feat: → enhancement, ! → breaking,
+     docs/ test/ ci/ chore: → chore). Else chore when the diff has no
+     src/, ext/, or root Project.toml. Anything else fails the check.
      Override with gh pr edit. -->
 
 ## Checklist

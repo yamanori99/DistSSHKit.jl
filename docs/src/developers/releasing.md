@@ -78,10 +78,13 @@ otherwise.
   usually a patch. The hardening is often breaking.
 
 A pull request needs one of `bug`, `enhancement`, `breaking`, or `chore`.
-CI applies that from a closing issue, or from the branch prefix
+CI applies that from a closing issue, then the branch prefix
 (`feat/`, `fix/`, `breaking/`, and `chore/` `docs/` `ci/` `test/` for
-chore). Any other prefix fails until someone adds one of the four labels.
-Dependabot is exempt.
+chore), then a Conventional Commit title (`fix:`, `feat:`, a `!` before
+the colon, and `docs:` `test:` `ci:` `chore:`). `type(scope):` is
+accepted. Otherwise it applies `chore` when the diff has no `src/`,
+`ext/`, or root `Project.toml`. Anything else fails until someone adds
+one of the four labels. Dependabot is exempt.
 
 ## Deprecation
 

@@ -360,8 +360,11 @@ CI infers, in order:
 1. A unique type on a closing issue (`Fixes #N`)
 2. Else the branch prefix: `feat/` → enhancement, `fix/` → bug,
    `breaking/` → breaking, `chore/` / `docs/` / `ci/` / `test/` → chore.
-   Any other prefix fails the check until someone adds one of the four
-   labels.
+3. Else a Conventional Commit title: `fix:` → bug, `feat:` → enhancement,
+   `!` before the colon → breaking, and `docs:` / `test:` / `ci:` /
+   `chore:` → chore. `type(scope):` is accepted.
+4. Else `chore` when the diff has no `src/`, `ext/`, or root `Project.toml`.
+   Anything else fails until someone adds one of the four labels.
 
 `fix/` plus `Fixes` an enhancement issue gets `enhancement`. `breaking`
 may sit next to the type label. After a cut, a human registers when
