@@ -49,29 +49,6 @@ function _kit_version_text()::String
     return "DistSSHKit $(kit)\nDistSSHRun $(run_s), DistSSHQueue $(queue_s)\n"
 end
 
-# Run exports these, and this package's `base/` defines the same names.
-const _VENDORED = (
-    :cache_file,
-    :cache_path,
-    :cache_relpath,
-    :canonical_local_path,
-    :file_sha256,
-    :host_tokens,
-    :is_parent_host_name,
-    :print_colored,
-    :print_help_blank,
-    :print_help_chrome,
-    :print_help_lines,
-    :print_help_section,
-    :resolve_controller_julia,
-    :resolve_pkg_env,
-    :resolve_pkg_project_dir,
-    :run_on_host,
-    :short_path,
-    :ssh_opts,
-    :stored_path,
-)
-
 @testset "DistSSHKit" verbose = true begin
     @testset "reexport" begin
         for n in names(DistSSHRun)
@@ -79,11 +56,7 @@ const _VENDORED = (
             n === :println_kit_version && continue
             @test isdefined(DistSSHKit, n)
             @test n in names(DistSSHKit)
-            if n in _VENDORED
-                @test parentmodule(getproperty(DistSSHKit, n)) === DistSSHKit
-            else
-                @test getproperty(DistSSHKit, n) === getproperty(DistSSHRun, n)
-            end
+            @test getproperty(DistSSHKit, n) === getproperty(DistSSHRun, n)
         end
         for n in names(DistSSHQueue)
             n === :DistSSHQueue && continue
@@ -92,8 +65,7 @@ const _VENDORED = (
             @test n in names(DistSSHKit)
         end
         @test !isdefined(DistSSHKit, :_read_kit_pid_record)
-        @test isdefined(DistSSHKit, :_juliaup_default_channel_from_status)
-        @test :_juliaup_default_channel_from_status ∉ names(DistSSHKit)
+        @test !isdefined(DistSSHKit, :_juliaup_default_channel_from_status)
         ver = DistSSHKit.dist_ssh_kit_version()
         @test ver == _project_toml_version()
         @test ver != DistSSHRun.dist_ssh_kit_version()
@@ -236,5 +208,4 @@ const _VENDORED = (
         end
     end
 
-    include(joinpath(@__DIR__, "shell_quote.jl"))
 end

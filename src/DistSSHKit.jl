@@ -9,7 +9,8 @@ module DistSSHKit
 
 using DistSSHQueue
 import DistSSHRun
-using SHA
+using DistSSHRun.DistSSHBase
+using DistSSHRun.DistSSHBase: cli_entry, cli_m, cli_m_project, with_cli_entry
 
 # Names this module defines itself. Do not import them from a dependency.
 const _OWN = (
@@ -34,9 +35,10 @@ const _FROM = Dict{Symbol, Module}()
 
 """Reexport names `mod` already exports. Private names stay there.
 
-A name this module already defines (vendored `base/` and `up/`) is exported
-here and not imported. `_OWN` is excluded even when not yet defined, because
-`println_kit_version` is declared after this pass and Run also exports it.
+A name already in this module is exported when it is the same binding `mod`
+holds (`using DistSSHRun.DistSSHBase` brings those in). `_OWN` is excluded
+even when not yet defined, because `println_kit_version` is declared after
+this pass and Run also exports it.
 """
 function _adopt!(mod::Module)
     for n in names(mod)
@@ -44,9 +46,19 @@ function _adopt!(mod::Module)
         n in _OWN && continue
         if haskey(_FROM, n)
             _FROM[n] === mod && continue
+            # Run and Queue can both reexport one DistSSHBase binding.
+            # Allow that only when the binding's owning module is the same.
+            if Base.binding_module(mod, n) === Base.binding_module(@__MODULE__, n)
+                continue
+            end
             error("DistSSHKit cannot take `$n` from both $(nameof(mod)) and $(nameof(_FROM[n]))")
         end
         if isdefined(@__MODULE__, n)
+            # `using DistSSHRun.DistSSHBase` may already have brought this binding in.
+            if Base.binding_module(mod, n) !== Base.binding_module(@__MODULE__, n)
+                owner = nameof(Base.binding_module(@__MODULE__, n))
+                error("DistSSHKit cannot take `$n` from both $(nameof(mod)) and $(owner)")
+            end
             Core.eval(@__MODULE__, Expr(:export, n))
             _FROM[n] = @__MODULE__
             continue
@@ -56,22 +68,6 @@ function _adopt!(mod::Module)
     end
     return nothing
 end
-
-include("DistSSHKit/base/paths.jl")
-include("DistSSHKit/base/explain.jl")
-include("DistSSHKit/base/argv.jl")
-include("DistSSHKit/base/hosts.jl")
-include("DistSSHKit/base/host_tokens.jl")
-include("DistSSHKit/base/cli_entry.jl")
-include("DistSSHKit/base/help.jl")
-include("DistSSHKit/base/ssh.jl")
-include("DistSSHKit/base/julia_where.jl")
-include("DistSSHKit/base/namespace.jl")
-include("DistSSHKit/up/version.jl")
-include("DistSSHKit/up/status.jl")
-include("DistSSHKit/up/remote.jl")
-include("DistSSHKit/up/local.jl")
-include("DistSSHKit/up/hosts.jl")
 
 _adopt!(DistSSHRun)
 _adopt!(DistSSHQueue)
@@ -310,12 +306,10 @@ Run commands (`setup`, `up`, `go`, `ride`, `drive`, `plan`, `size`, `pool`,
 `qhost up`, `qhost serve`, `qhost size`).
 """
 function main(args::Vector{String} = copy(ARGS))::Cint
+    # Run, Queue, and this package share DistSSHBase.with_cli_entry.
+    # The first call sets the entry. Nested calls would return immediately.
     return with_cli_entry(:DistSSHKit) do
-        DistSSHRun.with_cli_entry(:DistSSHKit) do
-            DistSSHQueue.with_cli_entry(:DistSSHKit) do
-                _main(args)
-            end
-        end
+        _main(args)
     end
 end
 

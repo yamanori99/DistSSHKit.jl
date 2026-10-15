@@ -133,9 +133,9 @@ would need a new cut for every upstream patch.
 Raise the floor when an older release lacks a fix this package promises.
 A fix reaches users on two paths. The CLI runs the upstream package, so
 that path needs the floor to move. Names this package defines itself
-need a release of this package. `_adopt!` keeps those names in
-DistSSHKit (`src/DistSSHKit/base/`). DistSSHQueue has its own copy under
-`src/DistSSHQueue/base/`.
+need a release of this package. DistSSHKit and DistSSHQueue use
+DistSSHRun's submodules (`DistSSHRun.DistSSHBase` and
+`DistSSHRun.DistSSHUp`) instead of keeping their own copies.
 
 Register the upstream release on General first. Then cut this package and
 set the new floor in the same `Project.toml` change, in every file

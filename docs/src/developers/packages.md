@@ -34,10 +34,12 @@ raises only its compat, in a patch, unless the change leaks into its own
 public API. A change in an upper package never raises a lower one.
 
 A breaking release of a package that many others depend on is a release
-of all of them together. Keep that package small. DistSSHBase, if it is
-split out of `base/`, is that package. DistSSHUp (`up/` and
-`base/julia_where.jl`) would depend on it and be installed on its own.
-DistSSHKit would depend on both and reexport neither. Both start at
-0.1.0. Add the row before the first release.
+of all of them together. Keep that package small. Today `DistSSHBase` and
+`DistSSHUp` are submodules of DistSSHRun (`DistSSHRun.DistSSHBase` and
+`DistSSHRun.DistSSHUp`), not separate packages. DistSSHQueue and
+DistSSHKit use those submodules. If they are later split out and
+registered, DistSSHUp would depend on DistSSHBase and be installed on its
+own. DistSSHKit would depend on both and reexport neither. Both would
+start at 0.1.0. Add the row before the first release.
 
 Rules for 1.0 are not decided.
