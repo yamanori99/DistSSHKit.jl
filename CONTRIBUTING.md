@@ -276,7 +276,7 @@ Versioning, when to cut, the dependency floor, and how to register are in
 
 In short: a breaking change raises `x` in `0.x.y`, anything else raises
 `y`. Label a breaking pull request `breaking`. Register on the merge
-commit with the NEWS section as the release notes. Do not lower
+commit. Release notes are often shorter than the NEWS section. Do not lower
 `version`.
 
 ### When to cut

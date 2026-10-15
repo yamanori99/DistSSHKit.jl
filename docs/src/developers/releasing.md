@@ -207,22 +207,22 @@ from General.
    (DistSSHQueue, 1.13)`. Do not register that DistSSHRun version while
    the job is red. If the cause is DistSSHQueue, open a DistSSHQueue
    issue.
-2. Comment on the merge commit, not the pull request body. Paste the
-   NEWS section unchanged, from the line after `## X.Y.Z` through the
-   line before the next level-2 heading:
+2. Comment on the merge commit, not the pull request body. Write the
+   release notes under `Release notes:`. They are often shorter than
+   the NEWS section, and they stand on their own. `## X.Y.Z` stays in
+   `NEWS.md`.
 
    ```text
    @JuliaRegistrator register
 
    Release notes:
 
-   ...the NEWS section...
+   ...the notes...
    ```
 
-   NEWS is the text. Do not summarize it into a second wording. A
-   breaking release needs the word `breaking` in those notes. The
-   `### Breaking` heading supplies it, which is what General's
-   AutoMerge looks for.
+   A breaking release needs the word `breaking` in those notes. That
+   is what General's AutoMerge looks for. The `### Breaking` items in
+   NEWS are what those notes describe.
 3. TagBot tags once General has the release.
 
 TagBot uses the SSH deploy key secret `DOCUMENTER_KEY` (a write deploy
