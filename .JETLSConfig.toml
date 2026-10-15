@@ -1,0 +1,10 @@
+# `_adopt!` imports each exported name. That `import` calls `require`.
+# JET re-executes it and reports DistSSHRun as a missing dependency.
+# This package lists DistSSHRun, and the binding stays an `import` so the
+# docstring stays on the original name for Documenter.
+[[diagnostic.patterns]]
+pattern = "does not have DistSSHRun in its dependencies"
+match_by = "message"
+match_type = "regex"
+severity = "off"
+path = "src/DistSSHKit.jl"
