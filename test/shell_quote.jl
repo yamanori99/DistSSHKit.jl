@@ -11,7 +11,7 @@ end
 
 @testset "remote shell quote" begin
     @test isfile("/bin/sh")
-    mktempdir() do dir
+    mktempdir() do dir::String
         sentinel = joinpath(dir, "SENTINEL")
         touch = "touch " * sentinel
         samples = String[
