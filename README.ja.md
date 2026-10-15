@@ -13,65 +13,57 @@
 [![Discussions](https://img.shields.io/badge/GitHub-Discussions-blueviolet?style=flat-square&logo=github)](https://github.com/yamanori99/DistSSHKit.jl/discussions)
 <!-- markdownlint-enable MD013 -->
 
-DistSSHKit は、複数のマシンへ SSH して Julia の計算を実行するツールキットである。
-ワークステーション 2 台でも、研究室のより多くのマシンでも、同じように使える。
-対応環境は **macOS、Linux、WSL2 Ubuntu** である (ネイティブ Windows は対象外)。
+DistSSHKitは、SSHを介して複数のマシン上でJuliaによる計算を実行するためのツールキットである。
 
-必要な操作は `pkg> add DistSSHKit` のみである。
-コマンドは `julia -m DistSSHKit` で呼び出す。
-DistSSHKit は DistSSHRun と DistSSHQueue をまとめている。
-それらを別々に入れる必要はない。
+ワークステーション2台の小規模な構成から、研究室にある多数のマシンを利用する構成まで対応する。
 
-ジョブを走らせる場所は次の2つである。
+対応環境はmacOS、Linux、およびWSL2上のUbuntuである（Windowsネイティブ環境には非対応）。
 
-- **このマシン。** ここでジョブを始める。終わるまで SSH は開いたままである。
-  コマンドは `go`、`ride`、`drive`、`plan`、`size`、`pool`、
-  `demo`、`progress` である。
-- **キューホスト。** つけたままのマシンである。そこにジョブを置いて、1件ずつ走らせる。
-  同じパッケージをそのマシンにも入れる。手元の接続が切れても、置いてあるジョブは止まらない。
-  コマンドは `submit`、`status`、`watch`、`cancel`、`fetch`、`serve` である。
-  `qhost` はそのマシンを指す。
+DistSSHKitは、Juliaのパッケージモードで `add DistSSHKit` を実行することでインストールできる。各コマンドは、ターミナルから `julia -m DistSSHKit` にサブコマンドを続けて実行する。
 
-**ホストの準備**は両方に共通する。`setup` は SSH 先を準備する。
-`up` は各マシンの Julia を同じチャネルにする。始める前に行う。
+DistSSHKitは、DistSSHRunとDistSSHQueueを依存関係として持つメタパッケージである。両パッケージは自動的にインストールされるため、個別に導入する必要はない。
+
+ジョブの実行を開始する方法は、次の2種類である。
+
+- **手元のマシンから実行する場合。** このマシンからジョブを開始する。リモートマシンを利用する場合、ジョブが完了するまでSSH接続が維持される。ジョブの実行には `go`、`ride`、`drive` を使用し、実行計画の確認や補助的な操作には `plan`、`size`、`pool`、`demo`、`progress` を利用できる。
+- **キューホスト。** 常時稼働するマシンであり、登録されたジョブをキュー（待ち行列）で管理し、先に登録されたものから順番に実行する。
+
+ホストの事前準備は、手元のマシンからジョブを実行する場合と、キューホストを利用する場合の両方に共通する。
+
+SSH接続先の環境を準備するには `setup` を使用する。また、必要に応じて `up` を使用し、各マシンのJuliaのチャネル（バージョン系列）を揃える。
 
 ## インストール
 
-Julia の REPL で `]` を押して Pkg モードに入り、次のコマンドを実行する。
+JuliaのREPLで `]` キーを押してPkgモードに切り替え、次のコマンドを実行する。
 
 ```julia
 pkg> add DistSSHKit
 ```
 
-`Pkg` API を用いる場合は次のように書く。
+また、Pkg APIを使用してインストールすることもできる。
 
 ```julia
 julia> import Pkg; Pkg.add("DistSSHKit")
 ```
 
-DistSSHKit を実行するマシンには、**`ssh`** と **`rsync`** が必要である。
-git によるデプロイを使う場合は、さらに **`git`** も必要となる。
-これらは `pkg> add` では導入されない。動作要件の詳細は
-[Requirements](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)
-を参照されたい。
+SSH経由で別のマシンを利用する場合、実行元のマシンには `ssh` と `rsync` が必要となる。Gitを使用してデプロイする場合は、さらに `git` も必要となる。
 
-パッケージの詳細は
-**[ドキュメント](https://yamanori99.github.io/DistSSHKit.jl/stable/)**
-にまとめている。
+これらはJuliaのパッケージとは別のツールであり、`pkg> add DistSSHKit` ではインストールされない。動作要件の詳細については、[Requirements][req]を参照する。
+
+DistSSHKitの機能や使用方法については、[公式ドキュメント][home]を参照する。
 
 ## 使用方法
 
 ### 基本用語
 
-- **ホスト** — 計算を行うマシン。`parent` や `child:user@hostname` のようなトークンで指定する。
-- **プロセス** — 起動された `julia` の1つ分の実体。それぞれが独立したメモリを持ち、OS 上で別々に動作する。
-  (1回の実行は、1台のマシン上でも複数の `julia` プロセスを起動し、並列に実行する。基盤は Distributed.jl である)
-- **マスター** — 実行が始まるマシン上のプロセス。`go` ではスロットの割り当てを計画し、`drive` ではワーカーに処理を割り振って結果を回収する。
-  手元で `go` / `drive` するときはこのマシン、ジョブを置いたときはキューホストである。
-- **ワーカー** — マスターから処理を受け取って実行するプロセス。
+- **ホスト** — 計算に利用するマシン。`parent` や `child:user@hostname` などの指定文字列（トークン）を用いて指定する。
+- **プロセス** — 実行中の `julia` に対応するOS上の実行単位。各プロセスは独立したメモリ空間を持ち、OSによって個別に管理される。DistSSHKitでは、1台のマシン上でも複数のJuliaプロセスを起動し、並列に処理を実行できる。
+- **マスター** — ジョブの実行を管理するプロセス。`go` ではスロットの割り当てを計画し、`drive` ではワーカーへの処理の割り振りと結果の回収を担当する。
+- **ワーカー** — マスターから割り当てられた処理を実行するプロセス。`drive` や `ride` では、Distributed.jlのワーカーを利用する。
 
-例えば手元で `go` や `drive` を実行した場合、そのマシンがジョブを始めた側となる。
-ワーカーは1台のマシンに複数起動できる (このマシンのワーカー数は0でもよい)。リモートマシンも台数に制限なく追加できる。
+手元のマシンから `go` や `drive` を実行する場合、そのマシンが実行元となる。一方、キューホストにジョブを登録した場合は、キューホストが実行元となる。
+
+`drive` では、1台のマシン上で複数のワーカーを起動できる。実行元のマシンにワーカーを配置せず、リモートマシン上のワーカーのみを利用することも可能である。
 
 <!-- markdownlint-disable MD033 MD013 -->
 <p align="center">
@@ -89,154 +81,158 @@ git によるデプロイを使う場合は、さらに **`git`** も必要と�
 </p>
 <!-- markdownlint-enable MD033 MD013 -->
 
-上図は **drive** の構成である。このマシンに1つのマスターがあり、各ホストにワーカーが配置される。
-**go** でもホストの指定方法は同じだが、マスターとワーカーの関係はなく、各ホストが独立してスクリプトを実行する。
+上図は `drive` の構成を示している。実行元のマシンに1つのマスターがあり、指定したホスト上のワーカーに処理を分配する。
+
+`go` でもホストの指定方法は共通しているが、`drive` のようなマスター・ワーカー関係はなく、各スロットでスクリプトを独立して実行する。
 
 ```text
-parent                 # このマシン
-parent:2               # このマシンでワーカーを2つ起動
-child:user@hostname    # SSH 先 (user@host / IP / Host エイリアス)
-child:user@hostname:4  # SSH 先でワーカーを4つ起動
+parent                 # 実行元のマシン
+parent:2               # 実行元のマシンに2スロットを指定
+child:user@hostname    # SSH接続先のマシン
+child:user@hostname:4  # SSH接続先のマシンに4スロットを指定
 ```
 
-SSH 先の台数に上限はない。ただし、台数が増えるほど SSH 接続や配置に要する時間も長くなるため、まずは数台から試すとよい。
+SSH接続先のホスト数に固定の上限は設けていない。ただし、接続先が増えるほどSSH接続やプロジェクトの配置に要する時間も増加するため、まずは少数のマシンから試すことを推奨する。
 
-利用にあたっては、各 SSH 先が次の条件を満たしている必要がある。
+SSH接続先のマシンは、次の条件を満たす必要がある。
 
-- 実行が始まるマシンからパスワードなしで SSH ログインできること
-- Julia がインストールされており、そのマシンと **メジャー.マイナーバージョンが一致**していること
-  (`setup --check` で確認できる。チャネルは `up` で揃える)
+- 実行元のマシンから、公開鍵認証などを利用してパスワード入力なしでSSH接続できること
+- Juliaがインストールされており、実行元のマシンとメジャー・マイナーバージョンが一致していること（`setup --check` で確認できる。必要に応じて `up` でJuliaのチャネルを揃える）
 
-詳細は
-[Requirements](https://yamanori99.github.io/DistSSHKit.jl/stable/requirements/)
-を参照されたい。
+動作要件の詳細については、[Requirements][req]を参照する。
 
-### このマシン: go、ride、drive
+### 実行元のマシンから実行する場合：go、ride、drive
 
 実行方式は次の3種類である。
 
-- **go** — 各ホストが、指定された `.jl` ファイルをそのまま最初から最後まで実行する
-- **ride** — DistSSHKit が、互いに独立な `map`、filter、内包表記、添字 `for` を分割して実行する
-  (実験的機能。parent または SSH 先で利用可能)
-- **drive** — 1つのマスターがワーカーに処理を割り振る (Distributed.jl ベース)
+- **`go`** — 指定された `.jl` ファイルを、各スロットで最初から最後まで独立して実行する。
+- **`ride`** — `map`、`filter`、内包表記、添字を用いた `for` ループなど、条件を満たす独立した処理を分割し、並列実行を試みる（実験的機能。実行元のマシンおよびSSH接続先で利用可能）。
+- **`drive`** — Distributed.jlを利用し、1つのマスターが複数のワーカーに処理を分配する。
 
-### 事前確認: plan (ファイル) と pool (ホスト)
+### 事前確認：plan（スクリプト）とpool（ホスト）
 
-- **plan** — `.jl` ファイルを検査し、go、ride、drive のうち適切な方式を提案する。
-  処理はディスクの読み込みと構文解析のみで、bang 付きではなく SSH も行わない。
-  スロット数の見積もりが必要な場合は `size!` を呼び出す
-- **pool** / **pool!** — 指定したホストのコア数と RAM を取得する。
-  SSH を用いるため bang 付きである。RSS は取得しない。
-  接続できないホストは `ok=false` のまま残る
+- **`plan`** — `.jl` ファイルの構文を解析し、`go`、`ride`、`drive` の実行方式の候補を提案する。通常はファイルの読み込みと構文解析のみを行い、SSH接続やジョブの実行は行わない。追加オプションを指定することで、`size!` によるスロット数の見積もりも可能である。
+- **`pool` / `pool!`** — 指定したホストのCPUコア数とRAM容量を取得し、スロット数の目安を示す。リモートホストの情報取得にはSSHを使用するが、RSS（プロセスの物理メモリ使用量）は計測しない。接続できないホストも結果から除外せず、`ok=false` として記録する。
 
-**size** / **size!** は占有状況 (RSS に基づく WorkerPlan) を扱う。
-CLI の `size` で計画が出力される。
-go、drive、ride でホストを列挙する際は、トークンに `:N` が必須である
-(トークンを省略した場合は parent の1スロットとなる)。
-例外として、`go --repeat` に限り、列挙したホストの `:N` を省略できる
-(そのホストの上限はなくなる)。なお、これらはダッシュボードではない。
+`size` / `size!` は、CPUやメモリの情報をもとに、実行可能なワーカー数を見積もる機能である。必要に応じてRSS（プロセスの物理メモリ使用量）を計測し、実行計画（`WorkerPlan`）の作成に利用する。CLIの `size` では、この実行計画を表示する。
 
-go 単体でも十分に実用的である。まず go で単独実行を確認し、
-その後 drive、すなわち Distributed.jl への対応へと進めば、段階的に開発できる。
-`plan` が ride を提案する場合もある。
+`go`、`drive`、`ride` でホストを指定する場合は、各ホストの指定文字列に `:N` を付けてスロット数を明示する必要がある。ホストを指定しない場合は、実行元のマシンに1スロットが割り当てられる。
+
+ただし、`go --repeat` では例外的に `:N` を省略できる。この場合、そのホストのスロット数に明示的な上限は設けられない。
+
+これらは実行計画の確認を目的とした機能であり、リアルタイムの監視を行うダッシュボードではない。
+
+`go` は、独立したスクリプトの実行に利用できる。まず `go` でスクリプトが正常に実行できることを確認し、必要に応じてDistributed.jlを利用する `drive` に移行することで、段階的に開発を進められる。なお、`plan` が `ride` を実行方式の候補として提案する場合もある。
 
 ### 操作方法
 
-- **CLI** — ターミナルからコマンドとして直接実行する方法。
-  例: `julia --project=. -m DistSSHKit go child:user@host1:1 script.jl`。
-  手早く試したい場合や、シェルスクリプトに組み込みたい場合に向いている
-- **Julia** — 自作の Julia コード (スクリプト、REPL、他のパッケージなど) の中から関数として呼び出す方法。
-  `setup!`、`go!`、`plan`、`pool!`、`drive!` などの関数を用いる (`plan` には bang が付かない)
+DistSSHKitには、次の2つの操作方法がある。
 
-CLI のオプションと Julia API は1対1に対応している。
-例えば、CLI の `setup --rsync` は `setup!(session, :rsync)` に相当する。
-具体例は `demo install with_kit` と `demo install without_kit` のあと
-`distsshkit_demos/with_kit/pipeline_square.jl` と
-`distsshkit_demos/without_kit/pipeline_pi.jl` を参照されたい。
+- **CLI** — ターミナルからコマンドを実行する方法。手軽に試したい場合や、シェルスクリプトに組み込む場合に適している。
+  例：`julia --project=. -m DistSSHKit go child:user@host1:1 script.jl`
+- **Julia API** — Juliaのコード（スクリプト、REPL、他のパッケージなど）から関数を呼び出す方法。`setup!`、`go!`、`plan`、`pool!`、`drive!` などの関数を使用する。
 
-どちらの方法でも実行内容は同じで、呼び出し方が異なるだけである。まずは CLI から試すと理解しやすい。
+CLIの操作は、Julia APIからも同様に実行できる。例えば、CLIの `setup --rsync` は、Julia APIの `setup!(session, :rsync)` に相当する。
+
+具体的な使用例は、`demo install with_kit` および `demo install without_kit` でデモをインストールした後、生成される `distsshkit_demos/with_kit/pipeline_square.jl` と `distsshkit_demos/without_kit/pipeline_pi.jl` を参照する。
+
+どちらの方法でも同等の操作が可能だが、初めて利用する場合はCLIから試すと理解しやすい。
 
 ### 事前準備
 
-通常は、スクリプトの実行前に `setup` でコードの配置と依存関係を整える。
-1回の呼び出しで指定する配置や初期化の操作は、原則として1つのみとする。
-リモートが空、または未作成の場合は、`go --rsync` や `drive --rsync` により、コピーと instantiate を一度に行える
-(既定の `go` と `drive` は、リモートが準備済みであることを前提とする)。
+通常は、スクリプトの実行前に `setup` を使用し、リモートマシンへのプロジェクトの配置と依存パッケージの準備を行う。CLIの `setup` では、1回の呼び出しにつき1つの操作モードを指定する。
 
-- 初回配置: `--rsync` (ローカルのツリーをそのまま転送) または `--clone` (git リポジトリを clone) のいずれか一方
-- 依存関係の準備: `--instantiate` (リモートで `Pkg.instantiate` を実行)
-- 更新 (再配置): `--sync` (git push の後、各リモートで pull)、`--pull`
-  (push せず pull のみ)、または `--rsync` の再実行
-- その他
-  - `--check` (SSH、Julia、依存関係の疎通確認)
-  - `up` / `up update` (juliaup でチャネルを揃える。`setup` のフラグではない。確認プロンプトあり、`-y` で省略可)
-  - `--prune` (`.distsshkit` 内の go、drive、setup、runs を削除する。配置したツリーは残る)
-  - `--cleanup` (残存しているワーカープロセスの掃除)
-  - `--delete` (リモートのプロジェクトディレクトリを削除。破壊的な操作である)
+リモートマシン上のプロジェクト配置先が存在しない、または空の場合は、`go --rsync` や `drive --rsync` を使用することで、ファイルの転送と必要に応じた依存パッケージのインストールを一度に行える。通常の `go` と `drive` は、リモート環境が準備済みであることを前提とする。
 
-`--rsync`、`--clone`、`--sync`、`--pull`、`up`、`up update` は、実行前に確認プロンプトが表示される。
-スクリプトなどで非対話的に実行する場合は、`-y` または `--yes` を付ける。
-`--delete` と `--prune` は `delete` または `prune` の入力を求める。`-y` と `DISTSSHKIT_YES` は、その確認を飛ばしてまだ削除する。これは DistSSHKit 0.11 (DistSSHRun 0.2) でやめる。残る手順は `--confirm-path` である。
-`teardown` は `--confirm-path` が無いとき `Would remove` を表示して削除しない。ただし `-y` と `DISTSSHKIT_YES` ではまだ削除する。これは DistSSHKit 0.11 (DistSSHQueue 0.10) でやめる。
+- **初回配置**
+  - `--rsync`：ローカルのプロジェクトファイルをリモートマシンに転送する。
+  - `--clone`：リモートマシン上でGitリポジトリを複製する。
+  - 初回配置では、いずれか一方を指定する。
+- **依存パッケージの準備**
+  - `--instantiate`：リモートマシン上で `Pkg.instantiate` を実行し、依存パッケージを用意する。
+- **更新**
+  - `--sync`：ローカルで `git push` を実行した後、各リモートマシンで `git pull` を実行する。
+  - `--pull`：ローカルと各リモートマシンで順番に `git pull` を実行する。`git push` は行わない。
+- **その他の操作**
+  - `--check`：SSH接続、Juliaの実行環境、プロジェクトや依存パッケージの状態などを確認する。
+  - `up` / `up update`：juliaupを使用してJuliaのチャネルを設定・更新する。`setup` とは独立したコマンドであり、実行前に確認が求められる（`-y` で省略可能）。
+  - `--prune`：ローカルおよびリモートの `.distsshkit` 内にある `go`、`drive`、`setup`、`runs` の実行関連データを削除する。配置済みのプロジェクトは削除しない。
+  - `--cleanup`：残存しているJuliaのワーカープロセスを終了する。
+  - `--delete`：リモートマシン上のプロジェクト配置先を削除する。実行時には注意が必要である。
 
-詳細は
-[setup](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/setup/)
-を参照されたい。
+`--rsync`、`--clone`、`--sync`、`--pull`、`up`、`up update` は、実行前に確認を求める。スクリプトなどから非対話的に実行する場合は、`-y` または `--yes` を指定することで確認を省略できる。
+
+`--delete` と `--prune` では、削除前にそれぞれ `delete` または `prune` の入力が求められる。現行バージョンでは、`-y` または環境変数 `DISTSSHKIT_YES` によって、この確認を省略して削除を実行できる。ただし、この動作はDistSSHKit 0.11（DistSSHRun 0.2）で廃止される予定であり、以降は `--confirm-path` による削除対象パスの確認を使用する。
+
+キューホストの管理データなどを削除する `teardown` は、`--confirm-path` を指定しない場合、`Would remove` と表示して削除を行わない。ただし、現行バージョンでは `-y` または `DISTSSHKIT_YES` を指定すると削除が実行される。この動作もDistSSHKit 0.11（DistSSHQueue 0.10）で廃止される予定である。
+
+詳細は[`setup`][m-setup]を参照する。
 
 > [!NOTE]
-> **rsync と git のどちらを使うか迷った場合**
+> **rsyncとGitのどちらを使用するか迷った場合**
 >
-> - **`--rsync`** — ローカルのファイルをそのまま転送する。リモートに git は不要である。まず試す場合や、単発で使う場合に適している
-> - **`--clone` → `--sync`** — git リポジトリとして管理する。コードを継続的に更新しながら使う場合や、
->   `drive --require-git` でリモートの commit がローカルと一致していることを確認したい場合に適している
+> - **`--rsync`** — ローカルのプロジェクトファイルをリモートマシンに転送する。リモートマシンでのGitによる管理は不要であり、初めて利用する場合や単発の実行に適している。
+> - **`--clone` → `--sync`** — `--clone` でGitリポジトリを複製し、以降の更新を `--sync` で行う。コードを継続的に更新する場合や、`drive --require-git` を使用して実行元とリモートマシンのGitコミットが一致していることを確認し、再現性を高めたい場合に適している。
 
-初回セットアップの典型的な流れは次のとおりである (rsync の場合)。
+初回セットアップの基本的な手順は次のとおりである（rsyncを使用する場合）。
 
 ```bash
-# ファイル転送
+# プロジェクトファイルの転送
 julia --project=. -m DistSSHKit setup --rsync child:user@host1 child:user@host2
-# 依存の用意
+
+# 依存パッケージの準備
 julia --project=. -m DistSSHKit setup --instantiate child:user@host1 child:user@host2
-# 疎通確認
+
+# SSH接続・実行環境の確認
 julia --project=. -m DistSSHKit setup --check child:user@host1 child:user@host2
 ```
 
-トラブル時によく使うコマンドは次のとおりである。
+実行環境の管理やトラブルへの対処に使用するコマンドは次のとおりである。
 
 ```bash
-# `.distsshkit` の go / drive / setup を消す (配置は残す)
+# .distsshkit 内の実行関連データを削除する（配置済みのプロジェクトは保持する）
 julia --project=. -m DistSSHKit setup --prune child:user@host1 child:user@host2
-# 残っている古いワーカープロセスを掃除する
+
+# 残存しているワーカープロセスを終了する
 julia --project=. -m DistSSHKit setup --cleanup child:user@host1 child:user@host2
-# 全部やり直したいとき (delete の入力を求める。-y は DistSSHKit 0.11 まで削除する)
+
+# リモートマシンのプロジェクト配置先を削除する
+# 現行の0.10系では -y を指定すると削除確認が省略されるため注意する
 julia --project=. -m DistSSHKit setup --delete child:user@host1 child:user@host2
 ```
 
 ### 実行例
 
-事前準備ののち、次のように実行する。
+事前準備が完了したら、次のように実行する。
 
-**CLI による go の例。** 各スロットで `script.jl` を最初から最後まで1回ずつ実行する。
-`child:user@host:1` はそのホストで1回、`parent:N` はこのマシンで N 回の実行を意味する。
-`--repeat N` は合計 N 回の実行を指定する。ホストを併記した場合は、そのホストに割り振られる。
+**CLIによる `go` の実行例。**
+
+各スロットで `script.jl` を最初から最後まで1回ずつ実行する。`child:user@host:1` は指定したリモートホストで1回、`parent:N` は実行元のマシンでN回実行することを意味する。
+
+`--repeat N` は、合計N回の実行を指定するオプションである。複数のホストを指定した場合は、それらのホストに実行が振り分けられる。
 
 ```bash
 julia --project=. -m DistSSHKit go \
   child:user@host1:1 child:user@host2:1 path/to/script.jl
+
 julia --project=. -m DistSSHKit go --repeat 100 path/to/script.jl
+
 julia --project=. -m DistSSHKit go --repeat 100 \
   child:user@host1 child:user@host2 path/to/script.jl
 ```
 
-**CLI による drive の例。** git でデプロイした場合、
-2回目以降の更新は `setup --sync` で行う。`rsync` を使ってもよい。
+**CLIによる `drive` の実行例。**
+
+Gitを使用してプロジェクトを配置した場合、以降の更新には `setup --sync` を使用する。`rsync` によるファイル転送も利用できる。
 
 ```bash
 julia --project=. -m DistSSHKit drive \
   parent:2 child:user@host1:4 path/to/driver.jl
 ```
 
-**Julia コードによる go の例。** `remote=` は `setup!` と同じ値にそろえる (どちらも省略した場合は既定のパスが使われる)。
+**Julia APIによる `go` の実行例。**
+
+`remote` には、リモートマシン上のプロジェクト配置先を指定する。`KitSession` と `go!` で同じ値を使用する必要がある。どちらも省略した場合は、既定のパスが使用される。
 
 ```julia
 using DistSSHKit
@@ -247,7 +243,7 @@ setup!(session, :rsync, :instantiate)
 go!("path/to/script.jl", "child:user@host1:1"; remote=remote)
 ```
 
-**Julia コードによる drive の例。**
+**Julia APIによる `drive` の実行例。**
 
 ```julia
 using DistSSHKit
@@ -260,74 +256,102 @@ drive!("path/to/driver.jl", "parent:2", "child:user@host1:4"; remote=remote)
 setup!(session, :sync)  # 2回目以降の更新
 ```
 
-`pipeline!` は、複数の処理をまとめて呼び出すための任意の関数である。sync、`drive!`、collect を一度に実行できる。
-ただし `setup!` は含まれない。`sync=:rsync` はコピーのみを行い、instantiate は実行しない。
-そのため、リモートをあらかじめ準備しておくか、`drive!(…; sync=:rsync)` を使用すること。
-詳細は [API](https://yamanori99.github.io/DistSSHKit.jl/stable/api/) を参照されたい。
+`pipeline!` は、必要に応じたファイルの同期、`drive!` による実行、結果の回収（collect）をまとめて行うための補助関数である。
+
+ただし、`pipeline!` には `setup!` による事前準備は含まれない。また、`sync=:rsync` を指定した場合はファイルの転送のみを行い、`instantiate` による依存パッケージの準備は実行されない。
+
+そのため、あらかじめリモート環境を準備しておく必要がある。依存パッケージが不足している場合に自動で準備したい場合は、`drive!(…; sync=:rsync)` を使用する。
+
+詳細は[API][api]を参照する。
 
 ### デモの実行
 
-自分でスクリプトを書く前に、DistSSHKit の動作を試すことができる。
-`with_kit` は drive、`without_kit` は単独実行および go のデモである。
+自分でスクリプトを作成する前に、用意されているデモを使用してDistSSHKitの動作を確認できる。
 
-デモは、ジョブ側のプロジェクト (`pkg> add DistSSHKit` を実行済みのもの) で実行する。
-DistSSHKit 自体の checkout 上では実行できない。
+- **`with_kit`** — `drive` を使用した分散実行のデモ。
+- **`without_kit`** — 通常のJuliaスクリプトとしての単独実行や、`go` による並列実行のデモ。
+
+デモのインストールと実行は、DistSSHKitを依存パッケージとして追加した、ジョブ用のJuliaプロジェクトで行う。
+
+DistSSHKit自体のソースコードがあるディレクトリには、デモを直接インストールできない。開発中に別の場所へインストールする場合は、`--dest` でインストール先を指定する。
+
+**デモのインストール**
 
 ```bash
 julia --project=. -m DistSSHKit demo install with_kit
 julia --project=. -m DistSSHKit demo install without_kit
 ```
 
+**デモの実行**
+
 ```bash
+# driveによる分散実行
 julia --project=. -m DistSSHKit drive parent:2 distsshkit_demos/with_kit/square_file.jl
+
+# goによる独立したスクリプトの並列実行
 julia --project=. -m DistSSHKit go parent:2 distsshkit_demos/without_kit/pi_file.jl
 ```
 
-詳細は
-[Demo](https://yamanori99.github.io/DistSSHKit.jl/stable/tutorial/demo/)
-を参照されたい。
+どちらの例も、実行元のマシンに2つのスロットを指定している。
+
+詳細は[Demo][t-demo]を参照する。
 
 ### キューホスト
 
+キューホストは、ジョブを待ち行列で管理し、順番に実行するための常時稼働マシンである。ジョブはFIFO（先入れ先出し）方式で管理され、原則として一度に1件ずつ実行される。
+
 ```text
-  client (dev machine, no cap)            queue host (always on, log in here)
-  ----------------------------            ------------------------------------
-  yours / a colleague's                   FIFO     one job at a time
-       |                                  table    ~/.distsshqueue
-       |  julia --project=.               julia -m DistSSHKit
-       |    -m DistSSHKit                  qhost setup / add-host
-       |    qhost:HOST submit              qhost serve
-       |    status | fetch | cancel        qhost enable  after reboot
-       +--------------------------------> then go / ride / drive
-                                          -> workers (parent / child:)
+  client (開発用マシン)                 queue host (常時稼働)
+  --------------------                 --------------------
+  ジョブ用プロジェクト                 FIFO: 一度に1件ずつ実行
+       |                               管理データ ~/.distsshqueue/
+       |  qhost:HOST submit             qhost setup / add-host
+       |  status / fetch / cancel       qhost serve / enable
+       +------------------------------> go / ride / drive
+                                       -> workers (parent / child:)
 ```
 
-**キューホスト。** 常時稼働している macOS または Linux のマシンにログインし、
-同じ `pkg> add DistSSHKit` を実行して導入する。
-キューホストで実行するコマンドは、すべて `qhost` で始まる。
-`qhost:HOST` の形式は受け付けない。
-既定の Julia 環境で動作するため、`--project=.` は付けない。
+**キューホスト側**
+
+常時稼働するmacOSまたはLinuxのマシンにログインし、Juliaのパッケージモードで `add DistSSHKit` を実行してインストールする。
+
+キューホストの初期設定や実行管理には、`qhost setup`、`qhost add-host`、`qhost serve` などのコマンドを使用する。これらはキューホスト上で直接実行するため、`qhost:HOST` は付けない。
+
+次の例では、Juliaの既定の環境にDistSSHKitをインストールしていることを前提としているため、`--project=.` は指定しない。
 
 ```bash
+# キューホストの初期設定
 julia -m DistSSHKit qhost setup
+
+# 利用するホストの登録
 julia -m DistSSHKit qhost add-host parent child:host1
+
+# ジョブの処理を開始
 julia -m DistSSHKit qhost serve
 ```
 
-`qhost enable` を実行すると、再起動後にも `serve` が自動的に起動する。
+ここで `parent` はキューホスト自身、`child:host1` はキューホストからSSH接続するリモートマシンを指す。
 
-**クライアント。** ジョブはクライアント側のマシンに置いたままにする。
-`qhost:HOST` にはキューホストの SSH 名を指定し、
-`submit`、`status`、`fetch`、`cancel` の前に付ける。
-この接続では、キューホストの `~/.distsshqueue/env` が使われる。
-その環境の作成方法は [Prepare][q-prepare] を参照されたい。
+`qhost enable` を実行すると、OSのサービス機能を利用し、再起動後やログイン後にも `serve` が自動的に起動するように設定できる。
+
+**クライアント側**
+
+クライアントは、ジョブの登録や実行状況の確認、結果の取得などを行うマシンである。
+
+`qhost:HOST` の `HOST` には、キューホストのSSH接続先名を指定する。クライアントから操作する場合は、`submit`、`status`、`fetch`、`cancel` などのコマンドの前に `qhost:HOST` を付ける。
+
+`qhost:HOST submit` を実行すると、クライアント上のジョブ用プロジェクトがキューホストにコピーされ、ジョブが待ち行列に登録される。元のプロジェクトはクライアント側にも残る。
 
 ```bash
+# キューホストにジョブを登録
 julia --project=. -m DistSSHKit qhost:HOST submit go parent:1 distsshkit_demos/without_kit/pi_echo.jl
 ```
 
-詳細は [Prepare][q-prepare]、[Walkthrough][q-walk]、
-[How it runs][q-manual] を参照されたい。
+この例では、キューホスト自身に1スロットを割り当て、`go` でスクリプトを実行する。
+
+`qhost:HOST` による接続では、既定でキューホスト上の `~/.distsshqueue/env` がJuliaの実行環境として使用される。この環境にはDistSSHKitをインストールしておく必要がある。
+
+環境の準備方法や詳しい操作手順については、[Prepare][q-prepare]、[Walkthrough][q-walk]、[How it runs][q-manual]を参照する。
 
 ## ドキュメント
 
@@ -386,11 +410,11 @@ julia --project=. -m DistSSHKit qhost:HOST submit go parent:1 distsshkit_demos/w
 
 ## ライセンス
 
-ソースコードは [MIT](LICENSE) ライセンスである。ロゴと図に含まれる Julia のドットは
+ソースコードは [MIT](LICENSE) ライセンスである。ロゴと図に含まれるJuliaのドットは
 Copyright (c) 2012-2022 Stefan Karpinski によるもので、
 [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 のもとで提供されている。
-DistSSHKit では、これを改変して使用している。
+DistSSHKitでは、これを改変して使用している。
 詳細は [LICENSE](LICENSE) と
 [julia-logo-graphics](https://github.com/JuliaLang/julia-logo-graphics) を参照されたい。
 
