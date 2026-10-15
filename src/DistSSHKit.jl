@@ -19,15 +19,11 @@ const _OWN = (
     :println_kit_version,
 )
 
-"""Bind `n` from the already loaded `mod`. `export_name` reexports it.
-
-`import` would call `require` again. JET re-executes that `require` and reports
-the dependency as missing, even though this package lists it.
-"""
+"""Import `n` from `mod`. `export_name` reexports it."""
 function _bind!(mod::Module, n::Symbol; export_name::Bool)
     Core.eval(
         @__MODULE__,
-        Expr(:const, Expr(:(=), n, Expr(:., nameof(mod), QuoteNode(n)))),
+        Expr(:import, Expr(:(:), Expr(:., nameof(mod)), Expr(:., n))),
     )
     export_name || return nothing
     Core.eval(@__MODULE__, Expr(:export, n))
