@@ -5,8 +5,25 @@
 #   ./.github/wsl-julia.sh <juliaup-channel> <command...>
 set -euo pipefail
 
+# Ubuntu-24.04's WSL rootfs usually has these. Install only when it does not,
+# so Vampire/setup-wsl does not apt-get on every job.
+ensure_curl_git() {
+  local missing=()
+  command -v curl >/dev/null 2>&1 || missing+=(curl)
+  command -v git >/dev/null 2>&1 || missing+=(git)
+  [[ ${#missing[@]} -eq 0 ]] && return 0
+  if [[ "$(id -u)" -ne 0 ]]; then
+    echo "WSL image is missing ${missing[*]}; need root to install" >&2
+    return 1
+  fi
+  export DEBIAN_FRONTEND=noninteractive
+  timeout 180 apt-get update -qq
+  timeout 180 apt-get install -y --no-install-recommends ca-certificates "${missing[@]}"
+}
+
 channel="$1"
 shift
+ensure_curl_git
 
 src="$(pwd)"
 dest="$HOME/DistSSHKit.jl"
