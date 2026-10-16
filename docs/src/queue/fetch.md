@@ -1,8 +1,8 @@
 # [fetch](@id Queue-fetch)
 
-Copy one finished result leaf onto this job tree. Inverse of
-`qhost:` stage (rsync excludes: `.gitignore`, `.git/`, `.distsshkit/`,
-`.distsshqueue/`). `qhost:` submit leaves
+Copy one finished result leaf onto this job tree. `fetch` rsyncs that
+leaf with `-az` and does not apply the [`submit`](@ref Queue-submit)
+send list. `qhost:` submit leaves
 `.distsshqueue/tickets/<uuid>` on this tree (one file per job, kept).
 That file is not the result leaf.
 For the ownership boundary and both directory trees, see

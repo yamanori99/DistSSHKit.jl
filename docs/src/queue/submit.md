@@ -81,9 +81,15 @@ re-reads config `hosts`. Library [`submit!`](@ref) uses
 
 With `qhost:`, the client **rsync**s the job project (`cwd` /
 `DISTRIBUTED_PROJECT_ROOT`) to `~/.distsshqueue/stage/<uuid>` on the
-queue host (rsync excludes: `.gitignore`, `.git/`, `.distsshkit/`,
-`.distsshqueue/`), then enqueue resolves
-`SCRIPT.jl` there. The client keeps `.distsshqueue/tickets/<uuid>`
+queue host, then enqueue resolves `SCRIPT.jl` there. In a git work
+tree the paths are the same as [`setup --rsync`](@ref Manual-setup),
+then anything under `.distsshqueue/` is dropped. `.git/` and
+`.distsshkit/` are already out of that list. A different name, such as
+`.distsshqueue-backup`, is not that directory and stays when the list
+includes it. Outside a git work tree there is no send list: rsync
+applies each directory's `.gitignore` and excludes `.git/`,
+`.distsshkit/`, and `.distsshqueue/`. The client keeps
+`.distsshqueue/tickets/<uuid>`
 (every `qhost:` submit from this tree; not an artifact).
 [Artifacts and paths](@ref Queue-artifacts) explains stage, ticket,
 the run's output, and the [`fetch`](@ref Queue-fetch) destination. Omit `qhost:`:

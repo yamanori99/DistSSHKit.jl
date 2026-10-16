@@ -43,8 +43,12 @@ julia --project=. -m DistSSHKit demo install without_kit
 julia --project=. -m DistSSHKit qhost:HOST submit go parent:1 distsshkit_demos/without_kit/pi_echo.jl
 ```
 
-`qhost:` rsyncs this tree to `~/.distsshqueue/stage/<uuid>` on `HOST`
-(excludes `.gitignore`, `.git/`, `.distsshkit/`, `.distsshqueue/`). Stdout is the job UUID. This client has
+`qhost:` rsyncs this tree to `~/.distsshqueue/stage/<uuid>` on `HOST`.
+In a git work tree that file set matches [`setup --rsync`](@ref Manual-setup),
+without `.distsshqueue/`. Outside git, rsync applies `.gitignore` in
+each directory and skips `.git/`, `.distsshkit/`, and `.distsshqueue/`.
+`.distsshqueue-backup` is a different name, so that rule does not drop
+it. Stdout is the job UUID. This client has
 `.distsshqueue/tickets/<uuid>` only; the result leaf is not here yet.
 
 ```bash
