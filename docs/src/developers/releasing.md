@@ -77,14 +77,20 @@ otherwise.
 - Split a safety fix from the hardening that follows it. The fix is
   usually a patch. The hardening is often breaking.
 
-A pull request needs one of `bug`, `enhancement`, `breaking`, or `chore`.
-CI applies that from a closing issue, then the branch prefix
+A change pull request needs one of `bug`, `enhancement`, `breaking`, or
+`chore`. CI applies that from a closing issue, then the branch prefix
 (`feat/`, `fix/`, `breaking/`, and `chore/` `docs/` `ci/` `test/` for
 chore), then a Conventional Commit title (`fix:`, `feat:`, a `!` before
 the colon, and `docs:` `test:` `ci:` `chore:`). `type(scope):` is
 accepted. Otherwise it applies `chore` when the diff has no `src/`,
 `ext/`, or root `Project.toml`. Anything else fails until someone adds
 one of the four labels. Dependabot is exempt.
+
+A version-cut pull request uses the orthogonal `cut` label and does not
+need one of those four type labels. CI reads the `Project.toml` version
+diff directly, so this does not depend on which label workflow finishes
+first. A cut is not itself `chore` or `breaking`; the version increase and
+the required `NEWS.md` structure classify the release.
 
 ## Deprecation
 
