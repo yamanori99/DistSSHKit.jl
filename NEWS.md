@@ -9,6 +9,10 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
 
 ## Unreleased
 
+- `dist_ssh_kit_version` is exported.
+- `--project` placed after `julia -m DistSSHKit` exits 1 with `Error:`.
+  Put it before `-m`: `julia --project=DIR -m DistSSHKit …`. Routing of
+  other arguments is unchanged.
 - Host SSH and juliaup come from DistSSHRun 0.1.7 (`DistSSHBase` and
   `DistSSHUp`). The copies in this package are gone. DistSSHRun compat is
   `0.1.7`. DistSSHQueue compat is `0.9.5`.

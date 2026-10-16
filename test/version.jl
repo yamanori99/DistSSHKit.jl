@@ -11,6 +11,7 @@ using TOML
         raw isa String && @test DistSSHKit.dist_ssh_kit_version() == VersionNumber(raw)
     end
     @test DistSSHKit.dist_ssh_kit_version() == pkgversion(DistSSHKit)
+    @test :dist_ssh_kit_version in names(DistSSHKit)
     code, out, err = _main_capture(["--version"])
     @test code == 0
     @test isempty(err)

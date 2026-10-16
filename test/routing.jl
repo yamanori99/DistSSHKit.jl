@@ -18,6 +18,17 @@ using Random
         @test occursin("Unknown subcommand: bogus", err)
         @test occursin("submit", err)
     end
+    let (code, out, err) = _main_capture(["--project=.", "go", "x.jl"])
+        @test code == 1
+        @test isempty(out)
+        @test occursin("`--project` after `julia -m DistSSHKit`", err)
+        @test occursin("before `-m`", err)
+    end
+    let (code, out, err) = _main_capture(["--queue-env", "E", "--project", "P", "status"])
+        @test code == 1
+        @test isempty(out)
+        @test occursin("before `-m`", err)
+    end
     let (code, out, err) = _main_capture(["map_echo.jl"])
         @test code == 1
         @test isempty(out)

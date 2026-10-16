@@ -24,7 +24,7 @@ end
     allowed = Set(
         [
             names(DistSSHRun); names(DistSSHQueue);
-            :DistSSHKit; :println_kit_version
+            :DistSSHKit; :dist_ssh_kit_version; :println_kit_version
         ]
     )
     @test Set(names(DistSSHKit)) ⊆ allowed

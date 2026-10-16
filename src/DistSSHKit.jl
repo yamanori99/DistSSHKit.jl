@@ -127,7 +127,7 @@ function println_kit_version(io::IO = stdout)
     return nothing
 end
 
-export println_kit_version
+export dist_ssh_kit_version, println_kit_version
 
 const _RUN_COMMANDS = (
     "demo",
@@ -256,6 +256,24 @@ function _leading_command(args::Vector{String})
         sub = String(args[1])
     end
     return sub, saw
+end
+
+"""True when `--project` appears before the command, after `julia -m DistSSHKit`."""
+function _leading_julia_project(args::Vector{String})::Bool
+    i = 1
+    while i <= length(args)
+        a = args[i]
+        if a == "--remote-julia" && i < length(args)
+            i += 2
+        elseif a == "--queue-env" && i < length(args)
+            i += 2
+        elseif a == "--project" || startswith(a, "--project=")
+            return true
+        else
+            return false
+        end
+    end
+    return false
 end
 
 """Drop a leading `qhost` group word. `qhost:HOST` is a client hop and stays."""
@@ -393,6 +411,12 @@ function _main(args::Vector{String})::Cint
         print_kit_root_usage()
         return payload::Int
     elseif kind === :queue_help || kind === :queue
+        if _leading_julia_project(args)
+            DistSSHRun.print_cli_error(
+                "`--project` after `julia -m DistSSHKit` is Julia's project flag. Put it before `-m`: `julia --project=DIR -m DistSSHKit …`.",
+            )
+            return 1
+        end
         return DistSSHQueue.main(payload::Vector{String})
     elseif kind === :run
         _bind_run_in_main!()
