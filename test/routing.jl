@@ -185,7 +185,6 @@ end
         "--project", "--project=.", "--qhost", "-h", "--help", "-v",
         "x.jl", "", "ü", "--",
     ]
-    bad = nothing
     function consider(a)
         got = try
             DistSSHKit._route(a)
@@ -196,14 +195,23 @@ end
         return (a, got)
     end
     bad = consider(String[])
-    # Every short sequence. Longer ones are a seeded sample: 15^5 is large,
-    # and the check is the shape, not one lucky input.
+    # Lengths 1–3 are every sequence. A closure in `ntuple` is a JETLS
+    # undef-global-var, so the three lengths are written out.
     if bad === nothing
-        for n in 1:3
-            for seq in Iterators.product(ntuple(_ -> tokens, n)...)
-                bad = consider(String[seq...])
-                bad === nothing || break
-            end
+        for a in tokens
+            bad = consider([a])
+            bad === nothing || break
+        end
+    end
+    if bad === nothing
+        for a in tokens, b in tokens
+            bad = consider([a, b])
+            bad === nothing || break
+        end
+    end
+    if bad === nothing
+        for a in tokens, b in tokens, c in tokens
+            bad = consider([a, b, c])
             bad === nothing || break
         end
     end
