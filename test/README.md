@@ -20,9 +20,9 @@ Tests for a job
 started on this machine live in DistSSHRun.
 Tests for jobs left on a machine that stays on live in DistSSHQueue.
 Aqua is a separate CI job, not `Pkg.test()`.
-`Pkg.test()` must pass on a Registry install (that tree has no
-`Manifest.toml`, and `pkgdir` is often mode 444). Real SSH is DistSSHRun's
-E2E, not this repo. Occasional copy recipe: [Registry tree](#registry-tree).
+`Pkg.test()` on this checkout is not the PkgEval sandbox. Real SSH is
+DistSSHRun's E2E, not this repo. Reproduce that sandbox:
+[PkgEval](#pkgeval).
 
 ## Layout
 
@@ -61,91 +61,36 @@ Green on one layer does not imply the others. Child CLI uses
 - **doctests** (~5 s): `src/` docstring examples (Documenter, Julia 1.13).
   Not workers / SSH.
 
-## Registry tree
+## PkgEval
 
-[PkgEval](https://github.com/JuliaCI/PkgEval.jl) (via
-[Nanosoldier](https://github.com/JuliaCI/Nanosoldier.jl)) and `Pkg.add` use
-a Registry tarball, not this checkout. This package:
+[PkgEval](https://github.com/JuliaCI/PkgEval.jl) runs the daily ecosystem
+check. The sandbox is Debian bookworm without `tzdata`, with
+`LANG=C.UTF-8`, a pipe for stdout, and a 45 minute test limit. Daily uses
+the General tarball. This recipe mounts this checkout read-only, and
+dependencies resolve from General, so an unreleased DistSSHRun or
+DistSSHQueue change is not in the sandbox. This package:
 <https://juliaci.github.io/NanosoldierReports/pkgeval_badges/D/DistSSHKit.html>
 Latest ecosystem report:
 <https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html>
-Reproduce that tree: copy without this checkout's `.git` / `Manifest.toml`, `Pkg.add`
-from a **bare** `file://` git (so the installed package dir has no `.git` —
-DistSSHKit talks to git for jobs, not for its own install), `chmod a-w` on
-`pkgdir`, then `Pkg.test`. Do this after changing the gates above, and
-before a General cut. CI: `Pkg.test (registry, ubuntu-latest, x64)` on **main** and
-a version-cut PR (slot tip, no `ssh`; not a required check). Not
-ordinary PRs.
+Run it on Linux with cgroup v2 and unprivileged user namespaces, before a
+General cut. The host Julia is 1.12 or newer. The tested Julia is nightly.
+CI: `PkgEval (nightly, ubuntu-latest, x64)` on **main** and a version-cut
+PR (`continue-on-error`; not a required check). Not ordinary PRs.
 
-Copy without `Manifest.toml` (and without `.git`). On Linux, `mktemp -d` is
-enough.
-
-```bash
-WORKDIR=$(mktemp -d "$HOME/dsk.XXXXXX")
-rsync -a \
-  --exclude .git \
-  --exclude Manifest.toml \
-  --exclude docs/Manifest.toml \
-  --exclude docs/build \
-  --exclude test/artifacts \
-  ./ "$WORKDIR/"
-```
-
-This machine (**1.13**, and `+nightly`). Distro `ssh` / `git` stay on `PATH`.
-On Linux this is enough for the tree; it does not reproduce a missing
-`ssh`. Do not `git init` inside the copy (that would put `.git` on this
-package tree). Use a bare repo, then `Pkg.add(; url=)`.
-
-```bash
-BARE=$(mktemp -d "$HOME/dsk.git.XXXXXX")
-git init --bare -q "$BARE"
-git --git-dir="$BARE" --work-tree="$WORKDIR" add -A
-git --git-dir="$BARE" --work-tree="$WORKDIR" \
-  -c user.email=ci@distsshkit -c user.name=ci commit -q -m tree
-```
+From this checkout:
 
 ```bash
 julia -e '
   using Pkg
   Pkg.activate(temp=true)
-  Pkg.add(; url=ARGS[1])
-  using DistSSHKit
-  run(Cmd(["chmod", "-R", "a-w", pkgdir(DistSSHKit)]))
-  Pkg.test("DistSSHKit")
-' "file://$BARE"
-```
-
-Linux without `ssh`: same [juliaup](https://github.com/JuliaLang/juliaup)
-Ubuntu container from macOS or from Linux
-([Docker Hub `julia`](https://hub.docker.com/_/julia) has no `nightly`
-tag). `--no-install-recommends` keeps `openssh-client` out.
-
-```bash
-docker run --rm \
-  -v "$WORKDIR:/pkg:ro" \
-  ubuntu:24.04 \
-  bash -lc "
-    apt-get update -qq &&
-    apt-get install -y -qq --no-install-recommends \
-      curl ca-certificates git &&
-    curl -fsSL https://install.julialang.org |
-      sh -s -- --yes --default-channel nightly &&
-    export PATH=\"\$HOME/.juliaup/bin:\$PATH\" &&
-    cp -a /pkg /tmp/dsk &&
-    git init --bare -q /tmp/dsk.git &&
-    git --git-dir=/tmp/dsk.git --work-tree=/tmp/dsk add -A &&
-    git --git-dir=/tmp/dsk.git --work-tree=/tmp/dsk \
-      -c user.email=ci@distsshkit -c user.name=ci \
-      commit -q -m tree &&
-    julia +nightly -e '
-      using Pkg
-      Pkg.activate(temp=true)
-      Pkg.add(; url=\"file:///tmp/dsk.git\")
-      using DistSSHKit
-      run(Cmd([\"chmod\", \"-R\", \"a-w\", pkgdir(DistSSHKit)]))
-      Pkg.test(\"DistSSHKit\")
-    '
-  "
+  Pkg.add("PkgEval")
+  using PkgEval
+  config = Configuration(; julia="nightly")
+  pkg = Package(; name="DistSSHKit", url="/package")
+  result = PkgEval.evaluate_package(config, pkg; echo=true,
+      mounts=Dict("/package:ro" => pwd()))
+  exit(result.status == :test ? 0 : 1)
+'
 ```
 
 ## Writing tests

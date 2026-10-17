@@ -86,12 +86,10 @@ julia --project=. -e 'using Pkg; Pkg.test()'
 Run this on **1.13** (and **1.14-nightly** if you have it).
 Layout: [test/README.md](test/README.md).
 
-Checkout `Pkg.test()` is not a Registry tarball. After changing those
-gates (smokes, demo copy, `ssh` / `git` spawn, probe), and before a
-General cut, run the disposable copy in
-[test/README.md](test/README.md#registry-tree). CI runs that shape on
-**main** and a version-cut PR (slot tip; not a required check). Not on
-ordinary PRs.
+Checkout `Pkg.test()` is not the PkgEval sandbox. Before a General cut,
+run the recipe in [test/README.md](test/README.md#pkgeval). CI runs that
+job on **main** and a version-cut PR (host Julia 1.12, test Julia nightly;
+`continue-on-error`; not a required check). Not on ordinary PRs.
 
 Smoke (1.13+; copies land in `distsshkit_demos/`):
 
