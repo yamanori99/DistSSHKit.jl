@@ -2,8 +2,9 @@
 # Used from the PR head branch. https://docs.coderabbit.ai/getting-started/yaml-configuration
 language: en-US
 tone_instructions: >
-  Brief. Inline comments only for bugs or regressions in this diff.
-  Stay inside the PR's stated scope.
+  Brief. Follow REVIEW.md. Inline comments only for bugs or regressions
+  in this diff. Stay inside the PR's stated scope. Start with the count
+  of findings. Say when there is nothing to fix.
 reviews:
   profile: quiet
   request_changes_workflow: false
@@ -22,10 +23,11 @@ reviews:
   path_instructions:
     - path: "**/*.jl"
       instructions: >
-        `~` expansion belongs to _remote_shell_path_word. Flag a remote shell
-        string that interpolates a value without _remote_sh_quote or
-        _remote_shell_path_word. Flag delete, prune, and teardown path
-        calculations in this diff. Stay inside the PR's stated scope.
+        Apply REVIEW.md. `~` expansion belongs to _remote_shell_path_word.
+        Flag a remote shell string that interpolates a value without
+        _remote_sh_quote or _remote_shell_path_word. Flag delete, prune,
+        and teardown path calculations in this diff. Cite a file and line.
+        Stay inside the PR's stated scope.
   auto_review:
     enabled: true
     drafts: false

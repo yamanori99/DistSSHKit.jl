@@ -169,8 +169,8 @@ still runs when `docs/**`, README,
 `src/**`, or `Project.toml` changed; otherwise it is skipped too.
 Allowlisted markdown-only PRs skip the heavy jobs (skipping UI):
 
-- `README.md`, `README.ja.md`, `CONTRIBUTING.md`, `NEWS.md`,
-  `HISTORY.md`,
+- `AGENTS.md`, `REVIEW.md`, `README.md`, `README.ja.md`,
+  `CONTRIBUTING.md`, `NEWS.md`, `HISTORY.md`,
   `SECURITY.md`, `LICENSE`
 - `.gitignore`, `.git-blame-ignore-revs`,
   `.github/pull_request_template.md`, `.coderabbit.yaml`
@@ -254,6 +254,15 @@ minor drift when nothing formatted that month. Failure opens Issue
 - One reviewable change per PR. Split unless `main` would be broken in
   between.
 - Large plans: Discussion or Enhancement Issue first, then small PRs.
+- The body is
+  [`.github/pull_request_template.md`](.github/pull_request_template.md):
+  what changed, what ran, what it can break, and how to undo it.
+  [AGENTS.md](AGENTS.md) tells an agent how to fill that.
+  [REVIEW.md](REVIEW.md) tells a reviewer what failure looks like here.
+  The type label stays out of the body. CI applies it. See
+  [releasing](docs/src/developers/releasing.md).
+- That split follows
+  [How the Claude Code team does code review](https://claude.dev/blog/solving-code-review-at-anthropic/).
 
 ### CodeRabbit (experimental)
 

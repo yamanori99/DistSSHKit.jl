@@ -3,14 +3,18 @@
 ## Summary
 
 <!-- What / why -->
-<!-- Type label: closing issue (`Fixes #N`) if unique, else branch prefix
-     (feat/ → enhancement, fix/ → bug, breaking/ → breaking,
-     chore/ docs/ ci/ test/ → chore), else a Conventional Commit title
-     (fix: → bug, feat: → enhancement, ! → breaking,
-     docs/ test/ ci/ chore: → chore). Else chore when the diff has no
-     src/, ext/, or root Project.toml. Anything else fails the check.
-     Version cuts use cut instead of a type label. Override with gh pr
-     edit. -->
+
+## Testing
+
+<!-- The command that ran, and what it returned. If nothing ran, say why. -->
+
+## Risk
+
+<!-- What this change can break. Docs-only and comment-only changes are low. -->
+
+## Revert
+
+<!-- How to undo this after it merges. -->
 
 ## Checklist
 
