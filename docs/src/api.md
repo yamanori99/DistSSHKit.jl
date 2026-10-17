@@ -372,8 +372,11 @@ are an extension surface aimed at
 exact rendered text, colors, or spinner glyphs — presentation may change
 without a breaking version bump.
 
-`dist_ssh_kit_version`, `println_kit_version`, `ssh_opts`, and the help
-helpers in this section are defined in DistSSHKit.
+`dist_ssh_kit_version` and `println_kit_version` are defined in DistSSHKit.
+The other names in this section are defined in DistSSHRun and reexported.
+`ssh_opts`, `run_on_host`, the path helpers, and the help helpers live in
+`DistSSHRun.DistSSHBase`. `SPINNER_FRAMES`, `print_cli_error`, and the
+`go` / `drive` parsers live in DistSSHRun.
 
 ```@docs
 parse_go_args

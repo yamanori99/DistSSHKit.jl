@@ -20,6 +20,14 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
   files above the send root. That has been true since DistSSHRun 0.1.7.
 - CLI flags, confirmation, and exit codes are unchanged.
 
+### Planned breaking (next minor)
+
+- `-y`, `--yes`, and `DISTSSHKIT_YES` will stop authorizing
+  `setup --delete`, `setup --prune`, and `teardown`. Without
+  `--confirm-path`, `-y` will exit 1. A `teardown` that was not asked to
+  delete still prints `Would remove` and exits 0. `up default` still
+  honors `DISTSSHKIT_YES`. DistSSHKit 0.11 (DistSSHRun 0.2, DistSSHQueue 0.10).
+
 ## 0.10.1
 
 - Requires DistSSHRun 0.1.6 and DistSSHQueue 0.9.4.
