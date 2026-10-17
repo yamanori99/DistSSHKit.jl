@@ -10,7 +10,7 @@
 
 ## Risk
 
-<!-- What this change can break. Docs-only and comment-only changes are low. -->
+<!-- Name what this can break. Do not grade it. -->
 
 ## Revert
 
