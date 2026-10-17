@@ -402,8 +402,8 @@ function _finish_rejected(sub::AbstractString, script::Bool)::Cint
     return 1
 end
 
-function _main(args::Vector{String})::Cint
-    kind, payload = _route(args)
+"""Run one `_route` result. An unknown `kind` errors instead of looking like a bad command."""
+function _apply_route(kind::Symbol, payload, args::Vector{String})::Cint
     if kind === :version
         println_kit_version()
         return 0
@@ -423,9 +423,16 @@ function _main(args::Vector{String})::Cint
         return DistSSHRun.main(payload::Vector{String})
     elseif kind === :no_command
         return _finish_rejected(payload::String, true)
-    else
+    elseif kind === :unknown
         return _finish_rejected(payload::String, false)
+    else
+        error("unhandled route: $(repr(kind))")
     end
+end
+
+function _main(args::Vector{String})::Cint
+    kind, payload = _route(args)
+    return _apply_route(kind, payload, args)
 end
 
 Base.eval(@__MODULE__, :(@main))
