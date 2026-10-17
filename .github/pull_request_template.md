@@ -23,6 +23,7 @@
       bump. Breaking includes CLI behavior: flags, confirmation, exit codes,
       what is deleted. See
       [docs/src/developers/releasing.md](https://github.com/yamanori99/DistSSHKit.jl/blob/main/docs/src/developers/releasing.md).
-- [ ] Version raise — `Project.toml` `version` went up (CI reads the
-      diff; register when the remaining required checks are green)
-- [ ] Remote / smoke tested if this PR needs it
+- [ ] Version is correct — `Project.toml` `version` went up when this
+      should ship, and stayed when it should not (CI reads the diff;
+      register when the remaining required checks are green)
+- [ ] Remote / smoke is done, or this change does not need it
