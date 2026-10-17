@@ -29,6 +29,9 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
   `0.1.9`. DistSSHQueue compat is `0.9.6`.
 - `setup --rsync` inside one git repository also applies `.gitignore`
   files above the send root. That has been true since DistSSHRun 0.1.7.
+  A `qhost:` stage in a git work tree sends that same file list.
+  `.distsshqueue/` stays out. Outside git, rsync still uses each
+  directory's `.gitignore`.
 - CLI flags, confirmation, and exit codes are unchanged.
 
 ## 0.10.1
