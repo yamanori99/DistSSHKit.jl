@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+name: compile-bench
+description: Measure precompile, load, CLI compile time, and src size
+
+inputs:
+  slot:
+    description: Julia slot, such as 1.13 or 1.14-nightly
+    required: true
+  token:
+    description: Token used to push the bench-data branch. Main runs only.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Measure
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        COMPILE_BENCH_SLOT: ${{ inputs.slot }}
+      run: |
+        set -euo pipefail
+        julia --startup-file=no --project=. bench/compile/measure.jl \
+          --out "${RUNNER_TEMP}/compile-bench.toml" \
+          --slot "$COMPILE_BENCH_SLOT"
+    - name: Record on bench-data
+      if: github.ref == 'refs/heads/main'
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        SLOT: ${{ inputs.slot }}
+        BENCH_TOKEN: ${{ inputs.token }}
+      run: |
+        set -euo pipefail
+        dest="${RUNNER_TEMP}/bench-data"
+        rm -rf "$dest"
+        url="https://x-access-token:${BENCH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+        existed=0
+        if git ls-remote --exit-code --heads "$url" bench-data >/dev/null; then
+          existed=1
+          git clone --branch bench-data --single-branch "$url" "$dest"
+        else
+          git clone --branch main --single-branch "$url" "$dest"
+          git -C "$dest" checkout --orphan bench-data
+          git -C "$dest" rm -rf . >/dev/null 2>&1 || true
+        fi
+        sha="$(git rev-parse --short=7 HEAD)"
+        day="$(date -u +%Y-%m-%d)"
+        mkdir -p "$dest/history/${SLOT}"
+        cp "${RUNNER_TEMP}/compile-bench.toml" "$dest/history/${SLOT}/${day}-${sha}.toml"
+        julia --startup-file=no bench/compile/report.jl \
+          --history "$dest/history" \
+          --readme "$dest/README.md" \
+          --summary "$GITHUB_STEP_SUMMARY"
+        git -C "$dest" add README.md history
+        git -C "$dest" \
+          -c user.name="github-actions[bot]" \
+          -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+          commit -m "Record compile bench for ${SLOT}."
+        if [ "$existed" = "1" ]; then
+          for _ in 1 2 3; do
+            git -C "$dest" push origin HEAD:bench-data && exit 0
+            git -C "$dest" pull --rebase origin bench-data
+          done
+          exit 1
+        fi
+        git -C "$dest" push origin HEAD:bench-data
+    - name: Report this run
+      if: github.ref != 'refs/heads/main'
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        SLOT: ${{ inputs.slot }}
+      run: |
+        set -euo pipefail
+        hist="${RUNNER_TEMP}/bench-history"
+        mkdir -p "$hist/${SLOT}"
+        cp "${RUNNER_TEMP}/compile-bench.toml" "$hist/${SLOT}/sample.toml"
+        julia --startup-file=no bench/compile/report.jl \
+          --history "$hist" \
+          --readme "${RUNNER_TEMP}/compile-bench-README.md" \
+          --summary "$GITHUB_STEP_SUMMARY"
+    - name: Upload compile bench
+      if: github.ref != 'refs/heads/main'
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: compile-bench-${{ inputs.slot }}
+        path: |
+          ${{ runner.temp }}/compile-bench.toml
+          ${{ runner.temp }}/compile-bench-README.md

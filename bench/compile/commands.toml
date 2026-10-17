@@ -1,0 +1,15 @@
+# Commands measured by bench/compile/measure.jl. No SSH.
+# `{store}` is a temporary jobs file created for the run.
+package = "DistSSHKit"
+
+[[command]]
+name = "help"
+args = ["--help"]
+
+[[command]]
+name = "status"
+args = ["status"]
+
+[command.env]
+DISTSSHQUEUE_NO_AUTOSERVE = "1"
+DISTSSHQUEUE_STORE = "{store}"

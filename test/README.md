@@ -61,6 +61,14 @@ Green on one layer does not imply the others. Child CLI uses
 - **doctests** (~5 s): `src/` docstring examples (Documenter, Julia 1.13).
   Not workers / SSH.
 
+## Compile bench
+
+`bench/compile/measure.jl` records precompile time, `using` time, CLI wall time, and the size of `src/**/*.jl` (file count, physical lines, non-blank lines, bytes). CI weekly runs it on Julia 1.13 and 1.14-nightly. A main run appends the result to the `bench-data` branch and rebuilds that branch's README. Other runs upload the result as an artifact and do not push. A sample is flagged when, against the previous sample on the same Julia slot, package precompile grows by 1.5x and 0.5s, a command wall grows by 1.5x and 1s, or a method of at least 200 ms is new in the top 20 or doubles. The job is `continue-on-error` and does not fail the weekly notify.
+
+```bash
+julia --startup-file=no --project=. bench/compile/measure.jl --out /tmp/compile-bench.toml --slot local
+```
+
 ## PkgEval
 
 [PkgEval](https://github.com/JuliaCI/PkgEval.jl) runs the daily ecosystem

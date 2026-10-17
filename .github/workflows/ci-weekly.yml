@@ -231,6 +231,28 @@ jobs:
         shell: wsl-bash {0}
         run: ./.github/wsl-julia.sh 1.14-nightly ./.github/aqua-check.sh
 
+  compile-bench:
+    name: Compile bench (${{ matrix.slot }}, ubuntu-latest, x64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        slot: ["1.13", "1.14-nightly"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: julia-actions/setup-julia@fa02766e078afaaf09b14210362cee14137e6a32 # v3.0.2
+        with:
+          version: ${{ matrix.slot }}
+      - uses: ./.github/actions/compile-bench
+        with:
+          slot: ${{ matrix.slot }}
+          token: ${{ github.token }}
+
   cache-gc:
     needs:
       - test

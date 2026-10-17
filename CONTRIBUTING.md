@@ -237,9 +237,13 @@ not rewrite files you did not mean to touch.
 
 **CI weekly** (Sunday 10:00 JST, or Run workflow): same `Pkg.test` /
 JETLS / Aqua as a PR, including `macos-latest` and WSL2 (no coverage).
-Not a PR check. Catches 1.13 / Aqua / JETLS `@release` drift when nothing
-merged that week. Failure of the 1.13 jobs opens Issue `CI weekly failed`
-(`alert`); 1.14-nightly is omitted from that notify.
+Not a PR check. `Compile bench` measures precompile, load, CLI wall time,
+and `src/**/*.jl` size on 1.13 and 1.14-nightly, and on **main** appends
+that to the `bench-data` branch. It flags a 1.5x jump (and a 200 ms method
+that is new or doubled) but does not fail the run. Catches 1.13 / Aqua /
+JETLS `@release` drift when nothing merged that week. Failure of the 1.13
+jobs opens Issue `CI weekly failed` (`alert`); 1.14-nightly and compile
+bench are omitted from that notify.
 
 **Runic monthly** (1st 10:00 JST, or Run workflow): `runic --check` on
 tracked `.jl` (`version: '1'`). Not a required PR check. Catches Runic
