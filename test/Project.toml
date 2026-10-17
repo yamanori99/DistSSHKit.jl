@@ -10,8 +10,8 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 DistSSHKit = {path = ".."}
 
 [compat]
-DistSSHQueue = "0.9.5"
-DistSSHRun = "0.1.7"
+DistSSHQueue = "0.9.6"
+DistSSHRun = "0.1.9"
 Random = "1"
 TOML = "1"
 Test = "1"

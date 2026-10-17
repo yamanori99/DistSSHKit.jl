@@ -9,17 +9,6 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
 
 ## Unreleased
 
-- `dist_ssh_kit_version` is exported.
-- `--project` placed after `julia -m DistSSHKit` exits 1 with `Error:`.
-  Put it before `-m`: `julia --project=DIR -m DistSSHKit …`. Routing of
-  other arguments is unchanged.
-- Host SSH and juliaup come from DistSSHRun 0.1.7 (`DistSSHBase` and
-  `DistSSHUp`). The copies in this package are gone. DistSSHRun compat is
-  `0.1.7`. DistSSHQueue compat is `0.9.5`.
-- `setup --rsync` inside one git repository also applies `.gitignore`
-  files above the send root. That has been true since DistSSHRun 0.1.7.
-- CLI flags, confirmation, and exit codes are unchanged.
-
 ### Planned breaking (next minor)
 
 - `-y`, `--yes`, and `DISTSSHKIT_YES` will stop authorizing
@@ -27,6 +16,20 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
   `--confirm-path`, `-y` will exit 1. A `teardown` that was not asked to
   delete still prints `Would remove` and exits 0. `up default` still
   honors `DISTSSHKIT_YES`. DistSSHKit 0.11 (DistSSHRun 0.2, DistSSHQueue 0.10).
+
+## 0.10.2
+
+- Requires DistSSHRun 0.1.9 and DistSSHQueue 0.9.6.
+- `dist_ssh_kit_version` is exported.
+- `--project` placed after `julia -m DistSSHKit` exits 1 with `Error:`.
+  Put it before `-m`: `julia --project=DIR -m DistSSHKit …`. Routing of
+  other arguments is unchanged.
+- Host SSH and juliaup come from DistSSHRun 0.1.7 (`DistSSHBase` and
+  `DistSSHUp`). The copies in this package are gone. DistSSHRun compat is
+  `0.1.9`. DistSSHQueue compat is `0.9.6`.
+- `setup --rsync` inside one git repository also applies `.gitignore`
+  files above the send root. That has been true since DistSSHRun 0.1.7.
+- CLI flags, confirmation, and exit codes are unchanged.
 
 ## 0.10.1
 
