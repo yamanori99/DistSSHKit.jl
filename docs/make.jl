@@ -88,7 +88,9 @@ makedocs(;
     sitename = "DistSSHKit.jl",
     format = Documenter.HTML(;
         prettyurls = get(ENV, "CI", nothing) == "true",
-        canonical = "https://yamanori99.github.io/DistSSHKit.jl",
+        # Pages are served under /stable/. The site root only refreshes there.
+        # Canonical must be that stable base, or search results open the refresh page.
+        canonical = "https://yamanori99.github.io/DistSSHKit.jl/stable",
         edit_link = "main",
         # api.md is a large autogen page (Documenter default hard limit is 200 KiB).
         size_threshold_ignore = ["api.md"],
