@@ -27,7 +27,7 @@ runs:
         set -euo pipefail
         julia --project=@pkgeval -e '
           using Pkg
-          Pkg.add("PkgEval")
+          Pkg.add(url="https://github.com/JuliaCI/PkgEval.jl")
           using PkgEval
           config = Configuration(; julia=ENV["PKGEVAL_JULIA"])
           pkg = Package(; name=ENV["PKGEVAL_PACKAGE"], url="/package")
