@@ -333,7 +333,9 @@ function measure()
     specs isa AbstractDict && (specs = [specs])
     rows = Dict{String, Any}[]
     for spec in specs
-        push!(rows, measure_command(depot, package, spec, store))
+        row = measure_command(depot, package, spec, store)
+        row["exit"] == 0 || error("command $(row["name"]) failed: $(row["exit"])")
+        push!(rows, row)
     end
     result = Dict{String, Any}(
         "repo" => package,

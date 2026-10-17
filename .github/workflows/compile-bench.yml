@@ -1,0 +1,74 @@
+# A main push that raises Project.toml version. Not a PR check.
+# Same measure as the CI weekly job. A main run appends bench-data.
+# continue-on-error: a red bench does not fail this push's other checks.
+# This workflow is not part of the weekly notify.
+name: Compile bench
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - Project.toml
+
+concurrency:
+  group: compile-bench-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    name: detect
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      cut: ${{ steps.cut.outputs.cut }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Version cut
+        id: cut
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          zeros="$(printf '0%.0s' {1..40})"
+          if [ -z "${BEFORE:-}" ] || [ "$BEFORE" = "$zeros" ]; then
+            echo "cut=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            git fetch --depth=1 origin "$BEFORE" || true
+          fi
+          if ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            echo "before is unreadable; not a cut"
+            echo "cut=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          cut="$(./.github/version-cut.sh "$BEFORE" "$GITHUB_SHA")"
+          echo "cut=${cut}" >> "$GITHUB_OUTPUT"
+
+  compile-bench:
+    name: Compile bench (${{ matrix.slot }}, ubuntu-latest, x64)
+    needs: detect
+    if: needs.detect.outputs.cut == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        slot: ["1.13", "1.14-nightly"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: julia-actions/setup-julia@fa02766e078afaaf09b14210362cee14137e6a32 # v3.0.2
+        with:
+          version: ${{ matrix.slot }}
+      - uses: ./.github/actions/compile-bench
+        with:
+          slot: ${{ matrix.slot }}
+          token: ${{ github.token }}
