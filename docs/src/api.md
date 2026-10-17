@@ -66,7 +66,7 @@ First-time remotes usually look like:
 session = KitSession(
     workers=["child:user@h1"], remote="/path/to/project", yes=true,
 )
-setup!(session, :delete, :rsync, :instantiate)
+setup!(session, :rsync, :instantiate)
 setup!(session, :check; ignore_julia_version=true)  # optional
 # Julia channel: `julia -m DistSSHKit up` and `up parent`.
 # `up update` refreshes channels and leaves the default.
@@ -265,8 +265,9 @@ Watchers can tail `kit.progress` (or the log next to it) and use
 `DISTSSHKIT_PROGRESS=1` is `--progress` verbosity on the child, not a watcher.
 Slot-level `go` artifacts (`go_manifest.txt`, `{slot}/go.exitcode`) remain
 the source of truth for per-slot exit codes.
-`parse_progress_line` / `kit_progress_latest` / `kit_progress_phases` stay
-on `DistSSHKit` for scripts that parse those lines; they are not exported.
+`kit_progress_latest` stays on `DistSSHKit` for scripts that parse those
+lines; it is not exported. `parse_progress_line` and `kit_progress_phases`
+are DistSSHRun names and are not on DistSSHKit.
 
 ### Helpers for detached runs
 

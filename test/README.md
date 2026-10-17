@@ -12,7 +12,11 @@ julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
 That is `test/runtests.jl`, which includes the files under Layout:
-public reexports and `julia -m DistSSHKit` routing. Tests for a job
+public reexports and `julia -m DistSSHKit` routing.
+`reexport.jl` pins the names Kit exports. If that test fails after a
+DistSSHRun or DistSSHQueue release and Kit itself did not change, read the
+new name. Update the set in a Kit patch when the increase is intended.
+Tests for a job
 started on this machine live in DistSSHRun.
 Tests for jobs left on a machine that stays on live in DistSSHQueue.
 Aqua is a separate CI job, not `Pkg.test()`.
@@ -26,7 +30,7 @@ E2E, not this repo. Occasional copy recipe: [Registry tree](#registry-tree).
 test/
   runtests.jl      # Pkg.test() — include only
   helpers.jl       # _main_capture, _with_fake_ssh, _kit_proc
-  reexport.jl      # public names
+  reexport.jl      # public names; pinned export set
   routing.jl       # main wording, streams, and the _route table
   consistency.jl   # command lists
   hop.jl           # qhost: PATH ssh, no real connection

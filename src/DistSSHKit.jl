@@ -72,7 +72,8 @@ end
 _adopt!(DistSSHRun)
 _adopt!(DistSSHQueue)
 
-# Qualified names this repo's demos and SSH checks still call. Not exported.
+# Internal names kept so existing `DistSSHKit.name` calls still resolve.
+# Not a user promise. Not exported.
 const _QUALIFIED = (
     :KIT_PROGRESS,
     :KIT_PROGRESS_SUSPEND,

@@ -40,6 +40,7 @@ using Random
         @test isempty(out)
         @test occursin("does not infer go / ride / drive", err)
     end
+    # Root usage goes to stderr. That stream is the spec.
     let (code, out, err) = _main_capture(["--help"])
         @test code == 0
         @test isempty(out)

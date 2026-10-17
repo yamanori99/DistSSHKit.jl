@@ -50,10 +50,9 @@ function Documenter.allbindings(checkdocs::Symbol, mods::Set{Module})
     return Documenter.allbindings(checkdocs, kept)
 end
 
-# The docs build loads the released DistSSHRun, whose docstrings `@ref` names
-# this manual cannot link. Kit and Run each define `host_tokens` and
-# `cache_relpath`, so a `@ref` inside a Run docstring does not land on Kit's
-# copy. These two stay until that duplication is gone.
+# Run docstrings still `@ref` `host_tokens` and `cache_relpath`. Kit no longer
+# defines its own copies. These two stay until a docs build shows the `@ref`s
+# resolve.
 const _DOC_REF_REWRITES = (
     "[`host_tokens`](@ref)" => "`host_tokens`",
     "[`cache_relpath`](@ref)" => "`cache_relpath`",
