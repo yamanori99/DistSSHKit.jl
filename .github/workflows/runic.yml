@@ -9,7 +9,7 @@ on:
       - main
   pull_request:
   workflow_dispatch:
-  # 1st of the month 10:00 JST (UTC 01:00). Misses CI weekly (Sundays).
+  # 1st of the month 10:00 JST (UTC 01:00). Misses CI weekly (daily UTC 21:00).
   schedule:
     - cron: "0 1 1 * *"
 

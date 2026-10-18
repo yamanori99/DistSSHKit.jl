@@ -22,10 +22,11 @@ A version-cut pull request runs the full suite. Path filters do not
 apply. A main push that only raises `version` and updates `NEWS.md`
 does not re-run Test. Register from the green pull request.
 
-`cut-hold` is on DistSSHRun and DistSSHQueue. A red Sunday Linux job in
-E2E weekly adds it to the Issue `E2E weekly failed`. Intel and WSL do
-not. A later green Sunday Linux removes it, even if Intel or WSL is
-still red. The Issue stays open until the whole weekly run is green.
+`cut-hold` is on DistSSHRun and DistSSHQueue. A red Linux job in a
+scheduled E2E weekly run (daily) adds it to the Issue `E2E weekly
+failed`. Intel and WSL do not. A later green scheduled Linux removes it,
+even if Intel or WSL is still red. The Issue stays open until a whole
+run is green.
 DistSSHKit has no `cut-hold`.
 
 When a package breaks something public, every package that reexports it
