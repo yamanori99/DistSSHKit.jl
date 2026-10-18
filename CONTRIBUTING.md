@@ -83,7 +83,7 @@ DistSSHQueue `m_package`.
 julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
-Run this on **1.13** (and **1.14-nightly** if you have it).
+Run this on **1.13** (and **1.14-nightly** or **nightly** if you have them).
 Layout: [test/README.md](test/README.md).
 
 Checkout `Pkg.test()` is not the PkgEval sandbox. Before a General cut,
@@ -112,15 +112,17 @@ without coverage instrumentation. Status checks are informational
 
 Versions are lines in
 [`.github/julia-slots.env`](.github/julia-slots.env). Write the version
-(`1.13`, `1.14-nightly`). The job name uses that same string. Do not add
+(`1.13`, `1.14-nightly`, `nightly`). The job name uses that same string. Do not add
 a second stable line.
 
 - **1.13** (required): `Project.toml` julia floor, the maintained
   stable. Pkg.test on Ubuntu, macOS, and WSL2 Ubuntu, plus Aqua, JETLS,
   Documenter, bake. Codecov `pkgtest` on **main push**, Ubuntu only
-- **1.14-nightly** (not required): next-minor nightly. Ubuntu Pkg.test
+- **1.14-nightly** (not required): `release-1.14`. Ubuntu Pkg.test
   and Aqua on **main**, **CI weekly**, and a version-cut PR. macOS and
   WSL2 Pkg.test and Aqua on **CI weekly** only. `continue-on-error`
+- **nightly** (not required): Julia master. Same jobs and the same
+  schedule as **1.14-nightly**. `continue-on-error`. Not in the ruleset
 
 This package feels SSH hosts, Pkg, and lockfiles more than a compute-model
 library does. When Julia announces that it has stopped maintaining the
@@ -238,8 +240,8 @@ not rewrite files you did not mean to touch.
 **CI weekly** (daily 06:00 JST, or Run workflow): same `Pkg.test` /
 JETLS / Aqua as a PR, including `macos-latest` and WSL2 (no coverage).
 Not a PR check. `Compile bench` measures precompile, load, CLI wall time,
-`src/**/*.jl` size, and the host OS, arch, and CPU on 1.13 and
-1.14-nightly. CI weekly runs it, and a **main** push that raises
+`src/**/*.jl` size, and the host OS, arch, and CPU on 1.13,
+1.14-nightly, and nightly. CI weekly runs it, and a **main** push that raises
 `Project.toml` `version` runs it too. A **main**
 run appends that to the `bench-data` branch. How to read the archive
 is in
@@ -248,7 +250,7 @@ A command that exits nonzero
 is not recorded. It flags a host change, a 1.5x jump (and a 200 ms method
 that is new or doubled) but does not fail the run. Catches 1.13 / Aqua /
 JETLS `@release` drift when nothing merged that day. Failure of the 1.13
-jobs opens Issue `CI weekly failed` (`alert`); 1.14-nightly and compile
+jobs opens Issue `CI weekly failed` (`alert`); 1.14-nightly, nightly, and compile
 bench are omitted from that notify.
 
 **Runic monthly** (1st 10:00 JST, or Run workflow): `runic --check` on

@@ -4,7 +4,7 @@ description: setup-julia for a version listed in .github/julia-slots.env
 
 inputs:
   version:
-    description: Julia version (1.13, 1.14-nightly). Must be its own line in julia-slots.env.
+    description: Julia version (1.13, 1.14-nightly, nightly). Must be its own line in julia-slots.env.
     required: true
   setup:
     description: "true to run julia-actions/setup-julia"

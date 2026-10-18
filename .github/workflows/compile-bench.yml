@@ -1,7 +1,7 @@
 # A main push that raises Project.toml version. Not a PR check.
 # Same measure as the CI weekly job. A main run appends bench-data.
 # A 1.13 failure on main opens "Compile bench failed". A skipped run does not close it.
-# The nightly job stays continue-on-error and is not that issue.
+# The 1.14-nightly and nightly jobs stay continue-on-error and are not that issue.
 name: Compile bench
 
 on:
@@ -84,6 +84,25 @@ jobs:
       - uses: ./.github/actions/compile-bench
         with:
           slot: "1.14-nightly"
+          token: ${{ github.token }}
+
+  compile-bench-master:
+    name: Compile bench (nightly, ubuntu-latest, x64)
+    needs: detect
+    if: needs.detect.outputs.cut == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: julia-actions/setup-julia@fa02766e078afaaf09b14210362cee14137e6a32 # v3.0.2
+        with:
+          version: "nightly"
+      - uses: ./.github/actions/compile-bench
+        with:
+          slot: "nightly"
           token: ${{ github.token }}
 
   notify-bench:

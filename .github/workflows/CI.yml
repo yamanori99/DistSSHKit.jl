@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
 
 # Cancel redundant runs on the same branch/PR.
-# A Project.toml version increase (see version-cut.sh) runs Ubuntu tip /
-# Aqua tip / PkgEval in this workflow. macOS and WSL2 tip are
-# CI weekly. No label is involved.
+# A Project.toml version increase (see version-cut.sh) runs Ubuntu
+# 1.14-nightly, nightly, Aqua on those channels, and PkgEval in this workflow.
+# macOS and WSL2 for both channels are CI weekly. No label is involved.
 # A main push that changes only Project.toml and NEWS.md, and raises
 # version, skips Test.
 concurrency:
@@ -139,6 +139,24 @@ jobs:
           delete-old-caches: false
       - uses: ./.github/actions/pkg-test
 
+  test-nightly:
+    name: Pkg.test (nightly, ubuntu-latest, x64)
+    needs: detect
+    if: needs.detect.outputs.heavy == 'true' && (github.event_name != 'pull_request' || needs.detect.outputs.version_cut == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/julia-slot
+        with:
+          version: "nightly"
+      - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
+        with:
+          cache-scratchspaces: false
+          delete-old-caches: false
+      - uses: ./.github/actions/pkg-test
+
   # Not a Julia slot. Not required to merge. This checkout inside PkgEval's
   # sandbox, against Julia nightly. Host Julia is 1.12. Dependencies come
   # from General.
@@ -194,6 +212,25 @@ jobs:
       - uses: ./.github/actions/julia-slot
         with:
           version: "1.14-nightly"
+      - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
+        with:
+          cache-scratchspaces: false
+          delete-old-caches: false
+      - name: Aqua.test_all (latest Aqua)
+        run: ./.github/aqua-check.sh
+
+  aqua-nightly:
+    name: Aqua (nightly, ubuntu-latest, x64)
+    needs: detect
+    if: needs.detect.outputs.heavy == 'true' && (github.event_name != 'pull_request' || needs.detect.outputs.version_cut == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/julia-slot
+        with:
+          version: "nightly"
       - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
         with:
           cache-scratchspaces: false

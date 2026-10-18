@@ -4,7 +4,7 @@ description: Measure precompile, load, CLI compile time, and src size
 
 inputs:
   slot:
-    description: Julia slot, such as 1.13 or 1.14-nightly
+    description: Julia slot, such as 1.13, 1.14-nightly, or nightly
     required: true
   token:
     description: Token used to push the bench-data branch. Main runs only.

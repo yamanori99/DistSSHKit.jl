@@ -22,7 +22,7 @@ exits nonzero stops the run before a sample is written. A 1.13 failure
 on `main` opens an issue titled `Compile bench failed`, with the `alert`
 label. A later 1.13 success on `main` closes it. A skipped run, including
 a `Project.toml` push that is not a version cut, does not close it. The
-1.14-nightly slot stays out of that issue.
+1.14-nightly and nightly slots stay out of that issue.
 
 ```bash
 git clone --branch bench-data --single-branch \
@@ -36,7 +36,7 @@ history/<slot>/<YYYY-MM-DD>-<shortsha>.toml
 README.md
 ```
 
-`<slot>` is the CI name, such as `1.13` or `1.14-nightly`. The name
+`<slot>` is the CI name, such as `1.13`, `1.14-nightly`, or `nightly`. The name
 moves when the CI slot moves. Each file stores `julia` and
 `julia_commit`, so a later slot can still be lined up with an earlier
 one.

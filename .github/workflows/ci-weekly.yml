@@ -1,12 +1,12 @@
 name: CI weekly
 
-# Not on pull_request: insurance for 1.13 / 1.14-nightly / Aqua / JETLS
+# Not on pull_request: insurance for 1.13 / 1.14-nightly / nightly / Aqua / JETLS
 # @release drift when no PR ran that day. PR / main push stay the gate.
-# tip jobs are continue-on-error and omitted from notify.
+# 1.14-nightly and nightly jobs are continue-on-error and omitted from notify.
 # A 1.13 compile bench failure on main opens "Compile bench failed".
 # 1.13 macos-latest and WSL2 Pkg.test are included (no coverage), same as a PR.
-# 1.14-nightly Pkg.test and Aqua on macOS and WSL2 run here only, and stay
-# out of notify. Ubuntu nightly also runs in Test.
+# 1.14-nightly and nightly Pkg.test and Aqua on macOS and WSL2 run here only, and stay
+# out of notify. Ubuntu copies also run in Test.
 on:
   workflow_dispatch:
   # Daily 06:00 JST (UTC 21:00).
@@ -93,6 +93,22 @@ jobs:
           delete-old-caches: false
       - uses: ./.github/actions/pkg-test
 
+  test-nightly:
+    name: Pkg.test (nightly, ubuntu-latest, x64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/julia-slot
+        with:
+          version: "nightly"
+      - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
+        with:
+          cache-scratchspaces: false
+          delete-old-caches: false
+      - uses: ./.github/actions/pkg-test
+
   test-tip-macos:
     name: Pkg.test (1.14-nightly, macos-latest, aarch64)
     runs-on: macos-latest
@@ -103,6 +119,22 @@ jobs:
       - uses: ./.github/actions/julia-slot
         with:
           version: "1.14-nightly"
+      - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
+        with:
+          cache-scratchspaces: false
+          delete-old-caches: false
+      - uses: ./.github/actions/pkg-test
+
+  test-nightly-macos:
+    name: Pkg.test (nightly, macos-latest, aarch64)
+    runs-on: macos-latest
+    timeout-minutes: 45
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/julia-slot
+        with:
+          version: "nightly"
       - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
         with:
           cache-scratchspaces: false
@@ -135,6 +167,33 @@ jobs:
       - name: Pkg.test in WSL2
         shell: wsl-bash {0}
         run: ./.github/wsl-julia.sh 1.14-nightly julia --project=. -e 'using Pkg; Pkg.test()'
+
+  test-nightly-wsl:
+    name: Pkg.test (nightly, WSL2 ubuntu-24.04, x64)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: Vampire/setup-wsl@d1da7f2c0322a5ee4f24975344f67fc0f5baf364 # v7.0.0
+        timeout-minutes: 10
+        with:
+          distribution: Ubuntu-24.04
+          wsl-version: 2
+          # Cache the rootfs. Do not apt-get in this action: a stuck wsl.exe
+          # keeps stdio open, so this step's timeout-minutes does not reap it.
+          use-cache: true
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .ci-cache/wsl-julia
+          key: wsl-julia-nightly-${{ hashFiles('Project.toml', 'test/Project.toml', '.github/julia-slots.env') }}
+      - name: Pkg.test in WSL2
+        shell: wsl-bash {0}
+        run: ./.github/wsl-julia.sh nightly julia --project=. -e 'using Pkg; Pkg.test()'
 
   jetls:
     name: JETLS (1.13, ubuntu-latest, x64)
@@ -188,6 +247,23 @@ jobs:
       - name: Aqua.test_all (latest Aqua)
         run: ./.github/aqua-check.sh
 
+  aqua-nightly:
+    name: Aqua (nightly, ubuntu-latest, x64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/julia-slot
+        with:
+          version: "nightly"
+      - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
+        with:
+          cache-scratchspaces: false
+          delete-old-caches: false
+      - name: Aqua.test_all (latest Aqua)
+        run: ./.github/aqua-check.sh
+
   aqua-tip-macos:
     name: Aqua (1.14-nightly, macos-latest, aarch64)
     runs-on: macos-latest
@@ -198,6 +274,23 @@ jobs:
       - uses: ./.github/actions/julia-slot
         with:
           version: "1.14-nightly"
+      - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
+        with:
+          cache-scratchspaces: false
+          delete-old-caches: false
+      - name: Aqua.test_all (latest Aqua)
+        run: ./.github/aqua-check.sh
+
+  aqua-nightly-macos:
+    name: Aqua (nightly, macos-latest, aarch64)
+    runs-on: macos-latest
+    timeout-minutes: 45
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/julia-slot
+        with:
+          version: "nightly"
       - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
         with:
           cache-scratchspaces: false
@@ -232,6 +325,33 @@ jobs:
         shell: wsl-bash {0}
         run: ./.github/wsl-julia.sh 1.14-nightly ./.github/aqua-check.sh
 
+  aqua-nightly-wsl:
+    name: Aqua (nightly, WSL2 ubuntu-24.04, x64)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: Vampire/setup-wsl@d1da7f2c0322a5ee4f24975344f67fc0f5baf364 # v7.0.0
+        timeout-minutes: 10
+        with:
+          distribution: Ubuntu-24.04
+          wsl-version: 2
+          # Cache the rootfs. Do not apt-get in this action: a stuck wsl.exe
+          # keeps stdio open, so this step's timeout-minutes does not reap it.
+          use-cache: true
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .ci-cache/wsl-julia
+          key: wsl-julia-nightly-${{ hashFiles('Project.toml', 'test/Project.toml', '.github/julia-slots.env') }}
+      - name: Aqua.test_all (latest Aqua)
+        shell: wsl-bash {0}
+        run: ./.github/wsl-julia.sh nightly ./.github/aqua-check.sh
+
   compile-bench:
     name: Compile bench (1.13, ubuntu-latest, x64)
     runs-on: ubuntu-latest
@@ -263,6 +383,23 @@ jobs:
       - uses: ./.github/actions/compile-bench
         with:
           slot: "1.14-nightly"
+          token: ${{ github.token }}
+
+  compile-bench-master:
+    name: Compile bench (nightly, ubuntu-latest, x64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: julia-actions/setup-julia@fa02766e078afaaf09b14210362cee14137e6a32 # v3.0.2
+        with:
+          version: "nightly"
+      - uses: ./.github/actions/compile-bench
+        with:
+          slot: "nightly"
           token: ${{ github.token }}
 
   notify-bench:
