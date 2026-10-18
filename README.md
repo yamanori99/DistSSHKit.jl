@@ -10,6 +10,7 @@ doubles. This does not fail CI.
 ## Flagged
 
 - 1.13: status method new -> 10493.2 ms: Tuple{typeof(DistSSHQueue.main), Array{String, 1}}
+- 1.14-nightly: status method new -> 14927.6 ms: Tuple{typeof(DistSSHQueue.main), Array{String, 1}}
 
 ## 1.13
 
@@ -112,16 +113,17 @@ Latest `drive` methods:
 
 ## 1.14-nightly
 
-| date | commit | version | os | arch | src files | code lines | full s | pkg s | using s | help s | status s |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2026-10-18 | 81ff9d1 | 0.10.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 407 | 8.48 | 0.91 | 0.35 | 7.06 | 7.15 |
+| date | commit | version | os | arch | src files | code lines | full s | pkg s | using s | help s | status s | go s | drive s |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-18 | 81ff9d1 | 0.10.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 407 | 8.48 | 0.91 | 0.35 | 7.06 | 7.15 |  |  |
+| 2026-10-18 | be54052 | 0.10.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 410 | 7.48 | 0.88 | 0.34 | 0.64 | 6.63 | 3.29 | 12.38 |
 
 ```mermaid
 xychart-beta
     title "1.14-nightly help"
-    x-axis ["1018"]
+    x-axis ["1018", "1018"]
     y-axis "seconds" 0 --> 9
-    bar [7.06]
+    line [7.06, 0.64]
 ```
 
 
@@ -129,23 +131,22 @@ Latest `help` methods:
 
 | method | now ms | previous ms |
 | --- | ---: | ---: |
-| `Tuple{typeof(DistSSHKit.main), Array{String, 1}}` | 17077.1 |  |
-| `Tuple{typeof(DistSSHKit.print_kit_root_usage), Base.PipeEndpoint}` | 87.4 |  |
-| `Tuple{typeof(Distributed.flush_gc_msgs)}` | 23.7 |  |
-| `Tuple{Distributed.var"#start_gc_msgs_task##0#start_gc_msgs_task##1"}` | 15.5 |  |
-| `Tuple{typeof(Base.should_use_main_entrypoint)}` | 13.7 |  |
-| `Tuple{typeof(DistSSHRun.DistSSHBase.format_placement_token), Symbol, String, Nothing}` | 9.9 |  |
-| `Tuple{typeof(Base.getproperty), NamedTuple{(:quiet, :progress, :verbose, :yes, :hosts_file...` | 9.5 |  |
-| `Tuple{typeof(Base.getproperty), Pair{String, Int64}, Symbol}` | 6.8 |  |
-| `Tuple{typeof(Base.getproperty), Base.Generator{Tuple{String, String, String}, DistSSHRun.v...` | 6.7 |  |
-| `Tuple{typeof(Base.in), String, Tuple{String, String, String}}` | 6.6 |  |
+| `Tuple{typeof(DistSSHKit.main), Array{String, 1}}` | 228.2 | 17077.1 |
+| `Tuple{typeof(DistSSHKit.print_kit_root_usage), Base.PipeEndpoint}` | 73.9 | 87.4 |
+| `Tuple{typeof(Distributed.flush_gc_msgs)}` | 20.8 | 23.7 |
+| `Tuple{typeof(Base.should_use_main_entrypoint)}` | 16.9 | 13.7 |
+| `Tuple{Distributed.var"#start_gc_msgs_task##0#start_gc_msgs_task##1"}` | 14.5 | 15.5 |
+| `Tuple{typeof(Base.string), Char}` | 6.9 | 6.3 |
+| `Tuple{typeof(Base.tail), NTuple{14, String}}` | 5.1 | 5.9 |
+| `Tuple{typeof(Base.tail), NTuple{13, String}}` | 4.7 |  |
+| `Tuple{typeof(Base.tail), NTuple{12, String}}` | 4.5 |  |
 
 ```mermaid
 xychart-beta
     title "1.14-nightly status"
-    x-axis ["1018"]
+    x-axis ["1018", "1018"]
     y-axis "seconds" 0 --> 9
-    bar [7.15]
+    line [7.15, 6.63]
 ```
 
 
@@ -153,16 +154,64 @@ Latest `status` methods:
 
 | method | now ms | previous ms |
 | --- | ---: | ---: |
-| `Tuple{typeof(DistSSHKit.main), Array{String, 1}}` | 6511.7 |  |
-| `Tuple{DistSSHQueue.var"##show_status#192", Base.PipeEndpoint, Nothing, Bool, Nothing, Bool...` | 541.6 |  |
-| `Tuple{typeof(Distributed.flush_gc_msgs)}` | 25.4 |  |
-| `Tuple{Distributed.var"#start_gc_msgs_task##0#start_gc_msgs_task##1"}` | 14.7 |  |
-| `Tuple{typeof(Core.kwcall), NamedTuple{(:quiet, :tail, :verbose), Tuple{Bool, Nothing, Bool...` | 13.5 |  |
-| `Tuple{typeof(Base._array_for), Core.TypeEgal{DistSSHQueue.Job}, Array{Any, 1}, Base.HasSha...` | 7.1 |  |
-| `Tuple{Core.TypeEgal{Base.LinearIndices{N, R} where R<:Tuple{Vararg{Base.AbstractUnitRange{...` | 3.7 |  |
-| `Tuple{Base.var"##187#188", Vararg{Any, 4}}` | 3.5 |  |
-| `Tuple{typeof(Base.should_use_main_entrypoint)}` | 2.8 |  |
-| `Tuple{typeof(DistSSHRun.DistSSHBase.format_placement_token), Symbol, String, Nothing}` | 1.6 |  |
+| `Tuple{typeof(DistSSHQueue.main), Array{String, 1}}` | 14927.6 |  |
+| `Tuple{DistSSHQueue.var"##show_status#192", Base.PipeEndpoint, Nothing, Bool, Nothing, Bool...` | 505.4 | 541.6 |
+| `Tuple{typeof(DistSSHKit.main), Array{String, 1}}` | 98.9 | 6511.7 |
+| `Tuple{typeof(Distributed.flush_gc_msgs)}` | 21.5 | 25.4 |
+| `Tuple{Distributed.var"#start_gc_msgs_task##0#start_gc_msgs_task##1"}` | 14.0 | 14.7 |
+| `Tuple{typeof(Core.kwcall), NamedTuple{(:quiet, :tail, :verbose), Tuple{Bool, Nothing, Bool...` | 11.8 | 13.5 |
+| `Tuple{typeof(DistSSHRun.DistSSHBase.format_placement_token), Symbol, String, Nothing}` | 9.6 | 1.6 |
+| `Tuple{typeof(Base.getproperty), NamedTuple{(:quiet, :progress, :verbose, :yes, :hosts_file...` | 9.5 | 1.4 |
+| `Tuple{typeof(Base._array_for), Core.TypeEgal{DistSSHQueue.Job}, Array{Any, 1}, Base.HasSha...` | 7.4 | 7.1 |
+| `Tuple{typeof(Base.getproperty), Base.Generator{Tuple{String, String, String}, DistSSHRun.v...` | 6.9 |  |
+
+```mermaid
+xychart-beta
+    title "1.14-nightly go"
+    x-axis ["1018"]
+    y-axis "seconds" 0 --> 4
+    bar [3.29]
+```
+
+
+Latest `go` methods:
+
+| method | now ms | previous ms |
+| --- | ---: | ---: |
+| `Tuple{typeof(Core.kwcall), NamedTuple{(:project, :quiet, :verbosity, :yes, :sync, :args, :...` | 2521.5 |  |
+| `Tuple{typeof(Main.go_main)}` | 1609.9 |  |
+| `Tuple{typeof(DistSSHRun.main), Array{String, 1}}` | 1260.7 |  |
+| `Tuple{DistSSHRun.var"#_go_run!##6#_go_run!##7"{String, String, Bool, Array{String, 1}, Not...` | 325.2 |  |
+| `Tuple{typeof(Base.push_widen), Array{NamedTuple{(:event, :kind, :job, :label, :total, :don...` | 129.5 |  |
+| `Tuple{typeof(DistSSHKit.main), Array{String, 1}}` | 98.2 |  |
+| `Tuple{typeof(Core.kwcall), NamedTuple{(:ok, :footer), Tuple{Bool, String}}, typeof(DistSSH...` | 57.8 |  |
+| `Tuple{typeof(Base.addenv), Base.Cmd, Pair{String, String}}` | 51.2 |  |
+| `Tuple{typeof(Base.grow_to!), Array{NamedTuple{(:event, :kind, :job, :label, :total, :done,...` | 39.7 |  |
+| `Tuple{typeof(Base.grow_to!), Array{NamedTuple{(:event, :kind, :job, :label, :total, :done,...` | 39.1 |  |
+
+```mermaid
+xychart-beta
+    title "1.14-nightly drive"
+    x-axis ["1018"]
+    y-axis "seconds" 0 --> 15
+    bar [12.38]
+```
+
+
+Latest `drive` methods:
+
+| method | now ms | previous ms |
+| --- | ---: | ---: |
+| `Tuple{typeof(Core.kwcall), NamedTuple{(:original_args, :project_root), Tuple{Array{String,...` | 6631.9 |  |
+| `Tuple{typeof(Main.drive_main)}` | 3140.0 |  |
+| `Tuple{Distributed.var"#process_messages##0#process_messages##1"{Sockets.TCPSocket, Sockets...` | 1048.0 |  |
+| `Tuple{Distributed.var"#38#39"{Distributed.LocalManager, Array{Int64, 1}, Distributed.Worke...` | 943.2 |  |
+| `Tuple{typeof(DistSSHRun.main), Array{String, 1}}` | 475.0 |  |
+| `Tuple{typeof(Serialization.serialize), Distributed.ClusterSerializer{Sockets.TCPSocket}, A...` | 433.4 |  |
+| `Tuple{typeof(DistSSHKit.main)}` | 216.0 |  |
+| `Tuple{typeof(Distributed.send_connection_hdr), Sockets.TCPSocket, Bool}` | 183.5 |  |
+| `Tuple{typeof(Base.print), Base.PipeEndpoint, Array{Int64, 1}, String}` | 165.0 |  |
+| `Tuple{typeof(Distributed.read_worker_host_port), Base.PipeEndpoint}` | 152.0 |  |
 
 ## nightly
 
