@@ -150,6 +150,7 @@ makedocs(;
         "Developers" => [
             "Releasing" => "developers/releasing.md",
             "Packages" => "developers/packages.md",
+            "Compile bench" => "developers/compile-bench.md",
         ],
         "API" => "api.md",
     ],
