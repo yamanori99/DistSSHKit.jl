@@ -418,10 +418,13 @@ function _apply_route(kind::Symbol, payload, args::Vector{String})::Cint
             )
             return 1
         end
-        return DistSSHQueue.main(payload::Vector{String})
+        # `invokelatest` keeps this method from inferring Queue's `main`.
+        # Queue's `main` is a runtime call, and a new world is the one `Base` documents.
+        return Base.invokelatest(DistSSHQueue.main, payload::Vector{String})::Cint
     elseif kind === :run
+        # The const binding in `Main` is new in this world, so Run's `main` has to see it.
         _bind_run_in_main!()
-        return DistSSHRun.main(payload::Vector{String})
+        return Base.invokelatest(DistSSHRun.main, payload::Vector{String})::Cint
     elseif kind === :no_command
         return _finish_rejected(payload::String, true)
     elseif kind === :unknown
