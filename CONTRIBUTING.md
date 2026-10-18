@@ -238,8 +238,9 @@ not rewrite files you did not mean to touch.
 **CI weekly** (Sunday 10:00 JST, or Run workflow): same `Pkg.test` /
 JETLS / Aqua as a PR, including `macos-latest` and WSL2 (no coverage).
 Not a PR check. `Compile bench` measures precompile, load, CLI wall time,
-and `src/**/*.jl` size on 1.13 and 1.14-nightly. CI weekly runs it, and a
-**main** push that raises `Project.toml` `version` runs it too. A **main**
+`src/**/*.jl` size, and the host OS, arch, and CPU on 1.13 and
+1.14-nightly. CI weekly runs it, and a **main** push that raises
+`Project.toml` `version` runs it too. A **main**
 run appends that to the `bench-data` branch. A command that exits nonzero
 is not recorded. It flags a 1.5x jump (and a 200 ms method that is new or
 doubled) but does not fail the run. Catches 1.13 / Aqua /

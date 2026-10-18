@@ -77,9 +77,21 @@ function top_map(row, command::String)::Dict{String, Float64}
     return found
 end
 
+function host_label(row)::String
+    haskey(row, "os_name") || return ""
+    os = string(row["os_name"])
+    arch = string(get(row, "arch", ""))
+    return strip(isempty(arch) ? os : os * " " * arch)
+end
+
 function flags_for(prev, cur)::Vector{String}
     out = String[]
     prev === nothing && return out
+    prev_host = host_label(prev)
+    cur_host = host_label(cur)
+    if !isempty(prev_host) && !isempty(cur_host) && prev_host != cur_host
+        push!(out, "host changed $prev_host -> $cur_host")
+    end
     pkg_prev = Float64(prev["precompile_pkg_sec"])
     pkg_cur = Float64(cur["precompile_pkg_sec"])
     if pkg_cur >= pkg_prev * 1.5 && pkg_cur - pkg_prev >= 0.5
@@ -155,7 +167,7 @@ function slot_section(slot::String, rows)::Tuple{String, Vector{String}}
     prev = length(shown) >= 2 ? shown[end - 1] : nothing
     flagged = flags_for(prev, latest)
     names = command_names(shown)
-    cols = ["date", "commit", "version", "src files", "code lines", "full s", "pkg s", "using s"]
+    cols = ["date", "commit", "version", "os", "arch", "src files", "code lines", "full s", "pkg s", "using s"]
     append!(cols, [name * " s" for name in names])
     header = "| " * join(cols, " | ") * " |"
     sep = "| " * join(fill("---", length(cols)), " | ") * " |"
@@ -169,6 +181,8 @@ function slot_section(slot::String, rows)::Tuple{String, Vector{String}}
             day,
             short,
             string(get(row, "version", "")),
+            replace(string(get(row, "os_name", get(row, "os", ""))), '|' => '/'),
+            replace(string(get(row, "arch", "")), '|' => '/'),
             inum(row, "src_files"),
             inum(row, "src_code_lines"),
             fnum(get(row, "precompile_full_sec", nothing)),
@@ -216,9 +230,10 @@ function render(groups)::Tuple{String, Vector{String}}
     readme = """
     # Compile bench
 
-    Precompile time, load time, CLI wall time, and `src/**/*.jl` size.
-    `code lines` skips blank lines. A row is flagged when, against the previous
-    sample on the same Julia slot, package precompile grows by 1.5x and 0.5s,
+    Precompile time, load time, CLI wall time, `src/**/*.jl` size, and the host
+    (OS name, arch, CPU). `code lines` skips blank lines. A row is flagged when,
+    against the previous sample on the same Julia slot, package precompile grows
+    by 1.5x and 0.5s,
     a command wall grows by 1.5x and 1s, or a method of at least 200 ms is new
     in the top 20 or doubles. This does not fail CI.
 

@@ -52,6 +52,26 @@ function cpu_model()::String
     return string(Sys.ARCH)
 end
 
+function os_name()::String
+    # Kernel name alone (`Linux`) hides an image change that moves the times.
+    if Sys.islinux() && isfile("/etc/os-release")
+        for line in eachline("/etc/os-release")
+            startswith(line, "PRETTY_NAME=") || continue
+            raw = strip(split(line, '='; limit = 2)[2])
+            return strip(raw, ['"', '\''])
+        end
+    elseif Sys.isapple()
+        name = IOBuffer()
+        ver = IOBuffer()
+        pn = run(pipeline(ignorestatus(`sw_vers -productName`); stdout = name, stderr = devnull))
+        pv = run(pipeline(ignorestatus(`sw_vers -productVersion`); stdout = ver, stderr = devnull))
+        if pn.exitcode == 0 && pv.exitcode == 0
+            return strip(String(take!(name))) * " " * strip(String(take!(ver)))
+        end
+    end
+    return string(Sys.KERNEL)
+end
+
 function julia_commit()::String
     info = Base.GIT_VERSION_INFO
     if hasproperty(info, :commit_short) && !isempty(String(info.commit_short))
@@ -363,6 +383,8 @@ function measure()
         "cpu" => cpu_model(),
         "threads" => Sys.CPU_THREADS,
         "os" => string(Sys.KERNEL),
+        "os_name" => os_name(),
+        "arch" => string(Sys.MACHINE),
         "slot" => something(slot, "local"),
         "src_files" => stats["src_files"],
         "src_lines" => stats["src_lines"],
