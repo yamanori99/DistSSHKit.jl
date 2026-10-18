@@ -3,6 +3,7 @@ name: CI weekly
 # Not on pull_request: insurance for 1.13 / 1.14-nightly / Aqua / JETLS
 # @release drift when no PR ran that day. PR / main push stay the gate.
 # tip jobs are continue-on-error and omitted from notify.
+# A 1.13 compile bench failure on main opens "Compile bench failed".
 # 1.13 macos-latest and WSL2 Pkg.test are included (no coverage), same as a PR.
 # 1.14-nightly Pkg.test and Aqua on macOS and WSL2 run here only, and stay
 # out of notify. Ubuntu nightly also runs in Test.
@@ -232,26 +233,54 @@ jobs:
         run: ./.github/wsl-julia.sh 1.14-nightly ./.github/aqua-check.sh
 
   compile-bench:
-    name: Compile bench (${{ matrix.slot }}, ubuntu-latest, x64)
+    name: Compile bench (1.13, ubuntu-latest, x64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: julia-actions/setup-julia@fa02766e078afaaf09b14210362cee14137e6a32 # v3.0.2
+        with:
+          version: "1.13"
+      - uses: ./.github/actions/compile-bench
+        with:
+          slot: "1.13"
+          token: ${{ github.token }}
+
+  compile-bench-nightly:
+    name: Compile bench (1.14-nightly, ubuntu-latest, x64)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     continue-on-error: true
     permissions:
       contents: write
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix:
-        slot: ["1.13", "1.14-nightly"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: julia-actions/setup-julia@fa02766e078afaaf09b14210362cee14137e6a32 # v3.0.2
         with:
-          version: ${{ matrix.slot }}
+          version: "1.14-nightly"
       - uses: ./.github/actions/compile-bench
         with:
-          slot: ${{ matrix.slot }}
+          slot: "1.14-nightly"
           token: ${{ github.token }}
+
+  notify-bench:
+    needs: compile-bench
+    if: always() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    name: notify-bench
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Open or close tracking issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RESULT: ${{ needs.compile-bench.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash .github/compile-bench-notify.sh
 
   cache-gc:
     needs:

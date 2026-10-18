@@ -1,7 +1,7 @@
 # A main push that raises Project.toml version. Not a PR check.
 # Same measure as the CI weekly job. A main run appends bench-data.
-# continue-on-error: a red bench does not fail this push's other checks.
-# This workflow is not part of the weekly notify.
+# A 1.13 failure on main opens "Compile bench failed". A skipped run does not close it.
+# The nightly job stays continue-on-error and is not that issue.
 name: Compile bench
 
 on:
@@ -50,7 +50,25 @@ jobs:
           echo "cut=${cut}" >> "$GITHUB_OUTPUT"
 
   compile-bench:
-    name: Compile bench (${{ matrix.slot }}, ubuntu-latest, x64)
+    name: Compile bench (1.13, ubuntu-latest, x64)
+    needs: detect
+    if: needs.detect.outputs.cut == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: julia-actions/setup-julia@fa02766e078afaaf09b14210362cee14137e6a32 # v3.0.2
+        with:
+          version: "1.13"
+      - uses: ./.github/actions/compile-bench
+        with:
+          slot: "1.13"
+          token: ${{ github.token }}
+
+  compile-bench-nightly:
+    name: Compile bench (1.14-nightly, ubuntu-latest, x64)
     needs: detect
     if: needs.detect.outputs.cut == 'true'
     runs-on: ubuntu-latest
@@ -58,17 +76,29 @@ jobs:
     continue-on-error: true
     permissions:
       contents: write
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix:
-        slot: ["1.13", "1.14-nightly"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: julia-actions/setup-julia@fa02766e078afaaf09b14210362cee14137e6a32 # v3.0.2
         with:
-          version: ${{ matrix.slot }}
+          version: "1.14-nightly"
       - uses: ./.github/actions/compile-bench
         with:
-          slot: ${{ matrix.slot }}
+          slot: "1.14-nightly"
           token: ${{ github.token }}
+
+  notify-bench:
+    needs: compile-bench
+    if: always() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    name: notify-bench
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Open or close tracking issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RESULT: ${{ needs.compile-bench.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash .github/compile-bench-notify.sh

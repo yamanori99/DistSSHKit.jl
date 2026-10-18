@@ -18,7 +18,11 @@ old file.
 When the job runs is in that repo's `CONTRIBUTING.md`, under Scheduled
 CI. A run on `main` appends a sample and rebuilds the README. Any other
 ref uploads the sample as an artifact and does not push. A command that
-exits nonzero stops the run before a sample is written.
+exits nonzero stops the run before a sample is written. A 1.13 failure
+on `main` opens an issue titled `Compile bench failed`, with the `alert`
+label. A later 1.13 success on `main` closes it. A skipped run, including
+a `Project.toml` push that is not a version cut, does not close it. The
+1.14-nightly slot stays out of that issue.
 
 ```bash
 git clone --branch bench-data --single-branch \
