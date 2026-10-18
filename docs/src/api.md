@@ -279,10 +279,11 @@ that runs many jobs.
 [`terminate!`](@ref) with the default `interrupt_grace=0` SIGTERMs the
 child, waits `grace` for its `rmprocs` path, then SIGKILLs if needed, then
 `pkill`s only argv tagged with this run's `job_id`. A positive
-`interrupt_grace` sends SIGINT first and waits that many seconds, so the
-child can `catch` `InterruptException` (`drive` uses its Ctrl-C path;
-`go` and `ride` run `finally`). `kp.process` is still a `Base.Process` if
-you need `kill` yourself.
+`interrupt_grace` sends SIGINT first and waits that many seconds: a
+`drive` child runs its Ctrl-C path (interrupt workers, `rmprocs`, exit
+130); a `go` or `ride` child is `julia -m` with exit-on-sigint, so SIGINT
+runs `atexit` and does not enter `catch` or `finally`. `kp.process` is
+still a `Base.Process` if you need `kill` yourself.
 
 #### Sidecar files
 
