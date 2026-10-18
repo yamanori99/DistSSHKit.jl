@@ -88,7 +88,7 @@ Layout: [test/README.md](test/README.md).
 
 Checkout `Pkg.test()` is not the PkgEval sandbox. Before a General cut,
 run the recipe in [test/README.md](test/README.md#pkgeval). CI runs that
-job on **main** and a version-cut PR (host Julia 1.12, test Julia nightly;
+job on **main** and a version-cut PR (host Julia 1.12; test Julia is the julia-latest tarball;
 `continue-on-error`; not a required check). Not on ordinary PRs.
 
 Smoke (1.13+; copies land in `distsshkit_demos/`):
@@ -121,7 +121,8 @@ a second stable line.
 - **1.14-nightly** (not required): `release-1.14`. Ubuntu Pkg.test
   and Aqua on **main**, **CI weekly**, and a version-cut PR. macOS and
   WSL2 Pkg.test and Aqua on **CI weekly** only. `continue-on-error`
-- **nightly** (not required): Julia master. Same jobs and the same
+- **nightly** (not required): the published `julia-latest` tarball. It follows
+  master and can lag a `VERSION` bump. Same jobs and the same
   schedule as **1.14-nightly**. `continue-on-error`. Not in the ruleset
 
 This package feels SSH hosts, Pkg, and lockfiles more than a compute-model
