@@ -3,5 +3,5 @@
 using Distributed
 
 function main()
-    println(pmap(x -> x * x, 1:4))
+    return println(pmap(x -> x * x, 1:4))
 end
