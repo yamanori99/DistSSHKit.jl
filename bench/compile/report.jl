@@ -131,6 +131,8 @@ function chart(slot::String, name::String, rows)::String
         push!(values, wall)
     end
     isempty(values) && return ""
+    # A one-point line is a zero-length path, so GitHub draws an empty plot.
+    series = length(values) == 1 ? "bar" : "line"
     ymax = max(1, ceil(Int, maximum(values) * 1.2))
     xs = join((string('"', x, '"') for x in labels), ", ")
     ys = join((string(round(v; digits = 2)) for v in values), ", ")
@@ -140,7 +142,7 @@ function chart(slot::String, name::String, rows)::String
         title "$slot $name"
         x-axis [$xs]
         y-axis "seconds" 0 --> $ymax
-        line [$ys]
+        $series [$ys]
     ```
     """
 end
