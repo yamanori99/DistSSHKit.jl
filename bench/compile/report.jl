@@ -234,10 +234,10 @@ function render(groups)::Tuple{String, Vector{String}}
 
     Precompile time, load time, CLI wall time, `src/**/*.jl` size, and the host
     (OS name, arch, CPU). `code lines` skips blank lines. A row is flagged when,
-    against the previous sample on the same Julia slot, package precompile grows
-    by 1.5x and 0.5s,
-    a command wall grows by 1.5x and 1s, or a method of at least 200 ms is new
-    in the top 20 or doubles. This does not fail CI.
+    against the previous sample on the same Julia slot, the host OS or arch
+    changes, package precompile grows by 1.5x and 0.5s, a command wall grows
+    by 1.5x and 1s, or a method of at least 200 ms is new in the top 20 or
+    doubles. This does not fail CI.
 
     ## Flagged
 

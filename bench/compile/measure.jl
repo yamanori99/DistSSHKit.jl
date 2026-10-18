@@ -384,7 +384,7 @@ function measure()
         "threads" => Sys.CPU_THREADS,
         "os" => string(Sys.KERNEL),
         "os_name" => os_name(),
-        "arch" => string(Sys.MACHINE),
+        "arch" => string(Sys.ARCH),
         "slot" => something(slot, "local"),
         "src_files" => stats["src_files"],
         "src_lines" => stats["src_lines"],
