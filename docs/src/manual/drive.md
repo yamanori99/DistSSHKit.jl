@@ -130,8 +130,11 @@ listed. Estimate with [`size`](@ref Manual-size), then paste the printed
 tokens.
 
 - Ctrl-C during **run** stops the driver (exit 130): interrupt in-flight
-  worker `pmap`, then `rmprocs`. One SIGINT is enough; the live bar does
-  not swallow it
+  worker `pmap`, wait a few seconds, then `rmprocs`. One SIGINT is enough;
+  the live bar does not swallow it. SSH workers on one host share a single
+  `kill -INT`. A worker function may `catch` `InterruptException` and save
+  partial state. A loop that does not yield does not see the interrupt
+  until it yields; `rmprocs` still runs after the wait
 - Local workers are torn down with `rmprocs` at the end of every `drive` run
 - SSH leftover `pkill` matches argv `distsshkit-job:<id>` when `job_id` /
   `DISTSSHKIT_JOB_ID` is set (drive workers: `--eval=#distsshkit-job:<id>`).

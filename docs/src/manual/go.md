@@ -139,6 +139,24 @@ without matching other Julias. The tag is a no-op `-L` file named
 `--eval=#distsshkit-job:<id>` instead (Distributed starts the worker; the
 driver `include`s later). Unset `job_id`: no tag. Details: [API](@ref API).
 
+## Where a slot stopped
+
+`go` does not pass `--trace-eval`. Put this at the top of the script when
+a failure should name the last top-level expression:
+
+```julia
+Base.TRACE_EVAL = :loc
+```
+
+A slot that exits non-zero then adds `last top-level: path:line` to its
+`✗` line. That text is read from the slot's `julia.stdout.log` (a remote
+slot keeps the captured log locally when collect does not run). Only
+top-level expressions are recorded. `include` counts. A function body does
+not. Work that lives in `main()` shows the `main()` call unless the steps
+are top-level or split across `include`d files. Julia writes the trace with
+color codes even when the log is a file. `go` strips those codes. The `-L`
+job mark (`distsshkit-job:`) is not reported.
+
 ## Hosts
 
 CLI tokens, `--hosts`, `--hosts-file`, and/or `DISTSSHKIT_HOSTS`.

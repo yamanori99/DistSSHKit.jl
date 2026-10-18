@@ -276,10 +276,13 @@ that runs many jobs.
 
 #### Still holding `KitProcess`
 
-[`terminate!`](@ref) SIGTERMs the child, waits `grace` for its `rmprocs`
-path, then SIGKILLs if needed, then `pkill`s only argv tagged with this
-run's `job_id`. `kp.process` is still a `Base.Process` if you need `kill`
-yourself.
+[`terminate!`](@ref) with the default `interrupt_grace=0` SIGTERMs the
+child, waits `grace` for its `rmprocs` path, then SIGKILLs if needed, then
+`pkill`s only argv tagged with this run's `job_id`. A positive
+`interrupt_grace` sends SIGINT first and waits that many seconds, so the
+child can `catch` `InterruptException` (`drive` uses its Ctrl-C path;
+`go` and `ride` run `finally`). `kp.process` is still a `Base.Process` if
+you need `kill` yourself.
 
 #### Sidecar files
 
