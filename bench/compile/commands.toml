@@ -11,5 +11,7 @@ name = "status"
 args = ["status"]
 
 [command.env]
+# A runner has no `setup`. Without this, `status` exits 1.
+DISTSSHQUEUE_LOCAL = "1"
 DISTSSHQUEUE_NO_AUTOSERVE = "1"
 DISTSSHQUEUE_STORE = "{store}"

@@ -145,11 +145,18 @@ function child_env(depot::AbstractString, extra::AbstractDict)::Dict{String, Str
     return env
 end
 
-function capture(cmd::Cmd)::Tuple{Int, String, Float64}
+function capture(cmd::Cmd)::Tuple{Int, String, String, Float64}
     out = IOBuffer()
+    err = IOBuffer()
     t0 = time()
-    p = run(pipeline(cmd; stdout = out, stderr = devnull))
-    return (p.exitcode, String(take!(out)), time() - t0)
+    p = run(pipeline(cmd; stdout = out, stderr = err))
+    return (p.exitcode, String(take!(out)), String(take!(err)), time() - t0)
+end
+
+function stderr_tail(text::AbstractString)::String
+    plain = strip(replace(String(text), r"\e\[[0-9;]*m" => ""))
+    isempty(plain) && return ""
+    return length(plain) <= 400 ? plain : last(plain, 400)
 end
 
 function phase_precompile()
@@ -189,14 +196,14 @@ end
 function measure_precompile(depot::AbstractString, package::String)::Dict{String, Any}
     env = child_env(depot, Dict{String, String}())
     inst = setenv(`$(julia_bin()) --startup-file=no --project=$ROOT -e 'using Pkg; Pkg.instantiate()'`, env)
-    code, _, _ = capture(ignorestatus(inst))
-    code == 0 || error("instantiate failed: $code")
+    code, _, err, _ = capture(ignorestatus(inst))
+    code == 0 || error("instantiate failed: $code\n$(stderr_tail(err))")
     cmd = setenv(
         `$(julia_bin()) --startup-file=no --project=$ROOT $(@__FILE__) --phase precompile --package $package`,
         env,
     )
-    code, text, _ = capture(ignorestatus(cmd))
-    code == 0 || error("precompile phase failed: $code\n$text")
+    code, text, err, _ = capture(ignorestatus(cmd))
+    code == 0 || error("precompile phase failed: $code\n$text\n$(stderr_tail(err))")
     return Dict{String, Any}(
         "full_sec" => parse_seconds(text, "FULL_SEC"),
         "pkg_sec" => parse_seconds(text, "PKG_SEC"),
@@ -210,15 +217,15 @@ function measure_using(depot::AbstractString, package::String)::Dict{String, Any
     println("USING_SEC ", t)
     """
     cmd = setenv(`$(julia_bin()) --startup-file=no --project=$ROOT -e $code`, env)
-    status, text, _ = capture(ignorestatus(cmd))
-    status == 0 || error("using failed: $status\n$text")
+    status, text, err, _ = capture(ignorestatus(cmd))
+    status == 0 || error("using failed: $status\n$text\n$(stderr_tail(err))")
     imports_code = """
     using InteractiveUtils
     @time_imports using $package
     """
     icmd = setenv(`$(julia_bin()) --startup-file=no --project=$ROOT -e $imports_code`, env)
-    status, itext, _ = capture(ignorestatus(icmd))
-    status == 0 || error("time_imports failed: $status\n$itext")
+    status, itext, err, _ = capture(ignorestatus(icmd))
+    status == 0 || error("time_imports failed: $status\n$itext\n$(stderr_tail(err))")
     imports = Dict{String, Any}[]
     plain = replace(itext, r"\e\[[0-9;]*m" => "")
     for line in split(plain, '\n')
@@ -263,12 +270,15 @@ function measure_command(
         `$(jl) --startup-file=no --project=$ROOT --trace-compile=$trace --trace-compile-timing -m $package $args`,
         env,
     )
-    code, _, wall = capture(ignorestatus(traced))
+    code, _, errtext, wall = capture(ignorestatus(traced))
     push!(walls, wall)
     for _ in 1:2
         cmd = setenv(`$(jl) --startup-file=no --project=$ROOT -m $package $args`, env)
-        status, _, w = capture(ignorestatus(cmd))
-        status != 0 && (code = status)
+        status, _, err2, w = capture(ignorestatus(cmd))
+        if status != 0
+            code = status
+            errtext = err2
+        end
         push!(walls, w)
     end
     summary = trace_summary(trace, package)
@@ -277,6 +287,7 @@ function measure_command(
     summary["exit"] = code
     summary["wall_sec"] = median(walls)
     summary["walls_sec"] = walls
+    summary["stderr"] = errtext
     return summary
 end
 
@@ -334,7 +345,12 @@ function measure()
     rows = Dict{String, Any}[]
     for spec in specs
         row = measure_command(depot, package, spec, store)
-        row["exit"] == 0 || error("command $(row["name"]) failed: $(row["exit"])")
+        errtext = String(pop!(row, "stderr"))
+        if row["exit"] != 0
+            tail = stderr_tail(errtext)
+            msg = "command $(row["name"]) failed: $(row["exit"])"
+            error(isempty(tail) ? msg : msg * "\n" * tail)
+        end
         push!(rows, row)
     end
     result = Dict{String, Any}(
