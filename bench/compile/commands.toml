@@ -1,5 +1,6 @@
 # Commands measured by bench/compile/measure.jl. No SSH.
-# `{store}` is a temporary jobs file created for the run.
+# `{work}` is a fresh copy of bench/compile/fixtures. `{store}` is a fresh jobs file.
+# The process cwd is that directory.
 package = "DistSSHKit"
 
 [[command]]
@@ -15,3 +16,11 @@ args = ["status"]
 DISTSSHQUEUE_LOCAL = "1"
 DISTSSHQUEUE_NO_AUTOSERVE = "1"
 DISTSSHQUEUE_STORE = "{store}"
+
+[[command]]
+name = "go"
+args = ["go", "{work}/pi_echo.jl"]
+
+[[command]]
+name = "drive"
+args = ["drive", "parent:2", "{work}/drive_square.jl"]

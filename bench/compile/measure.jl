@@ -259,13 +259,40 @@ function measure_using(depot::AbstractString, package::String)::Dict{String, Any
     )
 end
 
-function command_env(raw::Any, store::AbstractString)::Dict{String, String}
+function fill_tokens(text::AbstractString, work::AbstractString, store::AbstractString)::String
+    return replace(replace(String(text), "{work}" => work), "{store}" => store)
+end
+
+function command_env(raw::Any, work::AbstractString, store::AbstractString)::Dict{String, String}
     env = Dict{String, String}()
     raw isa AbstractDict || return env
     for (k, v) in raw
-        env[string(k)] = replace(string(v), "{store}" => store)
+        env[string(k)] = fill_tokens(string(v), work, store)
     end
     return env
+end
+
+"""Copy `bench/compile/fixtures` into a fresh directory. The process cwd for a run."""
+function stage_work()::String
+    work = mktempdir()
+    src = joinpath(@__DIR__, "fixtures")
+    isdir(src) || return work
+    for name in readdir(src)
+        cp(joinpath(src, name), joinpath(work, name))
+    end
+    return work
+end
+
+"""One store file per invocation, so a command that writes jobs cannot change the next run."""
+function stage_store(spec::AbstractDict)::String
+    dest = joinpath(mktempdir(), "jobs.toml")
+    rel = get(spec, "store", nothing)
+    if rel === nothing
+        write(dest, "jobs = []\n")
+    else
+        cp(joinpath(@__DIR__, string(rel)), dest)
+    end
+    return dest
 end
 
 function median(xs::Vector{Float64})::Float64
@@ -273,28 +300,39 @@ function median(xs::Vector{Float64})::Float64
     return ys[(length(ys) + 1) ÷ 2]
 end
 
+function run_once(
+        depot::AbstractString,
+        package::String,
+        spec::AbstractDict,
+        trace::Union{Nothing, String},
+    )::Tuple{Int, String, Float64}
+    work = stage_work()
+    store = stage_store(spec)
+    args = String[fill_tokens(a, work, store) for a in spec["args"]]
+    env = child_env(depot, command_env(get(spec, "env", nothing), work, store))
+    jl = julia_bin()
+    cmd = if trace === nothing
+        `$(jl) --startup-file=no --project=$ROOT -m $package $args`
+    else
+        `$(jl) --startup-file=no --project=$ROOT --trace-compile=$trace --trace-compile-timing -m $package $args`
+    end
+    code, _, errtext, wall = capture(ignorestatus(Cmd(setenv(cmd, env); dir = work)))
+    return code, errtext, wall
+end
+
 function measure_command(
         depot::AbstractString,
         package::String,
         spec::AbstractDict,
-        store::AbstractString,
     )::Dict{String, Any}
     name = string(spec["name"])
     args = String[string(a) for a in spec["args"]]
-    extra = command_env(get(spec, "env", nothing), store)
-    env = child_env(depot, extra)
-    jl = julia_bin()
     walls = Float64[]
     trace = joinpath(mktempdir(), "trace.jl")
-    traced = setenv(
-        `$(jl) --startup-file=no --project=$ROOT --trace-compile=$trace --trace-compile-timing -m $package $args`,
-        env,
-    )
-    code, _, errtext, wall = capture(ignorestatus(traced))
+    code, errtext, wall = run_once(depot, package, spec, trace)
     push!(walls, wall)
     for _ in 1:2
-        cmd = setenv(`$(jl) --startup-file=no --project=$ROOT -m $package $args`, env)
-        status, _, err2, w = capture(ignorestatus(cmd))
+        status, err2, w = run_once(depot, package, spec, nothing)
         if status != 0
             code = status
             errtext = err2
@@ -354,9 +392,6 @@ function measure()
     commands = TOML.parsefile(joinpath(@__DIR__, "commands.toml"))
     package = string(commands["package"])
     depot = mktempdir()
-    store = joinpath(mktempdir(), "jobs.toml")
-    # An empty file is bad TOML and `status` exits 1. An empty job list is the quiet path.
-    write(store, "jobs = []\n")
     stats = source_stats(ROOT)
     pre = measure_precompile(depot, package)
     load = measure_using(depot, package)
@@ -364,7 +399,7 @@ function measure()
     specs isa AbstractDict && (specs = [specs])
     rows = Dict{String, Any}[]
     for spec in specs
-        row = measure_command(depot, package, spec, store)
+        row = measure_command(depot, package, spec)
         errtext = String(pop!(row, "stderr"))
         if row["exit"] != 0
             tail = stderr_tail(errtext)
