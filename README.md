@@ -15,14 +15,14 @@ No sample grew past the watch line.
 
 | date | commit | version | os | arch | src files | code lines | full s | pkg s | using s | help s | status s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2026-10-18 | 81ff9d1 | 0.10.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 407 | 9.19 | 1.02 | 0.32 | 15.62 | 16.08 |
+| 2026-10-18 | 81ff9d1 | 0.10.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 407 | 9.21 | 1.02 | 0.32 | 15.61 | 16.38 |
 
 ```mermaid
 xychart-beta
     title "1.13 help"
     x-axis ["1018"]
     y-axis "seconds" 0 --> 19
-    bar [15.62]
+    bar [15.61]
 ```
 
 
@@ -30,23 +30,23 @@ Latest `help` methods:
 
 | method | now ms | previous ms |
 | --- | ---: | ---: |
-| `Tuple{typeof(DistSSHKit.main), Array{String, 1}}` | 15048.2 |  |
-| `Tuple{typeof(DistSSHKit.print_kit_root_usage), Base.PipeEndpoint}` | 78.1 |  |
-| `Tuple{Distributed.var"#start_gc_msgs_task##0#start_gc_msgs_task##1"}` | 18.6 |  |
-| `Tuple{typeof(Base.should_use_main_entrypoint)}` | 11.2 |  |
-| `Tuple{typeof(Base.in), String, Tuple{String, String, String}}` | 5.9 |  |
-| `Tuple{typeof(Base.getproperty), Base.MappingRF{DistSSHRun.var"#67#68", typeof(Base.max)}, ...` | 5.6 |  |
-| `Tuple{typeof(Base.getproperty), Base.Order.By{DistSSHQueue.var"#sorted_kit_ssh_names##0#so...` | 5.5 |  |
-| `Tuple{typeof(Base.getproperty), Base.MappingRF{DistSSHRun.var"#77#78", typeof(Base.max)}, ...` | 5.4 |  |
-| `Tuple{typeof(Base.getproperty), NamedTuple{(:quiet, :progress, :verbose, :yes, :hosts_file...` | 5.3 |  |
-| `Tuple{typeof(Base.getproperty), Base.Generator{Base.Pairs{Symbol, Union{}, Nothing, NamedT...` | 5.2 |  |
+| `Tuple{typeof(DistSSHKit.main), Array{String, 1}}` | 14966.0 |  |
+| `Tuple{typeof(DistSSHKit.print_kit_root_usage), Base.PipeEndpoint}` | 74.5 |  |
+| `Tuple{Distributed.var"#start_gc_msgs_task##0#start_gc_msgs_task##1"}` | 17.8 |  |
+| `Tuple{typeof(Base.should_use_main_entrypoint)}` | 11.3 |  |
+| `Tuple{typeof(Base.getproperty), Base.MappingRF{DistSSHRun.var"#67#68", typeof(Base.max)}, ...` | 5.7 |  |
+| `Tuple{typeof(Base.getproperty), Base.Order.By{DistSSHQueue.var"#sorted_kit_ssh_names##0#so...` | 5.6 |  |
+| `Tuple{typeof(Base.in), String, Tuple{String, String, String}}` | 5.5 |  |
+| `Tuple{typeof(Base.getproperty), Base.MappingRF{DistSSHRun.var"#77#78", typeof(Base.max)}, ...` | 5.2 |  |
+| `Tuple{typeof(Base.getproperty), NamedTuple{(:quiet, :progress, :verbose, :yes, :hosts_file...` | 5.0 |  |
+| `Tuple{typeof(Base.getproperty), Base.Order.By{DistSSHRun.var"#_kit_progress_files##0#_kit_...` | 4.8 |  |
 
 ```mermaid
 xychart-beta
     title "1.13 status"
     x-axis ["1018"]
     y-axis "seconds" 0 --> 20
-    bar [16.08]
+    bar [16.38]
 ```
 
 
@@ -54,16 +54,16 @@ Latest `status` methods:
 
 | method | now ms | previous ms |
 | --- | ---: | ---: |
-| `Tuple{typeof(DistSSHKit.main), Array{String, 1}}` | 14893.7 |  |
-| `Tuple{DistSSHQueue.var"##show_status#192", Base.PipeEndpoint, Nothing, Bool, Nothing, Bool...` | 606.4 |  |
-| `Tuple{Distributed.var"#start_gc_msgs_task##0#start_gc_msgs_task##1"}` | 17.6 |  |
-| `Tuple{typeof(Base.should_use_main_entrypoint)}` | 11.2 |  |
-| `Tuple{typeof(Base._array_for), Type{DistSSHQueue.Job}, Array{Any, 1}, Base.HasShape{1}}` | 6.8 |  |
-| `Tuple{typeof(Core.kwcall), NamedTuple{(:quiet, :tail, :verbose), Tuple{Bool, Nothing, Bool...` | 6.8 |  |
-| `Tuple{typeof(Base.in), String, Tuple{String, String, String}}` | 5.8 |  |
-| `Tuple{typeof(Base.getproperty), Base.MappingRF{DistSSHRun.var"#67#68", typeof(Base.max)}, ...` | 5.6 |  |
-| `Tuple{typeof(Base.getproperty), Base.Order.By{DistSSHQueue.var"#sorted_kit_ssh_names##0#so...` | 5.5 |  |
-| `Tuple{typeof(Base.getproperty), Base.MappingRF{DistSSHRun.var"#77#78", typeof(Base.max)}, ...` | 5.3 |  |
+| `Tuple{typeof(DistSSHKit.main), Array{String, 1}}` | 15382.8 |  |
+| `Tuple{DistSSHQueue.var"##show_status#192", Base.PipeEndpoint, Nothing, Bool, Nothing, Bool...` | 608.0 |  |
+| `Tuple{Distributed.var"#start_gc_msgs_task##0#start_gc_msgs_task##1"}` | 17.8 |  |
+| `Tuple{typeof(Base.should_use_main_entrypoint)}` | 11.3 |  |
+| `Tuple{typeof(Core.kwcall), NamedTuple{(:quiet, :tail, :verbose), Tuple{Bool, Nothing, Bool...` | 6.9 |  |
+| `Tuple{typeof(Base._array_for), Type{DistSSHQueue.Job}, Array{Any, 1}, Base.HasShape{1}}` | 6.6 |  |
+| `Tuple{typeof(Base.in), String, Tuple{String, String, String}}` | 5.9 |  |
+| `Tuple{typeof(Base.getproperty), Base.MappingRF{DistSSHRun.var"#67#68", typeof(Base.max)}, ...` | 5.7 |  |
+| `Tuple{typeof(Base.getproperty), Base.MappingRF{DistSSHRun.var"#77#78", typeof(Base.max)}, ...` | 5.6 |  |
+| `Tuple{typeof(Base.getproperty), Base.Generator{Base.Pairs{Symbol, Union{}, Nothing, NamedT...` | 5.5 |  |
 
 ## 1.14-nightly
 
