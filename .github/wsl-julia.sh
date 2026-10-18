@@ -48,12 +48,18 @@ install_julia() {
   echo "Julia install failed after 3 attempts" >&2
   return 1
 }
+restored=0
 if [[ -f "$cache/julia.tgz" ]]; then
   tar -xzf "$cache/julia.tgz" -C "$HOME"
+  restored=1
 else
   install_julia
 fi
 export PATH="$HOME/.juliaup/bin:$PATH"
+# A cache hit would keep the first nightly build. Move that channel forward.
+if [[ "$restored" -eq 1 && ( "$channel" == "nightly" || "$channel" == *-nightly ) ]]; then
+  juliaup update "$channel"
+fi
 cd "$dest"
 "$@"
 if [[ -d "$HOME/.julia" ]]; then
