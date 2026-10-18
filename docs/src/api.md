@@ -282,8 +282,8 @@ child, waits `grace` for its `rmprocs` path, then SIGKILLs if needed, then
 `interrupt_grace` sends SIGINT first and waits that many seconds: a
 `drive` child runs its Ctrl-C path (interrupt workers, `rmprocs`, exit
 130); a `go` or `ride` child is `julia -m` with exit-on-sigint, so SIGINT
-runs `atexit` and does not enter `catch` or `finally`. On macOS with
-Julia 1.13, a `drive` driver waiting in `pmap` does not run that path,
+runs `atexit` and does not enter `catch` or `finally`. On Julia 1.13,
+a `drive` driver waiting in `pmap` does not run that path,
 and SIGTERM stops it. On Julia 1.14 the driver exits 130, but a worker
 can be removed before it sees the interrupt. `kp.process` is
 still a `Base.Process` if you need `kill` yourself.

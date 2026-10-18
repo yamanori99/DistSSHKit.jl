@@ -134,8 +134,8 @@ tokens.
   the live bar does not swallow it. SSH workers on one host share a single
   `kill -INT`. A worker function may `catch` `InterruptException` and save
   partial state. A loop that does not yield does not see the interrupt
-  until it yields; `rmprocs` still runs after the wait. On macOS with
-  Julia 1.13, SIGINT sent only to a driver that waits in `pmap` (for
+  until it yields; `rmprocs` still runs after the wait. On Julia 1.13,
+  SIGINT sent only to a driver that waits in `pmap` (for
   example from `terminate!` with `interrupt_grace`) does not reach this
   path. On Julia 1.14 the driver exits 130, but a worker can be removed
   before it sees the interrupt
