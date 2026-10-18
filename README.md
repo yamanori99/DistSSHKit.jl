@@ -119,3 +119,104 @@ Latest `status` methods:
 | `Tuple{typeof(Base.should_use_main_entrypoint)}` | 2.8 |  |
 | `Tuple{typeof(DistSSHRun.DistSSHBase.format_placement_token), Symbol, String, Nothing}` | 1.6 |  |
 
+## nightly
+
+| date | commit | version | os | arch | src files | code lines | full s | pkg s | using s | help s | status s | go s | drive s |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-18 | be54052 | 0.10.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 410 | 5.15 | 0.68 | 0.23 | 0.44 | 4.22 | 2.12 | 8.76 |
+
+```mermaid
+xychart-beta
+    title "nightly help"
+    x-axis ["1018"]
+    y-axis "seconds" 0 --> 1
+    bar [0.44]
+```
+
+
+Latest `help` methods:
+
+| method | now ms | previous ms |
+| --- | ---: | ---: |
+| `Tuple{typeof(DistSSHKit.main), Array{String, 1}}` | 164.7 |  |
+| `Tuple{typeof(DistSSHKit.print_kit_root_usage), Base.PipeEndpoint}` | 50.0 |  |
+| `Tuple{typeof(Distributed.flush_gc_msgs)}` | 14.7 |  |
+| `Tuple{typeof(Base.should_use_main_entrypoint)}` | 10.5 |  |
+| `Tuple{Distributed.var"#start_gc_msgs_task##0#start_gc_msgs_task##1"}` | 9.6 |  |
+| `Tuple{typeof(Base.string), Char}` | 5.7 |  |
+| `Tuple{typeof(Base.tail), NTuple{14, String}}` | 4.8 |  |
+| `Tuple{typeof(Base.tail), NTuple{13, String}}` | 3.4 |  |
+| `Tuple{typeof(Base.tail), NTuple{12, String}}` | 2.9 |  |
+
+```mermaid
+xychart-beta
+    title "nightly status"
+    x-axis ["1018"]
+    y-axis "seconds" 0 --> 6
+    bar [4.22]
+```
+
+
+Latest `status` methods:
+
+| method | now ms | previous ms |
+| --- | ---: | ---: |
+| `Tuple{typeof(DistSSHQueue.main), Array{String, 1}}` | 9722.1 |  |
+| `Tuple{DistSSHQueue.var"##show_status#192", Base.PipeEndpoint, Nothing, Bool, Nothing, Bool...` | 319.6 |  |
+| `Tuple{typeof(DistSSHKit.main), Array{String, 1}}` | 74.8 |  |
+| `Tuple{typeof(Distributed.flush_gc_msgs)}` | 15.5 |  |
+| `Tuple{Distributed.var"#start_gc_msgs_task##0#start_gc_msgs_task##1"}` | 10.4 |  |
+| `Tuple{typeof(Core.kwcall), NamedTuple{(:quiet, :tail, :verbose), Tuple{Bool, Nothing, Bool...` | 8.4 |  |
+| `Tuple{typeof(DistSSHRun.DistSSHBase.format_placement_token), Symbol, String, Nothing}` | 7.9 |  |
+| `Tuple{typeof(Base.getproperty), NamedTuple{(:quiet, :progress, :verbose, :yes, :hosts_file...` | 7.9 |  |
+| `Tuple{typeof(Base._array_for), Core.TypeEgal{DistSSHQueue.Job}, Array{Any, 1}, Base.HasSha...` | 5.8 |  |
+| `Tuple{typeof(Base.getproperty), Base.MappingRF{DistSSHRun.var"#77#78", typeof(Base.max)}, ...` | 5.3 |  |
+
+```mermaid
+xychart-beta
+    title "nightly go"
+    x-axis ["1018"]
+    y-axis "seconds" 0 --> 3
+    bar [2.12]
+```
+
+
+Latest `go` methods:
+
+| method | now ms | previous ms |
+| --- | ---: | ---: |
+| `Tuple{typeof(Core.kwcall), NamedTuple{(:project, :quiet, :verbosity, :yes, :sync, :args, :...` | 1560.6 |  |
+| `Tuple{typeof(Main.go_main)}` | 1104.0 |  |
+| `Tuple{typeof(DistSSHRun.main), Array{String, 1}}` | 806.7 |  |
+| `Tuple{DistSSHRun.var"#_go_run!##6#_go_run!##7"{String, String, Bool, Array{String, 1}, Not...` | 214.9 |  |
+| `Tuple{typeof(Base.push_widen), Array{NamedTuple{(:event, :kind, :job, :label, :total, :don...` | 83.8 |  |
+| `Tuple{typeof(DistSSHKit.main), Array{String, 1}}` | 70.7 |  |
+| `Tuple{typeof(Core.kwcall), NamedTuple{(:ok, :footer), Tuple{Bool, String}}, typeof(DistSSH...` | 38.0 |  |
+| `Tuple{typeof(Base.addenv), Base.Cmd, Pair{String, String}}` | 34.2 |  |
+| `Tuple{typeof(Core.kwcall), NamedTuple{(:kind,), Tuple{Symbol}}, typeof(DistSSHRun.execute_...` | 26.9 |  |
+| `Tuple{typeof(Base.grow_to!), Array{NamedTuple{(:event, :kind, :job, :label, :total, :done,...` | 25.7 |  |
+
+```mermaid
+xychart-beta
+    title "nightly drive"
+    x-axis ["1018"]
+    y-axis "seconds" 0 --> 11
+    bar [8.76]
+```
+
+
+Latest `drive` methods:
+
+| method | now ms | previous ms |
+| --- | ---: | ---: |
+| `Tuple{typeof(Core.kwcall), NamedTuple{(:original_args, :project_root), Tuple{Array{String,...` | 4262.9 |  |
+| `Tuple{typeof(Main.drive_main)}` | 2110.0 |  |
+| `Tuple{Distributed.var"#38#39"{Distributed.LocalManager, Array{Int64, 1}, Distributed.Worke...` | 787.5 |  |
+| `Tuple{Distributed.var"#process_messages##0#process_messages##1"{Sockets.TCPSocket, Sockets...` | 633.7 |  |
+| `Tuple{typeof(DistSSHRun.main), Array{String, 1}}` | 304.8 |  |
+| `Tuple{typeof(Serialization.serialize), Distributed.ClusterSerializer{Sockets.TCPSocket}, A...` | 291.2 |  |
+| `Tuple{typeof(Distributed.send_connection_hdr), Sockets.TCPSocket, Bool}` | 227.2 |  |
+| `Tuple{typeof(Distributed.read_worker_host_port), Base.PipeEndpoint}` | 155.8 |  |
+| `Tuple{typeof(DistSSHKit.main)}` | 132.3 |  |
+| `Tuple{Distributed.var"#remote##4#remote##5"{Distributed.var"#remote##6#remote##7"{Distribu...` | 116.2 |  |
+
