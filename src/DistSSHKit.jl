@@ -235,15 +235,10 @@ function _leading_command(args::Vector{String})
     i = 1
     while i <= length(args)
         a = args[i]
-        if a == "--remote-julia" && i < length(args)
+        n, _ = DistSSHQueue.leading_hop_span(args, i)
+        if n > 0
             saw = true
-            i += 2
-        elseif a == "--queue-env" && i < length(args)
-            saw = true
-            i += 2
-        elseif startswith(a, "qhost:")
-            saw = true
-            i += 1
+            i += n
         elseif a == "--qhost" || a == "--project" || startswith(a, "--project=")
             saw = true
             break
@@ -264,10 +259,9 @@ function _leading_julia_project(args::Vector{String})::Bool
     i = 1
     while i <= length(args)
         a = args[i]
-        if a == "--remote-julia" && i < length(args)
-            i += 2
-        elseif a == "--queue-env" && i < length(args)
-            i += 2
+        n, kind = DistSSHQueue.leading_hop_span(args, i)
+        if n > 0 && kind !== :qhost
+            i += n
         elseif a == "--project" || startswith(a, "--project=")
             return true
         else
@@ -281,13 +275,11 @@ end
 function _without_qhost_group(args::Vector{String})::Union{Nothing, Vector{String}}
     i = 1
     while i <= length(args)
-        a = args[i]
-        if a == "--remote-julia" && i < length(args)
-            i += 2
-        elseif a == "--queue-env" && i < length(args)
-            i += 2
-        elseif startswith(a, "qhost:")
+        n, kind = DistSSHQueue.leading_hop_span(args, i)
+        if n > 0 && kind === :qhost
             return nothing
+        elseif n > 0
+            i += n
         else
             break
         end

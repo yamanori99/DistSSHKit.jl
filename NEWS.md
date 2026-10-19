@@ -9,6 +9,9 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
 
 ## Unreleased
 
+- Requires DistSSHRun 0.1.10 and DistSSHQueue 0.9.7.
+- The first `julia -m DistSSHKit` compiles the `main` of the package it calls. Commands, flags, and exit codes are unchanged.
+
 ### Planned breaking (next minor)
 
 - `terminate!` / `terminate_run!` `interrupt_grace` will default to a positive value, so a stop sends SIGINT before SIGTERM. `cancel` of a running job will use that default. Until then the default is `0` and `cancel` does not send SIGINT. DistSSHKit 0.11 (DistSSHRun 0.2, DistSSHQueue 0.10).
