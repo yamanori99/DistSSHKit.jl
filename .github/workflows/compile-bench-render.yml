@@ -46,6 +46,12 @@ jobs:
   publish:
     name: Render bench-data
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    # Same queue as Deploy docs. Both jobs push gh-pages.
+    concurrency:
+      group: docs-gh-pages
+      cancel-in-progress: false
+      # actionlint 1.7.12 does not know concurrency.queue yet. GitHub does.
+      queue: max
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

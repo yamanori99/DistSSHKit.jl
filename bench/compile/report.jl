@@ -126,7 +126,9 @@ end
 
 function bench_url()::String
     repo = get(ENV, "GITHUB_REPOSITORY", "yamanori99/DistSSHKit.jl")
-    return "https://cdn.jsdelivr.net/gh/$(repo)@bench-data/bench.html"
+    owner, name = split(repo, '/')
+    # GitHub Pages serves this as HTML. jsDelivr serves .html as text/plain.
+    return "https://$(owner).github.io/$(name)/bench.html"
 end
 
 function slot_section(slot::String, rows)::Tuple{String, Vector{String}}

@@ -17,7 +17,9 @@ old file.
 
 When the job runs is in that repo's `CONTRIBUTING.md`, under Scheduled
 CI. A run on `main` appends a sample. A render job then rebuilds the
-README and `bench.html` from the history already on `bench-data`. A `main` push that
+README and `bench.html` from the history already on `bench-data`, and copies
+`bench.html` to the root of `gh-pages`. GitHub Pages serves that file as HTML.
+A `main` push that
 changes `bench/compile/report.jl` does the same and does not measure.
 A pull request that changes that file renders the history into the job
 summary and does not push. Every run uploads the sample as an artifact.
@@ -112,5 +114,8 @@ files, not for that flag.
 
 `bench.html` draws the method times and every command's wall time.
 The README keeps the latest 12 rows and the link to that page.
+The public link is GitHub Pages
+(`https://yamanori99.github.io/DistSSHKit.jl/bench.html`).
+jsDelivr serves `.html` as plain text, so the page is not linked from there.
 A method missing from an older `top` list is left out of the line.
 It is not drawn as zero, and it is not listed as uncompiled.
