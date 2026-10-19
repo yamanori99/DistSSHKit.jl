@@ -126,6 +126,54 @@ const _KNOWN_KIT_EXPORTS = Set(
     @test DistSSHKit.submit! === DistSSHQueue.submit!
 end
 
+module _AdoptClashQueued
+    function submit!() end
+    export submit!
+end
+
+module _AdoptClashQualified
+    function kit_verbosity() end
+    export kit_verbosity
+end
+
+@testset "adopt name clash" begin
+    before_names = Set(names(DistSSHKit))
+    before_from = copy(DistSSHKit._FROM)
+    @test haskey(DistSSHKit._FROM, :submit!)
+    @test !haskey(DistSSHKit._FROM, :kit_verbosity)
+    @test isdefined(DistSSHKit, :kit_verbosity)
+
+    queued = try
+        DistSSHKit._adopt!(_AdoptClashQueued)
+        nothing
+    catch e
+        e
+    end
+    @test queued isa ErrorException
+    if queued isa ErrorException
+        @test occursin("`submit!`", queued.msg)
+        @test occursin(string(nameof(_AdoptClashQueued)), queued.msg)
+        @test occursin(string(nameof(DistSSHKit._FROM[:submit!])), queued.msg)
+    end
+
+    qualified = try
+        DistSSHKit._adopt!(_AdoptClashQualified)
+        nothing
+    catch e
+        e
+    end
+    @test qualified isa ErrorException
+    if qualified isa ErrorException
+        @test occursin("`kit_verbosity`", qualified.msg)
+        @test occursin(string(nameof(_AdoptClashQualified)), qualified.msg)
+        owner = nameof(Base.binding_module(DistSSHKit, :kit_verbosity))
+        @test occursin(string(owner), qualified.msg)
+    end
+
+    @test Set(names(DistSSHKit)) == before_names
+    @test DistSSHKit._FROM == before_from
+end
+
 @testset "export surface" begin
     allowed = Set(
         [
