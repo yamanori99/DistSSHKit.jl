@@ -36,17 +36,24 @@ runs:
         dest="${RUNNER_TEMP}/bench-data"
         rm -rf "$dest"
         url="https://github.com/${GITHUB_REPOSITORY}.git"
-        auth=(-c "http.extraheader=AUTHORIZATION: bearer ${BENCH_TOKEN}")
+        basic="$(printf 'x-access-token:%s' "$BENCH_TOKEN" | base64 | tr -d '\n')"
+        echo "::add-mask::${basic}"
+        auth=(-c "http.extraheader=AUTHORIZATION: basic ${basic}")
+        # Exit 2 is "no matching ref". Any other failure is auth or the network.
+        rc=0
+        git "${auth[@]}" ls-remote --exit-code --heads "$url" bench-data >/dev/null || rc=$?
         existed=0
-        if git "${auth[@]}" ls-remote --exit-code --heads "$url" bench-data >/dev/null; then
+        if [ "$rc" = "0" ]; then
           existed=1
           git "${auth[@]}" clone --branch bench-data --single-branch "$url" "$dest"
-        else
+        elif [ "$rc" = "2" ]; then
           git "${auth[@]}" clone --branch main --single-branch "$url" "$dest"
           git -C "$dest" checkout --orphan bench-data
           git -C "$dest" rm -rf . >/dev/null 2>&1 || true
+        else
+          exit "$rc"
         fi
-        git -C "$dest" config http.extraheader "AUTHORIZATION: bearer ${BENCH_TOKEN}"
+        git -C "$dest" config http.extraheader "AUTHORIZATION: basic ${basic}"
         sha="$(git rev-parse --short=7 HEAD)"
         day="$(date -u +%Y-%m-%d)"
         rel="history/${SLOT}/${day}-${sha}.toml"
