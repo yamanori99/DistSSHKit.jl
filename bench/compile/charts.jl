@@ -293,24 +293,10 @@ function defaultCommand(samples) {
 }
 
 function chosenMethods(samples, name, count) {
-  const best = new Map();
-  const meta = new Map();
-  samples.forEach((sample) => {
-    const command = sample.commands.find((item) => item.name === name);
-    if (!command) return;
-    ranked(command).forEach((method, index) => {
-      const rank = index + 1;
-      if (!meta.has(method.signature)) meta.set(method.signature, method);
-      if (rank <= count) {
-        const previous = best.get(method.signature);
-        if (previous === undefined || rank < previous) best.set(method.signature, rank);
-      }
-    });
-  });
-  let keys = Array.from(best.keys());
-  keys.sort((a, b) => best.get(a) - best.get(b) || meta.get(b).ms - meta.get(a).ms);
-  if (keys.length > count) keys = keys.slice(0, count);
-  return keys.map((key) => meta.get(key));
+  const last = samples[samples.length - 1];
+  if (!last) return [];
+  const command = last.commands.find((item) => item.name === name);
+  return command ? ranked(command).slice(0, count) : [];
 }
 
 function methodY(sample, name, signature, count) {
@@ -483,7 +469,7 @@ function drawMethods(samples) {
     const command = sample.commands.find((item) => item.name === state.cmd);
     return command ? ranked(command).slice(0, state.n) : [];
   }
-  const now = top(last);
+  const now = chosen;
   const before = top(prev);
   const rows = now.map((method) => {
     const nowRank = now.findIndex((item) => item.signature === method.signature) + 1;
