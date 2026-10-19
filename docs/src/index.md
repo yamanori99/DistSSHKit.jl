@@ -140,11 +140,6 @@ See [CONTRIBUTING.md][contrib] for how to contribute.
 ## License
 
 Source code is [MIT][mit-lic].
-The Julia dots in the docs logo and topology diagram are Copyright (c)
-2012-2022 Stefan Karpinski,
-[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
-DistSSHKit adapts them.
-[julia-logo-graphics](https://github.com/JuliaLang/julia-logo-graphics).
 
 [contrib]: https://github.com/yamanori99/DistSSHKit.jl/blob/main/CONTRIBUTING.md
 [mit-lic]: https://github.com/yamanori99/DistSSHKit.jl/blob/main/LICENSE

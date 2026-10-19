@@ -9,6 +9,7 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
 
 ## Unreleased
 
+- The logo is an original fan. The Julia-circle exception is gone, so the package is MIT only.
 - Requires DistSSHRun 0.1.10 and DistSSHQueue 0.9.7.
 - The first `julia -m DistSSHKit` compiles the `main` of the package it calls. Commands, flags, and exit codes are unchanged.
 

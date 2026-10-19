@@ -1,3 +1,20 @@
+<!-- markdownlint-disable MD033 MD013 -->
+<p align="center">
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/logo/logo-dark-static.svg">
+    <source
+      media="(prefers-color-scheme: light)"
+      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/logo/logo-static.svg">
+    <img
+      src="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/logo/logo-static.png"
+      width="128"
+      alt="DistSSHKit">
+  </picture>
+</p>
+<!-- markdownlint-enable MD033 MD013 -->
+
 # DistSSHKit.jl
 
 [English](README.md) · [日本語](README.ja.md)
@@ -386,13 +403,7 @@ julia --project=. -m DistSSHKit qhost:HOST submit go parent:1 distsshkit_demos/w
 
 ## ライセンス
 
-ソースコードは [MIT](LICENSE) ライセンスである。ロゴと図に含まれる Julia のドットは
-Copyright (c) 2012-2022 Stefan Karpinski によるもので、
-[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
-のもとで提供されている。
-DistSSHKit では、これを改変して使用している。
-詳細は [LICENSE](LICENSE) と
-[julia-logo-graphics](https://github.com/JuliaLang/julia-logo-graphics) を参照されたい。
+ソースコードは [MIT](LICENSE) ライセンスである。
 
 <!-- markdownlint-disable MD013 -->
 [home]: https://yamanori99.github.io/DistSSHKit.jl/stable/
@@ -425,20 +436,3 @@ DistSSHKit では、これを改変して使用している。
 [run]: https://yamanori99.github.io/DistSSHRun.jl/stable/
 [queue]: https://yamanori99.github.io/DistSSHQueue.jl/stable/
 <!-- markdownlint-enable MD013 -->
-
-<!-- markdownlint-disable MD033 MD013 -->
-<p align="center">
-  <picture>
-    <source
-      media="(prefers-color-scheme: dark)"
-      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/logo/logo-dark-static.svg">
-    <source
-      media="(prefers-color-scheme: light)"
-      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/logo/logo-static.svg">
-    <img
-      src="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/logo/logo-static.png"
-      width="180"
-      alt="DistSSHKit.jl logo"/>
-  </picture>
-</p>
-<!-- markdownlint-enable MD033 MD013 -->

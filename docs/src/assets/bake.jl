@@ -2,23 +2,11 @@
 #=
 Regenerate DistSSHKit logo / social-preview / topology-diagram derivatives.
 
-Hand-edit sources (under logo/ and diagram/):
-  logo/logo-dynamic.svg, logo/logo-static.svg
-  diagram/topology.svg
-
-Derived:
-  logo/logo-dark-*.svg, logo/logo-static.png, logo/logo-dynamic.gif
-  social/social-preview-*.svg|.png|.gif
-  diagram/topology-dark.svg
-  diagram/topology.png
-  favicon.svg / favicon.ico (Documenter tab icon; from logo-static)
+`bake_svgs!` writes the logo, favicon, social preview, and topology SVGs.
+PNG and GIF are `--png` / `--gif`.
 
 README.md, README.ja.md, and docs intro all use the English topology
 (`parent` / `child 1…n`). Do not bake a Japanese-labelled copy.
-
-Julia dots in these files are Copyright (c) 2012-2022 Stefan Karpinski,
-CC BY-NC-SA 4.0 (https://github.com/JuliaLang/julia-logo-graphics), not MIT.
-See LICENSE and docs/src/assets/README.md.
 
 Documenter looks for assets/logo.svg and assets/logo-dark.svg; bake makes
 **symlinks** to logo/logo-dynamic.svg and logo/logo-dark-dynamic.svg.
@@ -39,27 +27,8 @@ const DIAGRAM_DIR = "diagram"
 const DIAGRAM_W, DIAGRAM_H = 560, 236
 const DIAGRAM_PNG_W, DIAGRAM_PNG_H = DIAGRAM_W * 2, DIAGRAM_H * 2
 
-# Light (source) → dark surface. Master stays a strong blue so it still reads as hub.
-# Cluster/box fills sit above typical GitHub / Documenter dark chrome (#0d1117 / #1f2424).
-const DIAGRAM_DARK = (
-    ".box { fill: #ffffff; stroke: #475569;" =>
-        ".box { fill: #334155; stroke: #cbd5e1;",
-    ".link-more { fill: none; stroke: #cbd5e1;" =>
-        ".link-more { fill: none; stroke: #64748b;",
-    ".cluster { fill: #f8fafc; stroke: #cbd5e1;" =>
-        ".cluster { fill: #1e293b; stroke: #94a3b8;",
-    ".master { fill: #1e40af; stroke: #1e3a8a;" =>
-        ".master { fill: #3b82f6; stroke: #93c5fd;",
-    ".t { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; fill: #0f172a;" =>
-        ".t { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; fill: #f8fafc;",
-    ".t-sub { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; fill: #475569;" =>
-        ".t-sub { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; fill: #cbd5e1;",
-    ".halo { fill: #f8fafc; }" => ".halo { fill: #1e293b; }",
-)
-
 const SOCIAL_W, SOCIAL_H = 1280, 640
-# Gentle lift only — 112/36 read high; 140/18.5 read low.
-const LOGO_VIEWBOX = "0 26 240 240"
+const LOGO_VIEWBOX = "0 0 128 128"
 # Keep content near the usual GitHub-oriented safe zone (~960×480), but fill it.
 # Outer inset is a soft floor so edges are not flush to the crop.
 const SAFE_X, SAFE_Y = 100, 60
@@ -85,7 +54,7 @@ const FONT = "'Helvetica Neue', Helvetica, Arial, sans-serif"
 const TITLE_SIZE = 76
 const TAGLINE_SIZE = 28
 
-const STORY_S = 8.0  # send (synced ぐるん) → joint spin → collect + hold
+const STORY_S = 5.2  # fan open, lamps, close
 const DELAY_MS = 40
 # Parallel Chrome workers for GIF frames (each frame is one headless launch).
 const GIF_WORKERS = 4
@@ -100,8 +69,6 @@ const FAVICON = "favicon.ico"
 const FAVICON_SVG = "favicon.svg"
 const FAVICON_DARK_SVG = "favicon-dark.svg"
 const FAVICON_PX = (16, 32, 48)
-# Parent-only tab mark. Same `#juliadot-lg` as logo-static (`use` at (0,-6)).
-const FAVICON_DOT_SCALE = 1.0
 
 die(msg) = (println(stderr, "error: ", msg); exit(1))
 
@@ -285,12 +252,168 @@ function write_bmp_ico!(dest::AbstractString, pngs::Vector{Pair{Int, String}})
     return dest
 end
 
-function topology_dark(svg::AbstractString)
-    out = svg
-    for (light, dark) in DIAGRAM_DARK
-        out = replace(out, light => dark)
+const CARD = 70.0
+const CARD_R = 13
+const LAMP_C = (15.0, 15.0)
+const PIVOT = (0.0, 70.0)
+const ACCENT = "#9558b2"
+const LOGO_DUR = "5.2s"
+const OPEN_KT = "0;0.1;0.28;0.76;0.94;1"
+const OPEN_KS = "0 0 1 1;.65 0 .25 1;0 0 1 1;.65 0 .25 1;0 0 1 1"
+const LAMP_KT = "0;0.44;0.5;0.7;0.76;1"
+const DOT_KT = "0;0.3;0.45;1"
+const DOT_KS = "0 0 1 1;.45 0 .2 1;0 0 1 1"
+const DOT_OP_KT = "0;0.299;0.3;0.45;0.49;1"
+
+const LOGO_VARIANTS = Dict(
+    :L => (angles = [-15, -30, -45], op = (0.27, 0.21), lamp = 4.5, child_lamps = true, edge = true),
+    :M => (angles = [-15, -30, -45], op = (0.3, 0.24), lamp = 5.0, child_lamps = true, edge = true),
+    :S => (angles = [-22, -44], op = (0.36, 0.28), lamp = 7.5, child_lamps = true, edge = false),
+    :XS => (angles = [-30], op = (0.44, 0.34), lamp = 8.0, child_lamps = false, edge = false),
+)
+
+function num_str(x; digits::Int = 2)
+    s = digits == 4 ? @sprintf("%.4f", x) : @sprintf("%.2f", x)
+    s = rstrip(rstrip(s, '0'), '.')
+    return s in ("", "-0") ? "0" : s
+end
+
+function rot_pt(p, angle; pivot = PIVOT)
+    t = deg2rad(angle)
+    dx, dy = p[1] - pivot[1], p[2] - pivot[2]
+    return (
+        pivot[1] + dx * cos(t) - dy * sin(t),
+        pivot[2] + dx * sin(t) + dy * cos(t),
+    )
+end
+
+function logo_placement(angles)
+    pts = [rot_pt(p, a) for a in [0; angles] for p in ((0.0, 0.0), (CARD, 0.0), (CARD, CARD), (0.0, CARD))]
+    xs = first.(pts)
+    ys = last.(pts)
+    x0, y0, x1, y1 = minimum(xs), minimum(ys), maximum(xs), maximum(ys)
+    s = 108 / max(x1 - x0, y1 - y0)
+    cx = 0.6 * (x0 + x1) / 2 + 0.4 * CARD / 2
+    cy = 0.6 * (y0 + y1) / 2 + 0.4 * CARD / 2
+    return round(s; digits = 4), round(64 - cx * s; digits = 2), round(64 - cy * s; digits = 2)
+end
+
+function logo_svg(; size::Symbol = :L, dark::Bool = false, animated::Bool = false)
+    variant = LOGO_VARIANTS[size]
+    s, tx, ty = logo_placement(variant.angles)
+    op = dark ? variant.op[2] : variant.op[1]
+    child_fill = dark ? "#c9a8e3" : ACCENT
+    edge_color = dark ? "#d9c2ec" : ACCENT
+    edge_op = dark ? 0.55 : 0.2
+    edge_w = dark ? 1.2 : 0.6
+    child_lamp = dark ? "#ead9f6" : ACCENT
+    lr = variant.lamp
+    lines = String[
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 128 128\">",
+        "  <g transform=\"translate($(num_str(tx)) $(num_str(ty))) scale($(num_str(s; digits = 4)))\">",
+    ]
+    for angle in variant.angles
+        edge = variant.edge ?
+            " stroke=\"$edge_color\" stroke-opacity=\"$(num_str(edge_op))\" stroke-width=\"$(num_str(edge_w))\"" :
+            ""
+        if animated
+            push!(lines, "    <g>")
+            vals = "0 0 70;0 0 70;$angle 0 70;$angle 0 70;0 0 70;0 0 70"
+            push!(
+                lines,
+                "      <animateTransform attributeName=\"transform\" type=\"rotate\" dur=\"$LOGO_DUR\" repeatCount=\"indefinite\" values=\"$vals\" keyTimes=\"$OPEN_KT\" calcMode=\"spline\" keySplines=\"$OPEN_KS\"/>",
+            )
+        else
+            push!(lines, "    <g transform=\"rotate($angle 0 70)\">")
+        end
+        push!(
+            lines,
+            "      <rect x=\"0\" y=\"0\" width=\"$(Int(CARD))\" height=\"$(Int(CARD))\" rx=\"$CARD_R\" fill=\"$child_fill\" fill-opacity=\"$(num_str(op))\"$edge/>",
+        )
+        if variant.child_lamps
+            if animated
+                push!(
+                    lines,
+                    "      <circle cx=\"15\" cy=\"15\" r=\"$(num_str(lr))\" fill=\"$child_lamp\" opacity=\"0.18\"><animate attributeName=\"opacity\" dur=\"$LOGO_DUR\" repeatCount=\"indefinite\" values=\"0.18;0.18;1;1;0.18;0.18\" keyTimes=\"$LAMP_KT\"/></circle>",
+                )
+            else
+                push!(lines, "      <circle cx=\"15\" cy=\"15\" r=\"$(num_str(lr))\" fill=\"$child_lamp\"/>")
+            end
+        end
+        push!(lines, "    </g>")
     end
-    return prefix_svg_ids(out, "dark-")
+    push!(lines, "    <rect x=\"0\" y=\"0\" width=\"$(Int(CARD))\" height=\"$(Int(CARD))\" rx=\"$CARD_R\" fill=\"$ACCENT\"/>")
+    push!(lines, "    <circle cx=\"15\" cy=\"15\" r=\"$(num_str(lr))\" fill=\"#ffffff\"/>")
+    if animated && variant.child_lamps
+        for angle in variant.angles
+            x, y = rot_pt(LAMP_C, angle)
+            dx, dy = x - LAMP_C[1], y - LAMP_C[2]
+            push!(
+                lines,
+                "    <circle cx=\"15\" cy=\"15\" r=\"3\" fill=\"#ffffff\" opacity=\"0\"><animateMotion dur=\"$LOGO_DUR\" repeatCount=\"indefinite\" path=\"M0 0L$(num_str(dx)) $(num_str(dy))\" keyPoints=\"0;0;1;1\" keyTimes=\"$DOT_KT\" calcMode=\"spline\" keySplines=\"$DOT_KS\"/><animate attributeName=\"opacity\" dur=\"$LOGO_DUR\" repeatCount=\"indefinite\" values=\"0;0;1;1;0;0\" keyTimes=\"$DOT_OP_KT\"/></circle>",
+            )
+        end
+    end
+    push!(lines, "  </g>")
+    push!(lines, "</svg>")
+    return join(lines, "\n") * "\n"
+end
+
+function topology_text(x, y, label, fill; size = 13, weight = 400, anchor = "start")
+    return "  <text x=\"$x\" y=\"$y\" font-family=\"$FONT\" font-size=\"$size\" font-weight=\"$weight\" fill=\"$fill\" text-anchor=\"$anchor\">$label</text>"
+end
+
+function topology_svg(; dark::Bool = false)
+    ink = dark ? "#f5f7fa" : "#121419"
+    sub = dark ? "#a3a9b0" : "#5b6068"
+    mstroke = dark ? "#3a3542" : "#d9d2e2"
+    pop = dark ? 0.16 : 0.06
+    wfill = dark ? "#c9a8e3" : ACCENT
+    wop = dark ? 0.18 : 0.16
+    wstroke = dark ? "#d9c2ec" : ACCENT
+    wsop = dark ? 0.45 : 0.3
+    line = dark ? "#c9a8e3" : ACCENT
+    lop = dark ? 0.6 : 0.55
+    more = dark ? "#4a4552" : "#c9c3d1"
+    lines = String["<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 560 236\" width=\"560\" height=\"236\">"]
+    kids = [(24, "child 1"), (190, "child 2"), (380, "child n")]
+    for (x, _) in kids
+        push!(
+            lines,
+            "  <path d=\"M200 164 L$(x + 78) 100\" fill=\"none\" stroke=\"$line\" stroke-opacity=\"$lop\" stroke-width=\"1.5\" stroke-linecap=\"round\"/>",
+        )
+    end
+    push!(
+        lines,
+        "  <path d=\"M200 164 L352 100\" fill=\"none\" stroke=\"$more\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-dasharray=\"3 4\"/>",
+    )
+    function chip(x, y, w, label)
+        push!(
+            lines,
+            "  <rect x=\"$x\" y=\"$y\" width=\"$w\" height=\"36\" rx=\"8\" fill=\"$wfill\" fill-opacity=\"$wop\" stroke=\"$wstroke\" stroke-opacity=\"$wsop\" stroke-width=\"1\"/>",
+        )
+        push!(lines, topology_text(x + w / 2, y + 22.5, label, ink; anchor = "middle"))
+        return nothing
+    end
+    for (x, name) in kids
+        push!(
+            lines,
+            "  <rect x=\"$x\" y=\"22\" width=\"156\" height=\"78\" rx=\"12\" fill=\"none\" stroke=\"$mstroke\" stroke-width=\"1.5\"/>",
+        )
+        push!(lines, topology_text(x + 14, 44, name, ink; size = 14, weight = 600))
+        chip(x + 10, 54, 136, "Worker × 1..n")
+    end
+    push!(lines, topology_text(358, 66, "…", sub; size = 20, anchor = "middle"))
+    push!(
+        lines,
+        "  <rect x=\"124\" y=\"122\" width=\"312\" height=\"96\" rx=\"12\" fill=\"$ACCENT\" fill-opacity=\"$pop\" stroke=\"$mstroke\" stroke-width=\"1.5\"/>",
+    )
+    push!(lines, topology_text(138, 144, "parent", ink; size = 14, weight = 600))
+    push!(lines, "  <rect x=\"140\" y=\"164\" width=\"120\" height=\"36\" rx=\"8\" fill=\"$ACCENT\"/>")
+    push!(lines, topology_text(200, 187, "Master", "#ffffff"; size = 14, weight = 600, anchor = "middle"))
+    chip(276, 164, 144, "Worker × 0..n")
+    push!(lines, "</svg>")
+    return join(lines, "\n") * "\n"
 end
 
 function readfile(rel::AbstractString)
@@ -304,38 +427,6 @@ function writefile(rel::AbstractString, text::AbstractString)
     mkpath(dirname(p))
     write(p, text)
     return println("wrote $rel ($(sizeof(text)) bytes)")
-end
-
-"""Prefix `id=` / `href="#…"` / `url(#…)` so light+dark SVGs can share a DOM."""
-function prefix_svg_ids(svg::AbstractString, prefix::AbstractString)
-    ids = String[]
-    for m in eachmatch(r"\bid=\"([^\"]+)\"", svg)
-        push!(ids, String(m.captures[1]))
-    end
-    unique!(ids)
-    sort!(ids; by = length, rev = true)
-    out = svg
-    for id in ids
-        out = replace(out, "id=\"$(id)\"" => "id=\"$(prefix)$(id)\"")
-        out = replace(out, "href=\"#$(id)\"" => "href=\"#$(prefix)$(id)\"")
-        out = replace(out, "url(#$(id))" => "url(#$(prefix)$(id))")
-    end
-    return out
-end
-
-function to_dark(svg::AbstractString)
-    dark = replace(svg, "stroke: #1a1d21;" => "stroke: #ffffff;")
-    dark = replace(dark, "fill: #1a1d21;" => "fill: #ffffff;")
-    dark = replace(
-        dark, "stroke-width: 3.5;\n        stroke-linecap: round;\n        stroke-linejoin: round;" =>
-            "stroke-width: 4;\n        stroke-linecap: round;\n        stroke-linejoin: round;"
-    )
-    dark = replace(
-        dark, ".link {\n        stroke: #ffffff;\n        stroke-width: 1.4;" =>
-            ".link {\n        stroke: #ffffff;\n        stroke-width: 2;"
-    )
-    dark = replace(dark, "#a0a5ab" => "#94a3b8")  # idle remote ring (legacy)
-    return prefix_svg_ids(dark, "dark-")
 end
 
 function strip_xml_decl(svg::AbstractString)
@@ -352,32 +443,13 @@ function svg_inner(svg::AbstractString)
     return m.captures[1]
 end
 
-function build_favicon(_logo_svg::AbstractString = ""; dark::Bool = false)
-    # Parent `#master-body` + `#juliadot-lg` about (0,-6). Stroke 3.5 on a
-    # 64-wide bezel — same ratio as logo-static. No tile fill.
-    s = FAVICON_DOT_SCALE
-    r = round(4.65 * s; digits = 4)
-    red_y = round(-6 + s * (-6.2); digits = 4)
-    side_x = round(5.369 * s; digits = 4)
-    side_y = round(-6 + s * 3.1; digits = 4)
-    ink = dark ? "#ffffff" : "#1a1d21"
-    sw = 3.5
-    ox, oy = 34.0, 34.5
-    fmt(x) = string(round(x; digits = 4))
-    return """<?xml version="1.0" encoding="UTF-8"?>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 68 68" width="68" height="68">
-      <rect x="$(fmt(-32 + ox))" y="$(fmt(-25 + oy))" width="64" height="36" rx="4" fill="none" stroke="$(ink)" stroke-width="$(sw)" stroke-linecap="round" stroke-linejoin="round"/>
-      <line x1="$(fmt(ox))" y1="$(fmt(12 + oy))" x2="$(fmt(ox))" y2="$(fmt(22 + oy))" fill="none" stroke="$(ink)" stroke-width="$(sw)" stroke-linecap="round"/>
-      <line x1="$(fmt(-21 + ox))" y1="$(fmt(24 + oy))" x2="$(fmt(21 + ox))" y2="$(fmt(24 + oy))" fill="none" stroke="$(ink)" stroke-width="$(sw)" stroke-linecap="round"/>
-      <circle cx="$(fmt(ox))" cy="$(fmt(red_y + oy))" r="$r" fill="#cb3c33"/>
-      <circle cx="$(fmt(-side_x + ox))" cy="$(fmt(side_y + oy))" r="$r" fill="#389826"/>
-      <circle cx="$(fmt(side_x + ox))" cy="$(fmt(side_y + oy))" r="$r" fill="#9558b2"/>
-    </svg>
-    """
+function with_svg_size(svg::AbstractString, w::Int, h::Int)
+    s = strip_xml_decl(svg)
+    return replace(s, "<svg " => "<svg width=\"$w\" height=\"$h\" ", count = 1)
 end
 
-function build_social(logo_svg::AbstractString, kind::AbstractString)
-    inner = svg_inner(logo_svg)
+function build_social(logo_text::AbstractString, kind::AbstractString)
+    inner = svg_inner(logo_text)
     src = kind == "static" ? logo_path("logo-static.svg") : logo_path("logo-dynamic.svg")
     return """<?xml version="1.0" encoding="UTF-8"?>
     <svg xmlns="http://www.w3.org/2000/svg" width="$(SOCIAL_W)" height="$(SOCIAL_H)" viewBox="0 0 $(SOCIAL_W) $(SOCIAL_H)">
@@ -386,7 +458,7 @@ function build_social(logo_svg::AbstractString, kind::AbstractString)
       <svg x="$(MARK_X)" y="$(MARK_Y)" width="$(MARK_SIZE)" height="$(MARK_SIZE)" viewBox="$(LOGO_VIEWBOX)">
     $(inner)
       </svg>
-      <text x="$(TEXT_X)" y="$(TITLE_Y)" dominant-baseline="middle" fill="#0f172a" font-family="$(FONT)" font-size="$(TITLE_SIZE)" font-weight="800">$(TITLE)</text>
+      <text x="$(TEXT_X)" y="$(TITLE_Y)" dominant-baseline="middle" fill="#0f172a" font-family="$(FONT)" font-size="$(TITLE_SIZE)" font-weight="800">DistSSH<tspan fill="#9558b2">Kit</tspan>.jl</text>
       <text x="$(TEXT_X)" y="$(TAGLINE_Y1)" dominant-baseline="middle" fill="#475569" font-family="$(FONT)" font-size="$(TAGLINE_SIZE)" font-weight="500">$(TAGLINE_1)</text>
       <text x="$(TEXT_X)" y="$(TAGLINE_Y2)" dominant-baseline="middle" fill="#475569" font-family="$(FONT)" font-size="$(TAGLINE_SIZE)" font-weight="500">$(TAGLINE_2)</text>
     </svg>
@@ -495,12 +567,12 @@ function bake_svgs!()
     mkpath(joinpath(ROOT, SOCIAL_DIR))
     mkpath(joinpath(ROOT, DIAGRAM_DIR))
 
-    logo = readfile(logo_path("logo-dynamic.svg"))
-    logo_static = readfile(logo_path("logo-static.svg"))
-    logo_dark = to_dark(logo)
-
-    writefile(logo_path("logo-dark-dynamic.svg"), logo_dark)
-    writefile(logo_path("logo-dark-static.svg"), to_dark(logo_static))
+    logo = logo_svg(size = :L, dark = false, animated = true)
+    logo_static = logo_svg(size = :L, dark = false, animated = false)
+    writefile(logo_path("logo-dynamic.svg"), logo)
+    writefile(logo_path("logo-static.svg"), logo_static)
+    writefile(logo_path("logo-dark-dynamic.svg"), logo_svg(size = :L, dark = true, animated = true))
+    writefile(logo_path("logo-dark-static.svg"), logo_svg(size = :L, dark = true, animated = false))
     # Documenter only discovers logo.svg / logo-dark.svg at assets/ root.
     ensure_symlink!("logo.svg", logo_path("logo-dynamic.svg"))
     ensure_symlink!("logo-dark.svg", logo_path("logo-dark-dynamic.svg"))
@@ -510,11 +582,12 @@ function bake_svgs!()
     writefile(social_path("social-preview-static.svg"), social_static)
     writefile(social_path("social-preview-dynamic.svg"), social_dynamic)
 
-    topology = readfile(diagram_path("topology.svg"))
-    topology_dark_svg = topology_dark(topology)
+    topology = topology_svg(dark = false)
+    topology_dark_svg = topology_svg(dark = true)
+    writefile(diagram_path("topology.svg"), topology)
     writefile(diagram_path("topology-dark.svg"), topology_dark_svg)
-    writefile(FAVICON_SVG, build_favicon(logo_static))
-    writefile(FAVICON_DARK_SVG, build_favicon(logo_static; dark = true))
+    writefile(FAVICON_SVG, logo_svg(size = :S, dark = false))
+    writefile(FAVICON_DARK_SVG, logo_svg(size = :S, dark = true))
     ensure_docroot_link!(FAVICON_SVG)
     ensure_docroot_link!(FAVICON_DARK_SVG)
 
@@ -763,11 +836,7 @@ end
 function bake_pngs!(arts)
     logo_svg = logo_path("logo-static.svg")
     logo_png = logo_path("logo-static.png")
-    logo_html_body = replace(
-        strip_xml_decl(arts.logo_static),
-        "width=\"240\" height=\"240\"" => "width=\"$(LOGO_PNG)\" height=\"$(LOGO_PNG)\"",
-        count = 1,
-    )
+    logo_html_body = with_svg_size(arts.logo_static, LOGO_PNG, LOGO_PNG)
     bake_static_png!(logo_svg, logo_png, logo_html_body; w = LOGO_PNG, h = LOGO_PNG, scale = PNG_SCALE) ||
         die("logo-static.png (need rsvg-convert or Chromium)")
 
@@ -807,39 +876,39 @@ function bake_pngs!(arts)
     return nothing
 end
 
-function bake_favicon!(arts)
+function bake_favicon!(_arts)
     ico_path = joinpath(ROOT, FAVICON)
-    writefile(FAVICON_SVG, build_favicon(arts.logo_static))
-    writefile(FAVICON_DARK_SVG, build_favicon(arts.logo_static; dark = true))
+    writefile(FAVICON_SVG, logo_svg(size = :S, dark = false))
+    writefile(FAVICON_DARK_SVG, logo_svg(size = :S, dark = true))
     ensure_docroot_link!(FAVICON_SVG)
     ensure_docroot_link!(FAVICON_DARK_SVG)
     d = mktempdir(ROOT; prefix = ".favicon-")
     try
-        function raster_variant(svg_rel::AbstractString)
-            html_body = strip_xml_decl(readfile(svg_rel))
-            pngs = Pair{Int, String}[]
-            for px in FAVICON_PX
-                src = joinpath(d, "$(first(splitext(svg_rel)))-$(px).png")
-                body = replace(html_body, r"width=\"[^\"]+\" height=\"[^\"]+\"" => "width=\"$(px)\" height=\"$(px)\"", count = 1)
-                if !bake_static_png!(
-                        svg_rel,
-                        relpath(src, ROOT),
-                        body;
-                        w = px,
-                        h = px,
-                        scale = PNG_SCALE,
-                        exact_size = true,
-                    )
-                    return nothing
-                end
-                push!(pngs, px => src)
+        function raster_mark(pngs, px, size::Symbol, dark::Bool)
+            svg = joinpath(d, "$(dark ? "dark" : "light")-$px.svg")
+            write(svg, logo_svg(size = size, dark = dark))
+            src = joinpath(d, "$(dark ? "dark" : "light")-$px.png")
+            body = with_svg_size(read(svg, String), px, px)
+            if !bake_static_png!(
+                    relpath(svg, ROOT),
+                    relpath(src, ROOT),
+                    body;
+                    w = px,
+                    h = px,
+                    scale = PNG_SCALE,
+                    exact_size = true,
+                )
+                return false
             end
-            return pngs
+            push!(pngs, px => src)
+            return true
         end
-        light = raster_variant(FAVICON_SVG)
-        light === nothing && return false
-        dark = raster_variant(FAVICON_DARK_SVG)
-        dark === nothing && return false
+        light = Pair{Int, String}[]
+        dark = Pair{Int, String}[]
+        for (px, size) in ((16, :XS), (32, :S), (48, :M))
+            raster_mark(light, px, size, false) || return false
+        end
+        raster_mark(dark, 32, :S, true) || return false
         write_bmp_ico!(ico_path, light)
         png32 = joinpath(ROOT, "favicon.png")
         png32d = joinpath(ROOT, "favicon-dark.png")
@@ -917,7 +986,7 @@ end
 
 function bake_gifs!(arts)
     logo_html = html_wrap(
-        replace(strip_xml_decl(arts.logo), "width=\"240\" height=\"240\"" => "width=\"480\" height=\"480\"", count = 1),
+        with_svg_size(arts.logo, 480, 480),
         480,
         480,
     )
