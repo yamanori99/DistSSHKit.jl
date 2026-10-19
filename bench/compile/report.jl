@@ -180,38 +180,106 @@ function chart_label(slot::String, row, prev)::String
     return isempty(short) ? day : day * " " * short
 end
 
-function chart(slot::String, name::String, rows)::String
+# Dark colors, one per command, in command order. The default #fff4dd line
+# disappears on the white plot.
+const CHART_COLORS = (
+    "#1f4e79",
+    "#b85c38",
+    "#2d6a4f",
+    "#6b4c9a",
+    "#8a5a2b",
+    "#1d6a78",
+)
+
+function chart_latest(names, rows)::Dict{String, Float64}
+    latest = Dict{String, Float64}()
+    for name in names
+        for row in Iterators.reverse(rows)
+            wall = command_wall(row, name)
+            wall === nothing && continue
+            latest[name] = wall
+            break
+        end
+    end
+    return latest
+end
+
+# One band, or a short band and a long band when the tallest latest value is
+# more than four times the shortest. A short line otherwise sits on the axis.
+function chart_bands(names, rows)::Vector{Vector{String}}
+    latest = chart_latest(names, rows)
+    present = [name for name in names if haskey(latest, name)]
+    isempty(present) && return Vector{String}[]
+    lo = minimum(latest[name] for name in present)
+    hi = maximum(latest[name] for name in present)
+    if lo > 0 && hi > 4 * lo
+        short = [name for name in present if latest[name] <= 4 * lo]
+        long = [name for name in present if latest[name] > 4 * lo]
+        if !isempty(short) && !isempty(long)
+            return [short, long]
+        end
+    end
+    return [present]
+end
+
+function chart_ytoken(value::Union{Nothing, Float64})::String
+    value === nothing && return "null"
+    return string(round(value; digits = 2))
+end
+
+function chart(slot::String, names::Vector{String}, rows)::String
+    isempty(names) && return ""
     labels = String[]
-    values = Float64[]
+    series = Dict{String, Vector{Union{Nothing, Float64}}}(
+        name => Union{Nothing, Float64}[] for name in names
+    )
     prev = nothing
     for row in rows
-        wall = command_wall(row, name)
-        wall === nothing && continue
         push!(labels, chart_label(slot, row, prev))
-        push!(values, wall)
+        for name in names
+            push!(series[name], command_wall(row, name))
+        end
         prev = row
     end
-    isempty(values) && return ""
+    plotted = [name for name in names if any(!isnothing, series[name])]
+    isempty(plotted) && return ""
     # A one-point line is a zero-length path, so GitHub draws an empty plot.
-    series = length(values) == 1 ? "bar" : "line"
-    ymax = max(1, ceil(Int, maximum(values) * 1.2))
+    kind = length(labels) == 1 ? "bar" : "line"
+    peak = 0.0
+    for name in plotted
+        for value in series[name]
+            value === nothing && continue
+            peak = max(peak, value)
+        end
+    end
+    ymax = max(1, ceil(Int, peak * 1.2))
     xs = join((string('"', replace(x, '"' => "'"), '"') for x in labels), ", ")
-    ys = join((string(round(v; digits = 2)) for v in values), ", ")
-    title = "$slot $name"
+    title = slot
     if occursin("nightly", slot)
         julia = chart_julia(prev)
-        isempty(julia) || (title = "$slot $julia $name")
+        isempty(julia) || (title = "$slot $julia")
     end
-    # plotColorPalette replaces the default #fff4dd line, which disappears on
-    # the white plot. labelRotation keeps "10-18 v0.9.7 1.15-DEV" apart.
-    return """
+    if length(chart_bands(command_names(rows), rows)) == 2
+        title = title * " " * join(plotted, " ")
+    end
+    palette = join((CHART_COLORS[mod1(i, length(CHART_COLORS))] for i in eachindex(plotted)), ", ")
+    lines = String[]
+    for name in plotted
+        ys = join((chart_ytoken(value) for value in series[name]), ", ")
+        push!(lines, "        $kind \"$name\" [$ys]")
+    end
+    body = join(lines, "\n")
+    # plotColorPalette replaces the default #fff4dd line. labelRotation keeps
+    # "10-18 v0.9.7 1.15-DEV" apart. A missing sample is null, so the line breaks.
+    # The series block is concatenated so every line keeps the same indent.
+    head = """
     ```mermaid
     ---
     config:
       theme: base
       themeVariables:
         xyChart:
-          plotColorPalette: "#1f4e79"
+          plotColorPalette: "$palette"
       xyChart:
         xAxis:
           labelRotation: 45
@@ -220,9 +288,8 @@ function chart(slot::String, name::String, rows)::String
         title "$title"
         x-axis [$xs]
         y-axis "seconds" 0 --> $ymax
-        $series [$ys]
-    ```
     """
+    return head * body * "\n```\n"
 end
 
 function method_table(prev, cur, name::String)::String
@@ -279,11 +346,13 @@ function slot_section(slot::String, rows)::Tuple{String, Vector{String}}
     parts = String["## $slot", "", header, sep]
     append!(parts, body)
     parts = append!(parts, [""])
-    for name in names
-        picture = chart(slot, name, shown)
+    for band in chart_bands(names, shown)
+        picture = chart(slot, band, shown)
         isempty(picture) && continue
         push!(parts, picture)
         push!(parts, "")
+    end
+    for name in names
         table = method_table(prev, latest, name)
         isempty(table) && continue
         push!(parts, "Latest `$name` methods:", "")
