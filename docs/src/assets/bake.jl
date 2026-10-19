@@ -516,28 +516,31 @@ function build_readme(logo_text::AbstractString; dark::Bool = false)
     )
 end
 
-html_wrap(body, w, h) = """<!DOCTYPE html><html><head><meta charset="utf-8"/>
-<style>html,body{margin:0;width:$(w)px;height:$(h)px;overflow:hidden;background:#fff}</style>
-<script>
-window.__seek = function (t) {
-  document.querySelectorAll("svg").forEach(function (s) {
-    // Seek then pause — pause-first can leave SMIL on a stale frame in headless Chrome.
-    if (s.unpauseAnimations) s.unpauseAnimations();
-    if (s.setCurrentTime) s.setCurrentTime(t);
-    if (s.pauseAnimations) s.pauseAnimations();
-  });
-};
-window.addEventListener("DOMContentLoaded", function () {
-  var t = parseFloat(new URLSearchParams(location.search).get("t") || "0");
-  if (!isNaN(t)) {
-    // Double-seek after a tick so begin= / freeze states resolve reliably.
-    window.__seek(t);
-    requestAnimationFrame(function () { window.__seek(t); });
-  }
-});
-</script>
-</head><body>$(body)</body></html>
-"""
+function html_wrap(body, w, h; transparent::Bool = false)
+    bg = transparent ? "transparent" : "#fff"
+    return """<!DOCTYPE html><html><head><meta charset="utf-8"/>
+    <style>html,body{margin:0;width:$(w)px;height:$(h)px;overflow:hidden;background:$(bg)}</style>
+    <script>
+    window.__seek = function (t) {
+      document.querySelectorAll("svg").forEach(function (s) {
+        // Seek then pause — pause-first can leave SMIL on a stale frame in headless Chrome.
+        if (s.unpauseAnimations) s.unpauseAnimations();
+        if (s.setCurrentTime) s.setCurrentTime(t);
+        if (s.pauseAnimations) s.pauseAnimations();
+      });
+    };
+    window.addEventListener("DOMContentLoaded", function () {
+      var t = parseFloat(new URLSearchParams(location.search).get("t") || "0");
+      if (!isNaN(t)) {
+        // Double-seek after a tick so begin= / freeze states resolve reliably.
+        window.__seek(t);
+        requestAnimationFrame(function () { window.__seek(t); });
+      }
+    });
+    </script>
+    </head><body>$(body)</body></html>
+    """
+end
 
 function which_bin(names)
     for name in names
@@ -746,11 +749,13 @@ function chrome_screenshot(
         h::Int,
         t_s::Float64 = 0.0,
         scale::Int = 1,
+        transparent::Bool = false,
     )
     chrome = find_chrome()
     chrome === nothing && return false
     out_abs = abspath(out_png)
     html_uri = "file://" * abspath(html_path) * "?t=" * string(t_s)
+    page_bg = transparent ? "00000000" : "ffffffff"
 
     for attempt in 1:3
         isfile(out_abs) && rm(out_abs)
@@ -763,7 +768,7 @@ function chrome_screenshot(
             "--hide-scrollbars",
             "--force-device-scale-factor=$(scale)",
             "--window-size=$(w),$(h)",
-            "--default-background-color=ffffffff",
+            "--default-background-color=$(page_bg)",
             "--user-data-dir=$(udir)",
             "--virtual-time-budget=1500",
             "--screenshot=$(out_abs)",
@@ -838,6 +843,7 @@ function bake_static_png!(
         h::Int,
         scale::Int = PNG_SCALE,
         exact_size::Bool = false,
+        transparent::Bool = false,
     )
     out_path = joinpath(ROOT, out_rel)
     svg_path = joinpath(ROOT, svg_rel)
@@ -845,11 +851,11 @@ function bake_static_png!(
         return true
     end
 
-    html = html_wrap(html_body, w, h)
+    html = html_wrap(html_body, w, h; transparent = transparent)
     html_path = joinpath(tempdir(), "distsshkit-$(replace(out_rel, "/" => "-")).html")
     write(html_path, html)
     if scale <= 1
-        if chrome_screenshot(html_path, out_path; w = w, h = h, scale = 1)
+        if chrome_screenshot(html_path, out_path; w = w, h = h, scale = 1, transparent = transparent)
             if exact_size && !png_matches_size(out_path, w, h)
                 rm(out_path; force = true)
                 println(stderr, "error: chromium wrote wrong size for $out_rel (want $(w)×$(h))")
@@ -862,7 +868,7 @@ function bake_static_png!(
     end
 
     hi = joinpath(tempdir(), "distsshkit-$(replace(out_rel, "/" => "-"))-$(scale)x.png")
-    if !chrome_screenshot(html_path, hi; w = w, h = h, scale = scale)
+    if !chrome_screenshot(html_path, hi; w = w, h = h, scale = scale, transparent = transparent)
         return false
     end
     if downscale_png!(hi, out_path; w = w, h = h)
@@ -935,6 +941,7 @@ function bake_pngs!(arts)
         h = README_H,
         scale = PNG_SCALE,
         exact_size = true,
+        transparent = true,
     ) || die("readme-dark-static.png (need rsvg-convert or Chromium, plus sips/ffmpeg to keep $(README_W)×$(README_H))")
 
     bake_favicon!(arts) || die("$FAVICON (need rsvg-convert or Chromium)")
