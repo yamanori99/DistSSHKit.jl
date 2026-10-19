@@ -1,6 +1,6 @@
 # Compile bench
 
-The charts are on [bench.html](https://cdn.jsdelivr.net/gh/yamanori99/DistSSHKit.jl@bench-data/bench.html).
+The charts are on [bench.html](https://yamanori99.github.io/DistSSHKit.jl/bench.html).
 
 Precompile time, load time, CLI wall time, `src/**/*.jl` size, and the host
 (OS name, arch, CPU). `code lines` skips blank lines. A row is flagged when,
