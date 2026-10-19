@@ -47,26 +47,23 @@
                 return p.exitcode, read(out_path, String), read(err_path, String)
             end
         end
-        if inst_code != 0
-            @info "Pkg.instantiate failed" stdout = inst_out stderr = inst_err
-            @test false
-        else
-            cases = [
-                (String[], 1),
-                (["--version"], 0),
-                (["-h"], 0),
-                (["bogus"], 1),
-                (["x.jl"], 1),
-                (["drive", "-h"], 0),
-                (["submit", "-h"], 0),
-            ]
-            for (args, want) in cases
-                code, out, err = _kit_proc(julia, app, child_env, args)
-                @test code == want
-                if args == ["drive", "-h"]
-                    @test occursin("DistSSHKit drive", out)
-                    @test !occursin("Package DistSSHRun not found", err)
-                end
+        inst_code == 0 || @info "Pkg.instantiate failed" stdout = inst_out stderr = inst_err
+        @test inst_code == 0
+        cases = [
+            (String[], 1),
+            (["--version"], 0),
+            (["-h"], 0),
+            (["bogus"], 1),
+            (["x.jl"], 1),
+            (["drive", "-h"], 0),
+            (["submit", "-h"], 0),
+        ]
+        for (args, want) in cases
+            code, out, err = _kit_proc(julia, app, child_env, args)
+            @test code == want
+            if args == ["drive", "-h"]
+                @test occursin("DistSSHKit drive", out)
+                @test !occursin("Package DistSSHRun not found", err)
             end
         end
     end
