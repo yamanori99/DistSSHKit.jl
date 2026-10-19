@@ -74,6 +74,7 @@ jobs:
           fail_if_stale favicon.png .raster-stamp-png favicon.svg bake.jl
           fail_if_stale favicon-dark.png .raster-stamp-png favicon-dark.svg bake.jl
           fail_if_stale social/social-preview-static.png .raster-stamp-png logo/logo-static.svg bake.jl
+          fail_if_stale social/readme-static.png .raster-stamp-png social/readme-static.svg bake.jl
           fail_if_stale diagram/topology.png .raster-stamp-png diagram/topology.svg bake.jl
           fail_if_stale logo/logo-dynamic.gif .raster-stamp-gif logo/logo-dynamic.svg bake.jl
           fail_if_stale social/social-preview-dynamic.gif .raster-stamp-gif logo/logo-dynamic.svg bake.jl

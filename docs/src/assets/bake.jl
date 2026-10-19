@@ -53,6 +53,10 @@ const TAGLINE_Y2 = TAGLINE_Y1 + 38
 const FONT = "'Helvetica Neue', Helvetica, Arial, sans-serif"
 const TITLE_SIZE = 76
 const TAGLINE_SIZE = 28
+# README banner: same lockup as the social card, with the vertical pad tightened.
+const README_PAD_Y = 40
+const README_W = SOCIAL_W
+const README_H = MARK_SIZE + 2 * README_PAD_Y
 
 const STORY_S = 5.2  # fan open, lamps, close
 const DELAY_MS = 40
@@ -364,17 +368,19 @@ function topology_text(x, y, label, fill; size = 13, weight = 400, anchor = "sta
 end
 
 function topology_svg(; dark::Bool = false)
-    ink = dark ? "#f5f7fa" : "#121419"
-    sub = dark ? "#a3a9b0" : "#5b6068"
-    mstroke = dark ? "#3a3542" : "#d9d2e2"
+    # Slate blue, separate from the purple mark.
+    ink = dark ? "#f8fafc" : "#0f172a"
+    sub = dark ? "#cbd5e1" : "#475569"
+    mstroke = dark ? "#64748b" : "#94a3b8"
     pop = dark ? 0.16 : 0.06
-    wfill = dark ? "#c9a8e3" : ACCENT
+    accent = dark ? "#3b82f6" : "#1e40af"
+    wfill = dark ? "#93c5fd" : accent
     wop = dark ? 0.18 : 0.16
-    wstroke = dark ? "#d9c2ec" : ACCENT
+    wstroke = dark ? "#bfdbfe" : accent
     wsop = dark ? 0.45 : 0.3
-    line = dark ? "#c9a8e3" : ACCENT
+    line = dark ? "#93c5fd" : accent
     lop = dark ? 0.6 : 0.55
-    more = dark ? "#4a4552" : "#c9c3d1"
+    more = dark ? "#475569" : "#cbd5e1"
     lines = String["<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 560 236\" width=\"560\" height=\"236\">"]
     kids = [(24, "child 1"), (190, "child 2"), (380, "child n")]
     for (x, _) in kids
@@ -406,10 +412,10 @@ function topology_svg(; dark::Bool = false)
     push!(lines, topology_text(358, 66, "…", sub; size = 20, anchor = "middle"))
     push!(
         lines,
-        "  <rect x=\"124\" y=\"122\" width=\"312\" height=\"96\" rx=\"12\" fill=\"$ACCENT\" fill-opacity=\"$pop\" stroke=\"$mstroke\" stroke-width=\"1.5\"/>",
+        "  <rect x=\"124\" y=\"122\" width=\"312\" height=\"96\" rx=\"12\" fill=\"$accent\" fill-opacity=\"$pop\" stroke=\"$mstroke\" stroke-width=\"1.5\"/>",
     )
     push!(lines, topology_text(138, 144, "parent", ink; size = 14, weight = 600))
-    push!(lines, "  <rect x=\"140\" y=\"164\" width=\"120\" height=\"36\" rx=\"8\" fill=\"$ACCENT\"/>")
+    push!(lines, "  <rect x=\"140\" y=\"164\" width=\"120\" height=\"36\" rx=\"8\" fill=\"$accent\"/>")
     push!(lines, topology_text(200, 187, "Master", "#ffffff"; size = 14, weight = 600, anchor = "middle"))
     chip(276, 164, 144, "Worker × 0..n")
     push!(lines, "</svg>")
@@ -448,21 +454,54 @@ function with_svg_size(svg::AbstractString, w::Int, h::Int)
     return replace(s, "<svg " => "<svg width=\"$w\" height=\"$h\" ", count = 1)
 end
 
-function build_social(logo_text::AbstractString, kind::AbstractString)
+function build_lockup(
+        logo_text::AbstractString,
+        kind::AbstractString;
+        width::Int,
+        height::Int,
+        mark_y::Int,
+        note::AbstractString,
+    )
     inner = svg_inner(logo_text)
     src = kind == "static" ? logo_path("logo-static.svg") : logo_path("logo-dynamic.svg")
+    text_top = mark_y + (MARK_SIZE - TEXT_BLOCK_H) ÷ 2
+    title_y = text_top + 40
+    tagline_y1 = title_y + 64
+    tagline_y2 = tagline_y1 + 38
     return """<?xml version="1.0" encoding="UTF-8"?>
-    <svg xmlns="http://www.w3.org/2000/svg" width="$(SOCIAL_W)" height="$(SOCIAL_H)" viewBox="0 0 $(SOCIAL_W) $(SOCIAL_H)">
-      <!-- social-preview-$(kind): 1280×640; safe $(SAFE_X)×$(SAFE_Y); mark | title lockup; from $(src) -->
-      <rect width="$(SOCIAL_W)" height="$(SOCIAL_H)" fill="#ffffff"/>
-      <svg x="$(MARK_X)" y="$(MARK_Y)" width="$(MARK_SIZE)" height="$(MARK_SIZE)" viewBox="$(LOGO_VIEWBOX)">
+    <svg xmlns="http://www.w3.org/2000/svg" width="$(width)" height="$(height)" viewBox="0 0 $(width) $(height)">
+      <!-- $(note); from $(src) -->
+      <rect width="$(width)" height="$(height)" fill="#ffffff"/>
+      <svg x="$(MARK_X)" y="$(mark_y)" width="$(MARK_SIZE)" height="$(MARK_SIZE)" viewBox="$(LOGO_VIEWBOX)">
     $(inner)
       </svg>
-      <text x="$(TEXT_X)" y="$(TITLE_Y)" dominant-baseline="middle" fill="#0f172a" font-family="$(FONT)" font-size="$(TITLE_SIZE)" font-weight="800">DistSSH<tspan fill="#9558b2">Kit</tspan>.jl</text>
-      <text x="$(TEXT_X)" y="$(TAGLINE_Y1)" dominant-baseline="middle" fill="#475569" font-family="$(FONT)" font-size="$(TAGLINE_SIZE)" font-weight="500">$(TAGLINE_1)</text>
-      <text x="$(TEXT_X)" y="$(TAGLINE_Y2)" dominant-baseline="middle" fill="#475569" font-family="$(FONT)" font-size="$(TAGLINE_SIZE)" font-weight="500">$(TAGLINE_2)</text>
+      <text x="$(TEXT_X)" y="$(title_y)" dominant-baseline="middle" fill="#0f172a" font-family="$(FONT)" font-size="$(TITLE_SIZE)" font-weight="800">DistSSH<tspan fill="#9558b2">Kit</tspan>.jl</text>
+      <text x="$(TEXT_X)" y="$(tagline_y1)" dominant-baseline="middle" fill="#475569" font-family="$(FONT)" font-size="$(TAGLINE_SIZE)" font-weight="500">$(TAGLINE_1)</text>
+      <text x="$(TEXT_X)" y="$(tagline_y2)" dominant-baseline="middle" fill="#475569" font-family="$(FONT)" font-size="$(TAGLINE_SIZE)" font-weight="500">$(TAGLINE_2)</text>
     </svg>
     """
+end
+
+function build_social(logo_text::AbstractString, kind::AbstractString)
+    return build_lockup(
+        logo_text,
+        kind;
+        width = SOCIAL_W,
+        height = SOCIAL_H,
+        mark_y = MARK_Y,
+        note = "social-preview-$kind: $(SOCIAL_W)×$(SOCIAL_H); safe $(SAFE_X)×$(SAFE_Y); mark | title lockup",
+    )
+end
+
+function build_readme(logo_text::AbstractString)
+    return build_lockup(
+        logo_text,
+        "static";
+        width = README_W,
+        height = README_H,
+        mark_y = README_PAD_Y,
+        note = "readme-static: $(README_W)×$(README_H); pad $(README_PAD_Y); mark | title lockup",
+    )
 end
 
 html_wrap(body, w, h) = """<!DOCTYPE html><html><head><meta charset="utf-8"/>
@@ -579,8 +618,10 @@ function bake_svgs!()
 
     social_static = build_social(logo_static, "static")
     social_dynamic = build_social(logo, "dynamic")
+    readme_static = build_readme(logo_static)
     writefile(social_path("social-preview-static.svg"), social_static)
     writefile(social_path("social-preview-dynamic.svg"), social_dynamic)
+    writefile(social_path("readme-static.svg"), readme_static)
 
     topology = topology_svg(dark = false)
     topology_dark_svg = topology_svg(dark = true)
@@ -596,6 +637,7 @@ function bake_svgs!()
         logo_static,
         social_static,
         social_dynamic,
+        readme_static,
         topology,
         topology_dark_svg,
     )
@@ -852,6 +894,19 @@ function bake_pngs!(arts)
         scale = PNG_SCALE,
         exact_size = true,
     ) || die("social-preview-static.png (need rsvg-convert or Chromium, plus sips/ffmpeg to keep 1280×640)")
+
+    readme_svg = social_path("readme-static.svg")
+    readme_png = social_path("readme-static.png")
+    readme_html = strip_xml_decl(arts.readme_static)
+    bake_static_png!(
+        readme_svg,
+        readme_png,
+        readme_html;
+        w = README_W,
+        h = README_H,
+        scale = PNG_SCALE,
+        exact_size = true,
+    ) || die("readme-static.png (need rsvg-convert or Chromium, plus sips/ffmpeg to keep $(README_W)×$(README_H))")
 
     bake_favicon!(arts) || die("$FAVICON (need rsvg-convert or Chromium)")
 

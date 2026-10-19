@@ -1,13 +1,11 @@
-<!-- markdownlint-disable MD033 MD013 -->
+<!-- markdownlint-disable MD033 MD013 MD041 -->
 <p align="center">
   <img
-    src="docs/src/assets/social/social-preview-static.png"
+    src="docs/src/assets/social/readme-static.png"
     width="640"
     alt="DistSSHKit">
 </p>
-<!-- markdownlint-enable MD033 MD013 -->
-
-# DistSSHKit.jl
+<!-- markdownlint-enable MD033 MD013 MD041 -->
 
 [English](README.md) · [日本語](README.ja.md)
 
@@ -22,7 +20,8 @@
 [![Discussions](https://img.shields.io/badge/GitHub-Discussions-blueviolet?style=flat-square&logo=github)](https://github.com/yamanori99/DistSSHKit.jl/discussions)
 <!-- markdownlint-enable MD013 -->
 
-DistSSHKit は、複数のマシンへ SSH して Julia の計算を実行するツールキットである。
+## DistSSHKit
+
 ワークステーション 2 台でも、研究室のより多くのマシンでも、同じように使える。
 対応環境は **macOS、Linux、WSL2 Ubuntu** である (ネイティブ Windows は対象外)。
 

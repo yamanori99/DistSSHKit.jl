@@ -1,13 +1,11 @@
-<!-- markdownlint-disable MD033 MD013 -->
+<!-- markdownlint-disable MD033 MD013 MD041 -->
 <p align="center">
   <img
-    src="docs/src/assets/social/social-preview-static.png"
+    src="docs/src/assets/social/readme-static.png"
     width="640"
     alt="DistSSHKit">
 </p>
-<!-- markdownlint-enable MD033 MD013 -->
-
-# DistSSHKit.jl
+<!-- markdownlint-enable MD033 MD013 MD041 -->
 
 [English](README.md) | [日本語](README.ja.md)
 
@@ -22,10 +20,11 @@
 [![Discussions](https://img.shields.io/badge/GitHub-Discussions-blueviolet?style=flat-square&logo=github)](https://github.com/yamanori99/DistSSHKit.jl/discussions)
 <!-- markdownlint-enable MD013 -->
 
-DistSSHKit is a toolkit for running Julia computations across multiple
-machines over SSH. It works equally well for a pair of workstations and
-for a larger set of lab machines. Supported platforms are **macOS, Linux,
-and WSL2 Ubuntu** (native Windows is not supported).
+## DistSSHKit
+
+A pair of workstations and a larger set of lab machines work the same way.
+Supported platforms are **macOS, Linux, and WSL2 Ubuntu** (native Windows
+is not supported).
 
 A single `pkg> add DistSSHKit` is all you need to install it. The command is
 `julia -m DistSSHKit`. DistSSHKit bundles DistSSHRun and DistSSHQueue.

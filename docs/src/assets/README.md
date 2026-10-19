@@ -26,16 +26,20 @@ Naming: **`static`** = end-state still; **`dynamic`** = SMIL / GIF motion.
   `logo/logo-dark-static.svg`
 - Social preview: dynamic `social/social-preview-dynamic.svg`, `.gif`;
   static `social/social-preview-static.svg`, `.png`
+- README banner: static `social/readme-static.svg`, `.png` (same lockup,
+  shorter canvas)
 
 If a dark SVG gains an `id`, prefix that `id` / `href="#…"` / `url(#…)`
 with `dark-` so light and dark copies can sit in one HTML document.
 
-GitHub README / README.ja put `social/social-preview-static.png` above
-the title, and use `<picture>` plus `prefers-color-scheme` for the
-topology diagram. Paths are relative to the README, so a branch shows
-that branch's files. Dark / light `source` are the transparent SVGs.
-The fallback `img` is `topology.png` (paper background). JuliaHub strips
-or ignores `<picture>` / `prefers-color-scheme`.
+GitHub README / README.ja put `social/readme-static.png` above the
+title. That banner is the social lockup with the vertical pad tightened
+(`README_PAD_Y`). The 1280×640 social preview stays the GitHub Settings
+upload. The topology diagram uses `<picture>` plus
+`prefers-color-scheme`. Paths are relative to the README, so a branch
+shows that branch's files. Dark / light `source` are the transparent
+SVGs. The fallback `img` is `topology.png` (paper background). JuliaHub
+strips or ignores `<picture>` / `prefers-color-scheme`.
 
 Documenter discovers bare `logo.svg` / `logo-dark.svg` at this
 directory's top level only.
@@ -52,8 +56,9 @@ julia docs/src/assets/bake.jl --png --gif  # + GIF (Chromium + ffmpeg)
 ```
 
 - default: Julia
-- `--png`: `rsvg-convert` or Chrome; sizes: social 1280×640, logo 960×960,
-  topology 1120×472, `favicon.ico` 16 (XS) + 32 (S) + 48 (M)
+- `--png`: `rsvg-convert` or Chrome; sizes: social 1280×640, README banner
+  1280×420, logo 960×960, topology 1120×472, `favicon.ico` 16 (XS) + 32
+  (S) + 48 (M)
 - `--gif`: Chrome / Chromium (4 parallel workers) + `ffmpeg`
 
 CI (`.github/workflows/assets-bake.yml`) re-runs the default bake when
@@ -73,6 +78,8 @@ the fan closes.
 - Social SVG and PNG **1280×640** (GitHub Social preview); fill most of a
   ~**960×480** zone (soft ≈100×60 inset); kit lockup (mark | title +
   tagline)
+- README banner **1280×420**: the same lockup, 40px above and below the
+  mark
 - Nested logo `viewBox="0 0 128 128"`; static/dynamic social share chrome
 - Upload `social/social-preview-static.png` under GitHub → Settings →
   Social preview
