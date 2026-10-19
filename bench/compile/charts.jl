@@ -222,7 +222,7 @@ const RANGES = [
   ["2y", 730],
   ["all", null]
 ];
-const NOT_JULIA = new Set(["", "Main", "stdlib", "other", "DistSSHKit", "DistSSHRun", "DistSSHQueue"]);
+const PACKAGE = new Set(["DistSSHKit", "DistSSHRun", "DistSSHQueue"]);
 const state = { slot: "", range: "all", n: 8, cmd: "", drag: null };
 
 function slotData() {
@@ -484,7 +484,7 @@ function drawMethods(samples) {
   });
   rows.forEach((item) => {
     const row = document.createElement("tr");
-    if (!NOT_JULIA.has(item.method.owner)) row.dataset.julia = "1";
+    if (PACKAGE.has(item.method.owner)) row.dataset.package = "1";
     [item.nowRank, item.prevRank, item.change, item.method.owner, item.method.short, item.ms === "" ? "" : Math.round(item.ms), item.delta === "" ? "" : Math.round(item.delta)].forEach((cell) => {
       const td = document.createElement("td");
       td.textContent = cell;
@@ -616,7 +616,7 @@ function bench_html(groups)::String
     .key span { overflow-wrap: anywhere; }
     table { border-collapse: collapse; margin: 12px 0 24px; width: 100%; table-layout: fixed; }
     td, th { border: 1px solid #cbd5e1; padding: 4px 8px; text-align: left; overflow-wrap: anywhere; }
-    tr[data-julia="1"] { background: #f3e8ff; }
+    tr[data-package="1"] { background: #f3e8ff; }
     #range-row, #method-row { margin: 8px 0 16px; }
     </style>
     </head>
