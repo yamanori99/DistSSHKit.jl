@@ -30,12 +30,12 @@ Naming: **`static`** = end-state still; **`dynamic`** = SMIL / GIF motion.
 If a dark SVG gains an `id`, prefix that `id` / `href="#…"` / `url(#…)`
 with `dark-` so light and dark copies can sit in one HTML document.
 
-GitHub README / README.ja use `<picture>` plus `prefers-color-scheme`
-for the topology diagram and the mark above the title. Dark / light
-`source` are the transparent SVGs. The fallback `img` is `topology.png` /
-`logo-static.png` (paper background). JuliaHub strips or ignores
-`<picture>` / `prefers-color-scheme` (a transparent light SVG vanishes
-on a dark page). Absolute
+GitHub README / README.ja put `social/social-preview-static.png` above
+the title, and use `<picture>` plus `prefers-color-scheme` for the
+topology diagram. Dark / light `source` are the transparent SVGs. The
+fallback `img` is `topology.png` (paper background). JuliaHub strips or
+ignores `<picture>` / `prefers-color-scheme` (a transparent light SVG
+vanishes on a dark page). Absolute
 `raw.githubusercontent.com/…/main/docs/src/assets/…` so the files load.
 
 Documenter discovers bare `logo.svg` / `logo-dark.svg` at this

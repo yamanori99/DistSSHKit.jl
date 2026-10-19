@@ -1,17 +1,9 @@
 <!-- markdownlint-disable MD033 MD013 -->
 <p align="center">
-  <picture>
-    <source
-      media="(prefers-color-scheme: dark)"
-      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/logo/logo-dark-static.svg">
-    <source
-      media="(prefers-color-scheme: light)"
-      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/logo/logo-static.svg">
-    <img
-      src="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/logo/logo-static.png"
-      width="128"
-      alt="DistSSHKit">
-  </picture>
+  <img
+    src="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/social/social-preview-static.png"
+    width="640"
+    alt="DistSSHKit">
 </p>
 <!-- markdownlint-enable MD033 MD013 -->
 
