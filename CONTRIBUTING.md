@@ -152,6 +152,10 @@ in `Project.toml`). macOS (`macos-latest`) and WSL2 Ubuntu 24.04:
 `Pkg.test` 1.13, same heavy gate, no coverage upload. Both are required.
 Documenter 1.13 is
 [`.github/workflows/Documentation.yml`](.github/workflows/Documentation.yml).
+A pull request that runs it also pushes a preview to `gh-pages` at
+`previews/PR<n>`. The commit status `documenter/deploy` links to
+`https://yamanori99.github.io/DistSSHKit.jl/previews/PR<n>/`.
+That directory stays after the pull request closes.
 Ubuntu tip `Pkg.test` / Aqua stay on **main**, **CI weekly**, and a
 version-cut PR. macOS and WSL2 tip stay on **CI weekly** only. Registry
 tree stays on **main** and a

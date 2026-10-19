@@ -211,11 +211,12 @@ end
 rewrite_favicon_types!(joinpath(@__DIR__, "build"))
 unlink_sidebar_brand!(joinpath(@__DIR__, "build"))
 
-if get(ENV, "GITHUB_EVENT_NAME", "") != "pull_request"
-    deploydocs(;
-        repo = "github.com/yamanori99/DistSSHKit.jl.git",
-        devbranch = "main",
-        # stable = latest tagged release; appears after the first v* tag.
-        versions = ["stable" => "v^", "v#.#", "dev" => "dev"],
-    )
-end
+# A pull request from this repository deploys previews/PR<n>.
+# A local run has no token, so deploydocs records the criteria and skips.
+deploydocs(;
+    repo = "github.com/yamanori99/DistSSHKit.jl.git",
+    devbranch = "main",
+    push_preview = true,
+    # stable = latest tagged release; appears after the first v* tag.
+    versions = ["stable" => "v^", "v#.#", "dev" => "dev"],
+)
