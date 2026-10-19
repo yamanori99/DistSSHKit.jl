@@ -61,7 +61,8 @@ julia docs/src/assets/bake.jl --png --gif  # + GIF (Chromium + ffmpeg)
 - default: Julia
 - `--png`: `rsvg-convert` or Chrome; sizes: social 1280×640, README banner
   1280×420 (light and dark), logo 960×960, topology 1120×472,
-  `favicon.ico` 16 (XS) + 32 (S) + 48 (M)
+  `favicon.ico` 16 (XS) + 32 (S) + 48 (M). The tab mark fills 124 of
+  the 128 square; the lockup mark stays at 108
 - `--gif`: Chrome / Chromium (4 parallel workers) + `ffmpeg`
 
 CI (`.github/workflows/assets-bake.yml`) re-runs the default bake when
@@ -71,10 +72,11 @@ raster, or `.raster-stamp-png` / `.raster-stamp-gif` after a complete
 `--png` / `--gif`). Bake `--png` / `--gif` locally before committing
 rasters (CI does not render them).
 
-## Motion (5.2s)
+## Motion (7.8s)
 
 The fan opens, a point travels to each child lamp, the lamps light, then
-the fan closes.
+the fan closes. That cycle always plays once. It opens again and stops
+when the pose matches the static logo: fan open, lamps lit, points gone.
 
 ## Layout notes
 

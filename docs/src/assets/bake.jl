@@ -58,7 +58,10 @@ const README_PAD_Y = 40
 const README_W = SOCIAL_W
 const README_H = MARK_SIZE + 2 * README_PAD_Y
 
-const STORY_S = 5.2  # fan open, lamps, close
+# One open–close, then a second open that freezes on the static pose.
+const CYCLE_S = 5.2
+const SETTLE_U = 0.5 # lamps full, points gone; fan has been open since 0.28
+const STORY_S = CYCLE_S * (1 + SETTLE_U)
 const DELAY_MS = 40
 # Parallel Chrome workers for GIF frames (each frame is one headless launch).
 const GIF_WORKERS = 4
@@ -73,6 +76,9 @@ const FAVICON = "favicon.ico"
 const FAVICON_SVG = "favicon.svg"
 const FAVICON_DARK_SVG = "favicon-dark.svg"
 const FAVICON_PX = (16, 32, 48)
+# Lockup mark stays LOGO_SPAN. The tab icon has no title beside it, so the
+# fan uses more of the square. 124 still fits the card corners in 128.
+const FAVICON_SPAN = 124.0
 
 die(msg) = (println(stderr, "error: ", msg); exit(1))
 
@@ -257,17 +263,23 @@ function write_bmp_ico!(dest::AbstractString, pngs::Vector{Pair{Int, String}})
 end
 
 const CARD = 70.0
+const LOGO_SPAN = 108.0
 const CARD_R = 13
 const LAMP_C = (15.0, 15.0)
 const PIVOT = (0.0, 70.0)
 const ACCENT = "#9558b2"
-const LOGO_DUR = "5.2s"
-const OPEN_KT = "0;0.1;0.28;0.76;0.94;1"
+const OPEN_KT = [0.0, 0.1, 0.28, 0.76, 0.94, 1.0]
 const OPEN_KS = "0 0 1 1;.65 0 .25 1;0 0 1 1;.65 0 .25 1;0 0 1 1"
-const LAMP_KT = "0;0.44;0.5;0.7;0.76;1"
-const DOT_KT = "0;0.3;0.45;1"
+const LAMP_KT = [0.0, 0.44, 0.5, 0.7, 0.76, 1.0]
+const DOT_KT = [0.0, 0.3, 0.45, 1.0]
 const DOT_KS = "0 0 1 1;.45 0 .2 1;0 0 1 1"
-const DOT_OP_KT = "0;0.299;0.3;0.45;0.49;1"
+const DOT_OP_KT = [0.0, 0.299, 0.3, 0.45, 0.49, 1.0]
+const OPEN_SETTLE_U = [0.1, 0.28, SETTLE_U]
+const OPEN_SETTLE_KS = "0 0 1 1;.65 0 .25 1;0 0 1 1"
+const LAMP_SETTLE_U = [0.44, SETTLE_U]
+const DOT_SETTLE_U = [0.3, 0.45, SETTLE_U]
+const DOT_SETTLE_KS = "0 0 1 1;.45 0 .2 1;0 0 1 1"
+const DOT_OP_SETTLE_U = [0.299, 0.3, 0.45, 0.49, SETTLE_U]
 
 const LOGO_VARIANTS = Dict(
     :L => (angles = [-15, -30, -45], op = (0.27, 0.21), lamp = 4.5, child_lamps = true, edge = true),
@@ -276,11 +288,45 @@ const LOGO_VARIANTS = Dict(
     :XS => (angles = [-30], op = (0.44, 0.34), lamp = 8.0, child_lamps = false, edge = false),
 )
 
+function key_join(xs)
+    parts = String[]
+    for (i, x) in pairs(xs)
+        if i > 1 && x <= xs[i - 1]
+            die("story keyTimes must increase ($(xs[i - 1]) then $x)")
+        end
+        if i == length(xs) && isapprox(x, 1; atol = 1.0e-9)
+            push!(parts, "1")
+        elseif isapprox(x, 0; atol = 1.0e-9)
+            push!(parts, "0")
+        else
+            push!(parts, rstrip(rstrip(@sprintf("%.6f", x), '0'), '.'))
+        end
+    end
+    return join(parts, ";")
+end
+
+function story_keytimes(cycle_times, settle_times)
+    scale = 1 / (1 + SETTLE_U)
+    xs = Float64[u * scale for u in cycle_times]
+    for u in settle_times
+        push!(xs, (1 + u) * scale)
+    end
+    return key_join(xs)
+end
+
 function num_str(x; digits::Int = 2)
     s = digits == 4 ? @sprintf("%.4f", x) : @sprintf("%.2f", x)
     s = rstrip(rstrip(s, '0'), '.')
     return s in ("", "-0") ? "0" : s
 end
+
+const LOGO_DUR = string(num_str(STORY_S), "s")
+const STORY_OPEN_KT = story_keytimes(OPEN_KT, OPEN_SETTLE_U)
+const STORY_LAMP_KT = story_keytimes(LAMP_KT, LAMP_SETTLE_U)
+const STORY_DOT_KT = story_keytimes(DOT_KT, DOT_SETTLE_U)
+const STORY_DOT_OP_KT = story_keytimes(DOT_OP_KT, DOT_OP_SETTLE_U)
+const STORY_OPEN_KS = OPEN_KS * ";" * OPEN_SETTLE_KS
+const STORY_DOT_KS = DOT_KS * ";" * DOT_SETTLE_KS
 
 function rot_pt(p, angle; pivot = PIVOT)
     t = deg2rad(angle)
@@ -291,20 +337,20 @@ function rot_pt(p, angle; pivot = PIVOT)
     )
 end
 
-function logo_placement(angles)
+function logo_placement(angles; span = LOGO_SPAN)
     pts = [rot_pt(p, a) for a in [0; angles] for p in ((0.0, 0.0), (CARD, 0.0), (CARD, CARD), (0.0, CARD))]
     xs = first.(pts)
     ys = last.(pts)
     x0, y0, x1, y1 = minimum(xs), minimum(ys), maximum(xs), maximum(ys)
-    s = 108 / max(x1 - x0, y1 - y0)
+    s = span / max(x1 - x0, y1 - y0)
     cx = 0.6 * (x0 + x1) / 2 + 0.4 * CARD / 2
     cy = 0.6 * (y0 + y1) / 2 + 0.4 * CARD / 2
     return round(s; digits = 4), round(64 - cx * s; digits = 2), round(64 - cy * s; digits = 2)
 end
 
-function logo_svg(; size::Symbol = :L, dark::Bool = false, animated::Bool = false)
+function logo_svg(; size::Symbol = :L, dark::Bool = false, animated::Bool = false, span = LOGO_SPAN)
     variant = LOGO_VARIANTS[size]
-    s, tx, ty = logo_placement(variant.angles)
+    s, tx, ty = logo_placement(variant.angles; span)
     op = dark ? variant.op[2] : variant.op[1]
     child_fill = dark ? "#c9a8e3" : ACCENT
     edge_color = dark ? "#d9c2ec" : ACCENT
@@ -322,10 +368,10 @@ function logo_svg(; size::Symbol = :L, dark::Bool = false, animated::Bool = fals
             ""
         if animated
             push!(lines, "    <g>")
-            vals = "0 0 70;0 0 70;$angle 0 70;$angle 0 70;0 0 70;0 0 70"
+            vals = "0 0 70;0 0 70;$angle 0 70;$angle 0 70;0 0 70;0 0 70;0 0 70;$angle 0 70;$angle 0 70"
             push!(
                 lines,
-                "      <animateTransform attributeName=\"transform\" type=\"rotate\" dur=\"$LOGO_DUR\" repeatCount=\"indefinite\" values=\"$vals\" keyTimes=\"$OPEN_KT\" calcMode=\"spline\" keySplines=\"$OPEN_KS\"/>",
+                "      <animateTransform attributeName=\"transform\" type=\"rotate\" dur=\"$LOGO_DUR\" repeatCount=\"1\" fill=\"freeze\" values=\"$vals\" keyTimes=\"$STORY_OPEN_KT\" calcMode=\"spline\" keySplines=\"$STORY_OPEN_KS\"/>",
             )
         else
             push!(lines, "    <g transform=\"rotate($angle 0 70)\">")
@@ -338,7 +384,7 @@ function logo_svg(; size::Symbol = :L, dark::Bool = false, animated::Bool = fals
             if animated
                 push!(
                     lines,
-                    "      <circle cx=\"15\" cy=\"15\" r=\"$(num_str(lr))\" fill=\"$child_lamp\" opacity=\"0.18\"><animate attributeName=\"opacity\" dur=\"$LOGO_DUR\" repeatCount=\"indefinite\" values=\"0.18;0.18;1;1;0.18;0.18\" keyTimes=\"$LAMP_KT\"/></circle>",
+                    "      <circle cx=\"15\" cy=\"15\" r=\"$(num_str(lr))\" fill=\"$child_lamp\" opacity=\"0.18\"><animate attributeName=\"opacity\" dur=\"$LOGO_DUR\" repeatCount=\"1\" fill=\"freeze\" values=\"0.18;0.18;1;1;0.18;0.18;0.18;1\" keyTimes=\"$STORY_LAMP_KT\"/></circle>",
                 )
             else
                 push!(lines, "      <circle cx=\"15\" cy=\"15\" r=\"$(num_str(lr))\" fill=\"$child_lamp\"/>")
@@ -354,7 +400,7 @@ function logo_svg(; size::Symbol = :L, dark::Bool = false, animated::Bool = fals
             dx, dy = x - LAMP_C[1], y - LAMP_C[2]
             push!(
                 lines,
-                "    <circle cx=\"15\" cy=\"15\" r=\"3\" fill=\"#ffffff\" opacity=\"0\"><animateMotion dur=\"$LOGO_DUR\" repeatCount=\"indefinite\" path=\"M0 0L$(num_str(dx)) $(num_str(dy))\" keyPoints=\"0;0;1;1\" keyTimes=\"$DOT_KT\" calcMode=\"spline\" keySplines=\"$DOT_KS\"/><animate attributeName=\"opacity\" dur=\"$LOGO_DUR\" repeatCount=\"indefinite\" values=\"0;0;1;1;0;0\" keyTimes=\"$DOT_OP_KT\"/></circle>",
+                "    <circle cx=\"15\" cy=\"15\" r=\"3\" fill=\"#ffffff\" opacity=\"0\"><animateMotion dur=\"$LOGO_DUR\" repeatCount=\"1\" fill=\"freeze\" path=\"M0 0L$(num_str(dx)) $(num_str(dy))\" keyPoints=\"0;0;1;1;0;1;1\" keyTimes=\"$STORY_DOT_KT\" calcMode=\"spline\" keySplines=\"$STORY_DOT_KS\"/><animate attributeName=\"opacity\" dur=\"$LOGO_DUR\" repeatCount=\"1\" fill=\"freeze\" values=\"0;0;1;1;0;0;0;1;1;0;0\" keyTimes=\"$STORY_DOT_OP_KT\"/></circle>",
             )
         end
     end
@@ -645,8 +691,8 @@ function bake_svgs!()
     topology_dark_svg = topology_svg(dark = true)
     writefile(diagram_path("topology.svg"), topology)
     writefile(diagram_path("topology-dark.svg"), topology_dark_svg)
-    writefile(FAVICON_SVG, logo_svg(size = :S, dark = false))
-    writefile(FAVICON_DARK_SVG, logo_svg(size = :S, dark = true))
+    writefile(FAVICON_SVG, logo_svg(size = :S, dark = false; span = FAVICON_SPAN))
+    writefile(FAVICON_DARK_SVG, logo_svg(size = :S, dark = true; span = FAVICON_SPAN))
     ensure_docroot_link!(FAVICON_SVG)
     ensure_docroot_link!(FAVICON_DARK_SVG)
 
@@ -969,15 +1015,15 @@ end
 
 function bake_favicon!(_arts)
     ico_path = joinpath(ROOT, FAVICON)
-    writefile(FAVICON_SVG, logo_svg(size = :S, dark = false))
-    writefile(FAVICON_DARK_SVG, logo_svg(size = :S, dark = true))
+    writefile(FAVICON_SVG, logo_svg(size = :S, dark = false; span = FAVICON_SPAN))
+    writefile(FAVICON_DARK_SVG, logo_svg(size = :S, dark = true; span = FAVICON_SPAN))
     ensure_docroot_link!(FAVICON_SVG)
     ensure_docroot_link!(FAVICON_DARK_SVG)
     d = mktempdir(ROOT; prefix = ".favicon-")
     try
         function raster_mark(pngs, px, size::Symbol, dark::Bool)
             svg = joinpath(d, "$(dark ? "dark" : "light")-$px.svg")
-            write(svg, logo_svg(size = size, dark = dark))
+            write(svg, logo_svg(size = size, dark = dark; span = FAVICON_SPAN))
             src = joinpath(d, "$(dark ? "dark" : "light")-$px.png")
             body = with_svg_size(read(svg, String), px, px)
             if !bake_static_png!(
@@ -1045,7 +1091,7 @@ function bake_gif_from_html!(html::AbstractString, out_gif::AbstractString; w::I
         isfile("/opt/homebrew/bin/ffmpeg") || isfile("/usr/local/bin/ffmpeg")
     ffmpeg_ok || die("ffmpeg not found (required for --gif)")
 
-    n = round(Int, STORY_S * 1000 / DELAY_MS)
+    n = floor(Int, STORY_S * 1000 / DELAY_MS) + 1
     seq = mktempdir(prefix = "distsshkit-gif-")
     html_path = joinpath(seq, "page.html")
     write(html_path, html)
