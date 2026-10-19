@@ -186,7 +186,30 @@ function rewrite_favicon_types!(build)
     return println("rewrote favicon type on $n HTML pages")
 end
 
+# The sidebar logo and package name are not links. Documenter points both at
+# the first page. A click there leaves the page you were reading.
+function unlink_sidebar_brand!(build)
+    logo = r"""<a (?:class="docs-logo" href="[^"]*"|href="[^"]*" class="docs-logo")>([\s\S]*?)</a>"""
+    name = r"""(<div class="docs-package-name"><span class="docs-autofit">)<a href="[^"]*">([^<]*)</a>"""
+    n = 0
+    for (root, _, files) in walkdir(build)
+        for f in files
+            endswith(f, ".html") || continue
+            path = joinpath(root, f)
+            html = read(path, String)
+            html2 = replace(html, logo => s"""<div class="docs-logo">\1</div>""")
+            html2 = replace(html2, name => s"""\1\2""")
+            if html2 != html
+                write(path, html2)
+                n += 1
+            end
+        end
+    end
+    return println("unlinked sidebar brand on $n HTML pages")
+end
+
 rewrite_favicon_types!(joinpath(@__DIR__, "build"))
+unlink_sidebar_brand!(joinpath(@__DIR__, "build"))
 
 if get(ENV, "GITHUB_EVENT_NAME", "") != "pull_request"
     deploydocs(;

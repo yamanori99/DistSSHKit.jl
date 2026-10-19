@@ -1,9 +1,14 @@
 <!-- markdownlint-disable MD033 MD013 MD041 -->
 <p align="center">
-  <img
-    src="docs/src/assets/social/readme-static.png"
-    width="640"
-    alt="DistSSHKit">
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/social/readme-dark-static.png">
+    <img
+      src="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/social/readme-static.png"
+      width="640"
+      alt="DistSSHKit. A toolkit for running Julia computations across multiple machines over SSH.">
+  </picture>
 </p>
 <!-- markdownlint-enable MD033 MD013 MD041 -->
 
@@ -22,7 +27,9 @@
 
 ## DistSSHKit
 
-A pair of workstations and a larger set of lab machines work the same way.
+DistSSHKit is a toolkit for running Julia computations across multiple
+machines over SSH. A pair of workstations and a larger set of lab machines
+work the same way.
 Supported platforms are **macOS, Linux, and WSL2 Ubuntu** (native Windows
 is not supported).
 
@@ -91,13 +98,13 @@ and you can add as many remote machines as you like.
   <picture>
     <source
       media="(prefers-color-scheme: dark)"
-      srcset="docs/src/assets/diagram/topology-dark.svg">
+      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/diagram/topology-dark.svg">
     <source
       media="(prefers-color-scheme: light)"
-      srcset="docs/src/assets/diagram/topology.svg">
+      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/diagram/topology.svg">
     <img
       alt="Drive topology: master and workers"
-      src="docs/src/assets/diagram/topology.png">
+      src="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/diagram/topology.png">
   </picture>
 </p>
 <!-- markdownlint-enable MD033 MD013 -->

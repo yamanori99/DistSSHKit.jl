@@ -461,23 +461,28 @@ function build_lockup(
         height::Int,
         mark_y::Int,
         note::AbstractString,
+        bg::Union{Nothing, AbstractString} = "#ffffff",
+        title_fill::AbstractString = "#0f172a",
+        kit_fill::AbstractString = "#9558b2",
+        tagline_fill::AbstractString = "#475569",
+        src::Union{Nothing, AbstractString} = nothing,
     )
     inner = svg_inner(logo_text)
-    src = kind == "static" ? logo_path("logo-static.svg") : logo_path("logo-dynamic.svg")
+    src = something(src, kind == "static" ? logo_path("logo-static.svg") : logo_path("logo-dynamic.svg"))
     text_top = mark_y + (MARK_SIZE - TEXT_BLOCK_H) ÷ 2
     title_y = text_top + 40
     tagline_y1 = title_y + 64
     tagline_y2 = tagline_y1 + 38
+    backdrop = bg === nothing ? "" : "\n  <rect width=\"$(width)\" height=\"$(height)\" fill=\"$(bg)\"/>"
     return """<?xml version="1.0" encoding="UTF-8"?>
     <svg xmlns="http://www.w3.org/2000/svg" width="$(width)" height="$(height)" viewBox="0 0 $(width) $(height)">
-      <!-- $(note); from $(src) -->
-      <rect width="$(width)" height="$(height)" fill="#ffffff"/>
+      <!-- $(note); from $(src) -->$(backdrop)
       <svg x="$(MARK_X)" y="$(mark_y)" width="$(MARK_SIZE)" height="$(MARK_SIZE)" viewBox="$(LOGO_VIEWBOX)">
     $(inner)
       </svg>
-      <text x="$(TEXT_X)" y="$(title_y)" dominant-baseline="middle" fill="#0f172a" font-family="$(FONT)" font-size="$(TITLE_SIZE)" font-weight="800">DistSSH<tspan fill="#9558b2">Kit</tspan>.jl</text>
-      <text x="$(TEXT_X)" y="$(tagline_y1)" dominant-baseline="middle" fill="#475569" font-family="$(FONT)" font-size="$(TAGLINE_SIZE)" font-weight="500">$(TAGLINE_1)</text>
-      <text x="$(TEXT_X)" y="$(tagline_y2)" dominant-baseline="middle" fill="#475569" font-family="$(FONT)" font-size="$(TAGLINE_SIZE)" font-weight="500">$(TAGLINE_2)</text>
+      <text x="$(TEXT_X)" y="$(title_y)" dominant-baseline="middle" fill="$(title_fill)" font-family="$(FONT)" font-size="$(TITLE_SIZE)" font-weight="800">DistSSH<tspan fill="$(kit_fill)">Kit</tspan>.jl</text>
+      <text x="$(TEXT_X)" y="$(tagline_y1)" dominant-baseline="middle" fill="$(tagline_fill)" font-family="$(FONT)" font-size="$(TAGLINE_SIZE)" font-weight="500">$(TAGLINE_1)</text>
+      <text x="$(TEXT_X)" y="$(tagline_y2)" dominant-baseline="middle" fill="$(tagline_fill)" font-family="$(FONT)" font-size="$(TAGLINE_SIZE)" font-weight="500">$(TAGLINE_2)</text>
     </svg>
     """
 end
@@ -493,14 +498,21 @@ function build_social(logo_text::AbstractString, kind::AbstractString)
     )
 end
 
-function build_readme(logo_text::AbstractString)
+function build_readme(logo_text::AbstractString; dark::Bool = false)
     return build_lockup(
         logo_text,
         "static";
         width = README_W,
         height = README_H,
         mark_y = README_PAD_Y,
-        note = "readme-static: $(README_W)×$(README_H); pad $(README_PAD_Y); mark | title lockup",
+        note = dark ?
+            "readme-dark-static: $(README_W)×$(README_H); pad $(README_PAD_Y); transparent; mark | title lockup" :
+            "readme-static: $(README_W)×$(README_H); pad $(README_PAD_Y); mark | title lockup",
+        bg = dark ? nothing : "#ffffff",
+        title_fill = dark ? "#f8fafc" : "#0f172a",
+        kit_fill = dark ? "#c9a8e3" : "#9558b2",
+        tagline_fill = dark ? "#cbd5e1" : "#475569",
+        src = dark ? logo_path("logo-dark-static.svg") : nothing,
     )
 end
 
@@ -608,10 +620,11 @@ function bake_svgs!()
 
     logo = logo_svg(size = :L, dark = false, animated = true)
     logo_static = logo_svg(size = :L, dark = false, animated = false)
+    logo_dark_static = logo_svg(size = :L, dark = true, animated = false)
     writefile(logo_path("logo-dynamic.svg"), logo)
     writefile(logo_path("logo-static.svg"), logo_static)
     writefile(logo_path("logo-dark-dynamic.svg"), logo_svg(size = :L, dark = true, animated = true))
-    writefile(logo_path("logo-dark-static.svg"), logo_svg(size = :L, dark = true, animated = false))
+    writefile(logo_path("logo-dark-static.svg"), logo_dark_static)
     # Documenter only discovers logo.svg / logo-dark.svg at assets/ root.
     ensure_symlink!("logo.svg", logo_path("logo-dynamic.svg"))
     ensure_symlink!("logo-dark.svg", logo_path("logo-dark-dynamic.svg"))
@@ -619,9 +632,11 @@ function bake_svgs!()
     social_static = build_social(logo_static, "static")
     social_dynamic = build_social(logo, "dynamic")
     readme_static = build_readme(logo_static)
+    readme_dark = build_readme(logo_dark_static; dark = true)
     writefile(social_path("social-preview-static.svg"), social_static)
     writefile(social_path("social-preview-dynamic.svg"), social_dynamic)
     writefile(social_path("readme-static.svg"), readme_static)
+    writefile(social_path("readme-dark-static.svg"), readme_dark)
 
     topology = topology_svg(dark = false)
     topology_dark_svg = topology_svg(dark = true)
@@ -638,6 +653,7 @@ function bake_svgs!()
         social_static,
         social_dynamic,
         readme_static,
+        readme_dark,
         topology,
         topology_dark_svg,
     )
@@ -907,6 +923,19 @@ function bake_pngs!(arts)
         scale = PNG_SCALE,
         exact_size = true,
     ) || die("readme-static.png (need rsvg-convert or Chromium, plus sips/ffmpeg to keep $(README_W)×$(README_H))")
+
+    readme_dark_svg = social_path("readme-dark-static.svg")
+    readme_dark_png = social_path("readme-dark-static.png")
+    readme_dark_html = strip_xml_decl(arts.readme_dark)
+    bake_static_png!(
+        readme_dark_svg,
+        readme_dark_png,
+        readme_dark_html;
+        w = README_W,
+        h = README_H,
+        scale = PNG_SCALE,
+        exact_size = true,
+    ) || die("readme-dark-static.png (need rsvg-convert or Chromium, plus sips/ffmpeg to keep $(README_W)×$(README_H))")
 
     bake_favicon!(arts) || die("$FAVICON (need rsvg-convert or Chromium)")
 

@@ -1,9 +1,14 @@
 <!-- markdownlint-disable MD033 MD013 MD041 -->
 <p align="center">
-  <img
-    src="docs/src/assets/social/readme-static.png"
-    width="640"
-    alt="DistSSHKit">
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/social/readme-dark-static.png">
+    <img
+      src="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/social/readme-static.png"
+      width="640"
+      alt="DistSSHKit。複数のマシンへ SSH して Julia の計算を実行するツールキット。">
+  </picture>
 </p>
 <!-- markdownlint-enable MD033 MD013 MD041 -->
 
@@ -22,6 +27,7 @@
 
 ## DistSSHKit
 
+DistSSHKit は、複数のマシンへ SSH して Julia の計算を実行するツールキットである。
 ワークステーション 2 台でも、研究室のより多くのマシンでも、同じように使える。
 対応環境は **macOS、Linux、WSL2 Ubuntu** である (ネイティブ Windows は対象外)。
 
@@ -86,13 +92,13 @@ git によるデプロイを使う場合は、さらに **`git`** も必要と�
   <picture>
     <source
       media="(prefers-color-scheme: dark)"
-      srcset="docs/src/assets/diagram/topology-dark.svg">
+      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/diagram/topology-dark.svg">
     <source
       media="(prefers-color-scheme: light)"
-      srcset="docs/src/assets/diagram/topology.svg">
+      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/diagram/topology.svg">
     <img
       alt="Drive topology: master and workers"
-      src="docs/src/assets/diagram/topology.png">
+      src="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/diagram/topology.png">
   </picture>
 </p>
 <!-- markdownlint-enable MD033 MD013 -->
