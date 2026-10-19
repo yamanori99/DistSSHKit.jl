@@ -32,11 +32,10 @@ with `dark-` so light and dark copies can sit in one HTML document.
 
 GitHub README / README.ja put `social/social-preview-static.png` above
 the title, and use `<picture>` plus `prefers-color-scheme` for the
-topology diagram. Dark / light `source` are the transparent SVGs. The
-fallback `img` is `topology.png` (paper background). JuliaHub strips or
-ignores `<picture>` / `prefers-color-scheme` (a transparent light SVG
-vanishes on a dark page). Absolute
-`raw.githubusercontent.com/…/main/docs/src/assets/…` so the files load.
+topology diagram. Paths are relative to the README, so a branch shows
+that branch's files. Dark / light `source` are the transparent SVGs.
+The fallback `img` is `topology.png` (paper background). JuliaHub strips
+or ignores `<picture>` / `prefers-color-scheme`.
 
 Documenter discovers bare `logo.svg` / `logo-dark.svg` at this
 directory's top level only.

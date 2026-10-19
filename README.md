@@ -1,7 +1,7 @@
 <!-- markdownlint-disable MD033 MD013 -->
 <p align="center">
   <img
-    src="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/social/social-preview-static.png"
+    src="docs/src/assets/social/social-preview-static.png"
     width="640"
     alt="DistSSHKit">
 </p>
@@ -92,13 +92,13 @@ and you can add as many remote machines as you like.
   <picture>
     <source
       media="(prefers-color-scheme: dark)"
-      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/diagram/topology-dark.svg">
+      srcset="docs/src/assets/diagram/topology-dark.svg">
     <source
       media="(prefers-color-scheme: light)"
-      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/diagram/topology.svg">
+      srcset="docs/src/assets/diagram/topology.svg">
     <img
       alt="Drive topology: master and workers"
-      src="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/diagram/topology.png">
+      src="docs/src/assets/diagram/topology.png">
   </picture>
 </p>
 <!-- markdownlint-enable MD033 MD013 -->
