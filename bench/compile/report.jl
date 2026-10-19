@@ -92,6 +92,11 @@ function flags_for(prev, cur)::Vector{String}
     if !isempty(prev_host) && !isempty(cur_host) && prev_host != cur_host
         push!(out, "host changed $prev_host -> $cur_host")
     end
+    jprev = string(get(prev, "julia", ""))
+    jcur = string(get(cur, "julia", ""))
+    if !isempty(jprev) && !isempty(jcur) && jprev != jcur
+        push!(out, "julia $jprev -> $jcur")
+    end
     pkg_prev = Float64(prev["precompile_pkg_sec"])
     pkg_cur = Float64(cur["precompile_pkg_sec"])
     if pkg_cur >= pkg_prev * 1.5 && pkg_cur - pkg_prev >= 0.5
@@ -119,27 +124,100 @@ function flags_for(prev, cur)::Vector{String}
     return out
 end
 
+function chart_day(row)::String
+    t = string(get(row, "time", ""))
+    return length(t) >= 10 ? t[6:7] * "-" * t[9:10] : t
+end
+
+# OS family and arch. A Ubuntu point release is not a host switch.
+function chart_host(row)::String
+    haskey(row, "os_name") || return ""
+    os = strip(string(row["os_name"]))
+    isempty(os) && return ""
+    word = first(split(os))
+    arch = strip(string(get(row, "arch", "")))
+    return isempty(arch) ? word : word * " " * arch
+end
+
+# `1.15.0-DEV` is the nightly Julia. The axis shows `1.15-DEV`.
+function chart_julia(row)::String
+    j = strip(string(get(row, "julia", "")))
+    isempty(j) && return ""
+    v = tryparse(VersionNumber, j)
+    v === nothing && return j
+    base = string(v.major, ".", v.minor)
+    return isempty(v.prerelease) ? base : base * "-" * join(v.prerelease, ".")
+end
+
+function chart_label(slot::String, row, prev)::String
+    day = chart_day(row)
+    marks = String[]
+    if prev === nothing && occursin("nightly", slot)
+        julia = chart_julia(row)
+        isempty(julia) || push!(marks, julia)
+    elseif prev !== nothing
+        ver = string(get(row, "version", ""))
+        old = string(get(prev, "version", ""))
+        if !isempty(ver) && ver != old
+            push!(marks, "v" * ver)
+        end
+        julia = chart_julia(row)
+        prev_julia = chart_julia(prev)
+        if !isempty(julia) && !isempty(prev_julia) && julia != prev_julia
+            push!(marks, "julia " * julia)
+        end
+        host = chart_host(row)
+        prev_host = chart_host(prev)
+        if !isempty(host) && !isempty(prev_host) && host != prev_host
+            push!(marks, host)
+        end
+    end
+    if !isempty(marks)
+        return day * " " * join(marks, " ")
+    end
+    sha = string(get(row, "commit", ""))
+    short = isempty(sha) ? "" : first(sha, 7)
+    return isempty(short) ? day : day * " " * short
+end
+
 function chart(slot::String, name::String, rows)::String
     labels = String[]
     values = Float64[]
+    prev = nothing
     for row in rows
         wall = command_wall(row, name)
         wall === nothing && continue
-        t = string(get(row, "time", ""))
-        label = length(t) >= 10 ? t[6:7] * t[9:10] : t
-        push!(labels, label)
+        push!(labels, chart_label(slot, row, prev))
         push!(values, wall)
+        prev = row
     end
     isempty(values) && return ""
     # A one-point line is a zero-length path, so GitHub draws an empty plot.
     series = length(values) == 1 ? "bar" : "line"
     ymax = max(1, ceil(Int, maximum(values) * 1.2))
-    xs = join((string('"', x, '"') for x in labels), ", ")
+    xs = join((string('"', replace(x, '"' => "'"), '"') for x in labels), ", ")
     ys = join((string(round(v; digits = 2)) for v in values), ", ")
+    title = "$slot $name"
+    if occursin("nightly", slot)
+        julia = chart_julia(prev)
+        isempty(julia) || (title = "$slot $julia $name")
+    end
+    # plotColorPalette replaces the default #fff4dd line, which disappears on
+    # the white plot. labelRotation keeps "10-18 v0.9.7 1.15-DEV" apart.
     return """
     ```mermaid
+    ---
+    config:
+      theme: base
+      themeVariables:
+        xyChart:
+          plotColorPalette: "#1f4e79"
+      xyChart:
+        xAxis:
+          labelRotation: 45
+    ---
     xychart-beta
-        title "$slot $name"
+        title "$title"
         x-axis [$xs]
         y-axis "seconds" 0 --> $ymax
         $series [$ys]
@@ -169,7 +247,7 @@ function slot_section(slot::String, rows)::Tuple{String, Vector{String}}
     prev = length(shown) >= 2 ? shown[end - 1] : nothing
     flagged = flags_for(prev, latest)
     names = command_names(shown)
-    cols = ["date", "commit", "version", "os", "arch", "src files", "code lines", "full s", "pkg s", "using s"]
+    cols = ["date", "commit", "version", "julia", "os", "arch", "src files", "code lines", "full s", "pkg s", "using s"]
     append!(cols, [name * " s" for name in names])
     header = "| " * join(cols, " | ") * " |"
     sep = "| " * join(fill("---", length(cols)), " | ") * " |"
@@ -183,6 +261,7 @@ function slot_section(slot::String, rows)::Tuple{String, Vector{String}}
             day,
             short,
             string(get(row, "version", "")),
+            replace(string(get(row, "julia", "")), '|' => '/'),
             replace(string(get(row, "os_name", get(row, "os", ""))), '|' => '/'),
             replace(string(get(row, "arch", "")), '|' => '/'),
             inum(row, "src_files"),
@@ -235,7 +314,7 @@ function render(groups)::Tuple{String, Vector{String}}
     Precompile time, load time, CLI wall time, `src/**/*.jl` size, and the host
     (OS name, arch, CPU). `code lines` skips blank lines. A row is flagged when,
     against the previous sample on the same Julia slot, the host OS or arch
-    changes, package precompile grows by 1.5x and 0.5s, a command wall grows
+    changes, the Julia version changes, package precompile grows by 1.5x and 0.5s, a command wall grows
     by 1.5x and 1s, or a method of at least 200 ms is new in the top 20 or
     doubles. This does not fail CI.
 
