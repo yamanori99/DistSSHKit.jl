@@ -292,11 +292,12 @@ function defaultCommand(samples) {
   return best;
 }
 
-function chosenMethods(samples, name, count) {
-  const last = samples[samples.length - 1];
-  if (!last) return [];
-  const command = last.commands.find((item) => item.name === name);
-  return command ? ranked(command).slice(0, count) : [];
+function latestWithCommand(samples, name) {
+  for (let index = samples.length - 1; index >= 0; index -= 1) {
+    const command = samples[index].commands.find((item) => item.name === name);
+    if (command) return { index, command };
+  }
+  return null;
 }
 
 function methodY(sample, name, signature, count) {
@@ -448,7 +449,8 @@ function drawMethods(samples) {
   });
   const cap = Math.max(1, available.size);
   if (state.n > cap) state.n = cap;
-  const chosen = chosenMethods(samples, state.cmd, state.n);
+  const found = latestWithCommand(samples, state.cmd);
+  const chosen = found ? ranked(found.command).slice(0, state.n) : [];
   const traces = chosen.map((method) => ({
     type: "scatter", mode: "lines+markers", name: method.short, connectgaps: false,
     x: samples.map((sample) => sample.time),
@@ -462,8 +464,8 @@ function drawMethods(samples) {
   window.__methodDrawn = drawn;
   const body = document.querySelector("#method-table tbody");
   body.innerHTML = "";
-  const last = samples[samples.length - 1];
-  const prev = samples.length > 1 ? samples[samples.length - 2] : null;
+  const last = found ? samples[found.index] : null;
+  const prev = found && found.index > 0 ? samples[found.index - 1] : null;
   function top(sample) {
     if (!sample) return [];
     const command = sample.commands.find((item) => item.name === state.cmd);
