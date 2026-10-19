@@ -15,7 +15,7 @@ button[aria-pressed="true"] { font-weight: 700; }
 .key span { overflow-wrap: anywhere; }
 table { border-collapse: collapse; margin: 12px 0 24px; width: 100%; table-layout: fixed; }
 td, th { border: 1px solid #cbd5e1; padding: 4px 8px; text-align: left; overflow-wrap: anywhere; }
-tr[data-julia="1"] { background: #f3e8ff; }
+tr[data-package="1"] { background: #f3e8ff; }
 #range-row, #method-row { margin: 8px 0 16px; }
 </style>
 </head>
@@ -86,7 +86,7 @@ const RANGES = [
   ["2y", 730],
   ["all", null]
 ];
-const NOT_JULIA = new Set(["", "Main", "stdlib", "other", "DistSSHKit", "DistSSHRun", "DistSSHQueue"]);
+const PACKAGE = new Set(["DistSSHKit", "DistSSHRun", "DistSSHQueue"]);
 const state = { slot: "", range: "all", n: 8, cmd: "", drag: null };
 
 function slotData() {
@@ -156,25 +156,12 @@ function defaultCommand(samples) {
   return best;
 }
 
-function chosenMethods(samples, name, count) {
-  const best = new Map();
-  const meta = new Map();
-  samples.forEach((sample) => {
-    const command = sample.commands.find((item) => item.name === name);
-    if (!command) return;
-    ranked(command).forEach((method, index) => {
-      const rank = index + 1;
-      if (!meta.has(method.signature)) meta.set(method.signature, method);
-      if (rank <= count) {
-        const previous = best.get(method.signature);
-        if (previous === undefined || rank < previous) best.set(method.signature, rank);
-      }
-    });
-  });
-  let keys = Array.from(best.keys());
-  keys.sort((a, b) => best.get(a) - best.get(b) || meta.get(b).ms - meta.get(a).ms);
-  if (keys.length > count) keys = keys.slice(0, count);
-  return keys.map((key) => meta.get(key));
+function latestWithCommand(samples, name) {
+  for (let index = samples.length - 1; index >= 0; index -= 1) {
+    const command = samples[index].commands.find((item) => item.name === name);
+    if (command) return { index, command };
+  }
+  return null;
 }
 
 function methodY(sample, name, signature, count) {
@@ -326,7 +313,8 @@ function drawMethods(samples) {
   });
   const cap = Math.max(1, available.size);
   if (state.n > cap) state.n = cap;
-  const chosen = chosenMethods(samples, state.cmd, state.n);
+  const found = latestWithCommand(samples, state.cmd);
+  const chosen = found ? ranked(found.command).slice(0, state.n) : [];
   const traces = chosen.map((method) => ({
     type: "scatter", mode: "lines+markers", name: method.short, connectgaps: false,
     x: samples.map((sample) => sample.time),
@@ -340,14 +328,14 @@ function drawMethods(samples) {
   window.__methodDrawn = drawn;
   const body = document.querySelector("#method-table tbody");
   body.innerHTML = "";
-  const last = samples[samples.length - 1];
-  const prev = samples.length > 1 ? samples[samples.length - 2] : null;
+  const last = found ? samples[found.index] : null;
+  const prev = found && found.index > 0 ? samples[found.index - 1] : null;
   function top(sample) {
     if (!sample) return [];
     const command = sample.commands.find((item) => item.name === state.cmd);
     return command ? ranked(command).slice(0, state.n) : [];
   }
-  const now = top(last);
+  const now = chosen;
   const before = top(prev);
   const rows = now.map((method) => {
     const nowRank = now.findIndex((item) => item.signature === method.signature) + 1;
@@ -362,7 +350,7 @@ function drawMethods(samples) {
   });
   rows.forEach((item) => {
     const row = document.createElement("tr");
-    if (!NOT_JULIA.has(item.method.owner)) row.dataset.julia = "1";
+    if (PACKAGE.has(item.method.owner)) row.dataset.package = "1";
     [item.nowRank, item.prevRank, item.change, item.method.owner, item.method.short, item.ms === "" ? "" : Math.round(item.ms), item.delta === "" ? "" : Math.round(item.delta)].forEach((cell) => {
       const td = document.createElement("td");
       td.textContent = cell;
