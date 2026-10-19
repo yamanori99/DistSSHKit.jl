@@ -372,14 +372,19 @@ function annotations(samples) {
   })));
 }
 
+function sampleMark(sample) {
+  return [String(sample.time).slice(0, 10), String(sample.commit || ""), String(sample.julia || "")];
+}
+
 function layout(title, ytitle, samples) {
   return {
-    title, margin: { t: 48, r: 16, b: 48, l: 56 }, height: title.startsWith("Method") ? 420 : 280,
-    xaxis: { type: "date", title: "" },
-    yaxis: { title: ytitle, rangemode: "tozero" },
+    title, margin: { t: 48, r: 16, b: 64, l: 56 }, height: title.startsWith("Method") ? 460 : 320,
+    xaxis: { type: "date", automargin: true, tickformat: "%Y-%m-%d" },
+    yaxis: { title: ytitle, rangemode: "tozero", automargin: true },
     shapes: shapes(samples),
     annotations: annotations(samples),
-    legend: { orientation: "h" }
+    legend: { orientation: "v" },
+    hovermode: "closest"
   };
 }
 
@@ -394,8 +399,8 @@ function drawWall(samples) {
       type: "scatter", mode: "lines+markers", name, connectgaps: false,
       x: samples.map((sample) => sample.time),
       y: dropped.values,
-      customdata: samples.map((sample) => sample.commit),
-      hovertemplate: "%{x}<br>%{customdata}<br>" + name + " %{y}s<extra></extra>"
+      customdata: samples.map(sampleMark),
+      hovertemplate: "%{customdata[0]} %{customdata[1]}<br>%{fullData.name} %{y} s<extra></extra>"
     };
   });
   const node = document.getElementById("wall-chart");
@@ -442,8 +447,8 @@ function drawMethods(samples) {
     type: "scatter", mode: "lines+markers", name: method.short, connectgaps: false,
     x: samples.map((sample) => sample.time),
     y: samples.map((sample) => methodY(sample, state.cmd, method.signature, state.n)),
-    customdata: samples.map((sample) => [sample.commit, sample.julia, method.signature, method.owner]),
-    hovertemplate: "%{x}<br>%{customdata[0]} %{customdata[1]}<br>%{customdata[3]} %{y} ms<br>%{customdata[2]}<extra></extra>"
+    customdata: samples.map((sample) => sampleMark(sample).concat([method.owner, method.signature])),
+    hovertemplate: "%{customdata[0]} %{customdata[1]}<br>%{customdata[2]}<br>%{fullData.name}<br>%{customdata[3]} %{y} ms<br>%{customdata[4]}<extra></extra>"
   }));
   const node = document.getElementById("method-chart");
   const drawn = window.Plotly ? Plotly.react(node, traces, layout("Method rank", "ms", samples)) : Promise.resolve();
@@ -593,11 +598,12 @@ function bench_html(groups)::String
     <meta charset="utf-8">
     <title>Compile bench</title>
     <style>
-    body { font: 15px/1.4 sans-serif; margin: 24px; color: #0f172a; background: #fff; }
+    body { font: 15px/1.4 sans-serif; margin: 24px auto; max-width: 920px; padding: 0 16px; color: #0f172a; background: #fff; }
     button { margin: 0 4px 8px 0; }
     button[aria-pressed="true"] { font-weight: 700; }
-    table { border-collapse: collapse; margin: 12px 0 24px; }
-    td, th { border: 1px solid #cbd5e1; padding: 4px 8px; text-align: left; }
+    .plot { width: 100%; }
+    table { border-collapse: collapse; margin: 12px 0 24px; width: 100%; table-layout: fixed; }
+    td, th { border: 1px solid #cbd5e1; padding: 4px 8px; text-align: left; overflow-wrap: anywhere; }
     tr[data-julia="1"] { background: #f3e8ff; }
     #range-row, #method-row { margin: 8px 0 16px; }
     </style>
@@ -617,19 +623,21 @@ function bench_html(groups)::String
     <span id="method-count">8</span>
     <button type="button" id="method-inc">+</button>
     </div>
+    <p>A time is a specialization this command compiled. Specializations of this package are all kept. Any other owner is kept only at 200 ms or more. Main, the driving script, is omitted. A blank time is a function defined on the package module that the trace never named. This is not every method under <code>src/</code>. Each function is one name. When one of its methods compiles, the methods that did not compile are left out.</p>
+    <div id="method-chart" class="plot"></div>
     <p id="method-note"></p>
     <table id="method-table">
+    <colgroup><col style="width:3.5rem"><col style="width:3.5rem"><col style="width:4.5rem"><col style="width:8rem"><col><col style="width:4.5rem"><col style="width:5.5rem"></colgroup>
     <thead><tr><th>now</th><th>prev</th><th>change</th><th>owner</th><th>method</th><th>ms</th><th>ms change</th></tr></thead>
     <tbody></tbody>
     </table>
-    <div id="method-chart"></div>
     <h2>Command wall</h2>
+    <div id="wall-chart" class="plot"></div>
     <p id="wall-note"></p>
     <table id="wall-table">
     <thead><tr><th>command</th><th>now s</th><th>start s</th><th>change</th></tr></thead>
     <tbody></tbody>
     </table>
-    <div id="wall-chart"></div>
     <div id="fallback">
     $tables
     </div>

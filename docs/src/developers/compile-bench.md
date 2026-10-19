@@ -20,7 +20,7 @@ CI. A run on `main` appends a sample. A render job then rebuilds the
 README and `bench.html` from the history already on `bench-data`, and copies
 `bench.html` to the root of `gh-pages`. GitHub Pages serves that file as HTML.
 A `main` push that
-changes `bench/compile/report.jl` does the same and does not measure.
+changes `bench/compile/report.jl` or `bench/compile/charts.jl` does the same and does not measure.
 A pull request that changes that file renders the history into the job
 summary and does not push. Every run uploads the sample as an artifact.
 A ref other than `main` does not push. A command that
@@ -113,7 +113,11 @@ CI. A jump against a sample from months ago is a question for the
 files, not for that flag.
 
 `bench.html` draws the method times and every command's wall time.
-The README keeps the latest 12 rows and the link to that page.
+A time is a specialization that command compiled. A blank time is a
+function on the package module that the trace never named. The page is
+not every method under `src/`. Each function is one name, so a method
+that did not compile stays off the page when another method of that
+function did. The README keeps the latest 12 rows and the link to that page.
 The public link is GitHub Pages
 (`https://yamanori99.github.io/DistSSHKit.jl/bench.html`).
 jsDelivr serves `.html` as plain text, so the page is not linked from there.

@@ -8,11 +8,13 @@ on:
       - main
     paths:
       - bench/compile/report.jl
+      - bench/compile/charts.jl
       - .github/compile-bench-render.sh
       - .github/workflows/compile-bench-render.yml
   pull_request:
     paths:
       - bench/compile/report.jl
+      - bench/compile/charts.jl
       - .github/compile-bench-render.sh
       - .github/workflows/compile-bench-render.yml
   workflow_dispatch:
