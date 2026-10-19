@@ -35,25 +35,28 @@ runs:
         set -euo pipefail
         dest="${RUNNER_TEMP}/bench-data"
         rm -rf "$dest"
-        url="https://x-access-token:${BENCH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+        url="https://github.com/${GITHUB_REPOSITORY}.git"
+        auth=(-c "http.extraheader=AUTHORIZATION: bearer ${BENCH_TOKEN}")
         existed=0
-        if git ls-remote --exit-code --heads "$url" bench-data >/dev/null; then
+        if git "${auth[@]}" ls-remote --exit-code --heads "$url" bench-data >/dev/null; then
           existed=1
-          git clone --branch bench-data --single-branch "$url" "$dest"
+          git "${auth[@]}" clone --branch bench-data --single-branch "$url" "$dest"
         else
-          git clone --branch main --single-branch "$url" "$dest"
+          git "${auth[@]}" clone --branch main --single-branch "$url" "$dest"
           git -C "$dest" checkout --orphan bench-data
           git -C "$dest" rm -rf . >/dev/null 2>&1 || true
         fi
+        git -C "$dest" config http.extraheader "AUTHORIZATION: bearer ${BENCH_TOKEN}"
         sha="$(git rev-parse --short=7 HEAD)"
         day="$(date -u +%Y-%m-%d)"
+        rel="history/${SLOT}/${day}-${sha}.toml"
         mkdir -p "$dest/history/${SLOT}"
-        cp "${RUNNER_TEMP}/compile-bench.toml" "$dest/history/${SLOT}/${day}-${sha}.toml"
-        julia --startup-file=no bench/compile/report.jl \
-          --history "$dest/history" \
-          --readme "$dest/README.md" \
-          --summary "$GITHUB_STEP_SUMMARY"
-        git -C "$dest" add README.md history
+        cp "${RUNNER_TEMP}/compile-bench.toml" "$dest/$rel"
+        git -C "$dest" add "$rel"
+        if git -C "$dest" diff --cached --quiet; then
+          echo "sample unchanged"
+          exit 0
+        fi
         git -C "$dest" \
           -c user.name="github-actions[bot]" \
           -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
@@ -82,10 +85,18 @@ runs:
           --readme "${RUNNER_TEMP}/compile-bench-README.md" \
           --summary "$GITHUB_STEP_SUMMARY"
     - name: Upload compile bench
-      if: github.ref != 'refs/heads/main'
+      shell: bash
+      run: |
+        set -euo pipefail
+        stage="${RUNNER_TEMP}/compile-bench-artifact"
+        rm -rf "$stage"
+        mkdir -p "$stage"
+        cp "${RUNNER_TEMP}/compile-bench.toml" "$stage/compile-bench.toml"
+        if [ -f "${RUNNER_TEMP}/compile-bench-README.md" ]; then
+          cp "${RUNNER_TEMP}/compile-bench-README.md" "$stage/compile-bench-README.md"
+        fi
+    - name: Upload compile bench artifact
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: compile-bench-${{ inputs.slot }}
-        path: |
-          ${{ runner.temp }}/compile-bench.toml
-          ${{ runner.temp }}/compile-bench-README.md
+        path: ${{ runner.temp }}/compile-bench-artifact

@@ -84,10 +84,14 @@ end
 function owner_name(sig::AbstractString)::String
     if occursin("typeof(Core.kwcall)", sig)
         matches = collect(eachmatch(r"typeof\(([A-Za-z_][A-Za-z0-9_]*)\.", sig))
-        return isempty(matches) ? "other" : only(matches[end].captures)
+        isempty(matches) && return "other"
+        name = something(matches[end].captures[1], "")
+        return isempty(name) ? "other" : name
     end
     m = match(r"typeof\(([A-Za-z_][A-Za-z0-9_]*)\.", sig)
-    return m === nothing ? "other" : only(m.captures)
+    m === nothing && return "other"
+    name = something(m.captures[1], "")
+    return isempty(name) ? "other" : name
 end
 
 function bucket_name(name::String)::String
@@ -103,10 +107,12 @@ function parse_trace(path::AbstractString)::Vector{NamedTuple{(:ms, :bucket, :si
     for line in eachline(path)
         m = match(TRACE_RX, line)
         m === nothing && continue
-        sig = m.captures[2]
+        ms = something(m.captures[1], "")
+        sig = something(m.captures[2], "")
+        (isempty(ms) || isempty(sig)) && continue
         push!(
             rows, (
-                ms = parse(Float64, m.captures[1]),
+                ms = parse(Float64, ms),
                 bucket = bucket_name(owner_name(sig)),
                 signature = sig,
                 recompile = m.captures[3] !== nothing,
@@ -251,7 +257,10 @@ function measure_using(depot::AbstractString, package::String)::Dict{String, Any
     for line in split(plain, '\n')
         m = match(r"^\s*([0-9.]+)\s+ms\s+(DistSSH\w+)\s*$", line)
         m === nothing && continue
-        push!(imports, Dict{String, Any}("name" => m.captures[2], "ms" => parse(Float64, m.captures[1])))
+        ms = something(m.captures[1], "")
+        name = something(m.captures[2], "")
+        (isempty(ms) || isempty(name)) && continue
+        push!(imports, Dict{String, Any}("name" => name, "ms" => parse(Float64, ms)))
     end
     return Dict{String, Any}(
         "using_sec" => parse_seconds(text, "USING_SEC"),

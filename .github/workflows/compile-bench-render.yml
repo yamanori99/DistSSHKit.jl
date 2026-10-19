@@ -1,0 +1,64 @@
+# Rebuild the bench-data README when the renderer changes.
+# Measurement stays on CI weekly and on a version cut.
+name: Compile bench render
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - bench/compile/report.jl
+      - .github/compile-bench-render.sh
+      - .github/workflows/compile-bench-render.yml
+  pull_request:
+    paths:
+      - bench/compile/report.jl
+      - .github/compile-bench-render.sh
+      - .github/workflows/compile-bench-render.yml
+  workflow_dispatch:
+
+concurrency:
+  group: compile-bench-render-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    name: Render bench-data
+    if: github.event_name == 'pull_request' || github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: julia-actions/setup-julia@fa02766e078afaaf09b14210362cee14137e6a32 # v3.0.2
+        with:
+          version: "1.13"
+      - name: Render
+        env:
+          BENCH_TOKEN: ${{ github.token }}
+          BENCH_PUSH: "0"
+        run: bash .github/compile-bench-render.sh
+
+  publish:
+    name: Render bench-data
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: julia-actions/setup-julia@fa02766e078afaaf09b14210362cee14137e6a32 # v3.0.2
+        with:
+          version: "1.13"
+      - name: Render
+        env:
+          BENCH_TOKEN: ${{ github.token }}
+          BENCH_PUSH: "1"
+        run: bash .github/compile-bench-render.sh

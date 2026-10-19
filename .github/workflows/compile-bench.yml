@@ -1,5 +1,6 @@
 # A main push that raises Project.toml version. Not a PR check.
-# Same measure as the CI weekly job. A main run appends bench-data.
+# Same measure as the CI weekly job. A main run appends a sample to bench-data.
+# The README is rendered after the three slots, and when report.jl changes.
 # A 1.13 failure on main opens "Compile bench failed". A skipped run does not close it.
 # The 1.14-nightly and nightly jobs stay continue-on-error and are not that issue.
 name: Compile bench
@@ -112,6 +113,31 @@ jobs:
         with:
           slot: "nightly"
           token: ${{ github.token }}
+
+  render:
+    name: Render bench-data
+    needs:
+      - detect
+      - compile-bench
+      - compile-bench-nightly
+      - compile-bench-master
+    if: always() && needs.detect.outputs.cut == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: julia-actions/setup-julia@fa02766e078afaaf09b14210362cee14137e6a32 # v3.0.2
+        with:
+          version: "1.13"
+      - name: Render
+        env:
+          BENCH_TOKEN: ${{ github.token }}
+          BENCH_PUSH: "1"
+        run: bash .github/compile-bench-render.sh
 
   notify-bench:
     needs: compile-bench

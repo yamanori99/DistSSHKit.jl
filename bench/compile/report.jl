@@ -255,7 +255,7 @@ function chart(slot::String, names::Vector{String}, rows)::String
     ymax = max(1, ceil(Int, peak * 1.2))
     xs = join((string('"', replace(x, '"' => "'"), '"') for x in labels), ", ")
     title = slot
-    if occursin("nightly", slot)
+    if occursin("nightly", slot) && prev !== nothing
         julia = chart_julia(prev)
         isempty(julia) || (title = "$slot $julia")
     end

@@ -16,8 +16,12 @@ old file.
 | DistSSHRun | [bench-data](https://github.com/yamanori99/DistSSHRun.jl/tree/bench-data) |
 
 When the job runs is in that repo's `CONTRIBUTING.md`, under Scheduled
-CI. A run on `main` appends a sample and rebuilds the README. Any other
-ref uploads the sample as an artifact and does not push. A command that
+CI. A run on `main` appends a sample. A render job then rebuilds the
+README from the history already on `bench-data`. A `main` push that
+changes `bench/compile/report.jl` does the same and does not measure.
+A pull request that changes that file renders the history into the job
+summary and does not push. Every run uploads the sample as an artifact.
+A ref other than `main` does not push. A command that
 exits nonzero stops the run before a sample is written. A 1.13 failure
 on `main` opens an issue titled `Compile bench failed`, with the `alert`
 label. A later 1.13 success on `main` closes it. A skipped run, including
@@ -28,6 +32,16 @@ a `Project.toml` push that is not a version cut, does not close it. The
 git clone --branch bench-data --single-branch \
   https://github.com/yamanori99/DistSSHKit.jl.git kit-bench-data
 ```
+
+From a package checkout, measure and render without pushing:
+
+```bash
+./bench/compile/measure.sh --slot local --history kit-bench-data/history
+./bench/compile/render.sh --history kit-bench-data/history
+```
+
+`measure.sh` writes a toml under `history/<slot>/`. `render.sh` rewrites
+`README.md` next to that `history` directory. Neither command commits.
 
 ## Files
 
@@ -71,8 +85,9 @@ when two samples share a date.
 
 A command row has `name`, `args`, `exit`, `wall_sec` (median of three
 runs), `walls_sec`, `total_ms`, `main_ms`, `count`, `buckets`, and
-`top` (the 20 slowest methods). DistSSHKit and DistSSHQueue record
-`help` and `status`. DistSSHRun records `help`.
+`top` (the 20 slowest methods). DistSSHQueue records `help`, `status`,
+`submit`, `watch`, and `cancel`. DistSSHKit records `help`, `status`,
+`go`, and `drive`. DistSSHRun records `help`, `go`, and `drive`.
 
 ## Reading a long series
 
