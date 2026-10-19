@@ -39,3 +39,4 @@ fi
 
 julia --startup-file=no bench/compile/report.jl --history "$history" --readme "$readme"
 echo "wrote $readme"
+echo "wrote $(cd "$(dirname "$readme")" && pwd)/bench.html"

@@ -17,7 +17,7 @@ old file.
 
 When the job runs is in that repo's `CONTRIBUTING.md`, under Scheduled
 CI. A run on `main` appends a sample. A render job then rebuilds the
-README from the history already on `bench-data`. A `main` push that
+README and `bench.html` from the history already on `bench-data`. A `main` push that
 changes `bench/compile/report.jl` does the same and does not measure.
 A pull request that changes that file renders the history into the job
 summary and does not push. Every run uploads the sample as an artifact.
@@ -41,13 +41,14 @@ From a package checkout, measure and render without pushing:
 ```
 
 `measure.sh` writes a toml under `history/<slot>/`. `render.sh` rewrites
-`README.md` next to that `history` directory. Neither command commits.
+`README.md` and `bench.html` next to that `history` directory. Neither command commits.
 
 ## Files
 
 ```text
 history/<slot>/<YYYY-MM-DD>-<shortsha>.toml
 README.md
+bench.html
 ```
 
 `<slot>` is the CI name, such as `1.13`, `1.14-nightly`, or `nightly`. The name
@@ -85,7 +86,11 @@ when two samples share a date.
 
 A command row has `name`, `args`, `exit`, `wall_sec` (median of three
 runs), `walls_sec`, `total_ms`, `main_ms`, `count`, `buckets`, and
-`top` (the 20 slowest methods). DistSSHQueue records `help`, `status`,
+`top` (the 20 slowest methods, still used for the flag). Newer Kit samples
+also store `methods` (every specialization of this package, plus any other
+specialization of at least 200 ms that is not `Main`) and `missed` (source
+functions the command did not compile). Older files have only `top`.
+DistSSHQueue records `help`, `status`,
 `submit`, `watch`, and `cancel`. DistSSHKit records `help`, `status`,
 `go`, and `drive`. DistSSHRun records `help`, `go`, and `drive`.
 
@@ -105,5 +110,7 @@ least 200 ms is new in the top 20 or doubles. The flag does not fail
 CI. A jump against a sample from months ago is a question for the
 files, not for that flag.
 
-One chart point is a bar. Two or more are a line. The chart only draws
-the samples in the README window.
+`bench.html` draws the method times and every command's wall time.
+The README keeps the latest 12 rows and the link to that page.
+A method missing from an older `top` list is left out of the line.
+It is not drawn as zero, and it is not listed as uncompiled.

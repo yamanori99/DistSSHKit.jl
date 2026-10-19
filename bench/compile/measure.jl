@@ -122,7 +122,96 @@ function parse_trace(path::AbstractString)::Vector{NamedTuple{(:ms, :bucket, :si
     return rows
 end
 
-function trace_summary(path::AbstractString, package::String)::Dict{String, Any}
+function method_owner(signature::AbstractString, bucket::AbstractString)::String
+    sig = string(signature)
+    occursin("typeof(Main.", sig) && return "Main"
+    if bucket in ("DistSSHKit", "DistSSHQueue", "DistSSHRun", "Base")
+        return string(bucket)
+    end
+    matches = collect(eachmatch(r"typeof\(([A-Za-z_][A-Za-z0-9_]*)\.", sig))
+    for match in Iterators.reverse(matches)
+        name = string(something(match.captures[1], ""))
+        if name == "Main"
+            return "Main"
+        end
+        name in ("Core", "") && continue
+        return name
+    end
+    found = Base.match(r"(?:Tuple\{|, )([A-Z][A-Za-z0-9_]*)\.", sig)
+    found === nothing && return string(bucket)
+    return string(something(found.captures[1], bucket))
+end
+
+# The package's own specializations stay. Anything else stays at 200 ms,
+# except `Main`, which is the user's script.
+function keep_method(row, package::String)::Bool
+    row.bucket == package && return true
+    row.ms < 200 && return false
+    return method_owner(row.signature, row.bucket) != "Main"
+end
+
+function name_in_signature(signature::AbstractString, qualified::AbstractString)::Bool
+    parts = split(qualified, '.'; limit = 2)
+    length(parts) == 2 || return false
+    fname = replace(string(parts[2]), r"([^A-Za-z0-9_])" => s"\\\1")
+    return occursin(Regex(string(parts[1]) * "\\." * fname * "(?![A-Za-z0-9_])"), signature)
+end
+
+function missed_functions(rows, package::String, defined::Vector{String})::Vector{String}
+    missed = String[]
+    prefix = package * "."
+    for qualified in defined
+        startswith(qualified, prefix) || continue
+        hit = false
+        for row in rows
+            if name_in_signature(row.signature, qualified)
+                hit = true
+                break
+            end
+        end
+        hit || push!(missed, qualified)
+    end
+    return missed
+end
+
+function package_function_names(depot::AbstractString, package::String)::Vector{String}
+    script = joinpath(mktempdir(), "names.jl")
+    write(script, """
+    using $package
+    mod = $package
+    seen = Set{String}()
+    function walk(m)
+        for n in names(m; all = true)
+            isdefined(m, n) || continue
+            v = getfield(m, n)
+            if v isa Module && v !== m && parentmodule(v) === m
+                walk(v)
+            elseif v isa Function
+                for method in methods(v)
+                    method.module === m || continue
+                    push!(seen, string(nameof(m)) * "." * string(n))
+                end
+            end
+        end
+    end
+    walk(mod)
+    for name in sort!(collect(seen))
+        println(name)
+    end
+    """)
+    code, out, err, _ = capture(setenv(
+        `$(julia_bin()) --startup-file=no --project=$ROOT $script`,
+        child_env(depot, Dict{String, String}()),
+    ))
+    code == 0 || error("listing methods failed: $code\n" * stderr_tail(err))
+    return filter(!isempty, split(strip(out), '\n'))
+end
+
+function trace_summary(
+        path::AbstractString,
+        package::String,
+        defined::Vector{String} = String[],
+    )::Dict{String, Any}
     rows = parse_trace(path)
     totals = Dict{String, Float64}()
     counts = Dict{String, Int}()
@@ -152,12 +241,27 @@ function trace_summary(path::AbstractString, package::String)::Dict{String, Any}
             )
         )
     end
+    methods = Dict{String, Any}[]
+    for row in ranked
+        keep_method(row, package) || continue
+        push!(
+            methods, Dict{String, Any}(
+                "ms" => row.ms,
+                "bucket" => row.bucket,
+                "owner" => method_owner(row.signature, row.bucket),
+                "signature" => row.signature,
+                "recompile" => row.recompile,
+            )
+        )
+    end
     return Dict{String, Any}(
         "count" => length(rows),
         "total_ms" => sum(row -> row.ms, rows; init = 0.0),
         "main_ms" => main_ms,
         "buckets" => buckets,
         "top" => top,
+        "methods" => methods,
+        "missed" => missed_functions(rows, package, defined),
     )
 end
 
@@ -333,6 +437,7 @@ function measure_command(
         depot::AbstractString,
         package::String,
         spec::AbstractDict,
+        defined::Vector{String},
     )::Dict{String, Any}
     name = string(spec["name"])
     args = String[string(a) for a in spec["args"]]
@@ -348,7 +453,7 @@ function measure_command(
         end
         push!(walls, w)
     end
-    summary = trace_summary(trace, package)
+    summary = trace_summary(trace, package, defined)
     summary["name"] = name
     summary["args"] = args
     summary["exit"] = code
@@ -406,9 +511,10 @@ function measure()
     load = measure_using(depot, package)
     specs = commands["command"]
     specs isa AbstractDict && (specs = [specs])
+    defined = package_function_names(depot, package)
     rows = Dict{String, Any}[]
     for spec in specs
-        row = measure_command(depot, package, spec)
+        row = measure_command(depot, package, spec, defined)
         errtext = String(pop!(row, "stderr"))
         if row["exit"] != 0
             tail = stderr_tail(errtext)

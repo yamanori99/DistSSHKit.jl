@@ -1,0 +1,642 @@
+# Interactive bench page. Included from report.jl `main` only.
+# Stdlib only. plotly.js is loaded by the page, not by Julia.
+
+function json_escape(text::AbstractString)::String
+    out = IOBuffer()
+    for char in text
+        if char == '"'
+            print(out, "\\\"")
+        elseif char == '\\'
+            print(out, "\\\\")
+        elseif char == '\n'
+            print(out, "\\n")
+        elseif char == '\r'
+            print(out, "\\r")
+        elseif char == '<'
+            print(out, "\\u003c")
+        else
+            print(out, char)
+        end
+    end
+    return String(take!(out))
+end
+
+function json_encode(value)::String
+    value === nothing && return "null"
+    value isa Bool && return value ? "true" : "false"
+    value isa Integer && return string(value)
+    value isa AbstractFloat && return string(value)
+    if value isa AbstractString
+        return "\"" * json_escape(value) * "\""
+    end
+    if value isa AbstractDict
+        parts = String[]
+        for (key, item) in value
+            push!(parts, json_encode(string(key)) * ":" * json_encode(item))
+        end
+        return "{" * join(parts, ",") * "}"
+    end
+    if value isa AbstractVector
+        return "[" * join((json_encode(item) for item in value), ",") * "]"
+    end
+    error("cannot encode $(typeof(value))")
+end
+
+function html_escape(text)::String
+    return replace(
+        string(text),
+        '&' => "&amp;",
+        '<' => "&lt;",
+        '>' => "&gt;",
+        '"' => "&quot;",
+    )
+end
+
+# Same rule as measure.jl. Old rows have no `owner`, so the page derives it.
+function method_owner(signature::AbstractString, bucket::AbstractString)::String
+    sig = string(signature)
+    occursin("typeof(Main.", sig) && return "Main"
+    if bucket in ("DistSSHKit", "DistSSHQueue", "DistSSHRun", "Base")
+        return string(bucket)
+    end
+    matches = collect(eachmatch(r"typeof\(([A-Za-z_][A-Za-z0-9_]*)\.", sig))
+    for item in Iterators.reverse(matches)
+        name = string(something(item.captures[1], ""))
+        name == "Main" && return "Main"
+        name in ("Core", "") && continue
+        return name
+    end
+    found = Base.match(r"(?:Tuple\{|, )([A-Z][A-Za-z0-9_]*)\.", sig)
+    found === nothing && return string(bucket)
+    return string(something(found.captures[1], bucket))
+end
+
+function julia_short(row)::String
+    julia = strip(string(get(row, "julia", "")))
+    isempty(julia) && return ""
+    version = tryparse(VersionNumber, julia)
+    version === nothing && return julia
+    base = string(version.major, ".", version.minor)
+    isempty(version.prerelease) && return base
+    return base * "-" * string(version.prerelease[1])
+end
+
+# `Ubuntu 24.04.3 LTS` is `Ubuntu 24.04`. A point release is not a new host.
+function host_mark(row)::String
+    haskey(row, "os_name") || return ""
+    os = strip(string(row["os_name"]))
+    isempty(os) && return ""
+    found = Base.match(r"^([A-Za-z]+)\s+(\d+)\.(\d+)", os)
+    label = found === nothing ? first(split(os)) : "$(found.captures[1]) $(found.captures[2]).$(found.captures[3])"
+    arch = strip(string(get(row, "arch", "")))
+    return isempty(arch) ? label : label * " " * arch
+end
+
+function bare_short(signature::AbstractString)::String
+    matches = collect(eachmatch(r"typeof\(([A-Za-z_][A-Za-z0-9_.!]*)\)", signature))
+    picked = ""
+    for item in matches
+        name = string(something(item.captures[1], ""))
+        name == "Core.kwcall" && continue
+        picked = name
+    end
+    isempty(picked) || return picked
+    generated = Base.match(r"([A-Z][A-Za-z0-9_]*)\.var\"#([^#\"]+)", signature)
+    generated === nothing || return "$(generated.captures[1]).$(generated.captures[2])"
+    found = Base.match(r"Tuple\{([A-Z][A-Za-z0-9_]*)\.", signature)
+    found === nothing && return signature
+    return string(something(found.captures[1], signature))
+end
+
+function stored_methods(cmd)::Vector
+    haskey(cmd, "methods") && return cmd["methods"]
+    return get(cmd, "top", [])
+end
+
+function method_records(items)::Vector{Dict{String, Any}}
+    shorts = String[]
+    owners = String[]
+    sigs = String[]
+    for item in items
+        sig = string(get(item, "signature", ""))
+        push!(sigs, sig)
+        push!(shorts, bare_short(sig))
+        owner = haskey(item, "owner") ? string(item["owner"]) : method_owner(sig, string(get(item, "bucket", "")))
+        push!(owners, owner)
+    end
+    counts = Dict{String, Int}()
+    for short in shorts
+        counts[short] = get(counts, short, 0) + 1
+    end
+    out = Dict{String, Any}[]
+    for (index, item) in enumerate(items)
+        short = shorts[index]
+        if counts[short] > 1
+            short = short * " " * first(sigs[index], 32)
+        end
+        push!(out, Dict{String, Any}(
+            "signature" => sigs[index],
+            "short" => short,
+            "owner" => owners[index],
+            "ms" => Float64(item["ms"]),
+        ))
+    end
+    return out
+end
+
+function bench_payload(groups::Dict{String, Vector{Dict{String, Any}}})::Vector{Dict{String, Any}}
+    slots = Dict{String, Any}[]
+    for name in sort(collect(keys(groups)))
+        samples = Dict{String, Any}[]
+        for row in groups[name]
+            sha = string(get(row, "commit", ""))
+            commands = Dict{String, Any}[]
+            for cmd in get(row, "commands", [])
+                haskey(cmd, "wall_sec") || continue
+                missed = String[string(item) for item in get(cmd, "missed", [])]
+                push!(commands, Dict{String, Any}(
+                    "name" => string(get(cmd, "name", "")),
+                    "wall" => Float64(cmd["wall_sec"]),
+                    "methods" => method_records(stored_methods(cmd)),
+                    "missed" => missed,
+                ))
+            end
+            push!(samples, Dict{String, Any}(
+                "time" => string(get(row, "time", "")),
+                "commit" => isempty(sha) ? "" : first(sha, 7),
+                "julia" => string(get(row, "julia", "")),
+                "julia_short" => julia_short(row),
+                "host" => host_mark(row),
+                "commands" => commands,
+            ))
+        end
+        push!(slots, Dict{String, Any}("name" => name, "samples" => samples))
+    end
+    return slots
+end
+
+function fallback_rows(payload::Vector{Dict{String, Any}})::String
+    isempty(payload) && return "<p>No samples.</p>"
+    index = findfirst(item -> item["name"] == "nightly", payload)
+    slot = index === nothing ? payload[1] : payload[index]
+    samples = slot["samples"]::Vector{Dict{String, Any}}
+    isempty(samples) && return "<p>No samples.</p>"
+    latest = samples[end]
+    commands = latest["commands"]::Vector{Dict{String, Any}}
+    isempty(commands) && return "<p>No commands.</p>"
+    command = commands[argmax([Float64(item["wall"]) for item in commands])]
+    methods = sort(command["methods"]; by = item -> Float64(item["ms"]), rev = true)
+    shown = methods[1:min(8, end)]
+    lines = String["<table>", "<tr><th>owner</th><th>method</th><th>ms</th></tr>"]
+    for item in shown
+        push!(lines, "<tr><td>$(html_escape(item["owner"]))</td><td>$(html_escape(item["short"]))</td><td>$(html_escape(item["ms"]))</td></tr>")
+    end
+    for name in command["missed"]
+        push!(lines, "<tr><td></td><td>$(html_escape(name))</td><td></td></tr>")
+    end
+    push!(lines, "</table>")
+    push!(lines, "<table>")
+    push!(lines, "<tr><th>command</th><th>now s</th></tr>")
+    for item in commands
+        push!(lines, "<tr><td>$(html_escape(item["name"]))</td><td>$(html_escape(item["wall"]))</td></tr>")
+    end
+    push!(lines, "</table>")
+    return join(lines, "\n")
+end
+
+const PAGE_SCRIPT = raw"""
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script>
+const SLOTS = DATA;
+const RANGES = [
+  ["7d", 7],
+  ["30d", 30],
+  ["6mo", 183],
+  ["1y", 365],
+  ["2y", 730],
+  ["all", null]
+];
+const NOT_JULIA = new Set(["", "Main", "stdlib", "other", "DistSSHKit", "DistSSHRun", "DistSSHQueue"]);
+const state = { slot: "", range: "all", n: 8, cmd: "", drag: null };
+
+function slotData() {
+  return SLOTS.find((item) => item.name === state.slot) || SLOTS[0];
+}
+
+function parseTime(text) {
+  const value = Date.parse(text);
+  return Number.isNaN(value) ? 0 : value;
+}
+
+function visibleSamples() {
+  const slot = slotData();
+  const samples = slot ? slot.samples : [];
+  if (!samples.length) return [];
+  const latest = parseTime(samples[samples.length - 1].time);
+  let start = 0;
+  let end = latest;
+  if (state.drag) {
+    start = state.drag[0];
+    end = state.drag[1];
+  } else if (state.range !== "all") {
+    const days = RANGES.find((item) => item[0] === state.range)[1];
+    start = latest - days * 86400000;
+  } else {
+    start = parseTime(samples[0].time);
+  }
+  return samples.filter((sample) => {
+    const time = parseTime(sample.time);
+    return time >= start && time <= end + 1000;
+  });
+}
+
+function commandNames(samples) {
+  const names = [];
+  samples.forEach((sample) => {
+    sample.commands.forEach((command) => {
+      if (!names.includes(command.name)) names.push(command.name);
+    });
+  });
+  return names;
+}
+
+function wallAt(sample, name) {
+  const command = sample.commands.find((item) => item.name === name);
+  return command ? command.wall : null;
+}
+
+function ranked(command) {
+  return command.methods.slice().sort((a, b) => b.ms - a.ms);
+}
+
+function defaultCommand(samples) {
+  const names = commandNames(samples);
+  let best = names[0] || "";
+  let bestWall = -1;
+  for (let index = samples.length - 1; index >= 0; index -= 1) {
+    names.forEach((name) => {
+      const wall = wallAt(samples[index], name);
+      if (wall !== null && wall > bestWall) {
+        bestWall = wall;
+        best = name;
+      }
+    });
+    if (bestWall >= 0) break;
+  }
+  return best;
+}
+
+function chosenMethods(samples, name, count) {
+  const best = new Map();
+  const meta = new Map();
+  samples.forEach((sample) => {
+    const command = sample.commands.find((item) => item.name === name);
+    if (!command) return;
+    ranked(command).forEach((method, index) => {
+      const rank = index + 1;
+      if (!meta.has(method.signature)) meta.set(method.signature, method);
+      if (rank <= count) {
+        const previous = best.get(method.signature);
+        if (previous === undefined || rank < previous) best.set(method.signature, rank);
+      }
+    });
+  });
+  let keys = Array.from(best.keys());
+  keys.sort((a, b) => best.get(a) - best.get(b) || meta.get(b).ms - meta.get(a).ms);
+  if (keys.length > count) keys = keys.slice(0, count);
+  return keys.map((key) => meta.get(key));
+}
+
+function methodY(sample, name, signature, count) {
+  const command = sample.commands.find((item) => item.name === name);
+  if (!command) return null;
+  const index = ranked(command).findIndex((method) => method.signature === signature);
+  if (index < 0 || index >= count) return null;
+  return ranked(command)[index].ms;
+}
+
+function dropSpikes(values) {
+  const out = values.slice();
+  const notes = [];
+  for (let index = 0; index < out.length - 1; index += 1) {
+    if (out[index] === null) continue;
+    let next = index + 1;
+    while (next < out.length && out[next] === null) next += 1;
+    if (next >= out.length) break;
+    if (out[index] > 4 * out[next]) {
+      notes.push(out[index]);
+      out[index] = null;
+    }
+  }
+  return { values: out, notes };
+}
+
+function breaks(samples, field, nightlyOnly) {
+  const marks = [];
+  if (nightlyOnly && !state.slot.includes("nightly")) return marks;
+  for (let index = 1; index < samples.length; index += 1) {
+    const previous = samples[index - 1][field];
+    const current = samples[index][field];
+    if (previous && current && previous !== current) {
+      marks.push({ time: samples[index].time, label: current });
+    }
+  }
+  return marks;
+}
+
+function shapes(samples) {
+  const julia = breaks(samples, "julia_short", true);
+  const hosts = breaks(samples, "host", false);
+  return julia.map((mark) => ({
+    type: "line", x0: mark.time, x1: mark.time, y0: 0, y1: 1, yref: "paper",
+    line: { dash: "dash", width: 1, color: "#64748b" }
+  })).concat(hosts.map((mark) => ({
+    type: "line", x0: mark.time, x1: mark.time, y0: 0, y1: 1, yref: "paper",
+    line: { dash: "dot", width: 1, color: "#9558b2" }
+  })));
+}
+
+function annotations(samples) {
+  const julia = breaks(samples, "julia_short", true);
+  const hosts = breaks(samples, "host", false);
+  return julia.map((mark) => ({
+    x: mark.time, y: 1, yref: "paper", text: mark.label, showarrow: false, yanchor: "bottom"
+  })).concat(hosts.map((mark) => ({
+    x: mark.time, y: 0.92, yref: "paper", text: mark.label, showarrow: false, font: { color: "#9558b2" }
+  })));
+}
+
+function layout(title, ytitle, samples) {
+  return {
+    title, margin: { t: 48, r: 16, b: 48, l: 56 }, height: title.startsWith("Method") ? 420 : 280,
+    xaxis: { type: "date", title: "" },
+    yaxis: { title: ytitle, rangemode: "tozero" },
+    shapes: shapes(samples),
+    annotations: annotations(samples),
+    legend: { orientation: "h" }
+  };
+}
+
+function drawWall(samples) {
+  const names = commandNames(samples);
+  const notes = [];
+  const traces = names.map((name) => {
+    const raw = samples.map((sample) => wallAt(sample, name));
+    const dropped = dropSpikes(raw);
+    dropped.notes.forEach((value) => notes.push(name + " " + value + "s omitted"));
+    return {
+      type: "scatter", mode: "lines+markers", name, connectgaps: false,
+      x: samples.map((sample) => sample.time),
+      y: dropped.values,
+      customdata: samples.map((sample) => sample.commit),
+      hovertemplate: "%{x}<br>%{customdata}<br>" + name + " %{y}s<extra></extra>"
+    };
+  });
+  const node = document.getElementById("wall-chart");
+  const drawn = window.Plotly ? Plotly.react(node, traces, layout("Command wall", "seconds", samples)) : Promise.resolve();
+  if (window.Plotly) {
+    if (node.removeAllListeners) node.removeAllListeners("plotly_click");
+    node.on("plotly_click", (event) => {
+      const point = event.points && event.points[0];
+      if (!point) return;
+      state.cmd = names[point.curveNumber];
+      state.drag = null;
+      draw();
+    });
+  }
+  document.getElementById("wall-note").textContent = notes.join(" ");
+  window.__wallDrawn = drawn;
+  const body = document.querySelector("#wall-table tbody");
+  body.innerHTML = "";
+  names.forEach((name) => {
+    const values = samples.map((sample) => wallAt(sample, name)).filter((value) => value !== null);
+    const row = document.createElement("tr");
+    const now = values.length ? values[values.length - 1] : null;
+    const start = values.length ? values[0] : null;
+    const change = now === null || start === null || values.length < 2 ? "" : (now - start).toFixed(2);
+    [name, now === null ? "" : now.toFixed(2), start === null ? "" : start.toFixed(2), change].forEach((cell) => {
+      const td = document.createElement("td");
+      td.textContent = cell;
+      row.appendChild(td);
+    });
+    body.appendChild(row);
+  });
+}
+
+function drawMethods(samples) {
+  const available = new Set();
+  samples.forEach((sample) => {
+    const command = sample.commands.find((item) => item.name === state.cmd);
+    if (command) command.methods.forEach((method) => available.add(method.signature));
+  });
+  const cap = Math.max(1, available.size);
+  if (state.n > cap) state.n = cap;
+  const chosen = chosenMethods(samples, state.cmd, state.n);
+  const traces = chosen.map((method) => ({
+    type: "scatter", mode: "lines+markers", name: method.short, connectgaps: false,
+    x: samples.map((sample) => sample.time),
+    y: samples.map((sample) => methodY(sample, state.cmd, method.signature, state.n)),
+    customdata: samples.map((sample) => [sample.commit, sample.julia, method.signature, method.owner]),
+    hovertemplate: "%{x}<br>%{customdata[0]} %{customdata[1]}<br>%{customdata[3]} %{y} ms<br>%{customdata[2]}<extra></extra>"
+  }));
+  const node = document.getElementById("method-chart");
+  const drawn = window.Plotly ? Plotly.react(node, traces, layout("Method rank", "ms", samples)) : Promise.resolve();
+  window.__methodDrawn = drawn;
+  const body = document.querySelector("#method-table tbody");
+  body.innerHTML = "";
+  const last = samples[samples.length - 1];
+  const prev = samples.length > 1 ? samples[samples.length - 2] : null;
+  function top(sample) {
+    if (!sample) return [];
+    const command = sample.commands.find((item) => item.name === state.cmd);
+    return command ? ranked(command).slice(0, state.n) : [];
+  }
+  const now = top(last);
+  const before = top(prev);
+  const rows = now.map((method) => {
+    const nowRank = now.findIndex((item) => item.signature === method.signature) + 1;
+    const prevRank = before.findIndex((item) => item.signature === method.signature) + 1;
+    const old = before.find((item) => item.signature === method.signature);
+    return { method, nowRank, prevRank: prevRank || "", change: prevRank ? String(prevRank - nowRank) : "new", ms: method.ms, delta: old ? method.ms - old.ms : "" };
+  });
+  before.forEach((method) => {
+    if (now.some((item) => item.signature === method.signature)) return;
+    const prevRank = before.findIndex((item) => item.signature === method.signature) + 1;
+    rows.push({ method, nowRank: "", prevRank, change: "gone", ms: "", delta: "" });
+  });
+  rows.forEach((item) => {
+    const row = document.createElement("tr");
+    if (!NOT_JULIA.has(item.method.owner)) row.dataset.julia = "1";
+    [item.nowRank, item.prevRank, item.change, item.method.owner, item.method.short, item.ms === "" ? "" : Math.round(item.ms), item.delta === "" ? "" : Math.round(item.delta)].forEach((cell) => {
+      const td = document.createElement("td");
+      td.textContent = cell;
+      row.appendChild(td);
+    });
+    body.appendChild(row);
+  });
+  const command = last && last.commands.find((item) => item.name === state.cmd);
+  (command ? command.missed : []).forEach((name) => {
+    const row = document.createElement("tr");
+    ["", "", "", "", name, "", ""].forEach((cell) => {
+      const td = document.createElement("td");
+      td.textContent = cell;
+      row.appendChild(td);
+    });
+    body.appendChild(row);
+  });
+  document.getElementById("method-count").textContent = String(state.n);
+  document.getElementById("method-note").textContent =
+    state.slot + " methods for " + state.cmd + ". Owners other than the package or Main can be copied into a Julia issue with the Julia version, the command, the signature, and the milliseconds.";
+}
+
+function drawControls() {
+  const slots = document.getElementById("slots");
+  slots.innerHTML = "";
+  SLOTS.forEach((slot) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = slot.name;
+    button.setAttribute("aria-pressed", slot.name === state.slot ? "true" : "false");
+    button.onclick = () => { state.slot = slot.name; state.cmd = ""; state.drag = null; draw(); };
+    slots.appendChild(button);
+  });
+  document.getElementById("range-label").textContent = state.drag ? "drag" : state.range;
+}
+
+function writeQuery() {
+  const query = new URLSearchParams();
+  query.set("slot", state.slot);
+  query.set("range", state.range);
+  query.set("n", String(state.n));
+  query.set("cmd", state.cmd);
+  history.replaceState(null, "", "?" + query.toString());
+}
+
+function draw() {
+  const samples = visibleSamples();
+  if (!samples.length) return;
+  if (!commandNames(samples).includes(state.cmd)) state.cmd = defaultCommand(samples);
+  drawControls();
+  drawing += 1;
+  drawMethods(samples);
+  drawWall(samples);
+  state.shown = samples.map((sample) => sample.time).join("|");
+  Promise.all([window.__methodDrawn, window.__wallDrawn]).then(() => { drawing -= 1; });
+  writeQuery();
+  if (!window.Plotly) return;
+  const wall = document.getElementById("wall-chart");
+  const method = document.getElementById("method-chart");
+  function follow(event) {
+    if (drawing > 0) return;
+    if (!event || event["xaxis.autorange"]) return;
+    const start = Date.parse(event["xaxis.range[0]"]);
+    const end = Date.parse(event["xaxis.range[1]"]);
+    if (Number.isNaN(start) || Number.isNaN(end)) return;
+    state.drag = [start, end];
+    const key = visibleSamples().map((sample) => sample.time).join("|");
+    if (key === state.shown) return;
+    draw();
+  }
+  [wall, method].forEach((node) => {
+    if (!node.removeAllListeners) return;
+    node.removeAllListeners("plotly_relayout");
+    node.on("plotly_relayout", follow);
+  });
+}
+
+let drawing = 0;
+function boot() {
+  const fallback = document.getElementById("fallback");
+  if (fallback) fallback.hidden = true;
+  const query = new URLSearchParams(location.search);
+  const names = SLOTS.map((slot) => slot.name);
+  state.slot = names.includes(query.get("slot")) ? query.get("slot") : (names.includes("nightly") ? "nightly" : names[0]);
+  const range = query.get("range");
+  state.range = RANGES.some((item) => item[0] === range) ? range : "all";
+  const count = Number(query.get("n"));
+  state.n = count >= 1 ? Math.round(count) : 8;
+  state.cmd = query.get("cmd") || "";
+  document.getElementById("range-dec").onclick = () => {
+    const index = Math.max(0, RANGES.findIndex((item) => item[0] === state.range) - 1);
+    state.range = RANGES[index][0];
+    state.drag = null;
+    draw();
+  };
+  document.getElementById("range-inc").onclick = () => {
+    const index = RANGES.findIndex((item) => item[0] === state.range);
+    state.range = RANGES[Math.min(RANGES.length - 1, index + 1)][0];
+    state.drag = null;
+    draw();
+  };
+  document.getElementById("method-dec").onclick = () => { state.n = Math.max(1, state.n - 1); draw(); };
+  document.getElementById("method-inc").onclick = () => { state.n += 1; draw(); };
+  draw();
+}
+boot();
+</script>
+"""
+
+function bench_html(groups)::String
+    payload = bench_payload(groups)
+    tables = fallback_rows(payload)
+    script = replace(PAGE_SCRIPT, "const SLOTS = DATA;" => "const SLOTS = " * json_encode(payload) * ";")
+    return """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+    <meta charset="utf-8">
+    <title>Compile bench</title>
+    <style>
+    body { font: 15px/1.4 sans-serif; margin: 24px; color: #0f172a; }
+    button { margin: 0 4px 8px 0; }
+    button[aria-pressed="true"] { font-weight: 700; }
+    table { border-collapse: collapse; margin: 12px 0 24px; }
+    td, th { border: 1px solid #cbd5e1; padding: 4px 8px; text-align: left; }
+    tr[data-julia="1"] { background: #f3e8ff; }
+    #range-row, #method-row { margin: 8px 0 16px; }
+    </style>
+    </head>
+    <body>
+    <div id="slots"></div>
+    <div id="range-row">
+    <span>range</span>
+    <button type="button" id="range-dec">-</button>
+    <span id="range-label">all</span>
+    <button type="button" id="range-inc">+</button>
+    </div>
+    <h1>Method rank</h1>
+    <div id="method-row">
+    <span>methods</span>
+    <button type="button" id="method-dec">-</button>
+    <span id="method-count">8</span>
+    <button type="button" id="method-inc">+</button>
+    </div>
+    <p id="method-note"></p>
+    <table id="method-table">
+    <thead><tr><th>now</th><th>prev</th><th>change</th><th>owner</th><th>method</th><th>ms</th><th>ms change</th></tr></thead>
+    <tbody></tbody>
+    </table>
+    <div id="method-chart"></div>
+    <h2>Command wall</h2>
+    <p id="wall-note"></p>
+    <table id="wall-table">
+    <thead><tr><th>command</th><th>now s</th><th>start s</th><th>change</th></tr></thead>
+    <tbody></tbody>
+    </table>
+    <div id="wall-chart"></div>
+    <div id="fallback">
+    $tables
+    </div>
+    $script
+    </body>
+    </html>
+    """
+end
+
+function write_bench(groups, path::AbstractString)
+    open(path, "w") do io
+        write(io, bench_html(groups))
+    end
+    println(stderr, "wrote ", path)
+    return nothing
+end
