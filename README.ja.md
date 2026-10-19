@@ -3,9 +3,9 @@
   <picture>
     <source
       media="(prefers-color-scheme: dark)"
-      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/social/readme-dark-static.png">
+      srcset="docs/src/assets/social/readme-dark-static.png">
     <img
-      src="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/social/readme-static.png"
+      src="docs/src/assets/social/readme-static.png"
       width="640"
       alt="DistSSHKit。複数のマシンへ SSH して Julia の計算を実行するツールキット。">
   </picture>
@@ -92,13 +92,13 @@ git によるデプロイを使う場合は、さらに **`git`** も必要と�
   <picture>
     <source
       media="(prefers-color-scheme: dark)"
-      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/diagram/topology-dark.svg">
+      srcset="docs/src/assets/diagram/topology-dark.svg">
     <source
       media="(prefers-color-scheme: light)"
-      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/diagram/topology.svg">
+      srcset="docs/src/assets/diagram/topology.svg">
     <img
       alt="Drive topology: master and workers"
-      src="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/diagram/topology.png">
+      src="docs/src/assets/diagram/topology.png">
   </picture>
 </p>
 <!-- markdownlint-enable MD033 MD013 -->

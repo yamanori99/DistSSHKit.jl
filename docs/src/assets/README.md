@@ -34,9 +34,9 @@ with `dark-` so light and dark copies can sit in one HTML document.
 
 GitHub README / README.ja put the README banner above the title, and
 use `<picture>` plus `prefers-color-scheme` for that banner and for the
-topology diagram. Image addresses are absolute
-`raw.githubusercontent.com/…/main/docs/src/assets/…` so JuliaHub, which
-does not resolve a path relative to the repo, can load them. The banner
+topology diagram. Paths are relative to the README, so GitHub shows the
+files from the branch you are reading. An absolute `…/main/…` URL 404s
+until those files are on main. The banner
 is the social lockup with the vertical pad tightened (`README_PAD_Y`).
 Its dark source is a transparent PNG. The light fallback is the white
 card. The 1280×640 social preview stays the GitHub Settings upload.
