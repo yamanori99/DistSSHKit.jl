@@ -3,26 +3,35 @@
 Precompile time, load time, CLI wall time, `src/**/*.jl` size, and the host
 (OS name, arch, CPU). `code lines` skips blank lines. A row is flagged when,
 against the previous sample on the same Julia slot, the host OS or arch
-changes, package precompile grows by 1.5x and 0.5s, a command wall grows
+changes, the Julia version changes, package precompile grows by 1.5x and 0.5s, a command wall grows
 by 1.5x and 1s, or a method of at least 200 ms is new in the top 20 or
 doubles. This does not fail CI.
 
 ## Flagged
 
 - 1.13: status method new -> 10493.2 ms: Tuple{typeof(DistSSHQueue.main), Array{String, 1}}
-- 1.14-nightly: status method new -> 14927.6 ms: Tuple{typeof(DistSSHQueue.main), Array{String, 1}}
 
 ## 1.13
 
-| date | commit | version | os | arch | src files | code lines | full s | pkg s | using s | help s | status s | go s | drive s |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2026-10-18 | 81ff9d1 | 0.10.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 407 | 9.21 | 1.02 | 0.32 | 15.61 | 16.38 |  |  |
-| 2026-10-18 | be54052 | 0.10.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 410 | 6.13 | 0.8 | 0.25 | 0.63 | 11.52 | 6.25 | 22.36 |
+| date | commit | version | julia | os | arch | src files | code lines | full s | pkg s | using s | help s | status s | go s | drive s |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-18 | 81ff9d1 | 0.10.2 | 1.13.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 407 | 9.21 | 1.02 | 0.32 | 15.61 | 16.38 |  |  |
+| 2026-10-18 | be54052 | 0.10.2 | 1.13.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 410 | 6.13 | 0.8 | 0.25 | 0.63 | 11.52 | 6.25 | 22.36 |
 
 ```mermaid
+---
+config:
+  theme: base
+  themeVariables:
+    xyChart:
+      plotColorPalette: "#1f4e79"
+  xyChart:
+    xAxis:
+      labelRotation: 45
+---
 xychart-beta
     title "1.13 help"
-    x-axis ["1018", "1018"]
+    x-axis ["10-18 81ff9d1", "10-18 be54052"]
     y-axis "seconds" 0 --> 19
     line [15.61, 0.63]
 ```
@@ -40,9 +49,19 @@ Latest `help` methods:
 | `Tuple{typeof(Base.getproperty), Base.GenericCondition{Base.ReentrantLock}, Symbol}` | 2.7 |  |
 
 ```mermaid
+---
+config:
+  theme: base
+  themeVariables:
+    xyChart:
+      plotColorPalette: "#1f4e79"
+  xyChart:
+    xAxis:
+      labelRotation: 45
+---
 xychart-beta
     title "1.13 status"
-    x-axis ["1018", "1018"]
+    x-axis ["10-18 81ff9d1", "10-18 be54052"]
     y-axis "seconds" 0 --> 20
     line [16.38, 11.52]
 ```
@@ -64,9 +83,19 @@ Latest `status` methods:
 | `Tuple{typeof(Base.getproperty), Base.MappingRF{typeof(Base.Unicode.textwidth), typeof(Base...` | 5.5 | 4.9 |
 
 ```mermaid
+---
+config:
+  theme: base
+  themeVariables:
+    xyChart:
+      plotColorPalette: "#1f4e79"
+  xyChart:
+    xAxis:
+      labelRotation: 45
+---
 xychart-beta
     title "1.13 go"
-    x-axis ["1018"]
+    x-axis ["10-18 be54052"]
     y-axis "seconds" 0 --> 8
     bar [6.25]
 ```
@@ -88,9 +117,19 @@ Latest `go` methods:
 | `Tuple{typeof(Base.addenv), Base.Cmd, Pair{String, String}}` | 50.0 |  |
 
 ```mermaid
+---
+config:
+  theme: base
+  themeVariables:
+    xyChart:
+      plotColorPalette: "#1f4e79"
+  xyChart:
+    xAxis:
+      labelRotation: 45
+---
 xychart-beta
     title "1.13 drive"
-    x-axis ["1018"]
+    x-axis ["10-18 be54052"]
     y-axis "seconds" 0 --> 27
     bar [22.36]
 ```
@@ -113,17 +152,28 @@ Latest `drive` methods:
 
 ## 1.14-nightly
 
-| date | commit | version | os | arch | src files | code lines | full s | pkg s | using s | help s | status s | go s | drive s |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2026-10-18 | 81ff9d1 | 0.10.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 407 | 8.48 | 0.91 | 0.35 | 7.06 | 7.15 |  |  |
-| 2026-10-18 | be54052 | 0.10.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 410 | 7.48 | 0.88 | 0.34 | 0.64 | 6.63 | 3.29 | 12.38 |
+| date | commit | version | julia | os | arch | src files | code lines | full s | pkg s | using s | help s | status s | go s | drive s |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-18 | 81ff9d1 | 0.10.2 | 1.14.0-DEV.3787 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 407 | 8.48 | 0.91 | 0.35 | 7.06 | 7.15 |  |  |
+| 2026-10-18 | be54052 | 0.10.2 | 1.14.0-DEV.3787 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 410 | 7.48 | 0.88 | 0.34 | 0.64 | 6.63 | 3.29 | 12.38 |
+| 2026-10-19 | 72e0a48 | 0.10.2 | 1.14.0-DEV.3787 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 410 | 6.69 | 0.77 | 0.32 | 0.57 | 6.14 | 3.09 | 12.02 |
 
 ```mermaid
+---
+config:
+  theme: base
+  themeVariables:
+    xyChart:
+      plotColorPalette: "#1f4e79"
+  xyChart:
+    xAxis:
+      labelRotation: 45
+---
 xychart-beta
-    title "1.14-nightly help"
-    x-axis ["1018", "1018"]
+    title "1.14-nightly 1.14-DEV.3787 help"
+    x-axis ["10-18 1.14-DEV.3787", "10-18 be54052", "10-19 72e0a48"]
     y-axis "seconds" 0 --> 9
-    line [7.06, 0.64]
+    line [7.06, 0.64, 0.57]
 ```
 
 
@@ -131,22 +181,32 @@ Latest `help` methods:
 
 | method | now ms | previous ms |
 | --- | ---: | ---: |
-| `Tuple{typeof(DistSSHKit.main), Array{String, 1}}` | 228.2 | 17077.1 |
-| `Tuple{typeof(DistSSHKit.print_kit_root_usage), Base.PipeEndpoint}` | 73.9 | 87.4 |
-| `Tuple{typeof(Distributed.flush_gc_msgs)}` | 20.8 | 23.7 |
-| `Tuple{typeof(Base.should_use_main_entrypoint)}` | 16.9 | 13.7 |
-| `Tuple{Distributed.var"#start_gc_msgs_task##0#start_gc_msgs_task##1"}` | 14.5 | 15.5 |
-| `Tuple{typeof(Base.string), Char}` | 6.9 | 6.3 |
-| `Tuple{typeof(Base.tail), NTuple{14, String}}` | 5.1 | 5.9 |
-| `Tuple{typeof(Base.tail), NTuple{13, String}}` | 4.7 |  |
-| `Tuple{typeof(Base.tail), NTuple{12, String}}` | 4.5 |  |
+| `Tuple{typeof(DistSSHKit.main), Array{String, 1}}` | 220.0 | 228.2 |
+| `Tuple{typeof(DistSSHKit.print_kit_root_usage), Base.PipeEndpoint}` | 64.8 | 73.9 |
+| `Tuple{typeof(Distributed.flush_gc_msgs)}` | 18.8 | 20.8 |
+| `Tuple{typeof(Base.should_use_main_entrypoint)}` | 16.7 | 16.9 |
+| `Tuple{Distributed.var"#start_gc_msgs_task##0#start_gc_msgs_task##1"}` | 11.7 | 14.5 |
+| `Tuple{typeof(Base.string), Char}` | 6.0 | 6.9 |
+| `Tuple{typeof(Base.tail), NTuple{14, String}}` | 4.5 | 5.1 |
+| `Tuple{typeof(Base.tail), NTuple{13, String}}` | 4.0 | 4.7 |
+| `Tuple{typeof(Base.tail), NTuple{12, String}}` | 3.6 | 4.5 |
 
 ```mermaid
+---
+config:
+  theme: base
+  themeVariables:
+    xyChart:
+      plotColorPalette: "#1f4e79"
+  xyChart:
+    xAxis:
+      labelRotation: 45
+---
 xychart-beta
-    title "1.14-nightly status"
-    x-axis ["1018", "1018"]
+    title "1.14-nightly 1.14-DEV.3787 status"
+    x-axis ["10-18 1.14-DEV.3787", "10-18 be54052", "10-19 72e0a48"]
     y-axis "seconds" 0 --> 9
-    line [7.15, 6.63]
+    line [7.15, 6.63, 6.14]
 ```
 
 
@@ -154,23 +214,33 @@ Latest `status` methods:
 
 | method | now ms | previous ms |
 | --- | ---: | ---: |
-| `Tuple{typeof(DistSSHQueue.main), Array{String, 1}}` | 14927.6 |  |
-| `Tuple{DistSSHQueue.var"##show_status#192", Base.PipeEndpoint, Nothing, Bool, Nothing, Bool...` | 505.4 | 541.6 |
-| `Tuple{typeof(DistSSHKit.main), Array{String, 1}}` | 98.9 | 6511.7 |
-| `Tuple{typeof(Distributed.flush_gc_msgs)}` | 21.5 | 25.4 |
-| `Tuple{Distributed.var"#start_gc_msgs_task##0#start_gc_msgs_task##1"}` | 14.0 | 14.7 |
-| `Tuple{typeof(Core.kwcall), NamedTuple{(:quiet, :tail, :verbose), Tuple{Bool, Nothing, Bool...` | 11.8 | 13.5 |
-| `Tuple{typeof(DistSSHRun.DistSSHBase.format_placement_token), Symbol, String, Nothing}` | 9.6 | 1.6 |
-| `Tuple{typeof(Base.getproperty), NamedTuple{(:quiet, :progress, :verbose, :yes, :hosts_file...` | 9.5 | 1.4 |
-| `Tuple{typeof(Base._array_for), Core.TypeEgal{DistSSHQueue.Job}, Array{Any, 1}, Base.HasSha...` | 7.4 | 7.1 |
-| `Tuple{typeof(Base.getproperty), Base.Generator{Tuple{String, String, String}, DistSSHRun.v...` | 6.9 |  |
+| `Tuple{typeof(DistSSHQueue.main), Array{String, 1}}` | 13499.5 | 14927.6 |
+| `Tuple{DistSSHQueue.var"##show_status#192", Base.PipeEndpoint, Nothing, Bool, Nothing, Bool...` | 450.6 | 505.4 |
+| `Tuple{typeof(DistSSHKit.main), Array{String, 1}}` | 80.7 | 98.9 |
+| `Tuple{typeof(Distributed.flush_gc_msgs)}` | 20.4 | 21.5 |
+| `Tuple{Distributed.var"#start_gc_msgs_task##0#start_gc_msgs_task##1"}` | 12.9 | 14.0 |
+| `Tuple{typeof(Core.kwcall), NamedTuple{(:quiet, :tail, :verbose), Tuple{Bool, Nothing, Bool...` | 10.2 | 11.8 |
+| `Tuple{typeof(Base.getproperty), NamedTuple{(:quiet, :progress, :verbose, :yes, :hosts_file...` | 9.4 | 9.5 |
+| `Tuple{typeof(DistSSHRun.DistSSHBase.format_placement_token), Symbol, String, Nothing}` | 8.0 | 9.6 |
+| `Tuple{typeof(Base._array_for), Core.TypeEgal{DistSSHQueue.Job}, Array{Any, 1}, Base.HasSha...` | 6.7 | 7.4 |
+| `Tuple{typeof(Base.getproperty), Base.Order.By{DistSSHQueue.var"#sorted_kit_ssh_names##0#so...` | 5.9 | 6.0 |
 
 ```mermaid
+---
+config:
+  theme: base
+  themeVariables:
+    xyChart:
+      plotColorPalette: "#1f4e79"
+  xyChart:
+    xAxis:
+      labelRotation: 45
+---
 xychart-beta
-    title "1.14-nightly go"
-    x-axis ["1018"]
+    title "1.14-nightly 1.14-DEV.3787 go"
+    x-axis ["10-18 1.14-DEV.3787", "10-19 72e0a48"]
     y-axis "seconds" 0 --> 4
-    bar [3.29]
+    line [3.29, 3.09]
 ```
 
 
@@ -178,23 +248,33 @@ Latest `go` methods:
 
 | method | now ms | previous ms |
 | --- | ---: | ---: |
-| `Tuple{typeof(Core.kwcall), NamedTuple{(:project, :quiet, :verbosity, :yes, :sync, :args, :...` | 2521.5 |  |
-| `Tuple{typeof(Main.go_main)}` | 1609.9 |  |
-| `Tuple{typeof(DistSSHRun.main), Array{String, 1}}` | 1260.7 |  |
-| `Tuple{DistSSHRun.var"#_go_run!##6#_go_run!##7"{String, String, Bool, Array{String, 1}, Not...` | 325.2 |  |
-| `Tuple{typeof(Base.push_widen), Array{NamedTuple{(:event, :kind, :job, :label, :total, :don...` | 129.5 |  |
-| `Tuple{typeof(DistSSHKit.main), Array{String, 1}}` | 98.2 |  |
-| `Tuple{typeof(Core.kwcall), NamedTuple{(:ok, :footer), Tuple{Bool, String}}, typeof(DistSSH...` | 57.8 |  |
-| `Tuple{typeof(Base.addenv), Base.Cmd, Pair{String, String}}` | 51.2 |  |
-| `Tuple{typeof(Base.grow_to!), Array{NamedTuple{(:event, :kind, :job, :label, :total, :done,...` | 39.7 |  |
-| `Tuple{typeof(Base.grow_to!), Array{NamedTuple{(:event, :kind, :job, :label, :total, :done,...` | 39.1 |  |
+| `Tuple{typeof(Core.kwcall), NamedTuple{(:project, :quiet, :verbosity, :yes, :sync, :args, :...` | 2782.8 | 2521.5 |
+| `Tuple{typeof(Main.go_main)}` | 1842.4 | 1609.9 |
+| `Tuple{DistSSHRun.var"#_go_run!##6#_go_run!##7"{String, String, Bool, Array{String, 1}, Not...` | 362.9 | 325.2 |
+| `Tuple{typeof(Base.push_widen), Array{NamedTuple{(:event, :kind, :job, :label, :total, :don...` | 117.6 | 129.5 |
+| `Tuple{typeof(DistSSHKit.main), Array{String, 1}}` | 94.8 | 98.2 |
+| `Tuple{DistSSHRun.var"#577#578", Array{String, 1}}` | 83.4 |  |
+| `Tuple{typeof(DistSSHRun.main), Array{String, 1}}` | 60.0 | 1260.7 |
+| `Tuple{typeof(Core.kwcall), NamedTuple{(:ok, :footer), Tuple{Bool, String}}, typeof(DistSSH...` | 52.9 | 57.8 |
+| `Tuple{typeof(Base.addenv), Base.Cmd, Pair{String, String}}` | 45.4 | 51.2 |
+| `Tuple{typeof(Base.grow_to!), Array{NamedTuple{(:event, :kind, :job, :label, :total, :done,...` | 36.1 | 39.7 |
 
 ```mermaid
+---
+config:
+  theme: base
+  themeVariables:
+    xyChart:
+      plotColorPalette: "#1f4e79"
+  xyChart:
+    xAxis:
+      labelRotation: 45
+---
 xychart-beta
-    title "1.14-nightly drive"
-    x-axis ["1018"]
+    title "1.14-nightly 1.14-DEV.3787 drive"
+    x-axis ["10-18 1.14-DEV.3787", "10-19 72e0a48"]
     y-axis "seconds" 0 --> 15
-    bar [12.38]
+    line [12.38, 12.02]
 ```
 
 
@@ -202,27 +282,37 @@ Latest `drive` methods:
 
 | method | now ms | previous ms |
 | --- | ---: | ---: |
-| `Tuple{typeof(Core.kwcall), NamedTuple{(:original_args, :project_root), Tuple{Array{String,...` | 6631.9 |  |
-| `Tuple{typeof(Main.drive_main)}` | 3140.0 |  |
-| `Tuple{Distributed.var"#process_messages##0#process_messages##1"{Sockets.TCPSocket, Sockets...` | 1048.0 |  |
-| `Tuple{Distributed.var"#38#39"{Distributed.LocalManager, Array{Int64, 1}, Distributed.Worke...` | 943.2 |  |
-| `Tuple{typeof(DistSSHRun.main), Array{String, 1}}` | 475.0 |  |
-| `Tuple{typeof(Serialization.serialize), Distributed.ClusterSerializer{Sockets.TCPSocket}, A...` | 433.4 |  |
-| `Tuple{typeof(DistSSHKit.main)}` | 216.0 |  |
-| `Tuple{typeof(Distributed.send_connection_hdr), Sockets.TCPSocket, Bool}` | 183.5 |  |
-| `Tuple{typeof(Base.print), Base.PipeEndpoint, Array{Int64, 1}, String}` | 165.0 |  |
-| `Tuple{typeof(Distributed.read_worker_host_port), Base.PipeEndpoint}` | 152.0 |  |
+| `Tuple{typeof(Core.kwcall), NamedTuple{(:original_args, :project_root), Tuple{Array{String,...` | 6532.7 | 6631.9 |
+| `Tuple{typeof(Main.drive_main)}` | 3136.8 | 3140.0 |
+| `Tuple{Distributed.var"#38#39"{Distributed.LocalManager, Array{Int64, 1}, Distributed.Worke...` | 1050.4 | 943.2 |
+| `Tuple{Distributed.var"#process_messages##0#process_messages##1"{Sockets.TCPSocket, Sockets...` | 874.6 | 1048.0 |
+| `Tuple{typeof(Serialization.serialize), Distributed.ClusterSerializer{Sockets.TCPSocket}, A...` | 391.0 | 433.4 |
+| `Tuple{typeof(Distributed.send_connection_hdr), Sockets.TCPSocket, Bool}` | 237.3 | 183.5 |
+| `Tuple{typeof(Distributed.read_worker_host_port), Base.PipeEndpoint}` | 203.6 | 152.0 |
+| `Tuple{typeof(DistSSHKit.main)}` | 201.7 | 216.0 |
+| `Tuple{typeof(Distributed.write_msg), Sockets.TCPSocket, Distributed.ClusterSerializer{Sock...` | 154.1 |  |
+| `Tuple{typeof(Base.print), Base.PipeEndpoint, Array{Int64, 1}, String}` | 151.7 | 165.0 |
 
 ## nightly
 
-| date | commit | version | os | arch | src files | code lines | full s | pkg s | using s | help s | status s | go s | drive s |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2026-10-18 | be54052 | 0.10.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 410 | 5.15 | 0.68 | 0.23 | 0.44 | 4.22 | 2.12 | 8.76 |
+| date | commit | version | julia | os | arch | src files | code lines | full s | pkg s | using s | help s | status s | go s | drive s |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-18 | be54052 | 0.10.2 | 1.14.0-DEV.3787 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 410 | 5.15 | 0.68 | 0.23 | 0.44 | 4.22 | 2.12 | 8.76 |
 
 ```mermaid
+---
+config:
+  theme: base
+  themeVariables:
+    xyChart:
+      plotColorPalette: "#1f4e79"
+  xyChart:
+    xAxis:
+      labelRotation: 45
+---
 xychart-beta
-    title "nightly help"
-    x-axis ["1018"]
+    title "nightly 1.14-DEV.3787 help"
+    x-axis ["10-18 1.14-DEV.3787"]
     y-axis "seconds" 0 --> 1
     bar [0.44]
 ```
@@ -243,9 +333,19 @@ Latest `help` methods:
 | `Tuple{typeof(Base.tail), NTuple{12, String}}` | 2.9 |  |
 
 ```mermaid
+---
+config:
+  theme: base
+  themeVariables:
+    xyChart:
+      plotColorPalette: "#1f4e79"
+  xyChart:
+    xAxis:
+      labelRotation: 45
+---
 xychart-beta
-    title "nightly status"
-    x-axis ["1018"]
+    title "nightly 1.14-DEV.3787 status"
+    x-axis ["10-18 1.14-DEV.3787"]
     y-axis "seconds" 0 --> 6
     bar [4.22]
 ```
@@ -267,9 +367,19 @@ Latest `status` methods:
 | `Tuple{typeof(Base.getproperty), Base.MappingRF{DistSSHRun.var"#77#78", typeof(Base.max)}, ...` | 5.3 |  |
 
 ```mermaid
+---
+config:
+  theme: base
+  themeVariables:
+    xyChart:
+      plotColorPalette: "#1f4e79"
+  xyChart:
+    xAxis:
+      labelRotation: 45
+---
 xychart-beta
-    title "nightly go"
-    x-axis ["1018"]
+    title "nightly 1.14-DEV.3787 go"
+    x-axis ["10-18 1.14-DEV.3787"]
     y-axis "seconds" 0 --> 3
     bar [2.12]
 ```
@@ -291,9 +401,19 @@ Latest `go` methods:
 | `Tuple{typeof(Base.grow_to!), Array{NamedTuple{(:event, :kind, :job, :label, :total, :done,...` | 25.7 |  |
 
 ```mermaid
+---
+config:
+  theme: base
+  themeVariables:
+    xyChart:
+      plotColorPalette: "#1f4e79"
+  xyChart:
+    xAxis:
+      labelRotation: 45
+---
 xychart-beta
-    title "nightly drive"
-    x-axis ["1018"]
+    title "nightly 1.14-DEV.3787 drive"
+    x-axis ["10-18 1.14-DEV.3787"]
     y-axis "seconds" 0 --> 11
     bar [8.76]
 ```
