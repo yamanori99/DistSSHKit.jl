@@ -91,7 +91,8 @@ git "${net[@]}" "${auth[@]}" clone \
     --filter=blob:none --sparse --depth 1 \
     --branch gh-pages --single-branch \
     "$url" "$pages"
-git -C "$pages" sparse-checkout set bench.html
+# Cone mode refuses a file path. bench.html is a file at the root.
+git -C "$pages" sparse-checkout set --skip-checks bench.html
 cp "$dest/bench.html" "$pages/bench.html"
 git -C "$pages" config http.extraheader "AUTHORIZATION: basic ${basic}"
 git -C "$pages" add bench.html

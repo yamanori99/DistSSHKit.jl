@@ -378,12 +378,13 @@ function sampleMark(sample) {
 
 function layout(title, ytitle, samples) {
   return {
-    title, margin: { t: 48, r: 16, b: 64, l: 56 }, height: title.startsWith("Method") ? 460 : 320,
+    title, width: 680, height: title.startsWith("Method") ? 400 : 280,
+    margin: { t: 36, r: 12, b: 44, l: 48 },
     xaxis: { type: "date", automargin: true, tickformat: "%Y-%m-%d" },
     yaxis: { title: ytitle, rangemode: "tozero", automargin: true },
     shapes: shapes(samples),
     annotations: annotations(samples),
-    legend: { orientation: "v" },
+    legend: { orientation: "v", x: 1.02, xanchor: "left", y: 1, yanchor: "top" },
     hovermode: "closest"
   };
 }
@@ -601,7 +602,7 @@ function bench_html(groups)::String
     body { font: 15px/1.4 sans-serif; margin: 24px auto; max-width: 920px; padding: 0 16px; color: #0f172a; background: #fff; }
     button { margin: 0 4px 8px 0; }
     button[aria-pressed="true"] { font-weight: 700; }
-    .plot { width: 100%; }
+    .plot { width: 680px; max-width: 100%; }
     table { border-collapse: collapse; margin: 12px 0 24px; width: 100%; table-layout: fixed; }
     td, th { border: 1px solid #cbd5e1; padding: 4px 8px; text-align: left; overflow-wrap: anywhere; }
     tr[data-julia="1"] { background: #f3e8ff; }
