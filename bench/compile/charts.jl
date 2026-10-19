@@ -593,7 +593,7 @@ function bench_html(groups)::String
     <meta charset="utf-8">
     <title>Compile bench</title>
     <style>
-    body { font: 15px/1.4 sans-serif; margin: 24px; color: #0f172a; }
+    body { font: 15px/1.4 sans-serif; margin: 24px; color: #0f172a; background: #fff; }
     button { margin: 0 4px 8px 0; }
     button[aria-pressed="true"] { font-weight: 700; }
     table { border-collapse: collapse; margin: 12px 0 24px; }
