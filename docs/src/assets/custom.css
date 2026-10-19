@@ -15,11 +15,6 @@
   documenter-light.css is unscoped: `.docs-dark-only { display: none !important }`
   applies on every theme. Dark theme sheets hide `.docs-light-only` but never
   restore `.docs-dark-only`, so the dark logo and topology vanish.
-*/
-/*
-  documenter-light.css is unscoped: `.docs-dark-only { display: none !important }`
-  applies on every theme. Dark theme sheets hide `.docs-light-only` but never
-  restore `.docs-dark-only`, so the dark logo and topology vanish.
   Sidebar: `block` + auto margins (same as the light logo). `inline-block`
   left-aligns the mark in the sidebar.
   Content: `block` so topology keeps the auto margins above.
