@@ -176,33 +176,37 @@ end
 
 function package_function_names(depot::AbstractString, package::String)::Vector{String}
     script = joinpath(mktempdir(), "names.jl")
-    write(script, """
-    using $package
-    mod = $package
-    seen = Set{String}()
-    function walk(m)
-        for n in names(m; all = true)
-            isdefined(m, n) || continue
-            v = getfield(m, n)
-            if v isa Module && v !== m && parentmodule(v) === m
-                walk(v)
-            elseif v isa Function
-                for method in methods(v)
-                    method.module === m || continue
-                    push!(seen, string(nameof(m)) * "." * string(n))
+    write(
+        script, """
+        using $package
+        mod = $package
+        seen = Set{String}()
+        function walk(m)
+            for n in names(m; all = true)
+                isdefined(m, n) || continue
+                v = getfield(m, n)
+                if v isa Module && v !== m && parentmodule(v) === m
+                    walk(v)
+                elseif v isa Function
+                    for method in methods(v)
+                        method.module === m || continue
+                        push!(seen, string(nameof(m)) * "." * string(n))
+                    end
                 end
             end
         end
-    end
-    walk(mod)
-    for name in sort!(collect(seen))
-        println(name)
-    end
-    """)
-    code, out, err, _ = capture(setenv(
-        `$(julia_bin()) --startup-file=no --project=$ROOT $script`,
-        child_env(depot, Dict{String, String}()),
-    ))
+        walk(mod)
+        for name in sort!(collect(seen))
+            println(name)
+        end
+        """
+    )
+    code, out, err, _ = capture(
+        setenv(
+            `$(julia_bin()) --startup-file=no --project=$ROOT $script`,
+            child_env(depot, Dict{String, String}()),
+        )
+    )
     code == 0 || error("listing methods failed: $code\n" * stderr_tail(err))
     return filter(!isempty, split(strip(out), '\n'))
 end

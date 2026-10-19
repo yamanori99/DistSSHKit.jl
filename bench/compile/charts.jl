@@ -134,12 +134,14 @@ function method_records(items)::Vector{Dict{String, Any}}
         if counts[short] > 1
             short = short * " " * first(sigs[index], 32)
         end
-        push!(out, Dict{String, Any}(
-            "signature" => sigs[index],
-            "short" => short,
-            "owner" => owners[index],
-            "ms" => Float64(item["ms"]),
-        ))
+        push!(
+            out, Dict{String, Any}(
+                "signature" => sigs[index],
+                "short" => short,
+                "owner" => owners[index],
+                "ms" => Float64(item["ms"]),
+            )
+        )
     end
     return out
 end
@@ -154,21 +156,25 @@ function bench_payload(groups::Dict{String, Vector{Dict{String, Any}}})::Vector{
             for cmd in get(row, "commands", [])
                 haskey(cmd, "wall_sec") || continue
                 missed = String[string(item) for item in get(cmd, "missed", [])]
-                push!(commands, Dict{String, Any}(
-                    "name" => string(get(cmd, "name", "")),
-                    "wall" => Float64(cmd["wall_sec"]),
-                    "methods" => method_records(stored_methods(cmd)),
-                    "missed" => missed,
-                ))
+                push!(
+                    commands, Dict{String, Any}(
+                        "name" => string(get(cmd, "name", "")),
+                        "wall" => Float64(cmd["wall_sec"]),
+                        "methods" => method_records(stored_methods(cmd)),
+                        "missed" => missed,
+                    )
+                )
             end
-            push!(samples, Dict{String, Any}(
-                "time" => string(get(row, "time", "")),
-                "commit" => isempty(sha) ? "" : first(sha, 7),
-                "julia" => string(get(row, "julia", "")),
-                "julia_short" => julia_short(row),
-                "host" => host_mark(row),
-                "commands" => commands,
-            ))
+            push!(
+                samples, Dict{String, Any}(
+                    "time" => string(get(row, "time", "")),
+                    "commit" => isempty(sha) ? "" : first(sha, 7),
+                    "julia" => string(get(row, "julia", "")),
+                    "julia_short" => julia_short(row),
+                    "host" => host_mark(row),
+                    "commands" => commands,
+                )
+            )
         end
         push!(slots, Dict{String, Any}("name" => name, "samples" => samples))
     end
