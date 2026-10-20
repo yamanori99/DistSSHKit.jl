@@ -88,7 +88,7 @@ Layout: [test/README.md](test/README.md).
 
 Checkout `Pkg.test()` is not the PkgEval sandbox. Before a General cut,
 run the recipe in [test/README.md](test/README.md#pkgeval). CI runs that
-job on **main** and a version-cut PR (host Julia 1.12; test Julia is the julia-latest tarball;
+job on **main** and a version-cut PR (host Julia 1.13; test Julia is the julia-latest tarball;
 `continue-on-error`; not a required check). Not on ordinary PRs.
 
 Smoke (1.13+; copies land in `distsshkit_demos/`):

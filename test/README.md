@@ -82,7 +82,7 @@ DistSSHQueue change is not in the sandbox. This package:
 Latest ecosystem report:
 <https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html>
 Run it on Linux with cgroup v2 and unprivileged user namespaces, before a
-General cut. The host Julia is 1.12 or newer. PkgEval is not in General,
+General cut. The host Julia is 1.13 or newer. PkgEval is not in General,
 so this adds it from its repository. The tested Julia is the published
 julia-latest tarball (`julia="nightly"`). It follows master and can lag a
 `VERSION` bump. The ecosystem daily pins a master commit and enables
