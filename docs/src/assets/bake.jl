@@ -38,8 +38,8 @@ const MARK_GAP = 40
 const TITLE = "DistSSHKit.jl"
 const TEXT_W = 700  # approx. longest tagline line at tagline font size
 const GROUP_W = MARK_SIZE + MARK_GAP + TEXT_W
+# README banner keeps this box placement (mark square + text column).
 const MARK_X = clamp((SOCIAL_W - GROUP_W) ÷ 2, SAFE_X, SOCIAL_W - SAFE_X - MARK_SIZE)
-const TEXT_X = MARK_X + MARK_SIZE + MARK_GAP
 const MARK_Y = clamp((SOCIAL_H - MARK_SIZE) ÷ 2, SAFE_Y, SOCIAL_H - SAFE_Y - MARK_SIZE)
 const TAGLINE_1 = "A toolkit for running Julia computations"
 const TAGLINE_2 = "across multiple machines over SSH."
@@ -53,10 +53,18 @@ const TAGLINE_Y2 = TAGLINE_Y1 + 38
 const FONT = "'Helvetica Neue', Helvetica, Arial, sans-serif"
 const TITLE_SIZE = 76
 const TAGLINE_SIZE = 28
+# Helvetica Neue Medium advance of TAGLINE_1 at TAGLINE_SIZE.
+# It is longer than the title, so it is the right edge of the social lockup.
+const TAGLINE_1_ADVANCE = 508.816
 # README banner: same lockup as the social card, with the vertical pad tightened.
+# The SVG stays at the layout size. The PNG is 2× that (4× the 640px README
+# display) so the title stays sharp. Social PNG stays 1280×640.
 const README_PAD_Y = 40
 const README_W = SOCIAL_W
 const README_H = MARK_SIZE + 2 * README_PAD_Y
+const README_PNG_SCALE = 2
+const README_PNG_W = README_W * README_PNG_SCALE
+const README_PNG_H = README_H * README_PNG_SCALE
 
 # One open–close, then a second open that freezes on the static pose.
 const CYCLE_S = 5.2
@@ -348,6 +356,61 @@ function logo_placement(angles; span = LOGO_SPAN)
     return round(s; digits = 4), round(64 - cx * s; digits = 2), round(64 - cy * s; digits = 2)
 end
 
+"""Left and right of one rounded card, in card space, after `angle` about the pivot."""
+function card_outline_x(angle; stroke::Float64)
+    half = stroke / 2
+    rad = Float64(CARD_R) + half
+    xs = Float64[]
+    for (cx0, cy0) in (
+            (Float64(CARD_R), Float64(CARD_R)),
+            (CARD - CARD_R, Float64(CARD_R)),
+            (Float64(CARD_R), CARD - CARD_R),
+            (CARD - CARD_R, CARD - CARD_R),
+        )
+        cx, _ = rot_pt((cx0, cy0), angle)
+        push!(xs, cx - rad, cx + rad)
+    end
+    # Straight edges meet the arcs here. Extrema of a segment are its ends.
+    ends = (
+        ((0.0, Float64(CARD_R)), (-1.0, 0.0)),
+        ((0.0, CARD - CARD_R), (-1.0, 0.0)),
+        ((CARD, Float64(CARD_R)), (1.0, 0.0)),
+        ((CARD, CARD - CARD_R), (1.0, 0.0)),
+        ((Float64(CARD_R), 0.0), (0.0, -1.0)),
+        ((CARD - CARD_R, 0.0), (0.0, -1.0)),
+        ((Float64(CARD_R), CARD), (0.0, 1.0)),
+        ((CARD - CARD_R, CARD), (0.0, 1.0)),
+    )
+    for (p, n) in ends
+        push!(xs, rot_pt((p[1] + n[1] * half, p[2] + n[2] * half), angle)[1])
+    end
+    return minimum(xs), maximum(xs)
+end
+
+"""Open L fan ink, in the 128 viewBox. Child cards include the 0.6 stroke."""
+function fan_viewbox_x()
+    variant = LOGO_VARIANTS[:L]
+    s, tx, _ = logo_placement(variant.angles)
+    xs = Float64[]
+    for angle in [0.0; variant.angles]
+        stroke = angle == 0.0 || !variant.edge ? 0.0 : 0.6
+        x0, x1 = card_outline_x(angle; stroke)
+        push!(xs, tx + s * x0, tx + s * x1)
+    end
+    return minimum(xs), maximum(xs)
+end
+
+"""Social mark x so the fan ink and the tagline share the side margin."""
+function social_mark_x()
+    ink_left, _ = fan_viewbox_x()
+    scale = MARK_SIZE / 128
+    left_pad = ink_left * scale
+    text_end = MARK_SIZE + MARK_GAP + TAGLINE_1_ADVANCE
+    group = text_end - left_pad
+    margin = (SOCIAL_W - group) / 2
+    return round(Int, margin - left_pad)
+end
+
 function logo_svg(; size::Symbol = :L, dark::Bool = false, animated::Bool = false, span = LOGO_SPAN)
     variant = LOGO_VARIANTS[size]
     s, tx, ty = logo_placement(variant.angles; span)
@@ -507,6 +570,7 @@ function build_lockup(
         height::Int,
         mark_y::Int,
         note::AbstractString,
+        mark_x::Int = MARK_X,
         bg::Union{Nothing, AbstractString} = "#ffffff",
         title_fill::AbstractString = "#0f172a",
         kit_fill::AbstractString = "#9558b2",
@@ -515,6 +579,7 @@ function build_lockup(
     )
     inner = svg_inner(logo_text)
     src = something(src, kind == "static" ? logo_path("logo-static.svg") : logo_path("logo-dynamic.svg"))
+    text_x = mark_x + MARK_SIZE + MARK_GAP
     text_top = mark_y + (MARK_SIZE - TEXT_BLOCK_H) ÷ 2
     title_y = text_top + 40
     tagline_y1 = title_y + 64
@@ -523,24 +588,26 @@ function build_lockup(
     return """<?xml version="1.0" encoding="UTF-8"?>
     <svg xmlns="http://www.w3.org/2000/svg" width="$(width)" height="$(height)" viewBox="0 0 $(width) $(height)">
       <!-- $(note); from $(src) -->$(backdrop)
-      <svg x="$(MARK_X)" y="$(mark_y)" width="$(MARK_SIZE)" height="$(MARK_SIZE)" viewBox="$(LOGO_VIEWBOX)">
+      <svg x="$(mark_x)" y="$(mark_y)" width="$(MARK_SIZE)" height="$(MARK_SIZE)" viewBox="$(LOGO_VIEWBOX)">
     $(inner)
       </svg>
-      <text x="$(TEXT_X)" y="$(title_y)" dominant-baseline="middle" fill="$(title_fill)" font-family="$(FONT)" font-size="$(TITLE_SIZE)" font-weight="800">DistSSH<tspan fill="$(kit_fill)">Kit</tspan>.jl</text>
-      <text x="$(TEXT_X)" y="$(tagline_y1)" dominant-baseline="middle" fill="$(tagline_fill)" font-family="$(FONT)" font-size="$(TAGLINE_SIZE)" font-weight="500">$(TAGLINE_1)</text>
-      <text x="$(TEXT_X)" y="$(tagline_y2)" dominant-baseline="middle" fill="$(tagline_fill)" font-family="$(FONT)" font-size="$(TAGLINE_SIZE)" font-weight="500">$(TAGLINE_2)</text>
+      <text x="$(text_x)" y="$(title_y)" dominant-baseline="middle" fill="$(title_fill)" font-family="$(FONT)" font-size="$(TITLE_SIZE)" font-weight="800">DistSSH<tspan fill="$(kit_fill)">Kit</tspan>.jl</text>
+      <text x="$(text_x)" y="$(tagline_y1)" dominant-baseline="middle" fill="$(tagline_fill)" font-family="$(FONT)" font-size="$(TAGLINE_SIZE)" font-weight="500">$(TAGLINE_1)</text>
+      <text x="$(text_x)" y="$(tagline_y2)" dominant-baseline="middle" fill="$(tagline_fill)" font-family="$(FONT)" font-size="$(TAGLINE_SIZE)" font-weight="500">$(TAGLINE_2)</text>
     </svg>
     """
 end
 
 function build_social(logo_text::AbstractString, kind::AbstractString)
+    mark_x = social_mark_x()
     return build_lockup(
         logo_text,
         kind;
         width = SOCIAL_W,
         height = SOCIAL_H,
         mark_y = MARK_Y,
-        note = "social-preview-$kind: $(SOCIAL_W)×$(SOCIAL_H); safe $(SAFE_X)×$(SAFE_Y); mark | title lockup",
+        mark_x = mark_x,
+        note = "social-preview-$kind: $(SOCIAL_W)×$(SOCIAL_H); optical side margins; mark x $(mark_x)",
     )
 end
 
@@ -970,11 +1037,11 @@ function bake_pngs!(arts)
         readme_svg,
         readme_png,
         readme_html;
-        w = README_W,
-        h = README_H,
+        w = README_PNG_W,
+        h = README_PNG_H,
         scale = PNG_SCALE,
         exact_size = true,
-    ) || die("readme-static.png (need rsvg-convert or Chromium, plus sips/ffmpeg to keep $(README_W)×$(README_H))")
+    ) || die("readme-static.png (need rsvg-convert or Chromium, plus sips/ffmpeg to keep $(README_PNG_W)×$(README_PNG_H))")
 
     readme_dark_svg = social_path("readme-dark-static.svg")
     readme_dark_png = social_path("readme-dark-static.png")
@@ -983,12 +1050,12 @@ function bake_pngs!(arts)
         readme_dark_svg,
         readme_dark_png,
         readme_dark_html;
-        w = README_W,
-        h = README_H,
+        w = README_PNG_W,
+        h = README_PNG_H,
         scale = PNG_SCALE,
         exact_size = true,
         transparent = true,
-    ) || die("readme-dark-static.png (need rsvg-convert or Chromium, plus sips/ffmpeg to keep $(README_W)×$(README_H))")
+    ) || die("readme-dark-static.png (need rsvg-convert or Chromium, plus sips/ffmpeg to keep $(README_PNG_W)×$(README_PNG_H))")
 
     bake_favicon!(arts) || die("$FAVICON (need rsvg-convert or Chromium)")
 

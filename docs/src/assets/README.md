@@ -60,7 +60,7 @@ julia docs/src/assets/bake.jl --png --gif  # + GIF (Chromium + ffmpeg)
 
 - default: Julia
 - `--png`: `rsvg-convert` or Chrome; sizes: social 1280×640, README banner
-  1280×420 (light and dark), logo 960×960, topology 1120×472,
+  PNG 2560×840 (SVG stays 1280×420; light and dark), logo 960×960, topology 1120×472,
   `favicon.ico` 16 (XS) + 32 (S) + 48 (M). The tab mark fills 124 of
   the 128 square; the lockup mark stays at 108
 - `--gif`: Chrome / Chromium (4 parallel workers) + `ffmpeg`
@@ -80,11 +80,13 @@ when the pose matches the static logo: fan open, lamps lit, points gone.
 
 ## Layout notes
 
-- Social SVG and PNG **1280×640** (GitHub Social preview); fill most of a
-  ~**960×480** zone (soft ≈100×60 inset); kit lockup (mark | title +
-  tagline)
-- README banner **1280×420**: the same lockup, 40px above and below the
-  mark. Light card is white. Dark card is transparent, with light text
+- Social SVG and PNG **1280×640** (GitHub Social preview). The lockup is
+  shifted so the fan's painted left edge and the end of the first tagline
+  share the side margin. The README banner does not use that shift
+- README banner SVG **1280×420**, PNG **2560×840**: the box lockup (mark
+  square beside the text column), 40px above and below the mark. The README
+  shows it at 640px wide. Light card is white. Dark card is transparent,
+  with light text
 - Nested logo `viewBox="0 0 128 128"`; static/dynamic social share chrome
 - Upload `social/social-preview-static.png` under GitHub → Settings →
   Social preview
