@@ -115,7 +115,12 @@ files, not for that flag.
 `bench.html` draws the method times and every command's wall time.
 A time is a specialization that command compiled. The page shows the
 requested count of those times. When the latest sample has fewer than
-that count, earlier samples in the window supply the rest. It does not
+that count, earlier samples in the window supply the rest. The table
+shows that sample's date and the rank the method had there. Its
+milliseconds are that measurement, and the millisecond change is the
+difference from the sample before it. Above the table, the page shows
+the sum of every specialization in that command's trace, and the
+difference from the previous sample. It does not
 list functions the trace never named. The page is not every method under
 `src/`. Each function is one name, so a method that did not compile stays
 off the page when another method of that function did. The README keeps

@@ -113,6 +113,39 @@ function stored_methods(cmd)::Vector
     return get(cmd, "top", [])
 end
 
+function common_prefix_length(group::Vector{String})::Int
+    isempty(group) && return 0
+    chars = collect.(group)
+    limit = minimum(length, chars)
+    n = 0
+    for i in 1:limit
+        char = chars[1][i]
+        all(item -> item[i] == char, chars) || break
+        n = i
+    end
+    return n
+end
+
+# The part of a signature that is not shared with the other methods of the
+# same name. `Serialization.deserialize` otherwise keeps only
+# `Tuple{typeof(Serialization.deser` for every specialization.
+function argument_tail(signature::AbstractString, prefix::Int)::String
+    rest = signature
+    i = firstindex(rest)
+    for _ in 1:prefix
+        i > lastindex(rest) && return ""
+        i = nextind(rest, i)
+    end
+    rest = i > lastindex(rest) ? "" : rest[i:end]
+    rest = replace(rest, r"^[,\s]+" => "")
+    extra = count(==('}'), rest) - count(==('{'), rest)
+    while extra > 0 && endswith(rest, '}')
+        rest = rest[1:prevind(rest, lastindex(rest))]
+        extra -= 1
+    end
+    return strip(rest)
+end
+
 function method_records(items)::Vector{Dict{String, Any}}
     shorts = String[]
     owners = String[]
@@ -124,15 +157,17 @@ function method_records(items)::Vector{Dict{String, Any}}
         owner = haskey(item, "owner") ? string(item["owner"]) : method_owner(sig, string(get(item, "bucket", "")))
         push!(owners, owner)
     end
-    counts = Dict{String, Int}()
-    for short in shorts
-        counts[short] = get(counts, short, 0) + 1
+    groups = Dict{String, Vector{String}}()
+    for (short, sig) in zip(shorts, sigs)
+        push!(get!(groups, short, String[]), sig)
     end
     out = Dict{String, Any}[]
     for (index, item) in enumerate(items)
         short = shorts[index]
-        if counts[short] > 1
-            short = short * " " * first(sigs[index], 32)
+        group = groups[short]
+        if length(group) > 1
+            tail = argument_tail(sigs[index], common_prefix_length(group))
+            isempty(tail) || (short = short * " " * tail)
         end
         push!(
             out, Dict{String, Any}(
@@ -159,6 +194,7 @@ function bench_payload(groups::Dict{String, Vector{Dict{String, Any}}})::Vector{
                     commands, Dict{String, Any}(
                         "name" => string(get(cmd, "name", "")),
                         "wall" => Float64(cmd["wall_sec"]),
+                        "total" => haskey(cmd, "total_ms") ? Float64(cmd["total_ms"]) : nothing,
                         "methods" => method_records(stored_methods(cmd)),
                     )
                 )
@@ -191,7 +227,22 @@ function fallback_rows(payload::Vector{Dict{String, Any}})::String
     command = commands[argmax([Float64(item["wall"]) for item in commands])]
     methods = sort(command["methods"]; by = item -> Float64(item["ms"]), rev = true)
     shown = methods[1:min(8, end)]
-    lines = String["<table>", "<tr><th>owner</th><th>method</th><th>ms</th></tr>"]
+    lines = String[]
+    if get(command, "total", nothing) !== nothing
+        sentence = "Compile total $(round(Int, command["total"])) ms"
+        if length(samples) >= 2
+            earlier = samples[end - 1]["commands"]::Vector{Dict{String, Any}}
+            index = findfirst(item -> item["name"] == command["name"], earlier)
+            if index !== nothing && get(earlier[index], "total", nothing) !== nothing
+                delta = round(Int, command["total"]) - round(Int, earlier[index]["total"])
+                signed = delta > 0 ? "+$delta" : string(delta)
+                sentence *= ", $signed ms"
+            end
+        end
+        push!(lines, "<p>$(sentence).</p>")
+    end
+    push!(lines, "<table>")
+    push!(lines, "<tr><th>owner</th><th>method</th><th>ms</th></tr>")
     for item in shown
         push!(lines, "<tr><td>$(html_escape(item["owner"]))</td><td>$(html_escape(item["short"]))</td><td>$(html_escape(item["ms"]))</td></tr>")
     end
@@ -270,16 +321,32 @@ function ranked(command) {
   return command.methods.slice().sort((a, b) => b.ms - a.ms);
 }
 
+function measuredBefore(samples, index, signature) {
+  if (index <= 0) return null;
+  const command = samples[index - 1].commands.find((item) => item.name === state.cmd);
+  if (!command) return null;
+  const found = command.methods.find((method) => method.signature === signature);
+  return found ? found.ms : null;
+}
+
 function chosenMethods(samples, count) {
   const picked = [];
   const seen = new Set();
   for (let index = samples.length - 1; index >= 0 && picked.length < count; index -= 1) {
     const command = samples[index].commands.find((item) => item.name === state.cmd);
     if (!command) continue;
-    ranked(command).slice(0, count).forEach((method) => {
+    ranked(command).slice(0, count).forEach((method, place) => {
       if (picked.length >= count || seen.has(method.signature)) return;
       seen.add(method.signature);
-      picked.push(method);
+      picked.push({
+        signature: method.signature,
+        short: method.short,
+        owner: method.owner,
+        ms: method.ms,
+        prior: measuredBefore(samples, index, method.signature),
+        when: String(samples[index].time).slice(0, 10),
+        at: place + 1
+      });
     });
   }
   return picked;
@@ -497,13 +564,17 @@ function drawMethods(samples) {
     if (nowRank && prevRank) change = String(prevRank - nowRank);
     else if (nowRank) change = "new";
     else if (prevRank) change = "gone";
+    else if (method.when) change = method.when + " #" + method.at;
+    let delta = "";
+    if (current && old) delta = current.ms - old.ms;
+    else if (!nowRank && !prevRank && method.prior != null) delta = method.ms - method.prior;
     return {
       method: shown,
       nowRank: nowRank || "",
       prevRank: prevRank || "",
       change,
       ms: current ? current.ms : method.ms,
-      delta: current && old ? current.ms - old.ms : ""
+      delta
     };
   });
   before.forEach((method) => {
@@ -524,6 +595,19 @@ function drawMethods(samples) {
   document.getElementById("method-count").textContent = String(state.n);
   document.getElementById("method-note").textContent =
     state.slot + " methods for " + state.cmd + ".";
+  const nowTotal = found && found.command.total != null ? found.command.total : null;
+  const prevCommand = prev ? prev.commands.find((item) => item.name === state.cmd) : null;
+  const prevTotal = prevCommand && prevCommand.total != null ? prevCommand.total : null;
+  const totalNode = document.getElementById("method-total");
+  if (nowTotal == null) {
+    totalNode.textContent = "";
+  } else if (prevTotal == null) {
+    totalNode.textContent = "Compile total " + Math.round(nowTotal) + " ms.";
+  } else {
+    const delta = Math.round(nowTotal) - Math.round(prevTotal);
+    const signed = delta > 0 ? "+" + delta : String(delta);
+    totalNode.textContent = "Compile total " + Math.round(nowTotal) + " ms, " + signed + " ms.";
+  }
 }
 
 function drawControls() {
@@ -660,8 +744,9 @@ function bench_html(groups)::String
     <div id="method-key" class="key"></div>
     </div>
     <p id="method-note"></p>
+    <p id="method-total"></p>
     <table id="method-table">
-    <colgroup><col style="width:3.5rem"><col style="width:3.5rem"><col style="width:4.5rem"><col style="width:8rem"><col><col style="width:4.5rem"><col style="width:5.5rem"></colgroup>
+    <colgroup><col style="width:3.5rem"><col style="width:3.5rem"><col style="width:9.5rem"><col style="width:8rem"><col><col style="width:4.5rem"><col style="width:5.5rem"></colgroup>
     <thead><tr><th>now</th><th>prev</th><th>change</th><th>owner</th><th>method</th><th>ms</th><th>ms change</th></tr></thead>
     <tbody></tbody>
     </table>
