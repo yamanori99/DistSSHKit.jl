@@ -1,0 +1,30 @@
+# History and the pulls that got here: wsl-install.ps1.
+name: Register WSL distribution
+description: >-
+  Register a WSL distribution before Vampire/setup-wsl. wsl.exe does not
+  inherit this step's pipes, and this step exits on its own deadline.
+
+inputs:
+  name:
+    description: WSL distribution name. Must match setup-wsl's distribution id.
+    required: false
+    default: Ubuntu-24.04
+  url:
+    description: Rootfs URL. The same file setup-wsl v7.0.0 installs for Ubuntu-24.04.
+    required: false
+    default: https://releases.ubuntu.com/24.04.4/ubuntu-24.04.4-wsl-amd64.wsl
+  seconds:
+    description: Seconds to wait for one wsl.exe before this step kills it and continues.
+    required: false
+    default: "180"
+
+runs:
+  using: composite
+  steps:
+    - name: Register WSL distribution
+      shell: pwsh
+      env:
+        WSL_INSTALL_NAME: ${{ inputs.name }}
+        WSL_INSTALL_URL: ${{ inputs.url }}
+        WSL_INSTALL_SECONDS: ${{ inputs.seconds }}
+      run: '& "$env:GITHUB_ACTION_PATH/wsl-install.ps1"'
