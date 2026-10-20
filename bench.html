@@ -139,6 +139,21 @@ function ranked(command) {
   return command.methods.slice().sort((a, b) => b.ms - a.ms);
 }
 
+function chosenMethods(samples, count) {
+  const picked = [];
+  const seen = new Set();
+  for (let index = samples.length - 1; index >= 0 && picked.length < count; index -= 1) {
+    const command = samples[index].commands.find((item) => item.name === state.cmd);
+    if (!command) continue;
+    ranked(command).slice(0, count).forEach((method) => {
+      if (picked.length >= count || seen.has(method.signature)) return;
+      seen.add(method.signature);
+      picked.push(method);
+    });
+  }
+  return picked;
+}
+
 function defaultCommand(samples) {
   const names = commandNames(samples);
   let best = names[0] || "";
@@ -314,13 +329,14 @@ function drawMethods(samples) {
   const cap = Math.max(1, available.size);
   if (state.n > cap) state.n = cap;
   const found = latestWithCommand(samples, state.cmd);
-  const chosen = found ? ranked(found.command).slice(0, state.n) : [];
+  const chosen = chosenMethods(samples, state.n);
+  if (chosen.length > 0 && state.n > chosen.length) state.n = chosen.length;
   const traces = chosen.map((method) => ({
     type: "scatter", mode: "lines+markers", name: method.short, connectgaps: false,
     x: samples.map((sample) => sample.time),
     y: samples.map((sample) => methodY(sample, state.cmd, method.signature, state.n)),
-    customdata: samples.map((sample) => sampleMark(sample).concat([method.owner, method.signature])),
-    hovertemplate: "%{customdata[0]} %{customdata[1]}<br>%{customdata[2]}<br>%{fullData.name}<br>%{customdata[3]} %{y} ms<br>%{customdata[4]}<extra></extra>"
+    customdata: samples.map(sampleMark),
+    hovertemplate: "%{customdata[0]} %{customdata[1]}<br>%{fullData.name}<br>%{y} ms<extra></extra>"
   }));
   paintKey("method-key", chosen.map((method) => method.short));
   const node = document.getElementById("method-chart");
@@ -334,16 +350,33 @@ function drawMethods(samples) {
     const command = sample.commands.find((item) => item.name === state.cmd);
     return command ? ranked(command).slice(0, state.n) : [];
   }
-  const now = chosen;
+  const now = found ? ranked(found.command).slice(0, state.n) : [];
   const before = top(prev);
-  const rows = now.map((method) => {
-    const nowRank = now.findIndex((item) => item.signature === method.signature) + 1;
-    const prevRank = before.findIndex((item) => item.signature === method.signature) + 1;
-    const old = before.find((item) => item.signature === method.signature);
-    return { method, nowRank, prevRank: prevRank || "", change: prevRank ? String(prevRank - nowRank) : "new", ms: method.ms, delta: old ? method.ms - old.ms : "" };
+  function rankOf(list, signature) {
+    const index = list.findIndex((item) => item.signature === signature);
+    return index < 0 ? 0 : index + 1;
+  }
+  const rows = chosen.map((method) => {
+    const nowRank = rankOf(now, method.signature);
+    const prevRank = rankOf(before, method.signature);
+    const current = nowRank ? now[nowRank - 1] : null;
+    const old = prevRank ? before[prevRank - 1] : null;
+    const shown = current || method;
+    let change = "";
+    if (nowRank && prevRank) change = String(prevRank - nowRank);
+    else if (nowRank) change = "new";
+    else if (prevRank) change = "gone";
+    return {
+      method: shown,
+      nowRank: nowRank || "",
+      prevRank: prevRank || "",
+      change,
+      ms: current ? current.ms : method.ms,
+      delta: current && old ? current.ms - old.ms : ""
+    };
   });
   before.forEach((method) => {
-    if (now.some((item) => item.signature === method.signature)) return;
+    if (chosen.some((item) => item.signature === method.signature)) return;
     const prevRank = before.findIndex((item) => item.signature === method.signature) + 1;
     rows.push({ method, nowRank: "", prevRank, change: "gone", ms: "", delta: "" });
   });
@@ -359,7 +392,7 @@ function drawMethods(samples) {
   });
   document.getElementById("method-count").textContent = String(state.n);
   document.getElementById("method-note").textContent =
-    state.slot + " methods for " + state.cmd + ". Owners other than the package or Main can be copied into a Julia issue with the Julia version, the command, the signature, and the milliseconds.";
+    state.slot + " methods for " + state.cmd + ".";
 }
 
 function drawControls() {
