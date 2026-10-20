@@ -11,7 +11,10 @@ doubles. This does not fail CI.
 
 ## Flagged
 
-No sample grew past the watch line.
+- 1.14-nightly: julia 1.14.0-DEV.3787 -> 1.14.0-alpha1
+- 1.14-nightly: drive method 105.7 ms -> 232.6 ms: Tuple{typeof(Distributed.read_worker_host_port), Base.PipeEndpoint}
+- 1.14-nightly: drive method 134.6 ms -> 278.8 ms: Tuple{typeof(Distributed.send_connection_hdr), Sockets.TCPSocket, Bool}
+- nightly: julia 1.15.0-DEV.29 -> 1.15.0-DEV.53
 
 ## 1.13
 
@@ -22,6 +25,7 @@ No sample grew past the watch line.
 | 2026-10-19 | 72e0a48 | 0.10.2 | 1.13.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 410 | 9.34 | 1.05 | 0.32 | 0.82 | 14.84 | 7.81 | 27.68 |
 | 2026-10-20 | b02f4dd | 0.10.2 | 1.13.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 402 | 9.02 | 1.0 | 0.33 | 0.82 | 6.08 | 7.69 | 27.25 |
 | 2026-10-20 | d1bb1de | 0.10.3 | 1.13.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 402 | 10.09 | 1.07 | 0.34 | 0.9 | 6.37 | 8.08 | 28.14 |
+| 2026-10-20 | 33ecf3a | 0.10.3 | 1.13.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 402 | 6.1 | 0.74 | 0.22 | 0.6 | 3.95 | 5.11 | 19.16 |
 
 ## 1.14-nightly
 
@@ -32,6 +36,7 @@ No sample grew past the watch line.
 | 2026-10-19 | 72e0a48 | 0.10.2 | 1.14.0-DEV.3787 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 410 | 6.69 | 0.77 | 0.32 | 0.57 | 6.14 | 3.09 | 12.02 |
 | 2026-10-20 | b02f4dd | 0.10.2 | 1.14.0-DEV.3787 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 402 | 6.44 | 0.82 | 0.29 | 0.55 | 1.6 | 2.72 | 10.27 |
 | 2026-10-20 | d1bb1de | 0.10.3 | 1.14.0-DEV.3787 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 402 | 5.62 | 0.72 | 0.25 | 0.49 | 1.43 | 2.45 | 9.49 |
+| 2026-10-20 | 33ecf3a | 0.10.3 | 1.14.0-alpha1 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 402 | 8.0 | 0.83 | 0.35 | 0.66 | 1.96 | 3.37 | 12.57 |
 
 ## nightly
 
@@ -41,4 +46,5 @@ No sample grew past the watch line.
 | 2026-10-19 | 72e0a48 | 0.10.2 | 1.15.0-DEV.18 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 410 | 5.95 | 0.71 | 0.26 | 0.5 | 4.81 | 2.51 | 9.99 |
 | 2026-10-20 | b02f4dd | 0.10.2 | 1.15.0-DEV.29 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 402 | 7.19 | 0.76 | 0.31 | 0.58 | 1.76 | 2.97 | 11.09 |
 | 2026-10-20 | d1bb1de | 0.10.3 | 1.15.0-DEV.29 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 402 | 8.01 | 0.84 | 0.35 | 0.64 | 1.95 | 3.32 | 12.28 |
+| 2026-10-20 | 33ecf3a | 0.10.3 | 1.15.0-DEV.53 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 402 | 5.62 | 0.66 | 0.23 | 0.47 | 1.37 | 2.27 | 9.49 |
 
