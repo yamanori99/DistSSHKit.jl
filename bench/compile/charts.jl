@@ -155,13 +155,11 @@ function bench_payload(groups::Dict{String, Vector{Dict{String, Any}}})::Vector{
             commands = Dict{String, Any}[]
             for cmd in get(row, "commands", [])
                 haskey(cmd, "wall_sec") || continue
-                missed = String[string(item) for item in get(cmd, "missed", [])]
                 push!(
                     commands, Dict{String, Any}(
                         "name" => string(get(cmd, "name", "")),
                         "wall" => Float64(cmd["wall_sec"]),
                         "methods" => method_records(stored_methods(cmd)),
-                        "missed" => missed,
                     )
                 )
             end
@@ -196,9 +194,6 @@ function fallback_rows(payload::Vector{Dict{String, Any}})::String
     lines = String["<table>", "<tr><th>owner</th><th>method</th><th>ms</th></tr>"]
     for item in shown
         push!(lines, "<tr><td>$(html_escape(item["owner"]))</td><td>$(html_escape(item["short"]))</td><td>$(html_escape(item["ms"]))</td></tr>")
-    end
-    for name in command["missed"]
-        push!(lines, "<tr><td></td><td>$(html_escape(name))</td><td></td></tr>")
     end
     push!(lines, "</table>")
     push!(lines, "<table>")
@@ -464,7 +459,6 @@ function drawMethods(samples) {
   window.__methodDrawn = drawn;
   const body = document.querySelector("#method-table tbody");
   body.innerHTML = "";
-  const last = found ? samples[found.index] : null;
   const prev = found && found.index > 0 ? samples[found.index - 1] : null;
   function top(sample) {
     if (!sample) return [];
@@ -488,16 +482,6 @@ function drawMethods(samples) {
     const row = document.createElement("tr");
     if (PACKAGE.has(item.method.owner)) row.dataset.package = "1";
     [item.nowRank, item.prevRank, item.change, item.method.owner, item.method.short, item.ms === "" ? "" : Math.round(item.ms), item.delta === "" ? "" : Math.round(item.delta)].forEach((cell) => {
-      const td = document.createElement("td");
-      td.textContent = cell;
-      row.appendChild(td);
-    });
-    body.appendChild(row);
-  });
-  const command = last && last.commands.find((item) => item.name === state.cmd);
-  (command ? command.missed : []).forEach((name) => {
-    const row = document.createElement("tr");
-    ["", "", "", "", name, "", ""].forEach((cell) => {
       const td = document.createElement("td");
       td.textContent = cell;
       row.appendChild(td);
@@ -637,7 +621,7 @@ function bench_html(groups)::String
     <span id="method-count">8</span>
     <button type="button" id="method-inc">+</button>
     </div>
-    <p>A time is a specialization this command compiled. Specializations of this package are all kept. Any other owner is kept only at 200 ms or more. Main, the driving script, is omitted. A blank time is a function defined on the package module that the trace never named. This is not every method under <code>src/</code>. Each function is one name. When one of its methods compiles, the methods that did not compile are left out.</p>
+    <p>A time is a specialization this command compiled. Specializations of this package are all kept. Any other owner is kept only at 200 ms or more. Main, the driving script, is omitted. This is not every method under <code>src/</code>. Each function is one name. When one of its methods compiles, the methods that did not compile are left out.</p>
     <div class="chart-row">
     <div id="method-chart" class="plot"></div>
     <div id="method-key" class="key"></div>
