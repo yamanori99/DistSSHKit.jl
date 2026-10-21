@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
-  <!-- social-preview-dynamic: 1280×640; safe 100×60; mark | title lockup; from logo/logo-dynamic.svg -->
+  <!-- social-preview-dynamic: 1280×640; optical side margins; mark x 188; from logo/logo-dynamic.svg -->
   <rect width="1280" height="640" fill="#ffffff"/>
-  <svg x="100" y="150" width="340" height="340" viewBox="0 0 128 128">
+  <svg x="188" y="150" width="340" height="340" viewBox="0 0 128 128">
 
   <g transform="translate(45.79 40.23) scale(0.9038)">
     <g>
@@ -28,7 +28,7 @@
   </g>
 
   </svg>
-  <text x="480" y="276" dominant-baseline="middle" fill="#0f172a" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="76" font-weight="800">DistSSH<tspan fill="#9558b2">Kit</tspan>.jl</text>
-  <text x="480" y="340" dominant-baseline="middle" fill="#475569" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="28" font-weight="500">A toolkit for running Julia computations</text>
-  <text x="480" y="378" dominant-baseline="middle" fill="#475569" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="28" font-weight="500">across multiple machines over SSH.</text>
+  <text x="568" y="276" dominant-baseline="middle" fill="#0f172a" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="76" font-weight="800">DistSSH<tspan fill="#9558b2">Kit</tspan>.jl</text>
+  <text x="568" y="340" dominant-baseline="middle" fill="#475569" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="28" font-weight="500">A toolkit for running Julia computations</text>
+  <text x="568" y="378" dominant-baseline="middle" fill="#475569" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="28" font-weight="500">across multiple machines over SSH.</text>
 </svg>
