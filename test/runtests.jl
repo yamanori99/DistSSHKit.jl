@@ -9,6 +9,13 @@ using DistSSHRun
 
 include("helpers.jl")
 
+module _PublicOnlyProbe
+    function kept_out end
+    public kept_out
+    function shown end
+    export shown
+end
+
 @testset "DistSSHKit" verbose = true begin
     include("reexport.jl")
     include("routing.jl")

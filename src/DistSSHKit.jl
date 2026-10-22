@@ -3,7 +3,9 @@ DistSSHKit — meta-package for the run and the queue.
 
 Users add this package. The command is `julia -m DistSSHKit`.
 DistSSHRun is the run. DistSSHQueue is the queue, started on a queue host.
-This module reexports their public names.
+This module reexports names they export. `rsync_send_list` is public on
+DistSSHRun and stays reexported until 0.11. Other public-only names are
+not reexported.
 """
 module DistSSHKit
 
@@ -33,8 +35,21 @@ end
 
 const _FROM = Dict{Symbol, Module}()
 
+# Public-only names already reexported. Removed in 0.11. New public-only
+# names are not added here.
+const _PUBLIC_ONLY_KEPT = (:rsync_send_list,)
+
+"""True when `n` from `mod` is reexported.
+
+Exported names are taken. A public-only name is taken only when it is in
+`_PUBLIC_ONLY_KEPT`.
+"""
+_reexport_name(mod::Module, n::Symbol)::Bool =
+    Base.isexported(mod, n) || n in _PUBLIC_ONLY_KEPT
+
 """Reexport names `mod` already exports. Private names stay there.
 
+A public-only name is reexported only when it is in `_PUBLIC_ONLY_KEPT`.
 A name already in this module is exported when it is the same binding `mod`
 holds (`using DistSSHRun.DistSSHBase` brings those in). `_OWN` is excluded
 even when not yet defined, because `println_kit_version` is declared after
@@ -44,6 +59,7 @@ function _adopt!(mod::Module)
     for n in names(mod)
         n === nameof(mod) && continue
         n in _OWN && continue
+        _reexport_name(mod, n) || continue
         if haskey(_FROM, n)
             _FROM[n] === mod && continue
             # Run and Queue can both reexport one DistSSHBase binding.

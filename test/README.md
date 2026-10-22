@@ -15,7 +15,9 @@ That is `test/runtests.jl`, which includes the files under Layout:
 public reexports and `julia -m DistSSHKit` routing.
 `reexport.jl` pins the names Kit exports. If that test fails after a
 DistSSHRun or DistSSHQueue release and Kit itself did not change, read the
-new name. Update the set in a Kit patch when the increase is intended.
+new name. Update the set in a Kit patch when a new `export` is intended.
+A public-only name is not reexported, so it does not update the set.
+`rsync_send_list` stays until 0.11, when `_PUBLIC_ONLY_KEPT` is removed.
 Tests for a job
 started on this machine live in DistSSHRun.
 Tests for jobs left on a machine that stays on live in DistSSHQueue.

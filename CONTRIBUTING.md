@@ -12,7 +12,9 @@ Internals of this repo.
 
 Users add this package. A job runs on this machine, or on a queue host
 (an always-on machine). `setup` and `up` prepare hosts for both.
-DistSSHKit reexports the public names of DistSSHRun and DistSSHQueue.
+DistSSHKit reexports the exported names of DistSSHRun and DistSSHQueue.
+`rsync_send_list` is public on DistSSHRun and stays reexported until 0.11.
+Other public-only names are not reexported.
 You do not install those packages separately. `setup`, `up`, `go`,
 `ride`, and `drive` are implemented in
 [DistSSHRun.jl](https://github.com/yamanori99/DistSSHRun.jl).

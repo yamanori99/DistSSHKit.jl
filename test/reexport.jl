@@ -2,10 +2,11 @@
 #
 # `_KNOWN_KIT_EXPORTS` is the export set as of DistSSHRun 0.1.9 and
 # DistSSHQueue 0.9.6, including `rsync_send_list` (public on Run, reexported
-# until 0.11). A dependency patch that adds an `export` or a `public` name
-# fails the test below without a Kit change. Read the new name. Update this
-# set in a Kit patch when the increase is intended. The 0.11 change that
-# stops reexporting public-only names removes `rsync_send_list` from this set.
+# until 0.11). A dependency patch that adds an `export` fails the test below
+# without a Kit change. Read the new name. Update this set in a Kit patch
+# when the new export is intended. A public-only name is not reexported, so
+# it does not update this set. The 0.11 change that stops reexporting
+# public-only names removes `_PUBLIC_ONLY_KEPT` from this set.
 
 const _KNOWN_KIT_EXPORTS = Set(
     (
@@ -107,18 +108,29 @@ const _KNOWN_KIT_EXPORTS = Set(
 )
 
 @testset "reexport" begin
+    @test DistSSHKit._reexport_name(_PublicOnlyProbe, :shown)
+    @test !DistSSHKit._reexport_name(_PublicOnlyProbe, :kept_out)
+    @test DistSSHKit._reexport_name(DistSSHRun, :rsync_send_list)
     for n in names(DistSSHRun)
         n === :DistSSHRun && continue
         n === :println_kit_version && continue
-        @test isdefined(DistSSHKit, n)
-        @test n in names(DistSSHKit)
-        @test getproperty(DistSSHKit, n) === getproperty(DistSSHRun, n)
+        if Base.isexported(DistSSHRun, n) || n in DistSSHKit._PUBLIC_ONLY_KEPT
+            @test isdefined(DistSSHKit, n)
+            @test n in names(DistSSHKit)
+            @test getproperty(DistSSHKit, n) === getproperty(DistSSHRun, n)
+        else
+            @test !Base.isexported(DistSSHKit, n)
+        end
     end
     for n in names(DistSSHQueue)
         n === :DistSSHQueue && continue
-        @test isdefined(DistSSHKit, n)
-        @test getproperty(DistSSHKit, n) === getproperty(DistSSHQueue, n)
-        @test n in names(DistSSHKit)
+        if Base.isexported(DistSSHQueue, n) || n in DistSSHKit._PUBLIC_ONLY_KEPT
+            @test isdefined(DistSSHKit, n)
+            @test getproperty(DistSSHKit, n) === getproperty(DistSSHQueue, n)
+            @test n in names(DistSSHKit)
+        else
+            @test !Base.isexported(DistSSHKit, n)
+        end
     end
     @test !isdefined(DistSSHKit, :_read_kit_pid_record)
     @test !isdefined(DistSSHKit, :_juliaup_default_channel_from_status)
