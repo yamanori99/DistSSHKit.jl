@@ -91,7 +91,8 @@ if ($probe -eq 0) {
 
 # About 370MB. --retry starts again at byte 0, so a slow link spends every
 # attempt and still has no file. Each attempt keeps the bytes it received.
-# Two attempts that add nothing fail. Twenty minutes is this download.
+# Two attempts that add nothing fail only while the file is still empty.
+# After any bytes are kept, only the twenty minute budget stops the download.
 # $Seconds still bounds wsl.exe.
 $dest = Join-Path $Temp "wsl-install.wsl"
 $downloadStart = Get-Date
@@ -115,7 +116,7 @@ while ($true) {
     }
     $stalls += 1
     Write-Host "rootfs download added no bytes ($stalls, curl $code)"
-    if ($stalls -ge 2) { exit $code }
+    if ($before -eq 0 -and $stalls -ge 2) { exit $code }
 }
 
 foreach ($attempt in 1, 2) {
