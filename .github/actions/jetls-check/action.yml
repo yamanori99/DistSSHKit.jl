@@ -22,10 +22,10 @@ runs:
         if [[ -z "${JULIA_APPS_JULIA_CMD:-}" ]]; then
           export JULIA_APPS_JULIA_CMD="$(command -v julia)"
         fi
+        # `release` moves. A new hint then fails weekly on unchanged code.
+        # This tag is that date release. Bump it to take a newer JETLS.
         julia --startup-file=no -e '
           using Pkg
-          # `release` moves. A new hint then fails weekly on unchanged code.
-          # This tag is that date's release. Bump it to take a newer JETLS.
           Pkg.Apps.add(; url="https://github.com/aviatesk/JETLS.jl", rev="2026-10-21")
         '
     - name: Run jetls check
