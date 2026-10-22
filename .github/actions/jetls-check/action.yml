@@ -38,6 +38,21 @@ runs:
         if [[ -z "${JULIA_APPS_JULIA_CMD:-}" ]]; then
           export JULIA_APPS_JULIA_CMD="$(command -v julia)"
         fi
+        jetls version
+        manifest="${HOME}/.julia/environments/apps/JETLS/Manifest.toml"
+        if [[ -f "$manifest" ]]; then
+          # The date tag does not name the analyzer. JETLSCore repo-rev does.
+          core="$(awk '
+            /^\[\[deps\.JETLSCore\]\]$/ { section = "core"; next }
+            /^\[\[/ { section = ""; next }
+            section == "core" && $1 == "repo-rev" {
+              gsub(/"/, "", $3)
+              print $3
+              exit
+            }
+          ' "$manifest")"
+          echo "jetls core ${core}"
+        fi
         # Match aviatesk/JETLS.jl check@release: no `--threads=auto` (segfaults
         # on Julia 1.13 in signature_analysis_worker; exit 139).
         # shellcheck disable=SC2086
