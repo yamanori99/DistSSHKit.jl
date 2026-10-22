@@ -24,7 +24,9 @@ runs:
         fi
         julia --startup-file=no -e '
           using Pkg
-          Pkg.Apps.add(; url="https://github.com/aviatesk/JETLS.jl", rev="release")
+          # `release` moves. A new hint then fails weekly on unchanged code.
+          # This tag is that date's release. Bump it to take a newer JETLS.
+          Pkg.Apps.add(; url="https://github.com/aviatesk/JETLS.jl", rev="2026-10-21")
         '
     - name: Run jetls check
       shell: bash
