@@ -89,9 +89,34 @@ if ($probe -eq 0) {
     exit 0
 }
 
+# About 370MB. --retry starts again at byte 0, so a slow link spends every
+# attempt and still has no file. Each attempt keeps the bytes it received.
+# Two attempts that add nothing fail. Twenty minutes is this download.
+# $Seconds still bounds wsl.exe.
 $dest = Join-Path $Temp "wsl-install.wsl"
-& curl.exe --fail --location --retry 3 --retry-delay 5 --connect-timeout 20 --max-time 180 -o $dest $Url
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+$downloadStart = Get-Date
+$stalls = 0
+while ($true) {
+    if (((Get-Date) - $downloadStart).TotalMinutes -ge 20) {
+        Write-Host "rootfs download exceeded 20 minutes"
+        exit 1
+    }
+    $before = 0L
+    if (Test-Path $dest) { $before = (Get-Item $dest).Length }
+    & curl.exe --fail --location --continue-at - --connect-timeout 20 --max-time 180 -o $dest $Url
+    $code = $LASTEXITCODE
+    $after = 0L
+    if (Test-Path $dest) { $after = (Get-Item $dest).Length }
+    if ($code -eq 0) { break }
+    if ($after -gt $before) {
+        $stalls = 0
+        Write-Host "rootfs download kept $after bytes (curl $code)"
+        continue
+    }
+    $stalls += 1
+    Write-Host "rootfs download added no bytes ($stalls, curl $code)"
+    if ($stalls -ge 2) { exit $code }
+}
 
 foreach ($attempt in 1, 2) {
     $install = Invoke-Wsl -WslArgs @(
