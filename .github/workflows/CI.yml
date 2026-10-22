@@ -10,7 +10,8 @@ on:
 # Cancel redundant runs on the same branch/PR.
 # A Project.toml version increase (see version-cut.sh) runs Ubuntu
 # 1.14-nightly, nightly, Aqua on those channels, and PkgEval in this workflow.
-# macOS and WSL2 for both channels are CI weekly. No label is involved.
+# macOS for both channels is CI weekly. WSL2 1.13 Pkg.test runs on a main
+# push and CI weekly, not on a pull request. No label is involved.
 # A main push that changes only Project.toml and NEWS.md, and raises
 # version, skips Test.
 concurrency:
@@ -21,8 +22,9 @@ permissions:
   contents: read
 
 jobs:
-  # `Pkg.test` 1.13 runs on ubuntu-latest, macos-latest, and WSL2 Ubuntu.
-  # macOS and WSL are required. Coverage uploads from Ubuntu only. SSH E2E lives in
+  # `Pkg.test` 1.13 on a pull request is ubuntu-latest and macos-latest.
+  # WSL2 Ubuntu is a main push and CI weekly, not a pull request.
+  # macOS is required. Coverage uploads from Ubuntu only. SSH E2E lives in
   # DistSSHRun and DistSSHQueue, not this repo.
   # One detect job; markdown-only / allowlisted PRs skip heavy jobs (UI: skipping).
   # Required check names include the Julia version and the architecture.
@@ -100,7 +102,7 @@ jobs:
   test-wsl:
     name: Pkg.test (1.13, WSL2 ubuntu-24.04, x64)
     needs: detect
-    if: needs.detect.outputs.heavy == 'true'
+    if: needs.detect.outputs.heavy == 'true' && github.event_name != 'pull_request'
     runs-on: windows-latest
     timeout-minutes: 45
     permissions:

@@ -4,7 +4,8 @@ name: CI weekly
 # @release drift when no PR ran that day. PR / main push stay the gate.
 # 1.14-nightly and nightly jobs are continue-on-error and omitted from notify.
 # A 1.13 compile bench failure on main opens "Compile bench failed".
-# 1.13 macos-latest and WSL2 Pkg.test are included (no coverage), same as a PR.
+# 1.13 macos-latest Pkg.test matches a PR (no coverage). WSL2 1.13 Pkg.test
+# runs here and on a main push, not on a pull request.
 # 1.14-nightly and nightly Pkg.test and Aqua on macOS and WSL2 run here only, and stay
 # out of notify. Ubuntu copies also run in Test.
 on:

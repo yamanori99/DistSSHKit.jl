@@ -116,8 +116,9 @@ Versions are lines in
 a second stable line.
 
 - **1.13** (required): `Project.toml` julia floor, the maintained
-  stable. Pkg.test on Ubuntu, macOS, and WSL2 Ubuntu, plus Aqua, JETLS,
-  Documenter, bake. Codecov `pkgtest` on **main push**, Ubuntu only
+  stable. Pkg.test on Ubuntu and macOS, plus Aqua, JETLS,
+  Documenter, bake. WSL2 1.13 Pkg.test is a main push and CI weekly,
+  not a pull request. Codecov `pkgtest` on **main push**, Ubuntu only
 - **1.14-nightly** (not required): `release-1.14`. Ubuntu Pkg.test
   and Aqua on **main**, **CI weekly**, and a version-cut PR. macOS and
   WSL2 Pkg.test and Aqua on **CI weekly** only. `continue-on-error`
@@ -148,8 +149,9 @@ and the main ruleset in the same PR.
 These run as jobs of the `Test` workflow
 ([`.github/workflows/CI.yml`](.github/workflows/CI.yml)). Ubuntu:
 `Pkg.test` 1.13, JETLS 1.13, Aqua 1.13, Gitleaks (also rejects `< 0.0.1`
-in `Project.toml`). macOS (`macos-latest`) and WSL2 Ubuntu 24.04:
-`Pkg.test` 1.13, same heavy gate, no coverage upload. Both are required.
+in `Project.toml`). macOS (`macos-latest`):
+`Pkg.test` 1.13, same heavy gate, no coverage upload. macOS is required.
+WSL2 1.13 is a main push and CI weekly, not a pull request.
 Documenter 1.13 is
 [`.github/workflows/Documentation.yml`](.github/workflows/Documentation.yml).
 A pull request that runs it also pushes a preview to `gh-pages` at
@@ -169,7 +171,7 @@ required-name list). Monthly cron on `main` opens Issue
 `Runic monthly failed` (`alert`) when `--check` is red.
 
 These files **alone** skip the heavy jobs (UI: skipping; Pkg.test on
-Ubuntu, macOS, and WSL2, plus JETLS / Aqua, do not start). Documenter
+Ubuntu and macOS, plus JETLS / Aqua, do not start). Documenter
 still runs when `docs/**`, README,
 `src/**`, or `Project.toml` changed; otherwise it is skipped too.
 Allowlisted markdown-only PRs skip the heavy jobs (skipping UI):
@@ -183,7 +185,7 @@ Allowlisted markdown-only PRs skip the heavy jobs (skipping UI):
 
 A new root markdown file stays heavy until listed in
 [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml).
-A version increase skips none of this: Pkg.test (Ubuntu, macOS, and WSL2),
+A version increase skips none of this: Pkg.test (Ubuntu and macOS),
 JETLS, Aqua, and Documenter all run. Register when the required checks
 below are green. Do not wait on DistSSHRun's E2E.
 
@@ -193,7 +195,6 @@ green empty run).
 
 - `Pkg.test (1.13, ubuntu-latest, x64)`
 - `Pkg.test (1.13, macos-latest, aarch64)`
-- `Pkg.test (1.13, WSL2 ubuntu-24.04, x64)`
 - `JETLS (1.13, ubuntu-latest, x64)`
 - `Aqua (1.13, ubuntu-latest, x64)`
 - `Documenter (1.13, ubuntu-latest, x64)`
@@ -243,7 +244,8 @@ not rewrite files you did not mean to touch.
 ### Scheduled CI
 
 **CI weekly** (daily 06:00 JST, or Run workflow): same `Pkg.test` /
-JETLS / Aqua as a PR, including `macos-latest` and WSL2 (no coverage).
+JETLS / Aqua as a PR, including `macos-latest` (no coverage). WSL2 1.13
+runs on CI weekly and a main push, not on a pull request.
 Not a PR check. `Compile bench` measures precompile, load, CLI wall time,
 `src/**/*.jl` size, and the host OS, arch, and CPU on 1.13,
 1.14-nightly, and nightly. CI weekly runs it, and a **main** push that raises
