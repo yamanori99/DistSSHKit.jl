@@ -9,8 +9,6 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
 
 ## Unreleased
 
-- A name that DistSSHRun or DistSSHQueue marks public, and does not export, is not reexported. `rsync_send_list` stays reexported until 0.11. The current export set is unchanged.
-
 ### Planned breaking (next minor)
 
 - `terminate!` / `terminate_run!` `interrupt_grace` will default to a positive value, so a stop sends SIGINT before SIGTERM. `cancel` of a running job will use that default. Until then the default is `0` and `cancel` does not send SIGINT. DistSSHKit 0.11 (DistSSHRun 0.2, DistSSHQueue 0.10).
@@ -21,6 +19,10 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
   honors `DISTSSHKIT_YES`. DistSSHKit 0.11 (DistSSHRun 0.2, DistSSHQueue 0.10).
   `KitSession` `yes=true` is outside this change. `setup!(session, :delete)`
   and `setup!(session, :prune)` without `confirm_path` still follow `session.yes`.
+
+## 0.10.4
+
+- A name that DistSSHRun or DistSSHQueue marks public, and does not export, is not reexported. `rsync_send_list` stays reexported until 0.11. The current export set is unchanged.
 
 ## 0.10.3
 
