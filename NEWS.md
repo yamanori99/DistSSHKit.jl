@@ -9,6 +9,8 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
 
 ## Unreleased
 
+- The manual distinguishes `add-host` and `pool`, which compare a worker with serve's Julia, from `setup --check`, which warns on a patch or a prerelease and returns those warnings from `setup!`. It also describes the `submit`, `status`, and `qhost:` `fetch` lines DistSSHQueue 0.9.8 already prints.
+
 ### Planned breaking (next minor)
 
 - `terminate!` / `terminate_run!` `interrupt_grace` will default to a positive value, so a stop sends SIGINT before SIGTERM. `cancel` of a running job will use that default. Until then the default is `0` and `cancel` does not send SIGINT. DistSSHKit 0.11 (DistSSHRun 0.2, DistSSHQueue 0.10).

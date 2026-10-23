@@ -25,7 +25,8 @@ julia -m DistSSHKit qhost serve
 `add-host` does not deploy. `serve` instantiates the job project on
 this host, then `setup!` (rsync / instantiate / `check`) on
 `child:` hosts. A `qhost:` stage has no `.git/`; a missing local git
-commit warns instead of failing `:check`. Optional: `qhost up`
+commit warns instead of failing `:check`, and uncommitted changes warn
+too. Optional: `qhost up`
 when major.minor differs.
 
 From a client: create the env, then `pkg> add DistSSHKit` in it

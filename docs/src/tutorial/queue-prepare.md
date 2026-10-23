@@ -52,7 +52,7 @@ Do not `cd` the stage tree and run DistSSHKit `setup` by hand. `serve`
 on `child:` hosts, unless
 `DISTSSHQUEUE_NO_KIT_SETUP=1`. A `qhost:` stage omits `.git/`;
 a missing local git commit warns instead of
-failing `:check`. Leave
+failing `:check`, and uncommitted changes warn too. Leave
 `DISTRIBUTED_REMOTE_PROJECT_ROOT` unset in queue `config.toml` so a
 `qhost:` `child:` copy stays `~/stage/<uuid>`. `parent` uses the stage
 on the queue host.

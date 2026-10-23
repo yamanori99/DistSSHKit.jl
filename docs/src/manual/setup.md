@@ -40,8 +40,17 @@ Also: [Requirements](@ref), `setup --help`. Flag vocabulary:
 Pick **one mode** per invocation (except shared options).
 
 - `--check`: local `ssh` / `rsync` / `git` on PATH; remotes: SSH, Julia,
-  project, deps; git commit parity when remotes have `.git/`. A missing
-  local git commit is a warning (instantiate still proceeds), not a fail
+  project, deps; git commit parity when remotes have `.git/`. A
+  major.minor difference fails unless `--ignore-julia-version`. A patch
+  difference and a prerelease difference warn either way, and the check
+  still succeeds. A missing local git commit, and uncommitted changes,
+  are warnings (instantiate still proceeds), not a fail. The printed text
+  and the exit code stay the same. `setup!(session, :check)` returns those
+  warnings on `SyncResult.warnings`. Each value is a DistSSHRun
+  `SetupWarning` (`host`, `kind`, `message`). `host` is `PARENT_HOST_NAME`
+  for a local warning. `message` is the text that was printed. The name is
+  public in DistSSHRun and is not exported, so DistSSHKit does not reexport
+  it
 - `--clone`: `git clone` onto each remote at an empty/missing path
   (confirm unless `-y`)
 - `--rsync`: rsync local tree onto missing/empty path (recommended first

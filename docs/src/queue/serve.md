@@ -19,7 +19,7 @@ the job project on this host, then `setup!` (`rsync` →
 `DISTSSHQUEUE_NO_KIT_SETUP=1`. `setup!` does not instantiate
 `parent`. Child `instantiate` / `check` failure fails the job.
 A `qhost:` stage omits `.git/` (rsync); a missing local git commit
-warns instead of failing `:check`
+warns instead of failing `:check`, and uncommitted changes warn too
 ([DistSSHKit#370](https://github.com/yamanori99/DistSSHKit.jl/issues/370)). A
 later job's `rsync` onto a nonempty worker path follows the no-overwrite
 rule; `instantiate` still runs.

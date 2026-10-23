@@ -29,7 +29,10 @@ detail lines (`queued` is local wall time at submit, including DST;
 `elapsed` / `wall`, folded `hosts`). `-q` is the first
 line only. `--verbose` keeps the full host token list. While setup is in
 progress, STATE shows `rsync` / `instantiate` / `check` (`instantiate`
-includes the queue-host project; those steps are `child:` only). A
+includes the queue-host project; those steps are `child:` only). When
+the row has setup warnings, STATE ends with ` !`. Those warnings stay
+on the row after the job finishes. `-q` still shows ` !`. Unless `-q`,
+the table ends with `! setup warnings; fetch shows them`. A
 `qhost:` stage still reaches `check`; a missing `.git/` warns
 (the store row stays `:running`). `qhost:HOST` `status` / `watch` use
 `ssh` `-t` when this stdout is a TTY (watch paint). Colors unless

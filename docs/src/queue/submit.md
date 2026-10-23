@@ -97,7 +97,15 @@ the script is checked on this machine. Job id prints as a bare stdout line. CLI 
 `queue: local (HOSTNAME)` (or `qhost: local (HOSTNAME)` on the hopped
 process when you passed `qhost:`) then `Queued  N (no running)` on stderr
 (`(R running)` when a job is already running);
-`DISTSSHKIT_QUIET` hides that. A `qhost:` rsync prints `rsync → HOST:…` when it starts (fetch: `rsync ←`). `DISTSSHKIT_PROGRESS` / `--progress` adds rsync `--info=progress2`. Missing config `hosts`: a `parent` / `child:` token is an error (`add-host first`). `hosts = []` allows none.
+`DISTSSHKIT_QUIET` hides that. When the job tree has a `Project.toml`
+whose `[deps]` names at least one package, and the Julia that runs
+`submit` finds no Manifest (`Manifest.toml`, or a versioned file such
+as `Manifest-v1.13.toml`), stderr warns and the job records that
+warning. No `Project.toml`, or an empty `[deps]`, does not warn.
+`[weakdeps]` and `[extras]` are not read. The exit code stays 0.
+`DISTSSHKIT_QUIET` hides that line and still records the warning. On
+`qhost:` the Julia that looks is the hop's, which can differ from
+`serve`. A `qhost:` rsync prints `rsync → HOST:…` when it starts (fetch: `rsync ←`). `DISTSSHKIT_PROGRESS` / `--progress` adds rsync `--info=progress2`. Missing config `hosts`: a `parent` / `child:` token is an error (`add-host first`). `hosts = []` allows none.
 
 Two different projects
 that the run would deploy to the same worker path are refused (no

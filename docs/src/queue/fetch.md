@@ -27,6 +27,16 @@ Run it from the same `cwd` / `DISTRIBUTED_PROJECT_ROOT` as `submit`.
   `{stem}_{id8}` directory
 - stdout: the destination path, one line
 
+`qhost:` fetch also prints on stderr, after a successful copy or
+`already fetched`. First the code version: `code  commit` and the first
+7 characters, plus ` (uncommitted changes)` when the client tree was
+dirty. Then, when the job has setup warnings, `setup on the queue host:`
+and those warnings. A warning with a host is `! host: message`;
+otherwise `! message`. The text is what `setup --check` printed on the
+queue host, so `local` in it is that host. A fetch on the queue host,
+without `qhost:`, prints the path only. `DISTSSHKIT_QUIET` hides the
+notes. stdout stays the one path line.
+
 `--into` may point outside the job project. The destination is not the
 result under `{project}/.distsshkit/{kind}/…`.
 
@@ -57,7 +67,8 @@ The transfer prints `rsync ← HOST:…` on stderr.
 
 ## On the queue host
 
-Omit `qhost:` to print the source path without copying. The source is
+Omit `qhost:` to print the source path without copying, and without the
+code version or the setup warnings. The source is
 the persisted `result_path` or `run.toml` `output_dir`; it may be
 outside the job project.
 
