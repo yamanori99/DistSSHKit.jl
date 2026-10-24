@@ -19,6 +19,11 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
   honors `DISTSSHKIT_YES`. DistSSHKit 0.11 (DistSSHRun 0.2, DistSSHQueue 0.10).
   `KitSession` `yes=true` is outside this change. `setup!(session, :delete)`
   and `setup!(session, :prune)` without `confirm_path` still follow `session.yes`.
+- `rsync_send_list` will stop being reexported. It stays public on
+  DistSSHRun. DistSSHKit 0.11.
+- Names DistSSHRun 0.2 stops exporting will stop being reexported.
+  `parse_go_args`, `parse_drive_args`, and `parse_ride_args` stay.
+  DistSSHKit 0.11 (DistSSHRun 0.2).
 
 ## 0.10.5
 
