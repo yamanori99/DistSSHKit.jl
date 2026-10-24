@@ -205,6 +205,7 @@ function bench_payload(groups::Dict{String, Vector{Dict{String, Any}}})::Vector{
                     "commit" => isempty(sha) ? "" : first(sha, 7),
                     "julia" => string(get(row, "julia", "")),
                     "julia_short" => julia_short(row),
+                    "version" => string(get(row, "version", "")),
                     "host" => host_mark(row),
                     "commands" => commands,
                 )
@@ -217,7 +218,7 @@ end
 
 function fallback_rows(payload::Vector{Dict{String, Any}})::String
     isempty(payload) && return "<p>No samples.</p>"
-    index = findfirst(item -> item["name"] == "nightly", payload)
+    index = findfirst(item -> item["name"] == "1.13", payload)
     slot = index === nothing ? payload[1] : payload[index]
     samples = slot["samples"]::Vector{Dict{String, Any}}
     isempty(samples) && return "<p>No samples.</p>"
@@ -417,22 +418,29 @@ function breaks(samples, field, nightlyOnly) {
 function shapes(samples) {
   const julia = breaks(samples, "julia_short", true);
   const hosts = breaks(samples, "host", false);
+  const cuts = breaks(samples, "version", false);
   return julia.map((mark) => ({
     type: "line", x0: mark.time, x1: mark.time, y0: 0, y1: 1, yref: "paper",
     line: { dash: "dash", width: 1, color: "#64748b" }
   })).concat(hosts.map((mark) => ({
     type: "line", x0: mark.time, x1: mark.time, y0: 0, y1: 1, yref: "paper",
     line: { dash: "dot", width: 1, color: "#9558b2" }
+  }))).concat(cuts.map((mark) => ({
+    type: "line", x0: mark.time, x1: mark.time, y0: 0, y1: 1, yref: "paper",
+    line: { width: 1, color: "#c2410c" }
   })));
 }
 
 function annotations(samples) {
   const julia = breaks(samples, "julia_short", true);
   const hosts = breaks(samples, "host", false);
+  const cuts = breaks(samples, "version", false);
   return julia.map((mark) => ({
     x: mark.time, y: 1, yref: "paper", text: mark.label, showarrow: false, yanchor: "bottom"
   })).concat(hosts.map((mark) => ({
     x: mark.time, y: 0.92, yref: "paper", text: mark.label, showarrow: false, font: { color: "#9558b2" }
+  }))).concat(cuts.map((mark) => ({
+    x: mark.time, y: 0.84, yref: "paper", text: mark.label, showarrow: false, font: { color: "#c2410c" }
   })));
 }
 
@@ -671,7 +679,7 @@ function boot() {
   if (fallback) fallback.hidden = true;
   const query = new URLSearchParams(location.search);
   const names = SLOTS.map((slot) => slot.name);
-  state.slot = names.includes(query.get("slot")) ? query.get("slot") : (names.includes("nightly") ? "nightly" : names[0]);
+  state.slot = names.includes(query.get("slot")) ? query.get("slot") : (names.includes("1.13") ? "1.13" : names[0]);
   const range = query.get("range");
   state.range = RANGES.some((item) => item[0] === range) ? range : "all";
   const count = Number(query.get("n"));

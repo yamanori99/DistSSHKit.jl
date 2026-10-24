@@ -4,6 +4,7 @@ name: CI weekly
 # @release drift when no PR ran that day. PR / main push stay the gate.
 # 1.14-nightly and nightly jobs are continue-on-error and omitted from notify.
 # A 1.13 compile bench failure on main opens "Compile bench failed".
+# The 1.12 compile bench is continue-on-error and is not that issue.
 # 1.13 macos-latest Pkg.test matches a PR (no coverage). WSL2 1.13 Pkg.test
 # runs here and on a main push, not on a pull request.
 # 1.14-nightly and nightly Pkg.test and Aqua on macOS and WSL2 run here only, and stay
@@ -392,6 +393,25 @@ jobs:
         shell: wsl-bash {0}
         run: ./.github/wsl-julia.sh nightly ./.github/aqua-check.sh
 
+  compile-bench-1-12:
+    name: Compile bench (1.12, ubuntu-latest, x64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: julia-actions/setup-julia@da908477b5db94c10ffce8cfea9f2b3b9d5db687 # v3.0.3
+        with:
+          version: "1.12"
+      - uses: ./.github/actions/compile-bench
+        with:
+          slot: "1.12"
+          token: ${{ github.token }}
+
   compile-bench:
     name: Compile bench (1.13, ubuntu-latest, x64)
     runs-on: ubuntu-latest
@@ -451,6 +471,7 @@ jobs:
   render:
     name: Render bench-data
     needs:
+      - compile-bench-1-12
       - compile-bench
       - compile-bench-nightly
       - compile-bench-master

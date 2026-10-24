@@ -249,8 +249,9 @@ not rewrite files you did not mean to touch.
 JETLS / Aqua as a PR, including `macos-latest` (no coverage). WSL2 1.13
 runs on CI weekly and a main push, not on a pull request.
 Not a PR check. `Compile bench` measures precompile, load, CLI wall time,
-`src/**/*.jl` size, and the host OS, arch, and CPU on 1.13,
-1.14-nightly, and nightly. CI weekly runs it, and a **main** push that raises
+`src/**/*.jl` size, and the host OS, arch, and CPU on 1.12, 1.13,
+1.14-nightly, and nightly. The page opens on 1.13. A solid line marks a
+`Project.toml` version change. CI weekly runs it, and a **main** push that raises
 `Project.toml` `version` runs it too. A **main**
 run appends that sample to the `bench-data` branch. A render job then rebuilds the README and `bench.html`, and a main run publishes that page on GitHub Pages. A **main** push of `bench/compile/report.jl` or `bench/compile/charts.jl` rebuilds them and does not measure. A pull request that changes the file renders the history into the job summary and does not push. How to read the archive
 is in
