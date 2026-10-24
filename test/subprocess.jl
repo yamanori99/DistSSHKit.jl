@@ -1,5 +1,5 @@
 # Child `julia -m DistSSHKit` exit codes. Set DISTSSHKIT_SKIP_SUBPROCESS_TESTS=1
-# to skip. Not a guarantee of help text beyond `drive -h`.
+# to skip. Help-page bytes are compared in-process (`_test_same_page`).
 
 @testset "app project" begin
     if get(ENV, "DISTSSHKIT_SKIP_SUBPROCESS_TESTS", "") == "1"
@@ -59,10 +59,9 @@
             (["submit", "-h"], 0),
         ]
         for (args, want) in cases
-            code, out, err = _kit_proc(julia, app, child_env, args)
+            code, _, err = _kit_proc(julia, app, child_env, args)
             @test code == want
             if args == ["drive", "-h"]
-                @test occursin("DistSSHKit drive", out)
                 @test !occursin("Package DistSSHRun not found", err)
             end
         end
