@@ -1,5 +1,6 @@
-# `main` wording and streams, and the `_route` table. Not a guarantee of
-# every help sentence. A comment on a row says what that row records.
+# `main` streams and the `_route` table. A forwarded page equals that
+# owner's `main` under Kit's CLI entry, not a frozen sentence. A comment
+# on a row says what that row records.
 
 using Random
 
@@ -50,42 +51,16 @@ using Random
         @test occursin("qhost setup", err)
         @test !occursin("julia -m DistSSHQueue", err)
     end
-    let (code, out, err) = _main_capture(["go", "--help"])
-        @test code == 0
-        @test occursin("DistSSHKit go", out)
-        @test occursin("Usage", out)
-        @test !occursin("Unknown subcommand", out)
-        @test !occursin("Unknown subcommand", err)
-    end
-    let (code, out, err) = _main_capture(["setup", "--help"])
-        @test code == 0
-        @test occursin("DistSSHKit setup", out)
-        @test occursin("--clone", out)
-        @test !occursin("Unknown subcommand", err)
-    end
-    let (code, out, err) = _main_capture(["submit", "--help"])
-        @test code == 0
-        @test occursin("DistSSHKit submit", out)
-        @test !occursin("Unknown subcommand", out * err)
-    end
-    let (code, out, err) = _main_capture(["--help", "client"])
-        @test code == 0
-        @test occursin("DistSSHKit --help client", out)
-        @test occursin("submit", out)
-        @test occursin("Jobs", out)
-        @test !occursin("Unknown subcommand", err)
-    end
-    let (code, out, err) = _main_capture(["qhost", "setup", "--help"])
-        @test code == 0
-        @test occursin("DistSSHKit qhost setup", out)
-        @test occursin("--force", out)
-        @test !occursin("clone", lowercase(out * err))
-    end
-    let (code, out, err) = _main_capture(["qhost:HOST", "submit", "--help"])
-        @test code == 0
-        @test occursin("DistSSHKit submit", out)
-        @test !occursin("Unknown subcommand", out * err)
-    end
+    # Run's page. `main` is what Kit calls. `show_requirements` is not exported.
+    _test_same_page(["go", "--help"], DistSSHRun.main)
+    _test_same_page(["setup", "--help"], DistSSHRun.main)
+    _test_same_page(["submit", "--help"], DistSSHQueue.main)
+    # Queue owns the topic heading. Render `main`; do not pin its words.
+    _test_same_page(["--help", "client"], DistSSHQueue.main)
+    # Kit drops the group word. The owner argv below is that stripped pair,
+    # not a value read from `_route`. `cli_qhost_heading` still says `qhost`.
+    _test_same_page(["qhost", "setup", "--help"], DistSSHQueue.main, ["setup", "--help"])
+    _test_same_page(["qhost:HOST", "submit", "--help"], DistSSHQueue.main)
 end
 
 let routes = [

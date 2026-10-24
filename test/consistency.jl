@@ -1,6 +1,6 @@
 # Command lists stay aligned with root help and the unknown-subcommand text.
-# `service` is a route whose help says it is gone. Root help does not list it
-# (NEWS 0.10.0).
+# `service` is a route. Root help does not list it (NEWS 0.10.0).
+# Each forwarded page equals that owner's `main` (code, stdout, and stderr).
 
 @testset "command lists" begin
     run_cmds = DistSSHKit._RUN_COMMANDS
@@ -33,16 +33,15 @@
             @test occursin(column, help)
         end
     end
-    for c in (run_cmds..., queue_cmds...)
-        code, out, err = _main_capture([c, "--help"])
-        text = out * err
-        @test code == 0
-        @test !occursin("julia -m DistSSHQueue", text)
-        @test !occursin("julia -m DistSSHRun", text)
-        c == "service" && @test occursin("gone", text)
+    for c in run_cmds, flag in ("-h", "--help")
+        _test_same_page([c, flag], DistSSHRun.main)
     end
-    for t in DistSSHKit._QUEUE_HELP_TOPICS
-        code, _, _ = _main_capture(["--help", t])
-        @test code == 0
+    for c in queue_cmds, flag in ("-h", "--help")
+        _test_same_page([c, flag], DistSSHQueue.main)
+        # The group word is Kit's. Spell the stripped owner argv here.
+        _test_same_page(["qhost", c, flag], DistSSHQueue.main, [c, flag])
+    end
+    for t in DistSSHKit._QUEUE_HELP_TOPICS, flag in ("-h", "--help", "help")
+        _test_same_page([flag, t], DistSSHQueue.main)
     end
 end

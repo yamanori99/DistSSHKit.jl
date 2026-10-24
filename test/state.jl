@@ -3,9 +3,12 @@
 @testset "cli state" begin
     _main_capture(["--help"])
     code, out, err = _stdio_capture(() -> DistSSHQueue.main(["--help"]))
+    queue_entry = DistSSHRun.DistSSHBase.with_cli_entry(:DistSSHQueue) do
+        string(DistSSHRun.DistSSHBase.cli_entry())
+    end
     @test code == 0
-    @test occursin("DistSSHQueue", out)
-    @test !occursin("julia -m DistSSHKit", out * err)
+    @test occursin(queue_entry, out)
+    @test !occursin(_owner_cli_m(:DistSSHKit), out * err)
     saved_env = copy(ENV)
     saved_args = copy(ARGS)
     cold = _main_capture(["go", "--help"])
