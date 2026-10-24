@@ -166,9 +166,16 @@ function slot_section(slot::String, rows)::Tuple{String, Vector{String}}
         end
         push!(body, "| " * join(cells, " | ") * " |")
     end
-    parts = String["## $slot", "", header, sep]
+    opened = slot == "1.13" ? " open" : ""
+    parts = String[
+        "<details$opened>",
+        "<summary>$slot</summary>",
+        "",
+        header,
+        sep,
+    ]
     append!(parts, body)
-    parts = append!(parts, [""])
+    append!(parts, ["", "</details>", ""])
     return (join(parts, "\n"), flagged)
 end
 
@@ -197,7 +204,8 @@ function render(groups)::Tuple{String, Vector{String}}
     against the previous sample on the same Julia slot, the host OS or arch
     changes, the Julia version changes, package precompile grows by 1.5x and 0.5s, a command wall grows
     by 1.5x and 1s, or a method of at least 200 ms is new in the top 20 or
-    doubles. This does not fail CI.
+    doubles. This does not fail CI. Each slot's table folds. The 1.13
+    table starts open.
 
     ## Flagged
 
