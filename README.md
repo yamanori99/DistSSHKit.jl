@@ -7,7 +7,8 @@ Precompile time, load time, CLI wall time, `src/**/*.jl` size, and the host
 against the previous sample on the same Julia slot, the host OS or arch
 changes, the Julia version changes, package precompile grows by 1.5x and 0.5s, a command wall grows
 by 1.5x and 1s, or a method of at least 200 ms is new in the top 20 or
-doubles. This does not fail CI.
+doubles. This does not fail CI. Each slot's table folds. The 1.13
+table starts open.
 
 ## Flagged
 
@@ -19,7 +20,8 @@ doubles. This does not fail CI.
 - nightly: julia 1.15.0-DEV.84 -> 1.15.0-DEV.104
 - nightly: status method new -> 706.3 ms: Tuple{DistSSHQueue.var"##show_status#216", Base.PipeEndpoint, Nothing, Bool, Nothing, Bool, typeof(D...
 
-## 1.13
+<details open>
+<summary>1.13</summary>
 
 | date | commit | version | julia | os | arch | src files | code lines | full s | pkg s | using s | help s | status s | go s | drive s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -33,7 +35,10 @@ doubles. This does not fail CI.
 | 2026-10-22 | 2e838fd | 0.10.4 | 1.13.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 415 | 7.84 | 0.91 | 0.29 | 0.73 | 5.27 | 6.73 | 23.75 |
 | 2026-10-23 | 2e838fd | 0.10.4 | 1.13.2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 415 | 6.72 | 0.79 | 0.25 | 0.64 | 4.57 | 6.55 | 21.03 |
 
-## 1.14-nightly
+</details>
+
+<details>
+<summary>1.14-nightly</summary>
 
 | date | commit | version | julia | os | arch | src files | code lines | full s | pkg s | using s | help s | status s | go s | drive s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -47,7 +52,10 @@ doubles. This does not fail CI.
 | 2026-10-22 | 2e838fd | 0.10.4 | 1.14.0-alpha1 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 415 | 7.39 | 0.79 | 0.32 | 0.59 | 1.77 | 3.06 | 11.55 |
 | 2026-10-23 | 2e838fd | 0.10.4 | 1.14.0-alpha1 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 415 | 7.15 | 0.74 | 0.3 | 0.56 | 1.79 | 3.38 | 11.32 |
 
-## nightly
+</details>
+
+<details>
+<summary>nightly</summary>
 
 | date | commit | version | julia | os | arch | src files | code lines | full s | pkg s | using s | help s | status s | go s | drive s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -59,4 +67,6 @@ doubles. This does not fail CI.
 | 2026-10-21 | 0d024d1 | 0.10.3 | 1.15.0-DEV.71 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 402 | 9.29 | 0.99 | 0.36 | 0.67 | 2.14 | 3.65 | 13.69 |
 | 2026-10-22 | 2e838fd | 0.10.4 | 1.15.0-DEV.84 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 415 | 8.83 | 0.89 | 0.3 | 0.61 | 2.0 | 3.41 | 12.99 |
 | 2026-10-23 | 2e838fd | 0.10.4 | 1.15.0-DEV.104 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 415 | 8.3 | 0.9 | 0.32 | 0.61 | 2.08 | 3.96 | 13.27 |
+
+</details>
 
