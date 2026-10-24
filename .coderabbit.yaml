@@ -6,7 +6,7 @@ tone_instructions: >
   in this diff. Stay inside the PR's stated scope. Start with the count
   of findings. Say when there is nothing to fix.
 reviews:
-  profile: quiet
+  profile: chill
   request_changes_workflow: false
   high_level_summary: true
   high_level_summary_in_walkthrough: true
