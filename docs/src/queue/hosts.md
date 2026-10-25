@@ -83,7 +83,7 @@ julia -m DistSSHKit qhost:HOST size --gb-per-worker 1.5 parent child:host1
 
 Flags (`--probe`, `--gb-per-worker`, …):
 [size](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/size/).
-`size --help` adds a note under that command's help.
+`help qhost size` adds a note under that command's help.
 
 ## plan
 
@@ -97,7 +97,7 @@ julia -m DistSSHKit qhost:HOST plan SCRIPT.jl
 
 Flags:
 [plan](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/plan/).
-`plan --help` adds a note under that command's help.
+`help qhost plan` adds a note under that command's help.
 
 ## pool
 
@@ -121,4 +121,4 @@ julia -m DistSSHKit qhost:HOST pool parent child:host1
 
 Flags:
 [pool](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/pool/).
-`pool --help` adds a note under that command's help.
+`help qhost pool` adds a note under that command's help.

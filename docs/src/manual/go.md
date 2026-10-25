@@ -10,7 +10,7 @@ julia --project=. -m DistSSHKit go [options] \
 ```
 
 Also: [First Steps · Demo](@ref Tutorial-Demo), [drive](@ref Manual-drive),
-`go --help`. Flag vocabulary and a short **go vs drive** table:
+`help go`. Flag vocabulary and a short **go vs drive** table:
 [User Guide](@ref Manual).
 
 `parent:N` / `child:NAME:N` stay explicit counts. Omitting `:N` on a listed

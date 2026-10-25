@@ -167,6 +167,7 @@ them. `plan` may even suggest `ride` right away.
 
 - **CLI** — run DistSSHKit from the terminal.
   Example: `julia --project=. -m DistSSHKit go child:user@host1:1 script.jl`.
+  Command flags: `julia -m DistSSHKit help go`.
   This suits quick experiments and shell scripts.
 - **Julia** — call functions from your own Julia code (a script, the REPL, or
   another package): `setup!`, `go!`, `drive!`, `plan` (no bang), `pool!`, and

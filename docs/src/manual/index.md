@@ -6,7 +6,7 @@ start on a queue host at
 [Prepare the machine](@ref Queue-Tutorial-Prepare), then
 [First job](@ref Queue-Tutorial-Client).
 
-Full flag lists: `julia --project=. -m DistSSHKit {cmd} --help`.
+Full flag lists: `julia --project=. -m DistSSHKit help {cmd}`.
 Each command page starts with **Flags** for that command.
 
 ## Prepare hosts

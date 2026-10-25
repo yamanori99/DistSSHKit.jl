@@ -12,6 +12,6 @@ DistSSHQueue = "24254401-70d8-4a51-8ea4-cfab19f5bc73"
 DistSSHRun = "b568025c-2759-4ef1-8b14-17d00e2cd000"
 
 [compat]
-DistSSHQueue = "0.9.8"
-DistSSHRun = "0.1.14"
+DistSSHQueue = "0.9.9"
+DistSSHRun = "0.1.15"
 julia = "1.13"

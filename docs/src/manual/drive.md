@@ -10,7 +10,7 @@ julia --project=. -m DistSSHKit drive [options] \
 ```
 
 Also: [First Steps · Demo](@ref Tutorial-Demo), [go](@ref Manual-go),
-[API](@ref API) (`drive!`, `pipeline!`), `drive --help`.
+[API](@ref API) (`drive!`, `pipeline!`), `help drive`.
 Flag vocabulary and a short **go vs drive** table: [User Guide](@ref Manual).
 
 **vs go / ride:** one master plus Distributed workers; `child:NAME:N` is
@@ -169,7 +169,7 @@ machine the run starts from never `relpath`s against a tilde base (same ENV as
 Expects `init_output_dir!` / `main` (and optional hooks). Top-level work on
 Load is not repeated on workers unless `--sync-script`. Publish rules and
 `@__DIR__` on workers: [Publishing to workers](@ref Manual-drive-publish).
-Details and ENV: `drive --help`. Embed with [`drive!`](@ref) /
+Details and ENV: `help drive`. Embed with [`drive!`](@ref) /
 [`pipeline!`](@ref).
 
 ## Wall time

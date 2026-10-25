@@ -3,7 +3,7 @@
 Commands in the order you type them. Flags and trees stay on
 [Prepare](@ref Queue-Tutorial-Prepare), [First job](@ref Queue-Tutorial-Client),
 the [User Guide](@ref Queue-manual), and
-[Artifacts and paths](@ref Queue-artifacts). Not a dump of root `--help`.
+[Artifacts and paths](@ref Queue-artifacts). Not a dump of root `help`.
 
 Names here: queue host SSH `HOST`, worker SSH `host1`. Swap them.
 

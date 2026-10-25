@@ -158,6 +158,7 @@ go 単体でも十分に実用的である。まず go で単独実行を確認�
 
 - **CLI** — ターミナルからコマンドとして直接実行する方法。
   例: `julia --project=. -m DistSSHKit go child:user@host1:1 script.jl`。
+  フラグは `julia -m DistSSHKit help go` で開く。
   手早く試したい場合や、シェルスクリプトに組み込みたい場合に向いている
 - **Julia** — 自作の Julia コード (スクリプト、REPL、他のパッケージなど) の中から関数として呼び出す方法。
   `setup!`、`go!`、`plan`、`pool!`、`drive!` などの関数を用いる (`plan` には bang が付かない)

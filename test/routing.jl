@@ -51,15 +51,42 @@ using Random
         @test occursin("qhost setup", err)
         @test !occursin("julia -m DistSSHQueue", err)
     end
+    # Help words only: same root page, same stream, exit 0. No arguments stay 1.
+    let root = _main_capture(["--help"])
+        for a in (
+                ["help", "--help"],
+                ["-h", "--help"],
+                ["help", "help"],
+                ["--help", "help"],
+                ["help", "-h", "--help"],
+            )
+            @test _main_capture(a) == root
+        end
+    end
     # Run's page. `main` is what Kit calls. `show_requirements` is not exported.
     _test_same_page(["go", "--help"], DistSSHRun.main)
     _test_same_page(["setup", "--help"], DistSSHRun.main)
+    _test_same_page(["help", "go"], DistSSHRun.main, ["go", "--help"])
+    _test_same_page(["help", "size"], DistSSHRun.main, ["size", "--help"])
     _test_same_page(["submit", "--help"], DistSSHQueue.main)
+    _test_same_page(["help", "submit"], DistSSHQueue.main, ["submit", "--help"])
+    # `submit go --help` checks the queue target before the flag page.
+    # `DISTSSHQUEUE_LOCAL` is how Queue's own suite reaches that page.
+    withenv(DistSSHQueue.LOCAL_QUEUE_ENV => "1") do
+        for kind in string.(DistSSHQueue.KIT_EXECUTE_KINDS)
+            _test_same_page(
+                ["help", "submit", kind],
+                DistSSHQueue.main,
+                ["submit", kind, "--help"],
+            )
+        end
+    end
     # Queue owns the topic heading. Render `main`; do not pin its words.
     _test_same_page(["--help", "client"], DistSSHQueue.main)
     # Kit drops the group word. The owner argv below is that stripped pair,
     # not a value read from `_route`. `cli_qhost_heading` still says `qhost`.
     _test_same_page(["qhost", "setup", "--help"], DistSSHQueue.main, ["setup", "--help"])
+    _test_same_page(["help", "qhost", "setup"], DistSSHQueue.main, ["setup", "--help"])
     _test_same_page(["qhost:HOST", "submit", "--help"], DistSSHQueue.main)
 end
 
@@ -103,8 +130,26 @@ let routes = [
         (["bogus"], (:unknown, "bogus")),
         # `-h` with an extra word is an unknown subcommand.
         (["-h", "bogus"], (:unknown, "-h")),
-        # `help <command>` is an unknown subcommand.
-        (["help", "go"], (:unknown, "help")),
+        (["-h", "go"], (:unknown, "-h")),
+        # Help words only are the root page. No arguments stay exit 1.
+        (["help", "--help"], (:usage, 0)),
+        (["-h", "--help"], (:usage, 0)),
+        (["help", "help"], (:usage, 0)),
+        (["--help", "help"], (:usage, 0)),
+        (["help", "-h", "--help"], (:usage, 0)),
+        # `help <verb>` is that verb's `--help`. The second word of a miss stays `help`.
+        (["help", "go"], (:run, ["go", "--help"])),
+        (["help", "size"], (:run, ["size", "--help"])),
+        (["help", "setup"], (:run, ["setup", "--help"])),
+        (["help", "go", "--hosts", "parent"], (:run, ["go", "--help", "--hosts", "parent"])),
+        (["help", "bogus"], (:unknown, "help")),
+        (["help", "qhost", "setup"], (:queue, ["setup", "--help"])),
+        (["help", "qhost", "size"], (:queue, ["size", "--help"])),
+        (["help", "qhost", "go"], (:queue, ["go", "--help"])),
+        (["help", "submit"], (:queue, ["submit", "--help"])),
+        (["help", "submit", "go"], (:queue, ["submit", "go", "--help"])),
+        (["help", "submit", "go", "--x"], (:queue, ["submit", "go", "--help", "--x"])),
+        (["help", "qhost", "submit", "go"], (:queue, ["submit", "go", "--help"])),
         # An empty word is an unknown subcommand.
         ([""], (:unknown, "")),
         # `--version` with an extra word is unknown.
@@ -121,11 +166,24 @@ end
         # One version flag after a run command is this package's version.
         @test DistSSHKit._route([c, "-v"]) == (:version, String[])
         @test DistSSHKit._route([c, "--version"]) == (:version, String[])
+        @test DistSSHKit._route(["help", c]) == (:run, [c, "--help"])
     end
     for c in DistSSHKit._QUEUE_ONLY
         @test DistSSHKit._route([c]) == (:queue, [c])
         # Queue does not steal `-v`. `go -v` is the version; `submit -v` is not.
         @test DistSSHKit._route([c, "-v"]) == (:queue, [c, "-v"])
+        @test DistSSHKit._route(["help", c]) == (:queue, [c, "--help"])
+        @test DistSSHKit._route(["help", "qhost", c]) == (:queue, [c, "--help"])
+    end
+    for c in ("setup", "up", "size", "plan", "pool")
+        @test DistSSHKit._route(["help", c]) == (:run, [c, "--help"])
+        @test DistSSHKit._route(["help", "qhost", c]) == (:queue, [c, "--help"])
+    end
+    for kind in string.(DistSSHQueue.KIT_EXECUTE_KINDS)
+        @test DistSSHKit._route(["help", "submit", kind]) ==
+            (:queue, ["submit", kind, "--help"])
+        @test DistSSHKit._route(["help", "qhost", "submit", kind]) ==
+            (:queue, ["submit", kind, "--help"])
     end
     for t in DistSSHKit._QUEUE_HELP_TOPICS
         for flag in ("-h", "--help", "help")

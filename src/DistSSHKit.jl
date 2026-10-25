@@ -175,6 +175,7 @@ const _QUEUE_ONLY = (
     "watch",
 )
 const _QUEUE_HELP_TOPICS = ("client", "qhost", "queue", "queue-host")
+const _HELP_WORDS = ("help", "-h", "--help")
 
 """Top-level `julia -m DistSSHKit` usage (no subcommand)."""
 function print_kit_root_usage(io::IO = stderr)
@@ -197,36 +198,13 @@ function print_kit_root_usage(io::IO = stderr)
         "  progress           Phase seconds from kit.progress",
     )
     print_help_blank(io)
+    # `CLIENT_COMMAND_LINES` and `QUEUE_HOST_COMMAND_LINES` are not
+    # exported. A later Queue patch will mark them `public`.
     print_help_section("Client"; io = io)
-    print_help_lines(
-        io,
-        "  submit             Enqueue go / ride / drive",
-        "  status             Snapshot of the store",
-        "  watch              Live status",
-        "  cancel             Drop queued or stop running",
-        "  fetch              Copy a finished leaf",
-        "  list-host          Inventory",
-        "  stop               Stop serve, keep files",
-        "  teardown           Stop serve and remove ~/.distsshqueue",
-        "  qhost:HOST         SSH that client command to the queue host",
-    )
+    print_help_lines(io, DistSSHQueue.CLIENT_COMMAND_LINES...)
     print_help_blank(io)
     print_help_section("Queue host"; io = io)
-    print_help_lines(
-        io,
-        "  qhost setup        Write config.toml if missing",
-        "  qhost up           juliaup verbs on config hosts",
-        "  qhost add-host     Add host tokens",
-        "  qhost remove-host  Drop host tokens",
-        "  qhost serve        Run serve in this terminal",
-        "  qhost stop         Stop serve, keep files",
-        "  qhost enable       Start serve after reboot",
-        "  qhost disable      Remove that OS registration",
-        "  qhost teardown     Stop serve and remove ~/.distsshqueue",
-        "  qhost size         Estimate worker counts on the queue host",
-        "  qhost plan         Inspect a script on the queue host",
-        "  qhost pool         Cluster cores and RAM on the queue host",
-    )
+    print_help_lines(io, DistSSHQueue.QUEUE_HOST_COMMAND_LINES...)
     print_help_blank(io)
     print_help_section("Examples"; io = io)
     print_help_lines(
@@ -242,7 +220,7 @@ function print_kit_root_usage(io::IO = stderr)
         "  $(cli_m_project()) qhost up",
     )
     print_help_blank(io)
-    println(io, "Run $(cli_m()) <command> -h for flags.")
+    println(io, "Run `$(cli_m()) help <command>` for flags.")
     return nothing
 end
 
@@ -346,6 +324,45 @@ const _Route = Union{
     Tuple{Symbol, String},
 }
 
+"""Insert `--help` where that verb already looks for it.
+
+`submit go|ride|drive` keeps the kind in front of `--help`. That matches
+DistSSHQueue.`_help_command_argv`. The kinds are `KIT_EXECUTE_KINDS`,
+which is not exported. A later Queue patch will mark it `public`.
+"""
+function _argv_with_help_flag(words::AbstractVector{<:AbstractString})::Vector{String}
+    verb = String(words[1])
+    rest = @view words[2:end]
+    if verb == "submit" && !isempty(rest) && Symbol(rest[1]) in DistSSHQueue.KIT_EXECUTE_KINDS
+        return String[verb, String(rest[1]), "--help", String.(rest[2:end])...]
+    end
+    return String[verb, "--help", String.(rest)...]
+end
+
+"""`help <verb> …` as `(:run, …)` or `(:queue, …)`, or `nothing` to keep going.
+
+The first word must be `help`. `-h` / `--help` with an extra word stay on
+the unknown path. Length-2 topics are handled before this. `help qhost
+<verb>` drops `qhost`, the same way `_without_qhost_group` does, then
+inserts `--help`. A help word in the verb slot is not a command.
+"""
+function _help_command_route(args::Vector{String})::Union{Nothing, _Route}
+    (length(args) >= 2 && args[1] == "help") || return nothing
+    if args[2] == "qhost"
+        length(args) >= 3 || return nothing
+        args[3] in _HELP_WORDS && return nothing
+        return (:queue, _argv_with_help_flag(args[3:end]))
+    end
+    verb = args[2]
+    if verb in _RUN_COMMANDS
+        return (:run, _argv_with_help_flag(args[2:end]))
+    end
+    if verb in _QUEUE_ONLY
+        return (:queue, _argv_with_help_flag(args[2:end]))
+    end
+    return nothing
+end
+
 """Where `main` would send `args`, without I/O or another package's `main`.
 
 `(:version, String[])`, `(:usage, 0)` or `(:usage, 1)`, `(:queue_help, args)`,
@@ -355,15 +372,21 @@ function _route(args::Vector{String})::_Route
     if length(args) == 1 && _version_flag(args[1])
         return (:version, String[])
     end
-    if length(args) == 2 && args[1] in ("-h", "--help", "help") &&
-            args[2] in _QUEUE_HELP_TOPICS
+    # Length 2 topics stay ahead of the help-word and `help <verb>` rewrites.
+    # `help qhost` is that topic. `help qhost setup` is not.
+    if length(args) == 2 && args[1] in _HELP_WORDS && args[2] in _QUEUE_HELP_TOPICS
         return (:queue_help, args)
     end
-    if length(args) == 1 && args[1] in ("-h", "--help", "help")
+    # Empty argv is not this case. `all` on an empty collection is true.
+    if !isempty(args) && all(in(_HELP_WORDS), args)
         return (:usage, 0)
     end
     if isempty(args)
         return (:usage, 1)
+    end
+    rewritten = _help_command_route(args)
+    if rewritten !== nothing
+        return rewritten
     end
     stripped = _without_qhost_group(args)
     if stripped !== nothing

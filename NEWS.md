@@ -9,6 +9,8 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
 
 ## Unreleased
 
+- `help <command>` opens that command's flags: `help go` is `go --help`, `help submit` is `submit --help`, `help submit go` is `submit go --help`, and `help qhost setup` is the queue-host `setup` page. An argv made only of `help`, `-h`, and `--help` prints the root page and exits 0. No arguments still exits 1. `help client` and `help qhost` stay topic pages. The root Client and Queue host rows come from DistSSHQueue. Requires DistSSHRun 0.1.15 and DistSSHQueue 0.9.9.
+
 ### Planned breaking (next minor)
 
 - `terminate!` / `terminate_run!` `interrupt_grace` will default to a positive value, so a stop sends SIGINT before SIGTERM. `cancel` of a running job will use that default. Until then the default is `0` and `cancel` does not send SIGINT. DistSSHKit 0.11 (DistSSHRun 0.2, DistSSHQueue 0.10).

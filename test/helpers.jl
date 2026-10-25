@@ -81,6 +81,10 @@ Kit's `(code, stdout, stderr)` for `kit_args` equals the owner's for `owner_args
 Both exits are 0. The page must not name the other package's `julia -m`
 line: equality is rendered under Kit's entry, so a hardcoded owner entry
 would match on both sides and still be wrong.
+
+For `help <verb>`, pass the owner's flag argv as `owner_args` (`["go",
+"--help"]`, `["submit", "go", "--help"]`). Write that argv in the test.
+Do not read it back from `_route`.
 """
 function _test_same_page(kit_args, owner_main, owner_args = kit_args)
     got = _main_capture(kit_args)

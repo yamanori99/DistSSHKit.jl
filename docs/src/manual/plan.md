@@ -12,7 +12,7 @@ julia --project=. -m DistSSHKit plan parent --gb-per-worker 1.5 SCRIPT.jl
 Optional slot estimate uses [`size!`](@ref) (`--gb-per-worker`, `--probe`,
 or host tokens). Default is syntax only (no RSS probe). `size` CLI stays.
 
-Also: `plan --help`. API: [`plan`](@ref) (no bang).
+Also: `help plan`. API: [`plan`](@ref) (no bang).
 
 `ride` is experimental ([`ride!`](@ref) / CLI `ride`). A `:ride` suggestion
 means syntax looks distributable; runtime still checks `:effect_free`.

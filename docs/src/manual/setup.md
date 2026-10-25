@@ -17,7 +17,7 @@ work as `up` / `up update`.
 `setup!(session, :clone)` requires an explicit `repo=` URL (clone runs
 on the remote).
 
-Also: [Requirements](@ref), `setup --help`. Flag vocabulary:
+Also: [Requirements](@ref), `help setup`. Flag vocabulary:
 [User Guide](@ref Manual).
 
 ## [rsync or git?](@id Manual-setup-rsync-or-git)

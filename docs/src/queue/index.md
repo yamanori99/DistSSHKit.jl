@@ -9,16 +9,16 @@ For a hands-on path, use First Steps
 ([Requirements](@ref) → [Prepare the machine](@ref Queue-Tutorial-Prepare) →
 [Walkthrough](@ref Queue-Tutorial-Walkthrough)).
 
-Root `--help` defines Client vs queue host (`qhost:HOST`), then Usage,
-then `--help client` / `--help qhost`. `julia -m DistSSHKit -v` prints
+Root `help` defines Client vs queue host (`qhost:HOST`), then Usage,
+then `help client` / `help qhost`. `julia -m DistSSHKit -v` prints
 `DistSSHKit X`, then `DistSSHRun Y, DistSSHQueue Z`. A queue command
 on that machine prints `DistSSHQueue X`, then `DistSSHRun Y`.
-`--help client` is Jobs then Hosts;
-`--help qhost` is Setup, Serve, then Danger (`teardown`; `--confirm-path`, or `-y` until DistSSHKit 0.11;
-job trees stay). `<command> -h` is that verb's Usage and Flags.
+`help client` is Jobs then Hosts;
+`help qhost` is Setup, Serve, then Danger (`teardown`; `--confirm-path`, or `-y` until DistSSHKit 0.11;
+job trees stay). `help <command>` is that verb's Usage and Flags.
 Command argv is on
-`--help client`. Flags and FAQ:
-`julia --project=. -m DistSSHKit <command> -h` and the pages below.
+`help client`. Flags and FAQ:
+`julia --project=. -m DistSSHKit help <command>` and the pages below.
 Each command page starts with **Usage**, then **Flags**.
 `go` / `ride` / `drive` / `size` / `plan` / `pool` flags stay in the
 [User Guide](@ref Manual).

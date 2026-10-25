@@ -70,7 +70,7 @@ experimental.
 
 Also: [First job](@ref Queue-Tutorial-Client), [Walkthrough](@ref Queue-Tutorial-Walkthrough),
 [hosts](@ref Queue-hosts),
-`julia -m DistSSHKit --help`. Flags:
+`julia -m DistSSHKit help`. Flags:
 [go](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/go/),
 [ride](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/ride/),
 [drive](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/drive/).
