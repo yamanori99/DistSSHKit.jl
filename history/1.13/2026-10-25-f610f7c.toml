@@ -1,8 +1,8 @@
 slot = "1.13"
 commit = "f610f7c5fcf3f41f6c8c74798eedb5aa806f3002"
-precompile_full_sec = 8.025231756
+precompile_full_sec = 11.208114943
 src_bytes = 15983
-cpu = "AMD EPYC 9V74 80-Core Processor"
+cpu = "AMD EPYC 7763 64-Core Processor"
 julia_commit = "45b6d15e34"
 threads = 4
 src_files = 1
@@ -12,56 +12,56 @@ version = "0.10.6"
 julia = "1.13.2"
 os_name = "Ubuntu 26.04.1 LTS"
 src_code_lines = 434
-precompile_pkg_sec = 0.918432686
-using_sec = 0.297542686
+precompile_pkg_sec = 1.215005804
+using_sec = 0.393486141
 arch = "x86_64"
-time = "2026-10-25T14:58:35Z"
+time = "2026-10-25T23:01:59Z"
 os = "Linux"
 
 [[imports]]
 name = "DistSSHRun"
-ms = 9.7
+ms = 13.8
 [[imports]]
 name = "DistSSHQueue"
-ms = 4.3
+ms = 6.5
 [[imports]]
 name = "DistSSHKit"
-ms = 0.6
+ms = 1.0
 
 [[commands]]
 count = 8
 name = "help"
 exit = 0
-walls_sec = [0.877068042755127, 0.8745529651641846, 0.8787100315093994]
+walls_sec = [1.2713100910186768, 1.2284929752349854, 1.2229950428009033]
 missed = ["DistSSHKit.#1#val", "DistSSHKit.#10#val", "DistSSHKit.#11#val", "DistSSHKit.#13#val", "DistSSHKit.#15#val", "DistSSHKit.#16#val", "DistSSHKit.#17#val", "DistSSHKit.#18#val", "DistSSHKit.#22#val", "DistSSHKit.#27#val", "DistSSHKit.#5#val", "DistSSHKit.#6#val", "DistSSHKit.#8#val", "DistSSHKit.#9#val", "DistSSHKit.#_bind!#1", "DistSSHKit._adopt!", "DistSSHKit._apply_route", "DistSSHKit._argv_with_help_flag", "DistSSHKit._bind!", "DistSSHKit._bind_run_in_main!", "DistSSHKit._finish_rejected", "DistSSHKit._help_command_route", "DistSSHKit._leading_command", "DistSSHKit._leading_julia_project", "DistSSHKit._main", "DistSSHKit._project_version", "DistSSHKit._reexport_name", "DistSSHKit._route", "DistSSHKit._version_flag", "DistSSHKit._without_qhost_group", "DistSSHKit.dist_ssh_kit_version", "DistSSHKit.println_kit_version"]
-total_ms = 447.90000000000003
-wall_sec = 0.877068042755127
+total_ms = 639.0000000000001
+wall_sec = 1.2284929752349854
 args = ["--help"]
-main_ms = 351.8
+main_ms = 504.4
 
     [[commands.methods]]
     bucket = "DistSSHKit"
     owner = "DistSSHKit"
     signature = "Tuple{typeof(DistSSHKit.main), Array{String, 1}}"
     recompile = false
-    ms = 351.8
+    ms = 504.4
     [[commands.methods]]
     bucket = "DistSSHKit"
     owner = "DistSSHKit"
     signature = "Tuple{typeof(DistSSHKit.print_kit_root_usage), Base.PipeEndpoint}"
     recompile = false
-    ms = 61.0
+    ms = 84.6
 
     [commands.buckets.Base]
-    ms = 21.0
+    ms = 28.8
     count = 5
 
     [commands.buckets.stdlib]
-    ms = 14.1
+    ms = 21.2
     count = 1
 
     [commands.buckets.DistSSHKit]
-    ms = 412.8
+    ms = 589.0
     count = 2
 
     [commands.buckets.DistSSHRun]
@@ -76,242 +76,242 @@ main_ms = 351.8
     bucket = "DistSSHKit"
     signature = "Tuple{typeof(DistSSHKit.main), Array{String, 1}}"
     recompile = false
-    ms = 351.8
+    ms = 504.4
     [[commands.top]]
     bucket = "DistSSHKit"
     signature = "Tuple{typeof(DistSSHKit.print_kit_root_usage), Base.PipeEndpoint}"
     recompile = false
-    ms = 61.0
+    ms = 84.6
     [[commands.top]]
     bucket = "stdlib"
     signature = "Tuple{Distributed.var\"#start_gc_msgs_task##0#start_gc_msgs_task##1\"}"
     recompile = false
-    ms = 14.1
+    ms = 21.2
     [[commands.top]]
     bucket = "Base"
     signature = "Tuple{typeof(Base.should_use_main_entrypoint)}"
     recompile = true
-    ms = 10.5
-    [[commands.top]]
-    bucket = "Base"
-    signature = "Tuple{typeof(Base.something), Nothing, Symbol}"
-    recompile = false
-    ms = 3.1
+    ms = 12.6
     [[commands.top]]
     bucket = "Base"
     signature = "Tuple{typeof(Base.in), Tuple{String, String, String}}"
     recompile = false
-    ms = 2.6
+    ms = 4.7
     [[commands.top]]
     bucket = "Base"
     signature = "Tuple{typeof(Base.getproperty), Base.GenericCondition{Base.ReentrantLock}, Symbol}"
     recompile = false
-    ms = 2.5
+    ms = 4.2
     [[commands.top]]
     bucket = "Base"
     signature = "Tuple{Type{Base.Fix{2, F, T} where T where F}, typeof(Base.in), Tuple{String, String, String}}"
     recompile = false
-    ms = 2.3
+    ms = 3.7
+    [[commands.top]]
+    bucket = "Base"
+    signature = "Tuple{typeof(Base.something), Nothing, Symbol}"
+    recompile = false
+    ms = 3.6
 [[commands]]
 count = 41
 name = "status"
 exit = 0
-walls_sec = [5.572646856307983, 5.480916976928711, 5.607789993286133]
+walls_sec = [7.838627099990845, 7.8835978507995605, 7.805310964584351]
 missed = ["DistSSHKit.#1#val", "DistSSHKit.#10#val", "DistSSHKit.#11#val", "DistSSHKit.#13#val", "DistSSHKit.#15#val", "DistSSHKit.#16#val", "DistSSHKit.#17#val", "DistSSHKit.#18#val", "DistSSHKit.#22#val", "DistSSHKit.#27#val", "DistSSHKit.#5#val", "DistSSHKit.#6#val", "DistSSHKit.#8#val", "DistSSHKit.#9#val", "DistSSHKit.#_bind!#1", "DistSSHKit._adopt!", "DistSSHKit._apply_route", "DistSSHKit._argv_with_help_flag", "DistSSHKit._bind!", "DistSSHKit._bind_run_in_main!", "DistSSHKit._finish_rejected", "DistSSHKit._help_command_route", "DistSSHKit._leading_command", "DistSSHKit._leading_julia_project", "DistSSHKit._main", "DistSSHKit._project_version", "DistSSHKit._reexport_name", "DistSSHKit._route", "DistSSHKit._version_flag", "DistSSHKit._without_qhost_group", "DistSSHKit.dist_ssh_kit_version", "DistSSHKit.print_kit_root_usage", "DistSSHKit.println_kit_version"]
-total_ms = 5216.5
-wall_sec = 5.572646856307983
+total_ms = 7349.200000000002
+wall_sec = 7.838627099990845
 args = ["status"]
-main_ms = 352.3
+main_ms = 500.9
 
     [[commands.methods]]
     bucket = "DistSSHQueue"
     owner = "DistSSHQueue"
     signature = "Tuple{DistSSHQueue.var\"#_entry_forward##0#_entry_forward##1\"{DistSSHQueue.var\"#_argv##0#_argv##1\"{typeof(DistSSHQueue.status_cli)}, String, Bool, Bool}, DistSSHQueue.CliContext, Array{String, 1}}"
     recompile = false
-    ms = 3602.3
+    ms = 5047.8
     [[commands.methods]]
     bucket = "DistSSHQueue"
     owner = "DistSSHQueue"
     signature = "Tuple{DistSSHQueue.var\"##show_status#216\", Base.PipeEndpoint, Nothing, Bool, Nothing, Bool, typeof(DistSSHQueue.show_status), String}"
     recompile = false
-    ms = 701.3
+    ms = 1016.0
     [[commands.methods]]
     bucket = "DistSSHQueue"
     owner = "DistSSHQueue"
     signature = "Tuple{typeof(DistSSHQueue.main), Array{String, 1}}"
     recompile = false
-    ms = 426.0
+    ms = 594.2
     [[commands.methods]]
     bucket = "DistSSHKit"
     owner = "DistSSHKit"
     signature = "Tuple{typeof(DistSSHKit.main), Array{String, 1}}"
     recompile = false
-    ms = 352.3
+    ms = 500.9
 
     [commands.buckets.Base]
-    ms = 51.099999999999994
+    ms = 70.2
     count = 14
 
     [commands.buckets.stdlib]
-    ms = 60.9
+    ms = 88.39999999999999
     count = 17
 
     [commands.buckets.DistSSHKit]
-    ms = 352.3
+    ms = 500.9
     count = 1
 
     [commands.buckets.DistSSHRun]
-    ms = 9.7
+    ms = 14.4
     count = 4
 
     [commands.buckets.DistSSHQueue]
-    ms = 4742.5
+    ms = 6675.300000000001
     count = 5
 
     [[commands.top]]
     bucket = "DistSSHQueue"
     signature = "Tuple{DistSSHQueue.var\"#_entry_forward##0#_entry_forward##1\"{DistSSHQueue.var\"#_argv##0#_argv##1\"{typeof(DistSSHQueue.status_cli)}, String, Bool, Bool}, DistSSHQueue.CliContext, Array{String, 1}}"
     recompile = false
-    ms = 3602.3
+    ms = 5047.8
     [[commands.top]]
     bucket = "DistSSHQueue"
     signature = "Tuple{DistSSHQueue.var\"##show_status#216\", Base.PipeEndpoint, Nothing, Bool, Nothing, Bool, typeof(DistSSHQueue.show_status), String}"
     recompile = false
-    ms = 701.3
+    ms = 1016.0
     [[commands.top]]
     bucket = "DistSSHQueue"
     signature = "Tuple{typeof(DistSSHQueue.main), Array{String, 1}}"
     recompile = false
-    ms = 426.0
+    ms = 594.2
     [[commands.top]]
     bucket = "DistSSHKit"
     signature = "Tuple{typeof(DistSSHKit.main), Array{String, 1}}"
     recompile = false
-    ms = 352.3
+    ms = 500.9
     [[commands.top]]
     bucket = "stdlib"
     signature = "Tuple{Distributed.var\"#start_gc_msgs_task##0#start_gc_msgs_task##1\"}"
     recompile = false
-    ms = 13.9
+    ms = 22.8
     [[commands.top]]
     bucket = "DistSSHQueue"
     signature = "Tuple{typeof(Core.kwcall), NamedTuple{(:quiet, :tail, :verbose), Tuple{Bool, Nothing, Bool}}, typeof(DistSSHQueue.show_status), String}"
     recompile = false
-    ms = 11.0
+    ms = 14.1
     [[commands.top]]
     bucket = "Base"
     signature = "Tuple{typeof(Base.should_use_main_entrypoint)}"
     recompile = true
-    ms = 10.4
+    ms = 12.6
     [[commands.top]]
     bucket = "Base"
     signature = "Tuple{typeof(Base._array_for), Type{DistSSHQueue.Job}, Array{Any, 1}, Base.HasShape{1}}"
     recompile = false
-    ms = 5.3
+    ms = 8.2
     [[commands.top]]
     bucket = "Base"
     signature = "Tuple{typeof(Base.getproperty), NamedTuple{(:quiet, :progress, :verbose, :yes, :hosts_file, :hosts, :version), Tuple{Tuple{String, String}, Tuple{String}, Tuple{String}, Tuple{String, String}, Tuple{String}, Tuple{String}, Tuple{String, String, String}}}, Symbol}"
+    recompile = false
+    ms = 5.6
+    [[commands.top]]
+    bucket = "stdlib"
+    signature = "Tuple{Dates.var\"##34#35\", Vararg{Any, 5}}"
+    recompile = false
+    ms = 5.0
+    [[commands.top]]
+    bucket = "DistSSHRun"
+    signature = "Tuple{typeof(DistSSHRun.DistSSHBase._wait_known), Symbol}"
     recompile = false
     ms = 4.9
     [[commands.top]]
     bucket = "stdlib"
     signature = "Tuple{Type{NamedTuple{(:rel, :tree), T} where T<:Tuple}, Tuple{String, String}}"
     recompile = false
-    ms = 4.0
+    ms = 4.7
     [[commands.top]]
-    bucket = "stdlib"
-    signature = "Tuple{Type{NamedTuple{(:verb, :default_interval), T} where T<:Tuple}, Tuple{String, Nothing}}"
+    bucket = "Base"
+    signature = "Tuple{typeof(Base.getproperty), Base.GenericCondition{Base.ReentrantLock}, Symbol}"
     recompile = false
-    ms = 3.8
+    ms = 4.5
     [[commands.top]]
     bucket = "Base"
     signature = "Tuple{typeof(Base.getproperty), Base.Set{String}, Symbol}"
     recompile = false
-    ms = 3.7
+    ms = 4.4
     [[commands.top]]
-    bucket = "DistSSHRun"
-    signature = "Tuple{typeof(DistSSHRun.DistSSHBase._wait_known), Symbol}"
+    bucket = "stdlib"
+    signature = "Tuple{Type{NamedTuple{(:verb, :default_interval), T} where T<:Tuple}, Tuple{String, Nothing}}"
     recompile = false
-    ms = 3.7
+    ms = 4.4
+    [[commands.top]]
+    bucket = "stdlib"
+    signature = "Tuple{Type{Base.LinearIndices{N, R} where R<:Tuple{Vararg{Base.AbstractUnitRange{Int64}, N}} where N}, Array{DistSSHQueue.Job, 1}}"
+    recompile = false
+    ms = 4.3
     [[commands.top]]
     bucket = "Base"
-    signature = "Tuple{typeof(Base.isequal), String}"
+    signature = "Tuple{typeof(Base.in), Tuple{String, String, String}}"
     recompile = false
-    ms = 3.7
+    ms = 4.2
     [[commands.top]]
     bucket = "stdlib"
-    signature = "Tuple{Dates.var\"##34#35\", Vararg{Any, 5}}"
+    signature = "Tuple{Type{NamedTuple{(:role, :name, :n), T} where T<:Tuple}, Tuple{Symbol, String, Nothing}}"
     recompile = false
-    ms = 3.6
-    [[commands.top]]
-    bucket = "stdlib"
-    signature = "Tuple{Type{NamedTuple{(:read, :write, :append, :truncate), T} where T<:Tuple}, Tuple{Bool, Bool, Nothing, Nothing}}"
-    recompile = false
-    ms = 3.5
-    [[commands.top]]
-    bucket = "stdlib"
-    signature = "Tuple{Type{NamedTuple{(:warn,), T} where T<:Tuple}, Tuple{Bool}}"
-    recompile = false
-    ms = 3.4
+    ms = 4.2
     [[commands.top]]
     bucket = "stdlib"
     signature = "Tuple{Type{NamedTuple{(:read,), T} where T<:Tuple}, Tuple{Bool}}"
     recompile = false
-    ms = 3.1
-    [[commands.top]]
-    bucket = "stdlib"
-    signature = "Tuple{Type{NamedTuple{(:nonmatching,), T} where T<:Tuple}, Tuple{Bool}}"
-    recompile = false
-    ms = 3.1
+    ms = 4.2
     [[commands.top]]
     bucket = "Base"
-    signature = "Tuple{typeof(Base.something), Nothing, Symbol}"
+    signature = "Tuple{typeof(Base._cshp), Int64, Tuple{Bool}, Tuple{}, Tuple{Int64}}"
     recompile = false
-    ms = 3.0
+    ms = 4.1
 [[commands]]
 count = 151
 name = "go"
 exit = 0
-walls_sec = [7.849061012268066, 7.755229949951172, 7.802520990371704]
+walls_sec = [11.21213412284851, 11.15860104560852, 11.337247133255005]
 missed = ["DistSSHKit.#1#val", "DistSSHKit.#10#val", "DistSSHKit.#11#val", "DistSSHKit.#13#val", "DistSSHKit.#15#val", "DistSSHKit.#16#val", "DistSSHKit.#17#val", "DistSSHKit.#18#val", "DistSSHKit.#22#val", "DistSSHKit.#27#val", "DistSSHKit.#5#val", "DistSSHKit.#6#val", "DistSSHKit.#8#val", "DistSSHKit.#9#val", "DistSSHKit.#_bind!#1", "DistSSHKit._adopt!", "DistSSHKit._apply_route", "DistSSHKit._argv_with_help_flag", "DistSSHKit._bind!", "DistSSHKit._bind_run_in_main!", "DistSSHKit._finish_rejected", "DistSSHKit._help_command_route", "DistSSHKit._leading_command", "DistSSHKit._leading_julia_project", "DistSSHKit._main", "DistSSHKit._project_version", "DistSSHKit._reexport_name", "DistSSHKit._route", "DistSSHKit._version_flag", "DistSSHKit._without_qhost_group", "DistSSHKit.dist_ssh_kit_version", "DistSSHKit.print_kit_root_usage", "DistSSHKit.println_kit_version"]
-total_ms = 7133.299999999998
-wall_sec = 7.802520990371704
+total_ms = 10277.100000000004
+wall_sec = 11.21213412284851
 args = ["go", "{work}/pi_echo.jl"]
-main_ms = 355.1
+main_ms = 493.1
 
     [[commands.methods]]
     bucket = "DistSSHRun"
     owner = "DistSSHRun"
     signature = "Tuple{typeof(Core.kwcall), NamedTuple{(:project, :quiet, :verbosity, :yes, :sync, :args, :path_anchor, :output_dir, :hosts_file, :julia, :repeat, :hint_surface, :original_args), Tuple{String, Bool, Symbol, Bool, Nothing, Array{String, 1}, String, Nothing, Nothing, Nothing, Nothing, Symbol, Array{String, 1}}}, typeof(DistSSHRun.go!), String, Array{String, 1}}"
     recompile = false
-    ms = 3199.1
+    ms = 4627.3
     [[commands.methods]]
     bucket = "stdlib"
     owner = "DistSSHRun"
     signature = "Tuple{DistSSHRun.var\"#_go_run!##6#_go_run!##7\"{String, String, Bool, Array{String, 1}, Nothing, String, Array{Bool, 1}, Base.RefValue{Union{Nothing, DistSSHRun.DriveResult}}, Base.RefValue{DistSSHRun.DriveResult}, Base.RefValue{Bool}, String, DistSSHRun.GoSlot, Int64}}"
     recompile = false
-    ms = 395.7
+    ms = 563.4
     [[commands.methods]]
     bucket = "DistSSHKit"
     owner = "DistSSHKit"
     signature = "Tuple{typeof(DistSSHKit.main), Array{String, 1}}"
     recompile = false
-    ms = 355.1
+    ms = 493.1
 
     [commands.buckets.Base]
-    ms = 703.9000000000002
+    ms = 1080.6
     count = 95
 
     [commands.buckets.stdlib]
-    ms = 2544.9
+    ms = 3604.999999999999
     count = 38
 
     [commands.buckets.DistSSHKit]
-    ms = 355.1
+    ms = 493.1
     count = 1
 
     [commands.buckets.DistSSHRun]
-    ms = 3529.4000000000005
+    ms = 5098.4
     count = 17
 
     [commands.buckets.DistSSHQueue]
@@ -322,170 +322,176 @@ main_ms = 355.1
     bucket = "DistSSHRun"
     signature = "Tuple{typeof(Core.kwcall), NamedTuple{(:project, :quiet, :verbosity, :yes, :sync, :args, :path_anchor, :output_dir, :hosts_file, :julia, :repeat, :hint_surface, :original_args), Tuple{String, Bool, Symbol, Bool, Nothing, Array{String, 1}, String, Nothing, Nothing, Nothing, Nothing, Symbol, Array{String, 1}}}, typeof(DistSSHRun.go!), String, Array{String, 1}}"
     recompile = false
-    ms = 3199.1
+    ms = 4627.3
     [[commands.top]]
     bucket = "stdlib"
     signature = "Tuple{typeof(Main.go_main)}"
     recompile = false
-    ms = 1896.3
+    ms = 2685.1
     [[commands.top]]
     bucket = "stdlib"
     signature = "Tuple{DistSSHRun.var\"#_go_run!##6#_go_run!##7\"{String, String, Bool, Array{String, 1}, Nothing, String, Array{Bool, 1}, Base.RefValue{Union{Nothing, DistSSHRun.DriveResult}}, Base.RefValue{DistSSHRun.DriveResult}, Base.RefValue{Bool}, String, DistSSHRun.GoSlot, Int64}}"
     recompile = false
-    ms = 395.7
+    ms = 563.4
     [[commands.top]]
     bucket = "DistSSHKit"
     signature = "Tuple{typeof(DistSSHKit.main), Array{String, 1}}"
     recompile = false
-    ms = 355.1
+    ms = 493.1
     [[commands.top]]
     bucket = "DistSSHRun"
     signature = "Tuple{typeof(DistSSHRun.main), Array{String, 1}}"
     recompile = false
-    ms = 119.6
+    ms = 159.5
     [[commands.top]]
     bucket = "stdlib"
     signature = "Tuple{DistSSHRun.var\"#588#589\", Array{String, 1}}"
     recompile = false
-    ms = 103.2
+    ms = 143.3
     [[commands.top]]
     bucket = "Base"
     signature = "Tuple{typeof(Base.JuliaSyntax.core_parser_hook), Core.SimpleVector, String, Int64, Int64, Symbol}"
     recompile = false
-    ms = 96.8
+    ms = 133.6
     [[commands.top]]
     bucket = "Base"
     signature = "Tuple{typeof(Base.push_widen), Array{NamedTuple{(:event, :kind, :job, :label, :total, :done, :cur, :status, :ok, :t), Tuple{Symbol, Symbol, Nothing, String, Int64, Nothing, Nothing, Nothing, Nothing, Float64}}, 1}, NamedTuple{(:event, :kind, :job, :label, :total, :done, :cur, :status, :ok, :t), Tuple{Symbol, Symbol, Nothing, String, Int64, Int64, Int64, Nothing, Nothing, Float64}}}"
     recompile = false
-    ms = 93.5
+    ms = 132.7
     [[commands.top]]
     bucket = "DistSSHRun"
     signature = "Tuple{typeof(Core.kwcall), NamedTuple{(:ok, :footer), Tuple{Bool, String}}, typeof(DistSSHRun.kit_progress_done!)}"
     recompile = false
-    ms = 50.9
+    ms = 75.5
+    [[commands.top]]
+    bucket = "Base"
+    signature = "Tuple{typeof(Base.print), Base.IOStream, Int64}"
+    recompile = false
+    ms = 72.5
     [[commands.top]]
     bucket = "Base"
     signature = "Tuple{typeof(Base.addenv), Base.Cmd, Pair{String, String}}"
     recompile = false
-    ms = 48.2
+    ms = 69.0
     [[commands.top]]
     bucket = "Base"
     signature = "Tuple{typeof(Base.setindex!), Base.Dict{String, Symbol}, Symbol, String}"
     recompile = false
-    ms = 44.0
+    ms = 65.5
     [[commands.top]]
     bucket = "DistSSHRun"
     signature = "Tuple{typeof(Core.kwcall), NamedTuple{(:kind,), Tuple{Symbol}}, typeof(DistSSHRun.execute_kwargs_from_parsed), NamedTuple{(:help, :show_version, :cli_session, :script_path, :script_args, :hosts, :sync, :output_dir, :julia, :repeat), Tuple{Bool, Bool, DistSSHRun.KitCliSession, String, Array{String, 1}, Array{String, 1}, Vararg{Nothing, 4}}}}"
     recompile = false
-    ms = 40.2
+    ms = 59.3
     [[commands.top]]
     bucket = "Base"
     signature = "Tuple{typeof(Base.grow_to!), Array{NamedTuple{(:event, :kind, :job, :label, :total, :done, :cur, :status, :ok, :t), T} where T<:Tuple, 1}, Base.Generator{Base.Iterators.Filter{DistSSHRun.var\"#_kit_progress_phase_rows##0#_kit_progress_phase_rows##1\", Array{NamedTuple{names, T} where T<:Tuple where names, 1}}, typeof(Base.identity)}, Int64}"
     recompile = false
-    ms = 33.1
+    ms = 47.3
     [[commands.top]]
     bucket = "Base"
     signature = "Tuple{typeof(Base.grow_to!), Array{NamedTuple{(:event, :kind, :job, :label, :total, :done, :cur, :status, :ok, :t), Tuple{Symbol, Symbol, Nothing, String, Int64, Nothing, Nothing, Nothing, Nothing, Float64}}, 1}, Base.Generator{Base.Iterators.Filter{DistSSHRun.var\"#_kit_progress_phase_rows##0#_kit_progress_phase_rows##1\", Array{NamedTuple{names, T} where T<:Tuple where names, 1}}, typeof(Base.identity)}, Int64}"
     recompile = false
-    ms = 31.7
+    ms = 46.0
     [[commands.top]]
     bucket = "stdlib"
     signature = "Tuple{Base.var\"#setup_stdio##0#setup_stdio##1\"{Base.PipeEndpoint, Base.GenericIOBuffer{Memory{UInt8}}, Base.PipeEndpoint}}"
     recompile = false
-    ms = 30.4
+    ms = 43.2
     [[commands.top]]
     bucket = "DistSSHRun"
     signature = "Tuple{typeof(DistSSHRun._snapshot_dict), Base.Dict{String, String}}"
     recompile = false
-    ms = 24.3
+    ms = 36.2
     [[commands.top]]
     bucket = "DistSSHRun"
     signature = "Tuple{DistSSHRun.var\"##report_go_errors#508\", Base.PipeEndpoint, typeof(DistSSHRun.report_go_errors), DistSSHRun.GoResult}"
     recompile = false
-    ms = 23.0
+    ms = 36.1
     [[commands.top]]
     bucket = "Base"
     signature = "Tuple{typeof(Base.push!), Array{NamedTuple{(:event, :kind, :job, :label, :total, :done, :cur, :status, :ok, :t), Tuple{Symbol, Symbol, Nothing, String, Int64, Nothing, Nothing, Nothing, Nothing, Float64}}, 1}, NamedTuple{(:event, :kind, :job, :label, :total, :done, :cur, :status, :ok, :t), Tuple{Symbol, Symbol, Nothing, String, Int64, Nothing, Nothing, Nothing, Nothing, Float64}}}"
     recompile = false
-    ms = 19.3
+    ms = 29.3
     [[commands.top]]
-    bucket = "DistSSHRun"
-    signature = "Tuple{typeof(Core.kwcall), NamedTuple{(:kind,), Tuple{Symbol}}, typeof(DistSSHRun.DistSSHBase.host_tokens), NamedTuple{(:help, :show_version, :cli_session, :script_path, :script_args, :hosts, :sync, :output_dir, :julia, :repeat), Tuple{Bool, Bool, DistSSHRun.KitCliSession, String, Array{String, 1}, Array{String, 1}, Vararg{Nothing, 4}}}}"
+    bucket = "stdlib"
+    signature = "Tuple{Distributed.var\"#start_gc_msgs_task##0#start_gc_msgs_task##1\"}"
     recompile = false
-    ms = 16.5
-    [[commands.top]]
-    bucket = "Base"
-    signature = "Tuple{typeof(Base.shell_escape), String, String}"
-    recompile = false
-    ms = 16.5
+    ms = 23.2
 [[commands]]
 count = 357
 name = "drive"
 exit = 0
-walls_sec = [25.078101873397827, 24.576889991760254, 24.553919076919556]
+walls_sec = [34.26280879974365, 33.72231602668762, 34.47205400466919]
 missed = ["DistSSHKit.#1#val", "DistSSHKit.#10#val", "DistSSHKit.#11#val", "DistSSHKit.#13#val", "DistSSHKit.#15#val", "DistSSHKit.#16#val", "DistSSHKit.#17#val", "DistSSHKit.#18#val", "DistSSHKit.#22#val", "DistSSHKit.#27#val", "DistSSHKit.#5#val", "DistSSHKit.#6#val", "DistSSHKit.#8#val", "DistSSHKit.#9#val", "DistSSHKit.#_bind!#1", "DistSSHKit._adopt!", "DistSSHKit._apply_route", "DistSSHKit._argv_with_help_flag", "DistSSHKit._bind!", "DistSSHKit._bind_run_in_main!", "DistSSHKit._finish_rejected", "DistSSHKit._help_command_route", "DistSSHKit._leading_command", "DistSSHKit._leading_julia_project", "DistSSHKit._main", "DistSSHKit._project_version", "DistSSHKit._reexport_name", "DistSSHKit._route", "DistSSHKit._version_flag", "DistSSHKit._without_qhost_group", "DistSSHKit.dist_ssh_kit_version", "DistSSHKit.print_kit_root_usage", "DistSSHKit.println_kit_version"]
-total_ms = 17269.5
-wall_sec = 24.576889991760254
+total_ms = 24199.8
+wall_sec = 34.26280879974365
 args = ["drive", "parent:2", "{work}/drive_square.jl"]
-main_ms = 498.79999999999995
+main_ms = 709.6
 
     [[commands.methods]]
     bucket = "DistSSHRun"
     owner = "DistSSHRun"
     signature = "Tuple{typeof(Core.kwcall), NamedTuple{(:original_args, :project_root), Tuple{Array{String, 1}, String}}, typeof(DistSSHRun.run_drive_parsed!), NamedTuple{(:parent_workers, :default_workers, :julia, :skip_hash_check, :enable_log, :log_dir, :output_dir, :explicit_package, :hosts, :script_path, :script_args, :collect_root, :collect_hosts, :collect_overwrite, :sync_mode, :sync_script, :require_all_hosts, :help, :show_version, :cli_session, :hint_surface, :mem_headroom, :parent_gb), Tuple{Int64, Nothing, Nothing, Bool, Bool, Nothing, Nothing, Nothing, Array{Tuple{String, Union{Nothing, Int64}}, 1}, String, Array{String, 1}, Nothing, Nothing, Nothing, Nothing, Bool, Bool, Bool, Bool, DistSSHRun.KitCliSession, Symbol, Float64, Float64}}}"
     recompile = false
-    ms = 7362.1
+    ms = 10269.7
     [[commands.methods]]
     bucket = "stdlib"
     owner = "Distributed"
     signature = "Tuple{Distributed.var\"#process_messages##0#process_messages##1\"{Sockets.TCPSocket, Sockets.TCPSocket, Bool}}"
     recompile = false
-    ms = 1055.1
+    ms = 1451.1
     [[commands.methods]]
     bucket = "stdlib"
     owner = "Distributed"
     signature = "Tuple{Distributed.var\"#39#40\"{Distributed.LocalManager, Array{Int64, 1}, Distributed.WorkerConfig}}"
     recompile = false
-    ms = 860.3
+    ms = 1168.9
     [[commands.methods]]
     bucket = "stdlib"
     owner = "Serialization"
     signature = "Tuple{typeof(Serialization.serialize), Distributed.ClusterSerializer{Sockets.TCPSocket}, Array{Any, 1}}"
     recompile = false
-    ms = 441.8
+    ms = 643.4
     [[commands.methods]]
     bucket = "DistSSHKit"
     owner = "DistSSHKit"
     signature = "Tuple{typeof(DistSSHKit.main), Array{String, 1}}"
     recompile = false
-    ms = 349.9
+    ms = 494.7
     [[commands.methods]]
     bucket = "Base"
     owner = "Base"
     signature = "Tuple{typeof(Base.print), Base.PipeEndpoint, Array{Int64, 1}, String}"
     recompile = false
-    ms = 260.6
+    ms = 335.1
+    [[commands.methods]]
+    bucket = "stdlib"
+    owner = "Serialization"
+    signature = "Tuple{typeof(Serialization.deserialize), Distributed.ClusterSerializer{Sockets.TCPSocket}, Type{Core.CodeInfo}}"
+    recompile = false
+    ms = 214.9
     [[commands.methods]]
     bucket = "DistSSHKit"
     owner = "DistSSHKit"
     signature = "Tuple{typeof(DistSSHKit.main)}"
     recompile = false
-    ms = 148.9
+    ms = 214.9
 
     [commands.buckets.Base]
-    ms = 1926.9999999999998
+    ms = 2675.9999999999995
     count = 191
 
     [commands.buckets.stdlib]
-    ms = 7140.300000000002
+    ms = 10059.800000000001
     count = 145
 
     [commands.buckets.DistSSHKit]
-    ms = 498.79999999999995
+    ms = 709.6
     count = 2
 
     [commands.buckets.DistSSHRun]
-    ms = 7703.399999999999
+    ms = 10754.399999999998
     count = 19
 
     [commands.buckets.DistSSHQueue]
@@ -496,99 +502,99 @@ main_ms = 498.79999999999995
     bucket = "DistSSHRun"
     signature = "Tuple{typeof(Core.kwcall), NamedTuple{(:original_args, :project_root), Tuple{Array{String, 1}, String}}, typeof(DistSSHRun.run_drive_parsed!), NamedTuple{(:parent_workers, :default_workers, :julia, :skip_hash_check, :enable_log, :log_dir, :output_dir, :explicit_package, :hosts, :script_path, :script_args, :collect_root, :collect_hosts, :collect_overwrite, :sync_mode, :sync_script, :require_all_hosts, :help, :show_version, :cli_session, :hint_surface, :mem_headroom, :parent_gb), Tuple{Int64, Nothing, Nothing, Bool, Bool, Nothing, Nothing, Nothing, Array{Tuple{String, Union{Nothing, Int64}}, 1}, String, Array{String, 1}, Nothing, Nothing, Nothing, Nothing, Bool, Bool, Bool, Bool, DistSSHRun.KitCliSession, Symbol, Float64, Float64}}}"
     recompile = false
-    ms = 7362.1
+    ms = 10269.7
     [[commands.top]]
     bucket = "stdlib"
     signature = "Tuple{typeof(Main.drive_main)}"
     recompile = false
-    ms = 2502.2
+    ms = 3577.5
     [[commands.top]]
     bucket = "stdlib"
     signature = "Tuple{Distributed.var\"#process_messages##0#process_messages##1\"{Sockets.TCPSocket, Sockets.TCPSocket, Bool}}"
     recompile = false
-    ms = 1055.1
+    ms = 1451.1
     [[commands.top]]
     bucket = "stdlib"
     signature = "Tuple{Distributed.var\"#39#40\"{Distributed.LocalManager, Array{Int64, 1}, Distributed.WorkerConfig}}"
     recompile = false
-    ms = 860.3
+    ms = 1168.9
     [[commands.top]]
     bucket = "stdlib"
     signature = "Tuple{typeof(Serialization.serialize), Distributed.ClusterSerializer{Sockets.TCPSocket}, Array{Any, 1}}"
     recompile = false
-    ms = 441.8
+    ms = 643.4
     [[commands.top]]
     bucket = "DistSSHKit"
     signature = "Tuple{typeof(DistSSHKit.main), Array{String, 1}}"
     recompile = false
-    ms = 349.9
+    ms = 494.7
     [[commands.top]]
     bucket = "Base"
     signature = "Tuple{typeof(Base.print), Base.PipeEndpoint, Array{Int64, 1}, String}"
     recompile = false
-    ms = 260.6
+    ms = 335.1
     [[commands.top]]
     bucket = "stdlib"
     signature = "Tuple{typeof(Serialization.deserialize), Distributed.ClusterSerializer{Sockets.TCPSocket}, Type{Core.CodeInfo}}"
     recompile = false
-    ms = 150.5
+    ms = 214.9
     [[commands.top]]
     bucket = "DistSSHKit"
     signature = "Tuple{typeof(DistSSHKit.main)}"
     recompile = false
-    ms = 148.9
+    ms = 214.9
     [[commands.top]]
     bucket = "stdlib"
     signature = "Tuple{Distributed.var\"#35#36\"{Distributed.LocalManager, Base.GenericCondition{Base.AlwaysLockedST}, Array{Distributed.WorkerConfig, 1}, Base.Dict{Symbol, Any}}}"
     recompile = false
-    ms = 133.8
+    ms = 187.4
     [[commands.top]]
     bucket = "stdlib"
     signature = "Tuple{typeof(Serialization.deserialize), Distributed.ClusterSerializer{Sockets.TCPSocket}, Type{Core.TypeName}}"
     recompile = false
-    ms = 115.3
+    ms = 170.3
     [[commands.top]]
     bucket = "DistSSHRun"
     signature = "Tuple{typeof(DistSSHRun.main), Array{String, 1}}"
     recompile = false
-    ms = 112.9
+    ms = 154.7
     [[commands.top]]
     bucket = "stdlib"
     signature = "Tuple{typeof(Serialization.deserialize), Distributed.ClusterSerializer{Sockets.TCPSocket}, Type{Method}}"
     recompile = false
-    ms = 108.7
-    [[commands.top]]
-    bucket = "Base"
-    signature = "Tuple{typeof(Base.push_widen), Array{NamedTuple{(:event, :kind, :job, :label, :total, :done, :cur, :status, :ok, :t), Tuple{Symbol, Symbol, Nothing, String, Int64, Nothing, Nothing, Nothing, Nothing, Float64}}, 1}, NamedTuple{(:event, :kind, :job, :label, :total, :done, :cur, :status, :ok, :t), Tuple{Symbol, Symbol, Nothing, String, Int64, Int64, Int64, Nothing, Nothing, Float64}}}"
-    recompile = false
-    ms = 103.1
-    [[commands.top]]
-    bucket = "stdlib"
-    signature = "Tuple{typeof(Distributed.parse_connection_info), String}"
-    recompile = false
-    ms = 99.6
+    ms = 147.7
     [[commands.top]]
     bucket = "stdlib"
     signature = "Tuple{DistSSHRun.var\"#586#587\", Array{String, 1}}"
     recompile = false
-    ms = 98.5
-    [[commands.top]]
-    bucket = "stdlib"
-    signature = "Tuple{typeof(Serialization.serialize), Distributed.ClusterSerializer{Sockets.TCPSocket}, Tuple{Tuple{Main.var\"#main##0#main##1\", Distributed.RemoteChannel{Base.Channel{Any}}}, Int64}}"
-    recompile = false
-    ms = 95.3
+    ms = 142.4
     [[commands.top]]
     bucket = "Base"
-    signature = "Tuple{typeof(Base.JuliaSyntax.core_parser_hook), Core.SimpleVector, String, Int64, Int64, Symbol}"
+    signature = "Tuple{typeof(Base.push_widen), Array{NamedTuple{(:event, :kind, :job, :label, :total, :done, :cur, :status, :ok, :t), Tuple{Symbol, Symbol, Nothing, String, Int64, Nothing, Nothing, Nothing, Nothing, Float64}}, 1}, NamedTuple{(:event, :kind, :job, :label, :total, :done, :cur, :status, :ok, :t), Tuple{Symbol, Symbol, Nothing, String, Int64, Int64, Int64, Nothing, Nothing, Float64}}}"
     recompile = false
-    ms = 94.9
+    ms = 136.0
+    [[commands.top]]
+    bucket = "stdlib"
+    signature = "Tuple{typeof(Distributed.parse_connection_info), String}"
+    recompile = false
+    ms = 132.5
     [[commands.top]]
     bucket = "stdlib"
     signature = "Tuple{typeof(Serialization.serialize), Distributed.ClusterSerializer{Sockets.TCPSocket}, GlobalRef}"
     recompile = false
-    ms = 91.6
+    ms = 131.7
+    [[commands.top]]
+    bucket = "Base"
+    signature = "Tuple{typeof(Base.JuliaSyntax.core_parser_hook), Core.SimpleVector, String, Int64, Int64, Symbol}"
+    recompile = false
+    ms = 131.4
+    [[commands.top]]
+    bucket = "stdlib"
+    signature = "Tuple{typeof(Serialization.serialize), Distributed.ClusterSerializer{Sockets.TCPSocket}, Tuple{Tuple{Main.var\"#main##0#main##1\", Distributed.RemoteChannel{Base.Channel{Any}}}, Int64}}"
+    recompile = false
+    ms = 129.0
     [[commands.top]]
     bucket = "DistSSHRun"
     signature = "Tuple{typeof(DistSSHRun._plan_walk!), Array{DistSSHRun.PlanFinding, 1}, Expr, Int64}"
     recompile = false
-    ms = 79.8
+    ms = 114.8
