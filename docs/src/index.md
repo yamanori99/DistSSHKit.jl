@@ -5,9 +5,11 @@ machines over SSH. It works equally well for a pair of workstations and
 for a larger set of lab machines.
 Supported on **macOS, Linux, and WSL2 Ubuntu** (not native Windows).
 
-`pkg> add DistSSHKit` is all you need to install it. The command is
-`julia -m DistSSHKit`. DistSSHKit bundles DistSSHRun and DistSSHQueue.
-You do not install them separately.
+Install it with `pkg> add DistSSHKit` and use it through one command,
+`julia -m DistSSHKit`.
+[DistSSHRun](https://yamanori99.github.io/DistSSHRun.jl/stable/) and
+[DistSSHQueue](https://yamanori99.github.io/DistSSHQueue.jl/stable/)
+come with it, and you reach both through that command.
 
 A job runs in one of two places.
 

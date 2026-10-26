@@ -33,9 +33,11 @@ work the same way.
 Supported platforms are **macOS, Linux, and WSL2 Ubuntu** (native Windows
 is not supported).
 
-A single `pkg> add DistSSHKit` is all you need to install it. The command is
-`julia -m DistSSHKit`. DistSSHKit bundles DistSSHRun and DistSSHQueue.
-You do not install them separately.
+Install it with `pkg> add DistSSHKit` and use it through one command,
+`julia -m DistSSHKit`.
+[DistSSHRun](https://github.com/yamanori99/DistSSHRun.jl) and
+[DistSSHQueue](https://github.com/yamanori99/DistSSHQueue.jl) come with it,
+and you reach both through that command.
 
 A job runs in one of two places.
 
