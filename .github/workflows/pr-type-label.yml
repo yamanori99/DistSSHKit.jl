@@ -15,11 +15,14 @@
 # A removed `cut` stays off until the next rise. This workflow does not
 # add it. CI still reads Project.toml (version-cut.sh).
 #
-# pull_request_target runs this file from the base branch, so fork PRs
-# do not exercise this change until it is merged. The job writes labels
-# through the API. It does not check out the pull request head or run
-# code from it. version-cut.sh is the copy at the base SHA. Project.toml
-# bytes come from the contents API (head SHA, then refs/pull/N/head).
+# pull_request_target runs this file from the base-branch tip
+# (github.sha), which is the same commit as the workflow definition.
+# The job writes labels through the API. It does not check out the
+# pull request head or run code from it. version-cut.sh is read at
+# github.sha so --files matches this workflow. pull_request.base.sha can
+# predate that flag. Project.toml for the PR base stays at base.sha.
+# The head Project.toml comes from the contents API (head SHA, then
+# refs/pull/N/head).
 name: Type
 
 on: # zizmor: ignore[dangerous-triggers] API label writes only; no checkout of the PR head
@@ -45,11 +48,12 @@ jobs:
       pull-requests: write
       issues: write
     steps:
-      # Trusted base script. Head Project.toml is data from the API, not a checkout.
+      # Script from this workflow's commit. Project.toml is data from the API, not a checkout.
       - name: Detect version cut
         id: cut
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
+          WORKFLOW_SHA: ${{ github.sha }}
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
           PR: ${{ github.event.pull_request.number }}
@@ -59,6 +63,7 @@ jobs:
             const path = require("path");
             const { execFileSync } = require("child_process");
 
+            const workflowSha = process.env.WORKFLOW_SHA;
             const base = process.env.BASE;
             const head = process.env.HEAD;
             const pr = process.env.PR;
@@ -96,7 +101,7 @@ jobs:
               }
             }
 
-            const scriptText = await fileAt(".github/version-cut.sh", base);
+            const scriptText = await fileAt(".github/version-cut.sh", workflowSha);
             const oldText = await fileAt("Project.toml", base);
             const newText = await projectToml(head, `refs/pull/${pr}/head`);
             const dir = fs.mkdtempSync(path.join(process.env.RUNNER_TEMP, "vcut-"));

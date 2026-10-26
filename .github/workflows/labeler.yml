@@ -6,11 +6,13 @@
 # event.action, so labeled/unlabeled from this job does not cancel an
 # in-flight opened/synchronize Type run.
 #
-# pull_request_target runs this file from the base branch, so fork PRs
-# do not exercise this change until it is merged. This job does not
-# check out the pull request head or run code from it. With no checkout,
-# actions/labeler loads .github/labeler.yml from the base SHA via the
-# API (github.sha). gen-labeler.sh --check stays on pull_request in
+# pull_request_target runs this file from the base-branch tip
+# (github.sha), which is the same commit as the workflow definition.
+# This job does not check out the pull request head or run code from it.
+# With no checkout, the area-rules step loads .github/labeler.yml at
+# github.sha, not pull_request.base.sha. version-cut.sh is read the same
+# way so --files matches this workflow. Project.toml for the PR base
+# stays at base.sha. gen-labeler.sh --check stays on pull_request in
 # labeler-check.yml.
 name: Labels
 
@@ -49,7 +51,7 @@ jobs:
               ref: context.sha,
             });
             if (!data || Array.isArray(data) || !data.content) {
-              throw new Error(".github/labeler.yml was not a file at the base SHA");
+              throw new Error(".github/labeler.yml was not a file at github.sha");
             }
             const text = Buffer.from(data.content, "base64").toString("utf8");
             const run = /^"area:/m.test(text);
@@ -122,12 +124,14 @@ jobs:
       # label stays off until the next rise. An unreadable `before` does
       # not add the label and does not fail this job. Restore above keeps
       # `cut` when the snapshot had it; sync-labels drops it mid-job.
-      # version-cut.sh is the base copy. Project.toml bytes come from the
-      # contents API, not a checkout of the head.
+      # version-cut.sh is the copy at github.sha. Project.toml bytes come
+      # from the contents API, not a checkout of the head. The PR base
+      # Project.toml stays at base.sha.
       - name: Version cut label
         id: cut
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
+          WORKFLOW_SHA: ${{ github.sha }}
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
           PR: ${{ github.event.pull_request.number }}
@@ -139,6 +143,7 @@ jobs:
             const path = require("path");
             const { execFileSync } = require("child_process");
 
+            const workflowSha = process.env.WORKFLOW_SHA;
             const base = process.env.BASE;
             const head = process.env.HEAD;
             const before = process.env.BEFORE || "";
@@ -202,7 +207,7 @@ jobs:
             let baseToml;
             let now;
             try {
-              scriptText = await fileAt(".github/version-cut.sh", base);
+              scriptText = await fileAt(".github/version-cut.sh", workflowSha);
               baseToml = await fileAt("Project.toml", base);
               const headToml = await projectToml(head, `refs/pull/${pr}/head`);
               now = compare(scriptText, baseToml, headToml);
