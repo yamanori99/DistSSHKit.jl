@@ -31,10 +31,11 @@ DistSSHKitは、SSHを介して複数のマシン上でJuliaによる計算を�
 ワークステーション2台でも、研究室のより多くのマシンでも、同じように使える。
 対応環境は **macOS、Linux、WSL2 Ubuntu** である (ネイティブ Windows は対象外)。
 
-インストールに必要なのは `pkg> add DistSSHKit` だけである。
-コマンドは `julia -m DistSSHKit` である。
-DistSSHKitは DistSSHRun と DistSSHQueue をまとめている。
-両パッケージは依存関係として入るため、個別に導入する必要はない。
+`pkg> add DistSSHKit` でインストールし、1つのコマンド
+`julia -m DistSSHKit` から使う。
+[DistSSHRun](https://github.com/yamanori99/DistSSHRun.jl) と
+[DistSSHQueue](https://github.com/yamanori99/DistSSHQueue.jl) はそれに同梱され、
+どちらもそのコマンドから使う。
 
 ジョブが走る場所は、次の2つである。
 
