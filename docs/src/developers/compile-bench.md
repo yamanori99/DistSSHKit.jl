@@ -117,8 +117,10 @@ files, not for that flag.
 `bench.html` draws the method times and every command's wall time.
 The charts open on the last 30 days ending at the newest sample.
 `+`, `-`, and `?range=` still select the other ranges, including `all`.
-Version, host, and Julia changes stay as vertical lines. The text for
-those lines is listed under each chart, for the same samples the chart
+Version, host, and Julia changes stay as vertical lines. Each line's
+text sits inside the plot, at the top of the line. Labels that would
+overlap at the current range drop to the next row. The same events are
+listed under each chart, with the time, for the same samples the chart
 shows. Hover includes the package version and the host.
 A time is a specialization that command compiled. The page shows the
 requested count of those times. When the latest sample has fewer than

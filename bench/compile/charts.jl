@@ -462,6 +462,57 @@ function eventRows(samples) {
   return rows;
 }
 
+const EVENT_COLOR = { julia: "#64748b", host: "#9558b2", version: "#c2410c", patch: "#0369a1" };
+
+function labelSpan(samples, width, node) {
+  const axis = node && node._fullLayout && node._fullLayout.xaxis;
+  if (axis && axis.range && axis._length > 0) {
+    const start = parseTime(axis.range[0]);
+    const end = parseTime(axis.range[1]);
+    if (end > start) return { t0: start, span: end - start, innerW: axis._length };
+  }
+  const t0 = samples.length ? parseTime(samples[0].time) : 0;
+  const t1 = samples.length ? parseTime(samples[samples.length - 1].time) : t0;
+  return { t0, span: Math.max(t1 - t0, 1), innerW: Math.max(40, (width || 560) - 64) };
+}
+
+function labelAnnotations(samples, width, node) {
+  const rows = eventRows(samples);
+  if (!rows.length) return [];
+  const span = labelSpan(samples, width, node);
+  const charPx = 7.2;
+  const gap = 8;
+  const rowH = 24;
+  const ends = [];
+  return rows.map((row) => {
+    const xPx = ((parseTime(row.time) - span.t0) / span.span) * span.innerW;
+    const textW = Math.max(charPx, charPx * String(row.text).length);
+    const start = xPx - textW / 2;
+    let tier = 0;
+    while (ends[tier] != null && ends[tier] + gap > start) tier += 1;
+    ends[tier] = xPx + textW / 2;
+    return {
+      x: row.time,
+      xref: "x",
+      y: 1,
+      yref: "paper",
+      yshift: -(tier * rowH + 2),
+      text: row.text,
+      showarrow: false,
+      xanchor: "center",
+      yanchor: "top",
+      font: { size: 12, color: EVENT_COLOR[row.kind] || "#334155" }
+    };
+  });
+}
+
+function refineLabels(node, samples) {
+  if (!window.Plotly || !node) return Promise.resolve();
+  return Plotly.relayout(node, {
+    annotations: labelAnnotations(samples, node.clientWidth || 560, node)
+  });
+}
+
 function paintEvents(id, samples) {
   const host = document.getElementById(id);
   host.replaceChildren();
@@ -508,12 +559,14 @@ function paintKey(id, names) {
 }
 
 function layout(title, ytitle, samples, width) {
+  const height = title.startsWith("Method") ? 400 : 280;
   return {
-    title, width, height: title.startsWith("Method") ? 400 : 280,
+    title, width, height,
     margin: { t: 36, r: 16, b: 48, l: 48 },
     xaxis: { type: "date", automargin: true, tickformat: "%Y-%m-%d" },
     yaxis: { title: ytitle, rangemode: "tozero", automargin: true },
     shapes: shapes(samples),
+    annotations: labelAnnotations(samples, width, null),
     colorway: COLORWAY,
     showlegend: false,
     hovermode: "closest"
@@ -537,7 +590,8 @@ function drawWall(samples) {
   });
   paintKey("wall-key", names);
   const node = document.getElementById("wall-chart");
-  const drawn = window.Plotly ? Plotly.react(node, traces, layout("Command wall", "seconds", samples, node.clientWidth || 560)) : Promise.resolve();
+  const wallLayout = layout("Command wall", "seconds", samples, node.clientWidth || 560);
+  const drawn = window.Plotly ? Plotly.react(node, traces, wallLayout).then(() => refineLabels(node, samples)) : Promise.resolve();
   if (window.Plotly) {
     if (node.removeAllListeners) node.removeAllListeners("plotly_click");
     node.on("plotly_click", (event) => {
@@ -587,7 +641,8 @@ function drawMethods(samples) {
   }));
   paintKey("method-key", chosen.map((method) => method.short));
   const node = document.getElementById("method-chart");
-  const drawn = window.Plotly ? Plotly.react(node, traces, layout("Method rank", "ms", samples, node.clientWidth || 560)) : Promise.resolve();
+  const methodLayout = layout("Method rank", "ms", samples, node.clientWidth || 560);
+  const drawn = window.Plotly ? Plotly.react(node, traces, methodLayout).then(() => refineLabels(node, samples)) : Promise.resolve();
   window.__methodDrawn = drawn;
   const body = document.querySelector("#method-table tbody");
   body.innerHTML = "";
