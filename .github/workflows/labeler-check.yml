@@ -1,0 +1,31 @@
+# Drift check for .github/labeler.yml. This runs the PR tree
+# (gen-labeler.sh), so it stays on pull_request with a read-only token.
+# The job that writes labels is .github/workflows/labeler.yml
+# (pull_request_target, base config only).
+name: Labels check
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+concurrency:
+  group: labeler-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: labeler config
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check labeler.yml is generated
+        run: ./.github/gen-labeler.sh --check

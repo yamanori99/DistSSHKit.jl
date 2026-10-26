@@ -3,12 +3,20 @@
 # A prerelease (a hyphen, as in 0.2.0-DEV) is not a cut.
 # The same numbers with the prerelease removed (0.2.0-DEV -> 0.2.0) is a cut.
 # Usage: ./.github/version-cut.sh OLD NEW
+#        ./.github/version-cut.sh --versions OLD_VER NEW_VER
+#        ./.github/version-cut.sh --files OLD.toml NEW.toml
 #        ./.github/version-cut.sh --self-test
+# --versions and --files compare version strings only. They do not fetch
+# git objects and they do not execute the file contents.
 set -euo pipefail
 
 split_ver() {
   printf '%s\n' "$1" | sed -n \
     's/^\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)\(-[^ ]*\)\{0,1\}$/\1 \2 \3 \4/p'
+}
+
+ver_from_file() {
+  sed -n 's/^version[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' "$1" | head -1
 }
 
 # echo true or false
@@ -56,6 +64,28 @@ self_test() {
   expect 0.2.0 0.1.9 false
   expect 0.2.0-DEV 0.2.1 true
   expect 0.2.0-alpha 0.2.0-beta false
+  cli="$(bash "$0" --versions 0.1.5 0.1.6)"
+  if [ "$cli" != true ]; then
+    echo "FAIL --versions 0.1.5 -> 0.1.6 want true got $cli" >&2
+    failed=1
+  fi
+  cli="$(bash "$0" --versions 0.2.0-DEV 0.2.0-DEV)"
+  if [ "$cli" != false ]; then
+    echo "FAIL --versions unchanged prerelease want false got $cli" >&2
+    failed=1
+  fi
+  local tmpd oldf newf
+  tmpd="$(mktemp -d)"
+  oldf="$tmpd/old.toml"
+  newf="$tmpd/new.toml"
+  printf 'name = "Example"\nversion = "0.2.0-DEV"\n' >"$oldf"
+  printf 'version = "0.2.0"\n' >"$newf"
+  cli="$(bash "$0" --files "$oldf" "$newf")"
+  rm -rf "$tmpd"
+  if [ "$cli" != true ]; then
+    echo "FAIL --files prerelease drop want true got $cli" >&2
+    failed=1
+  fi
   if [ "$failed" -ne 0 ]; then
     exit 1
   fi
@@ -64,6 +94,16 @@ self_test() {
 
 if [ "${1:-}" = "--self-test" ]; then
   self_test
+  exit 0
+fi
+
+if [ "${1:-}" = "--versions" ]; then
+  is_cut "${2-}" "${3-}"
+  exit 0
+fi
+
+if [ "${1:-}" = "--files" ]; then
+  is_cut "$(ver_from_file "${2:?old Project.toml}")" "$(ver_from_file "${3:?new Project.toml}")"
   exit 0
 fi
 

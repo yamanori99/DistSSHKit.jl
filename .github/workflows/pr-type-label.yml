@@ -14,10 +14,16 @@
 # Labels adds `cut` only when the version rises above the base.
 # A removed `cut` stays off until the next rise. This workflow does not
 # add it. CI still reads Project.toml (version-cut.sh).
+#
+# pull_request_target runs this file from the base branch, so fork PRs
+# do not exercise this change until it is merged. The job writes labels
+# through the API. It does not check out the pull request head or run
+# code from it. version-cut.sh is the copy at the base SHA. Project.toml
+# bytes come from the contents API (head SHA, then refs/pull/N/head).
 name: Type
 
-on:
-  pull_request:
+on: # zizmor: ignore[dangerous-triggers] API label writes only; no checkout of the PR head
+  pull_request_target:
     types: [opened, edited, reopened, synchronize, ready_for_review, labeled, unlabeled]
 
 # Include event.action so labeled/unlabeled (from path Labels) do not
@@ -28,33 +34,87 @@ concurrency:
 
 permissions:
   contents: read
-  pull-requests: write
-  issues: write
 
 jobs:
   require-type:
     name: PR label
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-
-      # Read the detector from the trusted base revision. Labels runs the same
-      # comparison to add `cut`, but this direct check avoids a workflow race.
+      # Trusted base script. Head Project.toml is data from the API, not a checkout.
       - name: Detect version cut
         id: cut
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
           PR: ${{ github.event.pull_request.number }}
-        run: |
-          set -euo pipefail
-          script="$RUNNER_TEMP/version-cut.sh"
-          git show "${BASE}:.github/version-cut.sh" > "$script"
-          value="$(bash "$script" "$BASE" "$HEAD")"
-          printf 'value=%s\n' "$value" >> "$GITHUB_OUTPUT"
+        with:
+          script: |
+            const fs = require("fs");
+            const path = require("path");
+            const { execFileSync } = require("child_process");
+
+            const base = process.env.BASE;
+            const head = process.env.HEAD;
+            const pr = process.env.PR;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            function decode(data) {
+              if (!data || Array.isArray(data) || !data.content) {
+                throw new Error("GitHub contents response was not a file");
+              }
+              return Buffer.from(data.content, "base64").toString("utf8");
+            }
+
+            async function fileAt(filePath, ref) {
+              const { data } = await github.rest.repos.getContent({
+                owner,
+                repo,
+                path: filePath,
+                ref,
+              });
+              return decode(data);
+            }
+
+            async function projectToml(ref, fallback) {
+              try {
+                return await fileAt("Project.toml", ref);
+              } catch (err) {
+                if (!fallback) {
+                  throw err;
+                }
+                core.info(
+                  `Project.toml at ${ref} unreadable (${err.status || ""} ${err.message}); trying ${fallback}`,
+                );
+                return await fileAt("Project.toml", fallback);
+              }
+            }
+
+            const scriptText = await fileAt(".github/version-cut.sh", base);
+            const oldText = await fileAt("Project.toml", base);
+            const newText = await projectToml(head, `refs/pull/${pr}/head`);
+            const dir = fs.mkdtempSync(path.join(process.env.RUNNER_TEMP, "vcut-"));
+            const scriptPath = path.join(dir, "version-cut.sh");
+            const oldPath = path.join(dir, "old.toml");
+            const newPath = path.join(dir, "new.toml");
+            fs.writeFileSync(scriptPath, scriptText);
+            fs.writeFileSync(oldPath, oldText);
+            fs.writeFileSync(newPath, newText);
+            const value = execFileSync(
+              "bash",
+              [scriptPath, "--files", oldPath, newPath],
+              { encoding: "utf8" },
+            ).trim();
+            if (value !== "true" && value !== "false") {
+              throw new Error(`version-cut.sh returned ${JSON.stringify(value)}`);
+            }
+            core.setOutput("value", value);
 
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
