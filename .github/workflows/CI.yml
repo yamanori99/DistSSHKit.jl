@@ -34,8 +34,10 @@ jobs:
   # poison Pkg.Registry.update on 1.13 if restored corrupt.
   # Aqua / JETLS share this workflow so the Test badge is the PR gate.
   # JETLS uses `.github/actions/jetls-check` (no nested
-  # cache; julia-actions/cache#236). JETLS runs on 1.13. Add another version
-  # job only when that runtime is outside JETLS's range.
+  # cache; julia-actions/cache#236). JETLS 2026-10-26 officially supports
+  # 1.12.2 through 1.14. The 1.13 job is the gate. 1.14-nightly is
+  # informational (`continue-on-error`) and is not a required check.
+  # No JETLS on nightly.
   detect:
     name: detect
     runs-on: ubuntu-latest
@@ -258,7 +260,7 @@ jobs:
         run: ./.github/aqua-check.sh
 
   # Literal name: a skipped job must still be this string.
-  # 1.13 only. Add another job when JETLS does not list that version.
+  # Required check. JETLS 2026-10-26 officially supports 1.12.2 through 1.14.
   jetls:
     name: JETLS (1.13, ubuntu-latest, x64)
     needs: detect
@@ -274,6 +276,31 @@ jobs:
       - uses: ./.github/actions/julia-slot
         with:
           version: "1.13"
+      - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
+        with:
+          cache-scratchspaces: false
+          delete-old-caches: false
+      - uses: ./.github/actions/jetls-check
+        with:
+          files: ${{ steps.files.outputs.list }}
+
+  # Same files and action as 1.13. Informational only: not a required check.
+  jetls-tip:
+    name: JETLS (1.14-nightly, ubuntu-latest, x64)
+    needs: detect
+    if: needs.detect.outputs.heavy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: files
+        run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/julia-slot
+        with:
+          version: "1.14-nightly"
       - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
         with:
           cache-scratchspaces: false

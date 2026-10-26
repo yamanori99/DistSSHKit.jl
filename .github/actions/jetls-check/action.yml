@@ -26,7 +26,7 @@ runs:
         # This tag is that date release. Bump it to take a newer JETLS.
         julia --startup-file=no -e '
           using Pkg
-          Pkg.Apps.add(; url="https://github.com/aviatesk/JETLS.jl", rev="2026-10-21")
+          Pkg.Apps.add(; url="https://github.com/aviatesk/JETLS.jl", rev="2026-10-26")
         '
     - name: Run jetls check
       shell: bash

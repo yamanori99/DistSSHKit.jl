@@ -140,8 +140,9 @@ automatic rule. A release candidate of the next minor is not a second
 required version. **1.14-nightly** is that view until the stable line
 moves.
 
-JETLS runs on **1.13**. If that runtime is outside the range JETLS lists,
-add another version line and job. No JETLS on nightly.
+JETLS 2026-10-26 officially supports 1.12.2 through 1.14. The required
+job is **1.13**. **1.14-nightly** is informational (`continue-on-error`)
+and is not a required check. No JETLS on nightly.
 
 When the stable line moves to a new **major.minor**, change the job names
 and the main ruleset in the same PR.
@@ -150,7 +151,8 @@ and the main ruleset in the same PR.
 
 These run as jobs of the `Test` workflow
 ([`.github/workflows/CI.yml`](.github/workflows/CI.yml)). Ubuntu:
-`Pkg.test` 1.13, JETLS 1.13, Aqua 1.13, Gitleaks (also rejects `< 0.0.1`
+`Pkg.test` 1.13, JETLS 1.13, informational JETLS 1.14-nightly,
+Aqua 1.13, Gitleaks (also rejects `< 0.0.1`
 in `Project.toml`). macOS (`macos-latest`):
 `Pkg.test` 1.13, same heavy gate, no coverage upload. macOS is required.
 WSL2 1.13 is a main push and CI weekly, not a pull request.
