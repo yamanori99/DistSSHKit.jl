@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="420" viewBox="0 0 1280 420">
+  <!-- readme-static: 1280×420; pad 40; mark | title lockup; from logo/logo-static.svg -->
+  <rect width="1280" height="420" fill="#ffffff"/>
+  <svg x="100" y="40" width="340" height="340" viewBox="0 0 128 128">
+
+  <g transform="translate(45.79 40.23) scale(0.9038)">
+    <g transform="rotate(-15 0 70)">
+      <rect x="0" y="0" width="70" height="70" rx="13" fill="#9558b2" fill-opacity="0.27" stroke="#9558b2" stroke-opacity="0.2" stroke-width="0.6"/>
+      <circle cx="15" cy="15" r="4.5" fill="#9558b2"/>
+    </g>
+    <g transform="rotate(-30 0 70)">
+      <rect x="0" y="0" width="70" height="70" rx="13" fill="#9558b2" fill-opacity="0.27" stroke="#9558b2" stroke-opacity="0.2" stroke-width="0.6"/>
+      <circle cx="15" cy="15" r="4.5" fill="#9558b2"/>
+    </g>
+    <g transform="rotate(-45 0 70)">
+      <rect x="0" y="0" width="70" height="70" rx="13" fill="#9558b2" fill-opacity="0.27" stroke="#9558b2" stroke-opacity="0.2" stroke-width="0.6"/>
+      <circle cx="15" cy="15" r="4.5" fill="#9558b2"/>
+    </g>
+    <rect x="0" y="0" width="70" height="70" rx="13" fill="#9558b2"/>
+    <circle cx="15" cy="15" r="4.5" fill="#ffffff"/>
+  </g>
+
+  </svg>
+  <text x="480" y="166" dominant-baseline="middle" fill="#0f172a" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="76" font-weight="800">DistSSH<tspan fill="#9558b2">Kit</tspan>.jl</text>
+  <text x="480" y="230" dominant-baseline="middle" fill="#475569" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="28" font-weight="500">A toolkit for running Julia computations</text>
+  <text x="480" y="268" dominant-baseline="middle" fill="#475569" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="28" font-weight="500">across multiple machines over SSH.</text>
+</svg>
