@@ -14,7 +14,7 @@
     end
     @test occursin(hint, help)
     @test !occursin("<command> -h for flags.", help)
-    code, _, err = _main_capture(["bogus"])
+    code, _, err = _main_capture(["foo"])
     @test code == 1
     lines = split(err, '\n')
     expected = only(filter(startswith("Expected:"), lines))
@@ -58,8 +58,10 @@
     for c in ("setup", "up")
         _test_same_page(["help", "qhost", c], DistSSHQueue.main, [c, "--help"])
     end
-    # `size` / `plan` / `pool` and `submit <kind> --help` reach the page only
-    # after Queue's target check. The local-trial env is that check's switch.
+    # `size` / `plan` / `pool` still need Queue's target check.
+    # `submit <kind> --help` is the page before that check (DistSSHQueue 0.9.10).
+    # The local-trial env is the check's switch, and it is harmless for the
+    # submit pages.
     withenv(DistSSHQueue.LOCAL_QUEUE_ENV => "1") do
         for c in ("size", "plan", "pool")
             _test_same_page(["help", "qhost", c], DistSSHQueue.main, [c, "--help"])

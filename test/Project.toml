@@ -11,7 +11,7 @@ DistSSHKit = {path = ".."}
 
 [compat]
 DistSSHQueue = "0.9.9"
-DistSSHRun = "0.1.15"
+DistSSHRun = "0.1.16"
 Random = "1"
 TOML = "1"
 Test = "1"

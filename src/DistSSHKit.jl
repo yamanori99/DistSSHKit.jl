@@ -198,8 +198,8 @@ function print_kit_root_usage(io::IO = stderr)
         "  progress           Phase seconds from kit.progress",
     )
     print_help_blank(io)
-    # `CLIENT_COMMAND_LINES` and `QUEUE_HOST_COMMAND_LINES` are not
-    # exported. A later Queue patch will mark them `public`.
+    # Public since DistSSHQueue 0.9.10, not exported. The compat floor is
+    # 0.9.9, where the same bindings exist and are not public.
     print_help_section("Client"; io = io)
     print_help_lines(io, DistSSHQueue.CLIENT_COMMAND_LINES...)
     print_help_blank(io)
@@ -328,7 +328,8 @@ const _Route = Union{
 
 `submit go|ride|drive` keeps the kind in front of `--help`. That matches
 DistSSHQueue.`_help_command_argv`. The kinds are `KIT_EXECUTE_KINDS`,
-which is not exported. A later Queue patch will mark it `public`.
+public since DistSSHQueue 0.9.10 and not exported. The compat floor is
+0.9.9, where the same binding exists and is not public.
 """
 function _argv_with_help_flag(words::AbstractVector{<:AbstractString})::Vector{String}
     verb = String(words[1])
@@ -388,6 +389,19 @@ function _route(args::Vector{String})::_Route
     if rewritten !== nothing
         return rewritten
     end
+    # `help <word>` names that word when it is not a command or a topic.
+    # A following help word or `qhost:` stays on the path below. `-h foo`
+    # is not this case: the first word is not `help`.
+    if length(args) >= 2 && args[1] == "help" &&
+            !(args[2] in _HELP_WORDS) &&
+            !startswith(args[2], "qhost:")
+        # Only `:unknown` and `:no_command` carry a `String`. A version,
+        # queue, or run tail stays on the path below.
+        tail = _route(args[2:end])
+        if tail isa Tuple{Symbol, String}
+            return tail
+        end
+    end
     stripped = _without_qhost_group(args)
     if stripped !== nothing
         return (:queue, stripped)
@@ -410,20 +424,9 @@ function _route(args::Vector{String})::_Route
 end
 
 function _finish_rejected(sub::AbstractString, script::Bool)::Cint
-    if script
-        DistSSHRun.print_cli_error(
-            "No command (got $(repr(sub))). Kit does not infer go / ride / drive.",
-        )
-        println(stderr, "  go SCRIPT.jl      as-is complete job (timing without rewrite)")
-        println(stderr, "  ride … SCRIPT.jl  experimental map / filter")
-        println(stderr, "  drive … SCRIPT.jl Distributed")
-        println(stderr, "  plan SCRIPT.jl    inspect; do not run")
-    else
-        DistSSHRun.print_cli_error("Unknown subcommand: $sub")
-        println(
-            stderr,
-            "Expected: setup | up | go | ride | drive | plan | size | pool | demo | progress",
-        )
+    # Run prints the shared sentences. Kit adds the Queue line, then the page.
+    DistSSHRun.print_rejected_command(sub; script = script)
+    if !script
         println(
             stderr,
             "Queue: submit | status | watch | cancel | fetch | list-host | add-host | remove-host | serve | stop | enable | disable | teardown",
