@@ -331,31 +331,19 @@ function ranked(command) {
   return command.methods.slice().sort((a, b) => b.ms - a.ms);
 }
 
-function measuredBefore(samples, index, signature) {
-  if (index <= 0) return null;
-  const command = samples[index - 1].commands.find((item) => item.name === state.cmd);
-  if (!command) return null;
-  const found = command.methods.find((method) => method.signature === signature);
-  return found ? found.ms : null;
-}
-
-function chosenMethods(samples, count) {
+function chartMethods(samples, count) {
   const picked = [];
   const seen = new Set();
-  for (let index = samples.length - 1; index >= 0 && picked.length < count; index -= 1) {
+  for (let index = samples.length - 1; index >= 0; index -= 1) {
     const command = samples[index].commands.find((item) => item.name === state.cmd);
     if (!command) continue;
-    ranked(command).slice(0, count).forEach((method, place) => {
-      if (picked.length >= count || seen.has(method.signature)) return;
+    ranked(command).slice(0, count).forEach((method) => {
+      if (seen.has(method.signature)) return;
       seen.add(method.signature);
       picked.push({
         signature: method.signature,
         short: method.short,
-        owner: method.owner,
-        ms: method.ms,
-        prior: measuredBefore(samples, index, method.signature),
-        when: String(samples[index].time).slice(0, 10),
-        at: place + 1
+        owner: method.owner
       });
     });
   }
@@ -379,20 +367,23 @@ function defaultCommand(samples) {
   return best;
 }
 
-function latestWithCommand(samples, name) {
-  for (let index = samples.length - 1; index >= 0; index -= 1) {
-    const command = samples[index].commands.find((item) => item.name === name);
-    if (command) return { index, command };
-  }
-  return null;
-}
-
-function methodY(sample, name, signature, count) {
+function methodMs(sample, name, signature) {
   const command = sample.commands.find((item) => item.name === name);
   if (!command) return null;
-  const index = ranked(command).findIndex((method) => method.signature === signature);
-  if (index < 0 || index >= count) return null;
-  return ranked(command)[index].ms;
+  const found = command.methods.find((method) => method.signature === signature);
+  return found ? found.ms : null;
+}
+
+function hoverMarks(samples, values) {
+  let last = -1;
+  for (let index = 0; index < values.length; index += 1) {
+    if (values[index] !== null) last = index;
+  }
+  return samples.map((sample, index) => {
+    const mark = sampleMark(sample);
+    mark.push(index === last ? "last" : "");
+    return mark;
+  });
 }
 
 function dropSpikes(values) {
@@ -607,11 +598,12 @@ function drawWall(samples) {
   const body = document.querySelector("#wall-table tbody");
   body.innerHTML = "";
   names.forEach((name) => {
-    const values = samples.map((sample) => wallAt(sample, name)).filter((value) => value !== null);
+    const values = samples.map((sample) => wallAt(sample, name));
+    const present = values.filter((value) => value !== null);
     const row = document.createElement("tr");
     const now = values.length ? values[values.length - 1] : null;
-    const start = values.length ? values[0] : null;
-    const change = now === null || start === null || values.length < 2 ? "" : (now - start).toFixed(2);
+    const start = present.length ? present[0] : null;
+    const change = now === null || start === null || present.length < 2 ? "" : (now - start).toFixed(2);
     [name, now === null ? "" : now.toFixed(2), start === null ? "" : start.toFixed(2), change].forEach((cell) => {
       const td = document.createElement("td");
       td.textContent = cell;
@@ -629,67 +621,45 @@ function drawMethods(samples) {
   });
   const cap = Math.max(1, available.size);
   if (state.n > cap) state.n = cap;
-  const found = latestWithCommand(samples, state.cmd);
-  const chosen = chosenMethods(samples, state.n);
-  if (chosen.length > 0 && state.n > chosen.length) state.n = chosen.length;
-  const traces = chosen.map((method) => ({
-    type: "scatter", mode: "lines+markers", name: method.short, connectgaps: false,
-    x: samples.map((sample) => sample.time),
-    y: samples.map((sample) => methodY(sample, state.cmd, method.signature, state.n)),
-    customdata: samples.map(sampleMark),
-    hovertemplate: "%{customdata[0]} %{customdata[1]}<br>%{fullData.name}<br>%{y} ms<br>%{customdata[3]} %{customdata[4]}<extra></extra>"
-  }));
-  paintKey("method-key", chosen.map((method) => method.short));
+  const series = chartMethods(samples, state.n);
+  const traces = series.map((method) => {
+    const ys = samples.map((sample) => methodMs(sample, state.cmd, method.signature));
+    return {
+      type: "scatter", mode: "lines+markers", name: method.short, connectgaps: false,
+      x: samples.map((sample) => sample.time),
+      y: ys,
+      customdata: hoverMarks(samples, ys),
+      hovertemplate: "%{customdata[0]} %{customdata[1]}<br>%{fullData.name}<br>%{y} ms %{customdata[5]}<br>%{customdata[3]} %{customdata[4]}<extra></extra>"
+    };
+  });
+  paintKey("method-key", series.map((method) => method.short));
   const node = document.getElementById("method-chart");
   const methodLayout = layout("Method rank", "ms", samples, node.clientWidth || 560);
   const drawn = window.Plotly ? Plotly.react(node, traces, methodLayout).then(() => refineLabels(node, samples)) : Promise.resolve();
   window.__methodDrawn = drawn;
   const body = document.querySelector("#method-table tbody");
   body.innerHTML = "";
-  const prev = found && found.index > 0 ? samples[found.index - 1] : null;
+  const latest = samples[samples.length - 1];
+  const prev = samples.length > 1 ? samples[samples.length - 2] : null;
   function top(sample) {
     if (!sample) return [];
     const command = sample.commands.find((item) => item.name === state.cmd);
     return command ? ranked(command).slice(0, state.n) : [];
   }
-  const now = found ? ranked(found.command).slice(0, state.n) : [];
+  const now = top(latest);
   const before = top(prev);
   function rankOf(list, signature) {
     const index = list.findIndex((item) => item.signature === signature);
     return index < 0 ? 0 : index + 1;
   }
-  const rows = chosen.map((method) => {
+  now.forEach((method) => {
     const nowRank = rankOf(now, method.signature);
     const prevRank = rankOf(before, method.signature);
-    const current = nowRank ? now[nowRank - 1] : null;
     const old = prevRank ? before[prevRank - 1] : null;
-    const shown = current || method;
-    let change = "";
-    if (nowRank && prevRank) change = String(prevRank - nowRank);
-    else if (nowRank) change = "new";
-    else if (prevRank) change = "gone";
-    else if (method.when) change = method.when + " #" + method.at;
-    let delta = "";
-    if (current && old) delta = current.ms - old.ms;
-    else if (!nowRank && !prevRank && method.prior != null) delta = method.ms - method.prior;
-    return {
-      method: shown,
-      nowRank: nowRank || "",
-      prevRank: prevRank || "",
-      change,
-      ms: current ? current.ms : method.ms,
-      delta
-    };
-  });
-  before.forEach((method) => {
-    if (chosen.some((item) => item.signature === method.signature)) return;
-    const prevRank = before.findIndex((item) => item.signature === method.signature) + 1;
-    rows.push({ method, nowRank: "", prevRank, change: "gone", ms: "", delta: "" });
-  });
-  rows.forEach((item) => {
     const row = document.createElement("tr");
-    if (PACKAGE.has(item.method.owner)) row.dataset.package = "1";
-    [item.nowRank, item.prevRank, item.change, item.method.owner, item.method.short, item.ms === "" ? "" : Math.round(item.ms), item.delta === "" ? "" : Math.round(item.delta)].forEach((cell) => {
+    if (PACKAGE.has(method.owner)) row.dataset.package = "1";
+    const delta = old ? method.ms - old.ms : "";
+    [nowRank, prevRank || "", prevRank ? String(prevRank - nowRank) : "new", method.owner, method.short, Math.round(method.ms), delta === "" ? "" : Math.round(delta)].forEach((cell) => {
       const td = document.createElement("td");
       td.textContent = cell;
       row.appendChild(td);
@@ -699,7 +669,8 @@ function drawMethods(samples) {
   document.getElementById("method-count").textContent = String(state.n);
   document.getElementById("method-note").textContent =
     state.slot + " methods for " + state.cmd + ".";
-  const nowTotal = found && found.command.total != null ? found.command.total : null;
+  const latestCommand = latest.commands.find((item) => item.name === state.cmd) || null;
+  const nowTotal = latestCommand && latestCommand.total != null ? latestCommand.total : null;
   const prevCommand = prev ? prev.commands.find((item) => item.name === state.cmd) : null;
   const prevTotal = prevCommand && prevCommand.total != null ? prevCommand.total : null;
   const totalNode = document.getElementById("method-total");
