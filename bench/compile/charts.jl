@@ -279,7 +279,7 @@ const RANGES = [
   ["all", null]
 ];
 const PACKAGE = new Set(["DistSSHKit", "DistSSHRun", "DistSSHQueue"]);
-const state = { slot: "", range: "all", n: 8, cmd: "", drag: null };
+const state = { slot: "", range: "30d", n: 8, cmd: "", drag: null };
 
 function slotData() {
   return SLOTS.find((item) => item.name === state.slot) || SLOTS[0];
@@ -449,24 +449,45 @@ function shapes(samples) {
   })));
 }
 
-function annotations(samples) {
-  const julia = breaks(samples, "julia_short", true);
-  const hosts = breaks(samples, "host", false);
-  const cuts = breaks(samples, "version", false);
-  const patches = patchMarks(samples);
-  return julia.map((mark) => ({
-    x: mark.time, y: 1, yref: "paper", text: mark.label, showarrow: false, yanchor: "bottom"
-  })).concat(hosts.map((mark) => ({
-    x: mark.time, y: 0.92, yref: "paper", text: mark.label, showarrow: false, font: { color: "#9558b2" }
-  }))).concat(cuts.map((mark) => ({
-    x: mark.time, y: 0.84, yref: "paper", text: mark.label, showarrow: false, font: { color: "#c2410c" }
-  }))).concat(patches.map((mark) => ({
-    x: mark.time, y: 0.76, yref: "paper", text: mark.label, showarrow: false, font: { color: "#0369a1" }
-  })));
+function eventRows(samples) {
+  const rows = [];
+  function push(kind, marks) {
+    marks.forEach((mark) => rows.push({ time: mark.time, kind, text: mark.label }));
+  }
+  push("julia", breaks(samples, "julia_short", true));
+  push("host", breaks(samples, "host", false));
+  push("version", breaks(samples, "version", false));
+  push("patch", patchMarks(samples));
+  rows.sort((a, b) => parseTime(a.time) - parseTime(b.time));
+  return rows;
+}
+
+function paintEvents(id, samples) {
+  const host = document.getElementById(id);
+  host.replaceChildren();
+  const rows = eventRows(samples);
+  if (!rows.length) return;
+  const title = document.createElement("p");
+  title.className = "events-title";
+  title.textContent = "Events in this range";
+  host.appendChild(title);
+  rows.forEach((row) => {
+    const line = document.createElement("p");
+    line.dataset.kind = row.kind;
+    const when = String(row.time).slice(0, 16).replace("T", " ");
+    line.textContent = when + "  " + row.kind + "  " + row.text;
+    host.appendChild(line);
+  });
 }
 
 function sampleMark(sample) {
-  return [String(sample.time).slice(0, 10), String(sample.commit || ""), String(sample.julia || "")];
+  return [
+    String(sample.time).slice(0, 10),
+    String(sample.commit || ""),
+    String(sample.julia || ""),
+    String(sample.version || ""),
+    String(sample.host || "")
+  ];
 }
 
 const COLORWAY = ["#636efa", "#EF553B", "#00cc96", "#ab63fa", "#FFA15A", "#19d3f3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"];
@@ -493,7 +514,6 @@ function layout(title, ytitle, samples, width) {
     xaxis: { type: "date", automargin: true, tickformat: "%Y-%m-%d" },
     yaxis: { title: ytitle, rangemode: "tozero", automargin: true },
     shapes: shapes(samples),
-    annotations: annotations(samples),
     colorway: COLORWAY,
     showlegend: false,
     hovermode: "closest"
@@ -512,7 +532,7 @@ function drawWall(samples) {
       x: samples.map((sample) => sample.time),
       y: dropped.values,
       customdata: samples.map(sampleMark),
-      hovertemplate: "%{customdata[0]} %{customdata[1]}<br>%{fullData.name} %{y} s<extra></extra>"
+      hovertemplate: "%{customdata[0]} %{customdata[1]}<br>%{fullData.name} %{y} s<br>%{customdata[3]} %{customdata[4]}<extra></extra>"
     };
   });
   paintKey("wall-key", names);
@@ -563,7 +583,7 @@ function drawMethods(samples) {
     x: samples.map((sample) => sample.time),
     y: samples.map((sample) => methodY(sample, state.cmd, method.signature, state.n)),
     customdata: samples.map(sampleMark),
-    hovertemplate: "%{customdata[0]} %{customdata[1]}<br>%{fullData.name}<br>%{y} ms<extra></extra>"
+    hovertemplate: "%{customdata[0]} %{customdata[1]}<br>%{fullData.name}<br>%{y} ms<br>%{customdata[3]} %{customdata[4]}<extra></extra>"
   }));
   paintKey("method-key", chosen.map((method) => method.short));
   const node = document.getElementById("method-chart");
@@ -670,6 +690,8 @@ function draw() {
   drawing += 1;
   drawMethods(samples);
   drawWall(samples);
+  paintEvents("method-events", samples);
+  paintEvents("wall-events", samples);
   state.shown = samples.map((sample) => sample.time).join("|");
   Promise.all([window.__methodDrawn, window.__wallDrawn]).then(() => { drawing -= 1; });
   writeQuery();
@@ -702,7 +724,7 @@ function boot() {
   const names = SLOTS.map((slot) => slot.name);
   state.slot = names.includes(query.get("slot")) ? query.get("slot") : (names.includes("1.13") ? "1.13" : names[0]);
   const range = query.get("range");
-  state.range = RANGES.some((item) => item[0] === range) ? range : "all";
+  state.range = RANGES.some((item) => item[0] === range) ? range : "30d";
   const count = Number(query.get("n"));
   state.n = count >= 1 ? Math.round(count) : 8;
   state.cmd = query.get("cmd") || "";
@@ -750,6 +772,12 @@ function bench_html(groups)::String
     td, th { border: 1px solid #cbd5e1; padding: 4px 8px; text-align: left; overflow-wrap: anywhere; }
     tr[data-package="1"] { background: #f3e8ff; }
     #range-row, #method-row { margin: 8px 0 16px; }
+    .events { margin: 0 0 16px; color: #334155; font-size: 13px; }
+    .events p { margin: 0 0 2px; }
+    .events-title { color: #64748b; }
+    .events p[data-kind="host"] { color: #9558b2; }
+    .events p[data-kind="version"] { color: #c2410c; }
+    .events p[data-kind="patch"] { color: #0369a1; }
     </style>
     </head>
     <body>
@@ -757,7 +785,7 @@ function bench_html(groups)::String
     <div id="range-row">
     <span>range</span>
     <button type="button" id="range-dec">-</button>
-    <span id="range-label">all</span>
+    <span id="range-label">30d</span>
     <button type="button" id="range-inc">+</button>
     </div>
     <h1>Method rank</h1>
@@ -772,6 +800,7 @@ function bench_html(groups)::String
     <div id="method-chart" class="plot"></div>
     <div id="method-key" class="key"></div>
     </div>
+    <div class="events" id="method-events"></div>
     <p id="method-note"></p>
     <p id="method-total"></p>
     <table id="method-table">
@@ -784,6 +813,7 @@ function bench_html(groups)::String
     <div id="wall-chart" class="plot"></div>
     <div id="wall-key" class="key"></div>
     </div>
+    <div class="events" id="wall-events"></div>
     <p id="wall-note"></p>
     <table id="wall-table">
     <thead><tr><th>command</th><th>now s</th><th>start s</th><th>change</th></tr></thead>
