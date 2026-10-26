@@ -504,6 +504,62 @@ function package_version(root::AbstractString)::String
     return string(get(proj, "version", ""))
 end
 
+function manifest_entry(raw)::Union{Nothing, AbstractDict}
+    if raw isa AbstractVector
+        isempty(raw) && return nothing
+        item = raw[1]
+        return item isa AbstractDict ? item : nothing
+    end
+    return raw isa AbstractDict ? raw : nothing
+end
+
+# Direct `DistSSH*` dependencies of `package` in the Manifest `instantiate`
+# wrote. A missing version or tree is omitted. A missing or unreadable
+# Manifest returns an empty list so the sample is still written.
+function manifest_distssh_deps(root::AbstractString, package::String)::Vector{Dict{String, Any}}
+    path = joinpath(root, "Manifest.toml")
+    isfile(path) || return Dict{String, Any}[]
+    data = try
+        TOML.parsefile(path)
+    catch
+        return Dict{String, Any}[]
+    end
+    packages = get(data, "deps", nothing)
+    packages isa AbstractDict || return Dict{String, Any}[]
+    root_entry = manifest_entry(get(packages, package, nothing))
+    if root_entry === nothing
+        for raw in values(packages)
+            entry = manifest_entry(raw)
+            entry === nothing && continue
+            string(get(entry, "path", "")) == "." || continue
+            root_entry = entry
+            break
+        end
+    end
+    root_entry === nothing && return Dict{String, Any}[]
+    direct = get(root_entry, "deps", nothing)
+    direct isa AbstractVector || return Dict{String, Any}[]
+    wanted = String[]
+    for item in direct
+        name = string(item)
+        startswith(name, "DistSSH") || continue
+        push!(wanted, name)
+    end
+    sort!(wanted)
+    rows = Dict{String, Any}[]
+    for name in wanted
+        entry = manifest_entry(get(packages, name, nothing))
+        entry === nothing && continue
+        row = Dict{String, Any}("name" => name)
+        ver = strip(string(get(entry, "version", "")))
+        tree = strip(string(get(entry, "git-tree-sha1", "")))
+        isempty(ver) || (row["version"] = ver)
+        isempty(tree) || (row["tree"] = tree)
+        push!(rows, row)
+    end
+    return rows
+end
+
 function measure()
     out = arg_value("--out")
     slot = optional_arg("--slot")
@@ -512,6 +568,7 @@ function measure()
     depot = mktempdir()
     stats = source_stats(ROOT)
     pre = measure_precompile(depot, package)
+    deps = manifest_distssh_deps(ROOT, package)
     load = measure_using(depot, package)
     specs = commands["command"]
     specs isa AbstractDict && (specs = [specs])
@@ -550,6 +607,7 @@ function measure()
         "imports" => load["imports"],
         "commands" => rows,
     )
+    isempty(deps) || (result["deps"] = deps)
     open(out, "w") do io
         TOML.print(io, result)
     end

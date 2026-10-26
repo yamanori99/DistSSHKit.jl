@@ -189,6 +189,24 @@ function method_records(items)::Vector{Dict{String, Any}}
     return out
 end
 
+function dep_payload(row)::Vector{Dict{String, Any}}
+    raw = get(row, "deps", nothing)
+    raw isa AbstractVector || return Dict{String, Any}[]
+    out = Dict{String, Any}[]
+    for item in raw
+        item isa AbstractDict || continue
+        name = strip(string(get(item, "name", "")))
+        isempty(name) && continue
+        rec = Dict{String, Any}("name" => name)
+        ver = strip(string(get(item, "version", "")))
+        tree = strip(string(get(item, "tree", "")))
+        isempty(ver) || (rec["version"] = ver)
+        isempty(tree) || (rec["tree"] = tree)
+        push!(out, rec)
+    end
+    return out
+end
+
 function bench_payload(groups::Dict{String, Vector{Dict{String, Any}}})::Vector{Dict{String, Any}}
     slots = Dict{String, Any}[]
     for name in sort(collect(keys(groups)))
@@ -207,18 +225,19 @@ function bench_payload(groups::Dict{String, Vector{Dict{String, Any}}})::Vector{
                     )
                 )
             end
-            push!(
-                samples, Dict{String, Any}(
-                    "time" => string(get(row, "time", "")),
-                    "commit" => isempty(sha) ? "" : first(sha, 7),
-                    "julia" => string(get(row, "julia", "")),
-                    "julia_short" => julia_short(row),
-                    "julia_patch" => julia_patch(row),
-                    "version" => string(get(row, "version", "")),
-                    "host" => host_mark(row),
-                    "commands" => commands,
-                )
+            sample = Dict{String, Any}(
+                "time" => string(get(row, "time", "")),
+                "commit" => isempty(sha) ? "" : first(sha, 7),
+                "julia" => string(get(row, "julia", "")),
+                "julia_short" => julia_short(row),
+                "julia_patch" => julia_patch(row),
+                "version" => string(get(row, "version", "")),
+                "host" => host_mark(row),
+                "commands" => commands,
             )
+            deps = dep_payload(row)
+            isempty(deps) || (sample["deps"] = deps)
+            push!(samples, sample)
         end
         push!(slots, Dict{String, Any}("name" => name, "samples" => samples))
     end
@@ -379,8 +398,9 @@ function hoverMarks(samples, values) {
   for (let index = 0; index < values.length; index += 1) {
     if (values[index] !== null) last = index;
   }
+  const slots = depSlots(samples);
   return samples.map((sample, index) => {
-    const mark = sampleMark(sample);
+    const mark = sampleMark(sample, slots);
     mark.push(index === last ? "last" : "");
     return mark;
   });
@@ -522,14 +542,56 @@ function paintEvents(id, samples) {
   });
 }
 
-function sampleMark(sample) {
-  return [
+function depParts(sample, withTree) {
+  const deps = (sample && sample.deps) || [];
+  const parts = [];
+  deps.forEach((dep) => {
+    if (!dep || !dep.name || !dep.version) return;
+    let text = String(dep.name) + " " + String(dep.version);
+    if (withTree && dep.tree) text += " " + String(dep.tree).slice(0, 7);
+    parts.push(text);
+  });
+  return parts;
+}
+
+function depLine(sample, withTree) {
+  return depParts(sample, withTree).join(", ");
+}
+
+function depSlots(samples) {
+  let count = 0;
+  samples.forEach((sample) => {
+    const n = depParts(sample, true).length;
+    if (n > count) count = n;
+  });
+  return count;
+}
+
+function sampleMark(sample, slots) {
+  const row = [
     String(sample.time).slice(0, 10),
     String(sample.commit || ""),
     String(sample.julia || ""),
     String(sample.version || ""),
     String(sample.host || "")
   ];
+  const parts = depParts(sample, true);
+  for (let index = 0; index < slots; index += 1) row.push(parts[index] || "");
+  return row;
+}
+
+function hoverTail(slots) {
+  let text = "%{customdata[3]} %{customdata[4]}";
+  for (let index = 0; index < slots; index += 1) {
+    text += "<br>%{customdata[" + (5 + index) + "]}";
+  }
+  return text;
+}
+
+function paintDeps(id, samples) {
+  const node = document.getElementById(id);
+  const latest = samples.length ? samples[samples.length - 1] : null;
+  node.textContent = latest ? depLine(latest, false) : "";
 }
 
 const COLORWAY = ["#636efa", "#EF553B", "#00cc96", "#ab63fa", "#FFA15A", "#19d3f3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"];
@@ -567,16 +629,19 @@ function layout(title, ytitle, samples, width) {
 function drawWall(samples) {
   const names = commandNames(samples);
   const notes = [];
+  const slots = depSlots(samples);
+  const wallHover = "%{customdata[0]} %{customdata[1]}<br>%{fullData.name} %{y} s<br>" + hoverTail(slots) + "<extra></extra>";
   const traces = names.map((name) => {
     const raw = samples.map((sample) => wallAt(sample, name));
     const dropped = dropSpikes(raw);
     dropped.notes.forEach((value) => notes.push(name + " " + value + "s omitted"));
     return {
       type: "scatter", mode: "lines+markers", name, connectgaps: false,
+      marker: { size: 2 },
       x: samples.map((sample) => sample.time),
       y: dropped.values,
-      customdata: samples.map(sampleMark),
-      hovertemplate: "%{customdata[0]} %{customdata[1]}<br>%{fullData.name} %{y} s<br>%{customdata[3]} %{customdata[4]}<extra></extra>"
+      customdata: samples.map((sample) => sampleMark(sample, slots)),
+      hovertemplate: wallHover
     };
   });
   paintKey("wall-key", names);
@@ -594,6 +659,7 @@ function drawWall(samples) {
     });
   }
   document.getElementById("wall-note").textContent = notes.join(" ");
+  paintDeps("wall-deps", samples);
   window.__wallDrawn = drawn;
   const body = document.querySelector("#wall-table tbody");
   body.innerHTML = "";
@@ -622,14 +688,17 @@ function drawMethods(samples) {
   const cap = Math.max(1, available.size);
   if (state.n > cap) state.n = cap;
   const series = chartMethods(samples, state.n);
+  const slots = depSlots(samples);
+  const methodHover = "%{customdata[0]} %{customdata[1]}<br>%{fullData.name}<br>%{y} ms %{customdata[" + (5 + slots) + "]}<br>" + hoverTail(slots) + "<extra></extra>";
   const traces = series.map((method) => {
     const ys = samples.map((sample) => methodMs(sample, state.cmd, method.signature));
     return {
       type: "scatter", mode: "lines+markers", name: method.short, connectgaps: false,
+      marker: { size: 2 },
       x: samples.map((sample) => sample.time),
       y: ys,
       customdata: hoverMarks(samples, ys),
-      hovertemplate: "%{customdata[0]} %{customdata[1]}<br>%{fullData.name}<br>%{y} ms %{customdata[5]}<br>%{customdata[3]} %{customdata[4]}<extra></extra>"
+      hovertemplate: methodHover
     };
   });
   paintKey("method-key", series.map((method) => method.short));
@@ -666,6 +735,7 @@ function drawMethods(samples) {
     });
     body.appendChild(row);
   });
+  paintDeps("method-deps", samples);
   document.getElementById("method-count").textContent = String(state.n);
   document.getElementById("method-note").textContent =
     state.slot + " methods for " + state.cmd + ".";
@@ -804,6 +874,8 @@ function bench_html(groups)::String
     .events p[data-kind="host"] { color: #9558b2; }
     .events p[data-kind="version"] { color: #c2410c; }
     .events p[data-kind="patch"] { color: #0369a1; }
+    #method-deps, #wall-deps { margin: 0 0 8px; }
+    #method-deps:empty, #wall-deps:empty { display: none; }
     </style>
     </head>
     <body>
@@ -829,6 +901,7 @@ function bench_html(groups)::String
     <div class="events" id="method-events"></div>
     <p id="method-note"></p>
     <p id="method-total"></p>
+    <p id="method-deps"></p>
     <table id="method-table">
     <colgroup><col style="width:3.5rem"><col style="width:3.5rem"><col style="width:9.5rem"><col style="width:8rem"><col><col style="width:4.5rem"><col style="width:5.5rem"></colgroup>
     <thead><tr><th>now</th><th>prev</th><th>change</th><th>owner</th><th>method</th><th>ms</th><th>ms change</th></tr></thead>
@@ -841,6 +914,7 @@ function bench_html(groups)::String
     </div>
     <div class="events" id="wall-events"></div>
     <p id="wall-note"></p>
+    <p id="wall-deps"></p>
     <table id="wall-table">
     <thead><tr><th>command</th><th>now s</th><th>start s</th><th>change</th></tr></thead>
     <tbody></tbody>

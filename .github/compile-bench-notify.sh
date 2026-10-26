@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Open or close the one "Compile bench failed" issue.
-# RESULT is the 1.13 job result. skipped (a push that is not a cut) does not close.
+# RESULT is the 1.13 job result. skipped does not close.
+# A push outside the measure workflow's paths never reaches this script.
 set -euo pipefail
 
 result="${RESULT:?}"

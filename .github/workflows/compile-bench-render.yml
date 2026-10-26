@@ -1,5 +1,5 @@
 # Rebuild the bench-data README when the renderer changes.
-# Measurement stays on CI weekly and on a version cut.
+# Measurement stays on CI weekly and on a main push of the measured tree.
 name: Compile bench render
 
 on:
