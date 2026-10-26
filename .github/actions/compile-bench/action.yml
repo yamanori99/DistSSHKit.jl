@@ -58,6 +58,14 @@ runs:
         sha="$(git rev-parse --short=7 HEAD)"
         day="$(date -u +%Y-%m-%d)"
         rel="history/${SLOT}/${day}-${sha}.toml"
+        # First sample for this slot, commit, and UTC day wins. A later run
+        # the same UTC day (the daily job, or a rerun) must not replace it
+        # or add a second file. The next UTC day still writes a new file,
+        # so dependency and Julia drift on an unchanged commit stay visible.
+        if [ -f "$dest/$rel" ]; then
+          echo "kept existing sample ${rel}"
+          exit 0
+        fi
         mkdir -p "$dest/history/${SLOT}"
         cp "${RUNNER_TEMP}/compile-bench.toml" "$dest/$rel"
         git -C "$dest" add "$rel"
@@ -77,9 +85,19 @@ runs:
             if git "${net[@]}" -C "$dest" push origin HEAD:bench-data; then
               return 0
             fi
+            # This slot's sample for today landed while the push was in flight.
+            if git "${net[@]}" -C "$dest" fetch origin bench-data \
+              && git -C "$dest" cat-file -e "origin/bench-data:${rel}" 2>/dev/null; then
+              echo "kept existing sample ${rel}"
+              return 0
+            fi
             if ! git "${net[@]}" -C "$dest" pull --rebase origin bench-data; then
               echo "rebase onto bench-data failed (attempt ${attempt})" >&2
               git -C "$dest" rebase --abort || true
+              if git -C "$dest" cat-file -e "origin/bench-data:${rel}" 2>/dev/null; then
+                echo "kept existing sample ${rel}"
+                return 0
+              fi
               return 1
             fi
             if [ "$attempt" -lt 6 ]; then

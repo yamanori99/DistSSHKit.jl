@@ -16,7 +16,14 @@ old file.
 | DistSSHRun | [bench-data](https://github.com/yamanori99/DistSSHRun.jl/tree/bench-data) |
 
 When the job runs is in that repo's `CONTRIBUTING.md`, under Scheduled
-CI. A run on `main` appends a sample. A render job then rebuilds the
+CI. A `main` push that changes the measured tree runs it: `src/`, the bench
+inputs (`bench/compile/measure.jl`, `measure.sh`, `commands.toml`, and
+`fixtures/`), `Project.toml`, and the compile-bench action and workflow.
+A docs-only push does not. CI weekly still runs it. That daily run catches
+a Julia nightly move and a dependency release on a commit that did not
+change. A run on `main` appends a sample when that slot does not already
+have one for the same commit and the same UTC date. The first file stays.
+The next UTC day writes a new file for that commit. A render job then rebuilds the
 README and `bench.html` from the history already on `bench-data`, and copies
 `bench.html` to the root of `gh-pages`. GitHub Pages serves that file as HTML.
 A `main` push that
@@ -26,8 +33,9 @@ summary and does not push. Every run uploads the sample as an artifact.
 A ref other than `main` does not push. A command that
 exits nonzero stops the run before a sample is written. A 1.13 failure
 on `main` opens an issue titled `Compile bench failed`, with the `alert`
-label. A later 1.13 success on `main` closes it. A skipped run, including
-a `Project.toml` push that is not a version cut, does not close it. The
+label. A later 1.13 success on `main` closes it. A skipped run does not
+close it. A docs-only push does not run the job, so it does not close it
+either. The
 1.14-nightly and nightly slots stay out of that issue. The page
 opens on 1.13. A solid line marks the sample where `version` changed.
 On the 1.13 slot, a dash-dot line marks a Julia patch change.
@@ -61,7 +69,8 @@ moves when the CI slot moves. Each file stores `julia` and
 one.
 
 The file name is the UTC date and the first 7 characters of the commit.
-Two runs of the same commit on the same UTC date keep the later file.
+A second run of the same commit on the same UTC date leaves the first file.
+The next UTC day writes another file for that commit.
 Sort by the `time` field inside the file, not by the file name alone,
 when two samples share a date.
 
@@ -86,6 +95,7 @@ when two samples share a date.
 | `precompile_pkg_sec` | `Base.compilecache` of this package alone |
 | `using_sec` | Wall time of `using` |
 | `imports` | `@time_imports` rows whose name starts with `DistSSH` |
+| `deps` | Direct `DistSSH*` dependencies from the Manifest this run instantiated. Each row has `name`, and `version` and `tree` (`git-tree-sha1`) when that Manifest entry has them. Older files omit this |
 | `commands` | One row per CLI command in `bench/compile/commands.toml` |
 
 A command row has `name`, `args`, `exit`, `wall_sec` (median of three
@@ -121,7 +131,11 @@ Version, host, and Julia changes stay as vertical lines. Each line's
 text sits inside the plot, at the top of the line. Labels that would
 overlap at the current range drop to the next row. The same events are
 listed under each chart, with the time, for the same samples the chart
-shows. Hover includes the package version and the host.
+shows. Hover includes the package version and the host. When the sample has
+`deps`, the hover also shows those versions and the first 7 characters of
+each tree. That version line, without the tree, sits above the method
+table and the wall table for the latest sample in the range. Older
+samples leave the line empty.
 A time is a specialization that command compiled. The table is the
 latest sample's requested count of those times. Its milliseconds are
 that measurement, and the millisecond change is the difference from
