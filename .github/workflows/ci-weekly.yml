@@ -1,16 +1,18 @@
 name: CI weekly
 
-# Not on pull_request: insurance for 1.13 / 1.14-nightly / Aqua / JETLS
-# @release drift when no PR ran that week. PR / main push stay the gate.
-# tip jobs are continue-on-error and omitted from notify.
-# 1.13 macos-latest and WSL2 Pkg.test are included (no coverage), same as a PR.
-# 1.14-nightly Pkg.test and Aqua on macOS and WSL2 run here only, and stay
-# out of notify. Ubuntu nightly also runs in Test.
+# Not on pull_request: insurance for 1.13 / 1.14-nightly / nightly / Aqua / JETLS
+# @release drift when no PR ran that day. PR / main push stay the gate.
+# 1.14-nightly and nightly jobs are continue-on-error and omitted from notify.
+# A 1.13 compile bench failure on main opens "Compile bench failed".
+# 1.13 macos-latest Pkg.test matches a PR (no coverage). WSL2 1.13 Pkg.test
+# runs here and on a main push, not on a pull request.
+# 1.14-nightly and nightly Pkg.test and Aqua on macOS and WSL2 run here only, and stay
+# out of notify. Ubuntu copies also run in Test.
 on:
   workflow_dispatch:
-  # Sunday 10:00 JST (UTC 01:00).
+  # Daily 06:00 JST (UTC 21:00).
   schedule:
-    - cron: "0 1 * * 0"
+    - cron: "0 21 * * *"
 
 concurrency:
   group: ci-weekly-${{ github.workflow }}-${{ github.ref }}
@@ -26,6 +28,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/julia-slot
         with:
           version: "1.13"
@@ -41,6 +45,8 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/julia-slot
         with:
           version: "1.13"
@@ -60,12 +66,17 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: Vampire/setup-wsl@d1da7f2c0322a5ee4f24975344f67fc0f5baf364 # v7.0.0
+      - uses: ./.github/actions/wsl-install
+      - uses: Vampire/setup-wsl@4c48163d9f981914dd8caa0fc335fe19cca5bff4 # v7.2.0
         timeout-minutes: 10
         with:
           distribution: Ubuntu-24.04
           wsl-version: 2
-          additional-packages: ca-certificates curl git
+          # Already registered by ./.github/actions/wsl-install. See
+          # wsl-install.ps1 for #43, #96, and #134. This step must not run
+          # `wsl --install` or apt-get. A stuck wsl.exe keeps stdio open, so
+          # timeout-minutes does not reap it.
+          use-cache: true
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .ci-cache/wsl-julia
@@ -81,9 +92,29 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/julia-slot
         with:
           version: "1.14-nightly"
+      - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
+        with:
+          cache-scratchspaces: false
+          delete-old-caches: false
+      - uses: ./.github/actions/pkg-test
+
+  test-nightly:
+    name: Pkg.test (nightly, ubuntu-latest, x64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/julia-slot
+        with:
+          version: "nightly"
       - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
         with:
           cache-scratchspaces: false
@@ -97,9 +128,29 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/julia-slot
         with:
           version: "1.14-nightly"
+      - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
+        with:
+          cache-scratchspaces: false
+          delete-old-caches: false
+      - uses: ./.github/actions/pkg-test
+
+  test-nightly-macos:
+    name: Pkg.test (nightly, macos-latest, aarch64)
+    runs-on: macos-latest
+    timeout-minutes: 45
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/julia-slot
+        with:
+          version: "nightly"
       - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
         with:
           cache-scratchspaces: false
@@ -117,12 +168,17 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: Vampire/setup-wsl@d1da7f2c0322a5ee4f24975344f67fc0f5baf364 # v7.0.0
+      - uses: ./.github/actions/wsl-install
+      - uses: Vampire/setup-wsl@4c48163d9f981914dd8caa0fc335fe19cca5bff4 # v7.2.0
         timeout-minutes: 10
         with:
           distribution: Ubuntu-24.04
           wsl-version: 2
-          additional-packages: ca-certificates curl git
+          # Already registered by ./.github/actions/wsl-install. See
+          # wsl-install.ps1 for #43, #96, and #134. This step must not run
+          # `wsl --install` or apt-get. A stuck wsl.exe keeps stdio open, so
+          # timeout-minutes does not reap it.
+          use-cache: true
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .ci-cache/wsl-julia
@@ -131,12 +187,44 @@ jobs:
         shell: wsl-bash {0}
         run: ./.github/wsl-julia.sh 1.14-nightly julia --project=. -e 'using Pkg; Pkg.test()'
 
+  test-nightly-wsl:
+    name: Pkg.test (nightly, WSL2 ubuntu-24.04, x64)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/wsl-install
+      - uses: Vampire/setup-wsl@4c48163d9f981914dd8caa0fc335fe19cca5bff4 # v7.2.0
+        timeout-minutes: 10
+        with:
+          distribution: Ubuntu-24.04
+          wsl-version: 2
+          # Already registered by ./.github/actions/wsl-install. See
+          # wsl-install.ps1 for #43, #96, and #134. This step must not run
+          # `wsl --install` or apt-get. A stuck wsl.exe keeps stdio open, so
+          # timeout-minutes does not reap it.
+          use-cache: true
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .ci-cache/wsl-julia
+          key: wsl-julia-nightly-${{ hashFiles('Project.toml', 'test/Project.toml', '.github/julia-slots.env') }}
+      - name: Pkg.test in WSL2
+        shell: wsl-bash {0}
+        run: ./.github/wsl-julia.sh nightly julia --project=. -e 'using Pkg; Pkg.test()'
+
   jetls:
     name: JETLS (1.13, ubuntu-latest, x64)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - id: files
         run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/julia-slot
@@ -156,6 +244,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/julia-slot
         with:
           version: "1.13"
@@ -173,9 +263,30 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/julia-slot
         with:
           version: "1.14-nightly"
+      - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
+        with:
+          cache-scratchspaces: false
+          delete-old-caches: false
+      - name: Aqua.test_all (latest Aqua)
+        run: ./.github/aqua-check.sh
+
+  aqua-nightly:
+    name: Aqua (nightly, ubuntu-latest, x64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/julia-slot
+        with:
+          version: "nightly"
       - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
         with:
           cache-scratchspaces: false
@@ -190,9 +301,30 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/julia-slot
         with:
           version: "1.14-nightly"
+      - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
+        with:
+          cache-scratchspaces: false
+          delete-old-caches: false
+      - name: Aqua.test_all (latest Aqua)
+        run: ./.github/aqua-check.sh
+
+  aqua-nightly-macos:
+    name: Aqua (nightly, macos-latest, aarch64)
+    runs-on: macos-latest
+    timeout-minutes: 45
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/julia-slot
+        with:
+          version: "nightly"
       - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
         with:
           cache-scratchspaces: false
@@ -211,12 +343,17 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: Vampire/setup-wsl@d1da7f2c0322a5ee4f24975344f67fc0f5baf364 # v7.0.0
+      - uses: ./.github/actions/wsl-install
+      - uses: Vampire/setup-wsl@4c48163d9f981914dd8caa0fc335fe19cca5bff4 # v7.2.0
         timeout-minutes: 10
         with:
           distribution: Ubuntu-24.04
           wsl-version: 2
-          additional-packages: ca-certificates curl git
+          # Already registered by ./.github/actions/wsl-install. See
+          # wsl-install.ps1 for #43, #96, and #134. This step must not run
+          # `wsl --install` or apt-get. A stuck wsl.exe keeps stdio open, so
+          # timeout-minutes does not reap it.
+          use-cache: true
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .ci-cache/wsl-julia
@@ -224,6 +361,141 @@ jobs:
       - name: Aqua.test_all (latest Aqua)
         shell: wsl-bash {0}
         run: ./.github/wsl-julia.sh 1.14-nightly ./.github/aqua-check.sh
+
+  aqua-nightly-wsl:
+    name: Aqua (nightly, WSL2 ubuntu-24.04, x64)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/wsl-install
+      - uses: Vampire/setup-wsl@4c48163d9f981914dd8caa0fc335fe19cca5bff4 # v7.2.0
+        timeout-minutes: 10
+        with:
+          distribution: Ubuntu-24.04
+          wsl-version: 2
+          # Already registered by ./.github/actions/wsl-install. See
+          # wsl-install.ps1 for #43, #96, and #134. This step must not run
+          # `wsl --install` or apt-get. A stuck wsl.exe keeps stdio open, so
+          # timeout-minutes does not reap it.
+          use-cache: true
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .ci-cache/wsl-julia
+          key: wsl-julia-nightly-${{ hashFiles('Project.toml', 'test/Project.toml', '.github/julia-slots.env') }}
+      - name: Aqua.test_all (latest Aqua)
+        shell: wsl-bash {0}
+        run: ./.github/wsl-julia.sh nightly ./.github/aqua-check.sh
+
+  compile-bench:
+    name: Compile bench (1.13, ubuntu-latest, x64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: julia-actions/setup-julia@da908477b5db94c10ffce8cfea9f2b3b9d5db687 # v3.0.3
+        with:
+          version: "1.13"
+      - uses: ./.github/actions/compile-bench
+        with:
+          slot: "1.13"
+          token: ${{ github.token }}
+
+  compile-bench-nightly:
+    name: Compile bench (1.14-nightly, ubuntu-latest, x64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: julia-actions/setup-julia@da908477b5db94c10ffce8cfea9f2b3b9d5db687 # v3.0.3
+        with:
+          version: "1.14-nightly"
+      - uses: ./.github/actions/compile-bench
+        with:
+          slot: "1.14-nightly"
+          token: ${{ github.token }}
+
+  compile-bench-master:
+    name: Compile bench (nightly, ubuntu-latest, x64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: julia-actions/setup-julia@da908477b5db94c10ffce8cfea9f2b3b9d5db687 # v3.0.3
+        with:
+          version: "nightly"
+      - uses: ./.github/actions/compile-bench
+        with:
+          slot: "nightly"
+          token: ${{ github.token }}
+
+  render:
+    name: Render bench-data
+    needs:
+      - compile-bench
+      - compile-bench-nightly
+      - compile-bench-master
+    if: always() && github.ref == 'refs/heads/main'
+    # Same queue as Deploy docs. Both jobs push gh-pages.
+    concurrency:
+      group: docs-gh-pages
+      cancel-in-progress: false
+      # actionlint 1.7.12 does not know concurrency.queue yet. GitHub does.
+      queue: max
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: julia-actions/setup-julia@da908477b5db94c10ffce8cfea9f2b3b9d5db687 # v3.0.3
+        with:
+          version: "1.13"
+      - name: Render
+        env:
+          BENCH_TOKEN: ${{ github.token }}
+          BENCH_PUSH: "1"
+        run: bash .github/compile-bench-render.sh
+
+  notify-bench:
+    needs: compile-bench
+    if: always() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    name: notify-bench
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Open or close tracking issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RESULT: ${{ needs.compile-bench.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash .github/compile-bench-notify.sh
 
   cache-gc:
     needs:
@@ -241,6 +513,8 @@ jobs:
       actions: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Keep latest cache per ref and restore-key prefix
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

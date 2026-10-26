@@ -30,7 +30,8 @@ On this machine, three ways to run a script:
 - **Split map / filter** (`ride`) — experimental split of `map`, `filter`,
   and simple comprehensions.
 - **One machine coordinates** (`drive`) — the main process farms work to
-  the others ([Distributed.jl][dist-jl]).
+  the others
+  ([Distributed.jl](https://docs.julialang.org/en/v1/manual/distributed-computing/)).
 
 Match Julia versions with [`up`](@ref Manual-up) before you start. Remote
 project setup, sync, and collecting outputs are the same from the terminal
@@ -135,17 +136,11 @@ Bugs and feature requests:
 [Issues](https://github.com/yamanori99/DistSSHKit.jl/issues).
 Questions and ideas:
 [Discussions](https://github.com/yamanori99/DistSSHKit.jl/discussions).
-See [CONTRIBUTING.md][contrib] for how to contribute.
+See
+[CONTRIBUTING.md](https://github.com/yamanori99/DistSSHKit.jl/blob/main/CONTRIBUTING.md)
+for how to contribute.
 
 ## License
 
-Source code is [MIT][mit-lic].
-The Julia dots in the docs logo and topology diagram are Copyright (c)
-2012-2022 Stefan Karpinski,
-[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
-DistSSHKit adapts them.
-[julia-logo-graphics](https://github.com/JuliaLang/julia-logo-graphics).
-
-[contrib]: https://github.com/yamanori99/DistSSHKit.jl/blob/main/CONTRIBUTING.md
-[mit-lic]: https://github.com/yamanori99/DistSSHKit.jl/blob/main/LICENSE
-[dist-jl]: https://docs.julialang.org/en/v1/manual/distributed-computing/
+Source code is
+[MIT](https://github.com/yamanori99/DistSSHKit.jl/blob/main/LICENSE).

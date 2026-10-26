@@ -10,7 +10,7 @@ julia --project=. -m DistSSHKit drive [options] \
 ```
 
 Also: [First Steps · Demo](@ref Tutorial-Demo), [go](@ref Manual-go),
-[API](@ref API) (`drive!`, `pipeline!`), `drive --help`.
+[API](@ref API) (`drive!`, `pipeline!`), `help drive`.
 Flag vocabulary and a short **go vs drive** table: [User Guide](@ref Manual).
 
 **vs go / ride:** one master plus Distributed workers; `child:NAME:N` is
@@ -130,8 +130,15 @@ listed. Estimate with [`size`](@ref Manual-size), then paste the printed
 tokens.
 
 - Ctrl-C during **run** stops the driver (exit 130): interrupt in-flight
-  worker `pmap`, then `rmprocs`. One SIGINT is enough; the live bar does
-  not swallow it
+  worker `pmap`, wait a few seconds, then `rmprocs`. One SIGINT is enough;
+  the live bar does not swallow it. SSH workers on one host share a single
+  `kill -INT`. A worker function may `catch` `InterruptException` and save
+  partial state. A loop that does not yield does not see the interrupt
+  until it yields; `rmprocs` still runs after the wait. On Julia 1.13,
+  Ctrl-C while the driver waits in `pmap` does not reach this path. The
+  driver exits 1 and does not send `kill -INT`. Measured on macOS with a
+  process-group SIGINT. On Julia 1.14 the driver exits 130, but a worker
+  can be removed before it sees the interrupt
 - Local workers are torn down with `rmprocs` at the end of every `drive` run
 - SSH leftover `pkill` matches argv `distsshkit-job:<id>` when `job_id` /
   `DISTSSHKIT_JOB_ID` is set (drive workers: `--eval=#distsshkit-job:<id>`).
@@ -162,7 +169,7 @@ machine the run starts from never `relpath`s against a tilde base (same ENV as
 Expects `init_output_dir!` / `main` (and optional hooks). Top-level work on
 Load is not repeated on workers unless `--sync-script`. Publish rules and
 `@__DIR__` on workers: [Publishing to workers](@ref Manual-drive-publish).
-Details and ENV: `drive --help`. Embed with [`drive!`](@ref) /
+Details and ENV: `help drive`. Embed with [`drive!`](@ref) /
 [`pipeline!`](@ref).
 
 ## Wall time

@@ -14,6 +14,8 @@ shopt -s nullglob
 files=(
     src/DistSSHKit.jl
     test/runtests.jl
+    bench/compile/report.jl
+    bench/compile/measure.jl
 )
 
 if ((${#files[@]} == 0)); then

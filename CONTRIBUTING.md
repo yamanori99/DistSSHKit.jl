@@ -12,7 +12,9 @@ Internals of this repo.
 
 Users add this package. A job runs on this machine, or on a queue host
 (an always-on machine). `setup` and `up` prepare hosts for both.
-DistSSHKit reexports the public names of DistSSHRun and DistSSHQueue.
+DistSSHKit reexports the exported names of DistSSHRun and DistSSHQueue.
+`rsync_send_list` is public on DistSSHRun and stays reexported until 0.11.
+Other public-only names are not reexported.
 You do not install those packages separately. `setup`, `up`, `go`,
 `ride`, and `drive` are implemented in
 [DistSSHRun.jl](https://github.com/yamanori99/DistSSHRun.jl).
@@ -83,15 +85,13 @@ DistSSHQueue `m_package`.
 julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
-Run this on **1.13** (and **1.14-nightly** if you have it).
+Run this on **1.13** (and **1.14-nightly** or **nightly** if you have them).
 Layout: [test/README.md](test/README.md).
 
-Checkout `Pkg.test()` is not a Registry tarball. After changing those
-gates (smokes, demo copy, `ssh` / `git` spawn, probe), and before a
-General cut, run the disposable copy in
-[test/README.md](test/README.md#registry-tree). CI runs that shape on
-**main** and a version-cut PR (slot tip; not a required check). Not on
-ordinary PRs.
+Checkout `Pkg.test()` is not the PkgEval sandbox. Before a General cut,
+run the recipe in [test/README.md](test/README.md#pkgeval). CI runs that
+job on **main** and a version-cut PR (host Julia 1.13; test Julia is the julia-latest tarball;
+`continue-on-error`; not a required check). Not on ordinary PRs.
 
 Smoke (1.13+; copies land in `distsshkit_demos/`):
 
@@ -114,15 +114,19 @@ without coverage instrumentation. Status checks are informational
 
 Versions are lines in
 [`.github/julia-slots.env`](.github/julia-slots.env). Write the version
-(`1.13`, `1.14-nightly`). The job name uses that same string. Do not add
+(`1.13`, `1.14-nightly`, `nightly`). The job name uses that same string. Do not add
 a second stable line.
 
 - **1.13** (required): `Project.toml` julia floor, the maintained
-  stable. Pkg.test on Ubuntu, macOS, and WSL2 Ubuntu, plus Aqua, JETLS,
-  Documenter, bake. Codecov `pkgtest` on **main push**, Ubuntu only
-- **1.14-nightly** (not required): next-minor nightly. Ubuntu Pkg.test
+  stable. Pkg.test on Ubuntu and macOS, plus Aqua, JETLS,
+  Documenter, bake. WSL2 1.13 Pkg.test is a main push and CI weekly,
+  not a pull request. Codecov `pkgtest` on **main push**, Ubuntu only
+- **1.14-nightly** (not required): `release-1.14`. Ubuntu Pkg.test
   and Aqua on **main**, **CI weekly**, and a version-cut PR. macOS and
   WSL2 Pkg.test and Aqua on **CI weekly** only. `continue-on-error`
+- **nightly** (not required): the published `julia-latest` tarball. It follows
+  master and can lag a `VERSION` bump. Same jobs and the same
+  schedule as **1.14-nightly**. `continue-on-error`. Not in the ruleset
 
 This package feels SSH hosts, Pkg, and lockfiles more than a compute-model
 library does. When Julia announces that it has stopped maintaining the
@@ -147,10 +151,15 @@ and the main ruleset in the same PR.
 These run as jobs of the `Test` workflow
 ([`.github/workflows/CI.yml`](.github/workflows/CI.yml)). Ubuntu:
 `Pkg.test` 1.13, JETLS 1.13, Aqua 1.13, Gitleaks (also rejects `< 0.0.1`
-in `Project.toml`). macOS (`macos-latest`) and WSL2 Ubuntu 24.04:
-`Pkg.test` 1.13, same heavy gate, no coverage upload. Both are required.
+in `Project.toml`). macOS (`macos-latest`):
+`Pkg.test` 1.13, same heavy gate, no coverage upload. macOS is required.
+WSL2 1.13 is a main push and CI weekly, not a pull request.
 Documenter 1.13 is
 [`.github/workflows/Documentation.yml`](.github/workflows/Documentation.yml).
+A pull request that runs it also pushes a preview to `gh-pages` at
+`previews/PR<n>`. The commit status `documenter/deploy` links to
+`https://yamanori99.github.io/DistSSHKit.jl/previews/PR<n>/`.
+That directory stays after the pull request closes.
 Ubuntu tip `Pkg.test` / Aqua stay on **main**, **CI weekly**, and a
 version-cut PR. macOS and WSL2 tip stay on **CI weekly** only. Registry
 tree stays on **main** and a
@@ -164,13 +173,13 @@ required-name list). Monthly cron on `main` opens Issue
 `Runic monthly failed` (`alert`) when `--check` is red.
 
 These files **alone** skip the heavy jobs (UI: skipping; Pkg.test on
-Ubuntu, macOS, and WSL2, plus JETLS / Aqua, do not start). Documenter
+Ubuntu and macOS, plus JETLS / Aqua, do not start). Documenter
 still runs when `docs/**`, README,
 `src/**`, or `Project.toml` changed; otherwise it is skipped too.
 Allowlisted markdown-only PRs skip the heavy jobs (skipping UI):
 
-- `README.md`, `README.ja.md`, `CONTRIBUTING.md`, `NEWS.md`,
-  `HISTORY.md`,
+- `AGENTS.md`, `REVIEW.md`, `README.md`, `README.ja.md`,
+  `CONTRIBUTING.md`, `NEWS.md`, `HISTORY.md`,
   `SECURITY.md`, `LICENSE`
 - `.gitignore`, `.git-blame-ignore-revs`,
   `.github/pull_request_template.md`, `.coderabbit.yaml`
@@ -178,7 +187,7 @@ Allowlisted markdown-only PRs skip the heavy jobs (skipping UI):
 
 A new root markdown file stays heavy until listed in
 [`.github/actions/ci-heavy/action.yml`](.github/actions/ci-heavy/action.yml).
-A version increase skips none of this: Pkg.test (Ubuntu, macOS, and WSL2),
+A version increase skips none of this: Pkg.test (Ubuntu and macOS),
 JETLS, Aqua, and Documenter all run. Register when the required checks
 below are green. Do not wait on DistSSHRun's E2E.
 
@@ -188,7 +197,6 @@ green empty run).
 
 - `Pkg.test (1.13, ubuntu-latest, x64)`
 - `Pkg.test (1.13, macos-latest, aarch64)`
-- `Pkg.test (1.13, WSL2 ubuntu-24.04, x64)`
 - `JETLS (1.13, ubuntu-latest, x64)`
 - `Aqua (1.13, ubuntu-latest, x64)`
 - `Documenter (1.13, ubuntu-latest, x64)`
@@ -237,11 +245,24 @@ not rewrite files you did not mean to touch.
 
 ### Scheduled CI
 
-**CI weekly** (Sunday 10:00 JST, or Run workflow): same `Pkg.test` /
-JETLS / Aqua as a PR, including `macos-latest` and WSL2 (no coverage).
-Not a PR check. Catches 1.13 / Aqua / JETLS `@release` drift when nothing
-merged that week. Failure of the 1.13 jobs opens Issue `CI weekly failed`
-(`alert`); 1.14-nightly is omitted from that notify.
+**CI weekly** (daily 06:00 JST, or Run workflow): same `Pkg.test` /
+JETLS / Aqua as a PR, including `macos-latest` (no coverage). WSL2 1.13
+runs on CI weekly and a main push, not on a pull request.
+Not a PR check. `Compile bench` measures precompile, load, CLI wall time,
+`src/**/*.jl` size, and the host OS, arch, and CPU on 1.13,
+1.14-nightly, and nightly. The page opens on 1.13. A solid line marks a
+`Project.toml` version change. On the 1.13 slot, a dash-dot line marks a
+Julia patch change. CI weekly runs it, and a **main** push that raises
+`Project.toml` `version` runs it too. A **main**
+run appends that sample to the `bench-data` branch. A render job then rebuilds the README and `bench.html`, and a main run publishes that page on GitHub Pages. A **main** push of `bench/compile/report.jl` or `bench/compile/charts.jl` rebuilds them and does not measure. A pull request that changes the file renders the history into the job summary and does not push. How to read the archive
+is in
+[docs/src/developers/compile-bench.md](docs/src/developers/compile-bench.md).
+A command that exits nonzero
+is not recorded. It flags a host change, a 1.5x jump (and a 200 ms method
+that is new or doubled) but does not fail the run. Catches 1.13 / Aqua /
+JETLS `@release` drift when nothing merged that day. Failure of the 1.13
+jobs opens Issue `CI weekly failed` (`alert`); 1.14-nightly, nightly, and compile
+bench are omitted from that notify.
 
 **Runic monthly** (1st 10:00 JST, or Run workflow): `runic --check` on
 tracked `.jl` (`version: '1'`). Not a required PR check. Catches Runic
@@ -254,6 +275,15 @@ minor drift when nothing formatted that month. Failure opens Issue
 - One reviewable change per PR. Split unless `main` would be broken in
   between.
 - Large plans: Discussion or Enhancement Issue first, then small PRs.
+- The body is
+  [`.github/pull_request_template.md`](.github/pull_request_template.md):
+  what changed, what ran, what it can break, and how to undo it.
+  [AGENTS.md](AGENTS.md) tells an agent how to fill that.
+  [REVIEW.md](REVIEW.md) tells a reviewer what failure looks like here.
+  The type label stays out of the body. CI applies it. See
+  [releasing](docs/src/developers/releasing.md).
+- That split follows
+  [How the Claude Code team does code review](https://claude.dev/blog/solving-code-review-at-anthropic/).
 
 ### CodeRabbit (experimental)
 

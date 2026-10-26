@@ -1,0 +1,569 @@
+#!/usr/bin/env julia
+# Precompile, load, and CLI compile time. Stdlib only.
+#
+#   julia --startup-file=no --project=. bench/compile/measure.jl --out result.toml [--slot 1.13]
+#
+# `--phase` is an internal child mode. Do not pass it.
+
+using Dates
+using Pkg
+using TOML
+
+const ROOT = normpath(joinpath(@__DIR__, "..", ".."))
+const TRACE_RX = r"^#=\s*([0-9.]+)\s*ms\s*=#\s*precompile\((.*)\)\s*(# recompile)?\s*$"
+
+function julia_bin()::String
+    return joinpath(Sys.BINDIR, Base.julia_exename())
+end
+
+function arg_value(flag::String)::String
+    i = findfirst(==(flag), ARGS)
+    i === nothing && error("missing $flag")
+    i < length(ARGS) || error("missing value for $flag")
+    return ARGS[i + 1]
+end
+
+function optional_arg(flag::String)::Union{Nothing, String}
+    i = findfirst(==(flag), ARGS)
+    i === nothing && return nothing
+    i < length(ARGS) || error("missing value for $flag")
+    return ARGS[i + 1]
+end
+
+function git_head()::String
+    cmd = ignorestatus(`git -C $ROOT rev-parse HEAD`)
+    out = IOBuffer()
+    p = run(pipeline(cmd; stdout = out, stderr = devnull))
+    p.exitcode == 0 || return ""
+    return strip(String(take!(out)))
+end
+
+function cpu_model()::String
+    if Sys.islinux() && isfile("/proc/cpuinfo")
+        for line in eachline("/proc/cpuinfo")
+            startswith(line, "model name") || continue
+            return strip(split(line, ':'; limit = 2)[2])
+        end
+    elseif Sys.isapple()
+        out = IOBuffer()
+        p = run(pipeline(ignorestatus(`sysctl -n machdep.cpu.brand_string`); stdout = out, stderr = devnull))
+        p.exitcode == 0 && return strip(String(take!(out)))
+    end
+    return string(Sys.ARCH)
+end
+
+function os_name()::String
+    # Kernel name alone (`Linux`) hides an image change that moves the times.
+    if Sys.islinux() && isfile("/etc/os-release")
+        for line in eachline("/etc/os-release")
+            startswith(line, "PRETTY_NAME=") || continue
+            raw = strip(split(line, '='; limit = 2)[2])
+            return strip(raw, ['"', '\''])
+        end
+    elseif Sys.isapple()
+        name = IOBuffer()
+        ver = IOBuffer()
+        pn = run(pipeline(ignorestatus(`sw_vers -productName`); stdout = name, stderr = devnull))
+        pv = run(pipeline(ignorestatus(`sw_vers -productVersion`); stdout = ver, stderr = devnull))
+        if pn.exitcode == 0 && pv.exitcode == 0
+            return strip(String(take!(name))) * " " * strip(String(take!(ver)))
+        end
+    end
+    return string(Sys.KERNEL)
+end
+
+function julia_commit()::String
+    info = Base.GIT_VERSION_INFO
+    if hasproperty(info, :commit_short) && !isempty(String(info.commit_short))
+        return String(info.commit_short)
+    end
+    c = String(info.commit)
+    return isempty(c) ? "" : c[1:min(10, end)]
+end
+
+function owner_name(sig::AbstractString)::String
+    if occursin("typeof(Core.kwcall)", sig)
+        matches = collect(eachmatch(r"typeof\(([A-Za-z_][A-Za-z0-9_]*)\.", sig))
+        isempty(matches) && return "other"
+        name = something(matches[end].captures[1], "")
+        return isempty(name) ? "other" : name
+    end
+    m = match(r"typeof\(([A-Za-z_][A-Za-z0-9_]*)\.", sig)
+    m === nothing && return "other"
+    name = something(m.captures[1], "")
+    return isempty(name) ? "other" : name
+end
+
+function bucket_name(name::String)::String
+    name in ("DistSSHBase", "DistSSHUp") && return "DistSSHRun"
+    name in ("DistSSHKit", "DistSSHQueue", "DistSSHRun") && return name
+    name in ("Base", "Core") && return "Base"
+    return "stdlib"
+end
+
+function parse_trace(path::AbstractString)::Vector{NamedTuple{(:ms, :bucket, :signature, :recompile), Tuple{Float64, String, String, Bool}}}
+    rows = NamedTuple{(:ms, :bucket, :signature, :recompile), Tuple{Float64, String, String, Bool}}[]
+    isfile(path) || return rows
+    for line in eachline(path)
+        m = match(TRACE_RX, line)
+        m === nothing && continue
+        ms = something(m.captures[1], "")
+        sig = something(m.captures[2], "")
+        (isempty(ms) || isempty(sig)) && continue
+        push!(
+            rows, (
+                ms = parse(Float64, ms),
+                bucket = bucket_name(owner_name(sig)),
+                signature = sig,
+                recompile = m.captures[3] !== nothing,
+            )
+        )
+    end
+    return rows
+end
+
+function method_owner(signature::AbstractString, bucket::AbstractString)::String
+    sig = string(signature)
+    occursin("typeof(Main.", sig) && return "Main"
+    if bucket in ("DistSSHKit", "DistSSHQueue", "DistSSHRun", "Base")
+        return string(bucket)
+    end
+    matches = collect(eachmatch(r"typeof\(([A-Za-z_][A-Za-z0-9_]*)\.", sig))
+    for match in Iterators.reverse(matches)
+        name = string(something(match.captures[1], ""))
+        if name == "Main"
+            return "Main"
+        end
+        name in ("Core", "") && continue
+        return name
+    end
+    found = Base.match(r"(?:Tuple\{|, )([A-Z][A-Za-z0-9_]*)\.", sig)
+    found === nothing && return string(bucket)
+    return string(something(found.captures[1], bucket))
+end
+
+# The package's own specializations stay. Anything else stays at 200 ms,
+# except `Main`, which is the user's script.
+function keep_method(row, package::String)::Bool
+    row.bucket == package && return true
+    row.ms < 200 && return false
+    return method_owner(row.signature, row.bucket) != "Main"
+end
+
+function name_in_signature(signature::AbstractString, qualified::AbstractString)::Bool
+    parts = split(qualified, '.'; limit = 2)
+    length(parts) == 2 || return false
+    fname = replace(string(parts[2]), r"([^A-Za-z0-9_])" => s"\\\1")
+    return occursin(Regex(string(parts[1]) * "\\." * fname * "(?![A-Za-z0-9_])"), signature)
+end
+
+function missed_functions(rows, package::String, defined::Vector{String})::Vector{String}
+    missed = String[]
+    prefix = package * "."
+    for qualified in defined
+        startswith(qualified, prefix) || continue
+        hit = false
+        for row in rows
+            if name_in_signature(row.signature, qualified)
+                hit = true
+                break
+            end
+        end
+        hit || push!(missed, qualified)
+    end
+    return missed
+end
+
+function package_function_names(depot::AbstractString, package::String)::Vector{String}
+    script = joinpath(mktempdir(), "names.jl")
+    write(
+        script, """
+        using $package
+        mod = $package
+        seen = Set{String}()
+        function walk(m)
+            for n in names(m; all = true)
+                isdefined(m, n) || continue
+                v = getfield(m, n)
+                if v isa Module && v !== m && parentmodule(v) === m
+                    walk(v)
+                elseif v isa Function
+                    for method in methods(v)
+                        method.module === m || continue
+                        push!(seen, string(nameof(m)) * "." * string(n))
+                    end
+                end
+            end
+        end
+        walk(mod)
+        for name in sort!(collect(seen))
+            println(name)
+        end
+        """
+    )
+    code, out, err, _ = capture(
+        setenv(
+            `$(julia_bin()) --startup-file=no --project=$ROOT $script`,
+            child_env(depot, Dict{String, String}()),
+        )
+    )
+    code == 0 || error("listing methods failed: $code\n" * stderr_tail(err))
+    return filter(!isempty, split(strip(out), '\n'))
+end
+
+function trace_summary(
+        path::AbstractString,
+        package::String,
+        defined::Vector{String} = String[],
+    )::Dict{String, Any}
+    rows = parse_trace(path)
+    totals = Dict{String, Float64}()
+    counts = Dict{String, Int}()
+    main_ms = 0.0
+    needle = "typeof($package.main)"
+    for row in rows
+        totals[row.bucket] = get(totals, row.bucket, 0.0) + row.ms
+        counts[row.bucket] = get(counts, row.bucket, 0) + 1
+        occursin(needle, row.signature) && (main_ms += row.ms)
+    end
+    buckets = Dict{String, Any}()
+    for name in ("DistSSHKit", "DistSSHQueue", "DistSSHRun", "Base", "stdlib")
+        buckets[name] = Dict{String, Any}(
+            "count" => get(counts, name, 0),
+            "ms" => get(totals, name, 0.0),
+        )
+    end
+    ranked = sort(rows; by = row -> row.ms, rev = true)
+    top = Dict{String, Any}[]
+    for row in ranked[1:min(20, end)]
+        push!(
+            top, Dict{String, Any}(
+                "ms" => row.ms,
+                "bucket" => row.bucket,
+                "signature" => row.signature,
+                "recompile" => row.recompile,
+            )
+        )
+    end
+    methods = Dict{String, Any}[]
+    for row in ranked
+        keep_method(row, package) || continue
+        push!(
+            methods, Dict{String, Any}(
+                "ms" => row.ms,
+                "bucket" => row.bucket,
+                "owner" => method_owner(row.signature, row.bucket),
+                "signature" => row.signature,
+                "recompile" => row.recompile,
+            )
+        )
+    end
+    return Dict{String, Any}(
+        "count" => length(rows),
+        "total_ms" => sum(row -> row.ms, rows; init = 0.0),
+        "main_ms" => main_ms,
+        "buckets" => buckets,
+        "top" => top,
+        "methods" => methods,
+        "missed" => missed_functions(rows, package, defined),
+    )
+end
+
+function child_env(depot::AbstractString, extra::AbstractDict)::Dict{String, String}
+    env = Dict{String, String}(string(k) => string(v) for (k, v) in ENV)
+    env["JULIA_DEPOT_PATH"] = depot
+    env["JULIA_PKG_PRECOMPILE_AUTO"] = "0"
+    for (k, v) in extra
+        env[string(k)] = string(v)
+    end
+    return env
+end
+
+function capture(cmd::Cmd)::Tuple{Int, String, String, Float64}
+    out = IOBuffer()
+    err = IOBuffer()
+    t0 = time()
+    p = run(pipeline(cmd; stdout = out, stderr = err))
+    return (p.exitcode, String(take!(out)), String(take!(err)), time() - t0)
+end
+
+function stderr_tail(text::AbstractString)::String
+    plain = strip(replace(String(text), r"\e\[[0-9;]*m" => ""))
+    isempty(plain) && return ""
+    return length(plain) <= 400 ? plain : last(plain, 400)
+end
+
+function phase_precompile()
+    package = arg_value("--package")
+    spec = Base.identify_package(package)
+    spec === nothing && error("identify_package failed for $package")
+    println("FULL_BEGIN")
+    flush(stdout)
+    full = @elapsed Pkg.precompile(; io = devnull)
+    println("FULL_SEC ", full)
+    flush(stdout)
+    depot = DEPOT_PATH[1]
+    compiled = joinpath(depot, "compiled")
+    if isdir(compiled)
+        for ver in readdir(compiled)
+            cache = joinpath(compiled, ver, package)
+            isdir(cache) || continue
+            rm(cache; force = true, recursive = true)
+        end
+    end
+    println("PKG_BEGIN")
+    flush(stdout)
+    alone = @elapsed Base.compilecache(spec)
+    println("PKG_SEC ", alone)
+    flush(stdout)
+    return nothing
+end
+
+function parse_seconds(text::AbstractString, key::String)::Float64
+    for line in split(text, '\n')
+        startswith(line, key * " ") || continue
+        return parse(Float64, split(line)[2])
+    end
+    error("missing $key in child output")
+end
+
+function measure_precompile(depot::AbstractString, package::String)::Dict{String, Any}
+    env = child_env(depot, Dict{String, String}())
+    inst = setenv(`$(julia_bin()) --startup-file=no --project=$ROOT -e 'using Pkg; Pkg.instantiate()'`, env)
+    code, _, err, _ = capture(ignorestatus(inst))
+    code == 0 || error("instantiate failed: $code\n$(stderr_tail(err))")
+    cmd = setenv(
+        `$(julia_bin()) --startup-file=no --project=$ROOT $(@__FILE__) --phase precompile --package $package`,
+        env,
+    )
+    code, text, err, _ = capture(ignorestatus(cmd))
+    code == 0 || error("precompile phase failed: $code\n$text\n$(stderr_tail(err))")
+    return Dict{String, Any}(
+        "full_sec" => parse_seconds(text, "FULL_SEC"),
+        "pkg_sec" => parse_seconds(text, "PKG_SEC"),
+    )
+end
+
+function measure_using(depot::AbstractString, package::String)::Dict{String, Any}
+    env = child_env(depot, Dict{String, String}())
+    code = """
+    t = @elapsed @eval(using $package)
+    println("USING_SEC ", t)
+    """
+    cmd = setenv(`$(julia_bin()) --startup-file=no --project=$ROOT -e $code`, env)
+    status, text, err, _ = capture(ignorestatus(cmd))
+    status == 0 || error("using failed: $status\n$text\n$(stderr_tail(err))")
+    imports_code = """
+    using InteractiveUtils
+    @time_imports using $package
+    """
+    icmd = setenv(`$(julia_bin()) --startup-file=no --project=$ROOT -e $imports_code`, env)
+    status, itext, err, _ = capture(ignorestatus(icmd))
+    status == 0 || error("time_imports failed: $status\n$itext\n$(stderr_tail(err))")
+    imports = Dict{String, Any}[]
+    plain = replace(itext, r"\e\[[0-9;]*m" => "")
+    for line in split(plain, '\n')
+        m = match(r"^\s*([0-9.]+)\s+ms\s+(DistSSH\w+)\s*$", line)
+        m === nothing && continue
+        ms = something(m.captures[1], "")
+        name = something(m.captures[2], "")
+        (isempty(ms) || isempty(name)) && continue
+        push!(imports, Dict{String, Any}("name" => name, "ms" => parse(Float64, ms)))
+    end
+    return Dict{String, Any}(
+        "using_sec" => parse_seconds(text, "USING_SEC"),
+        "imports" => imports,
+    )
+end
+
+function fill_tokens(text::AbstractString, work::AbstractString, store::AbstractString)::String
+    return replace(replace(String(text), "{work}" => work), "{store}" => store)
+end
+
+function command_env(raw::Any, work::AbstractString, store::AbstractString)::Dict{String, String}
+    env = Dict{String, String}()
+    raw isa AbstractDict || return env
+    for (k, v) in raw
+        env[string(k)] = fill_tokens(string(v), work, store)
+    end
+    return env
+end
+
+"""Copy `bench/compile/fixtures` into a fresh directory. The process cwd for a run."""
+function stage_work()::String
+    work = mktempdir()
+    src = joinpath(@__DIR__, "fixtures")
+    isdir(src) || return work
+    for name in readdir(src)
+        cp(joinpath(src, name), joinpath(work, name))
+    end
+    return work
+end
+
+"""One store file per invocation, so a command that writes jobs cannot change the next run."""
+function stage_store(spec::AbstractDict)::String
+    dest = joinpath(mktempdir(), "jobs.toml")
+    rel = get(spec, "store", nothing)
+    if rel === nothing
+        write(dest, "jobs = []\n")
+    else
+        cp(joinpath(@__DIR__, string(rel)), dest)
+    end
+    return dest
+end
+
+function median(xs::Vector{Float64})::Float64
+    ys = sort(xs)
+    return ys[(length(ys) + 1) ÷ 2]
+end
+
+function run_once(
+        depot::AbstractString,
+        package::String,
+        spec::AbstractDict,
+        trace::Union{Nothing, String},
+    )::Tuple{Int, String, Float64}
+    work = stage_work()
+    store = stage_store(spec)
+    args = String[fill_tokens(a, work, store) for a in spec["args"]]
+    env = child_env(depot, command_env(get(spec, "env", nothing), work, store))
+    jl = julia_bin()
+    cmd = if trace === nothing
+        `$(jl) --startup-file=no --project=$ROOT -m $package $args`
+    else
+        `$(jl) --startup-file=no --project=$ROOT --trace-compile=$trace --trace-compile-timing -m $package $args`
+    end
+    code, _, errtext, wall = capture(ignorestatus(Cmd(setenv(cmd, env); dir = work)))
+    return code, errtext, wall
+end
+
+function measure_command(
+        depot::AbstractString,
+        package::String,
+        spec::AbstractDict,
+        defined::Vector{String},
+    )::Dict{String, Any}
+    name = string(spec["name"])
+    args = String[string(a) for a in spec["args"]]
+    walls = Float64[]
+    trace = joinpath(mktempdir(), "trace.jl")
+    code, errtext, wall = run_once(depot, package, spec, trace)
+    push!(walls, wall)
+    for _ in 1:2
+        status, err2, w = run_once(depot, package, spec, nothing)
+        if status != 0
+            code = status
+            errtext = err2
+        end
+        push!(walls, w)
+    end
+    summary = trace_summary(trace, package, defined)
+    summary["name"] = name
+    summary["args"] = args
+    summary["exit"] = code
+    summary["wall_sec"] = median(walls)
+    summary["walls_sec"] = walls
+    summary["stderr"] = errtext
+    return summary
+end
+
+function source_stats(root::AbstractString)::Dict{String, Any}
+    # `src/**/*.jl` only. `src_lines` counts physical lines. `src_code_lines`
+    # drops blank lines, so a time jump can be compared with a size jump.
+    files = 0
+    lines = 0
+    code_lines = 0
+    bytes = 0
+    src = joinpath(root, "src")
+    if isdir(src)
+        for (dir, _, names) in walkdir(src)
+            for name in names
+                endswith(name, ".jl") || continue
+                text = read(joinpath(dir, name), String)
+                files += 1
+                bytes += sizeof(text)
+                parts = split(text, '\n')
+                if !isempty(parts) && isempty(parts[end])
+                    pop!(parts)
+                end
+                lines += length(parts)
+                code_lines += count(line -> !isempty(strip(line)), parts)
+            end
+        end
+    end
+    return Dict{String, Any}(
+        "src_files" => files,
+        "src_lines" => lines,
+        "src_code_lines" => code_lines,
+        "src_bytes" => bytes,
+    )
+end
+
+function package_version(root::AbstractString)::String
+    proj = TOML.parsefile(joinpath(root, "Project.toml"))
+    return string(get(proj, "version", ""))
+end
+
+function measure()
+    out = arg_value("--out")
+    slot = optional_arg("--slot")
+    commands = TOML.parsefile(joinpath(@__DIR__, "commands.toml"))
+    package = string(commands["package"])
+    depot = mktempdir()
+    stats = source_stats(ROOT)
+    pre = measure_precompile(depot, package)
+    load = measure_using(depot, package)
+    specs = commands["command"]
+    specs isa AbstractDict && (specs = [specs])
+    defined = package_function_names(depot, package)
+    rows = Dict{String, Any}[]
+    for spec in specs
+        row = measure_command(depot, package, spec, defined)
+        errtext = String(pop!(row, "stderr"))
+        if row["exit"] != 0
+            tail = stderr_tail(errtext)
+            msg = "command $(row["name"]) failed: $(row["exit"])"
+            error(isempty(tail) ? msg : msg * "\n" * tail)
+        end
+        push!(rows, row)
+    end
+    result = Dict{String, Any}(
+        "repo" => package,
+        "version" => package_version(ROOT),
+        "commit" => git_head(),
+        "time" => Dates.format(now(UTC), "yyyy-mm-ddTHH:MM:SS") * "Z",
+        "julia" => string(VERSION),
+        "julia_commit" => julia_commit(),
+        "cpu" => cpu_model(),
+        "threads" => Sys.CPU_THREADS,
+        "os" => string(Sys.KERNEL),
+        "os_name" => os_name(),
+        "arch" => string(Sys.ARCH),
+        "slot" => something(slot, "local"),
+        "src_files" => stats["src_files"],
+        "src_lines" => stats["src_lines"],
+        "src_code_lines" => stats["src_code_lines"],
+        "src_bytes" => stats["src_bytes"],
+        "precompile_full_sec" => pre["full_sec"],
+        "precompile_pkg_sec" => pre["pkg_sec"],
+        "using_sec" => load["using_sec"],
+        "imports" => load["imports"],
+        "commands" => rows,
+    )
+    open(out, "w") do io
+        TOML.print(io, result)
+    end
+    println(stderr, "wrote ", out)
+    return nothing
+end
+
+function main()
+    if any(==("--phase"), ARGS) && optional_arg("--phase") == "precompile"
+        phase_precompile()
+    else
+        measure()
+    end
+    return nothing
+end
+
+main()

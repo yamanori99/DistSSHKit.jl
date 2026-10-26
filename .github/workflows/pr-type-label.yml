@@ -1,4 +1,5 @@
-# Require a type label on every PR: bug | enhancement | breaking | chore.
+# Require a type label on every PR except a version cut:
+# bug | enhancement | breaking | chore.
 # If missing, in order: unique type on a closing issue (`Fixes #N`),
 # branch prefix (`feat/` → enhancement, `fix/` → bug,
 # `breaking/` `break/` → breaking, `chore/` `docs/` `ci/` `test/` → chore),
@@ -6,7 +7,9 @@
 # `!` before the colon → breaking, `docs:` `test:` `ci:` `chore:` → chore,
 # `type(scope):` accepted), else `chore` when the diff has no `src/`,
 # `ext/`, or root `Project.toml`.
-# Anything else fails until someone adds one of the four labels.
+# A release cut is identified from the Project.toml version diff and uses
+# the orthogonal `cut` label instead. Anything else fails until someone
+# adds one of the four type labels.
 # Dependabot is exempt (`dependencies`).
 # Labels adds `cut` only when the version rises above the base.
 # A removed `cut` stays off until the next rise. This workflow does not
@@ -34,7 +37,28 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      # Read the detector from the trusted base revision. Labels runs the same
+      # comparison to add `cut`, but this direct check avoids a workflow race.
+      - name: Detect version cut
+        id: cut
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          script="$RUNNER_TEMP/version-cut.sh"
+          git show "${BASE}:.github/version-cut.sh" > "$script"
+          value="$(bash "$script" "$BASE" "$HEAD")"
+          printf 'value=%s\n' "$value" >> "$GITHUB_OUTPUT"
+
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          VERSION_CUT: ${{ steps.cut.outputs.value }}
         with:
           # 422 on a brand-new PR is often "Could not resolve … global id" (node
           # not visible on the Issues API yet). github-script exempts 422 from
@@ -43,6 +67,10 @@ jobs:
             const login = context.payload.pull_request.user.login;
             if (login === "dependabot[bot]") {
               core.info("Skipping type label check for Dependabot");
+              return;
+            }
+            if (process.env.VERSION_CUT === "true") {
+              core.info("Version cut: the orthogonal cut label replaces a type label");
               return;
             }
 
@@ -132,7 +160,7 @@ jobs:
               }
               if (inferred === null) {
                 core.setFailed(
-                  "Add one of these labels: bug, enhancement, breaking, chore.",
+                  "Add one of these labels: bug, enhancement, breaking, chore. Version cuts use cut instead.",
                 );
                 return;
               }

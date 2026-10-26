@@ -4,7 +4,7 @@ description: setup-julia for a version listed in .github/julia-slots.env
 
 inputs:
   version:
-    description: Julia version (1.13, 1.14-nightly). Must be its own line in julia-slots.env.
+    description: Julia version (1.13, 1.14-nightly, nightly). Must be its own line in julia-slots.env.
     required: true
   setup:
     description: "true to run julia-actions/setup-julia"
@@ -32,7 +32,7 @@ runs:
         fi
         echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
         echo "Julia ${VERSION}"
-    - uses: julia-actions/setup-julia@fa02766e078afaaf09b14210362cee14137e6a32 # v3.0.2
+    - uses: julia-actions/setup-julia@da908477b5db94c10ffce8cfea9f2b3b9d5db687 # v3.0.3
       if: ${{ inputs.setup == 'true' }}
       with:
         version: ${{ steps.pin.outputs.version }}

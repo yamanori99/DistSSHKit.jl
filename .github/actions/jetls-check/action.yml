@@ -22,9 +22,11 @@ runs:
         if [[ -z "${JULIA_APPS_JULIA_CMD:-}" ]]; then
           export JULIA_APPS_JULIA_CMD="$(command -v julia)"
         fi
+        # `release` moves. A new hint then fails weekly on unchanged code.
+        # This tag is that date release. Bump it to take a newer JETLS.
         julia --startup-file=no -e '
           using Pkg
-          Pkg.Apps.add(; url="https://github.com/aviatesk/JETLS.jl", rev="release")
+          Pkg.Apps.add(; url="https://github.com/aviatesk/JETLS.jl", rev="2026-10-21")
         '
     - name: Run jetls check
       shell: bash
@@ -35,6 +37,21 @@ runs:
         export PATH="$HOME/.julia/bin:$PATH"
         if [[ -z "${JULIA_APPS_JULIA_CMD:-}" ]]; then
           export JULIA_APPS_JULIA_CMD="$(command -v julia)"
+        fi
+        jetls version
+        manifest="${HOME}/.julia/environments/apps/JETLS/Manifest.toml"
+        if [[ -f "$manifest" ]]; then
+          # The date tag does not name the analyzer. JETLSCore repo-rev does.
+          core="$(awk '
+            /^\[\[deps\.JETLSCore\]\]$/ { section = "core"; next }
+            /^\[\[/ { section = ""; next }
+            section == "core" && $1 == "repo-rev" {
+              gsub(/"/, "", $3)
+              print $3
+              exit
+            }
+          ' "$manifest")"
+          echo "jetls core ${core}"
         fi
         # Match aviatesk/JETLS.jl check@release: no `--threads=auto` (segfaults
         # on Julia 1.13 in signature_analysis_worker; exit 139).

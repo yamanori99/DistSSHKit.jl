@@ -9,11 +9,56 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
 
 ## Unreleased
 
+### Planned breaking (next minor)
+
+- `terminate!` / `terminate_run!` `interrupt_grace` will default to a positive value, so a stop sends SIGINT before SIGTERM. `cancel` of a running job will use that default. Until then the default is `0` and `cancel` does not send SIGINT. DistSSHKit 0.11 (DistSSHRun 0.2, DistSSHQueue 0.10).
+- `-y`, `--yes`, and `DISTSSHKIT_YES` will stop authorizing
+  `setup --delete`, `setup --prune`, and `teardown`. Without
+  `--confirm-path`, `-y` will exit 1. A `teardown` that was not asked to
+  delete still prints `Would remove` and exits 0. `up default` still
+  honors `DISTSSHKIT_YES`. DistSSHKit 0.11 (DistSSHRun 0.2, DistSSHQueue 0.10).
+  `KitSession` `yes=true` is outside this change. `setup!(session, :delete)`
+  and `setup!(session, :prune)` without `confirm_path` still follow `session.yes`.
+- `rsync_send_list` will stop being reexported. It stays public on
+  DistSSHRun. DistSSHKit 0.11.
+- Names DistSSHRun 0.2 stops exporting will stop being reexported.
+  `parse_go_args`, `parse_drive_args`, and `parse_ride_args` stay.
+  DistSSHKit 0.11 (DistSSHRun 0.2).
+
+## 0.10.6
+
+- `help <command>` opens that command's flags: `help go` is `go --help`, `help submit` is `submit --help`, `help submit go` is `submit go --help`, and `help qhost setup` is the queue-host `setup` page. An argv made only of `help`, `-h`, and `--help` prints the root page and exits 0. No arguments still exits 1. `help client` and `help qhost` stay topic pages. The root Client and Queue host rows come from DistSSHQueue. Requires DistSSHRun 0.1.15 and DistSSHQueue 0.9.9.
+
+## 0.10.5
+
+- Requires DistSSHRun 0.1.14 and DistSSHQueue 0.9.8.
+- The manual distinguishes `add-host` and `pool`, which compare a worker with serve's Julia, from `setup --check`, which warns on a patch or a prerelease and returns those warnings from `setup!`. It also describes the `submit`, `status`, and `qhost:` `fetch` lines DistSSHQueue 0.9.8 already prints.
+
+## 0.10.4
+
+- A name that DistSSHRun or DistSSHQueue marks public, and does not export, is not reexported. `rsync_send_list` stays reexported until 0.11. The current export set is unchanged.
+
+## 0.10.3
+
+- The logo is an original fan. The Julia-circle exception is gone, so the package is MIT only.
+- Requires DistSSHRun 0.1.10 and DistSSHQueue 0.9.7.
+- The first `julia -m DistSSHKit` compiles the `main` of the package it calls. Commands, flags, and exit codes are unchanged.
+
+## 0.10.2
+
+- Requires DistSSHRun 0.1.9 and DistSSHQueue 0.9.6.
+- `dist_ssh_kit_version` is exported.
+- `--project` placed after `julia -m DistSSHKit` exits 1 with `Error:`.
+  Put it before `-m`: `julia --project=DIR -m DistSSHKit …`. Routing of
+  other arguments is unchanged.
 - Host SSH and juliaup come from DistSSHRun 0.1.7 (`DistSSHBase` and
   `DistSSHUp`). The copies in this package are gone. DistSSHRun compat is
-  `0.1.7`. DistSSHQueue compat is `0.9.5`.
+  `0.1.9`. DistSSHQueue compat is `0.9.6`.
 - `setup --rsync` inside one git repository also applies `.gitignore`
   files above the send root. That has been true since DistSSHRun 0.1.7.
+  A `qhost:` stage in a git work tree sends that same file list.
+  `.distsshqueue/` stays out. Outside git, rsync still uses each
+  directory's `.gitignore`.
 - CLI flags, confirmation, and exit codes are unchanged.
 
 ## 0.10.1

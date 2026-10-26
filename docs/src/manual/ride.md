@@ -50,5 +50,5 @@ Default artifacts: `{script}/.distsshkit/ride/{stem}_{UTC}/`. Sidecars
 (same project / `tempdir()` fallbacks as go when the script dir is not
 writable).
 
-Also: `ride --help`. API: [`ride!`](@ref), [`execute!`](@ref) (`:ride`, including
+Also: `help ride`. API: [`ride!`](@ref), [`execute!`](@ref) (`:ride`, including
 `detached=true` for DistSSHQueue).

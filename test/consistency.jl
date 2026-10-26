@@ -1,12 +1,19 @@
 # Command lists stay aligned with root help and the unknown-subcommand text.
-# `service` is a route whose help says it is gone. Root help does not list it
-# (NEWS 0.10.0).
+# `service` is a route. Root help does not list it (NEWS 0.10.0).
+# Each forwarded page equals that owner's `main` (code, stdout, and stderr).
 
 @testset "command lists" begin
     run_cmds = DistSSHKit._RUN_COMMANDS
     queue_cmds = DistSSHKit._QUEUE_ONLY
     @test isdisjoint(run_cmds, queue_cmds)
     help = sprint(io -> DistSSHKit.print_kit_root_usage(io))
+    @test occursin(join(DistSSHQueue.CLIENT_COMMAND_LINES, "\n"), help)
+    @test occursin(join(DistSSHQueue.QUEUE_HOST_COMMAND_LINES, "\n"), help)
+    hint = DistSSHRun.DistSSHBase.with_cli_entry(:DistSSHKit) do
+        "Run `$(DistSSHRun.DistSSHBase.cli_m()) help <command>` for flags."
+    end
+    @test occursin(hint, help)
+    @test !occursin("<command> -h for flags.", help)
     code, _, err = _main_capture(["bogus"])
     @test code == 1
     lines = split(err, '\n')
@@ -33,16 +40,44 @@
             @test occursin(column, help)
         end
     end
-    for c in (run_cmds..., queue_cmds...)
-        code, out, err = _main_capture([c, "--help"])
-        text = out * err
-        @test code == 0
-        @test !occursin("julia -m DistSSHQueue", text)
-        @test !occursin("julia -m DistSSHRun", text)
-        c == "service" && @test occursin("gone", text)
+    for c in run_cmds, flag in ("-h", "--help")
+        _test_same_page([c, flag], DistSSHRun.main)
     end
-    for t in DistSSHKit._QUEUE_HELP_TOPICS
-        code, _, _ = _main_capture(["--help", t])
-        @test code == 0
+    for c in run_cmds
+        _test_same_page(["help", c], DistSSHRun.main, [c, "--help"])
+    end
+    for c in queue_cmds, flag in ("-h", "--help")
+        _test_same_page([c, flag], DistSSHQueue.main)
+        # The group word is Kit's. Spell the stripped owner argv here.
+        _test_same_page(["qhost", c, flag], DistSSHQueue.main, [c, flag])
+    end
+    for c in queue_cmds
+        _test_same_page(["help", c], DistSSHQueue.main, [c, "--help"])
+        _test_same_page(["help", "qhost", c], DistSSHQueue.main, [c, "--help"])
+    end
+    for c in ("setup", "up")
+        _test_same_page(["help", "qhost", c], DistSSHQueue.main, [c, "--help"])
+    end
+    # `size` / `plan` / `pool` and `submit <kind> --help` reach the page only
+    # after Queue's target check. The local-trial env is that check's switch.
+    withenv(DistSSHQueue.LOCAL_QUEUE_ENV => "1") do
+        for c in ("size", "plan", "pool")
+            _test_same_page(["help", "qhost", c], DistSSHQueue.main, [c, "--help"])
+        end
+        for kind in string.(DistSSHQueue.KIT_EXECUTE_KINDS)
+            _test_same_page(
+                ["help", "submit", kind],
+                DistSSHQueue.main,
+                ["submit", kind, "--help"],
+            )
+            _test_same_page(
+                ["help", "qhost", "submit", kind],
+                DistSSHQueue.main,
+                ["submit", kind, "--help"],
+            )
+        end
+    end
+    for t in DistSSHKit._QUEUE_HELP_TOPICS, flag in ("-h", "--help", "help")
+        _test_same_page([flag, t], DistSSHQueue.main)
     end
 end

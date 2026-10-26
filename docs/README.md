@@ -11,10 +11,9 @@ Layout:
   This machine (`manual/`), Always-on machine (`queue/`)
 - **API** — `api.md`
 
-Logos and social previews: see [`src/assets/README.md`](src/assets/README.md)
-(`logo/` + `social/` + `diagram/`; edit `logo/logo-dynamic.svg` /
-`logo/logo-static.svg` / `diagram/topology.svg`, then
-`julia docs/src/assets/bake.jl`).
+Logos and social previews: see [`src/assets/README.md`](src/assets/README.md).
+`julia docs/src/assets/bake.jl` writes the logo, favicon, social preview,
+and topology diagram.
 
 ```bash
 julia --project=docs -e 'using Pkg; Pkg.instantiate()'

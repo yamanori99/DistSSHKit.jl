@@ -25,8 +25,8 @@ jobs.
   - Library (`Pkg.add` / `using` / `go!` / `drive!`) and CLI
     (`julia -m DistSSHKit`)
   - Same **major.minor** on this machine and SSH hosts (`setup --check`
-    fails on a mismatch unless `--ignore-julia-version`; patch-only
-    differences warn)
+    fails on a major.minor mismatch unless `--ignore-julia-version`; a
+    patch difference and a prerelease difference warn either way)
   - Prefer **[juliaup](https://github.com/JuliaLang/juliaup)** so
     `$HOME/.juliaup/bin/julia` is available (or macOS Homebrew
     `/opt/homebrew/bin/julia` / `/usr/local/bin/julia`). Otherwise put a
@@ -213,7 +213,8 @@ The queue host needs passwordless **`ssh`** to each worker, plus
 **`ssh`** and **`rsync`**: `qhost:` submit copies the job tree to the
 queue host, and `fetch` copies the finished leaf back. The client's
 Julia major.minor does not have to match the queue host. Workers must
-match the queue host (`setup --check`; patch-only differences warn).
+match the queue host's major.minor (`setup --check` while `serve` runs
+the check). A patch difference and a prerelease difference warn.
 A mismatch between this process and the queue host's DistSSHQueue
 prints a `!` note on stderr (`DISTSSHKIT_QUIET` hides it).
 

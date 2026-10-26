@@ -1,4 +1,16 @@
-# DistSSHKit.jl
+<!-- markdownlint-disable MD033 MD013 MD041 -->
+<p align="center">
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="docs/src/assets/social/readme-dark-static.png">
+    <img
+      src="docs/src/assets/social/readme-static.png"
+      width="640"
+      alt="DistSSHKit. A toolkit for running Julia computations across multiple machines over SSH.">
+  </picture>
+</p>
+<!-- markdownlint-enable MD033 MD013 MD041 -->
 
 [English](README.md) | [日本語](README.ja.md)
 
@@ -13,10 +25,13 @@
 [![Discussions](https://img.shields.io/badge/GitHub-Discussions-blueviolet?style=flat-square&logo=github)](https://github.com/yamanori99/DistSSHKit.jl/discussions)
 <!-- markdownlint-enable MD013 -->
 
+## DistSSHKit
+
 DistSSHKit is a toolkit for running Julia computations across multiple
-machines over SSH. It works equally well for a pair of workstations and
-for a larger set of lab machines. Supported platforms are **macOS, Linux,
-and WSL2 Ubuntu** (native Windows is not supported).
+machines over SSH. A pair of workstations and a larger set of lab machines
+work the same way.
+Supported platforms are **macOS, Linux, and WSL2 Ubuntu** (native Windows
+is not supported).
 
 A single `pkg> add DistSSHKit` is all you need to install it. The command is
 `julia -m DistSSHKit`. DistSSHKit bundles DistSSHRun and DistSSHQueue.
@@ -83,13 +98,13 @@ and you can add as many remote machines as you like.
   <picture>
     <source
       media="(prefers-color-scheme: dark)"
-      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/diagram/topology-dark.svg">
+      srcset="docs/src/assets/diagram/topology-dark.svg">
     <source
       media="(prefers-color-scheme: light)"
-      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/diagram/topology.svg">
+      srcset="docs/src/assets/diagram/topology.svg">
     <img
       alt="Drive topology: master and workers"
-      src="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/diagram/topology.png">
+      src="docs/src/assets/diagram/topology.png">
   </picture>
 </p>
 <!-- markdownlint-enable MD033 MD013 -->
@@ -152,6 +167,7 @@ them. `plan` may even suggest `ride` right away.
 
 - **CLI** — run DistSSHKit from the terminal.
   Example: `julia --project=. -m DistSSHKit go child:user@host1:1 script.jl`.
+  Command flags: `julia -m DistSSHKit help go`.
   This suits quick experiments and shell scripts.
 - **Julia** — call functions from your own Julia code (a script, the REPL, or
   another package): `setup!`, `go!`, `drive!`, `plan` (no bang), `pool!`, and
@@ -403,13 +419,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for how to contribute.
 
 ## License
 
-The source code is released under the [MIT](LICENSE) license. The Julia dots in
-the project logo and diagrams are Copyright (c) 2012-2022 Stefan Karpinski,
-licensed under
-[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
-DistSSHKit uses an adapted version of them. For details, see
-[LICENSE](LICENSE) and
-[julia-logo-graphics](https://github.com/JuliaLang/julia-logo-graphics).
+The source code is released under the [MIT](LICENSE) license.
 
 <!-- markdownlint-disable MD013 -->
 [home]: https://yamanori99.github.io/DistSSHKit.jl/stable/
@@ -442,20 +452,3 @@ DistSSHKit uses an adapted version of them. For details, see
 [run]: https://yamanori99.github.io/DistSSHRun.jl/stable/
 [queue]: https://yamanori99.github.io/DistSSHQueue.jl/stable/
 <!-- markdownlint-enable MD013 -->
-
-<!-- markdownlint-disable MD033 MD013 -->
-<p align="center">
-  <picture>
-    <source
-      media="(prefers-color-scheme: dark)"
-      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/logo/logo-dark-static.svg">
-    <source
-      media="(prefers-color-scheme: light)"
-      srcset="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/logo/logo-static.svg">
-    <img
-      src="https://raw.githubusercontent.com/yamanori99/DistSSHKit.jl/main/docs/src/assets/logo/logo-static.png"
-      width="180"
-      alt="DistSSHKit.jl logo"/>
-  </picture>
-</p>
-<!-- markdownlint-enable MD033 MD013 -->

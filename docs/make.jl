@@ -50,10 +50,9 @@ function Documenter.allbindings(checkdocs::Symbol, mods::Set{Module})
     return Documenter.allbindings(checkdocs, kept)
 end
 
-# The docs build loads the released DistSSHRun, whose docstrings `@ref` names
-# this manual cannot link. Kit and Run each define `host_tokens` and
-# `cache_relpath`, so a `@ref` inside a Run docstring does not land on Kit's
-# copy. These two stay until that duplication is gone.
+# Run docstrings still `@ref` `host_tokens` and `cache_relpath`. Kit no longer
+# defines its own copies. These two stay until a docs build shows the `@ref`s
+# resolve.
 const _DOC_REF_REWRITES = (
     "[`host_tokens`](@ref)" => "`host_tokens`",
     "[`cache_relpath`](@ref)" => "`cache_relpath`",
@@ -88,7 +87,9 @@ makedocs(;
     sitename = "DistSSHKit.jl",
     format = Documenter.HTML(;
         prettyurls = get(ENV, "CI", nothing) == "true",
-        canonical = "https://yamanori99.github.io/DistSSHKit.jl",
+        # Pages are served under /stable/. The site root only refreshes there.
+        # Canonical must be that stable base, or search results open the refresh page.
+        canonical = "https://yamanori99.github.io/DistSSHKit.jl/stable",
         edit_link = "main",
         # api.md is a large autogen page (Documenter default hard limit is 200 KiB).
         size_threshold_ignore = ["api.md"],
@@ -149,6 +150,7 @@ makedocs(;
         "Developers" => [
             "Releasing" => "developers/releasing.md",
             "Packages" => "developers/packages.md",
+            "Compile bench" => "developers/compile-bench.md",
         ],
         "API" => "api.md",
     ],
@@ -184,13 +186,37 @@ function rewrite_favicon_types!(build)
     return println("rewrote favicon type on $n HTML pages")
 end
 
-rewrite_favicon_types!(joinpath(@__DIR__, "build"))
-
-if get(ENV, "GITHUB_EVENT_NAME", "") != "pull_request"
-    deploydocs(;
-        repo = "github.com/yamanori99/DistSSHKit.jl.git",
-        devbranch = "main",
-        # stable = latest tagged release; appears after the first v* tag.
-        versions = ["stable" => "v^", "v#.#", "dev" => "dev"],
-    )
+# The sidebar logo and package name are not links. Documenter points both at
+# the first page. A click there leaves the page you were reading.
+function unlink_sidebar_brand!(build)
+    logo = r"""<a (?:class="docs-logo" href="[^"]*"|href="[^"]*" class="docs-logo")>([\s\S]*?)</a>"""
+    name = r"""(<div class="docs-package-name"><span class="docs-autofit">)<a href="[^"]*">([^<]*)</a>"""
+    n = 0
+    for (root, _, files) in walkdir(build)
+        for f in files
+            endswith(f, ".html") || continue
+            path = joinpath(root, f)
+            html = read(path, String)
+            html2 = replace(html, logo => s"""<div class="docs-logo">\1</div>""")
+            html2 = replace(html2, name => s"""\1\2""")
+            if html2 != html
+                write(path, html2)
+                n += 1
+            end
+        end
+    end
+    return println("unlinked sidebar brand on $n HTML pages")
 end
+
+rewrite_favicon_types!(joinpath(@__DIR__, "build"))
+unlink_sidebar_brand!(joinpath(@__DIR__, "build"))
+
+# A pull request from this repository deploys previews/PR<n>.
+# A local run has no token, so deploydocs records the criteria and skips.
+deploydocs(;
+    repo = "github.com/yamanori99/DistSSHKit.jl.git",
+    devbranch = "main",
+    push_preview = true,
+    # stable = latest tagged release; appears after the first v* tag.
+    versions = ["stable" => "v^", "v#.#", "dev" => "dev"],
+)

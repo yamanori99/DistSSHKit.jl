@@ -23,4 +23,4 @@ flags do the same work and tell you to use `up` / `up update` instead.
 On a queue host the same verbs are `qhost up` and
 `qhost up update` ([setup](@ref Queue-setup)).
 
-Also: [Requirements](@ref), `up --help`.
+Also: [Requirements](@ref), `help up`.

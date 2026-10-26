@@ -8,9 +8,10 @@ on:
   workflow_dispatch:
 
 # Cancel redundant runs on the same branch/PR.
-# A Project.toml version increase (see version-cut.sh) runs Ubuntu tip /
-# Aqua tip / registry tree in this workflow. macOS and WSL2 tip are
-# CI weekly. No label is involved.
+# A Project.toml version increase (see version-cut.sh) runs Ubuntu
+# 1.14-nightly, nightly, Aqua on those channels, and PkgEval in this workflow.
+# macOS for both channels is CI weekly. WSL2 1.13 Pkg.test runs on a main
+# push and CI weekly, not on a pull request. No label is involved.
 # A main push that changes only Project.toml and NEWS.md, and raises
 # version, skips Test.
 concurrency:
@@ -21,8 +22,9 @@ permissions:
   contents: read
 
 jobs:
-  # `Pkg.test` 1.13 runs on ubuntu-latest, macos-latest, and WSL2 Ubuntu.
-  # macOS and WSL are required. Coverage uploads from Ubuntu only. SSH E2E lives in
+  # `Pkg.test` 1.13 on a pull request is ubuntu-latest and macos-latest.
+  # WSL2 Ubuntu is a main push and CI weekly, not a pull request.
+  # macOS is required. Coverage uploads from Ubuntu only. SSH E2E lives in
   # DistSSHRun and DistSSHQueue, not this repo.
   # One detect job; markdown-only / allowlisted PRs skip heavy jobs (UI: skipping).
   # Required check names include the Julia version and the architecture.
@@ -62,6 +64,8 @@ jobs:
       id-token: write # Codecov OIDC on main push
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/julia-slot
         with:
           version: "1.13"
@@ -84,6 +88,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/julia-slot
         with:
           version: "1.13"
@@ -96,7 +102,7 @@ jobs:
   test-wsl:
     name: Pkg.test (1.13, WSL2 ubuntu-24.04, x64)
     needs: detect
-    if: needs.detect.outputs.heavy == 'true'
+    if: needs.detect.outputs.heavy == 'true' && github.event_name != 'pull_request'
     runs-on: windows-latest
     timeout-minutes: 45
     permissions:
@@ -105,12 +111,17 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: Vampire/setup-wsl@d1da7f2c0322a5ee4f24975344f67fc0f5baf364 # v7.0.0
+      - uses: ./.github/actions/wsl-install
+      - uses: Vampire/setup-wsl@4c48163d9f981914dd8caa0fc335fe19cca5bff4 # v7.2.0
         timeout-minutes: 10
         with:
           distribution: Ubuntu-24.04
           wsl-version: 2
-          additional-packages: ca-certificates curl git
+          # Already registered by ./.github/actions/wsl-install. See
+          # wsl-install.ps1 for #43, #96, and #134. This step must not run
+          # `wsl --install` or apt-get. A stuck wsl.exe keeps stdio open, so
+          # timeout-minutes does not reap it.
+          use-cache: true
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .ci-cache/wsl-julia
@@ -128,6 +139,8 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/julia-slot
         with:
           version: "1.14-nightly"
@@ -137,9 +150,8 @@ jobs:
           delete-old-caches: false
       - uses: ./.github/actions/pkg-test
 
-  # Not a Julia slot. Not required to merge. Catches checkout-only Pkg.test assumptions.
-  test-registry-tree:
-    name: Pkg.test (registry, ubuntu-latest, x64)
+  test-nightly:
+    name: Pkg.test (nightly, ubuntu-latest, x64)
     needs: detect
     if: needs.detect.outputs.heavy == 'true' && (github.event_name != 'pull_request' || needs.detect.outputs.version_cut == 'true')
     runs-on: ubuntu-latest
@@ -151,12 +163,37 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/julia-slot
         with:
-          version: "1.14-nightly"
+          version: "nightly"
       - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
         with:
           cache-scratchspaces: false
           delete-old-caches: false
-      - uses: ./.github/actions/registry-tree-test
+      - uses: ./.github/actions/pkg-test
+
+  # Not a Julia slot. Not required to merge. This checkout inside PkgEval's
+  # sandbox, against Julia nightly. Host Julia is 1.13. Dependencies come
+  # from General.
+  pkgeval:
+    name: PkgEval (nightly, ubuntu-latest, x64)
+    needs: detect
+    if: needs.detect.outputs.heavy == 'true' && (github.event_name != 'pull_request' || needs.detect.outputs.version_cut == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: julia-actions/setup-julia@da908477b5db94c10ffce8cfea9f2b3b9d5db687 # v3.0.3
+        with:
+          version: "1.13"
+      - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
+        with:
+          cache-scratchspaces: false
+          delete-old-caches: false
+      - uses: ./.github/actions/pkgeval
+        with:
+          package: DistSSHKit
 
   aqua:
     name: Aqua (1.13, ubuntu-latest, x64)
@@ -166,6 +203,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/julia-slot
         with:
           version: "1.13"
@@ -185,9 +224,32 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/julia-slot
         with:
           version: "1.14-nightly"
+      - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
+        with:
+          cache-scratchspaces: false
+          delete-old-caches: false
+      - name: Aqua.test_all (latest Aqua)
+        run: ./.github/aqua-check.sh
+
+  aqua-nightly:
+    name: Aqua (nightly, ubuntu-latest, x64)
+    needs: detect
+    if: needs.detect.outputs.heavy == 'true' && (github.event_name != 'pull_request' || needs.detect.outputs.version_cut == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/julia-slot
+        with:
+          version: "nightly"
       - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
         with:
           cache-scratchspaces: false
@@ -205,6 +267,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - id: files
         run: echo "list=$(./.github/jetls-check.sh --print-files)" >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/julia-slot

@@ -3,7 +3,7 @@
 Commands in the order you type them. Flags and trees stay on
 [Prepare](@ref Queue-Tutorial-Prepare), [First job](@ref Queue-Tutorial-Client),
 the [User Guide](@ref Queue-manual), and
-[Artifacts and paths](@ref Queue-artifacts). Not a dump of root `--help`.
+[Artifacts and paths](@ref Queue-artifacts). Not a dump of root `help`.
 
 Names here: queue host SSH `HOST`, worker SSH `host1`. Swap them.
 
@@ -25,7 +25,8 @@ julia -m DistSSHKit qhost serve
 `add-host` does not deploy. `serve` instantiates the job project on
 this host, then `setup!` (rsync / instantiate / `check`) on
 `child:` hosts. A `qhost:` stage has no `.git/`; a missing local git
-commit warns instead of failing `:check`. Optional: `qhost up`
+commit warns instead of failing `:check`, and uncommitted changes warn
+too. Optional: `qhost up`
 when major.minor differs.
 
 From a client: create the env, then `pkg> add DistSSHKit` in it
@@ -43,8 +44,12 @@ julia --project=. -m DistSSHKit demo install without_kit
 julia --project=. -m DistSSHKit qhost:HOST submit go parent:1 distsshkit_demos/without_kit/pi_echo.jl
 ```
 
-`qhost:` rsyncs this tree to `~/.distsshqueue/stage/<uuid>` on `HOST`
-(excludes `.gitignore`, `.git/`, `.distsshkit/`, `.distsshqueue/`). Stdout is the job UUID. This client has
+`qhost:` rsyncs this tree to `~/.distsshqueue/stage/<uuid>` on `HOST`.
+In a git work tree that file set matches [`setup --rsync`](@ref Manual-setup),
+without `.distsshqueue/`. Outside git, rsync applies `.gitignore` in
+each directory and skips `.git/`, `.distsshkit/`, and `.distsshqueue/`.
+`.distsshqueue-backup` is a different name, so that rule does not drop
+it. Stdout is the job UUID. This client has
 `.distsshqueue/tickets/<uuid>` only; the result leaf is not here yet.
 
 ```bash

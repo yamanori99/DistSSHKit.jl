@@ -13,8 +13,16 @@ julia -m DistSSHKit qhost remove-host child:host1
 
 From a **client**, `list-host`, `size`, `plan`, and `pool` are forwarded like `status`.
 `add-host` / `remove-host` run on the queue host only (like `setup`).
-A major.minor Julia mismatch vs this process is a warning only
-(`DISTSSHKIT_QUIET` silences it). Fix: `qhost up`.
+`add-host` and `pool` compare each worker's Julia with the running
+serve, or with the next serve's Julia from the enable unit. They warn
+when major.minor, the patch, or the prerelease differs. A build-only
+difference does not warn. When serve's Julia cannot be read, they say
+so and do not compare. When there is no serve and no enable unit, they
+also say to start serve, or enable, so the next `add-host` or `pool`
+can compare. Both commands still exit 0. The warning's next line is
+`qhost up`. `DISTSSHKIT_QUIET` hides the lines. This is not
+[`setup --check`](@ref Manual-setup): that check compares a worker with
+the Julia that runs the check.
 
 Also: [Prepare](@ref Queue-Tutorial-Prepare), [submit](@ref Queue-submit),
 [kit size](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/size/),
@@ -75,7 +83,7 @@ julia -m DistSSHKit qhost:HOST size --gb-per-worker 1.5 parent child:host1
 
 Flags (`--probe`, `--gb-per-worker`, …):
 [size](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/size/).
-`size --help` adds a note under that command's help.
+`help qhost size` adds a note under that command's help.
 
 ## plan
 
@@ -89,7 +97,7 @@ julia -m DistSSHKit qhost:HOST plan SCRIPT.jl
 
 Flags:
 [plan](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/plan/).
-`plan --help` adds a note under that command's help.
+`help qhost plan` adds a note under that command's help.
 
 ## pool
 
@@ -113,4 +121,4 @@ julia -m DistSSHKit qhost:HOST pool parent child:host1
 
 Flags:
 [pool](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/pool/).
-`pool --help` adds a note under that command's help.
+`help qhost pool` adds a note under that command's help.

@@ -39,10 +39,18 @@ jobs:
     name: Documenter (1.13, ubuntu-latest, x64)
     needs: detect
     if: github.event_name == 'pull_request' && (needs.detect.outputs.heavy == 'true' || needs.detect.outputs.docs == 'true')
+    # push_preview writes gh-pages (previews/PR<n>). Share the deploy queue.
+    concurrency:
+      group: docs-gh-pages
+      cancel-in-progress: false
+      # actionlint 1.7.12 does not know concurrency.queue yet. GitHub does.
+      queue: max
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
-      contents: read
+      contents: write
+      pull-requests: read
+      statuses: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -68,6 +76,9 @@ jobs:
             doctest(DistSSHKit)
           '
       - name: Build docs
+        env:
+          # Preview push uses HTTPS. Forks fail the same-repo check and skip.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: julia --project=docs --color=yes docs/make.jl
 
   deploy:

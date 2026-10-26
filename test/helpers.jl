@@ -53,6 +53,51 @@ function _main_capture(args)
     return _stdio_capture(() -> DistSSHKit.main(args); args = args)
 end
 
+"""`julia -m <pkg>` as DistSSHBase builds it for that outermost entry."""
+function _owner_cli_m(pkg::Symbol)::String
+    return DistSSHRun.DistSSHBase.with_cli_entry(pkg) do
+        DistSSHRun.DistSSHBase.cli_m()
+    end
+end
+
+"""
+Owner `main` for `args`, with the CLI entry forced to DistSSHKit.
+
+An inner `main` does not replace an outer entry, so the page uses Kit's
+heading (`cli_heading` / `cli_qhost_heading`) rather than the owner's.
+This calls `owner_main` (Run or Queue). It does not call `DistSSHKit.main`.
+"""
+function _owner_capture(owner_main, args::Vector{String})
+    return _stdio_capture(; args = args) do
+        DistSSHRun.DistSSHBase.with_cli_entry(:DistSSHKit) do
+            owner_main(args)
+        end
+    end
+end
+
+"""
+Kit's `(code, stdout, stderr)` for `kit_args` equals the owner's for `owner_args`.
+
+Both exits are 0. The page must not name the other package's `julia -m`
+line: equality is rendered under Kit's entry, so a hardcoded owner entry
+would match on both sides and still be wrong.
+
+For `help <verb>`, pass the owner's flag argv as `owner_args` (`["go",
+"--help"]`, `["submit", "go", "--help"]`). Write that argv in the test.
+Do not read it back from `_route`.
+"""
+function _test_same_page(kit_args, owner_main, owner_args = kit_args)
+    got = _main_capture(kit_args)
+    want = _owner_capture(owner_main, owner_args)
+    @test got[1] == want[1] == 0
+    @test got[2] == want[2]
+    @test got[3] == want[3]
+    text = got[2] * got[3]
+    @test !occursin(_owner_cli_m(:DistSSHRun), text)
+    @test !occursin(_owner_cli_m(:DistSSHQueue), text)
+    return got
+end
+
 """PATH-front `ssh` that records argv and exits 0. Does not open a connection."""
 function _with_fake_ssh(f)
     return mktempdir() do bin

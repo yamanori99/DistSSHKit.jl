@@ -3,7 +3,9 @@ DistSSHKit — meta-package for the run and the queue.
 
 Users add this package. The command is `julia -m DistSSHKit`.
 DistSSHRun is the run. DistSSHQueue is the queue, started on a queue host.
-This module reexports their public names.
+This module reexports names they export. `rsync_send_list` is public on
+DistSSHRun and stays reexported until 0.11. Other public-only names are
+not reexported.
 """
 module DistSSHKit
 
@@ -33,8 +35,21 @@ end
 
 const _FROM = Dict{Symbol, Module}()
 
+# Public-only names already reexported. Removed in 0.11. New public-only
+# names are not added here.
+const _PUBLIC_ONLY_KEPT = (:rsync_send_list,)
+
+"""True when `n` from `mod` is reexported.
+
+Exported names are taken. A public-only name is taken only when it is in
+`_PUBLIC_ONLY_KEPT`.
+"""
+_reexport_name(mod::Module, n::Symbol)::Bool =
+    Base.isexported(mod, n) || n in _PUBLIC_ONLY_KEPT
+
 """Reexport names `mod` already exports. Private names stay there.
 
+A public-only name is reexported only when it is in `_PUBLIC_ONLY_KEPT`.
 A name already in this module is exported when it is the same binding `mod`
 holds (`using DistSSHRun.DistSSHBase` brings those in). `_OWN` is excluded
 even when not yet defined, because `println_kit_version` is declared after
@@ -44,6 +59,7 @@ function _adopt!(mod::Module)
     for n in names(mod)
         n === nameof(mod) && continue
         n in _OWN && continue
+        _reexport_name(mod, n) || continue
         if haskey(_FROM, n)
             _FROM[n] === mod && continue
             # Run and Queue can both reexport one DistSSHBase binding.
@@ -72,7 +88,8 @@ end
 _adopt!(DistSSHRun)
 _adopt!(DistSSHQueue)
 
-# Qualified names this repo's demos and SSH checks still call. Not exported.
+# Internal names kept so existing `DistSSHKit.name` calls still resolve.
+# Not a user promise. Not exported.
 const _QUALIFIED = (
     :KIT_PROGRESS,
     :KIT_PROGRESS_SUSPEND,
@@ -127,7 +144,7 @@ function println_kit_version(io::IO = stdout)
     return nothing
 end
 
-export println_kit_version
+export dist_ssh_kit_version, println_kit_version
 
 const _RUN_COMMANDS = (
     "demo",
@@ -158,6 +175,7 @@ const _QUEUE_ONLY = (
     "watch",
 )
 const _QUEUE_HELP_TOPICS = ("client", "qhost", "queue", "queue-host")
+const _HELP_WORDS = ("help", "-h", "--help")
 
 """Top-level `julia -m DistSSHKit` usage (no subcommand)."""
 function print_kit_root_usage(io::IO = stderr)
@@ -180,36 +198,13 @@ function print_kit_root_usage(io::IO = stderr)
         "  progress           Phase seconds from kit.progress",
     )
     print_help_blank(io)
+    # `CLIENT_COMMAND_LINES` and `QUEUE_HOST_COMMAND_LINES` are not
+    # exported. A later Queue patch will mark them `public`.
     print_help_section("Client"; io = io)
-    print_help_lines(
-        io,
-        "  submit             Enqueue go / ride / drive",
-        "  status             Snapshot of the store",
-        "  watch              Live status",
-        "  cancel             Drop queued or stop running",
-        "  fetch              Copy a finished leaf",
-        "  list-host          Inventory",
-        "  stop               Stop serve, keep files",
-        "  teardown           Stop serve and remove ~/.distsshqueue",
-        "  qhost:HOST         SSH that client command to the queue host",
-    )
+    print_help_lines(io, DistSSHQueue.CLIENT_COMMAND_LINES...)
     print_help_blank(io)
     print_help_section("Queue host"; io = io)
-    print_help_lines(
-        io,
-        "  qhost setup        Write config.toml if missing",
-        "  qhost up           juliaup verbs on config hosts",
-        "  qhost add-host     Add host tokens",
-        "  qhost remove-host  Drop host tokens",
-        "  qhost serve        Run serve in this terminal",
-        "  qhost stop         Stop serve, keep files",
-        "  qhost enable       Start serve after reboot",
-        "  qhost disable      Remove that OS registration",
-        "  qhost teardown     Stop serve and remove ~/.distsshqueue",
-        "  qhost size         Estimate worker counts on the queue host",
-        "  qhost plan         Inspect a script on the queue host",
-        "  qhost pool         Cluster cores and RAM on the queue host",
-    )
+    print_help_lines(io, DistSSHQueue.QUEUE_HOST_COMMAND_LINES...)
     print_help_blank(io)
     print_help_section("Examples"; io = io)
     print_help_lines(
@@ -225,7 +220,7 @@ function print_kit_root_usage(io::IO = stderr)
         "  $(cli_m_project()) qhost up",
     )
     print_help_blank(io)
-    println(io, "Run $(cli_m()) <command> -h for flags.")
+    println(io, "Run `$(cli_m()) help <command>` for flags.")
     return nothing
 end
 
@@ -234,15 +229,10 @@ function _leading_command(args::Vector{String})
     i = 1
     while i <= length(args)
         a = args[i]
-        if a == "--remote-julia" && i < length(args)
+        n, _ = DistSSHQueue.leading_hop_span(args, i)
+        if n > 0
             saw = true
-            i += 2
-        elseif a == "--queue-env" && i < length(args)
-            saw = true
-            i += 2
-        elseif startswith(a, "qhost:")
-            saw = true
-            i += 1
+            i += n
         elseif a == "--qhost" || a == "--project" || startswith(a, "--project=")
             saw = true
             break
@@ -258,17 +248,32 @@ function _leading_command(args::Vector{String})
     return sub, saw
 end
 
+"""True when `--project` appears before the command, after `julia -m DistSSHKit`."""
+function _leading_julia_project(args::Vector{String})::Bool
+    i = 1
+    while i <= length(args)
+        a = args[i]
+        n, kind = DistSSHQueue.leading_hop_span(args, i)
+        if n > 0 && kind !== :qhost
+            i += n
+        elseif a == "--project" || startswith(a, "--project=")
+            return true
+        else
+            return false
+        end
+    end
+    return false
+end
+
 """Drop a leading `qhost` group word. `qhost:HOST` is a client hop and stays."""
 function _without_qhost_group(args::Vector{String})::Union{Nothing, Vector{String}}
     i = 1
     while i <= length(args)
-        a = args[i]
-        if a == "--remote-julia" && i < length(args)
-            i += 2
-        elseif a == "--queue-env" && i < length(args)
-            i += 2
-        elseif startswith(a, "qhost:")
+        n, kind = DistSSHQueue.leading_hop_span(args, i)
+        if n > 0 && kind === :qhost
             return nothing
+        elseif n > 0
+            i += n
         else
             break
         end
@@ -319,6 +324,45 @@ const _Route = Union{
     Tuple{Symbol, String},
 }
 
+"""Insert `--help` where that verb already looks for it.
+
+`submit go|ride|drive` keeps the kind in front of `--help`. That matches
+DistSSHQueue.`_help_command_argv`. The kinds are `KIT_EXECUTE_KINDS`,
+which is not exported. A later Queue patch will mark it `public`.
+"""
+function _argv_with_help_flag(words::AbstractVector{<:AbstractString})::Vector{String}
+    verb = String(words[1])
+    rest = @view words[2:end]
+    if verb == "submit" && !isempty(rest) && Symbol(rest[1]) in DistSSHQueue.KIT_EXECUTE_KINDS
+        return String[verb, String(rest[1]), "--help", String.(rest[2:end])...]
+    end
+    return String[verb, "--help", String.(rest)...]
+end
+
+"""`help <verb> …` as `(:run, …)` or `(:queue, …)`, or `nothing` to keep going.
+
+The first word must be `help`. `-h` / `--help` with an extra word stay on
+the unknown path. Length-2 topics are handled before this. `help qhost
+<verb>` drops `qhost`, the same way `_without_qhost_group` does, then
+inserts `--help`. A help word in the verb slot is not a command.
+"""
+function _help_command_route(args::Vector{String})::Union{Nothing, _Route}
+    (length(args) >= 2 && args[1] == "help") || return nothing
+    if args[2] == "qhost"
+        length(args) >= 3 || return nothing
+        args[3] in _HELP_WORDS && return nothing
+        return (:queue, _argv_with_help_flag(args[3:end]))
+    end
+    verb = args[2]
+    if verb in _RUN_COMMANDS
+        return (:run, _argv_with_help_flag(args[2:end]))
+    end
+    if verb in _QUEUE_ONLY
+        return (:queue, _argv_with_help_flag(args[2:end]))
+    end
+    return nothing
+end
+
 """Where `main` would send `args`, without I/O or another package's `main`.
 
 `(:version, String[])`, `(:usage, 0)` or `(:usage, 1)`, `(:queue_help, args)`,
@@ -328,15 +372,21 @@ function _route(args::Vector{String})::_Route
     if length(args) == 1 && _version_flag(args[1])
         return (:version, String[])
     end
-    if length(args) == 2 && args[1] in ("-h", "--help", "help") &&
-            args[2] in _QUEUE_HELP_TOPICS
+    # Length 2 topics stay ahead of the help-word and `help <verb>` rewrites.
+    # `help qhost` is that topic. `help qhost setup` is not.
+    if length(args) == 2 && args[1] in _HELP_WORDS && args[2] in _QUEUE_HELP_TOPICS
         return (:queue_help, args)
     end
-    if length(args) == 1 && args[1] in ("-h", "--help", "help")
+    # Empty argv is not this case. `all` on an empty collection is true.
+    if !isempty(args) && all(in(_HELP_WORDS), args)
         return (:usage, 0)
     end
     if isempty(args)
         return (:usage, 1)
+    end
+    rewritten = _help_command_route(args)
+    if rewritten !== nothing
+        return rewritten
     end
     stripped = _without_qhost_group(args)
     if stripped !== nothing
@@ -384,8 +434,8 @@ function _finish_rejected(sub::AbstractString, script::Bool)::Cint
     return 1
 end
 
-function _main(args::Vector{String})::Cint
-    kind, payload = _route(args)
+"""Run one `_route` result. An unknown `kind` errors instead of looking like a bad command."""
+function _apply_route(kind::Symbol, payload, args::Vector{String})::Cint
     if kind === :version
         println_kit_version()
         return 0
@@ -393,15 +443,31 @@ function _main(args::Vector{String})::Cint
         print_kit_root_usage()
         return payload::Int
     elseif kind === :queue_help || kind === :queue
-        return DistSSHQueue.main(payload::Vector{String})
+        if _leading_julia_project(args)
+            DistSSHRun.print_cli_error(
+                "`--project` after `julia -m DistSSHKit` is Julia's project flag. Put it before `-m`: `julia --project=DIR -m DistSSHKit …`.",
+            )
+            return 1
+        end
+        # `invokelatest` keeps this method from inferring Queue's `main`.
+        # Queue's `main` is a runtime call, and a new world is the one `Base` documents.
+        return Base.invokelatest(DistSSHQueue.main, payload::Vector{String})::Cint
     elseif kind === :run
+        # The const binding in `Main` is new in this world, so Run's `main` has to see it.
         _bind_run_in_main!()
-        return DistSSHRun.main(payload::Vector{String})
+        return Base.invokelatest(DistSSHRun.main, payload::Vector{String})::Cint
     elseif kind === :no_command
         return _finish_rejected(payload::String, true)
-    else
+    elseif kind === :unknown
         return _finish_rejected(payload::String, false)
+    else
+        error("unhandled route: $(repr(kind))")
     end
+end
+
+function _main(args::Vector{String})::Cint
+    kind, payload = _route(args)
+    return _apply_route(kind, payload, args)
 end
 
 Base.eval(@__MODULE__, :(@main))

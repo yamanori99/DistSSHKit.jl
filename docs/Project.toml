@@ -8,8 +8,8 @@ Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 DistSSHKit = {path = ".."}
 
 [compat]
-DistSSHQueue = "0.9.5"
-DistSSHRun = "0.1.7"
+DistSSHQueue = "0.9.9"
+DistSSHRun = "0.1.15"
 # 1.19.x only. docs/make.jl overrides Documenter for this release.
 # On the first bump, read how this bound was rewritten, then rebuild docs.
 Documenter = "~1.19"

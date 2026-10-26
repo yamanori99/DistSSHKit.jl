@@ -1,7 +1,7 @@
 name = "DistSSHKit"
 uuid = "ceec0504-c968-4be5-b215-667cae0e8f81"
 license = "MIT"
-version = "0.10.1"
+version = "0.10.6"
 authors = ["Yamamoto, Takanori <takanori.yamamoto.99@gmail.com>", "Ampuku, Honoka <ampk.hono@gmail.com>"]
 
 [workspace]
@@ -12,6 +12,6 @@ DistSSHQueue = "24254401-70d8-4a51-8ea4-cfab19f5bc73"
 DistSSHRun = "b568025c-2759-4ef1-8b14-17d00e2cd000"
 
 [compat]
-DistSSHQueue = "0.9.5"
-DistSSHRun = "0.1.7"
+DistSSHQueue = "0.9.9"
+DistSSHRun = "0.1.15"
 julia = "1.13"

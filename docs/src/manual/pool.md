@@ -9,7 +9,7 @@ drop a dead node and continue the way `--best-effort` can on drive.
 julia --project=. -m DistSSHKit pool [options] [parent] [child:NAME...]
 ```
 
-Also: [size](@ref Manual-size), `pool --help`. API: [`pool!`](@ref).
+Also: [size](@ref Manual-size), `help pool`. API: [`pool!`](@ref).
 
 Flag vocabulary: [User Guide](@ref Manual).
 

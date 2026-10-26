@@ -70,7 +70,7 @@ experimental.
 
 Also: [First job](@ref Queue-Tutorial-Client), [Walkthrough](@ref Queue-Tutorial-Walkthrough),
 [hosts](@ref Queue-hosts),
-`julia -m DistSSHKit --help`. Flags:
+`julia -m DistSSHKit help`. Flags:
 [go](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/go/),
 [ride](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/ride/),
 [drive](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/drive/).
@@ -81,9 +81,15 @@ re-reads config `hosts`. Library [`submit!`](@ref) uses
 
 With `qhost:`, the client **rsync**s the job project (`cwd` /
 `DISTRIBUTED_PROJECT_ROOT`) to `~/.distsshqueue/stage/<uuid>` on the
-queue host (rsync excludes: `.gitignore`, `.git/`, `.distsshkit/`,
-`.distsshqueue/`), then enqueue resolves
-`SCRIPT.jl` there. The client keeps `.distsshqueue/tickets/<uuid>`
+queue host, then enqueue resolves `SCRIPT.jl` there. In a git work
+tree the paths are the same as [`setup --rsync`](@ref Manual-setup),
+then anything under `.distsshqueue/` is dropped. `.git/` and
+`.distsshkit/` are already out of that list. A different name, such as
+`.distsshqueue-backup`, is not that directory and stays when the list
+includes it. Outside a git work tree there is no send list: rsync
+applies each directory's `.gitignore` and excludes `.git/`,
+`.distsshkit/`, and `.distsshqueue/`. The client keeps
+`.distsshqueue/tickets/<uuid>`
 (every `qhost:` submit from this tree; not an artifact).
 [Artifacts and paths](@ref Queue-artifacts) explains stage, ticket,
 the run's output, and the [`fetch`](@ref Queue-fetch) destination. Omit `qhost:`:
@@ -91,7 +97,15 @@ the script is checked on this machine. Job id prints as a bare stdout line. CLI 
 `queue: local (HOSTNAME)` (or `qhost: local (HOSTNAME)` on the hopped
 process when you passed `qhost:`) then `Queued  N (no running)` on stderr
 (`(R running)` when a job is already running);
-`DISTSSHKIT_QUIET` hides that. A `qhost:` rsync prints `rsync → HOST:…` when it starts (fetch: `rsync ←`). `DISTSSHKIT_PROGRESS` / `--progress` adds rsync `--info=progress2`. Missing config `hosts`: a `parent` / `child:` token is an error (`add-host first`). `hosts = []` allows none.
+`DISTSSHKIT_QUIET` hides that. When the job tree has a `Project.toml`
+whose `[deps]` names at least one package, and the Julia that runs
+`submit` finds no Manifest (`Manifest.toml`, or a versioned file such
+as `Manifest-v1.13.toml`), stderr warns and the job records that
+warning. No `Project.toml`, or an empty `[deps]`, does not warn.
+`[weakdeps]` and `[extras]` are not read. The exit code stays 0.
+`DISTSSHKIT_QUIET` hides that line and still records the warning. On
+`qhost:` the Julia that looks is the hop's, which can differ from
+`serve`. A `qhost:` rsync prints `rsync → HOST:…` when it starts (fetch: `rsync ←`). `DISTSSHKIT_PROGRESS` / `--progress` adds rsync `--info=progress2`. Missing config `hosts`: a `parent` / `child:` token is an error (`add-host first`). `hosts = []` allows none.
 
 Two different projects
 that the run would deploy to the same worker path are refused (no

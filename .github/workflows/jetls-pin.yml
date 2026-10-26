@@ -1,0 +1,38 @@
+name: JETLS pin
+
+# Open ci/jetls-pin when the JETLS release date tag is newer than the pin.
+# Not on pull_request. A red pull request stays off main, so CI weekly
+# keeps the previous date. Misses CI weekly (daily UTC 21:00).
+on:
+  workflow_dispatch:
+  # Daily 22:00 JST (UTC 13:00).
+  schedule:
+    - cron: "0 13 * * *"
+
+concurrency:
+  group: jetls-pin
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  pin:
+    name: pin
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Bump the JETLS date pin
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JETLS_PIN_APPLY: "1"
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          ./.github/jetls-pin.sh

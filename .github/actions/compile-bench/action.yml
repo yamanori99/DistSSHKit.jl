@@ -1,0 +1,135 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+name: compile-bench
+description: Measure precompile, load, CLI compile time, and src size
+
+inputs:
+  slot:
+    description: Julia slot, such as 1.13, 1.14-nightly, or nightly
+    required: true
+  token:
+    description: Token used to push the bench-data branch. Main runs only.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Measure
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        COMPILE_BENCH_SLOT: ${{ inputs.slot }}
+      run: |
+        set -euo pipefail
+        julia --startup-file=no --project=. bench/compile/measure.jl \
+          --out "${RUNNER_TEMP}/compile-bench.toml" \
+          --slot "$COMPILE_BENCH_SLOT"
+    - name: Record on bench-data
+      if: github.ref == 'refs/heads/main'
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        SLOT: ${{ inputs.slot }}
+        BENCH_TOKEN: ${{ inputs.token }}
+      run: |
+        set -euo pipefail
+        dest="${RUNNER_TEMP}/bench-data"
+        rm -rf "$dest"
+        url="https://github.com/${GITHUB_REPOSITORY}.git"
+        basic="$(printf 'x-access-token:%s' "$BENCH_TOKEN" | base64 | tr -d '\n')"
+        echo "::add-mask::${basic}"
+        auth=(-c "http.extraheader=AUTHORIZATION: basic ${basic}")
+        net=(-c http.connectTimeout=10 -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=30)
+        # Exit 2 is "no matching ref". Any other failure is auth or the network.
+        rc=0
+        git "${net[@]}" "${auth[@]}" ls-remote --exit-code --heads "$url" bench-data >/dev/null || rc=$?
+        existed=0
+        if [ "$rc" = "0" ]; then
+          existed=1
+          git "${net[@]}" "${auth[@]}" clone --branch bench-data --single-branch "$url" "$dest"
+        elif [ "$rc" = "2" ]; then
+          git "${net[@]}" "${auth[@]}" clone --branch main --single-branch "$url" "$dest"
+          git -C "$dest" checkout --orphan bench-data
+          git -C "$dest" rm -rf . >/dev/null 2>&1 || true
+        else
+          exit "$rc"
+        fi
+        git -C "$dest" config http.extraheader "AUTHORIZATION: basic ${basic}"
+        sha="$(git rev-parse --short=7 HEAD)"
+        day="$(date -u +%Y-%m-%d)"
+        rel="history/${SLOT}/${day}-${sha}.toml"
+        mkdir -p "$dest/history/${SLOT}"
+        cp "${RUNNER_TEMP}/compile-bench.toml" "$dest/$rel"
+        git -C "$dest" add "$rel"
+        if git -C "$dest" diff --cached --quiet; then
+          echo "sample unchanged"
+          exit 0
+        fi
+        # Repo identity. `-c` on `commit` does not apply to `pull --rebase`.
+        git -C "$dest" config user.name "github-actions[bot]"
+        git -C "$dest" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git -C "$dest" commit -m "Record compile bench for ${SLOT}."
+        # 1.13, 1.14-nightly, and nightly push this branch together.
+        # A rejected push rebases onto the new tip and tries again.
+        push_bench() {
+          local attempt
+          for attempt in 1 2 3 4 5 6; do
+            if git "${net[@]}" -C "$dest" push origin HEAD:bench-data; then
+              return 0
+            fi
+            if ! git "${net[@]}" -C "$dest" pull --rebase origin bench-data; then
+              echo "rebase onto bench-data failed (attempt ${attempt})" >&2
+              git -C "$dest" rebase --abort || true
+              return 1
+            fi
+            if [ "$attempt" -lt 6 ]; then
+              sleep "$attempt"
+            fi
+          done
+          git "${net[@]}" -C "$dest" push origin HEAD:bench-data
+        }
+        if [ "$existed" = "1" ]; then
+          push_bench
+        else
+          git "${net[@]}" -C "$dest" push origin HEAD:bench-data
+        fi
+    - name: Report this run
+      if: github.ref != 'refs/heads/main'
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        SLOT: ${{ inputs.slot }}
+      run: |
+        set -euo pipefail
+        hist="${RUNNER_TEMP}/bench-history"
+        mkdir -p "$hist/${SLOT}"
+        cp "${RUNNER_TEMP}/compile-bench.toml" "$hist/${SLOT}/sample.toml"
+        julia --startup-file=no bench/compile/report.jl \
+          --history "$hist" \
+          --readme "${RUNNER_TEMP}/compile-bench-README.md" \
+          --summary "$GITHUB_STEP_SUMMARY"
+    - name: Upload compile bench
+      id: sample
+      if: always()
+      shell: bash
+      run: |
+        set -euo pipefail
+        stage="${RUNNER_TEMP}/compile-bench-artifact"
+        rm -rf "$stage"
+        mkdir -p "$stage"
+        if [ ! -f "${RUNNER_TEMP}/compile-bench.toml" ]; then
+          echo "ok=false" >> "$GITHUB_OUTPUT"
+          echo "no sample to upload"
+          exit 0
+        fi
+        echo "ok=true" >> "$GITHUB_OUTPUT"
+        cp "${RUNNER_TEMP}/compile-bench.toml" "$stage/compile-bench.toml"
+        if [ -f "${RUNNER_TEMP}/compile-bench-README.md" ]; then
+          cp "${RUNNER_TEMP}/compile-bench-README.md" "$stage/compile-bench-README.md"
+        fi
+    - name: Upload compile bench artifact
+      if: always() && steps.sample.outputs.ok == 'true'
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: compile-bench-${{ inputs.slot }}
+        path: ${{ runner.temp }}/compile-bench-artifact

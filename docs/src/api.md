@@ -66,7 +66,7 @@ First-time remotes usually look like:
 session = KitSession(
     workers=["child:user@h1"], remote="/path/to/project", yes=true,
 )
-setup!(session, :delete, :rsync, :instantiate)
+setup!(session, :rsync, :instantiate)
 setup!(session, :check; ignore_julia_version=true)  # optional
 # Julia channel: `julia -m DistSSHKit up` and `up parent`.
 # `up update` refreshes channels and leaves the default.
@@ -265,8 +265,9 @@ Watchers can tail `kit.progress` (or the log next to it) and use
 `DISTSSHKIT_PROGRESS=1` is `--progress` verbosity on the child, not a watcher.
 Slot-level `go` artifacts (`go_manifest.txt`, `{slot}/go.exitcode`) remain
 the source of truth for per-slot exit codes.
-`parse_progress_line` / `kit_progress_latest` / `kit_progress_phases` stay
-on `DistSSHKit` for scripts that parse those lines; they are not exported.
+`kit_progress_latest` stays on `DistSSHKit` for scripts that parse those
+lines; it is not exported. `parse_progress_line` and `kit_progress_phases`
+are DistSSHRun names and are not on DistSSHKit.
 
 ### Helpers for detached runs
 
@@ -275,10 +276,17 @@ that runs many jobs.
 
 #### Still holding `KitProcess`
 
-[`terminate!`](@ref) SIGTERMs the child, waits `grace` for its `rmprocs`
-path, then SIGKILLs if needed, then `pkill`s only argv tagged with this
-run's `job_id`. `kp.process` is still a `Base.Process` if you need `kill`
-yourself.
+[`terminate!`](@ref) with the default `interrupt_grace=0` SIGTERMs the
+child, waits `grace` for its `rmprocs` path, then SIGKILLs if needed, then
+`pkill`s only argv tagged with this run's `job_id`. A positive
+`interrupt_grace` sends SIGINT first and waits that many seconds: a
+`drive` child runs its Ctrl-C path (interrupt workers, `rmprocs`, exit
+130); a `go` or `ride` child is `julia -m` with exit-on-sigint, so SIGINT
+runs `atexit` and does not enter `catch` or `finally`. On Julia 1.13,
+a `drive` driver waiting in `pmap` does not run that path,
+and SIGTERM stops it. On Julia 1.14 the driver exits 130, but a worker
+can be removed before it sees the interrupt. `kp.process` is
+still a `Base.Process` if you need `kill` yourself.
 
 #### Sidecar files
 
@@ -372,8 +380,11 @@ are an extension surface aimed at
 exact rendered text, colors, or spinner glyphs — presentation may change
 without a breaking version bump.
 
-`dist_ssh_kit_version`, `println_kit_version`, `ssh_opts`, and the help
-helpers in this section are defined in DistSSHKit.
+`dist_ssh_kit_version` and `println_kit_version` are defined in DistSSHKit.
+The other names in this section are defined in DistSSHRun and reexported.
+`ssh_opts`, `run_on_host`, the path helpers, and the help helpers live in
+`DistSSHRun.DistSSHBase`. `SPINNER_FRAMES`, `print_cli_error`, and the
+`go` / `drive` parsers live in DistSSHRun.
 
 ```@docs
 parse_go_args

@@ -1,16 +1,7 @@
 # Logo & social-preview assets
 
-The three-circle mark (`#juliadot`, `#juliadot-lg`) is the Julia logo
-(julia-circles), Copyright (c) 2012-2022 Stefan Karpinski,
-[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
-DistSSHKit adapts it inside original machine / wire artwork.
-
-- Design:
-  [julia-logo-graphics](https://github.com/JuliaLang/julia-logo-graphics)
-- Carve-out: [LICENSE](https://github.com/yamanori99/DistSSHKit.jl/blob/main/LICENSE)
-
-Hand-edit sources and bake outputs that include those circles (logo, social,
-diagram, PNG/GIF) are CC BY-NC-SA 4.0, not MIT.
+`bake.jl` writes the logo, favicon, social preview, and topology diagram.
+The mark is an original fan. These files are MIT, with the rest of the package.
 
 Layout:
 
@@ -19,10 +10,10 @@ assets/
   bake.jl, README.md, custom.css
   logo.svg          → logo/logo-dynamic.svg          (Documenter)
   logo-dark.svg     → logo/logo-dark-dynamic.svg     (Documenter)
-  logo/             sources + logo rasters
-  favicon.svg / favicon-dark.svg / favicon.ico   tab icon (parent, transparent)
+  logo/             logo SVGs + rasters
+  favicon.svg / favicon-dark.svg / favicon.ico   tab icon (transparent)
   social/           social-preview SVGs + rasters
-  diagram/          topology.svg (hand-edit) + dark SVG + PNG (bake)
+  diagram/          topology SVGs + PNG
 ```
 
 Naming: **`static`** = end-state still; **`dynamic`** = SMIL / GIF motion.
@@ -35,30 +26,29 @@ Naming: **`static`** = end-state still; **`dynamic`** = SMIL / GIF motion.
   `logo/logo-dark-static.svg`
 - Social preview: dynamic `social/social-preview-dynamic.svg`, `.gif`;
   static `social/social-preview-static.svg`, `.png`
+- README banner: static `social/readme-static.svg`, `.png` (white card)
+  and `social/readme-dark-static.svg`, `.png` (transparent, light text)
 
-Derived dark SVGs prefix every `id` / `href="#…"` / `url(#…)` with `dark-`
-so light and dark copies can sit in one HTML document.
+If a dark SVG gains an `id`, prefix that `id` / `href="#…"` / `url(#…)`
+with `dark-` so light and dark copies can sit in one HTML document.
 
-GitHub README / README.ja use `<picture>` plus `prefers-color-scheme`
-for the topology diagram and the footer logos. Dark / light `source`
-are the transparent SVGs. The fallback `img` is `topology.png` /
-`logo-static.png` (paper background). JuliaHub strips or ignores
-`<picture>` / `prefers-color-scheme` (a transparent light SVG vanishes
-on a dark page). Absolute
-`raw.githubusercontent.com/…/main/docs/src/assets/…` so the files load.
+GitHub README / README.ja put the README banner above the title, and
+use `<picture>` plus `prefers-color-scheme` for that banner and for the
+topology diagram. Paths are relative to the README, so GitHub shows the
+files from the branch you are reading. An absolute `…/main/…` URL 404s
+until those files are on main. The banner
+is the social lockup with the vertical pad tightened (`README_PAD_Y`).
+Its dark source is a transparent PNG. The light fallback is the white
+card. The 1280×640 social preview stays the GitHub Settings upload.
+Topology dark / light `source` are the transparent SVGs. The fallback
+`img` is `topology.png`. JuliaHub strips or ignores `<picture>` /
+`prefers-color-scheme`, so it shows the light fallback.
 
 Documenter discovers bare `logo.svg` / `logo-dark.svg` at this
 directory's top level only.
 `bake.jl` makes **symlinks** into `logo/` — do not edit the bare names.
 
-## Hand-edit (sources)
-
-| File | Role |
-| --- | --- |
-| `logo/logo-dynamic.svg` | Dynamic logo (SMIL) |
-| `logo/logo-static.svg` | Static geometry (feeds static PNG + social-static) |
-| `diagram/topology.svg` | English light diagram; bake writes dark SVG + PNG |
-| `custom.css` | Sidebar logo; topology; restore `.docs-dark-only` |
+`custom.css` styles the sidebar logo and the topology figure.
 
 ## Bake (`bake.jl`, Julia only — no Python)
 
@@ -69,8 +59,10 @@ julia docs/src/assets/bake.jl --png --gif  # + GIF (Chromium + ffmpeg)
 ```
 
 - default: Julia
-- `--png`: `rsvg-convert` or Chrome; sizes: social 1280×640, logo 960×960,
-  topology 1120×472, `favicon.ico` 16+32+48 from `favicon.svg`
+- `--png`: `rsvg-convert` or Chrome; sizes: social 1280×640, README banner
+  PNG 2560×840 (SVG stays 1280×420; light and dark), logo 960×960, topology 1120×472,
+  `favicon.ico` 16 (XS) + 32 (S) + 48 (M). The tab mark fills 124 of
+  the 128 square; the lockup mark stays at 108
 - `--gif`: Chrome / Chromium (4 parallel workers) + `ffmpeg`
 
 CI (`.github/workflows/assets-bake.yml`) re-runs the default bake when
@@ -80,20 +72,21 @@ raster, or `.raster-stamp-png` / `.raster-stamp-gif` after a complete
 `--png` / `--gif`). Bake `--png` / `--gif` locally before committing
 rasters (CI does not render them).
 
-## Story (~8s, dynamic)
+## Motion (7.8s)
 
-Setup → send → run → collect. Master is full-strength from t=0; remotes
-start faint. Send: master spins (~3 turns), one color per turn (R→G→P);
-remotes stay still until all solid. Then master + remotes spin together
-(~3 turns). Collect: quiet data-dots return; master sparkles.
-`prefers-reduced-motion` hides packets.
+The fan opens, a point travels to each child lamp, the lamps light, then
+the fan closes. That cycle always plays once. It opens again and stops
+when the pose matches the static logo: fan open, lamps lit, points gone.
 
 ## Layout notes
 
-- No ring; thin wires; size-aware fan; each remote owns its wire
-- Social SVG and PNG **1280×640** (GitHub Social preview); fill most of a
-  ~**960×480** zone (soft ≈100×60 inset); kit lockup (mark | title +
-  tagline)
-- Nested logo `viewBox="0 26 240 240"`; static/dynamic social share chrome
+- Social SVG and PNG **1280×640** (GitHub Social preview). The lockup is
+  shifted so the fan's painted left edge and the end of the first tagline
+  share the side margin. The README banner does not use that shift
+- README banner SVG **1280×420**, PNG **2560×840**: the box lockup (mark
+  square beside the text column), 40px above and below the mark. The README
+  shows it at 640px wide. Light card is white. Dark card is transparent,
+  with light text
+- Nested logo `viewBox="0 0 128 128"`; static/dynamic social share chrome
 - Upload `social/social-preview-static.png` under GitHub → Settings →
   Social preview

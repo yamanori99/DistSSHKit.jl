@@ -12,13 +12,19 @@ julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
 That is `test/runtests.jl`, which includes the files under Layout:
-public reexports and `julia -m DistSSHKit` routing. Tests for a job
+public reexports and `julia -m DistSSHKit` routing.
+`reexport.jl` pins the names Kit exports. If that test fails after a
+DistSSHRun or DistSSHQueue release and Kit itself did not change, read the
+new name. Update the set in a Kit patch when a new `export` is intended.
+A public-only name is not reexported, so it does not update the set.
+`rsync_send_list` stays until 0.11, when `_PUBLIC_ONLY_KEPT` is removed.
+Tests for a job
 started on this machine live in DistSSHRun.
 Tests for jobs left on a machine that stays on live in DistSSHQueue.
 Aqua is a separate CI job, not `Pkg.test()`.
-`Pkg.test()` must pass on a Registry install (that tree has no
-`Manifest.toml`, and `pkgdir` is often mode 444). Real SSH is DistSSHRun's
-E2E, not this repo. Occasional copy recipe: [Registry tree](#registry-tree).
+`Pkg.test()` on this checkout is not the PkgEval sandbox. Real SSH is
+DistSSHRun's E2E, not this repo. Reproduce that sandbox:
+[PkgEval](#pkgeval).
 
 ## Layout
 
@@ -26,7 +32,7 @@ E2E, not this repo. Occasional copy recipe: [Registry tree](#registry-tree).
 test/
   runtests.jl      # Pkg.test() — include only
   helpers.jl       # _main_capture, _with_fake_ssh, _kit_proc
-  reexport.jl      # public names
+  reexport.jl      # public names; pinned export set
   routing.jl       # main wording, streams, and the _route table
   consistency.jl   # command lists
   hop.jl           # qhost: PATH ssh, no real connection
@@ -50,98 +56,56 @@ Green on one layer does not imply the others. Child CLI uses
 - **Aqua** (~5 s): ambiguities, exports, compat (latest registry Aqua).
   Not CLI / workers.
 - **Pkg.test**: reexports and `julia -m DistSSHKit` routing
-  (the files under [Layout](#layout)). Ubuntu, `macos-latest`, and WSL2 Ubuntu.
-  All three are required checks.
+  (the files under [Layout](#layout)). Ubuntu and `macos-latest` are required
+  checks. WSL2 Ubuntu runs on a main push and CI weekly, not on a pull request.
 - **unit / integration / SSH E2E**: a job started on this machine, in
   DistSSHRun. Not this repo's `Pkg.test()`.
 - **doctests** (~5 s): `src/` docstring examples (Documenter, Julia 1.13).
   Not workers / SSH.
 
-## Registry tree
+## Compile bench
 
-[PkgEval](https://github.com/JuliaCI/PkgEval.jl) (via
-[Nanosoldier](https://github.com/JuliaCI/Nanosoldier.jl)) and `Pkg.add` use
-a Registry tarball, not this checkout. This package:
+`bench/compile/measure.jl` records precompile time, `using` time, CLI wall time, the size of `src/**/*.jl` (file count, physical lines, non-blank lines, bytes), and the host (OS name, arch, CPU). CI weekly runs it on Julia 1.13, 1.14-nightly, and nightly, and so does a `main` push that raises `Project.toml` `version`. A `main` run appends the sample to the `bench-data` branch. A render job then rebuilds that branch's README and `bench.html` from the history already there, publishes the page on GitHub Pages, and so does a `main` push that changes `bench/compile/report.jl` or `bench/compile/charts.jl`. That push does not measure. A pull request that changes the file renders the history into the job summary and does not push. A command that exits nonzero stops the run before a sample is written. Every run uploads the sample as an artifact. A run that is not `main` does not push. A sample is flagged when, against the previous sample on the same Julia slot, the host OS or arch changes, package precompile grows by 1.5x and 0.5s, a command wall grows by 1.5x and 1s, or a method of at least 200 ms is new in the top 20 or doubles. The job is `continue-on-error` and does not fail the weekly notify.
+
+```bash
+./bench/compile/measure.sh --slot local --history /tmp/compile-bench-history
+./bench/compile/render.sh --history /tmp/compile-bench-history --readme /tmp/compile-bench-README.md
+```
+
+## PkgEval
+
+[PkgEval](https://github.com/JuliaCI/PkgEval.jl) provides the sandbox the
+ecosystem daily uses. The sandbox is Debian bookworm without `tzdata`, with
+`LANG=C.UTF-8`, a pipe for stdout, and a 45 minute test limit. Daily uses
+the General tarball. This recipe mounts this checkout read-only, and
+dependencies resolve from General, so an unreleased DistSSHRun or
+DistSSHQueue change is not in the sandbox. This package:
 <https://juliaci.github.io/NanosoldierReports/pkgeval_badges/D/DistSSHKit.html>
 Latest ecosystem report:
 <https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html>
-Reproduce that tree: copy without this checkout's `.git` / `Manifest.toml`, `Pkg.add`
-from a **bare** `file://` git (so the installed package dir has no `.git` —
-DistSSHKit talks to git for jobs, not for its own install), `chmod a-w` on
-`pkgdir`, then `Pkg.test`. Do this after changing the gates above, and
-before a General cut. CI: `Pkg.test (registry, ubuntu-latest, x64)` on **main** and
-a version-cut PR (slot tip, no `ssh`; not a required check). Not
-ordinary PRs.
+Run it on Linux with cgroup v2 and unprivileged user namespaces, before a
+General cut. The host Julia is 1.13 or newer. PkgEval is not in General,
+so this adds it from its repository. The tested Julia is the published
+julia-latest tarball (`julia="nightly"`). It follows master and can lag a
+`VERSION` bump. The ecosystem daily pins a master commit and enables
+assertions, so its Julia is not this tarball.
+CI: `PkgEval (nightly, ubuntu-latest, x64)` on **main** and a version-cut
+PR (`continue-on-error`; not a required check). Not ordinary PRs.
 
-Copy without `Manifest.toml` (and without `.git`). On Linux, `mktemp -d` is
-enough.
-
-```bash
-WORKDIR=$(mktemp -d "$HOME/dsk.XXXXXX")
-rsync -a \
-  --exclude .git \
-  --exclude Manifest.toml \
-  --exclude docs/Manifest.toml \
-  --exclude docs/build \
-  --exclude test/artifacts \
-  ./ "$WORKDIR/"
-```
-
-This machine (**1.13**, and `+nightly`). Distro `ssh` / `git` stay on `PATH`.
-On Linux this is enough for the tree; it does not reproduce a missing
-`ssh`. Do not `git init` inside the copy (that would put `.git` on this
-package tree). Use a bare repo, then `Pkg.add(; url=)`.
-
-```bash
-BARE=$(mktemp -d "$HOME/dsk.git.XXXXXX")
-git init --bare -q "$BARE"
-git --git-dir="$BARE" --work-tree="$WORKDIR" add -A
-git --git-dir="$BARE" --work-tree="$WORKDIR" \
-  -c user.email=ci@distsshkit -c user.name=ci commit -q -m tree
-```
+From this checkout:
 
 ```bash
 julia -e '
   using Pkg
   Pkg.activate(temp=true)
-  Pkg.add(; url=ARGS[1])
-  using DistSSHKit
-  run(Cmd(["chmod", "-R", "a-w", pkgdir(DistSSHKit)]))
-  Pkg.test("DistSSHKit")
-' "file://$BARE"
-```
-
-Linux without `ssh`: same [juliaup](https://github.com/JuliaLang/juliaup)
-Ubuntu container from macOS or from Linux
-([Docker Hub `julia`](https://hub.docker.com/_/julia) has no `nightly`
-tag). `--no-install-recommends` keeps `openssh-client` out.
-
-```bash
-docker run --rm \
-  -v "$WORKDIR:/pkg:ro" \
-  ubuntu:24.04 \
-  bash -lc "
-    apt-get update -qq &&
-    apt-get install -y -qq --no-install-recommends \
-      curl ca-certificates git &&
-    curl -fsSL https://install.julialang.org |
-      sh -s -- --yes --default-channel nightly &&
-    export PATH=\"\$HOME/.juliaup/bin:\$PATH\" &&
-    cp -a /pkg /tmp/dsk &&
-    git init --bare -q /tmp/dsk.git &&
-    git --git-dir=/tmp/dsk.git --work-tree=/tmp/dsk add -A &&
-    git --git-dir=/tmp/dsk.git --work-tree=/tmp/dsk \
-      -c user.email=ci@distsshkit -c user.name=ci \
-      commit -q -m tree &&
-    julia +nightly -e '
-      using Pkg
-      Pkg.activate(temp=true)
-      Pkg.add(; url=\"file:///tmp/dsk.git\")
-      using DistSSHKit
-      run(Cmd([\"chmod\", \"-R\", \"a-w\", pkgdir(DistSSHKit)]))
-      Pkg.test(\"DistSSHKit\")
-    '
-  "
+  Pkg.add(url="https://github.com/JuliaCI/PkgEval.jl")
+  using PkgEval
+  config = Configuration(; julia="nightly")
+  pkg = Package(; name="DistSSHKit", url="/package")
+  result = PkgEval.evaluate_package(config, pkg; echo=true,
+      mounts=Dict("/package:ro" => pwd()))
+  exit(result.status == :test ? 0 : 1)
+'
 ```
 
 ## Writing tests
