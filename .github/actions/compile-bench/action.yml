@@ -65,18 +65,34 @@ runs:
           echo "sample unchanged"
           exit 0
         fi
-        git -C "$dest" \
-          -c user.name="github-actions[bot]" \
-          -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-          commit -m "Record compile bench for ${SLOT}."
-        if [ "$existed" = "1" ]; then
-          for _ in 1 2 3; do
-            git "${net[@]}" -C "$dest" push origin HEAD:bench-data && exit 0
-            git "${net[@]}" -C "$dest" pull --rebase origin bench-data
+        # Repo identity. `-c` on `commit` does not apply to `pull --rebase`.
+        git -C "$dest" config user.name "github-actions[bot]"
+        git -C "$dest" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git -C "$dest" commit -m "Record compile bench for ${SLOT}."
+        # 1.13, 1.14-nightly, and nightly push this branch together.
+        # A rejected push rebases onto the new tip and tries again.
+        push_bench() {
+          local attempt
+          for attempt in 1 2 3 4 5 6; do
+            if git "${net[@]}" -C "$dest" push origin HEAD:bench-data; then
+              return 0
+            fi
+            if ! git "${net[@]}" -C "$dest" pull --rebase origin bench-data; then
+              echo "rebase onto bench-data failed (attempt ${attempt})" >&2
+              git -C "$dest" rebase --abort || true
+              return 1
+            fi
+            if [ "$attempt" -lt 6 ]; then
+              sleep "$attempt"
+            fi
           done
-          exit 1
+          git "${net[@]}" -C "$dest" push origin HEAD:bench-data
+        }
+        if [ "$existed" = "1" ]; then
+          push_bench
+        else
+          git "${net[@]}" -C "$dest" push origin HEAD:bench-data
         fi
-        git "${net[@]}" -C "$dest" push origin HEAD:bench-data
     - name: Report this run
       if: github.ref != 'refs/heads/main'
       shell: bash

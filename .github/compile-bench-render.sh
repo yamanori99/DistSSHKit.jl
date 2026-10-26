@@ -55,23 +55,37 @@ if [ "${BENCH_PUSH:-0}" != "1" ] || [ "${GITHUB_EVENT_NAME:-}" = "pull_request" 
     exit 0
 fi
 
-commit_as_bot() {
-    git -C "$1" \
-        -c user.name="github-actions[bot]" \
-        -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-        commit -m "$2"
+# Repo identity. `-c` on `commit` does not apply to `pull --rebase`.
+git_bot() {
+    git -C "$1" config user.name "github-actions[bot]"
+    git -C "$1" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 }
 
-# Three tries. A failed push rebases onto the branch and tries again.
+commit_as_bot() {
+    git_bot "$1"
+    git -C "$1" commit -m "$2"
+}
+
+# Six tries. 1.13, 1.14-nightly, and nightly can push the same branch together.
+# A rejected push rebases onto the new tip and tries again.
 push_ref() {
     local dir="$1"
     local branch="$2"
-    local _
-    for _ in 1 2 3; do
-        git "${net[@]}" -C "$dir" push origin "HEAD:${branch}" && return 0
-        git "${net[@]}" -C "$dir" pull --rebase origin "$branch"
+    local attempt
+    for attempt in 1 2 3 4 5 6; do
+        if git "${net[@]}" -C "$dir" push origin "HEAD:${branch}"; then
+            return 0
+        fi
+        if ! git "${net[@]}" -C "$dir" pull --rebase origin "$branch"; then
+            echo "rebase onto ${branch} failed (attempt ${attempt})" >&2
+            git -C "$dir" rebase --abort || true
+            return 1
+        fi
+        if [ "$attempt" -lt 6 ]; then
+            sleep "$attempt"
+        fi
     done
-    return 1
+    git "${net[@]}" -C "$dir" push origin "HEAD:${branch}"
 }
 
 git -C "$dest" config http.extraheader "AUTHORIZATION: basic ${basic}"
@@ -102,13 +116,26 @@ if git -C "$pages" diff --cached --quiet; then
 fi
 commit_as_bot "$pages" "Publish compile bench page."
 # pull --rebase on this shallow clone would fetch the rest of the docs tree.
+# Rebase rewrites the commit, so this repo needs the same identity as bench-data.
 push_pages() {
-    local _
-    for _ in 1 2 3; do
-        git "${net[@]}" -C "$pages" push origin HEAD:gh-pages && return 0
-        git "${net[@]}" -C "$pages" fetch --filter=blob:none --depth=1 origin gh-pages
-        git -C "$pages" rebase --onto FETCH_HEAD HEAD~1
+    local attempt
+    for attempt in 1 2 3 4 5 6; do
+        if git "${net[@]}" -C "$pages" push origin HEAD:gh-pages; then
+            return 0
+        fi
+        if ! git "${net[@]}" -C "$pages" fetch --filter=blob:none --depth=1 origin gh-pages; then
+            echo "fetch gh-pages failed (attempt ${attempt})" >&2
+            return 1
+        fi
+        if ! git -C "$pages" rebase --onto FETCH_HEAD HEAD~1; then
+            echo "rebase onto gh-pages failed (attempt ${attempt})" >&2
+            git -C "$pages" rebase --abort || true
+            return 1
+        fi
+        if [ "$attempt" -lt 6 ]; then
+            sleep "$attempt"
+        fi
     done
-    return 1
+    git "${net[@]}" -C "$pages" push origin HEAD:gh-pages
 }
 push_pages
