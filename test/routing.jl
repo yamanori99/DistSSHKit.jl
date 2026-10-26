@@ -12,11 +12,19 @@ using Random
         @test occursin("julia -m DistSSHKit <command>", err)
         @test occursin("submit", err)
     end
-    let (code, out, err) = _main_capture(["bogus"])
+    let (code, out, err) = _main_capture(["foo"])
         @test code == 1
         @test isempty(out)
-        @test occursin("Unknown subcommand: bogus", err)
+        @test occursin("Unknown subcommand: foo", err)
         @test occursin("submit", err)
+    end
+    # `help foo` is that same rejection. The named word is `foo`.
+    @test _main_capture(["help", "foo"]) == _main_capture(["foo"])
+    let (code, _, err) = _main_capture(["help", "map_echo.jl"])
+        @test code == 1
+        @test occursin("got \"map_echo.jl\"", err)
+        @test occursin("does not infer go / ride / drive", err)
+        @test !occursin("Unknown subcommand", err)
     end
     let (code, out, err) = _main_capture(["--project=.", "go", "x.jl"])
         @test code == 1
@@ -70,8 +78,9 @@ using Random
     _test_same_page(["help", "size"], DistSSHRun.main, ["size", "--help"])
     _test_same_page(["submit", "--help"], DistSSHQueue.main)
     _test_same_page(["help", "submit"], DistSSHQueue.main, ["submit", "--help"])
-    # `submit go --help` checks the queue target before the flag page.
-    # `DISTSSHQUEUE_LOCAL` is how Queue's own suite reaches that page.
+    # `submit <kind> --help` is the page before Queue's target check
+    # (DistSSHQueue 0.9.10). The local-trial env stays so a 0.9.9 floor
+    # still reaches that page.
     withenv(DistSSHQueue.LOCAL_QUEUE_ENV => "1") do
         for kind in string.(DistSSHQueue.KIT_EXECUTE_KINDS)
             _test_same_page(
@@ -127,9 +136,9 @@ let routes = [
         (["go", "x.jl"], (:run, ["go", "x.jl"])),
         (["x.jl"], (:no_command, "x.jl")),
         (["map_echo.jl"], (:no_command, "map_echo.jl")),
-        (["bogus"], (:unknown, "bogus")),
-        # `-h` with an extra word is an unknown subcommand.
-        (["-h", "bogus"], (:unknown, "-h")),
+        (["foo"], (:unknown, "foo")),
+        # `-h` with an extra word is an unknown subcommand. The name is `-h`.
+        (["-h", "foo"], (:unknown, "-h")),
         (["-h", "go"], (:unknown, "-h")),
         # Help words only are the root page. No arguments stay exit 1.
         (["help", "--help"], (:usage, 0)),
@@ -137,12 +146,17 @@ let routes = [
         (["help", "help"], (:usage, 0)),
         (["--help", "help"], (:usage, 0)),
         (["help", "-h", "--help"], (:usage, 0)),
-        # `help <verb>` is that verb's `--help`. The second word of a miss stays `help`.
+        # `help <verb>` is that verb's `--help`. A miss names the second word.
         (["help", "go"], (:run, ["go", "--help"])),
         (["help", "size"], (:run, ["size", "--help"])),
         (["help", "setup"], (:run, ["setup", "--help"])),
         (["help", "go", "--hosts", "parent"], (:run, ["go", "--help", "--hosts", "parent"])),
-        (["help", "bogus"], (:unknown, "help")),
+        (["help", "foo"], (:unknown, "foo")),
+        (["help", "map_echo.jl"], (:no_command, "map_echo.jl")),
+        (["help", "parent:2", "job.jl"], (:no_command, "parent:2")),
+        # A help word or `qhost:` after `help` is not dropped.
+        (["help", "help", "foo"], (:unknown, "help")),
+        (["help", "qhost:HOST", "status"], (:queue, ["help", "qhost:HOST", "status"])),
         (["help", "qhost", "setup"], (:queue, ["setup", "--help"])),
         (["help", "qhost", "size"], (:queue, ["size", "--help"])),
         (["help", "qhost", "go"], (:queue, ["go", "--help"])),

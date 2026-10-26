@@ -416,9 +416,11 @@ PR type).
 
 | `when:*` | Use |
 | --- | --- |
-| `when:current` | Broken daily path or CLI that lies; same 0.7 contract |
-| `when:next` | Same contract: chrome, copy, colors |
-| `when:later` | Later cut: testitem, citation, comparison docs |
+| `when:current` | Bug on the ordinary path or lying CLI; patch promptly |
+| `when:next` | Non-breaking (opt-in, docs, CI); ships when needed or after 2 weeks in Unreleased |
+| `when:later` | Breaking milestone batch, or waits on upstream (e.g. julia-next) |
+
+An issue on the open breaking milestone (`X.Y.0`, no due date) gets `when:later`. That milestone is the batch in [When to cut](docs/src/developers/releasing.md#when-to-cut).
 
 ## Language
 
