@@ -115,6 +115,11 @@ CI. A jump against a sample from months ago is a question for the
 files, not for that flag.
 
 `bench.html` draws the method times and every command's wall time.
+The charts open on the last 30 days ending at the newest sample.
+`+`, `-`, and `?range=` still select the other ranges, including `all`.
+Version, host, and Julia changes stay as vertical lines. The text for
+those lines is listed under each chart, for the same samples the chart
+shows. Hover includes the package version and the host.
 A time is a specialization that command compiled. The page shows the
 requested count of those times. When the latest sample has fewer than
 that count, earlier samples in the window supply the rest. The table
