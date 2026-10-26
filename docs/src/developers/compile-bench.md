@@ -122,12 +122,17 @@ text sits inside the plot, at the top of the line. Labels that would
 overlap at the current range drop to the next row. The same events are
 listed under each chart, with the time, for the same samples the chart
 shows. Hover includes the package version and the host.
-A time is a specialization that command compiled. The page shows the
-requested count of those times. When the latest sample has fewer than
-that count, earlier samples in the window supply the rest. The table
-shows that sample's date and the rank the method had there. Its
-milliseconds are that measurement, and the millisecond change is the
-difference from the sample before it. Above the table, the page shows
+A time is a specialization that command compiled. The table is the
+latest sample's requested count of those times. Its milliseconds are
+that measurement, and the millisecond change is the difference from
+the sample before it. The chart keeps a line for every specialization
+that was in that count on any sample in the range. A point is the
+milliseconds that sample stored. When the sample did not store it,
+the line has no point there and does not connect across the gap.
+Hover on the last point of the line says `last`. The color key keeps
+the name. When the latest sample has no row for a command, that
+command's now cell is empty and its wall line keeps the earlier points.
+Above the table, the page shows
 the sum of every specialization in that command's trace, and the
 difference from the previous sample. It does not
 list functions the trace never named. The page is not every method under
