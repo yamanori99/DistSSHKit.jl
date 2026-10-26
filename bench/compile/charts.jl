@@ -637,7 +637,7 @@ function drawWall(samples) {
     dropped.notes.forEach((value) => notes.push(name + " " + value + "s omitted"));
     return {
       type: "scatter", mode: "lines+markers", name, connectgaps: false,
-      marker: { size: 4 },
+      marker: { size: 2 },
       x: samples.map((sample) => sample.time),
       y: dropped.values,
       customdata: samples.map((sample) => sampleMark(sample, slots)),
@@ -694,7 +694,7 @@ function drawMethods(samples) {
     const ys = samples.map((sample) => methodMs(sample, state.cmd, method.signature));
     return {
       type: "scatter", mode: "lines+markers", name: method.short, connectgaps: false,
-      marker: { size: 4 },
+      marker: { size: 2 },
       x: samples.map((sample) => sample.time),
       y: ys,
       customdata: hoverMarks(samples, ys),
