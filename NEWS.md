@@ -9,23 +9,10 @@ Releases through 0.9.0 are in [HISTORY.md](HISTORY.md).
 
 ## Unreleased
 
-- `help <word>` exits 1 and names that word when it is not a command or a help topic, the same rejection as that word alone. `help foo` used to name `help`. `-h foo` still names `-h`. Requires DistSSHRun 0.1.16.
+Notes since the last release are files in `changelog.d/`.
+The version-cut PR copies them into this file.
 
 ### Planned breaking (next minor)
-
-- `terminate!` / `terminate_run!` `interrupt_grace` will default to a positive value, so a stop sends SIGINT before SIGTERM. `cancel` of a running job will use that default. Until then the default is `0` and `cancel` does not send SIGINT. DistSSHKit 0.11 (DistSSHRun 0.2, DistSSHQueue 0.10).
-- `-y`, `--yes`, and `DISTSSHKIT_YES` will stop authorizing
-  `setup --delete`, `setup --prune`, and `teardown`. Without
-  `--confirm-path`, `-y` will exit 1. A `teardown` that was not asked to
-  delete still prints `Would remove` and exits 0. `up default` still
-  honors `DISTSSHKIT_YES`. DistSSHKit 0.11 (DistSSHRun 0.2, DistSSHQueue 0.10).
-  `KitSession` `yes=true` is outside this change. `setup!(session, :delete)`
-  and `setup!(session, :prune)` without `confirm_path` still follow `session.yes`.
-- `rsync_send_list` will stop being reexported. It stays public on
-  DistSSHRun. DistSSHKit 0.11.
-- Names DistSSHRun 0.2 stops exporting will stop being reexported.
-  `parse_go_args`, `parse_drive_args`, and `parse_ride_args` stay.
-  DistSSHKit 0.11 (DistSSHRun 0.2).
 
 ## 0.10.6
 

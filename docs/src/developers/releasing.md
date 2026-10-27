@@ -73,9 +73,21 @@ otherwise.
 - A breaking change is its own pull request, with the `breaking` label.
   A branch named `breaking/…` or `break/…` adds that label. Do not mix it
   with a fix or a new feature.
-- Put the NEWS entry under `### Breaking` in `## Unreleased`.
+- Record it as one `changelog.d/<slug>.md` fragment with
+  `category: breaking`. Do not edit `NEWS.md` on that pull request.
 - Split a safety fix from the hardening that follows it. The fix is
   usually a patch. The hardening is often breaking.
+
+A fragment file name matches `[a-z0-9][a-z0-9.-]{0,60}.md`. The first
+line is `category:` and one of `breaking`, `planned`, `added`, `fixed`,
+`changed`, or `skip`. A blank line follows, then the bullet. `skip` is
+one reason line and is left out of `NEWS.md`. There is no other field.
+A pull request that changes `src/`, `lib/**/src/`, or `ext/` adds one
+valid fragment. Docs, tests, and CI do not need one. Dependabot is
+exempt. On a non-cut pull request, the `breaking` label and a
+`category: breaking` fragment are both present or both absent. A
+`planned` fragment does not use that label. Feature pull requests do
+not edit `NEWS.md`.
 
 A change pull request needs one of `bug`, `enhancement`, `breaking`, or
 `chore`. CI applies that from a closing issue, then the branch prefix
@@ -89,16 +101,21 @@ one of the four labels. Dependabot is exempt.
 A version-cut pull request uses the orthogonal `cut` label and does not
 need one of those four type labels. CI reads the `Project.toml` version
 diff directly, so this does not depend on which label workflow finishes
-first. A cut is not itself `chore` or `breaking`; the version increase and
-the required `NEWS.md` structure classify the release.
+first. A cut is not itself `chore` or `breaking`. The version increase
+and the `NEWS.md` section from `.github/news-collect.sh` classify the
+release. The cut does not pair the `breaking` label with a fragment.
 
 ## Deprecation
 
 1. Patch: keep the old behavior and warn. Use `Base.depwarn` for a Julia
    API. The default `--depwarn=no` hides it outside tests, so also write
-   NEWS and the docs. For the CLI, print one line on stderr. Say what
+   a fragment and the docs. For the CLI, print one line on stderr. Say what
    goes away, in which version, and what to use instead.
-2. NEWS: `### Planned breaking (next minor)` under `## Unreleased`.
+2. Fragment: `changelog.d/<slug>.md` with `category: planned`. The
+   version-cut PR copies that bullet under
+   `### Planned breaking (next minor)` and keeps the file. The minor
+   that carries it out changes the line to `category: breaking` before
+   `./.github/news-collect.sh`. The script does not change the category.
 3. `AGENTS.md`: tell agents not to use the deprecated form.
 4. The next minor may remove it. There is no minimum wait.
 
@@ -113,14 +130,15 @@ When `-y` and `DISTSSHKIT_YES` stop authorizing `setup --delete`,
 
 ## When to cut
 
-Not a calendar. Cut when `## Unreleased` has something General users
-should get. Do not ship an empty cut. Do not automate the version bump
+Not a calendar. Cut when `changelog.d/` has something General users
+should get. Do not ship an empty cut. `news-collect.sh` fails when the
+new section would have no bullet. Do not automate the version bump
 or `@JuliaRegistrator register`.
 
 - A bug on the ordinary path ([Packages](packages.md)): cut that patch
   promptly.
 - Opt-in flags, docs, CI, labels, and internal changes: when someone
-  needs them on General, or when they have sat in Unreleased for two
+  needs them on General, or when they have sat in `changelog.d/` for two
   weeks. Docs-only changes do not get their own tag. They go out with
   the next release.
 - Breaking changes wait and go out together. Do not promise a date.
@@ -165,20 +183,29 @@ a patch prerelease (`0.1.7-DEV` to `0.1.7`) is a patch cut.
 
 Patch:
 
-1. Rename `## Unreleased` to `## X.Y.Z`. Leave
-   `### Planned breaking (next minor)` under a new `## Unreleased`.
-   The release section has no `### Breaking` heading. The warning you
-   added in this patch is a normal bullet in the release section.
-2. Raise `version` in `Project.toml`, and compat floors when
-   [Dependency floor](@ref) says to.
-3. Keep the cut commit to `Project.toml`, `NEWS.md`, and the compat
-   files. No workflow files.
+1. Raise `version` in `Project.toml`, and compat floors when
+   [Dependency floor](@ref) says to. The collector reads that version.
+2. Run `./.github/news-collect.sh` with no arguments. It writes
+   `## X.Y.Z` from fragments whose category is `breaking`, then
+   `changed`, then `added`, then `fixed`. Within one category, file
+   names are sorted. A `breaking` fragment adds a `### Breaking`
+   heading. The other release bullets stay flat. It deletes those
+   fragments and every `skip` fragment. It rewrites `## Unreleased` to
+   the stable note plus `### Planned breaking (next minor)` from the
+   `planned` fragments, and it leaves those files in `changelog.d/`.
+   It fails when the new section would have no bullet. A patch that
+   still has a `breaking` fragment gets `### Breaking`, which the NEWS
+   check rejects.
+3. Keep the cut commit to `Project.toml`, `NEWS.md`, `changelog.d/`,
+   and the compat files. No workflow files.
 
 Minor:
 
-1. The release section has a `### Breaking` heading and lists every
-   breaking change. Move the items you carried out from
-   `### Planned breaking (next minor)`.
+1. Change `category: planned` to `category: breaking` on each fragment
+   this minor carries out. Leave the others as `planned`. Then run
+   `./.github/news-collect.sh`. The script does not promote a category.
+   The release section has `### Breaking` when a `breaking` fragment
+   exists.
 2. Release in the order on [Packages](packages.md). Wait for General
    between steps. A package that reexports the broken API raises its
    minor. A package that only depends on it, and does not leak the
@@ -186,15 +213,19 @@ Minor:
 3. In the DistSSHKit manual, change deprecation notes that named this
    minor to say the old form is gone.
 
-On a version-cut pull request, the `Release NEWS` workflow reads the new
-`## X.Y.Z` section (from that heading to the next level-2 heading). A missing
-section fails. A patch fails if the section contains a heading that is
-exactly `### Breaking`. A breaking bump fails if that heading is missing.
-`### Planned breaking (next minor)` is not that heading. The check warns
-if a commit since the previous `v*` tag names a pull request labeled
-`breaking`. The warning does not fail the job. A reverted pull request
-stays in the history, so the warning is not a failure. If the GitHub API
-call fails, there is no warning.
+On a version-cut pull request, CI runs `.github/news-collect.sh --check`,
+then `.github/release-news.sh`. `--check` fails when a `breaking`,
+`changed`, `added`, `fixed`, or `skip` fragment is still in
+`changelog.d/`, when `## Unreleased` does not match the remaining
+`planned` fragments, or when `## X.Y.Z` has no bullet. The release-news
+check reads the new `## X.Y.Z` section (from that heading to the next
+level-2 heading). A missing section fails. A patch fails if the section
+contains a heading that is exactly `### Breaking`. A breaking bump fails
+if that heading is missing. `### Planned breaking (next minor)` is not
+that heading. The check warns if a commit since the previous `v*` tag
+names a pull request labeled `breaking`. The warning does not fail the
+job. A reverted pull request stays in the history, so the warning is not
+a failure. If the GitHub API call fails, there is no warning.
 
 Do not lower `version`. General never takes a version down. Do not skip
 a version number (`0.1.6` then `0.1.8`). A version held by `cut-hold` is
@@ -243,7 +274,7 @@ unless that path failed. Manual rebuild:
 GitHub Releases need a token that can `POST /repos/.../releases`
 (`Contents: write`). `GITHUB_TOKEN` returned 403 on v0.7.1 even though
 that commit did not touch `.github/workflows`. Keep cut commits to
-`Project.toml`, `NEWS.md`, and compat files. For Releases, set the
+`Project.toml`, `NEWS.md`, `changelog.d/`, and compat files. For Releases, set the
 repository secret `TAGBOT_PAT`: a fine-grained personal access token for
 this repository only, Contents read/write, Issues read/write. Add
 Workflows read/write only when the tagged commit changes
@@ -270,6 +301,7 @@ rise. Removing the label sticks until the next rise. CI reads the file,
 not the label.
 
 A new version that contains a hyphen (a prerelease, such as `0.2.0-DEV`)
-is not a cut, so it does not run the heavy suite or the NEWS check. The
-same numbers with the prerelease removed (`0.2.0-DEV` to `0.2.0`) is a
-cut.
+is not a cut, so it does not run the heavy suite or the version-cut NEWS
+check (`.github/news-collect.sh --check` and `.github/release-news.sh`).
+The fragment check (`.github/news-fragment.sh`) still runs. The same
+numbers with the prerelease removed (`0.2.0-DEV` to `0.2.0`) is a cut.

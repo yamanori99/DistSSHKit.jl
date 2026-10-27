@@ -33,6 +33,7 @@ runs:
             - "!CONTRIBUTING.md"
             - "!REVIEW.md"
             - "!NEWS.md"
+            - "!changelog.d/**"
             - "!HISTORY.md"
             - "!SECURITY.md"
             - "!LICENSE"
@@ -83,7 +84,13 @@ runs:
                 [ -z "$f" ] && continue
                 case "$f" in
                   Project.toml|NEWS.md) ;;
-                  *) only=false ;;
+                  changelog.d/*) ;;
+                  *)
+                    # changelog.d/** (a slash in the remainder).
+                    if [ "${f#changelog.d/}" = "$f" ]; then
+                      only=false
+                    fi
+                    ;;
                 esac
               done <<<"$names"
             fi
