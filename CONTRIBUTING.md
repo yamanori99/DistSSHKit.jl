@@ -85,7 +85,7 @@ DistSSHQueue `m_package`.
 julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
-Run this on **1.13** (and **1.14-nightly** or **nightly** if you have them).
+Run this on **1.13** (and **1.14-pre** or **nightly** if you have them).
 Layout: [test/README.md](test/README.md).
 
 Checkout `Pkg.test()` is not a registry install. General puts the
@@ -120,19 +120,26 @@ without coverage instrumentation. Status checks are informational
 
 Versions are lines in
 [`.github/julia-slots.env`](.github/julia-slots.env). Write the version
-(`1.13`, `1.14-nightly`, `nightly`). The job name uses that same string. Do not add
-a second stable line.
+(`1.13`, `~1.14.0-0`, `nightly`). Do not add a second stable line.
+Job titles for **1.13** and **nightly** use that string. The 1.14
+prerelease line keeps `~1.14.0-0` for setup-julia and uses the display
+label **1.14-pre** in the job title
+(`Pkg.test (1.14-pre, ubuntu-latest, x64)`).
 
 - **1.13** (required): `Project.toml` julia floor, the maintained
   stable. Pkg.test on Ubuntu and macOS, plus Aqua, JETLS,
   Documenter, bake. WSL2 1.13 Pkg.test is a main push and CI weekly,
   not a pull request. Codecov `pkgtest` on **main push**, Ubuntu only
-- **1.14-nightly** (not required): `release-1.14`. Ubuntu Pkg.test
-  and Aqua on **main**, **CI weekly**, and a version-cut PR. macOS and
-  WSL2 Pkg.test and Aqua on **CI weekly** only. `continue-on-error`
+- **1.14-pre** (not required): setup-julia `~1.14.0-0`. That range
+  tracks 1.14 alpha, then beta, then rc, then 1.14.x, and stays below
+  1.15. Ubuntu Pkg.test, Aqua, and JETLS on the heavy gate, including
+  ordinary pull requests, plus **main**, **CI weekly**, and a
+  version-cut PR. macOS and WSL2 Pkg.test and Aqua on **CI weekly**
+  only. `continue-on-error`
 - **nightly** (not required): the published `julia-latest` tarball. It follows
-  master and can lag a `VERSION` bump. Same jobs and the same
-  schedule as **1.14-nightly**. `continue-on-error`. Not in the ruleset
+  master and can lag a `VERSION` bump. Ubuntu Pkg.test and Aqua on
+  **main**, **CI weekly**, and a version-cut PR. macOS and WSL2 on
+  **CI weekly** only. No JETLS. `continue-on-error`. Not in the ruleset
 
 This package feels SSH hosts, Pkg, and lockfiles more than a compute-model
 library does. When Julia announces that it has stopped maintaining the
@@ -143,11 +150,11 @@ situations (a prerelease as the stable line, dropping a minor only for a
 language feature, and similar) are decided one by one. Do not move the
 stable line to nightly, or to a minor that has only just shipped, as an
 automatic rule. A release candidate of the next minor is not a second
-required version. **1.14-nightly** is that view until the stable line
+required version. **1.14-pre** is that view until the stable line
 moves.
 
 JETLS 2026-10-26 officially supports 1.12.2 through 1.14. The required
-job is **1.13**. **1.14-nightly** is informational (`continue-on-error`)
+job is **1.13**. **1.14-pre** is informational (`continue-on-error`)
 and is not a required check. No JETLS on nightly.
 
 When the stable line moves to a new **major.minor**, change the job names
@@ -157,7 +164,7 @@ and the main ruleset in the same PR.
 
 These run as jobs of the `Test` workflow
 ([`.github/workflows/CI.yml`](.github/workflows/CI.yml)). Ubuntu:
-`Pkg.test` 1.13, JETLS 1.13, informational JETLS 1.14-nightly,
+`Pkg.test` 1.13, JETLS 1.13, informational JETLS 1.14-pre,
 Aqua 1.13, Gitleaks (also rejects `< 0.0.1`
 in `Project.toml`). macOS (`macos-latest`):
 `Pkg.test` 1.13, same heavy gate, no coverage upload. macOS is required.
@@ -168,8 +175,11 @@ A pull request that runs it also pushes a preview to `gh-pages` at
 `previews/PR<n>`. The commit status `documenter/deploy` links to
 `https://yamanori99.github.io/DistSSHKit.jl/previews/PR<n>/`.
 That directory stays after the pull request closes.
-Ubuntu tip `Pkg.test` / Aqua stay on **main**, **CI weekly**, and a
-version-cut PR. macOS and WSL2 tip stay on **CI weekly** only.
+Ubuntu **1.14-pre** `Pkg.test`, Aqua, and JETLS use the heavy gate, so
+ordinary pull requests run them (`continue-on-error`). Ubuntu **nightly**
+`Pkg.test` and Aqua stay on **main**, **CI weekly**, and a version-cut
+PR. macOS and WSL2 **1.14-pre** and **nightly** stay on **CI weekly**
+only. No JETLS on nightly.
 `Registry install (1.13, ubuntu-latest, x64)` uses the same heavy gate
 as Ubuntu `Pkg.test` 1.13, so ordinary pull requests and **main** run it.
 It installs the head commit into a job-local depot and runs `Pkg.test`
@@ -262,7 +272,7 @@ JETLS / Aqua as a PR, including `macos-latest` (no coverage). WSL2 1.13
 runs on CI weekly and a main push, not on a pull request.
 Not a PR check. `Compile bench` measures precompile, load, CLI wall time,
 `src/**/*.jl` size, and the host OS, arch, and CPU on 1.13,
-1.14-nightly, and nightly. The page opens on 1.13. A solid line marks a
+1.14-pre, and nightly. The page opens on 1.13. A solid line marks a
 `Project.toml` version change. On the 1.13 slot, a dash-dot line marks a
 Julia patch change. CI weekly runs it, and a **main** push that changes the measured tree runs it too (`src/`, the bench measure inputs, `Project.toml`, and the compile-bench action and workflow). A docs-only push does not. A second run of the same commit on the same UTC day keeps the first sample. A **main**
 run appends that sample to the `bench-data` branch. A render job then rebuilds the README and `bench.html`, and a main run publishes that page on GitHub Pages. A **main** push of `bench/compile/report.jl` or `bench/compile/charts.jl` rebuilds them and does not measure. A pull request that changes the file renders the history into the job summary and does not push. How to read the archive
@@ -272,7 +282,7 @@ A command that exits nonzero
 is not recorded. It flags a host change, a 1.5x jump (and a 200 ms method
 that is new or doubled) but does not fail the run. Catches 1.13 / Aqua /
 JETLS `@release` drift when nothing merged that day. Failure of the 1.13
-jobs opens Issue `CI weekly failed` (`alert`); 1.14-nightly, nightly, and compile
+jobs opens Issue `CI weekly failed` (`alert`); 1.14-pre, nightly, and compile
 bench are omitted from that notify.
 
 **Runic monthly** (1st 10:00 JST, or Run workflow): `runic --check` on

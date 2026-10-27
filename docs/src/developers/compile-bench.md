@@ -36,7 +36,7 @@ on `main` opens an issue titled `Compile bench failed`, with the `alert`
 label. A later 1.13 success on `main` closes it. A skipped run does not
 close it. A docs-only push does not run the job, so it does not close it
 either. The
-1.14-nightly and nightly slots stay out of that issue. The page
+1.14-pre and nightly slots stay out of that issue. The page
 opens on 1.13. A solid line marks the sample where `version` changed.
 On the 1.13 slot, a dash-dot line marks a Julia patch change.
 
@@ -63,7 +63,7 @@ README.md
 bench.html
 ```
 
-`<slot>` is the CI name, such as `1.13`, `1.14-nightly`, or `nightly`. The name
+`<slot>` is the CI name, such as `1.13`, `1.14-pre`, or `nightly`. The name
 moves when the CI slot moves. Each file stores `julia` and
 `julia_commit`, so a later slot can still be lined up with an earlier
 one.
