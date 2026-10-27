@@ -103,7 +103,7 @@ check_news() {
     return 1
   fi
   if [ "$kind" = breaking ] && [ "$has" = false ]; then
-    echo "Breaking bump ${new} has no ### Breaking section." >&2
+    echo "Breaking bump ${new} has no ### Breaking section. General's AutoMerge also requires it." >&2
     return 1
   fi
   echo "NEWS section ## ${new} matches a ${kind} bump."
