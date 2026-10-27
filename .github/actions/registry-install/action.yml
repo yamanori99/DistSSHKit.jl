@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+name: registry-install
+description: Install one commit as a read-only depot package and Pkg.test it
+
+inputs:
+  package:
+    description: Package name passed to Pkg.test
+    required: true
+  rev:
+    description: Commit SHA to install. The checkout must be detached at this SHA.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Registry install ${{ inputs.package }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        REGISTRY_INSTALL_PACKAGE: ${{ inputs.package }}
+        REGISTRY_INSTALL_REV: ${{ inputs.rev }}
+        JULIA_PKGEVAL: "true"
+        PKGEVAL: "true"
+        LANG: C.UTF-8
+      run: |
+        set -euo pipefail
+        # No trailing colon: the runner's ~/.julia is not on JULIA_DEPOT_PATH.
+        depot="${RUNNER_TEMP}/registry-install-depot"
+        mkdir -p "${depot}"
+        case "${depot}" in
+          *:*)
+            echo "depot path contains a colon: ${depot}" >&2
+            exit 1
+            ;;
+        esac
+        export JULIA_DEPOT_PATH="${depot}"
+        head="$(git rev-parse HEAD)"
+        if [ "${head}" != "${REGISTRY_INSTALL_REV}" ]; then
+          echo "HEAD ${head} is not ${REGISTRY_INSTALL_REV}" >&2
+          exit 1
+        fi
+        if git symbolic-ref -q HEAD >/dev/null; then
+          echo "HEAD is attached. Pkg.add would follow the branch tip." >&2
+          exit 1
+        fi
+        # Pkg clones this checkout in full. A depth-1 checkout of the pull
+        # request merge ref does not contain the head commit.
+        if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+          echo "checkout is shallow" >&2
+          exit 1
+        fi
+        julia --startup-file=no -e '
+          using Pkg
+          pkg = ENV["REGISTRY_INSTALL_PACKAGE"]
+          rev = ENV["REGISTRY_INSTALL_REV"]
+          root = ENV["GITHUB_WORKSPACE"]
+          Pkg.activate(; temp=true)
+          Pkg.add(url=root, rev=rev)
+          info = nothing
+          for item in values(Pkg.dependencies())
+              item.name == pkg || continue
+              info = item
+              break
+          end
+          info === nothing && error("$pkg was not installed")
+          info.is_tracking_repo || error("$pkg is not a git install")
+          info.is_tracking_path && error("$pkg is a path install of the working tree")
+          src = something(info.source, "")
+          occursin("/packages/$(pkg)/", src) || error("$pkg installed at $src")
+          isfile(joinpath(src, "Project.toml")) || error("$src has no Project.toml")
+          iswritable(joinpath(src, "Project.toml")) && error("installed Project.toml is writable")
+          spec = rev * "^{tree}"
+          tree = readchomp(`git -C $root rev-parse $spec`)
+          installed = string(info.tree_hash)
+          installed == tree || error("installed tree $installed is not $tree")
+          println(stderr, "registry install ", pkg, " tree=", installed, " source=", src)
+          Pkg.test(pkg; julia_args=`--check-bounds=yes`)
+        '

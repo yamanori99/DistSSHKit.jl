@@ -10,6 +10,7 @@ on:
 # Cancel redundant runs on the same branch/PR.
 # A Project.toml version increase (see version-cut.sh) runs Ubuntu
 # 1.14-nightly, nightly, Aqua on those channels, and PkgEval in this workflow.
+# Registry install follows the heavy gate, including ordinary pull requests.
 # macOS for both channels is CI weekly. WSL2 1.13 Pkg.test runs on a main
 # push and CI weekly, not on a pull request. No label is involved.
 # A main push that changes only Project.toml and NEWS.md, and raises
@@ -171,6 +172,33 @@ jobs:
           cache-scratchspaces: false
           delete-old-caches: false
       - uses: ./.github/actions/pkg-test
+
+  # The commit under test, installed the way General installs it:
+  # packages/<name>/<slug>, read-only files, no gitignored Manifest.
+  # Pull requests checkout head.sha, not the merge ref. Not continue-on-error.
+  # Add the job name to the main ruleset; this file does not change it.
+  registry-install:
+    name: Registry install (1.13, ubuntu-latest, x64)
+    needs: detect
+    if: needs.detect.outputs.heavy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # pull_request's github.sha is the merge commit. Install the head.
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: ./.github/actions/julia-slot
+        with:
+          version: "1.13"
+      - uses: ./.github/actions/registry-install
+        with:
+          package: DistSSHKit
+          rev: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
   # Not a Julia slot. Not required to merge. This checkout inside PkgEval's
   # sandbox, against Julia nightly. Host Julia is 1.13. Dependencies come

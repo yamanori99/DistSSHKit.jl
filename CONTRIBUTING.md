@@ -88,10 +88,16 @@ julia --project=. -e 'using Pkg; Pkg.test()'
 Run this on **1.13** (and **1.14-nightly** or **nightly** if you have them).
 Layout: [test/README.md](test/README.md).
 
-Checkout `Pkg.test()` is not the PkgEval sandbox. Before a General cut,
-run the recipe in [test/README.md](test/README.md#pkgeval). CI runs that
-job on **main** and a version-cut PR (host Julia 1.13; test Julia is the julia-latest tarball;
-`continue-on-error`; not a required check). Not on ordinary PRs.
+Checkout `Pkg.test()` is not a registry install. General puts the
+committed tree in `~/.julia/packages/DistSSHKit/<slug>` with read-only
+files and no gitignored `Manifest.toml`. CI runs that install on the
+heavy gate (`Registry install (1.13, ubuntu-latest, x64)`), including
+ordinary pull requests and **main**. A pull request installs its head
+commit, not the merge commit. Dependencies come from General.
+`PkgEval (nightly, ubuntu-latest, x64)` is the sandbox in
+[test/README.md](test/README.md#pkgeval): **main** and a version-cut PR,
+host Julia 1.13, test Julia the julia-latest tarball, `continue-on-error`,
+not a required check. Not ordinary PRs. Run that recipe before a General cut.
 
 Smoke (1.13+; copies land in `distsshkit_demos/`):
 
@@ -163,8 +169,11 @@ A pull request that runs it also pushes a preview to `gh-pages` at
 `https://yamanori99.github.io/DistSSHKit.jl/previews/PR<n>/`.
 That directory stays after the pull request closes.
 Ubuntu tip `Pkg.test` / Aqua stay on **main**, **CI weekly**, and a
-version-cut PR. macOS and WSL2 tip stay on **CI weekly** only. Registry
-tree stays on **main** and a
+version-cut PR. macOS and WSL2 tip stay on **CI weekly** only.
+`Registry install (1.13, ubuntu-latest, x64)` uses the same heavy gate
+as Ubuntu `Pkg.test` 1.13, so ordinary pull requests and **main** run it.
+It installs the head commit into a job-local depot and runs `Pkg.test`
+with `--check-bounds=yes`. The PkgEval sandbox stays on **main** and a
 version-cut PR, not ordinary PRs. SSH is DistSSHRun's E2E, not a check
 on this repo.
 
@@ -199,6 +208,7 @@ green empty run).
 
 - `Pkg.test (1.13, ubuntu-latest, x64)`
 - `Pkg.test (1.13, macos-latest, aarch64)`
+- `Registry install (1.13, ubuntu-latest, x64)`
 - `JETLS (1.13, ubuntu-latest, x64)`
 - `Aqua (1.13, ubuntu-latest, x64)`
 - `Documenter (1.13, ubuntu-latest, x64)`

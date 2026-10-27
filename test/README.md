@@ -89,8 +89,12 @@ so this adds it from its repository. The tested Julia is the published
 julia-latest tarball (`julia="nightly"`). It follows master and can lag a
 `VERSION` bump. The ecosystem daily pins a master commit and enables
 assertions, so its Julia is not this tarball.
-CI: `PkgEval (nightly, ubuntu-latest, x64)` on **main** and a version-cut
-PR (`continue-on-error`; not a required check). Not ordinary PRs.
+CI: `Registry install (1.13, ubuntu-latest, x64)` on the heavy gate
+(ordinary pull requests and **main**). It `Pkg.add`s the head commit
+into a job-local depot and runs `Pkg.test` with `--check-bounds=yes`.
+Run and Queue resolve from General. `PkgEval (nightly, ubuntu-latest, x64)`
+stays on **main** and a version-cut PR (`continue-on-error`; not a
+required check). Not ordinary PRs.
 
 From this checkout:
 
