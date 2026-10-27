@@ -15,7 +15,7 @@ existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label alert
 if [ "$result" = "failure" ]; then
   body="Latest run: ${RUN_URL:?}
 
-The 1.13 compile bench on main failed, so that sample was not written. The 1.14-nightly and nightly slots are not part of this issue."
+The 1.13 compile bench on main failed, so that sample was not written. The 1.14-pre and nightly slots are not part of this issue."
   gh label create alert --description "Auto: scheduled check failed (E2E weekly, CI weekly, Runic)" --color "ff4d00" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || true
   if [ -n "$existing" ]; then
     gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"

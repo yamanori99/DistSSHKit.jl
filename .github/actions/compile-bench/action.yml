@@ -4,7 +4,7 @@ description: Measure precompile, load, CLI compile time, and src size
 
 inputs:
   slot:
-    description: Julia slot, such as 1.13, 1.14-nightly, or nightly
+    description: Julia slot, such as 1.13, 1.14-pre, or nightly
     required: true
   token:
     description: Token used to push the bench-data branch. Main runs only.
@@ -77,7 +77,7 @@ runs:
         git -C "$dest" config user.name "github-actions[bot]"
         git -C "$dest" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git -C "$dest" commit -m "Record compile bench for ${SLOT}."
-        # 1.13, 1.14-nightly, and nightly push this branch together.
+        # 1.13, 1.14-pre, and nightly push this branch together.
         # A rejected push rebases onto the new tip and tries again.
         push_bench() {
           local attempt

@@ -66,7 +66,7 @@ commit_as_bot() {
     git -C "$1" commit -m "$2"
 }
 
-# Six tries. 1.13, 1.14-nightly, and nightly can push the same branch together.
+# Six tries. 1.13, 1.14-pre, and nightly can push the same branch together.
 # A rejected push rebases onto the new tip and tries again.
 push_ref() {
     local dir="$1"
