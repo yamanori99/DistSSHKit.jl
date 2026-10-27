@@ -201,7 +201,7 @@ Allowlisted markdown-only PRs skip the heavy jobs (skipping UI):
 
 - `AGENTS.md`, `REVIEW.md`, `README.md`, `README.ja.md`,
   `CONTRIBUTING.md`, `NEWS.md`, `HISTORY.md`,
-  `SECURITY.md`, `LICENSE`
+  `SECURITY.md`, `LICENSE`, `changelog.d/**`
 - `.gitignore`, `.git-blame-ignore-revs`,
   `.github/pull_request_template.md`, `.coderabbit.yaml`
 - `docs/**`, and markdown under `test/`
@@ -224,6 +224,7 @@ green empty run).
 - `Documenter (1.13, ubuntu-latest, x64)`
 - `Gitleaks`
 - `PR label`
+- `NEWS section`
 
 ### Local checks
 
@@ -436,7 +437,7 @@ PR type).
 | `when:*` | Use |
 | --- | --- |
 | `when:current` | Bug on the ordinary path or lying CLI; patch promptly |
-| `when:next` | Non-breaking (opt-in, docs, CI); ships when needed or after 2 weeks in Unreleased |
+| `when:next` | Non-breaking (opt-in, docs, CI); ships when needed or after 2 weeks in `changelog.d/` |
 | `when:later` | Breaking milestone batch, or waits on upstream (e.g. julia-next) |
 
 An issue on the open breaking milestone (`X.Y.0`, no due date) gets `when:later`. That milestone is the batch in [When to cut](docs/src/developers/releasing.md#when-to-cut).
@@ -445,5 +446,5 @@ An issue on the open breaking milestone (`X.Y.0`, no due date) gets `when:later`
 
 `.jl` comments, docstrings, and errors: English. Install or Docs links:
 `docs/src`, [README.md](README.md), and [README.ja.md](README.ja.md).
-User-visible behavior: NEWS (date the section when tagged). Generative
+User-visible behavior: one fragment in `changelog.d/`. The version-cut PR copies fragments into `NEWS.md`. Generative
 AI is allowed; you own the diff. Keep docs plain.

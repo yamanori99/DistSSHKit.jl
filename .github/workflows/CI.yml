@@ -15,8 +15,8 @@ on:
 # Registry install follows the heavy gate, including ordinary pull requests.
 # macOS for 1.14-pre and nightly is CI weekly. WSL2 1.13 Pkg.test runs on a main
 # push and CI weekly, not on a pull request. No label is involved.
-# A main push that changes only Project.toml and NEWS.md, and raises
-# version, skips Test.
+# A main push that changes only Project.toml, NEWS.md, and changelog.d/**,
+# and raises version, skips Test.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}

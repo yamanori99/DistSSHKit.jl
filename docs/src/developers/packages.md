@@ -19,8 +19,9 @@ that example promises. It is not part of every Queue cut.
 
 DistSSHKit's required checks are the ones named in the table.
 A version-cut pull request runs the full suite. Path filters do not
-apply. A main push that only raises `version` and updates `NEWS.md`
-does not re-run Test. Register from the green pull request.
+apply. A main push that only raises `version`, updates `NEWS.md`, and
+changes `changelog.d/` does not re-run Test. Register from the green
+pull request.
 
 `cut-hold` is on DistSSHRun and DistSSHQueue. A red Linux job in a
 scheduled E2E weekly run (daily) adds it to the Issue `E2E weekly
