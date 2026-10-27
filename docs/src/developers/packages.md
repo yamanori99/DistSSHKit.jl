@@ -11,7 +11,7 @@ DistSSHRun, then DistSSHQueue, then DistSSHKit.
 | --- | --- | --- | --- | --- | --- | --- |
 | DistSSHRun | — | — | yes | — | `setup`, `go`, `ride`, `drive` | required checks, the PR's Linux E2E, and on a version-cut pull request `Downstream SSH E2E (DistSSHQueue, 1.13)`. Do not register while that job is red; open a DistSSHQueue issue when the cause is DistSSHQueue. Do not wait for E2E weekly. No open `cut-hold` |
 | DistSSHQueue | DistSSHRun | — | yes | `Project.toml`, `test/Project.toml` | FIFO enqueue, `serve` | required checks and the PR's Linux E2E. Do not wait for E2E weekly. No open `cut-hold` |
-| DistSSHKit | DistSSHRun, DistSSHQueue | DistSSHRun, DistSSHQueue | yes (main entry) | `Project.toml`, `test/Project.toml`, `docs/Project.toml` | ordinary `~/` roots, default `drive` / `go` / `setup` | `Pkg.test` 1.13 on Ubuntu and macOS; JETLS; Aqua; Documenter; Gitleaks; PR label. WSL2 1.13 is a main push and CI weekly, not the pull request gate. Do not wait on DistSSHRun's E2E |
+| DistSSHKit | DistSSHRun, DistSSHQueue | DistSSHRun, DistSSHQueue | yes (main entry) | `Project.toml`, `test/Project.toml`, `docs/Project.toml` | ordinary `~/` roots, default `drive` / `go` / `setup` | `Pkg.test` 1.13 on Ubuntu and macOS; `Registry install (1.13, ubuntu-latest, x64)`; JETLS; Aqua; Documenter; Gitleaks; PR label. WSL2 1.13 is a main push and CI weekly, not the pull request gate. Do not wait on DistSSHRun's E2E |
 
 `testenv/example-job/Project.toml` in DistSSHQueue pins DistSSHRun at
 `"0.1.2"`. Raise that floor only when an older DistSSHRun lacks a fix
