@@ -132,13 +132,17 @@ tokens.
 - Ctrl-C during **run** stops the driver (exit 130): interrupt in-flight
   worker `pmap`, wait a few seconds, then `rmprocs`. One SIGINT is enough;
   the live bar does not swallow it. SSH workers on one host share a single
-  `kill -INT`. A worker function may `catch` `InterruptException` and save
-  partial state. A loop that does not yield does not see the interrupt
-  until it yields; `rmprocs` still runs after the wait. On Julia 1.13,
-  Ctrl-C while the driver waits in `pmap` does not reach this path. The
-  driver exits 1 and does not send `kill -INT`. Measured on macOS with a
-  process-group SIGINT. On Julia 1.14 the driver exits 130, but a worker
-  can be removed before it sees the interrupt
+  `kill -INT`. A worker function may catch the interrupt and save partial
+  state. Julia 1.13 throws `InterruptException`. Julia 1.14, with
+  exit-on-sigint off, throws `Base.CancellationRequest` from `sleep`. An
+  uncaught `CancellationRequest` in a non-interactive worker exits 1. The
+  request stays raised, so a later `sleep` (or other wait) in the save code
+  throws again; save without waiting. A loop that does not yield does not
+  see the interrupt until it yields; `rmprocs` still runs after the wait.
+  On Julia 1.13, Ctrl-C while the driver waits in `pmap` does not reach this
+  path. The driver exits 1 and does not send `kill -INT`. Measured on macOS
+  with a process-group SIGINT. On Julia 1.14 the driver exits 130, but a
+  worker can be removed before it sees the interrupt
 - Local workers are torn down with `rmprocs` at the end of every `drive` run
 - SSH leftover `pkill` matches argv `distsshkit-job:<id>` when `job_id` /
   `DISTSSHKIT_JOB_ID` is set (drive workers: `--eval=#distsshkit-job:<id>`).
