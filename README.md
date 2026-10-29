@@ -12,18 +12,13 @@ table starts open.
 
 ## Flagged
 
-- 1.13: status method new -> 783.8 ms: Tuple{DistSSHQueue.var"##show_status#220", Base.PipeEndpoint, Nothing, Bool, Nothing, Bool, typeof(D...
-- 1.14-pre: status method new -> 676.8 ms: Tuple{DistSSHQueue.var"##show_status#220", Base.PipeEndpoint, Nothing, Bool, Nothing, Bool, typeof(D...
-- 1.14-pre: drive method new -> 200.3 ms: Tuple{Distributed.var"#remotecall_eval##0#remotecall_eval##1"{Module, Expr, Int64}}
-- nightly: julia 1.15.0-DEV.173 -> 1.15.0-DEV.186
-- nightly: status method new -> 487.3 ms: Tuple{DistSSHQueue.var"##show_status#220", Base.PipeEndpoint, Nothing, Bool, Nothing, Bool, typeof(D...
+- nightly: julia 1.15.0-DEV.186 -> 1.15.0-DEV.225
 
 <details open>
 <summary>1.13</summary>
 
 | date | commit | version | julia | os | arch | src files | code lines | full s | pkg s | using s | help s | status s | go s | drive s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2026-10-20 | d1bb1de | 0.10.3 | 1.13.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 402 | 10.09 | 1.07 | 0.34 | 0.9 | 6.37 | 8.08 | 28.14 |
 | 2026-10-20 | 33ecf3a | 0.10.3 | 1.13.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 402 | 6.1 | 0.74 | 0.22 | 0.6 | 3.95 | 5.11 | 19.16 |
 | 2026-10-21 | 0d024d1 | 0.10.3 | 1.13.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 402 | 7.11 | 0.8 | 0.26 | 0.7 | 4.91 | 6.33 | 22.37 |
 | 2026-10-22 | 2e838fd | 0.10.4 | 1.13.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 415 | 7.84 | 0.91 | 0.29 | 0.73 | 5.27 | 6.73 | 23.75 |
@@ -35,6 +30,7 @@ table starts open.
 | 2026-10-27 | 399faf6 | 0.10.6 | 1.13.3 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 9.95 | 1.11 | 0.37 | 1.18 | 8.45 | 10.41 | 31.91 |
 | 2026-10-27 | 9e042f1 | 0.10.6 | 1.13.3 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 9.06 | 0.98 | 0.34 | 1.1 | 8.11 | 9.63 | 30.07 |
 | 2026-10-28 | c474268 | 0.10.6 | 1.13.3 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 10.46 | 1.07 | 0.36 | 1.13 | 5.37 | 9.79 | 30.41 |
+| 2026-10-29 | c474268 | 0.10.6 | 1.13.3 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 8.72 | 0.94 | 0.33 | 1.04 | 5.06 | 9.17 | 28.15 |
 
 </details>
 
@@ -65,6 +61,7 @@ table starts open.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-10-27 | 9e042f1 | 0.10.6 | 1.14.0-alpha2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 9.3 | 0.92 | 0.31 | 0.74 | 2.59 | 4.04 | 13.5 |
 | 2026-10-28 | c474268 | 0.10.6 | 1.14.0-alpha2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 9.6 | 0.93 | 0.32 | 0.75 | 2.15 | 4.24 | 14.16 |
+| 2026-10-29 | c474268 | 0.10.6 | 1.14.0-alpha2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 9.41 | 0.93 | 0.31 | 0.74 | 2.14 | 4.21 | 14.4 |
 
 </details>
 
@@ -73,7 +70,6 @@ table starts open.
 
 | date | commit | version | julia | os | arch | src files | code lines | full s | pkg s | using s | help s | status s | go s | drive s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2026-10-20 | d1bb1de | 0.10.3 | 1.15.0-DEV.29 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 402 | 8.01 | 0.84 | 0.35 | 0.64 | 1.95 | 3.32 | 12.28 |
 | 2026-10-20 | 33ecf3a | 0.10.3 | 1.15.0-DEV.53 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 402 | 5.62 | 0.66 | 0.23 | 0.47 | 1.37 | 2.27 | 9.49 |
 | 2026-10-21 | 0d024d1 | 0.10.3 | 1.15.0-DEV.71 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 402 | 9.29 | 0.99 | 0.36 | 0.67 | 2.14 | 3.65 | 13.69 |
 | 2026-10-22 | 2e838fd | 0.10.4 | 1.15.0-DEV.84 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 415 | 8.83 | 0.89 | 0.3 | 0.61 | 2.0 | 3.41 | 12.99 |
@@ -85,6 +81,7 @@ table starts open.
 | 2026-10-27 | 399faf6 | 0.10.6 | 1.15.0-DEV.160 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 7.71 | 0.79 | 0.22 | 0.59 | 2.24 | 3.6 | 12.13 |
 | 2026-10-27 | 9e042f1 | 0.10.6 | 1.15.0-DEV.173 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 8.97 | 0.84 | 0.24 | 0.65 | 2.51 | 3.94 | 13.06 |
 | 2026-10-28 | c474268 | 0.10.6 | 1.15.0-DEV.186 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 6.58 | 0.74 | 0.21 | 0.58 | 1.77 | 3.31 | 11.17 |
+| 2026-10-29 | c474268 | 0.10.6 | 1.15.0-DEV.225 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 5.76 | 0.62 | 0.17 | 0.57 | 1.31 | 2.6 | 9.61 |
 
 </details>
 
