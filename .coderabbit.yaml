@@ -5,6 +5,9 @@ tone_instructions: >
   Brief. Follow REVIEW.md. Inline comments only for bugs or regressions
   in this diff. Stay inside the PR's stated scope. Start with the count
   of findings. Say when there is nothing to fix.
+# Reviews and chat run only after a mention. `@coderabbitai review` is
+# incremental. `@coderabbitai full review` starts over. A later push does
+# not review again. This file is read from the pull request head.
 reviews:
   profile: chill
   request_changes_workflow: false
@@ -29,10 +32,9 @@ reviews:
         and teardown path calculations in this diff. Cite a file and line.
         Stay inside the PR's stated scope.
   auto_review:
-    enabled: true
+    enabled: false
     drafts: false
-    auto_incremental_review: true
-    auto_pause_after_reviewed_commits: 1
+    auto_incremental_review: false
   finishing_touches:
     docstrings:
       enabled: false
@@ -44,3 +46,5 @@ reviews:
       enabled: false
     resolve_merge_conflict:
       enabled: false
+chat:
+  auto_reply: false
