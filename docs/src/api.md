@@ -44,11 +44,14 @@ spread across listed hosts.
 ```@docs
 go!
 GoResult
-report_go_errors
 KitRunResult
 kit_run_result
-report_run_errors
+result_provenance
+DistSSHRun.result_run_dir
 ```
+
+`report_go_errors` and `report_run_errors` are public on DistSSHRun and are
+not reexported.
 
 ## Drive work across workers
 
@@ -118,6 +121,7 @@ worker (empty when no host-collection step ran). The same vector is in
 ```@docs
 KitSession
 setup!
+DistSSHRun.ConfirmPathMismatch
 sync!
 instantiate!
 HostResult
@@ -129,7 +133,6 @@ collect!
 CollectResult
 ride!
 RideResult
-print_ride
 stored_path
 file_sha256
 cache_file
@@ -161,11 +164,9 @@ go / drive / ride do not infer `:N` from occupancy. Paste printed `parent:N`
 plan
 KitPlan
 PlanFinding
-print_plan
 pool!
 ResourcePool
 HostInventory
-print_pool
 size!
 WorkerPlan
 ```
@@ -175,8 +176,11 @@ pipeline!
 PipelineConfig
 pipeline_config_from_env
 PipelineResult
-report_pipeline_errors
+DistSSHRun.report_pipeline_errors
 ```
+
+`print_ride`, `print_plan`, `print_pool`, and `report_pipeline_errors` are
+public on DistSSHRun and are not reexported.
 
 ## Worker tokens — `parent:N` / `child:NAME:N`
 
@@ -371,26 +375,25 @@ Exported so a rename is a Semver break, not a silent `DistSSHKit._…` change.
 `go` / `drive` argv wrappers stay unexported.
 
 **Parsers / SSH helpers** (`parse_*`, `ssh_opts`, `run_on_host`, …) are for
-callers that share this CLI.
+callers that share this CLI. `parse_go_args`, `parse_drive_args`, and
+`parse_ride_args` stay exported. `parse_ride_args` has no docstring.
 
-**Help / display helpers** (`print_help_*`, `print_colored`, `SPINNER_FRAMES`)
-are an extension surface aimed at
-[DistSSHQueue.jl](https://yamanori99.github.io/DistSSHQueue.jl/stable/)
-(and similar). Guaranteed: **names and call signatures**. Not guaranteed:
-exact rendered text, colors, or spinner glyphs — presentation may change
-without a breaking version bump.
+Help and display helpers (`print_help_*`, `print_colored`, `print_plan`,
+`print_pool`, `print_ride`, `show_go_usage`, `show_drive_usage`,
+`report_go_errors`, `report_run_errors`, `report_pipeline_errors`,
+`SPINNER_FRAMES`, `print_cli_error`) are public on DistSSHRun and are not
+reexported. Call them as `DistSSHRun.<name>`. `print_colored` is the public
+name there; `_print_colored` is the same function. Names and call signatures
+stay. Rendered text, colors, and spinner glyphs may change.
 
 `dist_ssh_kit_version` and `println_kit_version` are defined in DistSSHKit.
 The other names in this section are defined in DistSSHRun and reexported.
-`ssh_opts`, `run_on_host`, the path helpers, and the help helpers live in
-`DistSSHRun.DistSSHBase`. `SPINNER_FRAMES`, `print_cli_error`, and the
-`go` / `drive` parsers live in DistSSHRun.
+`ssh_opts`, `run_on_host`, and the path helpers live in
+`DistSSHRun.DistSSHBase`. The parsers live in DistSSHRun.
 
 ```@docs
 parse_go_args
 parse_drive_args
-show_go_usage
-show_drive_usage
 dist_ssh_kit_version
 println_kit_version
 ssh_opts
@@ -401,16 +404,7 @@ short_path
 resolve_pkg_project_dir
 resolve_pkg_env
 explain_script_not_found
-print_cli_error
-print_help_chrome
-print_help_section
-print_help_lines
-print_help_blank
-print_colored
-SPINNER_FRAMES
 ```
-
-`print_colored` is the public name; `_print_colored` is the same function.
 
 Default `ssh_opts()` is BatchMode and `RequestTTY=no`.
 `ssh_opts(; request_tty=true)` omits `RequestTTY=no` (does not insert `-t`;

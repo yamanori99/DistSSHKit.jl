@@ -7,11 +7,14 @@ TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [sources]
-DistSSHKit = {path = ".."}
+DistSSHKit = { path = ".." }
+# Same revs as the root project. Drop both at the 0.11.0 cut.
+DistSSHRun = { url = "https://github.com/yamanori99/DistSSHRun.jl", rev = "main" }
+DistSSHQueue = { url = "https://github.com/yamanori99/DistSSHQueue.jl", rev = "main" }
 
 [compat]
-DistSSHQueue = "0.9.9"
-DistSSHRun = "0.1.16"
+DistSSHQueue = "0.10.0"
+DistSSHRun = "0.2.0"
 Random = "1"
 TOML = "1"
 Test = "1"

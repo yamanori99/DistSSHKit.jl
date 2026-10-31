@@ -1,8 +1,11 @@
 name = "DistSSHKit"
 uuid = "ceec0504-c968-4be5-b215-667cae0e8f81"
 license = "MIT"
-version = "0.10.6"
-authors = ["Yamamoto, Takanori <takanori.yamamoto.99@gmail.com>", "Ampuku, Honoka <ampk.hono@gmail.com>"]
+version = "0.11.0-DEV"
+authors = [
+    "Yamamoto, Takanori <takanori.yamamoto.99@gmail.com>",
+    "Ampuku, Honoka <ampk.hono@gmail.com>",
+]
 
 [workspace]
 projects = ["test", "docs"]
@@ -11,7 +14,13 @@ projects = ["test", "docs"]
 DistSSHQueue = "24254401-70d8-4a51-8ea4-cfab19f5bc73"
 DistSSHRun = "b568025c-2759-4ef1-8b14-17d00e2cd000"
 
+[sources]
+# Drop both at the 0.11.0 cut, after DistSSHRun 0.2.0 and DistSSHQueue 0.10.0
+# are on General.
+DistSSHRun = { url = "https://github.com/yamanori99/DistSSHRun.jl", rev = "main" }
+DistSSHQueue = { url = "https://github.com/yamanori99/DistSSHQueue.jl", rev = "main" }
+
 [compat]
-DistSSHQueue = "0.9.9"
-DistSSHRun = "0.1.16"
+DistSSHQueue = "0.10.0"
+DistSSHRun = "0.2.0"
 julia = "1.13"
