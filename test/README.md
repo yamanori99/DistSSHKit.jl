@@ -79,7 +79,8 @@ ecosystem daily uses. The sandbox is Debian bookworm without `tzdata`, with
 `LANG=C.UTF-8`, a pipe for stdout, and a 45 minute test limit. Daily uses
 the General tarball. This recipe mounts this checkout read-only, and
 dependencies resolve from General, so an unreleased DistSSHRun or
-DistSSHQueue change is not in the sandbox. This package:
+DistSSHQueue change is not in the sandbox. The `[sources]` git revs used
+while this package is `0.11.0-DEV` are not in that sandbox either. This package:
 <https://juliaci.github.io/NanosoldierReports/pkgeval_badges/D/DistSSHKit.html>
 Latest ecosystem report:
 <https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html>
@@ -92,7 +93,8 @@ assertions, so its Julia is not this tarball.
 CI: `Registry install (1.13, ubuntu-latest, x64)` on the heavy gate
 (ordinary pull requests and **main**). It `Pkg.add`s the head commit
 into a job-local depot and runs `Pkg.test` with `--check-bounds=yes`.
-Run and Queue resolve from General. `PkgEval (nightly, ubuntu-latest, x64)`
+Run and Queue resolve from the `[sources]` git revs while those entries
+are present. `PkgEval (nightly, ubuntu-latest, x64)`
 stays on **main** and a version-cut PR (`continue-on-error`; not a
 required check). Not ordinary PRs.
 

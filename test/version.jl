@@ -15,9 +15,9 @@ using TOML
     code, out, err = _main_capture(["--version"])
     @test code == 0
     @test isempty(err)
-    @test occursin(r"\ADistSSHKit \d+\.\d+\.\d+\nDistSSHRun \S+, DistSSHQueue \S+\n\z", out)
+    @test occursin(r"\ADistSSHKit \d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?\nDistSSHRun \S+, DistSSHQueue \S+\n\z", out)
     code, out, err = _main_capture(["go", "--version"])
     @test code == 0
     @test isempty(err)
-    @test occursin(r"\ADistSSHKit \d+\.\d+\.\d+\nDistSSHRun \S+, DistSSHQueue \S+\n\z", out)
+    @test occursin(r"\ADistSSHKit \d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?\nDistSSHRun \S+, DistSSHQueue \S+\n\z", out)
 end

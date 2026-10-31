@@ -183,9 +183,13 @@ only. No JETLS on nightly.
 `Registry install (1.13, ubuntu-latest, x64)` uses the same heavy gate
 as Ubuntu `Pkg.test` 1.13, so ordinary pull requests and **main** run it.
 It installs the head commit into a job-local depot and runs `Pkg.test`
-with `--check-bounds=yes`. The PkgEval sandbox stays on **main** and a
-version-cut PR, not ordinary PRs. SSH is DistSSHRun's E2E, not a check
-on this repo.
+with `--check-bounds=yes`. DistSSHRun and DistSSHQueue resolve from the
+`[sources]` git revs in `Project.toml`, `test/Project.toml`, and
+`docs/Project.toml` while those entries are present. Drop them at the
+0.11.0 cut, after DistSSHRun 0.2.0 and DistSSHQueue 0.10.0 are on General.
+The PkgEval sandbox stays on **main** and a version-cut PR, not ordinary
+PRs. A `[sources]` git rev is not in that sandbox. SSH is DistSSHRun's
+E2E, not a check on this repo.
 
 [Runic](https://github.com/fredrikekre/Runic.jl) is a separate light
 workflow ([`.github/workflows/runic.yml`](.github/workflows/runic.yml)).

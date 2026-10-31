@@ -1,9 +1,9 @@
 # Reexports. Not a guarantee that a future dependency export is wanted.
 #
-# `_KNOWN_KIT_EXPORTS` is the export set as of DistSSHRun 0.1.9 and
-# DistSSHQueue 0.9.6, including `rsync_send_list` (public on Run, reexported
-# until 0.11). A dependency patch that adds an `export` fails the test below
-# without a Kit change. Read the new name. Update this set in a Kit patch
+# `_KNOWN_KIT_EXPORTS` is the export set as of DistSSHRun 0.2.0-DEV and
+# DistSSHQueue 0.10.0-DEV, including `rsync_send_list` (public on Run,
+# reexported until 0.11). A dependency patch that adds an `export` fails
+# the test below without a Kit change. Read the new name. Update this set in a Kit patch
 # when the new export is intended. A public-only name is not reexported, so
 # it does not update this set. The 0.11 change that stops reexporting
 # public-only names removes `_PUBLIC_ONLY_KEPT` from this set.
@@ -29,7 +29,6 @@ const _KNOWN_KIT_EXPORTS = Set(
         :Queue,
         :ResourcePool,
         :RideResult,
-        :SPINNER_FRAMES,
         :SyncResult,
         :WorkerPlan,
         :allocate_output_dir,
@@ -64,25 +63,15 @@ const _KNOWN_KIT_EXPORTS = Set(
         :load!,
         :parse_drive_args,
         :parse_go_args,
+        :parse_ride_args,
         :pipeline!,
         :pipeline_config_from_env,
         :plan,
         :pool!,
-        :print_cli_error,
-        :print_colored,
-        :print_help_blank,
-        :print_help_chrome,
-        :print_help_lines,
-        :print_help_section,
-        :print_plan,
-        :print_pool,
-        :print_ride,
         :println_kit_version,
         :push_cache!,
         :read_kit_run_toml,
-        :report_go_errors,
-        :report_pipeline_errors,
-        :report_run_errors,
+        :result_provenance,
         :resolve_controller_julia,
         :resolve_pkg_env,
         :resolve_pkg_project_dir,
@@ -93,8 +82,6 @@ const _KNOWN_KIT_EXPORTS = Set(
         :serve!,
         :setup!,
         :short_path,
-        :show_drive_usage,
-        :show_go_usage,
         :size!,
         :ssh_opts,
         :step!,
