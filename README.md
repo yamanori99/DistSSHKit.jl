@@ -12,18 +12,19 @@ table starts open.
 
 ## Flagged
 
-- 1.13: status wall 3.46s -> 5.99s
-- 1.13: go wall 6.34s -> 11.2s
-- 1.13: drive wall 20.14s -> 32.57s
-- 1.13: drive method 115.0 ms -> 239.0 ms: Tuple{typeof(Serialization.deserialize), Distributed.ClusterSerializer{Sockets.TCPSocket}, Type{Core...
-- nightly: julia 1.15.0-DEV.251 -> 1.15.0-DEV.300
+- 1.13: go method new -> 2093.3 ms: Tuple{typeof(Core.kwcall), NamedTuple{(:project, :quiet, :verbosity, :yes, :sync, :args, :path_ancho...
+- 1.13: go method new -> 467.3 ms: Tuple{DistSSHRun.var"#_go_run!##6#_go_run!##7"{String, String, Bool, Array{String, 1}, Nothing, Stri...
+- 1.14-pre: go method new -> 1343.9 ms: Tuple{typeof(Core.kwcall), NamedTuple{(:project, :quiet, :verbosity, :yes, :sync, :args, :path_ancho...
+- 1.14-pre: go method new -> 235.1 ms: Tuple{DistSSHRun.var"#_go_run!##6#_go_run!##7"{String, String, Bool, Array{String, 1}, Nothing, Stri...
+- nightly: julia 1.15.0-DEV.300 -> 1.15.0-DEV.302
+- nightly: go method new -> 1188.3 ms: Tuple{typeof(Core.kwcall), NamedTuple{(:project, :quiet, :verbosity, :yes, :sync, :args, :path_ancho...
+- nightly: go method new -> 223.2 ms: Tuple{DistSSHRun.var"#_go_run!##6#_go_run!##7"{String, String, Bool, Array{String, 1}, Nothing, Stri...
 
 <details open>
 <summary>1.13</summary>
 
 | date | commit | version | julia | os | arch | src files | code lines | full s | pkg s | using s | help s | status s | go s | drive s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2026-10-22 | 2e838fd | 0.10.4 | 1.13.2 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 415 | 7.84 | 0.91 | 0.29 | 0.73 | 5.27 | 6.73 | 23.75 |
 | 2026-10-23 | 2e838fd | 0.10.4 | 1.13.2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 415 | 6.72 | 0.79 | 0.25 | 0.64 | 4.57 | 6.55 | 21.03 |
 | 2026-10-24 | ac1ce0f | 0.10.5 | 1.13.2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 415 | 10.21 | 1.07 | 0.35 | 0.88 | 6.63 | 9.43 | 29.2 |
 | 2026-10-24 | 7edf0c1 | 0.10.5 | 1.13.2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 415 | 10.37 | 1.12 | 0.35 | 0.89 | 6.85 | 9.8 | 30.15 |
@@ -35,6 +36,7 @@ table starts open.
 | 2026-10-29 | c474268 | 0.10.6 | 1.13.3 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 8.72 | 0.94 | 0.33 | 1.04 | 5.06 | 9.17 | 28.15 |
 | 2026-10-30 | bb32357 | 0.10.6 | 1.13.3 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 6.31 | 0.7 | 0.23 | 0.75 | 3.46 | 6.34 | 20.14 |
 | 2026-10-31 | bb32357 | 0.10.6 | 1.13.3 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 10.79 | 1.13 | 0.39 | 1.24 | 5.99 | 11.2 | 32.57 |
+| 2026-10-31 | d6e9282 | 0.11.0-DEV | 1.13.3 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 26.28 | 1.09 | 0.4 | 1.17 | 4.38 | 7.09 | 19.91 |
 
 </details>
 
@@ -68,6 +70,7 @@ table starts open.
 | 2026-10-29 | c474268 | 0.10.6 | 1.14.0-alpha2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 9.41 | 0.93 | 0.31 | 0.74 | 2.14 | 4.21 | 14.4 |
 | 2026-10-30 | bb32357 | 0.10.6 | 1.14.0-alpha2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 7.5 | 0.77 | 0.25 | 0.62 | 1.71 | 3.35 | 11.28 |
 | 2026-10-31 | bb32357 | 0.10.6 | 1.14.0-alpha2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 7.62 | 0.83 | 0.27 | 0.64 | 1.75 | 3.46 | 11.72 |
+| 2026-10-31 | d6e9282 | 0.11.0-DEV | 1.14.0-alpha2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 15.74 | 0.73 | 0.24 | 0.57 | 1.3 | 2.36 | 7.78 |
 
 </details>
 
@@ -76,7 +79,6 @@ table starts open.
 
 | date | commit | version | julia | os | arch | src files | code lines | full s | pkg s | using s | help s | status s | go s | drive s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2026-10-22 | 2e838fd | 0.10.4 | 1.15.0-DEV.84 | Ubuntu 24.04.5 LTS | x86_64 | 1 | 415 | 8.83 | 0.89 | 0.3 | 0.61 | 2.0 | 3.41 | 12.99 |
 | 2026-10-23 | 2e838fd | 0.10.4 | 1.15.0-DEV.104 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 415 | 8.3 | 0.9 | 0.32 | 0.61 | 2.08 | 3.96 | 13.27 |
 | 2026-10-24 | ac1ce0f | 0.10.5 | 1.15.0-DEV.109 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 415 | 7.47 | 0.83 | 0.26 | 0.53 | 1.82 | 3.44 | 11.8 |
 | 2026-10-24 | 7edf0c1 | 0.10.5 | 1.15.0-DEV.126 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 415 | 9.33 | 0.92 | 0.31 | 0.63 | 2.14 | 4.07 | 13.43 |
@@ -88,6 +90,7 @@ table starts open.
 | 2026-10-29 | c474268 | 0.10.6 | 1.15.0-DEV.225 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 5.76 | 0.62 | 0.17 | 0.57 | 1.31 | 2.6 | 9.61 |
 | 2026-10-30 | bb32357 | 0.10.6 | 1.15.0-DEV.251 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 10.12 | 0.97 | 0.28 | 0.74 | 2.33 | 4.59 | 14.99 |
 | 2026-10-31 | bb32357 | 0.10.6 | 1.15.0-DEV.300 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 8.85 | 0.82 | 0.22 | 0.63 | 1.94 | 3.88 | 12.85 |
+| 2026-10-31 | d6e9282 | 0.11.0-DEV | 1.15.0-DEV.302 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 13.75 | 0.62 | 0.17 | 0.48 | 1.08 | 2.15 | 7.52 |
 
 </details>
 
