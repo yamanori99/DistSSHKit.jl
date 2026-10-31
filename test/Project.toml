@@ -10,7 +10,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 DistSSHKit = { path = ".." }
 # Same revs as the root project. Drop both at the 0.11.0 cut.
 DistSSHRun = { url = "https://github.com/yamanori99/DistSSHRun.jl", rev = "main" }
-DistSSHQueue = { url = "https://github.com/yamanori99/DistSSHQueue.jl", rev = "chore/0.10.0-dev" }
+DistSSHQueue = { url = "https://github.com/yamanori99/DistSSHQueue.jl", rev = "main" }
 
 [compat]
 DistSSHQueue = "0.10.0"

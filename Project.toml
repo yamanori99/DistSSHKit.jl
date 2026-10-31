@@ -16,9 +16,9 @@ DistSSHRun = "b568025c-2759-4ef1-8b14-17d00e2cd000"
 
 [sources]
 # Drop both at the 0.11.0 cut, after DistSSHRun 0.2.0 and DistSSHQueue 0.10.0
-# are on General. DistSSHQueue's 0.10.0-DEV is not on main yet.
+# are on General.
 DistSSHRun = { url = "https://github.com/yamanori99/DistSSHRun.jl", rev = "main" }
-DistSSHQueue = { url = "https://github.com/yamanori99/DistSSHQueue.jl", rev = "chore/0.10.0-dev" }
+DistSSHQueue = { url = "https://github.com/yamanori99/DistSSHQueue.jl", rev = "main" }
 
 [compat]
 DistSSHQueue = "0.10.0"
