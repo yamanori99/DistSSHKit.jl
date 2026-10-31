@@ -47,6 +47,7 @@ GoResult
 KitRunResult
 kit_run_result
 result_provenance
+DistSSHRun.result_run_dir
 ```
 
 `report_go_errors` and `report_run_errors` are public on DistSSHRun and are
@@ -120,6 +121,7 @@ worker (empty when no host-collection step ran). The same vector is in
 ```@docs
 KitSession
 setup!
+DistSSHRun.ConfirmPathMismatch
 sync!
 instantiate!
 HostResult
@@ -174,6 +176,7 @@ pipeline!
 PipelineConfig
 pipeline_config_from_env
 PipelineResult
+DistSSHRun.report_pipeline_errors
 ```
 
 `print_ride`, `print_plan`, `print_pool`, and `report_pipeline_errors` are
@@ -373,7 +376,7 @@ Exported so a rename is a Semver break, not a silent `DistSSHKit._…` change.
 
 **Parsers / SSH helpers** (`parse_*`, `ssh_opts`, `run_on_host`, …) are for
 callers that share this CLI. `parse_go_args`, `parse_drive_args`, and
-`parse_ride_args` stay exported.
+`parse_ride_args` stay exported. `parse_ride_args` has no docstring.
 
 Help and display helpers (`print_help_*`, `print_colored`, `print_plan`,
 `print_pool`, `print_ride`, `show_go_usage`, `show_drive_usage`,
@@ -391,7 +394,6 @@ The other names in this section are defined in DistSSHRun and reexported.
 ```@docs
 parse_go_args
 parse_drive_args
-parse_ride_args
 dist_ssh_kit_version
 println_kit_version
 ssh_opts
