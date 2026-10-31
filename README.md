@@ -12,20 +12,14 @@ table starts open.
 
 ## Flagged
 
-- 1.13: go method new -> 2093.3 ms: Tuple{typeof(Core.kwcall), NamedTuple{(:project, :quiet, :verbosity, :yes, :sync, :args, :path_ancho...
-- 1.13: go method new -> 467.3 ms: Tuple{DistSSHRun.var"#_go_run!##6#_go_run!##7"{String, String, Bool, Array{String, 1}, Nothing, Stri...
-- 1.14-pre: go method new -> 1343.9 ms: Tuple{typeof(Core.kwcall), NamedTuple{(:project, :quiet, :verbosity, :yes, :sync, :args, :path_ancho...
-- 1.14-pre: go method new -> 235.1 ms: Tuple{DistSSHRun.var"#_go_run!##6#_go_run!##7"{String, String, Bool, Array{String, 1}, Nothing, Stri...
-- nightly: julia 1.15.0-DEV.300 -> 1.15.0-DEV.302
-- nightly: go method new -> 1188.3 ms: Tuple{typeof(Core.kwcall), NamedTuple{(:project, :quiet, :verbosity, :yes, :sync, :args, :path_ancho...
-- nightly: go method new -> 223.2 ms: Tuple{DistSSHRun.var"#_go_run!##6#_go_run!##7"{String, String, Bool, Array{String, 1}, Nothing, Stri...
+- nightly: julia 1.15.0-DEV.302 -> 1.15.0-DEV.309
+- nightly: go wall 2.15s -> 3.37s
 
 <details open>
 <summary>1.13</summary>
 
 | date | commit | version | julia | os | arch | src files | code lines | full s | pkg s | using s | help s | status s | go s | drive s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2026-10-23 | 2e838fd | 0.10.4 | 1.13.2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 415 | 6.72 | 0.79 | 0.25 | 0.64 | 4.57 | 6.55 | 21.03 |
 | 2026-10-24 | ac1ce0f | 0.10.5 | 1.13.2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 415 | 10.21 | 1.07 | 0.35 | 0.88 | 6.63 | 9.43 | 29.2 |
 | 2026-10-24 | 7edf0c1 | 0.10.5 | 1.13.2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 415 | 10.37 | 1.12 | 0.35 | 0.89 | 6.85 | 9.8 | 30.15 |
 | 2026-10-25 | f610f7c | 0.10.6 | 1.13.2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 434 | 11.21 | 1.22 | 0.39 | 1.23 | 7.84 | 11.21 | 34.26 |
@@ -37,6 +31,7 @@ table starts open.
 | 2026-10-30 | bb32357 | 0.10.6 | 1.13.3 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 6.31 | 0.7 | 0.23 | 0.75 | 3.46 | 6.34 | 20.14 |
 | 2026-10-31 | bb32357 | 0.10.6 | 1.13.3 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 10.79 | 1.13 | 0.39 | 1.24 | 5.99 | 11.2 | 32.57 |
 | 2026-10-31 | d6e9282 | 0.11.0-DEV | 1.13.3 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 26.28 | 1.09 | 0.4 | 1.17 | 4.38 | 7.09 | 19.91 |
+| 2026-10-31 | 0494b6e | 0.11.0-DEV | 1.13.3 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 28.18 | 1.1 | 0.4 | 1.17 | 4.38 | 7.18 | 19.13 |
 
 </details>
 
@@ -71,6 +66,7 @@ table starts open.
 | 2026-10-30 | bb32357 | 0.10.6 | 1.14.0-alpha2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 7.5 | 0.77 | 0.25 | 0.62 | 1.71 | 3.35 | 11.28 |
 | 2026-10-31 | bb32357 | 0.10.6 | 1.14.0-alpha2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 7.62 | 0.83 | 0.27 | 0.64 | 1.75 | 3.46 | 11.72 |
 | 2026-10-31 | d6e9282 | 0.11.0-DEV | 1.14.0-alpha2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 15.74 | 0.73 | 0.24 | 0.57 | 1.3 | 2.36 | 7.78 |
+| 2026-10-31 | 0494b6e | 0.11.0-DEV | 1.14.0-alpha2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 21.71 | 0.87 | 0.32 | 0.71 | 1.62 | 3.32 | 9.77 |
 
 </details>
 
@@ -79,7 +75,6 @@ table starts open.
 
 | date | commit | version | julia | os | arch | src files | code lines | full s | pkg s | using s | help s | status s | go s | drive s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2026-10-23 | 2e838fd | 0.10.4 | 1.15.0-DEV.104 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 415 | 8.3 | 0.9 | 0.32 | 0.61 | 2.08 | 3.96 | 13.27 |
 | 2026-10-24 | ac1ce0f | 0.10.5 | 1.15.0-DEV.109 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 415 | 7.47 | 0.83 | 0.26 | 0.53 | 1.82 | 3.44 | 11.8 |
 | 2026-10-24 | 7edf0c1 | 0.10.5 | 1.15.0-DEV.126 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 415 | 9.33 | 0.92 | 0.31 | 0.63 | 2.14 | 4.07 | 13.43 |
 | 2026-10-25 | f610f7c | 0.10.6 | 1.15.0-DEV.132 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 434 | 7.01 | 0.71 | 0.2 | 0.55 | 1.71 | 3.22 | 11.29 |
@@ -91,6 +86,7 @@ table starts open.
 | 2026-10-30 | bb32357 | 0.10.6 | 1.15.0-DEV.251 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 10.12 | 0.97 | 0.28 | 0.74 | 2.33 | 4.59 | 14.99 |
 | 2026-10-31 | bb32357 | 0.10.6 | 1.15.0-DEV.300 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 8.85 | 0.82 | 0.22 | 0.63 | 1.94 | 3.88 | 12.85 |
 | 2026-10-31 | d6e9282 | 0.11.0-DEV | 1.15.0-DEV.302 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 13.75 | 0.62 | 0.17 | 0.48 | 1.08 | 2.15 | 7.52 |
+| 2026-10-31 | 0494b6e | 0.11.0-DEV | 1.15.0-DEV.309 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 437 | 23.76 | 0.88 | 0.26 | 0.67 | 1.65 | 3.37 | 10.3 |
 
 </details>
 
