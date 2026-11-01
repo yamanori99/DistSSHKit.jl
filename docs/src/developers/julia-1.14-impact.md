@@ -94,8 +94,18 @@ No test depends on a particular resolution. Fallback:
 
 ## Base.SignalCondition (julia#63344)
 
-Future idea only. Not in 1.14.0-alpha2 (`isdefined` is false;
-`CANCEL_TOKEN` is present).
+Follow-up idea only. Not a DistSSHRun 0.2.0 todo.
+
+Not in 1.14.0-alpha2 (`isdefined` is false; `CANCEL_TOKEN` is present).
+Expected in 1.14 starting with alpha3, pending the backport pull request
+[JuliaLang/julia#64506](https://github.com/JuliaLang/julia/pull/64506)
+(open as of 2026-11-01). That pull request already includes
+`julia#63344` (`Base.SignalCondition`) and its test fix `#64420` as
+backported. Follow-ups `#64387` (allow intercepting SIGINT, run
+observers first), `#64422` (keep watcher handle referenced), and
+`#64507` (SIGTERM test hang / Windows exit crash) are labelled for
+backport but are not merged yet. The API may still change via those
+follow-ups, so wait for them before designing against it.
 
 Current handling: DistSSHBase `sigint.jl:5-50` (`is_sigint`,
 `shield_sigint`, `without_cancel`). DistSSHRun stop ladder is SIGINT,
@@ -157,4 +167,5 @@ Recommendation: add a cross-minor `Tar.tree_hash` parity test
 - [ ] DistSSHQueue
   [#497](https://github.com/yamanori99/DistSSHQueue.jl/issues/497)
 - [ ] b1 parity test
-- [ ] Revisit `SignalCondition` when it lands
+- [ ] Revisit `SignalCondition` after the alpha3 backport and its
+  follow-ups settle. Not a DistSSHRun 0.2.0 todo.
