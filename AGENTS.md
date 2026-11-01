@@ -4,13 +4,13 @@ The user-facing command is `julia -m DistSSHKit`.
 
 These commands are fine to run: `setup --check`, `plan`, `size`, `pool`, `status`.
 
-`setup --delete` and `setup --prune` ask for `delete` or `prune` unless `-y`, `--yes`, or `DISTSSHKIT_YES` is set. Those still skip the prompt and delete. That skip stops in DistSSHKit 0.11. `teardown` prints `Would remove` and deletes nothing until `--confirm-path` matches each path, unless `-y`, `--yes`, or `DISTSSHKIT_YES` is set. That skip stops in DistSSHKit 0.11. Copy the single quotes around a path that contains `~`, so the shell does not expand it. Agents must not pass `-y`, `--yes`, or set `DISTSSHKIT_YES` for these three. Use `--confirm-path` with the path the command printed.
+For `setup --delete`, `setup --prune`, and `teardown`, do not pass `-y` or `--yes`, and do not set `DISTSSHKIT_YES`. Pass `--confirm-path` with each path the command printed, and copy the single quotes around a path that contains `~` so the shell does not expand it.
 
-Do not call `setup!(session, :delete)` or `setup!(session, :prune)` from Julia. `yes=true` on that API still deletes without `--confirm-path`. Use the CLI.
+Do not call `setup!(session, :delete)` or `setup!(session, :prune)` from Julia. Use the CLI.
 
 Read [docs/src/developers/releasing.md](docs/src/developers/releasing.md) before a pull request that raises the version or changes public behavior.
 
-Fill [.github/pull_request_template.md](.github/pull_request_template.md). Write Testing and Revert from the command that ran and what it returned. Risk names what can break, not a grade. Do not paste the type-label procedure into the body. The check applies the label. The order is in that releasing doc: closing issue, then branch prefix, then a Conventional Commit title, else `chore` when the diff has no `src/`, `ext/`, or root `Project.toml`. A version cut uses `cut` instead of a type label.
+Fill [.github/pull_request_template.md](.github/pull_request_template.md). Write Testing and Revert from the commands that ran and what they returned. Risk names what can break, not a grade. CI applies the type label; see [docs/src/developers/releasing.md](docs/src/developers/releasing.md).
 
 When reviewing a diff, follow [REVIEW.md](REVIEW.md).
 

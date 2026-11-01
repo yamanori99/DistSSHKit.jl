@@ -90,10 +90,11 @@ exempt. On a non-cut pull request, the `breaking` label and a
 not edit `NEWS.md`.
 
 A change pull request needs one of `bug`, `enhancement`, `breaking`, or
-`chore`. CI applies that from a closing issue, then the branch prefix
-(`feat/`, `fix/`, `breaking/`, and `chore/` `docs/` `ci/` `test/` for
-chore), then a Conventional Commit title (`fix:`, `feat:`, a `!` before
-the colon, and `docs:` `test:` `ci:` `chore:`). `type(scope):` is
+`chore`. CI applies that from a closing issue, then exactly one branch
+prefix (`feat/` for enhancement, `fix/` for bug, `breaking/` for
+breaking, or `chore/`, `docs/`, `ci/`, or `test/` for chore, as in
+`docs/<slug>`), then a Conventional Commit title (`fix:`, `feat:`, a `!`
+before the colon, and `docs:` `test:` `ci:` `chore:`). `type(scope):` is
 accepted. Otherwise it applies `chore` when the diff has no `src/`,
 `ext/`, or root `Project.toml`. Anything else fails until someone adds
 one of the four labels. Dependabot is exempt.
