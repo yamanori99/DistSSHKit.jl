@@ -153,7 +153,7 @@ automatic rule. A release candidate of the next minor is not a second
 required version. **1.14-pre** is that view until the stable line
 moves.
 
-JETLS 2026-10-26 officially supports 1.12.2 through 1.14. The required
+JETLS 2026-11-04 officially supports 1.12.2 through 1.14. The required
 job is **1.13**. **1.14-pre** is informational (`continue-on-error`)
 and is not a required check. No JETLS on nightly.
 
