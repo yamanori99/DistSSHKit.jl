@@ -37,7 +37,7 @@ jobs:
   # poison Pkg.Registry.update on 1.13 if restored corrupt.
   # Aqua / JETLS share this workflow so the Test badge is the PR gate.
   # JETLS uses `.github/actions/jetls-check` (no nested
-  # cache; julia-actions/cache#236). JETLS 2026-10-26 officially supports
+  # cache; julia-actions/cache#236). JETLS 2026-11-04 officially supports
   # 1.12.2 through 1.14. The 1.13 job is the gate. 1.14-pre
   # (~1.14.0-0) is informational (`continue-on-error`) and is not a
   # required check. No JETLS on nightly.
@@ -291,7 +291,7 @@ jobs:
         run: ./.github/aqua-check.sh
 
   # Literal name: a skipped job must still be this string.
-  # Required check. JETLS 2026-10-26 officially supports 1.12.2 through 1.14.
+  # Required check. JETLS 2026-11-04 officially supports 1.12.2 through 1.14.
   jetls:
     name: JETLS (1.13, ubuntu-latest, x64)
     needs: detect
