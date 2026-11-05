@@ -41,7 +41,10 @@ id_rsa
 id_rsa.pub
 id_ed25519
 id_ed25519.pub
-.cursor/
+.cursor/**
+!.cursor/environment.json
+!.cursor/install.sh
+
 
 # Local dev notes (not shared)
 ROADMAP.ja.local.md
