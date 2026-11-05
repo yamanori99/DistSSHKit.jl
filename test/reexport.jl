@@ -91,6 +91,7 @@ const _KNOWN_KIT_EXPORTS = Set(
         :terminate!,
         :terminate_run!,
         :worker_pmap,
+        :worker_seed,
     )
 )
 
