@@ -226,6 +226,7 @@ kit_run_dir
 read_kit_run_toml
 execute_detached_accepts
 execute_kwargs_from_parsed
+detached_launch
 KitProcess
 wait(::KitProcess)
 kit_pid_file_running

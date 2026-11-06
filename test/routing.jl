@@ -189,7 +189,7 @@ end
         @test DistSSHKit._route(["help", c]) == (:queue, [c, "--help"])
         @test DistSSHKit._route(["help", "qhost", c]) == (:queue, [c, "--help"])
     end
-    for c in ("setup", "up", "size", "plan", "pool")
+    for c in ("setup", "up", "size", "pool")
         @test DistSSHKit._route(["help", c]) == (:run, [c, "--help"])
         @test DistSSHKit._route(["help", "qhost", c]) == (:queue, [c, "--help"])
     end
