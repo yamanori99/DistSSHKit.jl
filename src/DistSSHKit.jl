@@ -150,7 +150,6 @@ const _RUN_COMMANDS = (
     "demo",
     "drive",
     "go",
-    "plan",
     "pool",
     "progress",
     "ride",
@@ -191,7 +190,6 @@ function print_kit_root_usage(io::IO = stderr)
         "  go                 Run an as-is complete job",
         "  ride               Experimental auto-split of map / filter",
         "  drive              Distributed workers + collect",
-        "  plan               Inspect a script; do not run",
         "  size               Estimate worker counts",
         "  pool               Cluster cores / health (no job)",
         "  demo               Install or list example scripts",
@@ -214,7 +212,6 @@ function print_kit_root_usage(io::IO = stderr)
         "  $(cli_m_project()) go SCRIPT.jl",
         "  $(cli_m_project()) ride parent:2 SCRIPT.jl",
         "  $(cli_m_project()) drive parent:2 SCRIPT.jl",
-        "  $(cli_m_project()) plan SCRIPT.jl",
         "  $(cli_m_project()) qhost:HOST submit drive parent:4 SCRIPT.jl",
         "  $(cli_m_project()) qhost setup",
         "  $(cli_m_project()) qhost up",
@@ -305,7 +302,7 @@ end
 
 CLI entry. Prefer Julia 1.13+ and `julia -m DistSSHKit SUBCOMMAND …`.
 
-Run commands (`setup`, `up`, `go`, `ride`, `drive`, `plan`, `size`, `pool`,
+Run commands (`setup`, `up`, `go`, `ride`, `drive`, `size`, `pool`,
 `demo`, `progress`) stay the run surface. Client commands take an optional
 `qhost:HOST`. Queue-host commands start with `qhost` (`qhost setup`,
 `qhost up`, `qhost serve`, `qhost size`).

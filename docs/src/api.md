@@ -50,6 +50,8 @@ result_provenance
 DistSSHRun.result_run_dir
 DistSSHRun.result_content_tree_hash
 DistSSHRun.result_remote_run_id
+DistSSHRun.ship
+DistSSHRun.ShipTreeResult
 ```
 
 `report_go_errors` and `report_run_errors` are public on DistSSHRun and are
@@ -226,6 +228,7 @@ kit_run_dir
 read_kit_run_toml
 execute_detached_accepts
 execute_kwargs_from_parsed
+detached_launch
 KitProcess
 wait(::KitProcess)
 kit_pid_file_running
