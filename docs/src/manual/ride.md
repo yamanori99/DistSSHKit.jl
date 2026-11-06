@@ -2,11 +2,9 @@
 
 Experimental. Run a **plain** script (`map` / `filter` / simple
 comprehensions / independent indexed `for`). DistSSHKit rewrites those forms and
-may `pmap` them on Distributed workers (parent and SSH `child:`). Inspect
-first with [`plan`](@ref).
+may `pmap` them on Distributed workers (parent and SSH `child:`).
 
 ```bash
-julia --project=. -m DistSSHKit plan SCRIPT.jl
 julia --project=. -m DistSSHKit ride parent:2 SCRIPT.jl
 julia --project=. -m DistSSHKit ride parent:1 child:host1:2 SCRIPT.jl
 ```

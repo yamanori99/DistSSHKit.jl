@@ -38,7 +38,7 @@ DistSSHKit 整合了 [DistSSHRun](https://github.com/yamanori99/DistSSHRun.jl) �
 任务在下面两处之一运行。
 
 - **本机。** 在本机启动任务。SSH 连接保持打开，直到任务结束。
-  命令是 `go`、`ride`、`drive`、`plan`、
+  命令是 `go`、`ride`、`drive`、
   `size`、`pool`、`demo` 和 `progress`。
 - **队列主机。** 一台始终开着的机器。把任务留在那里。任务一次运行一个。
   在那台机器上安装同一个包。笔记本掉线不会停掉已经留在那里的任务。
@@ -138,11 +138,8 @@ SSH 连接和部署上的时间也越多，所以最好先从几台开始，再�
   带下标的 `for` 工作（实验性功能；可在 parent 或 SSH 工作进程上使用）。
 - **drive** — 一个主进程把工作分发给工作进程（基于 Distributed.jl）。
 
-### 检查：plan（文件）与 pool（主机）
+### 检查：size 与 pool（主机）
 
-- **plan** — 检查一个 `.jl` 文件，并建议使用 go、ride 或 drive。它只
-  从磁盘读取并解析，因此没有 bang，也不做 SSH。可选的槽位估算可以调用
-  `size!`。
 - **pool** / **pool!** — 报告所列主机的核心数和内存。它使用
   SSH，因此带 bang。它不报告 RSS。无法连接的主机仍留在
   列表中，并标记 `ok=false`。
@@ -154,8 +151,8 @@ SSH 连接和部署上的时间也越多，所以最好先从几台开始，再�
 这样它们的 pool 就没有上限。这些都不是仪表板。
 
 单独使用 `go` 已经相当有用。常见做法是先用 `go` 确认一次独立
-运行，需要时再转到 `drive` 和 Distributed.jl。
-`plan` 甚至可能马上建议使用 `ride`。
+运行，需要时再转到 `ride`，或转到 `drive` 和 Distributed.jl。
+运行前用 `size` 和 `pool` 检查主机。
 
 ### 调用 DistSSHKit 的方式
 
@@ -164,7 +161,7 @@ SSH 连接和部署上的时间也越多，所以最好先从几台开始，再�
   命令标志：`julia -m DistSSHKit help go`。
   适合快速试验和 shell 脚本。
 - **Julia** — 从你自己的 Julia 代码（脚本、REPL 或
-  另一个包）中调用函数：`setup!`、`go!`、`drive!`、`plan`（没有 bang）、`pool!`，以及
+  另一个包）中调用函数：`setup!`、`go!`、`drive!`、`pool!`、`size!`，以及
   其他带 `!` 的函数。
 
 CLI 标志与 Julia API 一一对应。例如，`setup --rsync`
@@ -382,7 +379,6 @@ julia --project=. -m DistSSHKit qhost:HOST submit go parent:1 distsshkit_demos/w
     - [go][m-go]
     - [ride][m-ride]
     - [drive][m-drive]
-    - [plan][m-plan]
     - [size][m-size]
     - [pool][m-pool]
     - [paths][m-paths]
@@ -433,7 +429,6 @@ julia --project=. -m DistSSHKit qhost:HOST submit go parent:1 distsshkit_demos/w
 [m-go]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/go/
 [m-ride]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/ride/
 [m-drive]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/drive/
-[m-plan]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/plan/
 [m-size]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/size/
 [m-pool]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/pool/
 [m-paths]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/paths/

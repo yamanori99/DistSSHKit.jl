@@ -144,12 +144,6 @@ push_cache!
 cache_remote_dir
 ```
 
-### Inspect a file — `plan`
-
-No bang. Disk read + `Meta.parseall` only (no SSH, no exclusive gate).
-Suggests `go` / `ride` / `drive`. Does not start a job. Optional slot
-estimate calls [`size!`](@ref); that probe is opt-in, so there is no `plan!`.
-
 ### Inventory hosts — `pool!`
 
 Cores and RAM on listed hosts, plus a slot hint. SSH, so bang. No RSS
@@ -163,9 +157,6 @@ go / drive / ride do not infer `:N` from occupancy. Paste printed `parent:N`
 (omit `:N` = uncapped).
 
 ```@docs
-plan
-KitPlan
-PlanFinding
 pool!
 ResourcePool
 HostInventory
@@ -181,7 +172,7 @@ PipelineResult
 DistSSHRun.report_pipeline_errors
 ```
 
-`print_ride`, `print_plan`, `print_pool`, and `report_pipeline_errors` are
+`print_ride`, `print_pool`, and `report_pipeline_errors` are
 public on DistSSHRun and are not reexported.
 
 ## Worker tokens — `parent:N` / `child:NAME:N`
@@ -361,8 +352,7 @@ Without `job_id`, only the child pid is signaled.
   way for `:ride`. Hosts stay in
   [`host_tokens`](@ref); `:workers` is drive `--workers` when set.
   `:log_dir` / `:mem_headroom` / `:parent_gb` / `:workers` are drive-only
-  except ride also takes `:spi_check` (default `false`); go / ride do not take size flags;
-  `:plan` is never accepted.
+  except ride also takes `:spi_check` (default `false`); go / ride do not take size flags.
 - `job_id` (`execute!` keyword, or `ENV["DISTSSHKIT_JOB_ID"]` for in-process
   `go!` / `drive!`): `job=<id>` on every `progress:` line. Drive workers get a
   comment-only `--eval=#distsshkit-job:<id>`; go slots `-L` a no-op file of
@@ -380,7 +370,7 @@ Exported so a rename is a Semver break, not a silent `DistSSHKit._…` change.
 callers that share this CLI. `parse_go_args`, `parse_drive_args`, and
 `parse_ride_args` stay exported. `parse_ride_args` has no docstring.
 
-Help and display helpers (`print_help_*`, `print_colored`, `print_plan`,
+Help and display helpers (`print_help_*`, `print_colored`,
 `print_pool`, `print_ride`, `show_go_usage`, `show_drive_usage`,
 `report_go_errors`, `report_run_errors`, `report_pipeline_errors`,
 `SPINNER_FRAMES`, `print_cli_error`) are public on DistSSHRun and are not
@@ -442,7 +432,7 @@ A client runs
 another computer. On that machine the commands are `qhost setup`, `qhost up`,
 `qhost add-host`, `qhost remove-host`, `qhost serve`, `qhost stop`,
 `qhost enable`, `qhost disable`, `qhost teardown`, plus `qhost size` /
-`qhost plan` / `qhost pool`. Bare `setup` / `up` / `size` / `plan` /
+`qhost pool`. Bare `setup` / `up` / `size` /
 `pool` stay the commands you run on this machine.
 
 ```julia

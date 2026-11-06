@@ -2,7 +2,7 @@
 
 Leave jobs on a queue host. They run one at a time.
 `julia -m DistSSHKit` accepts `submit`, `serve`, `status`, and the rest
-of this section. On the queue host, `setup`, and `size` / `plan` / `pool`,
+of this section. On the queue host, `setup`, and `size` / `pool`,
 stay `julia -m DistSSHKit`.
 
 For a hands-on path, use First Steps
@@ -20,7 +20,7 @@ Command argv is on
 `help client`. Flags and FAQ:
 `julia --project=. -m DistSSHKit help <command>` and the pages below.
 Each command page starts with **Usage**, then **Flags**.
-`go` / `ride` / `drive` / `size` / `plan` / `pool` flags stay in the
+`go` / `ride` / `drive` / `size` / `pool` flags stay in the
 [User Guide](@ref Manual).
 
 | | |
@@ -29,7 +29,7 @@ Each command page starts with **Usage**, then **Flags**.
 | [submit](@ref Queue-submit) | Leave `go` / `ride` / `drive` there |
 | [status](@ref Queue-status) | `status` / `watch` / `cancel` |
 | [fetch](@ref Queue-fetch) | Copy a finished leaf onto this job tree |
-| [hosts](@ref Queue-hosts) | `add-host` / `remove-host` / `list-host` / `size` / `plan` / `pool` |
+| [hosts](@ref Queue-hosts) | `add-host` / `remove-host` / `list-host` / `size` / `pool` |
 | [serve](@ref Queue-serve) | `serve` / `stop` / `enable` / `disable` |
 | [setup](@ref Queue-setup) | `setup` / `teardown` / `config.toml` |
 
@@ -44,7 +44,7 @@ first (the config is gone), or `qhost:HOST` if this was a client hop.
 Local trial: `DISTSSHQUEUE_LOCAL=1`.
 
 Refuse `qhost:`: `setup`, `serve`, `enable`, `disable`, `add-host`,
-`remove-host`. Forward: `submit`, `status`, `list-host`, `size`, `plan`,
+`remove-host`. Forward: `submit`, `status`, `list-host`, `size`,
 `pool`, `watch`, `cancel`, `stop`, `teardown`. Client (not forwarded as a
 whole): `fetch` (inverse of stage).
 

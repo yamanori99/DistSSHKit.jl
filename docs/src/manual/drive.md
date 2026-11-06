@@ -17,8 +17,7 @@ Flag vocabulary and a short **go vs drive** table: [User Guide](@ref Manual).
 worker count. Three phases: **Load** (master `include`), **Publish** (defs /
 `using` / `import` / `include` on workers), **Run** (`main()` if defined).
 No Distributed vocabulary in **this** file is a warning, not a refusal.
-[`plan`](@ref Manual-plan) may still suggest [`go`](@ref Manual-go) or
-[`ride`](@ref Manual-ride). Full-file worker `include`: `--sync-script`.
+Full-file worker `include`: `--sync-script`.
 Opt-in git parity is
 here only (`--require-git`). Prepare remotes with
 [`setup --rsync`](@ref Manual-setup) **or** `--clone`, then `--instantiate`.

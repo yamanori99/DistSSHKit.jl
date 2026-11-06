@@ -28,8 +28,6 @@ The machine the run starts from is this machine.
   (parent or SSH workers)
 - [drive](@ref Manual-drive): master + Distributed workers; driver farms
   work
-- [plan](@ref Manual-plan): inspect a script; suggest go / ride / drive
-  (does not run)
 - [size](@ref Manual-size): estimate worker counts from RAM / CPU
 - [pool](@ref Manual-pool): cluster cores / health; no job
 - [paths](@ref Manual-paths): `stored_path` / content-hash cache / `push_cache!`

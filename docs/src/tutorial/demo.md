@@ -53,7 +53,6 @@ Keep `Project.toml` at the project root — do not add
 Prefer **`go`** unless you already need in-script parallelism; use **`drive`**
 for driver scripts that farm work with `pmap`. **`ride`** is experimental:
 plain `map` / `filter` / indexed `for` without Distributed in the file.
-[`plan`](@ref Manual-plan) suggests which of the three.
 
 ## Standalone scripts (`without_kit/`)
 
@@ -120,8 +119,6 @@ split independent `map` / `filter` / indexed `for`. Experimental; details
 in [User Guide · ride](@ref Manual-ride).
 
 ```bash
-julia --project=. -m DistSSHKit plan \
-  distsshkit_demos/ride/map_echo.jl
 julia --project=. -m DistSSHKit ride parent:2 \
   distsshkit_demos/ride/map_echo.jl
 ```
@@ -129,10 +126,8 @@ julia --project=. -m DistSSHKit ride parent:2 \
 Indexed `for` (`dest[i] = …`):
 
 ```bash
-julia --project=. -m DistSSHKit plan \
-  distsshkit_demos/ride/for_loop.jl
 julia --project=. -m DistSSHKit ride parent:2 \
   distsshkit_demos/ride/for_loop.jl
 ```
 
-If `plan` says `drive`, the file already uses Distributed; do not `ride`.
+A file that already uses Distributed belongs on `drive`; do not `ride`.

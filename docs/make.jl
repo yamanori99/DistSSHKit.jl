@@ -52,10 +52,12 @@ end
 
 # Run docstrings still `@ref` `host_tokens` and `cache_relpath`. Kit no longer
 # defines its own copies. These two stay until a docs build shows the `@ref`s
-# resolve.
+# resolve. `ride!` and `drive!` still `@ref` `plan`. The manual page is gone,
+# so that link would not resolve until Run drops it.
 const _DOC_REF_REWRITES = (
     "[`host_tokens`](@ref)" => "`host_tokens`",
     "[`cache_relpath`](@ref)" => "`cache_relpath`",
+    "[`plan`](@ref)" => "`plan`",
 )
 
 function _retarget_doc_refs!(mod::Module)
@@ -130,7 +132,6 @@ makedocs(;
                 "go" => "manual/go.md",
                 "ride" => "manual/ride.md",
                 "drive" => "manual/drive.md",
-                "plan" => "manual/plan.md",
                 "size" => "manual/size.md",
                 "pool" => "manual/pool.md",
                 "paths" => "manual/paths.md",

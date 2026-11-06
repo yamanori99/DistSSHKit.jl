@@ -32,8 +32,7 @@ Bare `demo install` (no family) is refused. Layout under
   `pipeline!`
 - `without_kit/`: standalone Julia. `julia …`, [`go`](@ref Manual-go), or
   `go!`
-- `ride/`: plain scripts for [`plan`](@ref Manual-plan) /
-  [`ride`](@ref Manual-ride) (or `go`)
+- `ride/`: plain scripts for [`ride`](@ref Manual-ride) (or `go`)
 
 The sources ship with DistSSHRun. Install does not use `.distsshkit/`
 (rsync excludes it).
