@@ -2,7 +2,7 @@
 
 The user-facing command is `julia -m DistSSHKit`.
 
-These commands are fine to run: `setup --check`, `plan`, `size`, `pool`, `status`.
+These commands are fine to run: `setup --check`, `size`, `pool`, `status`.
 
 For `setup --delete`, `setup --prune`, and `teardown`, do not pass `-y` or `--yes`, and do not set `DISTSSHKIT_YES`. Pass `--confirm-path` with each path the command printed, and copy the single quotes around a path that contains `~` so the shell does not expand it.
 

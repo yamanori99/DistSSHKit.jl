@@ -137,6 +137,7 @@ let routes = [
         (["x.jl"], (:no_command, "x.jl")),
         (["map_echo.jl"], (:no_command, "map_echo.jl")),
         (["foo"], (:unknown, "foo")),
+        (["plan"], (:unknown, "plan")),
         # `-h` with an extra word is an unknown subcommand. The name is `-h`.
         (["-h", "foo"], (:unknown, "-h")),
         (["-h", "go"], (:unknown, "-h")),
@@ -152,6 +153,7 @@ let routes = [
         (["help", "setup"], (:run, ["setup", "--help"])),
         (["help", "go", "--hosts", "parent"], (:run, ["go", "--help", "--hosts", "parent"])),
         (["help", "foo"], (:unknown, "foo")),
+        (["help", "plan"], (:unknown, "plan")),
         (["help", "map_echo.jl"], (:no_command, "map_echo.jl")),
         (["help", "parent:2", "job.jl"], (:no_command, "parent:2")),
         # A help word or `qhost:` after `help` is not dropped.
@@ -189,7 +191,7 @@ end
         @test DistSSHKit._route(["help", c]) == (:queue, [c, "--help"])
         @test DistSSHKit._route(["help", "qhost", c]) == (:queue, [c, "--help"])
     end
-    for c in ("setup", "up", "size", "plan", "pool")
+    for c in ("setup", "up", "size", "pool")
         @test DistSSHKit._route(["help", c]) == (:run, [c, "--help"])
         @test DistSSHKit._route(["help", "qhost", c]) == (:queue, [c, "--help"])
     end

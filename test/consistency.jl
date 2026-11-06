@@ -58,12 +58,12 @@
     for c in ("setup", "up")
         _test_same_page(["help", "qhost", c], DistSSHQueue.main, [c, "--help"])
     end
-    # `size` / `plan` / `pool` still need Queue's target check.
+    # `size` / `pool` still need Queue's target check.
     # `submit <kind> --help` is the page before that check (DistSSHQueue 0.9.10).
     # The local-trial env is the check's switch, and it is harmless for the
     # submit pages.
     withenv(DistSSHQueue.LOCAL_QUEUE_ENV => "1") do
-        for c in ("size", "plan", "pool")
+        for c in ("size", "pool")
             _test_same_page(["help", "qhost", c], DistSSHQueue.main, [c, "--help"])
         end
         for kind in string.(DistSSHQueue.KIT_EXECUTE_KINDS)
