@@ -42,7 +42,7 @@ and you reach both through that command.
 A job runs in one of two places.
 
 - **This machine.** Start it here. The SSH connection stays open until
-  it finishes. The commands are `go`, `ride`, `drive`, `plan`,
+  it finishes. The commands are `go`, `ride`, `drive`,
   `size`, `pool`, `demo`, and `progress`.
 - **Queue host.** An always-on machine. Leave the job there. Jobs run
   one at a time. Install the same package there. A dropped laptop does
@@ -145,11 +145,8 @@ There are three ways to run a script:
   indexed `for` work (experimental; works on the parent or SSH workers).
 - **drive** — one master distributes work to workers (built on Distributed.jl).
 
-### Inspect: plan (files) and pool (hosts)
+### Inspect: size and pool (hosts)
 
-- **plan** — inspects a `.jl` file and suggests go, ride, or drive. It only
-  reads from disk and parses, so it has no bang and does no SSH. An optional
-  slot estimate can call `size!`.
 - **pool** / **pool!** — reports the cores and RAM of the listed hosts. It uses
   SSH, hence the bang. It does not report RSS. Unreachable hosts stay in the
   list with `ok=false`.
@@ -162,8 +159,8 @@ leaves their pool uncapped. None of
 these is a dashboard.
 
 `go` alone is already quite useful. A common workflow is to confirm a standalone
-run with `go` first, then move on to `drive` and Distributed.jl when you need
-them. `plan` may even suggest `ride` right away.
+run with `go` first, then move on to `ride` or `drive` when you need them.
+Use `size` and `pool` to inspect hosts before you run.
 
 ### Ways to call DistSSHKit
 
@@ -172,7 +169,7 @@ them. `plan` may even suggest `ride` right away.
   Command flags: `julia -m DistSSHKit help go`.
   This suits quick experiments and shell scripts.
 - **Julia** — call functions from your own Julia code (a script, the REPL, or
-  another package): `setup!`, `go!`, `drive!`, `plan` (no bang), `pool!`, and
+  another package): `setup!`, `go!`, `drive!`, `pool!`, `size!`, and
   the other `!` functions.
 
 CLI flags map one-to-one onto the Julia API. For example, `setup --rsync`
@@ -388,7 +385,6 @@ For details, see [Prepare][q-prepare], [Walkthrough][q-walk], and
     - [go][m-go]
     - [ride][m-ride]
     - [drive][m-drive]
-    - [plan][m-plan]
     - [size][m-size]
     - [pool][m-pool]
     - [paths][m-paths]
@@ -437,7 +433,6 @@ The source code is released under the [MIT](LICENSE) license.
 [m-go]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/go/
 [m-ride]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/ride/
 [m-drive]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/drive/
-[m-plan]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/plan/
 [m-size]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/size/
 [m-pool]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/pool/
 [m-paths]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/paths/

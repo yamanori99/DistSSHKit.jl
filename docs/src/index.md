@@ -45,8 +45,8 @@ Call paths:
   `pipeline!` for optional sync → `drive!` → collect (not `setup!`;
   rsync there does not instantiate). Occupancy is CLI `size` and
   Julia `size!`; paste the printed tokens.
-- **CLI** — `julia --project=. -m DistSSHKit go …` / `ride …` / `drive …` /
-  `plan …` (and `setup`, `demo`, …)
+- **CLI** — `julia --project=. -m DistSSHKit go …` / `ride …` / `drive …`
+  (and `setup`, `size`, `pool`, `demo`, …)
 
 All of these need **Julia 1.13+** ([Requirements](@ref)).
 
