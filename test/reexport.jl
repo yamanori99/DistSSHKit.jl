@@ -39,6 +39,7 @@ const _KNOWN_KIT_EXPORTS = Set(
         :canonical_local_path,
         :collect!,
         :default_store_path,
+        :detached_launch,
         :dist_ssh_kit_version,
         :drive!,
         :drive_host_status,
