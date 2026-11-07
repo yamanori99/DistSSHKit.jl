@@ -298,6 +298,11 @@ jobs:
     if: needs.detect.outputs.heavy == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Official x86_64 release target from JuliaCI/julia-buildkite
+    # utilities/build_envs.sh (generic, sandybridge, haswell, x86-64-v4).
+    # Pkgimages then load on any GitHub-hosted x86_64 runner. Job env only.
+    env:
+      JULIA_CPU_TARGET: "generic;sandybridge,-xsaveopt,clone_all;haswell,-rdrnd,base(1);x86-64-v4,-rdrnd,base(1)"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -307,8 +312,23 @@ jobs:
       - uses: ./.github/actions/julia-slot
         with:
           version: "1.13"
+      - name: Log runner CPU
+        id: runner
+        run: |
+          set -euo pipefail
+          julia --startup-file=no -e 'println("CPU_NAME=", Sys.CPU_NAME); println("CPU_MODEL=", Sys.cpu_info()[1].model)'
+          # Resolved VERSION, not the slot request (~1.14.0-0 stays put across alphas).
+          ver="$(julia --startup-file=no -e 'print(VERSION)')"
+          # First 12 hex digits of sha256(JULIA_CPU_TARGET). No newline in the input.
+          tag="$(printf '%s' "$JULIA_CPU_TARGET" | sha256sum | cut -c1-12)"
+          echo "julia=${ver}" >> "$GITHUB_OUTPUT"
+          echo "cputarget=${tag}" >> "$GITHUB_OUTPUT"
+          echo "jetls-cache: julia=${ver} cputarget=${tag}"
+      # Default prefix omits the target and the resolved version, so the
+      # native 1.13 depot stays the newest restore. Old caches are left in place.
       - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
         with:
+          cache-name: julia-cache;workflow=${{ github.workflow }};job=${{ github.job }};cputarget=${{ steps.runner.outputs.cputarget }};julia=${{ steps.runner.outputs.julia }}
           cache-scratchspaces: false
           delete-old-caches: false
       - uses: ./.github/actions/jetls-check
@@ -323,6 +343,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     continue-on-error: true
+    # Same multi-target as the 1.13 job. See that job's env comment.
+    env:
+      JULIA_CPU_TARGET: "generic;sandybridge,-xsaveopt,clone_all;haswell,-rdrnd,base(1);x86-64-v4,-rdrnd,base(1)"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -332,8 +355,22 @@ jobs:
       - uses: ./.github/actions/julia-slot
         with:
           version: "~1.14.0-0"
+      - name: Log runner CPU
+        id: runner
+        run: |
+          set -euo pipefail
+          julia --startup-file=no -e 'println("CPU_NAME=", Sys.CPU_NAME); println("CPU_MODEL=", Sys.cpu_info()[1].model)'
+          # Resolved VERSION, not the slot request (~1.14.0-0 stays put across alphas).
+          ver="$(julia --startup-file=no -e 'print(VERSION)')"
+          # First 12 hex digits of sha256(JULIA_CPU_TARGET). No newline in the input.
+          tag="$(printf '%s' "$JULIA_CPU_TARGET" | sha256sum | cut -c1-12)"
+          echo "julia=${ver}" >> "$GITHUB_OUTPUT"
+          echo "cputarget=${tag}" >> "$GITHUB_OUTPUT"
+          echo "jetls-cache: julia=${ver} cputarget=${tag}"
+      # Same prefix fields as the 1.13 job. An alpha bump changes julia=.
       - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
         with:
+          cache-name: julia-cache;workflow=${{ github.workflow }};job=${{ github.job }};cputarget=${{ steps.runner.outputs.cputarget }};julia=${{ steps.runner.outputs.julia }}
           cache-scratchspaces: false
           delete-old-caches: false
       - uses: ./.github/actions/jetls-check
