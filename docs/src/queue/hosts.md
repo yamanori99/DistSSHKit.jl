@@ -1,17 +1,18 @@
 # [hosts](@id Queue-hosts)
 
-Lab inventory and DistSSHKit `size` / `pool` on the queue host. These verbs do
+Lab inventory and DistSSHKit `pool` on the queue host. These verbs do
 not enqueue. Not `--hosts` (that still names workers on `go` /
-`ride` / `drive`).
+`ride` / `drive`). Queue has no `hostinfo` and does not special-forward
+it.
 
 ```bash
 julia -m DistSSHKit qhost add-host parent child:host1
 julia -m DistSSHKit list-host
-julia -m DistSSHKit qhost size
+julia -m DistSSHKit qhost pool
 julia -m DistSSHKit qhost remove-host child:host1
 ```
 
-From a **client**, `list-host`, `size`, and `pool` are forwarded like `status`.
+From a **client**, `list-host` and `pool` are forwarded like `status`.
 `add-host` / `remove-host` run on the queue host only (like `setup`).
 `add-host` and `pool` compare each worker's Julia with the running
 serve, or with the next serve's Julia from the enable unit. They warn
@@ -25,7 +26,7 @@ can compare. Both commands still exit 0. The warning's next line is
 the Julia that runs the check.
 
 Also: [Prepare](@ref Queue-Tutorial-Prepare), [submit](@ref Queue-submit),
-[kit size](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/size/),
+[kit hostinfo](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/hostinfo/),
 [kit pool](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/pool/).
 
 ## add-host / remove-host
@@ -70,29 +71,14 @@ queue host's hostname, not the client's.
 julia -m DistSSHKit qhost:HOST list-host
 ```
 
-## size
-
-DistSSHKit `size` on the queue host (cwd / project). Omit tokens to size
-config `hosts`. Does not enqueue. Prints a `submit drive` template.
-
-```bash
-julia -m DistSSHKit qhost:HOST size
-julia -m DistSSHKit qhost:HOST size --gb-per-worker 1.5 parent child:host1
-```
-
-Flags (`--probe`, `--gb-per-worker`, …):
-[size](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/size/).
-`help qhost size` adds a note under that command's help.
-
 ## pool
 
 `pool` wraps the same `pool` on the queue host (cwd / project).
-Cores / RAM / slot hint (no RSS). Omit tokens: config
-`hosts` are passed. Does not enqueue. Prints sizing notes and a
-`Suggested submit (template):` footer (always `submit drive`; use `size`
-to measure RSS). Same nesting as submit: the verb, then host
-tokens. Enqueue with the same `:N` on every config host is
-`submit pool:N` ([submit](@ref Queue-submit)).
+Cores / RAM / reachability (no worker-count hint). Missing facts print
+as `-`, not `0`. Omit tokens: config `hosts` are passed. Does not
+enqueue. Same nesting as submit: the verb, then host tokens. Enqueue
+with the same `:N` on every config host is `submit pool:N`
+([submit](@ref Queue-submit)). `size` is gone; Queue rejects it.
 
 ```text
 julia -m DistSSHKit  [qhost:HOST]  pool  parent  child:host1

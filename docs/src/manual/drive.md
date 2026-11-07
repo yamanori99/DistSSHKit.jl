@@ -69,10 +69,6 @@ include(DEMO_JL)
 - `-w` / `--workers N`: `parent:N` when no `parent` token is listed (also
   `-w:N`). Listed hosts still need `:N`.
 - `--julia PATH`: Julia on SSH workers
-- `--mem-headroom N`: RAM fraction for memory preflight (default `0.75`;
-  same as [`size`](@ref Manual-size))
-- `--parent-gb N`: GB reserved for the parent process (default `0.4`; same
-  as size)
 - `--output-dir PATH`: **result root** → `DISTRIBUTED_OUTPUT_DIR` (not go
   batch root). Omitted: the driver may set it in `init_output_dir!`;
   otherwise the run allocates `{script}/.distsshkit/drive/<stem>_<UTC>/`.
@@ -112,7 +108,8 @@ include(DEMO_JL)
 `DISTSSHKIT_BEST_EFFORT=1` is the same as `--best-effort` (cannot combine with
 the require-all env).
 `DISTSSHKIT_JOBS` (default 1) caps concurrent SSH host work for rsync,
-post-run collect, and `size` Julia-path detection.
+post-run collect, and `hostinfo` Julia-path detection.
+`--mem-headroom` and `--parent-gb` are errors (no heuristic memory cap).
 
 ## Prerequisites
 
@@ -125,8 +122,8 @@ onto an empty path). Prefer matching Julia **major.minor**; align with
 ## Workers
 
 Listed tokens need `:N`. `-w N` is `parent:N` when no `parent` token is
-listed. Estimate with [`size`](@ref Manual-size), then paste the printed
-tokens.
+listed. Inspect with [`hostinfo`](@ref Manual-hostinfo) /
+[`pool`](@ref Manual-pool), then pass explicit tokens.
 
 - Ctrl-C during **run** stops the driver (exit 130): interrupt in-flight
   worker `pmap`, wait a few seconds, then `rmprocs`. One SIGINT is enough;

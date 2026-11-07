@@ -150,11 +150,11 @@ const _RUN_COMMANDS = (
     "demo",
     "drive",
     "go",
+    "hostinfo",
     "pool",
     "progress",
     "ride",
     "setup",
-    "size",
     "up",
 )
 const _QUEUE_ONLY = (
@@ -190,7 +190,7 @@ function print_kit_root_usage(io::IO = stderr)
         "  go                 Run an as-is complete job",
         "  ride               Experimental auto-split of map / filter",
         "  drive              Distributed workers + collect",
-        "  size               Estimate worker counts",
+        "  hostinfo           Host identity / RAM / CPU / Julia",
         "  pool               Cluster cores / health (no job)",
         "  demo               Install or list example scripts",
         "  progress           Phase seconds from kit.progress",
@@ -302,10 +302,11 @@ end
 
 CLI entry. Prefer Julia 1.13+ and `julia -m DistSSHKit SUBCOMMAND …`.
 
-Run commands (`setup`, `up`, `go`, `ride`, `drive`, `size`, `pool`,
+Run commands (`setup`, `up`, `go`, `ride`, `drive`, `hostinfo`, `pool`,
 `demo`, `progress`) stay the run surface. Client commands take an optional
 `qhost:HOST`. Queue-host commands start with `qhost` (`qhost setup`,
-`qhost up`, `qhost serve`, `qhost size`).
+`qhost up`, `qhost serve`, `qhost pool`). `hostinfo` is DistSSHRun only;
+Queue does not forward it.
 """
 function main(args::Vector{String} = copy(ARGS))::Cint
     # Run, Queue, and this package share DistSSHBase.with_cli_entry.

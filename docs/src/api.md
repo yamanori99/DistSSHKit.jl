@@ -64,7 +64,7 @@ When the script is a **driver** (`init_output_dir!` / `main`, `pmap`,
 
 ```text
 (optional setup! / sync! / instantiate!)
-  →  (optional size!)  →  drive!  →  (optional collect!)
+  →  drive!  →  (optional collect!)
 ```
 
 First-time remotes usually look like:
@@ -106,7 +106,7 @@ A few points that carry over from the CLI:
   (`require_all_hosts=true`, the default). Pass `require_all_hosts=false`
   for a 0.4.3-style partial run
 - Prefer positional worker tokens over building a [`WorkerPlan`](@ref) by
-  hand (`WorkerPlan` is the return type of [`size!`](@ref))
+  hand (`WorkerPlan` is the explicit `parent:N` / `child:NAME:N` plan)
 - Pass `julia=` on `go!` / `drive!` / `pipeline!` to pin the remote Julia
   binary (same as CLI `--julia`)
 
@@ -148,21 +148,22 @@ cache_remote_dir
 
 ### Inventory hosts — `pool!`
 
-Cores and RAM on listed hosts, plus a slot hint. SSH, so bang. No RSS
-probe. Unreachable hosts stay listed with `ok=false`.
+Cores and RAM on listed hosts. SSH, so bang. No worker-count hint.
+Unreachable hosts stay listed with `ok=false`. Missing facts are not
+zero.
 
-### Occupancy — `size!`
+### Host facts — `hostinfo`
 
-RSS-based [`WorkerPlan`](@ref) used by CLI `size` and [`size!`](@ref).
-go / drive / ride do not infer `:N` from occupancy. Paste printed `parent:N`
-/ `child:NAME:N` tokens. `go --repeat` may still list bare pool hosts
-(omit `:N` = uncapped).
+CLI `hostinfo` prints identity / RAM / CPU / OS / Julia. Collection is
+in DistSSHBase (`HostFacts`; public, not reexported). DistSSHRun
+`print_hostinfo` is public and is not reexported. Queue has no
+`hostinfo`. go / drive / ride do not infer `:N`. `go --repeat` may still
+list bare pool hosts (omit `:N` = uncapped).
 
 ```@docs
 pool!
 ResourcePool
 HostInventory
-size!
 WorkerPlan
 ```
 
@@ -303,7 +304,7 @@ On-disk contract:
 - `.kit.lock`: pid of the process holding the **artifact** dir. A second
   **process** against the same path raises `ArgumentError`. A lock left by a
   dead pid is reclaimed. Two in-process runs share a pid, so overlapping calls are also rejected:
-  `go!` / `drive!` / `ride!` / `size!` / `pool!` / `setup!` / `sync!` /
+  `go!` / `drive!` / `ride!` / `pool!` / `setup!` / `sync!` /
   `instantiate!` / `collect!` / `push_cache!` / `pipeline!` (same-task nesting is ok).
 - `kit.out` / `kit.err`: detached child stdio when `stdout` / `stderr` were
   omitted (`run_dir`).
@@ -354,8 +355,9 @@ Without `job_id`, only the child pid is signaled.
   `parse_drive_args` onto detached `execute!` keywords. Ride argv maps the same
   way for `:ride`. Hosts stay in
   [`host_tokens`](@ref); `:workers` is drive `--workers` when set.
-  `:log_dir` / `:mem_headroom` / `:parent_gb` / `:workers` are drive-only
-  except ride also takes `:spi_check` (default `false`); go / ride do not take size flags.
+  `:log_dir` / `:workers` are drive-only
+  except ride also takes `:spi_check` (default `false`).
+  `:mem_headroom` / `:parent_gb` are not accepted.
 - `job_id` (`execute!` keyword, or `ENV["DISTSSHKIT_JOB_ID"]` for in-process
   `go!` / `drive!`): `job=<id>` on every `progress:` line. Drive workers get a
   comment-only `--eval=#distsshkit-job:<id>`; go slots `-L` a no-op file of
@@ -434,9 +436,9 @@ A client runs
 `julia -m DistSSHKit submit …`, with `qhost:HOST` when that machine is
 another computer. On that machine the commands are `qhost setup`, `qhost up`,
 `qhost add-host`, `qhost remove-host`, `qhost serve`, `qhost stop`,
-`qhost enable`, `qhost disable`, `qhost teardown`, plus `qhost size` /
-`qhost pool`. Bare `setup` / `up` / `size` /
-`pool` stay the commands you run on this machine.
+`qhost enable`, `qhost disable`, `qhost teardown`, plus `qhost pool`.
+Bare `setup` / `up` / `hostinfo` / `pool` stay the commands you run on
+this machine. Queue does not forward `hostinfo`.
 
 ```julia
 q = Queue(; store=default_store_path(), follow_config=true)

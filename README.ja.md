@@ -39,7 +39,7 @@ DistSSHKit は DistSSHRun と DistSSHQueue をまとめている。
 ジョブを走らせる場所は次の2つである。
 
 - **このマシン。** ここでジョブを始める。終わるまで SSH は開いたままである。
-  コマンドは `go`、`ride`、`drive`、`size`、`pool`、
+  コマンドは `go`、`ride`、`drive`、`hostinfo`、`pool`、
   `demo`、`progress` である。
 - **キューホスト。** つけたままのマシンである。そこにジョブを置いて、1件ずつ走らせる。
   同じパッケージをそのマシンにも入れる。手元の接続が切れても、置いてあるジョブは止まらない。
@@ -134,14 +134,14 @@ SSH 先の台数に上限はない。ただし、台数が増えるほど SSH �
   (実験的機能。parent または SSH 先で利用可能)
 - **drive** — 1つのマスターがワーカーに処理を割り振る (Distributed.jl ベース)
 
-### 事前確認: size と pool (ホスト)
+### 事前確認: hostinfo と pool (ホスト)
 
 - **pool** / **pool!** — 指定したホストのコア数と RAM を取得する。
-  SSH を用いるため bang 付きである。RSS は取得しない。
-  接続できないホストは `ok=false` のまま残る
+  SSH を用いるため bang 付きである。ワーカー数は推奨しない。
+  接続できないホストは `ok=false` のまま残る。欠ける事実は 0 にしない
+- **hostinfo** — 識別子、RAM、CPU、OS、Julia を表示する。DistSSHRun のみ。
+  Queue は転送しない
 
-**size** / **size!** は占有状況 (RSS に基づく WorkerPlan) を扱う。
-CLI の `size` で計画が出力される。
 go、drive、ride でホストを列挙する際は、トークンに `:N` が必須である
 (トークンを省略した場合は parent の1スロットとなる)。
 例外として、`go --repeat` に限り、列挙したホストの `:N` を省略できる
@@ -149,7 +149,7 @@ go、drive、ride でホストを列挙する際は、トークンに `:N` が�
 
 go 単体でも十分に実用的である。まず go で単独実行を確認し、
 必要なら `ride` へ、さらに drive、すなわち Distributed.jl へ進めば、段階的に開発できる。
-実行の前に `size` と `pool` でホストを確認する。
+実行の前に `hostinfo` と `pool` でホストを確認する。
 
 ### 操作方法
 
@@ -158,7 +158,7 @@ go 単体でも十分に実用的である。まず go で単独実行を確認�
   フラグは `julia -m DistSSHKit help go` で開く。
   手早く試したい場合や、シェルスクリプトに組み込みたい場合に向いている
 - **Julia** — 自作の Julia コード (スクリプト、REPL、他のパッケージなど) の中から関数として呼び出す方法。
-  `setup!`、`go!`、`pool!`、`drive!`、`size!` などの関数を用いる
+  `setup!`、`go!`、`pool!`、`drive!` などの関数を用いる
 
 CLI のオプションと Julia API は1対1に対応している。
 例えば、CLI の `setup --rsync` は `setup!(session, :rsync)` に相当する。
@@ -364,7 +364,7 @@ julia --project=. -m DistSSHKit qhost:HOST submit go parent:1 distsshkit_demos/w
     - [go][m-go]
     - [ride][m-ride]
     - [drive][m-drive]
-    - [size][m-size]
+    - [hostinfo][m-hostinfo]
     - [pool][m-pool]
     - [paths][m-paths]
     - [demo][m-demo]
@@ -413,7 +413,7 @@ julia --project=. -m DistSSHKit qhost:HOST submit go parent:1 distsshkit_demos/w
 [m-go]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/go/
 [m-ride]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/ride/
 [m-drive]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/drive/
-[m-size]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/size/
+[m-hostinfo]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/hostinfo/
 [m-pool]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/pool/
 [m-paths]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/paths/
 [m-demo]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/demo/

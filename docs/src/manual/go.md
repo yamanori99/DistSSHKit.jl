@@ -16,11 +16,11 @@ Also: [First Steps · Demo](@ref Tutorial-Demo), [drive](@ref Manual-drive),
 `parent:N` / `child:NAME:N` stay explicit counts. Omitting `:N` on a listed
 host is an error unless `--repeat` (then it is an uncapped pool host, not a
 count). Drive / ride also require `:N`. `go SCRIPT.jl` with no host tokens is
-still one parent slot. Estimate with [`size`](@ref Manual-size), then paste
-the printed tokens.
+still one parent slot. Inspect hosts with [`hostinfo`](@ref Manual-hostinfo)
+or [`pool`](@ref Manual-pool), then pass explicit tokens.
 A bare `julia -m DistSSHKit SCRIPT.jl` is not `go`; name the command.
 `--repeat N` still spreads N runs; explicit `:N` is a cap, while omitted
-`:N` stays uncapped and does not use `size!`.
+`:N` stays uncapped.
 
 **vs drive:** each `child:NAME:N` is N full script runs (not Distributed
 workers). There is no `--require-git`; for commit parity use

@@ -75,7 +75,7 @@ using Random
     _test_same_page(["go", "--help"], DistSSHRun.main)
     _test_same_page(["setup", "--help"], DistSSHRun.main)
     _test_same_page(["help", "go"], DistSSHRun.main, ["go", "--help"])
-    _test_same_page(["help", "size"], DistSSHRun.main, ["size", "--help"])
+    _test_same_page(["help", "hostinfo"], DistSSHRun.main, ["hostinfo", "--help"])
     _test_same_page(["submit", "--help"], DistSSHQueue.main)
     _test_same_page(["help", "submit"], DistSSHQueue.main, ["submit", "--help"])
     # `submit <kind> --help` is the page before Queue's target check
@@ -149,7 +149,8 @@ let routes = [
         (["help", "-h", "--help"], (:usage, 0)),
         # `help <verb>` is that verb's `--help`. A miss names the second word.
         (["help", "go"], (:run, ["go", "--help"])),
-        (["help", "size"], (:run, ["size", "--help"])),
+        (["help", "hostinfo"], (:run, ["hostinfo", "--help"])),
+        (["help", "size"], (:unknown, "size")),
         (["help", "setup"], (:run, ["setup", "--help"])),
         (["help", "go", "--hosts", "parent"], (:run, ["go", "--help", "--hosts", "parent"])),
         (["help", "foo"], (:unknown, "foo")),
@@ -161,6 +162,9 @@ let routes = [
         (["help", "qhost:HOST", "status"], (:queue, ["help", "qhost:HOST", "status"])),
         (["help", "qhost", "setup"], (:queue, ["setup", "--help"])),
         (["help", "qhost", "size"], (:queue, ["size", "--help"])),
+        (["help", "qhost", "hostinfo"], (:queue, ["hostinfo", "--help"])),
+        (["hostinfo"], (:run, ["hostinfo"])),
+        (["qhost", "hostinfo"], (:queue, ["hostinfo"])),
         (["help", "qhost", "go"], (:queue, ["go", "--help"])),
         (["help", "submit"], (:queue, ["submit", "--help"])),
         (["help", "submit", "go"], (:queue, ["submit", "go", "--help"])),
@@ -191,10 +195,12 @@ end
         @test DistSSHKit._route(["help", c]) == (:queue, [c, "--help"])
         @test DistSSHKit._route(["help", "qhost", c]) == (:queue, [c, "--help"])
     end
-    for c in ("setup", "up", "size", "pool")
+    for c in ("setup", "up", "hostinfo", "pool")
         @test DistSSHKit._route(["help", c]) == (:run, [c, "--help"])
         @test DistSSHKit._route(["help", "qhost", c]) == (:queue, [c, "--help"])
     end
+    @test DistSSHKit._route(["help", "size"]) == (:unknown, "size")
+    @test DistSSHKit._route(["size"]) == (:unknown, "size")
     for kind in string.(DistSSHQueue.KIT_EXECUTE_KINDS)
         @test DistSSHKit._route(["help", "submit", kind]) ==
             (:queue, ["submit", kind, "--help"])
@@ -231,7 +237,7 @@ end
 
 @testset "route shape" begin
     tokens = String[
-        "go", "submit", "qhost", "qhost:H", "--remote-julia", "--queue-env",
+        "go", "hostinfo", "submit", "qhost", "qhost:H", "--remote-julia", "--queue-env",
         "--project", "--project=.", "--qhost", "-h", "--help", "-v",
         "x.jl", "", "ü", "--",
     ]
