@@ -43,15 +43,15 @@ Call paths:
 
 - **Julia API** — `setup!` for remotes, `go!` / `drive!` to run, or
   `pipeline!` for optional sync → `drive!` → collect (not `setup!`;
-  rsync there does not instantiate). Occupancy is CLI `size` and
-  Julia `size!`; paste the printed tokens.
+  rsync there does not instantiate). Host facts are CLI `hostinfo`.
+  Worker counts stay explicit `parent:N` / `child:NAME:N`.
 - **CLI** — `julia --project=. -m DistSSHKit go …` / `ride …` / `drive …`
-  (and `setup`, `size`, `pool`, `demo`, …)
+  (and `setup`, `hostinfo`, `pool`, `demo`, …)
 
 All of these need **Julia 1.13+** ([Requirements](@ref)).
 
-Same host tokens for setup / go / drive / ride / size / pool (`parent:2`,
-`child:user@host:1`; setup / size / pool ignore `:N`). Details:
+Same host tokens for setup / go / drive / ride / hostinfo / pool (`parent:2`,
+`child:user@host:1`; setup / hostinfo / pool ignore `:N`). Details:
 [API](@ref API), [User Guide](@ref Manual).
 
 ## Installation

@@ -18,7 +18,7 @@ until a client uses `qhost:` (`qhost:` defaults to
 ```bash
 julia -m DistSSHKit qhost setup
 julia -m DistSSHKit qhost add-host parent child:host1
-julia -m DistSSHKit qhost size
+julia -m DistSSHKit qhost pool
 julia -m DistSSHKit qhost serve
 ```
 

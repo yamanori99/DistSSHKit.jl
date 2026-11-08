@@ -58,14 +58,17 @@
     for c in ("setup", "up")
         _test_same_page(["help", "qhost", c], DistSSHQueue.main, [c, "--help"])
     end
-    # `size` / `pool` still need Queue's target check.
+    # `pool` still needs Queue's target check. Queue has no `hostinfo`.
+    # `size` is gone: Queue rejects it; Kit does not dispatch it to Run.
     # `submit <kind> --help` is the page before that check (DistSSHQueue 0.9.10).
     # The local-trial env is the check's switch, and it is harmless for the
     # submit pages.
     withenv(DistSSHQueue.LOCAL_QUEUE_ENV => "1") do
-        for c in ("size", "pool")
-            _test_same_page(["help", "qhost", c], DistSSHQueue.main, [c, "--help"])
-        end
+        _test_same_page(["help", "qhost", "pool"], DistSSHQueue.main, ["pool", "--help"])
+        _test_same_page(
+            ["help", "qhost", "size"], DistSSHQueue.main, ["size", "--help"];
+            exit0 = false,
+        )
         for kind in string.(DistSSHQueue.KIT_EXECUTE_KINDS)
             _test_same_page(
                 ["help", "submit", kind],

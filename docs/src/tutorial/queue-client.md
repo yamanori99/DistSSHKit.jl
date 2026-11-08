@@ -24,7 +24,6 @@ copies from the queue host to the workers.
 
 ```bash
 julia --project=. -m DistSSHKit qhost:HOST list-host
-julia --project=. -m DistSSHKit qhost:HOST size
 julia --project=. -m DistSSHKit qhost:HOST pool
 ```
 
@@ -34,7 +33,8 @@ One queue host: still pass `qhost:HOST` (or `status qhost:HOST`).
 
 `list-host` is not `--hosts`. One row: NAME / TOKEN / MAX / JULIA / SSH
 (`user@hostname`, `:port` when not 22). `ssh -G` runs on the queue host.
-`size` / `pool` are DistSSHKit inspect verbs there (do not enqueue).
+`pool` is the DistSSHKit inspect verb there (do not enqueue).
+`hostinfo` stays on DistSSHRun; Queue does not forward it.
 
 ## Submit
 

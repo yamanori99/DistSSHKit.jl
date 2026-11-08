@@ -58,6 +58,7 @@ const _DOC_REF_REWRITES = (
     "[`host_tokens`](@ref)" => "`host_tokens`",
     "[`cache_relpath`](@ref)" => "`cache_relpath`",
     "[`plan`](@ref)" => "`plan`",
+    "[`collect_host_facts`](@ref)" => "`collect_host_facts`",
 )
 
 function _retarget_doc_refs!(mod::Module)
@@ -132,7 +133,7 @@ makedocs(;
                 "go" => "manual/go.md",
                 "ride" => "manual/ride.md",
                 "drive" => "manual/drive.md",
-                "size" => "manual/size.md",
+                "hostinfo" => "manual/hostinfo.md",
                 "pool" => "manual/pool.md",
                 "paths" => "manual/paths.md",
                 "demo" => "manual/demo.md",

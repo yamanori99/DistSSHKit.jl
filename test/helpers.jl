@@ -86,10 +86,14 @@ For `help <verb>`, pass the owner's flag argv as `owner_args` (`["go",
 "--help"]`, `["submit", "go", "--help"]`). Write that argv in the test.
 Do not read it back from `_route`.
 """
-function _test_same_page(kit_args, owner_main, owner_args = kit_args)
+function _test_same_page(kit_args, owner_main, owner_args = kit_args; exit0::Bool = true)
     got = _main_capture(kit_args)
     want = _owner_capture(owner_main, owner_args)
-    @test got[1] == want[1] == 0
+    if exit0
+        @test got[1] == want[1] == 0
+    else
+        @test got[1] == want[1]
+    end
     @test got[2] == want[2]
     @test got[3] == want[3]
     text = got[2] * got[3]

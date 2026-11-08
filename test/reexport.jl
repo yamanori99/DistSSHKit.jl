@@ -80,7 +80,6 @@ const _KNOWN_KIT_EXPORTS = Set(
         :serve!,
         :setup!,
         :short_path,
-        :size!,
         :ssh_opts,
         :step!,
         :stored_path,

@@ -28,7 +28,7 @@ The machine the run starts from is this machine.
   (parent or SSH workers)
 - [drive](@ref Manual-drive): master + Distributed workers; driver farms
   work
-- [size](@ref Manual-size): estimate worker counts from RAM / CPU
+- [hostinfo](@ref Manual-hostinfo): host identity / RAM / CPU / Julia
 - [pool](@ref Manual-pool): cluster cores / health; no job
 - [paths](@ref Manual-paths): `stored_path` / content-hash cache / `push_cache!`
 - [demo](@ref Manual-demo): install or list bundled example scripts
@@ -59,7 +59,8 @@ Both share host tokens (`parent:N`, `child:NAME:N`) and optional `--sync` /
   `init_output_dir!` / `main`.
 - **`child:NAME:N`:** go is N **concurrent full script runs**. Omit `:N`
   only with `--repeat` (uncapped). Drive is N **Distributed workers**;
-  omit `:N` is an error. Estimate with [`size`](@ref Manual-size).
+  omit `:N` is an error. Counts stay explicit; inspect with
+  [`hostinfo`](@ref Manual-hostinfo) / [`pool`](@ref Manual-pool).
 - **Collect:** go is slot-overwrite after remotes. Drive is post-run-new
   after `main()`; optional collect-only flags.
 - **Success:** go requires every listed slot to run (`ok=false` if one
@@ -90,29 +91,29 @@ Same **names** are shared on purpose; a few meanings differ by command:
   default; exclusive with `--sync` / `--rsync` on go).
 - `--output-dir`: **`go`** is batch root (`PATH/{slot}/`). **`drive`** is
   result root (`DISTRIBUTED_OUTPUT_DIR`). Different on purpose.
-- `--hosts`: CSV tokens. `setup` / `size` / `pool` strip `:N` from `parent` /
+- `--hosts`: CSV tokens. `setup` / `hostinfo` / `pool` strip `:N` from `parent` /
   `child:NAME[:N]`. `go` / `ride` / `drive` require `:N` on listed tokens.
 - `--hosts-file`: same as `--hosts` for that command.
 - Shared flags: `-q`/`--quiet`, `--progress`, `--verbose`, `-y`/`--yes`,
   `--hosts`, `--hosts-file`, `-v`/`--version` — same on setup / go /
-  drive / size / pool.
+  drive / hostinfo / pool.
 
 ## Shared concepts
 
 **Hosts.** Sources, in the order they append after positional tokens:
 
-- CLI tokens: `setup` / `size` / `pool` may omit `:N`; `go` / `ride` / `drive` need `parent:N` / `child:NAME:N`
+- CLI tokens: `setup` / `hostinfo` / `pool` may omit `:N`; `go` / `ride` / `drive` need `parent:N` / `child:NAME:N`
 - `--hosts` (CSV)
 - `DISTSSHKIT_HOSTS` (comma-separated)
 - `--hosts-file` (default path from `DISTSSHKIT_HOSTS_FILE`)
 
-`setup` / `size` / `pool` strip `:N` and use host names only. Bare SSH names are
+`setup` / `hostinfo` / `pool` strip `:N` and use host names only. Bare SSH names are
 not accepted on setup (use `child:NAME`). On setup, `parent` /
 `parent:N` are only for `up`; other modes take `child:NAME`
 only.
 
 **Jobs.** `DISTSSHKIT_JOBS` (default 1) is the max concurrent SSH host jobs
-for `setup --rsync`, drive post-run collect, and `size` Julia detection.
+for `setup --rsync`, drive post-run collect, and `hostinfo` Julia detection.
 Worker `addprocs` stays sequential.
 
 **Quiet / progress.**

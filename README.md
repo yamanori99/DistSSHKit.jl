@@ -43,7 +43,7 @@ A job runs in one of two places.
 
 - **This machine.** Start it here. The SSH connection stays open until
   it finishes. The commands are `go`, `ride`, `drive`,
-  `size`, `pool`, `demo`, and `progress`.
+  `hostinfo`, `pool`, `demo`, and `progress`.
 - **Queue host.** An always-on machine. Leave the job there. Jobs run
   one at a time. Install the same package there. A dropped laptop does
   not stop a job already left there. The commands are `submit`, `status`,
@@ -145,14 +145,15 @@ There are three ways to run a script:
   indexed `for` work (experimental; works on the parent or SSH workers).
 - **drive** — one master distributes work to workers (built on Distributed.jl).
 
-### Inspect: size and pool (hosts)
+### Inspect: hostinfo and pool (hosts)
 
 - **pool** / **pool!** — reports the cores and RAM of the listed hosts. It uses
-  SSH, hence the bang. It does not report RSS. Unreachable hosts stay in the
-  list with `ok=false`.
+  SSH, hence the bang. It does not recommend a worker count. Unreachable hosts
+  stay in the list with `ok=false`. Missing facts are not zero.
+- **hostinfo** — prints identity, RAM, CPU, OS, and Julia. DistSSHRun only;
+  Queue does not forward it.
 
-**size** / **size!** reports occupancy (an RSS-based `WorkerPlan`). The CLI
-`size` prints a plan. For go, drive, and ride, every listed token requires `:N`
+For go, drive, and ride, every listed token requires `:N`
 (with no tokens, you get one slot on the parent).
 `go --repeat` is the exception: it lets you omit `:N` for listed hosts, which
 leaves their pool uncapped. None of
@@ -160,7 +161,7 @@ these is a dashboard.
 
 `go` alone is already quite useful. A common workflow is to confirm a standalone
 run with `go` first, then move on to `ride` or `drive` when you need them.
-Use `size` and `pool` to inspect hosts before you run.
+Use `hostinfo` and `pool` to inspect hosts before you run.
 
 ### Ways to call DistSSHKit
 
@@ -169,7 +170,7 @@ Use `size` and `pool` to inspect hosts before you run.
   Command flags: `julia -m DistSSHKit help go`.
   This suits quick experiments and shell scripts.
 - **Julia** — call functions from your own Julia code (a script, the REPL, or
-  another package): `setup!`, `go!`, `drive!`, `pool!`, `size!`, and
+  another package): `setup!`, `go!`, `drive!`, `pool!`, and
   the other `!` functions.
 
 CLI flags map one-to-one onto the Julia API. For example, `setup --rsync`
@@ -385,7 +386,7 @@ For details, see [Prepare][q-prepare], [Walkthrough][q-walk], and
     - [go][m-go]
     - [ride][m-ride]
     - [drive][m-drive]
-    - [size][m-size]
+    - [hostinfo][m-hostinfo]
     - [pool][m-pool]
     - [paths][m-paths]
     - [demo][m-demo]
@@ -433,7 +434,7 @@ The source code is released under the [MIT](LICENSE) license.
 [m-go]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/go/
 [m-ride]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/ride/
 [m-drive]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/drive/
-[m-size]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/size/
+[m-hostinfo]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/hostinfo/
 [m-pool]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/pool/
 [m-paths]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/paths/
 [m-demo]: https://yamanori99.github.io/DistSSHKit.jl/stable/manual/demo/
