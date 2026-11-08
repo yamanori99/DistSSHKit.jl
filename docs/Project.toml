@@ -7,8 +7,8 @@ Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 [sources]
 DistSSHKit = { path = ".." }
 # Same revs as the root project. See root `Project.toml` `[sources]`.
-DistSSHRun = { url = "https://github.com/yamanori99/DistSSHRun.jl", rev = "breaking/drop-size-add-hostinfo-c3b5" }
-DistSSHQueue = { url = "https://github.com/yamanori99/DistSSHQueue.jl", rev = "breaking/drop-size-keep-pool-9fde" }
+DistSSHRun = { url = "https://github.com/yamanori99/DistSSHRun.jl", rev = "main" }
+DistSSHQueue = { url = "https://github.com/yamanori99/DistSSHQueue.jl", rev = "main" }
 
 [compat]
 DistSSHQueue = "0.10.0"

@@ -15,17 +15,10 @@ DistSSHQueue = "24254401-70d8-4a51-8ea4-cfab19f5bc73"
 DistSSHRun = "b568025c-2759-4ef1-8b14-17d00e2cd000"
 
 [sources]
-# Pending Size-removal compatibility: public matching branches, not local
-# paths and not commit SHAs. DistSSHRun #347
-# (`breaking/drop-size-add-hostinfo-c3b5`) and DistSSHQueue #527
-# (`breaking/drop-size-keep-pool-9fde`). Pkg clones the branch tip, so a
-# merge commit on that branch is a new tree without changing `rev`.
-# After both merge to their `main`s, set both `rev` values back to
-# `"main"` in this file, `test/Project.toml`, and `docs/Project.toml`
-# (same revs). Drop both `[sources]` entries at the 0.11.0 cut, after
-# DistSSHRun 0.2.0 and DistSSHQueue 0.10.0 are on General.
-DistSSHRun = { url = "https://github.com/yamanori99/DistSSHRun.jl", rev = "breaking/drop-size-add-hostinfo-c3b5" }
-DistSSHQueue = { url = "https://github.com/yamanori99/DistSSHQueue.jl", rev = "breaking/drop-size-keep-pool-9fde" }
+# DistSSHRun 0.2.0 and DistSSHQueue 0.10.0 are not on General yet.
+# Keep git `main` until the 0.11.0 cut, then drop both `[sources]` entries.
+DistSSHRun = { url = "https://github.com/yamanori99/DistSSHRun.jl", rev = "main" }
+DistSSHQueue = { url = "https://github.com/yamanori99/DistSSHQueue.jl", rev = "main" }
 
 [compat]
 DistSSHQueue = "0.10.0"
