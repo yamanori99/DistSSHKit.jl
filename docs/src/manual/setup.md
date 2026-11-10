@@ -80,10 +80,10 @@ Pick **one mode** per invocation (except shared options).
   for `delete`. `-y` and `DISTSSHKIT_YES` still skip that prompt and
   delete. That skip stops in DistSSHKit 0.11 (DistSSHRun 0.2).
   A git checkout removes the clone destination when that path sits above
-  the deploy root. A `--remote-path` that cannot express that parent, and
+  the deploy root. A `--deploy-root` that cannot express that parent, and
   a tree with no git work tree, remove the rsync deploy root.
 - `--repo URL`: clone URL (default: local `origin`)
-- `--remote-path PATH`: remote repo root (alias `--remote-dir`; or
+- `--deploy-root PATH`: remote deployment root (or
   `DISTRIBUTED_REMOTE_PROJECT_ROOT`)
 - `--julia PATH`: Julia on remotes (default: auto /
   `JULIA_DISTRIBUTED_EXE`)
@@ -114,7 +114,7 @@ Non-quiet setup and [`setup!`](@ref) print a Time table with a row per host
 ## Remote path
 
 Default: `~/Parent/RepoName` from the local tree. Override with
-`--remote-path` or `DISTRIBUTED_REMOTE_PROJECT_ROOT` (same ENV for `go` /
+`--deploy-root` or `DISTRIBUTED_REMOTE_PROJECT_ROOT` (same ENV for `go` /
 `drive`).
 
 `~` is fine for setup shell ops (`rsync` / `clone` / `check`). Before
