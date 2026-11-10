@@ -49,7 +49,7 @@ setup!(session, :rsync, :instantiate)
 ```
 
 CLI and API share the default remote root (`~/Parent/RepoName`). If you override
-it (`setup --remote-path` / `KitSession(; remote=…)`), pass the same path to
+it (`setup --deploy-root` / `KitSession(; remote=…)`), pass the same path to
 `go` / `drive` / `go!` / `drive!` / `pipeline!`.
 
 After setup, just run `go` / `drive` — neither pre-runs sync nor requires git
