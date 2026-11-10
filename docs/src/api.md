@@ -50,8 +50,11 @@ result_provenance
 DistSSHRun.result_run_dir
 DistSSHRun.result_content_tree_hash
 DistSSHRun.result_remote_run_id
-DistSSHRun.ship
+DistSSHRun.ship_tree!
 DistSSHRun.ShipTreeResult
+DistSSHRun.remote_script_path
+DistSSHRun.DistSSHShip.ShipPack
+DistSSHRun.DistSSHShip.ship
 ```
 
 `report_go_errors` and `report_run_errors` are public on DistSSHRun and are
