@@ -3,7 +3,7 @@ DistSSHKit — meta-package for the run and the queue.
 
 Users add this package. The command is `julia -m DistSSHKit`.
 DistSSHRun is the run. DistSSHQueue is the queue, started on a queue host.
-This module reexports names they export. `rsync_send_list` is public on
+This module reexports names they export. `git_send_list` is public on
 DistSSHRun and stays reexported until 0.11. Other public-only names are
 not reexported.
 """
@@ -37,7 +37,7 @@ const _FROM = Dict{Symbol, Module}()
 
 # Public-only names already reexported. Removed in 0.11. New public-only
 # names are not added here.
-const _PUBLIC_ONLY_KEPT = (:rsync_send_list,)
+const _PUBLIC_ONLY_KEPT = (:git_send_list,)
 
 """True when `n` from `mod` is reexported.
 

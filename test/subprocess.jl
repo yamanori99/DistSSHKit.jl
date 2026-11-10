@@ -26,7 +26,7 @@
         delete!(child_env, "JULIA_LOAD_PATH")
         delete!(child_env, "JULIA_PROJECT")
         for k in collect(keys(child_env))
-            if startswith(k, "DISTSSHKIT_") || k == "DISTRIBUTED_SSH_OPTS"
+            if startswith(k, "DISTSSH_") || startswith(k, "DISTSSHKIT_") || k == "DISTRIBUTED_SSH_OPTS"
                 delete!(child_env, k)
             end
         end

@@ -1,7 +1,7 @@
 # Reexports. Not a guarantee that a future dependency export is wanted.
 #
 # `_KNOWN_KIT_EXPORTS` is the export set as of DistSSHRun 0.2.0-DEV and
-# DistSSHQueue 0.10.0-DEV, including `rsync_send_list` (public on Run,
+# DistSSHQueue 0.10.0-DEV, including `git_send_list` (public on Run,
 # reexported until 0.11). A dependency patch that adds an `export` fails
 # the test below without a Kit change. Read the new name. Update this set in a Kit patch
 # when the new export is intended. A public-only name is not reexported, so
@@ -74,7 +74,7 @@ const _KNOWN_KIT_EXPORTS = Set(
         :resolve_pkg_env,
         :resolve_pkg_project_dir,
         :ride!,
-        :rsync_send_list,
+        :git_send_list,
         :run_on_host,
         :serve,
         :serve!,
@@ -95,7 +95,7 @@ const _KNOWN_KIT_EXPORTS = Set(
 @testset "reexport" begin
     @test DistSSHKit._reexport_name(_PublicOnlyProbe, :shown)
     @test !DistSSHKit._reexport_name(_PublicOnlyProbe, :kept_out)
-    @test DistSSHKit._reexport_name(DistSSHRun, :rsync_send_list)
+    @test DistSSHKit._reexport_name(DistSSHRun, :git_send_list)
     for n in names(DistSSHRun)
         n === :DistSSHRun && continue
         n === :println_kit_version && continue

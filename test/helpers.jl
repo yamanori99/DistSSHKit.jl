@@ -3,7 +3,7 @@
 # Run's CLI scripts write these even when they were absent. `withenv` only
 # restores keys it was given, so name them here or `"1"` stays after the call.
 const _CLI_WRITTEN_KEYS = (
-    "DISTSSHKIT_CLI_SUBCOMMAND_DONE",
+    "DISTSSH_CLI_SUBCOMMAND_DONE",
     "DISTRIBUTED_PROJECT_ROOT",
     "DIST_SSH_KIT_CLI_INCLUDE",
 )
@@ -12,7 +12,7 @@ const _CLI_WRITTEN_KEYS = (
 function _cli_env_isolation()
     ks = Set{String}()
     for k in keys(ENV)
-        if startswith(k, "DISTSSHKIT_") || k == "DISTRIBUTED_SSH_OPTS"
+        if startswith(k, "DISTSSH_") || startswith(k, "DISTSSHKIT_") || k == "DISTRIBUTED_SSH_OPTS"
             push!(ks, String(k))
         end
     end
@@ -111,8 +111,8 @@ function _with_fake_ssh(f)
         chmod(path, 0o755)
         withenv(
             "PATH" => bin * ":" * ENV["PATH"],
-            "DISTSSHKIT_QUIET" => nothing,
-            "DISTSSHKIT_TEST_SSH" => nothing,
+            "DISTSSH_QUIET" => nothing,
+            "DISTSSH_TEST_SSH" => nothing,
         ) do
             f(log)
         end
