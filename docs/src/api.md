@@ -53,7 +53,7 @@ DistSSHRun.result_remote_run_id
 DistSSHRun.ship_tree!
 DistSSHRun.ShipTreeResult
 DistSSHRun.remote_script_path
-DistSSHRun.DistSSHShip.ShipPack
+DistSSHRun.DistSSHShip.Shipment
 DistSSHRun.DistSSHShip.ship
 ```
 
@@ -115,8 +115,8 @@ A few points that carry over from the CLI:
 
 Or call [`pipeline!`](@ref) for optional sync → [`drive!`](@ref)
 → collect in one shot (`pipeline!` does not call [`setup!`](@ref)).
-[`pipeline_config_from_env`](@ref) reads `DISTSSHKIT_HOSTS` /
-`DISTSSHKIT_HOSTS_FILE`, `SYNC_MODE` (`rsync` / `sync` / `off`; unset → off for
+[`pipeline_config_from_env`](@ref) reads `DISTSSH_HOSTS` /
+`DISTSSH_HOSTS_FILE`, `SYNC_MODE` (`rsync` / `sync` / `off`; unset → off for
 remotes too), `JULIA_DISTRIBUTED_EXE` (same as CLI `--julia`), and the usual
 quiet / progress / yes flags — same vocabulary as the CLI.
 
@@ -249,7 +249,7 @@ When a kit log file is open (`go_*.log` / `drive_*.log`), `go` and `drive`
 append `progress:` lines. The same lines go to `kit.progress` in `output_dir`
 (even with `--no-log`). The last event (`done`) is written **regardless of
 verbosity**. `begin` / `step` / `item` lines appear only in `--progress`
-mode (`DISTSSHKIT_PROGRESS=1` for a child process).
+mode (`DISTSSH_PROGRESS=1` for a child process).
 
 Each line is space-separated `key=value` fields after the event name.
 `t=` is Unix time (seconds) at the end of every line. Events:
@@ -261,12 +261,12 @@ Each line is space-separated `key=value` fields after the event name.
 - `done`: `kind`, optional `job`, `ok`, `done`, `total`, `t`
 
 `kind` is `go`, `ride`, or `drive`. `job=` is present only when `job_id` /
-`DISTSSHKIT_JOB_ID` is set. Fields are not quoted; labels are chosen by the run
+`DISTSSH_JOB_ID` is set. Fields are not quoted; labels are chosen by the run
 (phase names or slot labels) and do not contain spaces.
 
 Watchers can tail `kit.progress` (or the log next to it) and use
 `julia -m DistSSHKit progress DIR`.
-`DISTSSHKIT_PROGRESS=1` is `--progress` verbosity on the child, not a watcher.
+`DISTSSH_PROGRESS=1` is `--progress` verbosity on the child, not a watcher.
 Slot-level `go` artifacts (`go_manifest.txt`, `{slot}/go.exitcode`) remain
 the source of truth for per-slot exit codes.
 `kit_progress_latest` stays on `DistSSHKit` for scripts that parse those
@@ -299,7 +299,7 @@ Detached stdio (`kit.out` / `kit.err`) lives in [`KitProcess`](@ref) `run_dir`.
 written under `run_dir`, and also under `output_dir` / `log_dir` when those
 paths are known at write time. `.kit.lock` stays on the artifact `output_dir`
 (exclusive run against that leaf). Logs (`go_*.log` / `drive_*.log`)
-default to `run_dir` for drive when `DISTSSHKIT_RUN_DIR` is set; go still
+default to `run_dir` for drive when `DISTSSH_RUN_DIR` is set; go still
 writes `go_*.log` next to the batch.
 
 On-disk contract:
@@ -346,13 +346,13 @@ Without `job_id`, only the child pid is signaled.
 #### Before spawn
 
 - [`allocate_output_dir`](@ref): create a unique **artifact** directory under
-  `{script}/.distsshkit/<kind>/` for a later `output_dir=`. Omitted `go` /
-  `ride` default is still `{script}/.distsshkit/<kind>/<stem>_<UTC>/`.
+  `{script}/.distssh/<kind>/` for a later `output_dir=`. Omitted `go` /
+  `ride` default is still `{script}/.distssh/<kind>/<stem>_<UTC>/`.
   Detached `drive` does not pin that path before spawn, so
   `init_output_dir!` can set `DISTRIBUTED_OUTPUT_DIR`.
 - [`allocate_run_dir`](@ref): run bundle
-  `{script}/.distsshkit/runs/<kind>/<stem>_<UTC>/` (`run.toml`, pid, stdio).
-  Falls back to `{project}/.distsshkit/runs/…` then
+  `{script}/.distssh/runs/<kind>/<stem>_<UTC>/` (`run.toml`, pid, stdio).
+  Falls back to `{project}/.distssh/runs/…` then
   `tempdir()/distsshkit-runs/…` when the script directory is not writable.
 - [`execute_kwargs_from_parsed`](@ref): map `parse_go_args` /
   `parse_drive_args` onto detached `execute!` keywords. Ride argv maps the same
@@ -361,7 +361,7 @@ Without `job_id`, only the child pid is signaled.
   `:log_dir` / `:workers` are drive-only
   except ride also takes `:spi_check` (default `false`).
   `:mem_headroom` / `:parent_gb` are not accepted.
-- `job_id` (`execute!` keyword, or `ENV["DISTSSHKIT_JOB_ID"]` for in-process
+- `job_id` (`execute!` keyword, or `ENV["DISTSSH_JOB_ID"]` for in-process
   `go!` / `drive!`): `job=<id>` on every `progress:` line. Drive workers get a
   comment-only `--eval=#distsshkit-job:<id>`; go slots `-L` a no-op file of
   that name so the user script stays `PROGRAM_FILE`. [`terminate!`](@ref)

@@ -17,7 +17,7 @@ public reexports and `julia -m DistSSHKit` routing.
 DistSSHRun or DistSSHQueue release and Kit itself did not change, read the
 new name. Update the set in a Kit patch when a new `export` is intended.
 A public-only name is not reexported, so it does not update the set.
-`rsync_send_list` stays until 0.11, when `_PUBLIC_ONLY_KEPT` is removed.
+`git_send_list` stays until 0.11, when `_PUBLIC_ONLY_KEPT` is removed.
 Tests for a job
 started on this machine live in DistSSHRun.
 Tests for jobs left on a machine that stays on live in DistSSHQueue.
@@ -123,9 +123,9 @@ julia -e '
 2. Do not add an SSH suite here. `Pkg.test` must not start Docker.
 3. Short Oracle / non-guarantee comment at the top of the file.
 
-CLI also honors `DISTSSHKIT_QUIET`, `DISTSSHKIT_PROGRESS`,
-`DISTSSHKIT_VERBOSE`, `DISTSSHKIT_YES`, `DISTSSHKIT_HOSTS`,
-`DISTSSHKIT_HOSTS_FILE` (DistSSHRun `src/DistSSHRun/argv/session.jl`).
+CLI also honors `DISTSSH_QUIET`, `DISTSSH_PROGRESS`,
+`DISTSSH_VERBOSE`, `DISTSSH_YES`, `DISTSSH_HOSTS`,
+`DISTSSH_HOSTS_FILE` (DistSSHRun `src/DistSSHRun/argv/session.jl`).
 
 ## Aqua
 
