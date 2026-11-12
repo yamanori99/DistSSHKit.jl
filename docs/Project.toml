@@ -15,5 +15,5 @@ DistSSHQueue = "0.10.0"
 DistSSHRun = "0.2.0"
 # 1.19.x only. docs/make.jl overrides Documenter for this release.
 # On the first bump, read how this bound was rewritten, then rebuild docs.
-Documenter = "~1.19"
+Documenter = "~1.19, 1.20"
 julia = "1.13"
