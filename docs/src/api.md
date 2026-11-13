@@ -44,7 +44,7 @@ spread across listed hosts.
 ```@docs
 go!
 GoResult
-KitRunResult
+DistSSHJobResult
 kit_run_result
 result_provenance
 DistSSHRun.result_run_dir
@@ -63,7 +63,7 @@ not reexported.
 ## Drive work across workers
 
 When the script is a **driver** (`init_output_dir!` / `main`, `pmap`,
-…), build a [`KitSession`](@ref), then call the steps you need:
+…), build a [`DistSSHSession`](@ref), then call the steps you need:
 
 ```text
 (optional setup! / sync! / instantiate!)
@@ -73,7 +73,7 @@ When the script is a **driver** (`init_output_dir!` / `main`, `pmap`,
 First-time remotes usually look like:
 
 ```julia
-session = KitSession(
+session = DistSSHSession(
     workers=["child:user@h1"], remote="/path/to/project", yes=true,
 )
 setup!(session, :rsync, :instantiate)
@@ -126,7 +126,7 @@ worker (empty when no host-collection step ran). The same vector is in
 [`HostResult`](@ref) is the per-host row for setup / sync, not drive collect.
 
 ```@docs
-KitSession
+DistSSHSession
 setup!
 DistSSHRun.ConfirmPathMismatch
 sync!
@@ -213,13 +213,13 @@ wait(execute!(:go, "job.jl", ["parent:1"]; detached=true, args=["8"]))
   A Manifest-only or transitive name does not count.
 - Keywords are an allow-list; `yes` must stay `true`
 - Child stdio defaults to `kit.out` / `kit.err` in `run_dir`
-- [`KitProcess`](@ref) holds the `Base.Process`, `run_dir`, and artifact
+- [`DetachedProcess`](@ref) holds the `Base.Process`, `run_dir`, and artifact
   `output_dir` when known **before spawn**. Detached `:drive` without
   `output_dir=` / inherited `DISTRIBUTED_OUTPUT_DIR` leaves `kp.output_dir`
   as `nothing`. [`wait`](@ref) does **not** write back into `kp`; the
-  resolved leaf is [`KitRunResult`](@ref) `output_dir` (from `kit.result` /
+  resolved leaf is [`DistSSHJobResult`](@ref) `output_dir` (from `kit.result` /
   `run.toml`)
-- `wait` converts it to [`KitRunResult`](@ref). If the child wrote `kit.result`,
+- `wait` converts it to [`DistSSHJobResult`](@ref). If the child wrote `kit.result`,
   that file wins (including `go!` `failed_step`). Otherwise a non-zero child
   exit yields `failed_step` `"go"` / `"ride"` / `"drive"` only. `wait(kp; timeout=N)`
   returns `failed_step="hung"` / `exit_code=124` without killing the child
@@ -233,8 +233,8 @@ read_kit_run_toml
 execute_detached_accepts
 execute_kwargs_from_parsed
 detached_launch
-KitProcess
-wait(::KitProcess)
+DetachedProcess
+wait(::DetachedProcess)
 kit_pid_file_running
 terminate!
 terminate_run!
@@ -278,7 +278,7 @@ are DistSSHRun names and are not on DistSSHKit.
 Opt-in extras on `go!` / `drive!` (in-process or detached) for a caller
 that runs many jobs.
 
-#### Still holding `KitProcess`
+#### Still holding `DetachedProcess`
 
 [`terminate!`](@ref) with the default `interrupt_grace=0` SIGTERMs the
 child, waits `grace` for its `rmprocs` path, then SIGKILLs if needed, then
@@ -294,7 +294,7 @@ still a `Base.Process` if you need `kill` yourself.
 
 #### Sidecar files
 
-Detached stdio (`kit.out` / `kit.err`) lives in [`KitProcess`](@ref) `run_dir`.
+Detached stdio (`kit.out` / `kit.err`) lives in [`DetachedProcess`](@ref) `run_dir`.
 `kit.pid`, `kit.job`, `kit.hosts`, `kit.hosts.status`, and `kit.result` are
 written under `run_dir`, and also under `output_dir` / `log_dir` when those
 paths are known at write time. `.kit.lock` stays on the artifact `output_dir`
@@ -324,7 +324,7 @@ On-disk contract:
   `:alive` / `:left` / `:collect_pending`). Read with
   [`drive_host_status`](@ref). Not the post-run collect vector.
   A second in-process `drive!` / `ride!` while the monitor is running throws.
-- `kit.result`: TOML with the same fields as [`KitRunResult`](@ref),
+- `kit.result`: TOML with the same fields as [`DistSSHJobResult`](@ref),
   including `hosts` (post-run collect, [`HostRunResult`](@ref) rows).
   Omitted when empty (`go`, or a `drive` that never collected). Read with
   [`kit_result_from_dir`](@ref). Missing while running or after a hard

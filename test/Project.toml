@@ -9,8 +9,9 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 [sources]
 DistSSHKit = { path = ".." }
 # Same revs as the root project. See root `Project.toml` `[sources]`.
-DistSSHRun = { url = "https://github.com/yamanori99/DistSSHRun.jl", rev = "main" }
-DistSSHQueue = { url = "https://github.com/yamanori99/DistSSHQueue.jl", rev = "main" }
+# Until Run #431 and Queue follow-up merge; then restore both to `main`.
+DistSSHRun = { url = "https://github.com/yamanori99/DistSSHRun.jl", rev = "breaking/kit-neutral-public-names-54ef" }
+DistSSHQueue = { url = "https://github.com/yamanori99/DistSSHQueue.jl", rev = "breaking/run-neutral-public-names-68c6" }
 
 [compat]
 DistSSHQueue = "0.10.0"

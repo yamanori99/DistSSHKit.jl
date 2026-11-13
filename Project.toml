@@ -17,8 +17,9 @@ DistSSHRun = "b568025c-2759-4ef1-8b14-17d00e2cd000"
 [sources]
 # DistSSHRun 0.2.0 and DistSSHQueue 0.10.0 are not on General yet.
 # Keep git `main` until the 0.11.0 cut, then drop both `[sources]` entries.
-DistSSHRun = { url = "https://github.com/yamanori99/DistSSHRun.jl", rev = "main" }
-DistSSHQueue = { url = "https://github.com/yamanori99/DistSSHQueue.jl", rev = "main" }
+# Until Run #431 and Queue follow-up merge; then restore both to `main`.
+DistSSHRun = { url = "https://github.com/yamanori99/DistSSHRun.jl", rev = "breaking/kit-neutral-public-names-54ef" }
+DistSSHQueue = { url = "https://github.com/yamanori99/DistSSHQueue.jl", rev = "breaking/run-neutral-public-names-68c6" }
 
 [compat]
 DistSSHQueue = "0.10.0"
