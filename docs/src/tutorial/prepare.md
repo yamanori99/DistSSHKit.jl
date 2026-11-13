@@ -40,7 +40,7 @@ then check — only onto a missing/empty remote path (or `setup --delete` first)
 Same steps from Julia:
 
 ```julia
-session = KitSession(workers=["child:YourHost1", "child:YourHost2"], yes=true)
+session = DistSSHSession(workers=["child:YourHost1", "child:YourHost2"], yes=true)
 setup!(session, :rsync, :instantiate)
 # optional: setup!(session, :check); setup!(session, :runtest)
 # Julia channel: `up` / `up parent` / `up update` (CLI below)
@@ -49,7 +49,7 @@ setup!(session, :rsync, :instantiate)
 ```
 
 CLI and API share the default remote root (`~/Parent/RepoName`). If you override
-it (`setup --deploy-root` / `KitSession(; remote=…)`), pass the same path to
+it (`setup --deploy-root` / `DistSSHSession(; remote=…)`), pass the same path to
 `go` / `drive` / `go!` / `drive!` / `pipeline!`.
 
 After setup, just run `go` / `drive` — neither pre-runs sync nor requires git

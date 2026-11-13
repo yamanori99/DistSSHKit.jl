@@ -93,9 +93,9 @@ _adopt!(DistSSHQueue)
 const _QUALIFIED = (
     :KIT_PROGRESS,
     :KIT_PROGRESS_SUSPEND,
-    :KitCliSession,
+    :CliSharedFlags,
     :KitProgressState,
-    :apply_kit_cli_session!,
+    :apply_shared_cli_flags!,
     :close_log_file,
     :get_local_git_hash,
     :kit_job_mark_comment,

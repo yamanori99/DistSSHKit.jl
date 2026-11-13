@@ -271,7 +271,7 @@ julia --project=. -m DistSSHKit drive \
 using DistSSHKit
 
 remote = "/path/to/project"
-session = KitSession(workers=["child:user@host1"], remote=remote, yes=true)
+session = DistSSHSession(workers=["child:user@host1"], remote=remote, yes=true)
 setup!(session, :rsync, :instantiate)
 go!("path/to/script.jl", "child:user@host1:1"; remote=remote)
 ```
@@ -282,7 +282,7 @@ go!("path/to/script.jl", "child:user@host1:1"; remote=remote)
 using DistSSHKit
 
 remote = "/path/to/project"
-session = KitSession(workers=["child:user@host1"], remote=remote, yes=true)
+session = DistSSHSession(workers=["child:user@host1"], remote=remote, yes=true)
 setup!(session, :clone; repo="https://github.com/org/proj.git")
 setup!(session, :instantiate)
 drive!("path/to/driver.jl", "parent:2", "child:user@host1:4"; remote=remote)
