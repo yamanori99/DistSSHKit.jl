@@ -67,7 +67,7 @@ runs:
         fi
         julia --startup-file=no -e '
           using Pkg
-          Pkg.Apps.add(; url="https://github.com/aviatesk/JETLS.jl", rev="2026-11-04")
+          Pkg.Apps.add(; url="https://github.com/aviatesk/JETLS.jl", rev="2026-11-14")
         '
     - name: Run jetls check
       shell: bash

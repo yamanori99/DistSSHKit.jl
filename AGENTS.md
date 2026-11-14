@@ -35,3 +35,16 @@ User-facing messages in Kit stay product-neutral (no hard-coded launcher or prod
 Breaking public renames ship without compatibility aliases; update docs and dependents in the same convergence wave.
 
 While the cross-repo redesign is in flight, track each repository's `main` branch. Do not rely on version tags or package registrations until the redesign has landed across the repos it touches.
+
+## Cloud Agent VM
+
+On the Cursor Cloud Agent VM, [`.cursor/install.sh`](.cursor/install.sh) installs Julia via juliaup and runs [`.github/install-agent-tools.sh`](.github/install-agent-tools.sh) for Runic and JETLS on Julia 1.13.
+
+Before pushing, on this VM:
+
+- **Runic** (same check as CI): `git ls-files -- '*.jl' | xargs runic --check --diff`
+- **JETLS**: `./.github/jetls-check.sh` (Julia 1.13; same flags as CI — no `--threads=auto`), plus any targeted tests for your change.
+
+The full `Pkg.test` matrix, SSH E2E, and downstream jobs stay **CI-only** here.
+
+Do not `export HOME` or `JULIA_DEPOT_PATH`. When a command needs a non-default value, set it as a prefix on that command only. For `runic` and `jetls`, prefix `JULIA_APPS_JULIA_CMD=$HOME/.juliaup/bin/julialauncher` (the juliaup launcher path, not `julia +1.13`).
