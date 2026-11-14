@@ -7,6 +7,18 @@
 # when the new export is intended. A public-only name is not reexported, so
 # it does not update this set. The 0.11 change that stops reexporting
 # public-only names removes `_PUBLIC_ONLY_KEPT` from this set.
+#
+# `_RUN_444_KIT_EXPORTS` (DistSSHRun #444) stays in `_KNOWN_KIT_EXPORTS` but
+# is dropped from the pinned set in `export surface` until Run exports the name,
+# so Kit `main` keeps passing against Run `main` before that PR merges.
+
+const _RUN_444_KIT_EXPORTS = (
+    :current_project_file,
+    :julia_default_sysimage_path,
+    :julia_sysimage_is_default,
+    :julia_sysimage_path,
+    :local_preferences_path,
+)
 
 const _KNOWN_KIT_EXPORTS = Set(
     (
@@ -38,6 +50,7 @@ const _KNOWN_KIT_EXPORTS = Set(
         :cancel!,
         :canonical_local_path,
         :collect!,
+        :current_project_file,
         :default_store_path,
         :detached_launch,
         :dist_ssh_kit_version,
@@ -55,11 +68,15 @@ const _KNOWN_KIT_EXPORTS = Set(
         :job,
         :job_project,
         :jobs,
+        :julia_default_sysimage_path,
+        :julia_sysimage_is_default,
+        :julia_sysimage_path,
         :kit_pid_file_running,
         :kit_result_from_dir,
         :kit_run_dir,
         :kit_run_result,
         :load!,
+        :local_preferences_path,
         :parse_drive_args,
         :parse_go_args,
         :parse_ride_args,
@@ -183,8 +200,14 @@ end
         @test Base.binding_module(DistSSHKit, n) === DistSSHKit
     end
     @test DistSSHKit.println_kit_version !== DistSSHRun.println_kit_version
+    expected_exports = copy(_KNOWN_KIT_EXPORTS)
+    for n in _RUN_444_KIT_EXPORTS
+        if !Base.isexported(DistSSHRun, n)
+            delete!(expected_exports, n)
+        end
+    end
     @test Set(n for n in names(DistSSHKit) if Base.isexported(DistSSHKit, n)) ==
-        _KNOWN_KIT_EXPORTS
+        expected_exports
     for n in DistSSHKit._QUALIFIED
         @test isdefined(DistSSHKit, n)
     end
