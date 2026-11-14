@@ -10,7 +10,6 @@ JULIA_LAUNCHER="${HOME}/.juliaup/bin/julialauncher"
 JETLS_ACTION="${root}/.github/actions/jetls-check/action.yml"
 APP_BIN="${HOME}/.julia/bin"
 # Do not export HOME, JULIA_DEPOT_PATH, or JULIA_APPS_JULIA_CMD in this shell.
-PATH="${APP_BIN}:${PATH:-/usr/local/bin:/usr/bin:/bin}"
 
 warn() {
     echo "install-agent-tools: $*" >&2
@@ -65,7 +64,11 @@ app_runs() {
     if [[ ! -x "${bin}" ]]; then
         return 1
     fi
-    with_apps_julia "${bin}" version >/dev/null 2>&1
+    if [[ "${name}" == "runic" ]]; then
+        with_apps_julia "${bin}" --version >/dev/null 2>&1
+    else
+        with_apps_julia "${bin}" version >/dev/null 2>&1
+    fi
 }
 
 ensure_julia_channel() {
