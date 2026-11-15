@@ -1,3 +1,13 @@
+/*
+  DocumenterLandingPage hero halo: #landing .landing-hero__image-container::before
+  paints --landing-glow with --landing-glow-filter (default blur(40px)). Set both
+  to none to drop the glow; see DocumenterLandingPage styling.md ("The glow").
+*/
+:root {
+  --landing-glow: none;
+  --landing-glow-filter: none;
+}
+
 /* Slightly larger sidebar logo than Documenter default (6rem). */
 #documenter .docs-sidebar .docs-logo > img {
   max-height: 8rem;
