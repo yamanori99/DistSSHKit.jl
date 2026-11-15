@@ -13,18 +13,25 @@
   display: none;
 }
 
-/* Hero logo: larger than DocumenterLandingPage defaults (65% / 75%). */
+/* Hero logo: larger than defaults; slight left nudge via transform (not bake). */
+#landing .landing-hero__image,
+#landing .landing-hero__image-container {
+  overflow: visible;
+}
 #landing .landing-hero__image-container img {
   width: 82%;
+  transform: translateX(-4%);
 }
 @container (min-width: 52rem) {
   #landing .landing-hero__image-container img {
     width: 86%;
+    transform: translateX(-5%);
   }
 }
 @container (min-width: 64rem) {
   #landing .landing-hero__image-container img {
     width: 92%;
+    transform: translateX(-6%);
   }
 }
 

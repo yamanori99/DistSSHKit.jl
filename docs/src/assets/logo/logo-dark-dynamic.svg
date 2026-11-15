@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <g transform="translate(32.37 32.37) scale(0.9038)">
+  <g transform="translate(45.79 40.23) scale(0.9038)">
     <g>
       <animateTransform attributeName="transform" type="rotate" dur="7.8s" repeatCount="1" fill="freeze" values="0 0 70;0 0 70;-15 0 70;-15 0 70;0 0 70;0 0 70;0 0 70;-15 0 70;-15 0 70" keyTimes="0;0.066667;0.186667;0.506667;0.626667;0.666667;0.733333;0.853333;1" calcMode="spline" keySplines="0 0 1 1;.65 0 .25 1;0 0 1 1;.65 0 .25 1;0 0 1 1;0 0 1 1;.65 0 .25 1;0 0 1 1"/>
       <rect x="0" y="0" width="70" height="70" rx="13" fill="#c9a8e3" fill-opacity="0.21" stroke="#d9c2ec" stroke-opacity="0.55" stroke-width="1.2"/>

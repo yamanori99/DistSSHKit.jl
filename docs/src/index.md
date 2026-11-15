@@ -9,13 +9,13 @@ hero:
   actions:
     - theme: brand
       text: Requirements
-      link: /requirements/
+      link: requirements/
     - theme: brand
       text: First queue job
-      link: /tutorial/queue-client/
+      link: tutorial/queue-client/
     - theme: alt
       text: User Guide
-      link: /manual/
+      link: manual/
   image:
     src: /logo/logo-dynamic.svg
     dark: /logo/logo-dark-dynamic.svg
@@ -23,13 +23,13 @@ hero:
 
 features:
   - title: Your personal cluster
-    link: /tutorial/queue-client/
+    link: tutorial/queue-client/
     details: Leave work on an always-on queue host; jobs run one at a time while you disconnect and fetch results later.
   - title: Prepare SSH hosts
-    link: /tutorial/prepare/
+    link: tutorial/prepare/
     details: Deploy your project to the machines that will run jobs, then verify SSH and Julia match.
   - title: Run from this machine
-    link: /manual/go/
+    link: manual/go/
     details: When you stay connected, run the same scripts directly over SSH without using the queue.
 ---
 ```
