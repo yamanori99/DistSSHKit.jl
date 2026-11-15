@@ -8,8 +8,8 @@ Layout:
 ```text
 assets/
   bake.jl, README.md, custom.css
-  logo.svg          → logo/logo-dynamic.svg          (Documenter)
-  logo-dark.svg     → logo/logo-dark-dynamic.svg     (Documenter)
+  logo.svg          → logo/logo-static.svg           (Documenter sidebar)
+  logo-dark.svg     → logo/logo-dark-static.svg      (Documenter sidebar)
   logo/             logo SVGs + rasters
   favicon.svg / favicon-dark.svg / favicon.ico   tab icon (transparent)
   social/           social-preview SVGs + rasters
@@ -45,8 +45,11 @@ Topology dark / light `source` are the transparent SVGs. The fallback
 `prefers-color-scheme`, so it shows the light fallback.
 
 Documenter discovers bare `logo.svg` / `logo-dark.svg` at this
-directory's top level only.
-`bake.jl` makes **symlinks** into `logo/` — do not edit the bare names.
+directory's top level only (sidebar: **static** stills).
+The DocumenterLandingPage home hero uses `logo/logo-dynamic.svg` and
+`logo/logo-dark-dynamic.svg` in frontmatter — not these symlinks.
+`bake.jl` makes **symlinks** into `logo/` — do not edit the bare names by hand;
+run `bake.jl` after art changes.
 
 `custom.css` styles the sidebar logo and the topology figure.
 

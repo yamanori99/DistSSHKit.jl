@@ -16,6 +16,10 @@ hero:
     - theme: alt
       text: API
       link: /api/
+  image:
+    src: /logo/logo-dynamic.svg
+    dark: /logo/logo-dark-dynamic.svg
+    alt: "DistSSHKit.jl logo"
 
 features:
   - icon: 📦
