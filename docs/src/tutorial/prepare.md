@@ -4,7 +4,7 @@ First-time remotes before the [Demo](@ref Tutorial-Demo).
 Local-only demos can skip this page.
 
 Also see [Requirements](@ref), [User Guide · setup](@ref Manual-setup),
-[Home](@ref DistSSHKit.jl).
+[Home](@ref Home).
 
 ## [First-time remotes](@id first-time-remotes)
 

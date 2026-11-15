@@ -1,3 +1,47 @@
+/*
+  DocumenterLandingPage hero halo: #landing .landing-hero__image-container::before
+  paints --landing-glow with --landing-glow-filter (default blur(40px)). Set both
+  to none to drop the glow; see DocumenterLandingPage styling.md ("The glow").
+*/
+:root {
+  --landing-glow: none;
+  --landing-glow-filter: none;
+}
+
+/* DocumenterLandingPage emits an empty icon badge when `icon` is omitted. */
+#landing .landing-feature__icon:empty {
+  display: none;
+}
+
+/* Hero logo: larger than defaults; slight left nudge via transform (not bake). */
+#landing .landing-hero__image,
+#landing .landing-hero__image-container {
+  overflow: visible;
+}
+#landing .landing-hero__image-container img {
+  width: 82%;
+  transform: translateX(-4%);
+}
+@container (min-width: 52rem) {
+  #landing .landing-hero__image-container img {
+    width: 86%;
+    transform: translateX(-5%);
+  }
+}
+@container (min-width: 64rem) {
+  #landing .landing-hero__image-container img {
+    width: 92%;
+    transform: translateX(-6%);
+  }
+}
+
+/* Stack hero below 40rem (DocumenterLandingPage landing.css): hide logo column. */
+@container (max-width: 40rem) {
+  #landing .landing-hero__image {
+    display: none;
+  }
+}
+
 /* Slightly larger sidebar logo than Documenter default (6rem). */
 #documenter .docs-sidebar .docs-logo > img {
   max-height: 8rem;

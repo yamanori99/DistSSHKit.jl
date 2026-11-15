@@ -4,7 +4,7 @@ Documenter site for DistSSHKit.jl. Sources live in `docs/src/`.
 
 Layout:
 
-- **Home** — `index.md`
+- **Home** — `index.md` (DocumenterLandingPage hero + existing home content)
 - **First Steps** — `requirements.md`, then This machine (`tutorial/prepare.md`,
   `tutorial/demo.md`) and Always-on machine (`tutorial/queue-*.md`)
 - **User Guide** — Prepare hosts (`manual/setup.md`, `manual/up.md`),

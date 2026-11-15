@@ -1,6 +1,6 @@
 # Requirements
 
-Prerequisites for [Home](@ref DistSSHKit.jl) and
+Prerequisites for [Home](@ref Home) and
 [Prepare](@ref Tutorial-Prepare). You can start local-only; add the remote
 pieces when you SSH to other hosts. `pkg> add DistSSHKit` does not install
 **`ssh`**, **`rsync`**, or **`git`**.
@@ -113,7 +113,7 @@ DistSSHKit assumes a Julia **project** — `Project.toml` at the project root
 
 Demo scripts live under `./distsshkit_demos/` after `demo install
 with_kit` (or `without_kit`); see
-[Home](@ref DistSSHKit.jl).
+[Home](@ref Home).
 
 ## Checks
 
@@ -297,4 +297,4 @@ to the queue host.
   SCRIPT.jl
 ```
 
-Next: [Home](@ref DistSSHKit.jl) · [Prepare](@ref Tutorial-Prepare).
+Next: [Home](@ref Home) · [Prepare](@ref Tutorial-Prepare).

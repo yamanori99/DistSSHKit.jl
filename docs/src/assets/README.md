@@ -47,6 +47,8 @@ Topology dark / light `source` are the transparent SVGs. The fallback
 Documenter discovers bare `logo.svg` / `logo-dark.svg` at this
 directory's top level only.
 `bake.jl` makes **symlinks** into `logo/` — do not edit the bare names.
+The DocumenterLandingPage home hero references `logo/logo-dynamic.svg`
+and `logo/logo-dark-dynamic.svg` in frontmatter (not the root symlinks).
 
 `custom.css` styles the sidebar logo and the topology figure.
 

@@ -1,4 +1,5 @@
 using Documenter
+using DocumenterLandingPage
 using DistSSHKit
 using DistSSHQueue
 using DistSSHRun
@@ -77,6 +78,7 @@ end
 _retarget_doc_refs!(DistSSHRun)
 
 makedocs(;
+    plugins = [LandingPage()],
     modules = [DistSSHKit, DistSSHRun, DistSSHQueue],
     remotes = Dict(
         _pkg_root(DistSSHRun) => (
@@ -152,6 +154,7 @@ makedocs(;
         "Developers" => [
             "Releasing" => "developers/releasing.md",
             "Packages" => "developers/packages.md",
+            "Package split" => "developers/package-split.md",
             "Compile bench" => "developers/compile-bench.md",
         ],
         "API" => "api.md",
