@@ -1,4 +1,53 @@
+```@raw html
+---
+layout: home
+
+hero:
+  name: DistSSH
+  text: Multi-machine Julia over SSH
+  tagline: "DistSSHKit is the usual install and CLI (julia -m DistSSHKit). DistSSHRun and DistSSHQueue are separate packages with their own docs; Kit reexports them."
+  actions:
+    - theme: brand
+      text: Requirements
+      link: /requirements/
+    - theme: brand
+      text: User Guide
+      link: /manual/
+    - theme: alt
+      text: API
+      link: /api/
+
+features:
+  - icon: 📦
+    title: DistSSHKit.jl
+    details: One command for local runs and queue client verbs. [User Guide](/manual/), [Prepare](/tutorial/prepare/), [API](/api/). Repository [yamanori99/DistSSHKit.jl](https://github.com/yamanori99/DistSSHKit.jl).
+  - icon: 🖥️
+    title: DistSSHRun.jl
+    details: "setup, go, ride, drive, hostinfo, pool, and related helpers. Submodules DistSSHRun.DistSSHBase (host tokens, deploy) and DistSSHRun.DistSSHUp (Julia channel sync). Docs [yamanori99.github.io/DistSSHRun.jl/stable](https://yamanori99.github.io/DistSSHRun.jl/stable/). Repository [yamanori99/DistSSHRun.jl](https://github.com/yamanori99/DistSSHRun.jl)."
+  - icon: 📋
+    title: DistSSHQueue.jl
+    details: "Leave jobs on a queue host (submit, status, fetch, serve, …). Reach it through Kit or julia -m DistSSHQueue. Manual on this site under [How it runs](/queue/). API docs [yamanori99.github.io/DistSSHQueue.jl/stable](https://yamanori99.github.io/DistSSHQueue.jl/stable/). Repository [yamanori99/DistSSHQueue.jl](https://github.com/yamanori99/DistSSHQueue.jl)."
+---
+```
+
 # [DistSSHKit.jl](@id DistSSHKit.jl)
+
+## Which package to use
+
+| Goal | Package | How you run it | Docs on this site |
+| --- | --- | --- | --- |
+| Default install, notebooks, mixed local + queue client | **DistSSHKit** | `julia -m DistSSHKit` or `using DistSSHKit` | [Requirements](@ref), [User Guide](@ref Manual), [API](@ref API) |
+| Run scripts on SSH hosts without queue features | **DistSSHRun** | `julia -m DistSSHRun` or `using DistSSHRun` | Same manual ([`setup`](@ref Manual-setup), [`go`](@ref Manual-go), …) — implemented in Run; linked from Kit |
+| Queue host or queue-only embedding | **DistSSHQueue** | `julia -m DistSSHQueue` or `using DistSSHQueue` | [How it runs](@ref Queue-manual), [First job](@ref Queue-Tutorial-Client) |
+| Host tokens, ship/rsync deploy, `up` channel sync | **DistSSHRun.DistSSHBase**, **DistSSHRun.DistSSHUp** | Submodules of DistSSHRun (not separate registered packages) | [setup](@ref Manual-setup), [up](@ref Manual-up), [API](@ref API) |
+
+Quick install (Julia **1.13+** on macOS, Linux, or WSL2 Ubuntu):
+
+```julia
+pkg> add DistSSHKit
+```
+
+That pulls compatible **DistSSHRun** and **DistSSHQueue** versions. Host tools **`ssh`**, **`rsync`**, and **`git`** (git deploy only) are still required on the machine; see [Requirements](@ref).
 
 DistSSHKit is a toolkit for running Julia computations across multiple
 machines over SSH. It works equally well for a pair of workstations and
