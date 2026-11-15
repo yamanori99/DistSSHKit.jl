@@ -3,8 +3,8 @@
 layout: home
 
 hero:
-  name: DistSSH
-  text: Multi-machine Julia over SSH
+  name: Multi-machine Julia over SSH
+  text: DistSSHKit
   tagline: "DistSSHKit is the usual install and CLI (julia -m DistSSHKit). DistSSHRun and DistSSHQueue are separate packages with their own docs; Kit reexports them."
   actions:
     - theme: brand
