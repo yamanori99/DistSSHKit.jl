@@ -9,7 +9,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 [sources]
 DistSSHKit = { path = ".." }
 # Same revs as the root project. See root `Project.toml` `[sources]`.
-DistSSHRun = { url = "https://github.com/yamanori99/DistSSHRun.jl", rev = "main" }
+DistSSHRun = { url = "https://github.com/yamanori99/DistSSHRun.jl", rev = "feat/fix/loaded-code-phase2-fef6" }
 DistSSHQueue = { url = "https://github.com/yamanori99/DistSSHQueue.jl", rev = "main" }
 
 [compat]

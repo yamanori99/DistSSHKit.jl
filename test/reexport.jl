@@ -76,6 +76,7 @@ const _KNOWN_KIT_EXPORTS = Set(
         :kit_run_dir,
         :kit_run_result,
         :load!,
+        :LoadedCodeMismatchError,
         :local_preferences_path,
         :parse_drive_args,
         :parse_go_args,
