@@ -8,6 +8,11 @@
   --landing-glow-filter: none;
 }
 
+/* DocumenterLandingPage emits an empty icon badge when `icon` is omitted. */
+#landing .landing-feature__icon:empty {
+  display: none;
+}
+
 /* Slightly larger sidebar logo than Documenter default (6rem). */
 #documenter .docs-sidebar .docs-logo > img {
   max-height: 8rem;
