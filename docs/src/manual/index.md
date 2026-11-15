@@ -9,6 +9,15 @@ start on a queue host at
 Full flag lists: `julia --project=. -m DistSSHKit help {cmd}`.
 Each command page starts with **Flags** for that command.
 
+## How you operate it
+
+`julia -m DistSSHKit` covers host prep ([`setup`](@ref Manual-setup), [`up`](@ref Manual-up)), runs that start on **this machine** ([`go`](@ref Manual-go), [`drive`](@ref Manual-drive), [`ride`](@ref Manual-ride)), and client verbs toward an **always-on queue host** (`submit`, `status`, `fetch`, … — [How it runs](@ref Queue-manual)).
+
+- **This machine:** the SSH session from your laptop (or login node) stays up until the job finishes.
+- **Queue host:** you leave the job on another machine; jobs run one at a time there so you can disconnect. `qhost:` names that host on client commands.
+
+**Prepare hosts** is shared: do [`setup`](@ref Manual-setup) (and match Julia with [`up`](@ref Manual-up)) before either path.
+
 ## Prepare hosts
 
 Shared by a job you start here and a job you leave on a queue host.
@@ -74,6 +83,35 @@ Both share host tokens (`parent:N`, `child:NAME:N`) and optional `--sync` /
 If you want “run this job on a few machines,” start with **go**.
 If you want one master farming work with `pmap` (and friends), use **drive**.
 
+**ride** is an experimental auto-split of `map` / `filter` ([`ride`](@ref Manual-ride)).
+
+## Topology (`drive`)
+
+```@raw html
+<p style="text-align:center">
+<img class="docs-light-only"
+  alt="Drive topology: Master process on parent, workers on parent and remotes"
+  src="assets/diagram/topology.svg">
+<img class="docs-dark-only"
+  alt="Drive topology: Master process on parent, workers on parent and remotes"
+  src="assets/diagram/topology-dark.svg">
+</p>
+```
+
+One master on the machine the run starts from, workers on each host.
+**go** uses the same host tokens, but there is no master/worker split: each host runs the script on its own.
+
+Example tokens:
+
+```text
+parent                 # this machine
+parent:2               # two slots on this machine
+child:user@hostname    # one slot on a remote
+child:user@hostname:4  # four slots on that remote
+```
+
+Each SSH host needs passwordless SSH from where you start the run and a matching Julia **major.minor** ([`setup --check`](@ref Manual-setup), [`up`](@ref Manual-up)). More: [Requirements](@ref).
+
 ## Flag consistency (read once)
 
 Same **names** are shared on purpose; a few meanings differ by command:
@@ -99,6 +137,10 @@ Same **names** are shared on purpose; a few meanings differ by command:
   drive / hostinfo / pool.
 
 ## Shared concepts
+
+- **Host** — `parent` (this machine) or `child:user@hostname` (SSH).
+- **Process** — one `julia` OS process; a run may start several per host.
+- **Master / worker** — `drive` topology only; **`go`** has no master/worker split.
 
 **Hosts.** Sources, in the order they append after positional tokens:
 

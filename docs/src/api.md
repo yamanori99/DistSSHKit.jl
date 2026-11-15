@@ -6,7 +6,7 @@ CurrentModule = DistSSHKit
 
 Julia entry points for notebooks and packages.
 Day-to-day: CLI (`julia --project=. -m DistSSHKit …`); see
-[Home](@ref DistSSHKit.jl),
+[Home](@ref Home),
 [First Steps](@ref Tutorial-Prepare), and the [User Guide](@ref Manual).
 REPL help also works (`?DistSSHKit.go!`).
 
