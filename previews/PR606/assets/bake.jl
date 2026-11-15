@@ -351,8 +351,9 @@ function logo_placement(angles; span = LOGO_SPAN)
     ys = last.(pts)
     x0, y0, x1, y1 = minimum(xs), minimum(ys), maximum(xs), maximum(ys)
     s = span / max(x1 - x0, y1 - y0)
-    pivot = CARD / 2
-    return round(s; digits = 4), round(64 - pivot * s; digits = 2), round(64 - pivot * s; digits = 2)
+    cx = 0.6 * (x0 + x1) / 2 + 0.4 * CARD / 2
+    cy = 0.6 * (y0 + y1) / 2 + 0.4 * CARD / 2
+    return round(s; digits = 4), round(64 - cx * s; digits = 2), round(64 - cy * s; digits = 2)
 end
 
 """Left and right of one rounded card, in card space, after `angle` about the pivot."""
@@ -741,9 +742,8 @@ function bake_svgs!()
     writefile(logo_path("logo-dark-dynamic.svg"), logo_svg(size = :L, dark = true, animated = true))
     writefile(logo_path("logo-dark-static.svg"), logo_dark_static)
     # Documenter only discovers logo.svg / logo-dark.svg at assets/ root.
-    # Sidebar uses static stills; landing hero references logo/*.svg directly.
-    ensure_symlink!("logo.svg", logo_path("logo-static.svg"))
-    ensure_symlink!("logo-dark.svg", logo_path("logo-dark-static.svg"))
+    ensure_symlink!("logo.svg", logo_path("logo-dynamic.svg"))
+    ensure_symlink!("logo-dark.svg", logo_path("logo-dark-dynamic.svg"))
 
     social_static = build_social(logo_static, "static")
     social_dynamic = build_social(logo, "dynamic")
