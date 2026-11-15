@@ -287,10 +287,16 @@ function capture(cmd::Cmd)::Tuple{Int, String, String, Float64}
     return (p.exitcode, String(take!(out)), String(take!(err)), time() - t0)
 end
 
+const _STDERR_TAIL_MAX = 4000
+
+"""Trailing stderr for measure errors. CLI failures often print a short message
+then dozens of stack lines (~100–150 chars each); 4000 chars keeps typical
+DistSSHRun traces while leaving room for the closing `what:` block when stderr
+is moderate."""
 function stderr_tail(text::AbstractString)::String
     plain = strip(replace(String(text), r"\e\[[0-9;]*m" => ""))
     isempty(plain) && return ""
-    return length(plain) <= 400 ? plain : last(plain, 400)
+    return length(plain) <= _STDERR_TAIL_MAX ? plain : last(plain, _STDERR_TAIL_MAX)
 end
 
 function phase_precompile()
@@ -433,7 +439,7 @@ function run_once(
     else
         `$(jl) --startup-file=no --project=$ROOT --trace-compile=$trace --trace-compile-timing -m $package $args`
     end
-    code, _, errtext, wall = capture(ignorestatus(Cmd(setenv(cmd, env); dir = work)))
+    code, _, errtext, wall = capture(ignorestatus(Cmd(setenv(cmd, env); dir = ROOT)))
     return code, errtext, wall
 end
 
