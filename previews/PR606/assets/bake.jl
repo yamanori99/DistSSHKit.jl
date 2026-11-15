@@ -742,8 +742,9 @@ function bake_svgs!()
     writefile(logo_path("logo-dark-dynamic.svg"), logo_svg(size = :L, dark = true, animated = true))
     writefile(logo_path("logo-dark-static.svg"), logo_dark_static)
     # Documenter only discovers logo.svg / logo-dark.svg at assets/ root.
-    ensure_symlink!("logo.svg", logo_path("logo-dynamic.svg"))
-    ensure_symlink!("logo-dark.svg", logo_path("logo-dark-dynamic.svg"))
+    # Sidebar uses static stills; landing hero references logo/*.svg directly.
+    ensure_symlink!("logo.svg", logo_path("logo-static.svg"))
+    ensure_symlink!("logo-dark.svg", logo_path("logo-dark-static.svg"))
 
     social_static = build_social(logo_static, "static")
     social_dynamic = build_social(logo, "dynamic")
