@@ -13,6 +13,28 @@
   display: none;
 }
 
+/* Hero logo: larger than DocumenterLandingPage defaults (65% / 75%). */
+#landing .landing-hero__image-container img {
+  width: 82%;
+}
+@container (min-width: 52rem) {
+  #landing .landing-hero__image-container img {
+    width: 86%;
+  }
+}
+@container (min-width: 64rem) {
+  #landing .landing-hero__image-container img {
+    width: 92%;
+  }
+}
+
+/* Stack hero below 40rem (DocumenterLandingPage landing.css): hide logo column. */
+@container (max-width: 40rem) {
+  #landing .landing-hero__image {
+    display: none;
+  }
+}
+
 /* Slightly larger sidebar logo than Documenter default (6rem). */
 #documenter .docs-sidebar .docs-logo > img {
   max-height: 8rem;
