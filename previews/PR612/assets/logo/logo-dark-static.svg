@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <g transform="translate(45.79 40.23) scale(0.9038)">
+    <g transform="rotate(-15 0 70)">
+      <rect x="0" y="0" width="70" height="70" rx="13" fill="#c9a8e3" fill-opacity="0.21" stroke="#d9c2ec" stroke-opacity="0.55" stroke-width="1.2"/>
+      <circle cx="15" cy="15" r="4.5" fill="#ead9f6"/>
+    </g>
+    <g transform="rotate(-30 0 70)">
+      <rect x="0" y="0" width="70" height="70" rx="13" fill="#c9a8e3" fill-opacity="0.21" stroke="#d9c2ec" stroke-opacity="0.55" stroke-width="1.2"/>
+      <circle cx="15" cy="15" r="4.5" fill="#ead9f6"/>
+    </g>
+    <g transform="rotate(-45 0 70)">
+      <rect x="0" y="0" width="70" height="70" rx="13" fill="#c9a8e3" fill-opacity="0.21" stroke="#d9c2ec" stroke-opacity="0.55" stroke-width="1.2"/>
+      <circle cx="15" cy="15" r="4.5" fill="#ead9f6"/>
+    </g>
+    <rect x="0" y="0" width="70" height="70" rx="13" fill="#9558b2"/>
+    <circle cx="15" cy="15" r="4.5" fill="#ffffff"/>
+  </g>
+</svg>
