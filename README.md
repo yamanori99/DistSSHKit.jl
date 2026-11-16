@@ -12,17 +12,16 @@ table starts open.
 
 ## Flagged
 
-- 1.13: go method new -> 1016.5 ms: Tuple{typeof(Core.kwcall), NamedTuple{(:project, :quiet, :verbosity, :yes, :args, :path_anchor, :out...
-- 1.14-pre: go method new -> 930.2 ms: Tuple{typeof(Core.kwcall), NamedTuple{(:project, :quiet, :verbosity, :yes, :args, :path_anchor, :out...
-- nightly: julia 1.15.0-DEV.731 -> 1.15.0-DEV.750
-- nightly: go method new -> 921.4 ms: Tuple{typeof(Core.kwcall), NamedTuple{(:project, :quiet, :verbosity, :yes, :args, :path_anchor, :out...
+- 1.13: go method new -> 943.0 ms: Tuple{typeof(Core.kwcall), NamedTuple{(:project, :quiet, :verbosity, :yes, :args, :path_anchor, :out...
+- 1.14-pre: go method new -> 1100.1 ms: Tuple{typeof(Core.kwcall), NamedTuple{(:project, :quiet, :verbosity, :yes, :args, :path_anchor, :out...
+- nightly: julia 1.15.0-DEV.750 -> 1.15.0-DEV.751
+- nightly: go method new -> 1228.7 ms: Tuple{typeof(Core.kwcall), NamedTuple{(:project, :quiet, :verbosity, :yes, :args, :path_anchor, :out...
 
 <details open>
 <summary>1.13</summary>
 
 | date | commit | version | julia | os | arch | src files | code lines | full s | pkg s | using s | help s | status s | go s | drive s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2026-11-06 | 9812d68 | 0.11.0-DEV | 1.13.3 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 434 | 18.29 | 0.78 | 0.27 | 0.83 | 3.07 | 5.2 | 14.25 |
 | 2026-11-07 | 9812d68 | 0.11.0-DEV | 1.13.3 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 434 | 17.37 | 0.77 | 0.26 | 0.8 | 2.96 | 5.05 | 13.69 |
 | 2026-11-08 | b13130d | 0.11.0-DEV | 1.13.3 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 434 | 26.88 | 1.08 | 0.39 | 1.2 | 4.43 | 7.32 | 19.08 |
 | 2026-11-08 | fe6cc4f | 0.11.0-DEV | 1.13.3 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 435 | 20.9 | 0.84 | 0.32 | 0.93 | 3.57 | 5.91 | 15.93 |
@@ -34,6 +33,7 @@ table starts open.
 | 2026-11-13 | b10d868 | 0.11.0-DEV | 1.13.3 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 435 | 23.58 | 0.9 | 0.34 | 0.97 | 3.57 | 4.43 | 14.79 |
 | 2026-11-14 | 32ffda0 | 0.11.0-DEV | 1.13.4 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 435 | 30.76 | 1.12 | 0.43 | 1.23 | 4.55 | 5.58 | 18.52 |
 | 2026-11-15 | b678d76 | 0.11.0-DEV | 1.13.4 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 435 | 26.31 | 0.97 | 0.37 | 1.04 | 3.84 | 5.02 | 16.39 |
+| 2026-11-16 | c53159c | 0.11.0-DEV | 1.13.4 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 435 | 25.5 | 0.91 | 0.34 | 0.99 | 3.58 | 4.85 | 15.18 |
 
 </details>
 
@@ -62,7 +62,6 @@ table starts open.
 
 | date | commit | version | julia | os | arch | src files | code lines | full s | pkg s | using s | help s | status s | go s | drive s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2026-11-06 | 9812d68 | 0.11.0-DEV | 1.14.0-alpha2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 434 | 21.89 | 0.95 | 0.35 | 0.75 | 1.67 | 3.49 | 10.02 |
 | 2026-11-07 | 9812d68 | 0.11.0-DEV | 1.14.0-alpha2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 434 | 23.32 | 0.95 | 0.34 | 0.74 | 1.74 | 3.65 | 10.31 |
 | 2026-11-08 | b13130d | 0.11.0-DEV | 1.14.0-alpha2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 434 | 23.81 | 0.99 | 0.34 | 0.78 | 1.77 | 3.68 | 10.49 |
 | 2026-11-08 | fe6cc4f | 0.11.0-DEV | 1.14.0-alpha2 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 435 | 19.02 | 0.85 | 0.3 | 0.68 | 1.52 | 3.19 | 8.63 |
@@ -74,6 +73,7 @@ table starts open.
 | 2026-11-13 | b10d868 | 0.11.0-DEV | 1.14.0-beta1 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 435 | 28.83 | 0.86 | 0.25 | 0.67 | 1.65 | 2.66 | 9.0 |
 | 2026-11-14 | 32ffda0 | 0.11.0-DEV | 1.14.0-beta1 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 435 | 23.43 | 0.79 | 0.25 | 0.65 | 1.43 | 2.3 | 8.34 |
 | 2026-11-15 | b678d76 | 0.11.0-DEV | 1.14.0-beta1 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 435 | 24.15 | 0.76 | 0.24 | 0.61 | 1.43 | 2.45 | 8.51 |
+| 2026-11-16 | c53159c | 0.11.0-DEV | 1.14.0-beta1 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 435 | 27.69 | 0.82 | 0.25 | 0.64 | 1.56 | 2.77 | 8.78 |
 
 </details>
 
@@ -82,7 +82,6 @@ table starts open.
 
 | date | commit | version | julia | os | arch | src files | code lines | full s | pkg s | using s | help s | status s | go s | drive s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2026-11-06 | 9812d68 | 0.11.0-DEV | 1.15.0-DEV.542 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 434 | 23.28 | 0.83 | 0.25 | 0.67 | 1.64 | 3.47 | 10.09 |
 | 2026-11-07 | 9812d68 | 0.11.0-DEV | 1.15.0-DEV.575 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 434 | 22.84 | 0.85 | 0.28 | 0.74 | 1.71 | 3.62 | 10.46 |
 | 2026-11-08 | b13130d | 0.11.0-DEV | 1.15.0-DEV.594 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 434 | 23.13 | 0.83 | 0.25 | 0.67 | 1.64 | 3.52 | 10.21 |
 | 2026-11-08 | fe6cc4f | 0.11.0-DEV | 1.15.0-DEV.603 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 435 | 23.63 | 0.81 | 0.25 | 0.68 | 1.65 | 3.52 | 10.39 |
@@ -94,6 +93,7 @@ table starts open.
 | 2026-11-13 | b10d868 | 0.11.0-DEV | 1.15.0-DEV.729 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 435 | 23.14 | 0.62 | 0.2 | 0.49 | 1.17 | 1.83 | 7.35 |
 | 2026-11-14 | 32ffda0 | 0.11.0-DEV | 1.15.0-DEV.731 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 435 | 34.7 | 0.93 | 0.27 | 0.7 | 1.64 | 2.68 | 9.46 |
 | 2026-11-15 | b678d76 | 0.11.0-DEV | 1.15.0-DEV.750 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 435 | 27.26 | 0.76 | 0.22 | 0.58 | 1.32 | 2.36 | 8.42 |
+| 2026-11-16 | c53159c | 0.11.0-DEV | 1.15.0-DEV.751 | Ubuntu 26.04.1 LTS | x86_64 | 1 | 435 | 37.03 | 0.96 | 0.28 | 0.71 | 1.67 | 2.99 | 10.13 |
 
 </details>
 
