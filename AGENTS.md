@@ -42,7 +42,7 @@ Job behavior and its rules live in DistSSHRun. When changing anything that affec
 
 User-facing messages in Kit stay product-neutral (no hard-coded launcher or product branding in shared help or errors).
 
-Public renames: update docs and dependents in the same convergence wave (see **Design principles**).
+Breaking public renames ship without compatibility aliases; update docs and dependents in the same convergence wave. (see Design principles)
 
 While the cross-repo redesign is in flight, track each repository's `main` branch. Do not rely on version tags or package registrations until the redesign has landed across the repos it touches.
 
