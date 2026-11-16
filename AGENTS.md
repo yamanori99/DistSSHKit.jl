@@ -8,6 +8,16 @@ For `setup --delete`, `setup --prune`, and `teardown`, do not pass `-y` or `--ye
 
 Do not call `setup!(session, :delete)` or `setup!(session, :prune)` from Julia. Use the CLI.
 
+## Design principles
+
+- **Fail closed.** Default behavior stops on error. Loosen only with an explicit flag or keyword (`--best-effort`, `best_effort=true`). Never loosen via environment variables.
+- **No silent fallbacks.** Removed keys, flags, or names error with a rewrite hint showing the current form. No auto-migration and no legacy remaps.
+- **One concept, one name.** No aliases or dual syntaxes. Tests assert only the current form; never accept both old and new.
+- **Explicit shapes.** A missing value is recorded as a typed reason, not filled with a default. Versioned formats require `schema_version`.
+- **CLI conventions.** Match [clap's `arg_required_else_help`](https://docs.rs/clap/latest/clap/struct.Command.html#method.arg_required_else_help): a subcommand that needs operands, run bare, prints help on stderr and exits 2; explicit `--help` prints help on stdout and exits 0; usage errors exit 2.
+- **Breaking changes and releases.** Follow semver (see [releasing.md](docs/src/developers/releasing.md)). A release takes changes that would be breaking if deferred; purely additive features go in follow-up releases.
+- **Errors.** State what failed, where, why, and how to fix it.
+
 Read [docs/src/developers/releasing.md](docs/src/developers/releasing.md) before a pull request that raises the version or changes public behavior.
 
 Fill [.github/pull_request_template.md](.github/pull_request_template.md). Write Testing and Revert from the commands that ran and what they returned. Risk names what can break, not a grade. CI applies the type label; see [docs/src/developers/releasing.md](docs/src/developers/releasing.md).
@@ -32,7 +42,7 @@ Job behavior and its rules live in DistSSHRun. When changing anything that affec
 
 User-facing messages in Kit stay product-neutral (no hard-coded launcher or product branding in shared help or errors).
 
-Breaking public renames ship without compatibility aliases; update docs and dependents in the same convergence wave.
+Public renames: update docs and dependents in the same convergence wave (see **Design principles**).
 
 While the cross-repo redesign is in flight, track each repository's `main` branch. Do not rely on version tags or package registrations until the redesign has landed across the repos it touches.
 
