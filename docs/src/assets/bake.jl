@@ -6,7 +6,7 @@ Regenerate DistSSHKit logo / social-preview / topology-diagram derivatives.
 PNG and GIF are `--png` / `--gif`.
 
 README.md, README.ja.md, and docs intro all use the English topology
-(`parent` / `child 1…n`). Do not bake a Japanese-labelled copy.
+(`head` / remote workers `1…n`). Do not bake a Japanese-labelled copy.
 
 Documenter looks for assets/logo.svg and assets/logo-dark.svg; bake makes
 **symlinks** to logo/logo-dynamic.svg and logo/logo-dark-dynamic.svg.
@@ -523,7 +523,7 @@ function topology_svg(; dark::Bool = false)
         lines,
         "  <rect x=\"124\" y=\"122\" width=\"312\" height=\"96\" rx=\"12\" fill=\"$accent\" fill-opacity=\"$pop\" stroke=\"$mstroke\" stroke-width=\"1.5\"/>",
     )
-    push!(lines, topology_text(138, 144, "parent", ink; size = 14, weight = 600))
+    push!(lines, topology_text(138, 144, "head", ink; size = 14, weight = 600))
     push!(lines, "  <rect x=\"140\" y=\"164\" width=\"120\" height=\"36\" rx=\"8\" fill=\"$accent\"/>")
     push!(lines, topology_text(200, 187, "Master", "#ffffff"; size = 14, weight = 600, anchor = "middle"))
     chip(276, 164, 144, "Worker × 0..n")

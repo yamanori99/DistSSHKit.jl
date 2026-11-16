@@ -77,7 +77,8 @@ git によるデプロイを使う場合は、さらに **`git`** も必要と�
 
 ### 基本用語
 
-- **ホスト** — 計算を行うマシン。`parent` や `child:user@hostname` のようなトークンで指定する。
+- **ホスト** — 計算を行うマシン。このマシン (head) または SSH 先
+  (`user@hostname`、Host エイリアス)。
 - **プロセス** — 起動された `julia` の1つ分の実体。それぞれが独立したメモリを持ち、OS 上で別々に動作する。
   (1回の実行は、1台のマシン上でも複数の `julia` プロセスを起動し、並列に実行する。基盤は Distributed.jl である)
 - **マスター** — 実行が始まるマシン上のプロセス。`go` ではスロットの割り当てを計画し、`drive` ではワーカーに処理を割り振って結果を回収する。
@@ -104,13 +105,13 @@ git によるデプロイを使う場合は、さらに **`git`** も必要と�
 <!-- markdownlint-enable MD033 MD013 -->
 
 上図は **drive** の構成である。このマシンに1つのマスターがあり、各ホストにワーカーが配置される。
-**go** でもホストの指定方法は同じだが、マスターとワーカーの関係はなく、各ホストが独立してスクリプトを実行する。
+**go** でも配置トークンは同じだが、マスターとワーカーの関係はなく、各ホストが独立してスクリプトを実行する。
 
 ```text
-parent                 # このマシン
-parent:2               # このマシンでワーカーを2つ起動
-child:user@hostname    # SSH 先 (user@host / IP / Host エイリアス)
-child:user@hostname:4  # SSH 先でワーカーを4つ起動
+--head-workers 2       # drive / ride: このマシンでワーカー2つ
+--head-slots 2         # go: このマシンでスロット2つ
+2*user@hostname        # その SSH 先で2つ (シェルでは `*` をクォート)
+user@hostname          # ホスト名のみ = 1 ワーカー/スロット
 ```
 
 SSH 先の台数に上限はない。ただし、台数が増えるほど SSH 接続や配置に要する時間も長くなるため、まずは数台から試すとよい。
@@ -131,7 +132,7 @@ SSH 先の台数に上限はない。ただし、台数が増えるほど SSH �
 
 - **go** — 各ホストが、指定された `.jl` ファイルをそのまま最初から最後まで実行する
 - **ride** — DistSSHKit が、互いに独立な `map`、filter、内包表記、添字 `for` を分割して実行する
-  (実験的機能。parent または SSH 先で利用可能)
+  (実験的機能。head または SSH 先で利用可能)
 - **drive** — 1つのマスターがワーカーに処理を割り振る (Distributed.jl ベース)
 
 ### 事前確認: hostinfo と pool (ホスト)
@@ -142,10 +143,11 @@ SSH 先の台数に上限はない。ただし、台数が増えるほど SSH �
 - **hostinfo** — 識別子、RAM、CPU、OS、Julia を表示する。DistSSHRun のみ。
   Queue は転送しない
 
-go、drive、ride でホストを列挙する際は、トークンに `:N` が必須である
-(トークンを省略した場合は parent の1スロットとなる)。
-例外として、`go --repeat` に限り、列挙したホストの `:N` を省略できる
-(そのホストの上限はなくなる)。なお、これらはダッシュボードではない。
+go、drive、ride の配置は `N*host` (ホスト名のみは 1)。head は
+`--head-workers` / `--head-slots`。リモートを列挙しない `go` は
+`--head-slots 0` 以外で head スロット1つ。drive / ride の head ワーカーは
+`--head-workers` 指定まで 0。`go --repeat` ではカウント省略で上限なしの pool
+ホストにできる。これらはダッシュボードではない。
 
 go 単体でも十分に実用的である。まず go で単独実行を確認し、
 必要なら `ride` へ、さらに drive、すなわち Distributed.jl へ進めば、段階的に開発できる。
@@ -154,7 +156,7 @@ go 単体でも十分に実用的である。まず go で単独実行を確認�
 ### 操作方法
 
 - **CLI** — ターミナルからコマンドとして直接実行する方法。
-  例: `julia --project=. -m DistSSHKit go child:user@host1:1 script.jl`。
+  例: `julia --project=. -m DistSSHKit go user@host1 script.jl`。
   フラグは `julia -m DistSSHKit help go` で開く。
   手早く試したい場合や、シェルスクリプトに組み込みたい場合に向いている
 - **Julia** — 自作の Julia コード (スクリプト、REPL、他のパッケージなど) の中から関数として呼び出す方法。
@@ -206,22 +208,22 @@ CLI のオプションと Julia API は1対1に対応している。
 
 ```bash
 # ファイル転送
-julia --project=. -m DistSSHKit setup --rsync child:user@host1 child:user@host2
+julia --project=. -m DistSSHKit setup --rsync user@host1 user@host2
 # 依存の用意
-julia --project=. -m DistSSHKit setup --instantiate child:user@host1 child:user@host2
+julia --project=. -m DistSSHKit setup --instantiate user@host1 user@host2
 # 疎通確認
-julia --project=. -m DistSSHKit setup --check child:user@host1 child:user@host2
+julia --project=. -m DistSSHKit setup --check user@host1 user@host2
 ```
 
 トラブル時によく使うコマンドは次のとおりである。
 
 ```bash
 # `.distsshkit` の go / drive / setup を消す (配置は残す)
-julia --project=. -m DistSSHKit setup --prune child:user@host1 child:user@host2
+julia --project=. -m DistSSHKit setup --prune user@host1 user@host2
 # 残っている古いワーカープロセスを掃除する
-julia --project=. -m DistSSHKit setup --cleanup child:user@host1 child:user@host2
+julia --project=. -m DistSSHKit setup --cleanup user@host1 user@host2
 # 全部やり直したいとき (delete の入力を求める。-y は DistSSHKit 0.11 まで削除する)
-julia --project=. -m DistSSHKit setup --delete child:user@host1 child:user@host2
+julia --project=. -m DistSSHKit setup --delete user@host1 user@host2
 ```
 
 ### 実行例
@@ -229,15 +231,15 @@ julia --project=. -m DistSSHKit setup --delete child:user@host1 child:user@host2
 事前準備ののち、次のように実行する。
 
 **CLI による go の例。** 各スロットで `script.jl` を最初から最後まで1回ずつ実行する。
-`child:user@host:1` はそのホストで1回、`parent:N` はこのマシンで N 回の実行を意味する。
+`user@host` のみはそのホストで1回、`--head-slots N` はこのマシンで N 回を意味する。
 `--repeat N` は合計 N 回の実行を指定する。ホストを併記した場合は、そのホストに割り振られる。
 
 ```bash
 julia --project=. -m DistSSHKit go \
-  child:user@host1:1 child:user@host2:1 path/to/script.jl
+  user@host1 user@host2 path/to/script.jl
 julia --project=. -m DistSSHKit go --repeat 100 path/to/script.jl
 julia --project=. -m DistSSHKit go --repeat 100 \
-  child:user@host1 child:user@host2 path/to/script.jl
+  user@host1 user@host2 path/to/script.jl
 ```
 
 **CLI による drive の例。** git でデプロイした場合、
@@ -245,7 +247,7 @@ julia --project=. -m DistSSHKit go --repeat 100 \
 
 ```bash
 julia --project=. -m DistSSHKit drive \
-  parent:2 child:user@host1:4 path/to/driver.jl
+  --head-workers 2 4*user@host1 path/to/driver.jl
 ```
 
 **Julia コードによる go の例。** `remote=` は `setup!` と同じ値にそろえる (どちらも省略した場合は既定のパスが使われる)。
@@ -254,9 +256,9 @@ julia --project=. -m DistSSHKit drive \
 using DistSSHKit
 
 remote = "/path/to/project"
-session = DistSSHSession(workers=["child:user@host1"], remote=remote, yes=true)
+session = DistSSHSession(workers=["user@host1"], remote=remote, yes=true)
 setup!(session, :rsync, :instantiate)
-go!("path/to/script.jl", "child:user@host1:1"; remote=remote)
+go!("path/to/script.jl", "user@host1"; remote=remote)
 ```
 
 **Julia コードによる drive の例。**
@@ -265,10 +267,10 @@ go!("path/to/script.jl", "child:user@host1:1"; remote=remote)
 using DistSSHKit
 
 remote = "/path/to/project"
-session = DistSSHSession(workers=["child:user@host1"], remote=remote, yes=true)
+session = DistSSHSession(workers=["user@host1"], remote=remote, yes=true)
 setup!(session, :clone; repo="https://github.com/org/proj.git")
 setup!(session, :instantiate)
-drive!("path/to/driver.jl", "parent:2", "child:user@host1:4"; remote=remote)
+drive!("path/to/driver.jl", "4*user@host1"; head_workers=2, remote=remote)
 setup!(session, :sync)  # 2回目以降の更新
 ```
 
@@ -291,8 +293,8 @@ julia --project=. -m DistSSHKit demo install without_kit
 ```
 
 ```bash
-julia --project=. -m DistSSHKit drive parent:2 distsshkit_demos/with_kit/square_file.jl
-julia --project=. -m DistSSHKit go parent:2 distsshkit_demos/without_kit/pi_file.jl
+julia --project=. -m DistSSHKit drive --head-workers 2 distsshkit_demos/with_kit/square_file.jl
+julia --project=. -m DistSSHKit go --head-slots 2 distsshkit_demos/without_kit/pi_file.jl
 ```
 
 詳細は
@@ -335,7 +337,7 @@ julia -m DistSSHKit qhost serve
 その環境の作成方法は [Prepare][q-prepare] を参照されたい。
 
 ```bash
-julia --project=. -m DistSSHKit qhost:HOST submit go parent:1 distsshkit_demos/without_kit/pi_echo.jl
+julia --project=. -m DistSSHKit qhost:HOST submit go --head-slots 1 distsshkit_demos/without_kit/pi_echo.jl
 ```
 
 詳細は [Prepare][q-prepare]、[Walkthrough][q-walk]、

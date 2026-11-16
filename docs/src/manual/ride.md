@@ -2,18 +2,19 @@
 
 Experimental. Run a **plain** script (`map` / `filter` / simple
 comprehensions / independent indexed `for`). DistSSHKit rewrites those forms and
-may `pmap` them on Distributed workers (parent and SSH `child:`).
+may `pmap` them on Distributed workers (head and SSH remotes).
 
 ```bash
-julia --project=. -m DistSSHKit ride parent:2 SCRIPT.jl
-julia --project=. -m DistSSHKit ride parent:1 child:host1:2 SCRIPT.jl
+julia --project=. -m DistSSHKit ride --head-workers 2 SCRIPT.jl
+julia --project=. -m DistSSHKit ride --head-workers 1 2*host1 SCRIPT.jl
 ```
 
-Listed tokens need `:N` (no tokens → `parent:1`). SSH children use the same
+Listed machine tokens need an explicit count (`N*host`; bare host = 1 worker).
+Head workers default to 0 until `--head-workers` or tokens. SSH remotes use the same
 worker-add path as [`drive`](@ref Manual-drive).
 Prepare remotes with [`setup`](@ref Manual-setup) first. Distributed
 vocabulary (`pmap`, `@everywhere`, …) is an error; that script belongs on
-`drive`. Listed `child:` hosts are fail-closed.
+`drive`. Listed remote hosts are fail-closed.
 
 `for i in iter; dest[i] = expr; end` is rewritten when `expr` does not
 read `dest`, does not `return` / `break` / `continue`, and every index in

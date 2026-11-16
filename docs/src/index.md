@@ -57,19 +57,19 @@ Host prep is shared: run [`setup`](@ref Manual-setup) and [`up`](@ref Manual-up)
 ## How it works
 
 1. **Prepare hosts.** [`setup`](@ref Manual-setup) and [`up`](@ref Manual-up) put your project and the same Julia channel on each SSH machine ([Prepare](@ref Tutorial-Prepare)).
-2. **Run now (optional).** While connected, start a run from this machine—for example `julia -m DistSSHKit go child:host:1 SCRIPT.jl` or a [`drive`](@ref Manual-drive) script with workers ([`go`](@ref Manual-go)).
+2. **Run now (optional).** While connected, start a run from this machine—for example `julia -m DistSSHKit go host SCRIPT.jl` or a [`drive`](@ref Manual-drive) script with workers ([`go`](@ref Manual-go)).
 3. **Or use the queue.** On the always-on host, run [`qhost setup`](@ref Queue-setup) ([Prepare the machine](@ref Queue-Tutorial-Prepare)). From the laptop, submit the same kinds of jobs (`go`, `ride`, `drive`) to that host; they execute there after you disconnect.
 
 Example **run from this machine**:
 
 ```bash
-julia --project=. -m DistSSHKit go parent:1 child:user@host:2 SCRIPT.jl
+julia --project=. -m DistSSHKit go --head-slots 1 2*user@host SCRIPT.jl
 ```
 
 Example **queue client** from a job project:
 
 ```bash
-julia --project=. -m DistSSHKit qhost:HOST submit go parent:1 SCRIPT.jl
+julia --project=. -m DistSSHKit qhost:HOST submit go --head-slots 1 SCRIPT.jl
 julia --project=. -m DistSSHKit qhost:HOST status
 julia --project=. -m DistSSHKit qhost:HOST fetch <id>
 ```

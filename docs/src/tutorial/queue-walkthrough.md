@@ -37,11 +37,12 @@ needs `qhost:HOST` on the command line.
 
 Job directory. DistSSHKit in this project (`julia --project=.`) brings
 the queue. `demo install` copies into `distsshkit_demos/`.
-Listed `parent` / `child:NAME` need `:N`.
+Queue config `parent` / `child:NAME` need `:N` on add-host. DistSSHKit
+argv on submit uses Run 0.2 placement (`--head-slots`, `N*host`, …).
 
 ```bash
 julia --project=. -m DistSSHKit demo install without_kit
-julia --project=. -m DistSSHKit qhost:HOST submit go parent:1 distsshkit_demos/without_kit/pi_echo.jl
+julia --project=. -m DistSSHKit qhost:HOST submit go --head-slots 1 distsshkit_demos/without_kit/pi_echo.jl
 ```
 
 `qhost:` rsyncs this tree to `~/.distsshqueue/stage/<uuid>` on `HOST`.
@@ -68,7 +69,7 @@ same directory as `submit`.
 From the **client**:
 
 ```bash
-julia --project=. -m DistSSHKit qhost:HOST submit go child:host1:2 distsshkit_demos/without_kit/pi_echo.jl
+julia --project=. -m DistSSHKit qhost:HOST submit go 2*host1 distsshkit_demos/without_kit/pi_echo.jl
 julia --project=. -m DistSSHKit qhost:HOST fetch <id>
 ```
 
@@ -82,7 +83,7 @@ julia --project=. -m DistSSHKit qhost:HOST submit pool:2 go distsshkit_demos/wit
 
 ```bash
 julia --project=. -m DistSSHKit demo install with_kit
-julia --project=. -m DistSSHKit qhost:HOST submit drive parent:1 distsshkit_demos/with_kit/square_file.jl
+julia --project=. -m DistSSHKit qhost:HOST submit drive --head-workers 1 distsshkit_demos/with_kit/square_file.jl
 julia --project=. -m DistSSHKit qhost:HOST fetch <id>
 ```
 

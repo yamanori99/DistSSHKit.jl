@@ -3,8 +3,9 @@
 Prepare SSH hosts before [`go`](@ref Manual-go) / [`drive`](@ref Manual-drive).
 
 ```bash
-julia --project=. -m DistSSHKit setup [options] [child:NAME]
-# Repeat child:NAME for more hosts. (:N ignored). parent is `up`, not setup.
+julia --project=. -m DistSSHKit setup [options] [HOST...]
+# Repeat HOST for more SSH names (`user@host`, Host alias). `N*host` counts
+# are stripped. `parent` is `up`, not setup.
 ```
 
 From Julia, use [`setup!`](@ref) for the same modes as this CLI
@@ -61,7 +62,7 @@ Pick **one mode** per invocation (except shared options).
   unless `-y`)
 - `--instantiate`: `Pkg.instantiate` on remotes after deploy
 - `up` / `up update`: not a setup flag. See [`up`](@ref Manual-up).
-  `up child:NAME` and `up parent` run `add` / `update` /
+  `up user@host` and `up parent` run `add` / `update` /
   `default`. `up update` runs `juliaup update` and leaves the default
 - `--runtest`: `Pkg.test()` of the **job** project on remotes (not
   DistSSHKit's tests)
@@ -99,8 +100,8 @@ Pick **one mode** per invocation (except shared options).
   contains `~` (`--confirm-path '~/Parent/Repo'`) so the shell does not
   expand it. Repeat is not needed; one match is enough. A mismatch exits 1
   and deletes nothing
-- `--hosts CSV`: comma-separated `child:NAME[:N]` (`:N` stripped).
-  `parent` / `parent:N` belong to `up`, not `setup`
+- `--hosts CSV`: comma-separated SSH host names (`N*host` counts stripped).
+  `parent` belongs to `up`, not `setup`
 - `--hosts-file PATH`: append the same tokens (`:N` stripped)
 - `-v` / `--version`: print DistSSHKit version and exit
 - `-h` / `--help`: full help

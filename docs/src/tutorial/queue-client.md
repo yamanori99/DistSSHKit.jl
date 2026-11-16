@@ -41,33 +41,35 @@ One queue host: still pass `qhost:HOST` (or `status qhost:HOST`).
 One line, nested the same way as [User Guide · submit](@ref Queue-submit):
 
 ```text
-julia -m DistSSHKit  [qhost:HOST]  submit  drive  parent:4  SCRIPT.jl
+julia -m DistSSHKit  [qhost:HOST]  submit  drive  --head-workers 4  SCRIPT.jl
 └── Julia ──┘  └── queue host ──┘  └─ submit ┘  └──────── go / ride / drive ────────┘
 ```
 
 The tail is `go` / `ride` / `drive`. Same compute, now, on this machine:
 
 ```bash
-julia --project=. -m DistSSHKit drive parent:4 SCRIPT.jl
+julia --project=. -m DistSSHKit drive --head-workers 4 SCRIPT.jl
 ```
 
 Longer argv, still one command (`\` at the end of the line):
 
 ```bash
 julia --project=. -m DistSSHKit qhost:HOST submit \
-    drive parent:4 child:host1:4 SCRIPT.jl
+    drive --head-workers 4 4*host1 SCRIPT.jl
 ```
 
 `submit` only enqueues that argv for `serve` on the queue host.
 
-The argv is `go child:NAME:N SCRIPT.jl`, or `parent:N`
-when workers are on the queue host. Flags:
+The DistSSHKit argv mirrors Run 0.2: `go --head-slots 1 SCRIPT.jl`,
+`2*host1`, `drive --head-workers 4 SCRIPT.jl`, and so on. (Queue 0.10 may
+still accept legacy `parent:` / `child:` tokens until it catches up.)
+Flags:
 [go](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/go/),
 [ride](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/ride/),
 [drive](https://yamanori99.github.io/DistSSHKit.jl/stable/manual/drive/).
 
 ```bash
-julia --project=. -m DistSSHKit qhost:HOST submit go child:host1:4 SCRIPT.jl
+julia --project=. -m DistSSHKit qhost:HOST submit go 4*host1 SCRIPT.jl
 julia --project=. -m DistSSHKit qhost:HOST status
 julia --project=. -m DistSSHKit qhost:HOST watch
 julia --project=. -m DistSSHKit qhost:HOST cancel <id>

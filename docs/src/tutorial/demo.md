@@ -29,11 +29,11 @@ distsshkit_demos/
   with_kit/          # driver scripts — use drive or pipeline!
     square_file.jl   # file: square_results.csv
     square_echo.jl   # stdout only
-    pipeline_square.jl  # pipeline!(driver, "parent:2")
+    pipeline_square.jl  # pipeline!(driver; head_workers=2)
   without_kit/       # after `demo install without_kit`
     pi_file.jl       # file: pi_results.txt
     pi_echo.jl       # stdout only
-    pipeline_pi.jl       # go!(script, "parent:2") → pi_file.jl
+    pipeline_pi.jl       # go!(script; head_slots=2) → pi_file.jl
   ride/              # after `demo install ride` (plain scripts)
     map_echo.jl      # stdout: map
     map_file.jl      # file: map_results.csv
@@ -65,7 +65,7 @@ julia distsshkit_demos/without_kit/pi_file.jl --n 5000
 Two local slots:
 
 ```bash
-julia --project=. -m DistSSHKit go parent:2 \
+julia --project=. -m DistSSHKit go --head-slots 2 \
   distsshkit_demos/without_kit/pi_file.jl --n 5000
 ```
 
@@ -79,7 +79,7 @@ With remotes (after [First-time remotes](@ref first-time-remotes)):
 
 ```bash
 julia --project=. -m DistSSHKit go \
-    parent:2 child:YourHost1:2 child:YourHost2:2 \
+    --head-slots 2 2*YourHost1 2*YourHost2 \
     distsshkit_demos/without_kit/pi_file.jl --n 5000
 ```
 
@@ -90,7 +90,7 @@ When you need
 over workers instead of N independent script runs, use `drive` (not `go`):
 
 ```bash
-julia --project=. -m DistSSHKit drive parent:2 \
+julia --project=. -m DistSSHKit drive --head-workers 2 \
   distsshkit_demos/with_kit/square_file.jl --n 4
 ```
 
@@ -104,7 +104,7 @@ With remotes (after [First-time remotes](@ref first-time-remotes)):
 
 ```bash
 julia --project=. -m DistSSHKit drive \
-    parent:2 child:YourHost1:2 child:YourHost2:2 \
+    --head-workers 2 2*YourHost1 2*YourHost2 \
     distsshkit_demos/with_kit/square_file.jl --n 4
 ```
 
@@ -119,14 +119,14 @@ split independent `map` / `filter` / indexed `for`. Experimental; details
 in [User Guide · ride](@ref Manual-ride).
 
 ```bash
-julia --project=. -m DistSSHKit ride parent:2 \
+julia --project=. -m DistSSHKit ride --head-workers 2 \
   distsshkit_demos/ride/map_echo.jl
 ```
 
 Indexed `for` (`dest[i] = …`):
 
 ```bash
-julia --project=. -m DistSSHKit ride parent:2 \
+julia --project=. -m DistSSHKit ride --head-workers 2 \
   distsshkit_demos/ride/for_loop.jl
 ```
 

@@ -207,12 +207,12 @@ function print_kit_root_usage(io::IO = stderr)
     print_help_section("Examples"; io = io)
     print_help_lines(
         io,
-        "  $(cli_m_project()) setup --check child:host1",
-        "  $(cli_m_project()) up child:host1",
-        "  $(cli_m_project()) go SCRIPT.jl",
-        "  $(cli_m_project()) ride parent:2 SCRIPT.jl",
-        "  $(cli_m_project()) drive parent:2 SCRIPT.jl",
-        "  $(cli_m_project()) qhost:HOST submit drive parent:4 SCRIPT.jl",
+        "  $(cli_m_project()) setup --check host1",
+        "  $(cli_m_project()) up host1",
+        "  $(cli_m_project()) go --head-slots 1 SCRIPT.jl",
+        "  $(cli_m_project()) ride --head-workers 2 SCRIPT.jl",
+        "  $(cli_m_project()) drive --head-workers 2 SCRIPT.jl",
+        "  $(cli_m_project()) qhost:HOST submit drive --head-workers 4 SCRIPT.jl",
         "  $(cli_m_project()) qhost setup",
         "  $(cli_m_project()) qhost up",
     )

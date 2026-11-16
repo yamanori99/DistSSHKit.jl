@@ -34,7 +34,7 @@ The machine the run starts from is this machine.
 - [go](@ref Manual-go): standalone script as-is; one full run per slot
   (`--repeat N` = N runs, spread across listed hosts)
 - [ride](@ref Manual-ride): experimental auto-split of map / filter
-  (parent or SSH workers)
+  (head or SSH workers)
 - [drive](@ref Manual-drive): master + Distributed workers; driver farms
   work
 - [hostinfo](@ref Manual-hostinfo): host identity / RAM / CPU / Julia
@@ -61,19 +61,20 @@ one at a time. The machine the run starts from is the queue host.
 
 ## go vs drive (pick one)
 
-Both share host tokens (`parent:N`, `child:NAME:N`) and optional `--sync` /
-`--rsync`. The difference is **what the script is**:
+Both share machine tokens (`N*host`, `--head-workers` / `--head-slots`) and
+optional `--sync` / `--rsync`. The difference is **what the script is**:
 
 - **Script:** go is ordinary `.jl` (the job file does not call DistSSHKit). Drive is a driver with
   `init_output_dir!` / `main`.
-- **`child:NAME:N`:** go is N **concurrent full script runs**. Omit `:N`
-  only with `--repeat` (uncapped). Drive is N **Distributed workers**;
-  omit `:N` is an error. Counts stay explicit; inspect with
+- **`N*host`:** go is N **concurrent full script runs**. Omit a count
+  only with `--repeat` (uncapped). Drive is N **Distributed workers** on
+  that host; bare host = 1 worker. Head: go uses `--head-slots`; drive /
+  ride use `--head-workers` (default 0 until set). Inspect with
   [`hostinfo`](@ref Manual-hostinfo) / [`pool`](@ref Manual-pool).
 - **Collect:** go is slot-overwrite after remotes. Drive is post-run-new
   after `main()`; optional collect-only flags.
 - **Success:** go requires every listed slot to run (`ok=false` if one
-  does not). Drive requires listed `parent` / `child` to join, stay, and
+  does not). Drive requires listed remotes and head workers to join, stay, and
   collect (**default**). `--best-effort` allows a partial run.
 - **Git parity:** go has no `--require-git`. Drive has opt-in
   `--require-git`.
@@ -90,24 +91,24 @@ If you want one master farming work with `pmap` (and friends), use **drive**.
 ```@raw html
 <p style="text-align:center">
 <img class="docs-light-only"
-  alt="Drive topology: Master process on parent, workers on parent and remotes"
+  alt="Drive topology: Master process on head, workers on head and remotes"
   src="assets/diagram/topology.svg">
 <img class="docs-dark-only"
-  alt="Drive topology: Master process on parent, workers on parent and remotes"
+  alt="Drive topology: Master process on head, workers on head and remotes"
   src="assets/diagram/topology-dark.svg">
 </p>
 ```
 
 One master on the machine the run starts from, workers on each host.
-**go** uses the same host tokens, but there is no master/worker split: each host runs the script on its own.
+**go** uses the same machine tokens, but there is no master/worker split: each host runs the script on its own.
 
-Example tokens:
+Example placement (quote `*` in the shell):
 
 ```text
-parent                 # this machine
-parent:2               # two slots on this machine
-child:user@hostname    # one slot on a remote
-child:user@hostname:4  # four slots on that remote
+--head-workers 2       # drive / ride: two workers on this machine
+--head-slots 2         # go: two slots on this machine
+2*user@hostname        # two on that SSH host
+user@hostname          # bare host = one worker/slot (go)
 ```
 
 Each SSH host needs passwordless SSH from where you start the run and a matching Julia **major.minor** ([`setup --check`](@ref Manual-setup), [`up`](@ref Manual-up)). More: [Requirements](@ref).
@@ -129,8 +130,9 @@ Same **names** are shared on purpose; a few meanings differ by command:
   default; exclusive with `--sync` / `--rsync` on go).
 - `--output-dir`: **`go`** is batch root (`PATH/{slot}/`). **`drive`** is
   result root (`DISTRIBUTED_OUTPUT_DIR`). Different on purpose.
-- `--hosts`: CSV tokens. `setup` / `hostinfo` / `pool` strip `:N` from `parent` /
-  `child:NAME[:N]`. `go` / `ride` / `drive` require `:N` on listed tokens.
+- `--hosts`: CSV tokens. `setup` / `hostinfo` / `pool` strip counts from
+  `N*host` and use SSH names only. `go` / `ride` / `drive` keep full
+  machine tokens.
 - `--hosts-file`: same as `--hosts` for that command.
 - Shared flags: `-q`/`--quiet`, `--progress`, `--verbose`, `-y`/`--yes`,
   `--hosts`, `--hosts-file`, `-v`/`--version` — same on setup / go /
@@ -138,21 +140,21 @@ Same **names** are shared on purpose; a few meanings differ by command:
 
 ## Shared concepts
 
-- **Host** — `parent` (this machine) or `child:user@hostname` (SSH).
+- **Host** — this machine (head) or an SSH destination (`user@hostname`, Host alias).
 - **Process** — one `julia` OS process; a run may start several per host.
 - **Master / worker** — `drive` topology only; **`go`** has no master/worker split.
 
 **Hosts.** Sources, in the order they append after positional tokens:
 
-- CLI tokens: `setup` / `hostinfo` / `pool` may omit `:N`; `go` / `ride` / `drive` need `parent:N` / `child:NAME:N`
+- CLI tokens: `setup` / `hostinfo` / `pool` take SSH host names; `go` /
+  `ride` / `drive` use `N*host` and `--head-workers` / `--head-slots`
 - `--hosts` (CSV)
 - `DISTSSHKIT_HOSTS` (comma-separated)
 - `--hosts-file` (default path from `DISTSSHKIT_HOSTS_FILE`)
 
-`setup` / `hostinfo` / `pool` strip `:N` and use host names only. Bare SSH names are
-not accepted on setup (use `child:NAME`). On setup, `parent` /
-`parent:N` are only for `up`; other modes take `child:NAME`
-only.
+`setup` / `hostinfo` / `pool` strip `N*host` counts and use host names only.
+On setup, `parent` is only for [`up`](@ref Manual-up); other modes take bare
+SSH host names.
 
 **Jobs.** `DISTSSHKIT_JOBS` (default 1) is the max concurrent SSH host jobs
 for `setup --rsync`, drive post-run collect, and `hostinfo` Julia detection.

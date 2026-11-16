@@ -7,7 +7,7 @@ count. Unreachable listed hosts stay in the list and the command fails
 `--best-effort` can on drive. Missing facts print as `-`, not `0`.
 
 ```bash
-julia --project=. -m DistSSHKit pool [options] [parent] [child:NAME...]
+julia --project=. -m DistSSHKit pool [options] [parent] [HOST...]
 ```
 
 Also: [hostinfo](@ref Manual-hostinfo), `help pool`. API: [`pool!`](@ref).
@@ -16,9 +16,9 @@ Flag vocabulary: [User Guide](@ref Manual).
 
 ## Flags
 
-- `parent`: include this job's DistSSHKit parent (`:N` stripped)
-- `--hosts CSV` / `--hosts-file PATH`: `parent` / `child:NAME[:N]`
-  (`:N` stripped)
+- `parent`: include the head row (`N*host` counts stripped)
+- `--hosts CSV` / `--hosts-file PATH`: SSH host names (`N*host` counts
+  stripped)
 - `-q` / `--quiet`, `--progress`, `--verbose`
 - `-v` / `--version`, `-h` / `--help`
 

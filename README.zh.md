@@ -73,8 +73,8 @@ julia> import Pkg; Pkg.add("DistSSHKit")
 
 ### 基本术语
 
-- **主机（Host）** — 执行计算的机器。用 token 指定，
-  例如 `parent` 或 `child:user@hostname`。
+- **主机（Host）** — 执行计算的机器：本机 (head) 或 SSH 目标
+  (`user@hostname`、Host 别名)。
 - **进程（Process）** — 一个正在运行的 `julia` 实例。每个进程有自己的
   内存，并在操作系统层面上独立运行。
   （一次运行会启动多个 `julia` 进程来并行执行
@@ -107,14 +107,14 @@ julia> import Pkg; Pkg.add("DistSSHKit")
 <!-- markdownlint-enable MD033 MD013 -->
 
 上图是 **drive**：本机上有一个主进程，每台主机上都有工作进程。
-**go** 使用相同的主机 token，但没有主进程/工作进程
+**go** 使用相同的机器 token，但没有主进程/工作进程
 关系；每台主机各自运行脚本。
 
 ```text
-parent                 # 本机
-parent:2               # 本机上两个
-child:user@hostname    # SSH child（user@host、IP 或 Host 别名）
-child:user@hostname:4  # 该 child 上四个
+--head-workers 2       # drive / ride：本机两个工作进程
+--head-slots 2         # go：本机两个槽位
+2*user@hostname        # 该 SSH 主机上两个（shell 中请引号包住 `*`）
+user@hostname          # 仅主机名 = 一个工作进程/槽位
 ```
 
 SSH 主机的数量没有上限。主机越多，花在
@@ -135,7 +135,7 @@ SSH 连接和部署上的时间也越多，所以最好先从几台开始，再�
 
 - **go** — 每台主机把你的 `.jl` 文件从头到尾运行一遍。
 - **ride** — DistSSHKit 拆分相互独立的 `map`、filter、推导式或
-  带下标的 `for` 工作（实验性功能；可在 parent 或 SSH 工作进程上使用）。
+  带下标的 `for` 工作（实验性功能；可在 head 或 SSH 工作进程上使用）。
 - **drive** — 一个主进程把工作分发给工作进程（基于 Distributed.jl）。
 
 ### 检查：hostinfo 与 pool（主机）
@@ -146,10 +146,10 @@ SSH 连接和部署上的时间也越多，所以最好先从几台开始，再�
 - **hostinfo** — 打印标识、内存、CPU、OS 和 Julia。仅 DistSSHRun；
   Queue 不转发。
 
-对于 go、drive 和 ride，列出的每个 token 都需要 `:N`
-（不给 token 时，会在 parent 上得到一个槽位）。
-`go --repeat` 是例外：列出的主机可以省略 `:N`，
-这样它们的 pool 就没有上限。这些都不是仪表板。
+go、drive、ride 的放置使用 `N*host`（仅主机名则为 1）。head 用
+`--head-workers` / `--head-slots`。未列出远程主机时，`go` 仍有一个 head
+槽位，除非 `--head-slots 0`；drive / ride 在指定 `--head-workers` 前 head
+工作进程默认为 0。`go --repeat` 可省略计数，使 pool 主机无上限。这些都不是仪表板。
 
 单独使用 `go` 已经相当有用。常见做法是先用 `go` 确认一次独立
 运行，需要时再转到 `ride`，或转到 `drive` 和 Distributed.jl。
@@ -158,7 +158,7 @@ SSH 连接和部署上的时间也越多，所以最好先从几台开始，再�
 ### 调用 DistSSHKit 的方式
 
 - **CLI** — 从终端运行 DistSSHKit。
-  示例：`julia --project=. -m DistSSHKit go child:user@host1:1 script.jl`。
+  示例：`julia --project=. -m DistSSHKit go user@host1 script.jl`。
   命令标志：`julia -m DistSSHKit help go`。
   适合快速试验和 shell 脚本。
 - **Julia** — 从你自己的 Julia 代码（脚本、REPL 或
@@ -221,22 +221,22 @@ CLI 标志与 Julia API 一一对应。例如，`setup --rsync`
 
 ```bash
 # 把文件复制过去
-julia --project=. -m DistSSHKit setup --rsync child:user@host1 child:user@host2
+julia --project=. -m DistSSHKit setup --rsync user@host1 user@host2
 # 安装依赖
-julia --project=. -m DistSSHKit setup --instantiate child:user@host1 child:user@host2
+julia --project=. -m DistSSHKit setup --instantiate user@host1 user@host2
 # 健全性检查
-julia --project=. -m DistSSHKit setup --check child:user@host1 child:user@host2
+julia --project=. -m DistSSHKit setup --check user@host1 user@host2
 ```
 
 其他顺手的命令：
 
 ```bash
 # 删除 go/drive/setup/runs 叶子项（保留项目树）
-julia --project=. -m DistSSHKit setup --prune child:user@host1 child:user@host2
+julia --project=. -m DistSSHKit setup --prune user@host1 user@host2
 # 清理残留的工作进程
-julia --project=. -m DistSSHKit setup --cleanup child:user@host1 child:user@host2
+julia --project=. -m DistSSHKit setup --cleanup user@host1 user@host2
 # 从头重新开始（会要求输入 delete；在 DistSSHKit 0.11 之前，-y 仍会删除）
-julia --project=. -m DistSSHKit setup --delete child:user@host1 child:user@host2
+julia --project=. -m DistSSHKit setup --delete user@host1 user@host2
 ```
 
 ### 示例
@@ -244,16 +244,16 @@ julia --project=. -m DistSSHKit setup --delete child:user@host1 child:user@host2
 设置完成后，按如下方式运行脚本。
 
 **CLI，go。** 每个槽位把 `script.jl` 从头到尾运行一次。
-`child:user@host:1` 表示在该主机上运行一次，`parent:N` 表示在
-本机上运行 N 次。`--repeat N` 表示总共运行 N 次，分摊到列出的
+仅写 `user@host` 表示在该主机上运行一次；`--head-slots N` 表示
+在本机上运行 N 次。`--repeat N` 表示总共运行 N 次，分摊到列出的
 主机上。
 
 ```bash
 julia --project=. -m DistSSHKit go \
-  child:user@host1:1 child:user@host2:1 path/to/script.jl
+  user@host1 user@host2 path/to/script.jl
 julia --project=. -m DistSSHKit go --repeat 100 path/to/script.jl
 julia --project=. -m DistSSHKit go --repeat 100 \
-  child:user@host1 child:user@host2 path/to/script.jl
+  user@host1 user@host2 path/to/script.jl
 ```
 
 **CLI，drive。** 如果用 git 部署，之后的更新用
@@ -261,7 +261,7 @@ julia --project=. -m DistSSHKit go --repeat 100 \
 
 ```bash
 julia --project=. -m DistSSHKit drive \
-  parent:2 child:user@host1:4 path/to/driver.jl
+  --head-workers 2 4*user@host1 path/to/driver.jl
 ```
 
 **Julia，go。** 让 `remote=` 与 `setup!` 保持一致（两者都省略则使用
@@ -271,9 +271,9 @@ julia --project=. -m DistSSHKit drive \
 using DistSSHKit
 
 remote = "/path/to/project"
-session = DistSSHSession(workers=["child:user@host1"], remote=remote, yes=true)
+session = DistSSHSession(workers=["user@host1"], remote=remote, yes=true)
 setup!(session, :rsync, :instantiate)
-go!("path/to/script.jl", "child:user@host1:1"; remote=remote)
+go!("path/to/script.jl", "user@host1"; remote=remote)
 ```
 
 **Julia，drive。**
@@ -282,10 +282,10 @@ go!("path/to/script.jl", "child:user@host1:1"; remote=remote)
 using DistSSHKit
 
 remote = "/path/to/project"
-session = DistSSHSession(workers=["child:user@host1"], remote=remote, yes=true)
+session = DistSSHSession(workers=["user@host1"], remote=remote, yes=true)
 setup!(session, :clone; repo="https://github.com/org/proj.git")
 setup!(session, :instantiate)
-drive!("path/to/driver.jl", "parent:2", "child:user@host1:4"; remote=remote)
+drive!("path/to/driver.jl", "4*user@host1"; head_workers=2, remote=remote)
 setup!(session, :sync)  # 之后的更新
 ```
 
@@ -310,8 +310,8 @@ julia --project=. -m DistSSHKit demo install without_kit
 ```
 
 ```bash
-julia --project=. -m DistSSHKit drive parent:2 distsshkit_demos/with_kit/square_file.jl
-julia --project=. -m DistSSHKit go parent:2 distsshkit_demos/without_kit/pi_file.jl
+julia --project=. -m DistSSHKit drive --head-workers 2 distsshkit_demos/with_kit/square_file.jl
+julia --project=. -m DistSSHKit go --head-slots 2 distsshkit_demos/without_kit/pi_file.jl
 ```
 
 逐步说明见
@@ -351,7 +351,7 @@ julia -m DistSSHKit qhost serve
 创建该环境，见 [Prepare][q-prepare]。
 
 ```bash
-julia --project=. -m DistSSHKit qhost:HOST submit go parent:1 distsshkit_demos/without_kit/pi_echo.jl
+julia --project=. -m DistSSHKit qhost:HOST submit go --head-slots 1 distsshkit_demos/without_kit/pi_echo.jl
 ```
 
 详情见 [Prepare][q-prepare]、[Walkthrough][q-walk] 和
