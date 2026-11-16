@@ -17,10 +17,10 @@ on a worker. `serve` on the queue host runs the DistSSHKit argv later.
 cd ~/my-job    # Project.toml, SCRIPT.jl; Queue loadable
 
 # another machine (not the queue host)
-julia --project=. -m DistSSHKit qhost:HOST submit drive parent:4 SCRIPT.jl
+julia --project=. -m DistSSHKit qhost:HOST submit drive --head-workers 4 SCRIPT.jl
 
 # already on the queue host
-julia --project=. -m DistSSHKit submit drive parent:4 SCRIPT.jl
+julia --project=. -m DistSSHKit submit drive --head-workers 4 SCRIPT.jl
 ```
 
 One argv, four nested pieces. `qhost:HOST` is the SSH name of that
@@ -28,25 +28,25 @@ queue machine. `submit` is Queue. The next word is the DistSSHKit kind
 (`go` / `ride` / `drive`); after that, argv matches DistSSHKit.
 
 ```bash
-julia --project=. -m DistSSHKit  [qhost:HOST]  submit  drive  parent:4  SCRIPT.jl
+julia --project=. -m DistSSHKit  [qhost:HOST]  submit  drive  --head-workers 4  SCRIPT.jl
 #──────────── Julia ────────────┘  └─ qhost ──┘  Queue   └─── DistSSHKit argv ────┘
 ```
 
 ```bash
-julia --project=. -m DistSSHKit [qhost:HOST] submit drive parent:4 SCRIPT.jl
+julia --project=. -m DistSSHKit [qhost:HOST] submit drive --head-workers 4 SCRIPT.jl
 ```
 
 A long line in the terminal is still one command. Break after `submit` with `\`:
 
 ```bash
 julia --project=. -m DistSSHKit [qhost:HOST] submit \
-    drive parent:4 child:NAME:N SCRIPT.jl
+    drive --head-workers 4 4*NAME SCRIPT.jl
 ```
 
 The same argv, started on this machine now:
 
 ```bash
-julia --project=. -m DistSSHKit drive parent:4 SCRIPT.jl
+julia --project=. -m DistSSHKit drive --head-workers 4 SCRIPT.jl
 ```
 
 That starts compute on **this** machine, now. `submit` only enqueues the
@@ -55,7 +55,7 @@ the staged tree). Start the same argv on this machine to debug placement, then e
 
 `pool:N` sits next to `submit`. It is not a host token: it expands config `hosts` to the same `:N`
 (clamped by add-host max). Place it next to `submit` (before or after
-the kind), not among `parent` / `child` tokens. Library [`submit!`](@ref)
+the kind), not among queue `parent` / `child:` tokens. Library [`submit!`](@ref)
 does not expand `pool:N`. Inspect `pool` (no enqueue) is
 [User Guide · hosts](@ref Queue-hosts).
 

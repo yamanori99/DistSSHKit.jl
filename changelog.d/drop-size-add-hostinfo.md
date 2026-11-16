@@ -1,7 +1,8 @@
 category: breaking
 
 - Remove CLI `size` / Julia `size!`, RSS probes, and worker-count
-  estimates. `WorkerPlan` stays for explicit `parent:N` / `child:NAME:N`.
+  estimates. `WorkerPlan` stays for explicit `head_workers` and `N*host`
+  machine tokens.
   `hostinfo` is DistSSHRun only (`HostFacts` /
   `collect_host_facts` in DistSSHBase). Queue does not forward `hostinfo`.
   `pool` stays factual cores / RAM / reachability. Missing facts print as

@@ -1,28 +1,28 @@
 # [go](@id Manual-go)
 
 Run a **standalone** script as-is (the job file does not call DistSSHKit). Each
-`parent:N` / `child:NAME:N` slot is one full script run, started
-**concurrently** — not Distributed workers.
+slot is one full script run, started **concurrently** — not Distributed workers.
 
 ```bash
 julia --project=. -m DistSSHKit go [options] \
-  [parent:N] [child:NAME:N...] SCRIPT.jl [script_args...]
+  [N*host...] SCRIPT.jl [script_args...]
 ```
 
 Also: [First Steps · Demo](@ref Tutorial-Demo), [drive](@ref Manual-drive),
 `help go`. Flag vocabulary and a short **go vs drive** table:
 [User Guide](@ref Manual).
 
-`parent:N` / `child:NAME:N` stay explicit counts. Omitting `:N` on a listed
-host is an error unless `--repeat` (then it is an uncapped pool host, not a
-count). Drive / ride also require `:N`. `go SCRIPT.jl` with no host tokens is
-still one parent slot. Inspect hosts with [`hostinfo`](@ref Manual-hostinfo)
+Machine tokens are `N*host` (quote `*` in the shell); bare `host` is one slot on
+that host. Head slots on this machine use `--head-slots N` (not `N*host` here).
+Omitting a count on a listed host is an error unless `--repeat` (then it is an
+uncapped pool host). `go SCRIPT.jl` with no host tokens still gets one head slot
+unless `--head-slots 0`. Inspect hosts with [`hostinfo`](@ref Manual-hostinfo)
 or [`pool`](@ref Manual-pool), then pass explicit tokens.
 A bare `julia -m DistSSHKit SCRIPT.jl` is not `go`; name the command.
-`--repeat N` still spreads N runs; explicit `:N` is a cap, while omitted
-`:N` stays uncapped.
+`--repeat N` still spreads N runs; `N*host` is a per-host cap, while omitted
+counts stay uncapped.
 
-**vs drive:** each `child:NAME:N` is N full script runs (not Distributed
+**vs drive:** each `N*host` is N full script runs (not Distributed
 workers). There is no `--require-git`; for commit parity use
 [`drive --require-git`](@ref Manual-drive).
 Prepare remotes with [`setup --rsync`](@ref Manual-setup) **or** `--clone`, then
@@ -48,10 +48,12 @@ if needed). Later git updates (`setup --sync` / `go --sync`) need a
 - `--progress`: live status (TTY default)
 - `--verbose`: full detail (non-TTY default)
 - `-y` / `--yes`: non-interactive confirmations
-- `--hosts-file PATH`: append slot specs (`child:NAME:N` preserved)
+- `--head-slots N`: head subprocess slots on this machine (go only;
+  `DISTSSH_HEAD_SLOTS`)
+- `--hosts-file PATH`: append slot specs (`N*host` preserved)
 - `--repeat N`: N independent runs in total. Spread round-robin across
-  listed hosts (none → all on parent). Omit `:N` on a host to leave it
-  uncapped; `parent:N` / `child:NAME:N` are per-host caps.
+  listed hosts (none → all on head). Omit a count on a host to leave it
+  uncapped; `N*host` is a per-host cap.
 - `-v` / `--version`: print DistSSHKit version and exit
 - `-h` / `--help`: full help
 
@@ -103,7 +105,7 @@ The Time table prints at the end, after slot stdout, with a `progress DIR`
 line to replay:
 
 ```bash
-julia --project=. -m DistSSHKit go -y parent:2 \
+julia --project=. -m DistSSHKit go -y --head-slots 2 \
   distsshkit_demos/without_kit/pi_echo.jl --n 5000
 julia --project=. -m DistSSHKit progress DIR
 ```
@@ -160,5 +162,6 @@ job mark (`distsshkit-job:`) is not reported.
 ## Hosts
 
 CLI tokens, `--hosts`, `--hosts-file`, and/or `DISTSSHKIT_HOSTS`.
-`parent:0` skips parent
-slots when remotes are listed. Omitting hosts is one parent slot (`parent/`).
+`--head-slots 0` skips head
+slots when remotes are listed. Omitting hosts is one head slot unless
+`--head-slots 0`.

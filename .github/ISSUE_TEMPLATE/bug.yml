@@ -17,6 +17,6 @@ body:
       label: How to reproduce? (optional)
       description: Commands, script path, Julia version, local vs remote.
       placeholder: |
-        julia --project=. -m DistSSHKit drive parent:2 distsshkit_demos/with_kit/square_file.jl
+        julia --project=. -m DistSSHKit drive --head-workers 2 distsshkit_demos/with_kit/square_file.jl
     validations:
       required: false

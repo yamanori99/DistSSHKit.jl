@@ -104,7 +104,7 @@ Smoke (1.13+; copies land in `distsshkit_demos/`):
 ```bash
 dest=$(mktemp -d)
 julia --project=. -m DistSSHKit demo install with_kit --dest "$dest"
-julia --project=. -m DistSSHKit drive parent:2 \
+julia --project=. -m DistSSHKit drive --head-workers 2 \
   "$dest/distsshkit_demos/with_kit/square_file.jl"
 ```
 

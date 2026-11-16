@@ -17,16 +17,16 @@ DistSSHKit
 The shape mirrors the CLI: **`go!`** for as-is scripts, **`drive!`**
 (and friends) for Distributed drivers. **`pipeline!`** is an optional
 one-shot for the usual remote order. Worker placement uses the
-same tokens as the CLI (`parent:2`, `child:user@host:1`):
+same tokens as the CLI (`--head-workers` / `--head-slots`, `N*host`):
 
 ```julia
-pipeline!(driver, "parent:2"; args=["8"])
+pipeline!(driver; head_workers=2, args=["8"])
 pipeline!(
-    driver, "child:user@h1:1", "child:user@h2:1";
+    driver, "1*h1", "1*h2";
     remote="/path/to/project", args=["8"],
 )
-go!("job.jl", "parent:2"; args=["8"])
-drive!("job.jl", "parent:2"; args=["8"])
+go!("job.jl"; head_slots=2, args=["8"])
+drive!("job.jl"; head_workers=2, args=["8"])
 ```
 
 ## This machine
@@ -37,9 +37,9 @@ these calls.
 
 ## Run a script as-is — `go!`
 
-The job file does not call DistSSHKit. Each `parent:N` / `child:NAME:N` slot is
-one full run, concurrent. `repeat=N` is N runs in total (`--repeat N`),
-spread across listed hosts.
+The job file does not call DistSSHKit. Each slot is one full run,
+concurrent. `repeat=N` is N runs in total (`--repeat N`), spread across
+listed hosts. Head slots use `head_slots=`; remotes use `N*host` tokens.
 
 ```@docs
 go!
@@ -74,7 +74,7 @@ First-time remotes usually look like:
 
 ```julia
 session = DistSSHSession(
-    workers=["child:user@h1"], remote="/path/to/project", yes=true,
+    workers=["user@h1"], remote="/path/to/project", yes=true,
 )
 setup!(session, :rsync, :instantiate)
 setup!(session, :check; ignore_julia_version=true)  # optional
@@ -108,8 +108,8 @@ A few points that carry over from the CLI:
 - Listed `drive` placements must join, stay, and collect
   (`require_all_hosts=true`, the default). Pass `require_all_hosts=false`
   for a 0.4.3-style partial run
-- Prefer positional worker tokens over building a [`WorkerPlan`](@ref) by
-  hand (`WorkerPlan` is the explicit `parent:N` / `child:NAME:N` plan)
+- Prefer positional machine tokens over building a [`WorkerPlan`](@ref) by
+  hand (`WorkerPlan` is explicit `head_workers` plus per-host counts)
 - Pass `julia=` on `go!` / `drive!` / `pipeline!` to pin the remote Julia
   binary (same as CLI `--julia`)
 
@@ -181,12 +181,13 @@ DistSSHRun.report_pipeline_errors
 `print_ride`, `print_pool`, and `report_pipeline_errors` are
 public on DistSSHRun and are not reexported.
 
-## Worker tokens — `parent:N` / `child:NAME:N`
+## Machine tokens — `N*host` and head counts
 
 [`host_tokens`](@ref) rebuilds `execute!` token strings from
-`parse_go_args` / `parse_drive_args`. Go keeps parser strings; drive emits
-`parent:N` from `parent_workers` and `child:NAME:N` for SSH.
-[`is_parent_host_name`](@ref) is the `parent` token (not a hostname).
+`parse_go_args` / `parse_drive_args`. Go and ride keep parser strings;
+drive emits `N*host` for remotes only (head workers use `--head-workers`,
+not tokens). [`is_parent_host_name`](@ref) is the `parent` label on
+`hostinfo` / `pool` / `up`, not a placement token on go / drive.
 
 ```@docs
 is_parent_host_name
@@ -199,10 +200,10 @@ For callers that pick the kind at runtime: one function,
 one result type, instead of branching on `kind` yourself.
 
 ```julia
-execute!(:go, "job.jl", ["parent:2"]; args=["8"])
-execute!(:ride, "job.jl", ["parent:2"])
-execute!(:drive, "job.jl", ["parent:2"]; args=["8"])
-wait(execute!(:go, "job.jl", ["parent:1"]; detached=true, args=["8"]))
+execute!(:go, "job.jl", String[]; head_slots=2, args=["8"])
+execute!(:ride, "job.jl", String[]; head_workers=2)
+execute!(:drive, "job.jl", String[]; head_workers=2, args=["8"])
+wait(execute!(:go, "job.jl", String[]; head_slots=1, detached=true, args=["8"]))
 ```
 
 `detached=true`:
@@ -357,8 +358,9 @@ Without `job_id`, only the child pid is signaled.
 - [`execute_kwargs_from_parsed`](@ref): map `parse_go_args` /
   `parse_drive_args` onto detached `execute!` keywords. Ride argv maps the same
   way for `:ride`. Hosts stay in
-  [`host_tokens`](@ref); `:workers` is drive `--workers` when set.
-  `:log_dir` / `:workers` are drive-only
+  [`host_tokens`](@ref); `:head_workers` is drive / ride `--head-workers`
+  when set; `:head_slots` is go `--head-slots`. `:log_dir` / `:head_workers`
+  are drive-only
   except ride also takes `:spi_check` (default `false`).
   `:mem_headroom` / `:parent_gb` are not accepted.
 - `job_id` (`execute!` keyword, or `ENV["DISTSSH_JOB_ID"]` for in-process
@@ -445,7 +447,7 @@ this machine. Queue does not forward `hostinfo`.
 
 ```julia
 q = Queue(; store=default_store_path(), follow_config=true)
-id = submit!(q, "SCRIPT.jl", "child:host1:4"; kind=:go)
+id = submit!(q, "SCRIPT.jl", "2*host1"; kind=:go)  # Queue 0.10: argv mirrors Run tokens
 cancel!(q, id)
 serve!(q)
 ```

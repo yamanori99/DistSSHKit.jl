@@ -52,7 +52,7 @@ A job started from your machine keeps that SSH connection open until it
 finishes. On an always-on machine, the same `pkg> add DistSSHKit` holds jobs
 and runs them in order after that connection drops.
 
-When you use SSH hosts (not just `parent:N`):
+When you use SSH hosts (not just head slots / workers on this machine):
 
 Passwordless SSH means this machine and those hosts are **one trust
 domain**: whoever can start a job as you, can run arbitrary Julia on each
@@ -165,9 +165,9 @@ If the major.minor does not match this machine, align with juliaup
 (changes that host's **default** Julia):
 
 ```bash
-julia --project=. -m DistSSHKit up child:USER@HOST
+julia --project=. -m DistSSHKit up USER@HOST
 julia --project=. -m DistSSHKit up parent   # this machine
-julia --project=. -m DistSSHKit up update child:USER@HOST
+julia --project=. -m DistSSHKit up update USER@HOST
 # or manually (official install or macOS Homebrew):
 # ssh USER@HOST '$HOME/.juliaup/bin/juliaup add 1.13 &&
 #   $HOME/.juliaup/bin/juliaup update 1.13 &&
@@ -188,7 +188,7 @@ The kit covers the same ground (`ssh`, Julia path / version, remote project)
 with `setup --check` (this **is** a DistSSHKit command):
 
 ```bash
-julia --project=. -m DistSSHKit setup --check child:USER@HOST
+julia --project=. -m DistSSHKit setup --check USER@HOST
 ```
 
 `setup --check` prints an `up` Fix when Julia is missing or the

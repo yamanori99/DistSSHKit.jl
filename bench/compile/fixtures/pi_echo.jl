@@ -13,7 +13,7 @@ function main()
     n = 1000
     if !isempty(ARGS)
         length(ARGS) == 2 && ARGS[1] == "--n" ||
-            error("pass --n N (a bare number looks like parent:N)")
+            error("pass --n N (a bare number looks like N*host or --head-slots)")
         n = parse(Int, ARGS[2])
     end
     Random.seed!(42)

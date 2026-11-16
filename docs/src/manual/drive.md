@@ -6,15 +6,16 @@ workers. The script is a **driver** that farms work (e.g. `pmap`).
 
 ```bash
 julia --project=. -m DistSSHKit drive [options] \
-  [parent:N] [child:NAME:N...] SCRIPT.jl [script_args...]
+  [N*host...] SCRIPT.jl [script_args...]
 ```
 
 Also: [First Steps · Demo](@ref Tutorial-Demo), [go](@ref Manual-go),
 [API](@ref API) (`drive!`, `pipeline!`), `help drive`.
 Flag vocabulary and a short **go vs drive** table: [User Guide](@ref Manual).
 
-**vs go / ride:** one master plus Distributed workers; `child:NAME:N` is
-worker count. Three phases: **Load** (master `include`), **Publish** (defs /
+**vs go / ride:** one master plus Distributed workers; `N*host` is
+worker count on that SSH host. Head workers use `--head-workers` (default
+0 until set). Three phases: **Load** (master `include`), **Publish** (defs /
 `using` / `import` / `include` on workers), **Run** (`main()` if defined).
 No Distributed vocabulary in **this** file is a warning, not a refusal.
 Full-file worker `include`: `--sync-script`.
@@ -43,7 +44,7 @@ see it. `drive` warns and continues. Use a bare `include(...)`, or
 `@__DIR__` is re-evaluated on each worker: `_drive_worker_publish!` sets
 `task_local_storage()[:SOURCE_PATH]` to that worker’s remapped script
 path before re-running published source. Prefer `@__DIR__`-derived
-`const`s for sibling files (parent, `child:NAME`, and DistSSHQueue
+`const`s for sibling files (head, remotes, and DistSSHQueue
 `qhost:` trees have different absolute paths). Do not bake a master
 `abspath` / `@__FILE__` / `Base.active_project()` into the published
 source:
@@ -61,13 +62,13 @@ include(DEMO_JL)
   definitions only)
 - `--require-git`: opt-in git parity: dirty-tree warn + remote commit must
   match local
-- `--require-all-hosts`: fail unless every explicit `parent:N` /
-  `child:NAME:N` joined, stayed, and collect succeeded (**default**)
+- `--require-all-hosts`: fail unless every explicit `N*host` and head worker
+  joined, stayed, and collect succeeded (**default**)
 - `--best-effort`: allow a partial run (missing join or collect error does
   not fail)
 - `--skip-git-guard`: compat no-op (parity already off)
-- `-w` / `--workers N`: `parent:N` when no `parent` token is listed (also
-  `-w:N`). Listed hosts still need `:N`.
+- `--head-workers N`: LocalManager workers on this machine (also
+  `DISTSSH_HEAD_WORKERS`). Removed: `-w` / `--workers`, `--local-workers`.
 - `--julia PATH`: Julia on SSH workers
 - `--output-dir PATH`: **result root** → `DISTRIBUTED_OUTPUT_DIR` (not go
   batch root). Omitted: the driver may set it in `init_output_dir!`;
@@ -90,7 +91,7 @@ include(DEMO_JL)
 - `-y` / `--yes`: auto-accept memory-pressure and other prompts
 - `--hosts CSV`: comma-separated worker specs (same form as CLI tokens /
   `DISTSSHKIT_HOSTS`)
-- `--hosts-file PATH`: append worker specs (`child:NAME:N` preserved)
+- `--hosts-file PATH`: append worker specs (`N*host` preserved)
 - `-v` / `--version`: print DistSSHKit version and exit
 - `-h` / `--help`: full help
 
@@ -121,8 +122,9 @@ onto an empty path). Prefer matching Julia **major.minor**; align with
 
 ## Workers
 
-Listed tokens need `:N`. `-w N` is `parent:N` when no `parent` token is
-listed. Inspect with [`hostinfo`](@ref Manual-hostinfo) /
+Listed machine tokens need explicit counts (`N*host`; bare host = 1 worker).
+Head workers default to 0 until `--head-workers` or placement. Inspect with
+[`hostinfo`](@ref Manual-hostinfo) /
 [`pool`](@ref Manual-pool), then pass explicit tokens.
 
 - Ctrl-C during **run** stops the driver (exit 130): interrupt in-flight
@@ -178,7 +180,7 @@ Run drive as usual (`-q` hides the table). The Time table prints at the end,
 after job stdout, with a `progress DIR` line to replay:
 
 ```bash
-julia --project=. -m DistSSHKit drive -y parent:4 \
+julia --project=. -m DistSSHKit drive -y --head-workers 4 \
   distsshkit_demos/with_kit/square_echo.jl --n 4
 julia --project=. -m DistSSHKit progress DIR
 ```

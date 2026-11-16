@@ -81,13 +81,13 @@ with the same `:N` on every config host is `submit pool:N`
 ([submit](@ref Queue-submit)). `size` is gone; Queue rejects it.
 
 ```text
-julia -m DistSSHKit  [qhost:HOST]  pool  parent  child:host1
+julia -m DistSSHKit  [qhost:HOST]  pool  parent  host1
 └── Julia ──┘  └── queue host ──┘  └─ pool ┘  └──── host tokens ────────┘
 ```
 
 ```bash
 julia -m DistSSHKit qhost:HOST pool
-julia -m DistSSHKit qhost:HOST pool parent child:host1
+julia -m DistSSHKit qhost:HOST pool parent host1
 ```
 
 Flags:

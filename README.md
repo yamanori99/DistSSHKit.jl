@@ -78,8 +78,8 @@ For everything else, see the
 
 ### Basic terms
 
-- **Host** — a machine that does the computation. You specify it with a token
-  such as `parent` or `child:user@hostname`.
+- **Host** — a machine that does the computation: this machine (head) or an
+  SSH destination (`user@hostname`, a Host alias).
 - **Process** — a single running `julia` instance. Each process has its own
   memory and runs independently at the OS level.
   (A run launches multiple `julia` processes to run
@@ -112,14 +112,14 @@ and you can add as many remote machines as you like.
 <!-- markdownlint-enable MD033 MD013 -->
 
 The diagram shows **drive**: one master on this machine and workers on each
-host. **go** uses the same host tokens, but there is no master/worker
+host. **go** uses the same machine tokens, but there is no master/worker
 relationship; each host runs the script on its own.
 
 ```text
-parent                 # this machine
-parent:2               # two on this machine
-child:user@hostname    # SSH child (user@host, IP, or Host alias)
-child:user@hostname:4  # four on that child
+--head-workers 2       # drive / ride: two workers on this machine
+--head-slots 2         # go: two slots on this machine
+2*user@hostname        # two on that SSH host (quote `*` in the shell)
+user@hostname          # bare host = one worker or slot
 ```
 
 There is no limit on the number of SSH hosts. More hosts do mean more time spent
@@ -153,11 +153,11 @@ There are three ways to run a script:
 - **hostinfo** — prints identity, RAM, CPU, OS, and Julia. DistSSHRun only;
   Queue does not forward it.
 
-For go, drive, and ride, every listed token requires `:N`
-(with no tokens, you get one slot on the parent).
-`go --repeat` is the exception: it lets you omit `:N` for listed hosts, which
-leaves their pool uncapped. None of
-these is a dashboard.
+For go, drive, and ride, listed machine tokens use `N*host` (bare host = 1).
+Head placement uses `--head-workers` or `--head-slots`. With no remote tokens,
+`go` still gets one head slot unless `--head-slots 0`; drive / ride default to
+0 head workers until `--head-workers`. `go --repeat` may omit counts on pool
+hosts (uncapped). None of these is a dashboard.
 
 `go` alone is already quite useful. A common workflow is to confirm a standalone
 run with `go` first, then move on to `ride` or `drive` when you need them.
@@ -166,7 +166,7 @@ Use `hostinfo` and `pool` to inspect hosts before you run.
 ### Ways to call DistSSHKit
 
 - **CLI** — run DistSSHKit from the terminal.
-  Example: `julia --project=. -m DistSSHKit go child:user@host1:1 script.jl`.
+  Example: `julia --project=. -m DistSSHKit go user@host1 script.jl`.
   Command flags: `julia -m DistSSHKit help go`.
   This suits quick experiments and shell scripts.
 - **Julia** — call functions from your own Julia code (a script, the REPL, or
@@ -229,22 +229,22 @@ A typical first-time setup (rsync route) looks like this:
 
 ```bash
 # Copy the files over
-julia --project=. -m DistSSHKit setup --rsync child:user@host1 child:user@host2
+julia --project=. -m DistSSHKit setup --rsync user@host1 user@host2
 # Install dependencies
-julia --project=. -m DistSSHKit setup --instantiate child:user@host1 child:user@host2
+julia --project=. -m DistSSHKit setup --instantiate user@host1 user@host2
 # Sanity check
-julia --project=. -m DistSSHKit setup --check child:user@host1 child:user@host2
+julia --project=. -m DistSSHKit setup --check user@host1 user@host2
 ```
 
 Other commands that come in handy:
 
 ```bash
 # Remove go/drive/setup/runs leaves (keeps the project tree)
-julia --project=. -m DistSSHKit setup --prune child:user@host1 child:user@host2
+julia --project=. -m DistSSHKit setup --prune user@host1 user@host2
 # Clean up leftover worker processes
-julia --project=. -m DistSSHKit setup --cleanup child:user@host1 child:user@host2
+julia --project=. -m DistSSHKit setup --cleanup user@host1 user@host2
 # Start over from scratch (asks for delete; -y still deletes until DistSSHKit 0.11)
-julia --project=. -m DistSSHKit setup --delete child:user@host1 child:user@host2
+julia --project=. -m DistSSHKit setup --delete user@host1 user@host2
 ```
 
 ### Examples
@@ -252,16 +252,16 @@ julia --project=. -m DistSSHKit setup --delete child:user@host1 child:user@host2
 After setup, run your scripts as follows.
 
 **CLI, go.** Each slot runs `script.jl` once, from start to finish.
-`child:user@host:1` means one run on that host, and `parent:N` means N runs on
-this machine. `--repeat N` means N runs in total, spread across the listed
+Bare `user@host` is one run on that host; `--head-slots N` is N runs on this
+machine. `--repeat N` means N runs in total, spread across the listed
 hosts.
 
 ```bash
 julia --project=. -m DistSSHKit go \
-  child:user@host1:1 child:user@host2:1 path/to/script.jl
+  user@host1 user@host2 path/to/script.jl
 julia --project=. -m DistSSHKit go --repeat 100 path/to/script.jl
 julia --project=. -m DistSSHKit go --repeat 100 \
-  child:user@host1 child:user@host2 path/to/script.jl
+  user@host1 user@host2 path/to/script.jl
 ```
 
 **CLI, drive.** For a git deployment, later updates are done with
@@ -269,7 +269,7 @@ julia --project=. -m DistSSHKit go --repeat 100 \
 
 ```bash
 julia --project=. -m DistSSHKit drive \
-  parent:2 child:user@host1:4 path/to/driver.jl
+  --head-workers 2 4*user@host1 path/to/driver.jl
 ```
 
 **Julia, go.** Keep `remote=` consistent with `setup!` (omit both to use the
@@ -279,9 +279,9 @@ default path).
 using DistSSHKit
 
 remote = "/path/to/project"
-session = DistSSHSession(workers=["child:user@host1"], remote=remote, yes=true)
+session = DistSSHSession(workers=["user@host1"], remote=remote, yes=true)
 setup!(session, :rsync, :instantiate)
-go!("path/to/script.jl", "child:user@host1:1"; remote=remote)
+go!("path/to/script.jl", "user@host1"; remote=remote)
 ```
 
 **Julia, drive.**
@@ -290,10 +290,10 @@ go!("path/to/script.jl", "child:user@host1:1"; remote=remote)
 using DistSSHKit
 
 remote = "/path/to/project"
-session = DistSSHSession(workers=["child:user@host1"], remote=remote, yes=true)
+session = DistSSHSession(workers=["user@host1"], remote=remote, yes=true)
 setup!(session, :clone; repo="https://github.com/org/proj.git")
 setup!(session, :instantiate)
-drive!("path/to/driver.jl", "parent:2", "child:user@host1:4"; remote=remote)
+drive!("path/to/driver.jl", "4*user@host1"; head_workers=2, remote=remote)
 setup!(session, :sync)  # later updates
 ```
 
@@ -318,8 +318,8 @@ julia --project=. -m DistSSHKit demo install without_kit
 ```
 
 ```bash
-julia --project=. -m DistSSHKit drive parent:2 distsshkit_demos/with_kit/square_file.jl
-julia --project=. -m DistSSHKit go parent:2 distsshkit_demos/without_kit/pi_file.jl
+julia --project=. -m DistSSHKit drive --head-workers 2 distsshkit_demos/with_kit/square_file.jl
+julia --project=. -m DistSSHKit go --head-slots 2 distsshkit_demos/without_kit/pi_file.jl
 ```
 
 For a walkthrough, see
@@ -359,7 +359,7 @@ That connection uses `~/.distsshqueue/env` on the queue host. To learn how to
 create that environment, see [Prepare][q-prepare].
 
 ```bash
-julia --project=. -m DistSSHKit qhost:HOST submit go parent:1 distsshkit_demos/without_kit/pi_echo.jl
+julia --project=. -m DistSSHKit qhost:HOST submit go --head-slots 1 distsshkit_demos/without_kit/pi_echo.jl
 ```
 
 For details, see [Prepare][q-prepare], [Walkthrough][q-walk], and

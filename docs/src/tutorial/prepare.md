@@ -19,11 +19,11 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 # For a workspace member that lock may sit next to the parent Project.toml,
 # not beside the member. setup --rsync sends that parent directory.
 # Pick one first deploy (rsync: no remote .git/):
-julia --project=. -m DistSSHKit setup --rsync child:YourHost1 child:YourHost2
-# or: julia --project=. -m DistSSHKit setup --clone child:YourHost1 child:YourHost2
-julia --project=. -m DistSSHKit setup --instantiate child:YourHost1 child:YourHost2
+julia --project=. -m DistSSHKit setup --rsync YourHost1 YourHost2
+# or: julia --project=. -m DistSSHKit setup --clone YourHost1 YourHost2
+julia --project=. -m DistSSHKit setup --instantiate YourHost1 YourHost2
 # optional: job Pkg.test() on remotes (not DistSSHKit's tests)
-# julia --project=. -m DistSSHKit setup --runtest child:YourHost1 child:YourHost2
+# julia --project=. -m DistSSHKit setup --runtest YourHost1 YourHost2
 ```
 
 `--rsync` is the usual first deploy; `--clone` is the git path (later updates:
@@ -40,7 +40,7 @@ then check — only onto a missing/empty remote path (or `setup --delete` first)
 Same steps from Julia:
 
 ```julia
-session = DistSSHSession(workers=["child:YourHost1", "child:YourHost2"], yes=true)
+session = DistSSHSession(workers=["YourHost1", "YourHost2"], yes=true)
 setup!(session, :rsync, :instantiate)
 # optional: setup!(session, :check); setup!(session, :runtest)
 # Julia channel: `up` / `up parent` / `up update` (CLI below)
@@ -64,24 +64,24 @@ rsync tree. Commit parity is drive-only:
 Verify when ready:
 
 ```bash
-julia --project=. -m DistSSHKit setup --check child:YourHost1 child:YourHost2
+julia --project=. -m DistSSHKit setup --check YourHost1 YourHost2
 ```
 
 If check fails on Julia major.minor (and hosts already have juliaup):
 
 ```bash
-julia --project=. -m DistSSHKit up child:YourHost1 child:YourHost2
+julia --project=. -m DistSSHKit up YourHost1 YourHost2
 julia --project=. -m DistSSHKit up parent   # this machine too
 # refresh installed channels only (no default):
-# julia --project=. -m DistSSHKit up update child:YourHost1
+# julia --project=. -m DistSSHKit up update YourHost1
 ```
 
 Clean slate. The first command asks you to type `delete` and does not delete until you do.
 `-y` still skips that prompt until DistSSHKit 0.11 (DistSSHRun 0.2). Pass the path as `--confirm-path` to delete without the prompt:
 
 ```bash
-julia --project=. -m DistSSHKit setup --delete child:YourHost1 child:YourHost2
-julia --project=. -m DistSSHKit setup --delete --confirm-path '~/Parent/Repo' child:YourHost1 child:YourHost2
+julia --project=. -m DistSSHKit setup --delete YourHost1 YourHost2
+julia --project=. -m DistSSHKit setup --delete --confirm-path '~/Parent/Repo' YourHost1 YourHost2
 ```
 
 Next: [Demo](@ref Tutorial-Demo).
