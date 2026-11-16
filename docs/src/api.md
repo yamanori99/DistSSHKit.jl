@@ -447,7 +447,7 @@ this machine. Queue does not forward `hostinfo`.
 
 ```julia
 q = Queue(; store=default_store_path(), follow_config=true)
-id = submit!(q, "SCRIPT.jl", "child:host1:4"; kind=:go)
+id = submit!(q, "SCRIPT.jl", "2*host1"; kind=:go)  # Queue 0.10: argv mirrors Run tokens
 cancel!(q, id)
 serve!(q)
 ```

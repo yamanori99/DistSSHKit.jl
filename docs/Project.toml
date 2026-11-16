@@ -8,7 +8,7 @@ DocumenterLandingPage = "1c52b33b-3e2f-4e99-b3b5-a6ad63f0d6d2"
 [sources]
 DistSSHKit = { path = ".." }
 # Same revs as the root project. See root `Project.toml` `[sources]`.
-DistSSHRun = { url = "https://github.com/yamanori99/DistSSHRun.jl", rev = "c570a62d" }
+DistSSHRun = { url = "https://github.com/yamanori99/DistSSHRun.jl", rev = "main" }
 DistSSHQueue = { url = "https://github.com/yamanori99/DistSSHQueue.jl", rev = "main" }
 
 [compat]
