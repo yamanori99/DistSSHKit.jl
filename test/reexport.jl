@@ -11,6 +11,9 @@
 # `_RUN_444_KIT_EXPORTS` (DistSSHRun #444) stays in `_KNOWN_KIT_EXPORTS` but
 # is dropped from the pinned set in `export surface` until Run exports the name,
 # so Kit `main` keeps passing against Run `main` before that PR merges.
+#
+# `_RUN_491_KIT_EXPORTS` (DistSSHRun #491 / cluster-manager freeze #469) uses the
+# same rule until that Run PR merges.
 
 const _RUN_444_KIT_EXPORTS = (
     :current_project_file,
@@ -18,6 +21,20 @@ const _RUN_444_KIT_EXPORTS = (
     :julia_sysimage_is_default,
     :julia_sysimage_path,
     :local_preferences_path,
+)
+
+const _RUN_491_KIT_EXPORTS = (
+    :LaunchIncompleteError,
+    :LaunchReport,
+    :WorkerLaunchOutcome,
+    :SEED_SCHEME,
+    :job_item_seed,
+    :launch_rank,
+    :launch_report_failures,
+    :launch_report_joined,
+    :launch_report_planned,
+    :launch_report_usable,
+    :seed_mix,
 )
 
 const _KNOWN_KIT_EXPORTS = Set(
@@ -34,6 +51,8 @@ const _KNOWN_KIT_EXPORTS = Set(
         :DetachedProcess,
         :DistSSHJobResult,
         :DistSSHSession,
+        :LaunchIncompleteError,
+        :LaunchReport,
         :PipelineConfig,
         :PipelineResult,
         :Queue,
@@ -41,6 +60,7 @@ const _KNOWN_KIT_EXPORTS = Set(
         :RideResult,
         :SyncResult,
         :WorkerPlan,
+        :WorkerLaunchOutcome,
         :allocate_output_dir,
         :allocate_run_dir,
         :cache_file,
@@ -68,6 +88,7 @@ const _KNOWN_KIT_EXPORTS = Set(
         :job,
         :job_project,
         :jobs,
+        :job_item_seed,
         :julia_default_sysimage_path,
         :julia_sysimage_is_default,
         :julia_sysimage_path,
@@ -75,6 +96,11 @@ const _KNOWN_KIT_EXPORTS = Set(
         :kit_result_from_dir,
         :kit_run_dir,
         :kit_run_result,
+        :launch_rank,
+        :launch_report_failures,
+        :launch_report_joined,
+        :launch_report_planned,
+        :launch_report_usable,
         :load!,
         :LoadedCodeMismatchError,
         :local_preferences_path,
@@ -92,10 +118,12 @@ const _KNOWN_KIT_EXPORTS = Set(
         :resolve_pkg_env,
         :resolve_pkg_project_dir,
         :ride!,
+        :SEED_SCHEME,
         :git_send_list,
         :run_on_host,
         :serve,
         :serve!,
+        :seed_mix,
         :setup!,
         :short_path,
         :ssh_opts,
@@ -202,7 +230,7 @@ end
     end
     @test DistSSHKit.println_kit_version !== DistSSHRun.println_kit_version
     expected_exports = copy(_KNOWN_KIT_EXPORTS)
-    for n in _RUN_444_KIT_EXPORTS
+    for n in (_RUN_444_KIT_EXPORTS..., _RUN_491_KIT_EXPORTS...)
         if !Base.isexported(DistSSHRun, n)
             delete!(expected_exports, n)
         end
