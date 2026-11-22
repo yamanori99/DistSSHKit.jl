@@ -155,7 +155,6 @@ makedocs(;
             "Releasing" => "developers/releasing.md",
             "Packages" => "developers/packages.md",
             "Package split" => "developers/package-split.md",
-            "Compile bench" => "developers/compile-bench.md",
         ],
         "API" => "api.md",
     ],
