@@ -102,17 +102,43 @@ function _test_same_page(kit_args, owner_main, owner_args = kit_args; exit0::Boo
     return got
 end
 
+const _FAKE_SSH_SCRIPT = raw"""
+#!/bin/sh
+log="$FAKE_SSH_LOG"
+printf '%s\n' "$@" >> "$log"
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --) shift; break ;;
+  esac
+  shift
+done
+cmd="$*"
+case "$cmd" in
+  *'__DSR_POSIX_OK_'*)
+    printf '%s\n' "$cmd" | sed -n 's/.*\(__DSR_POSIX_OK_[0-9a-fA-F]*__\).*/\1/p'
+    exit 0
+    ;;
+  *'echo $SHELL'*|*'echo \$SHELL'*)
+    echo /bin/bash
+    exit 0
+    ;;
+esac
+printf '%s\n' "$cmd"
+exit 0
+"""
+
 """PATH-front `ssh` that records argv and exits 0. Does not open a connection."""
 function _with_fake_ssh(f)
     return mktempdir() do bin
         log = joinpath(bin, "argv")
         path = joinpath(bin, "ssh")
-        write(path, "#!/bin/sh\nprintf '%s\\n' \"\$@\" >> '$(log)'\nexit 0\n")
+        write(path, _FAKE_SSH_SCRIPT)
         chmod(path, 0o755)
         withenv(
             "PATH" => bin * ":" * ENV["PATH"],
             "DISTSSH_QUIET" => nothing,
             "DISTSSH_TEST_SSH" => nothing,
+            "FAKE_SSH_LOG" => log,
         ) do
             f(log)
         end

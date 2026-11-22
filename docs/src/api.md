@@ -113,6 +113,12 @@ A few points that carry over from the CLI:
 - Pass `julia=` on `go!` / `drive!` / `pipeline!` to pin the remote Julia
   binary (same as CLI `--julia`)
 
+[`cluster`](@ref) runs `cluster(session) do c … end`: it launches workers from a
+[`DistSSHSession`](@ref) (or `plan=`), runs the block, then removes DistSSH-started
+workers on every exit path (normal return, error, Ctrl-C). User `addprocs` workers
+stay up; DistSSH logs when teardown skips them. The block's `LaunchReport`
+is stored under provenance `launch`.
+
 Or call [`pipeline!`](@ref) for optional sync → [`drive!`](@ref)
 → collect in one shot (`pipeline!` does not call [`setup!`](@ref)).
 [`pipeline_config_from_env`](@ref) reads `DISTSSH_HOSTS` /
@@ -136,10 +142,17 @@ SyncResult
 drive!
 DriveResult
 HostRunResult
+LaunchReport
+launch_report_planned
+launch_report_joined
+launch_report_failures
+launch_report_usable
+LaunchIncompleteError
+WorkerLaunchOutcome
+Cluster
+cluster
 collect!
 CollectResult
-ride!
-RideResult
 stored_path
 file_sha256
 cache_file
@@ -377,8 +390,7 @@ Exported so a rename is a Semver break, not a silent `DistSSHKit._…` change.
 `go` / `drive` argv wrappers stay unexported.
 
 **Parsers / SSH helpers** (`parse_*`, `ssh_opts`, `run_on_host`, …) are for
-callers that share this CLI. `parse_go_args`, `parse_drive_args`, and
-`parse_ride_args` stay exported. `parse_ride_args` has no docstring.
+callers that share this CLI. `parse_go_args` and `parse_drive_args` stay exported.
 
 Help and display helpers (`print_help_*`, `print_colored`,
 `print_pool`, `print_ride`, `show_go_usage`, `show_drive_usage`,

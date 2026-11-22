@@ -23,7 +23,7 @@ using Random
     let (code, _, err) = _main_capture(["help", "map_echo.jl"])
         @test code == 1
         @test occursin("got \"map_echo.jl\"", err)
-        @test occursin("does not infer go / ride / drive", err)
+        @test occursin("does not infer go or drive", err)
         @test !occursin("Unknown subcommand", err)
     end
     let (code, out, err) = _main_capture(["--project=.", "go", "x.jl"])
@@ -40,14 +40,14 @@ using Random
     let (code, out, err) = _main_capture(["map_echo.jl"])
         @test code == 1
         @test isempty(out)
-        @test occursin("does not infer go / ride / drive", err)
+        @test occursin("does not infer go or drive", err)
         @test occursin("go SCRIPT.jl", err)
         @test !occursin("Unknown subcommand", err)
     end
     let (code, out, err) = _main_capture(["parent:2", "job.jl"])
         @test code == 1
         @test isempty(out)
-        @test occursin("does not infer go / ride / drive", err)
+        @test occursin("does not infer go or drive", err)
     end
     # Root usage goes to stderr. That stream is the spec.
     let (code, out, err) = _main_capture(["--help"])
@@ -83,6 +83,9 @@ using Random
     # still reaches that page.
     withenv(DistSSHQueue.LOCAL_QUEUE_ENV => "1") do
         for kind in string.(DistSSHQueue.KIT_EXECUTE_KINDS)
+            # Run removed `ride`; Queue still lists it in `KIT_EXECUTE_KINDS` until
+            # a Queue lockstep PR drops `:ride` from submit kinds.
+            kind == "ride" && continue
             _test_same_page(
                 ["help", "submit", kind],
                 DistSSHQueue.main,
