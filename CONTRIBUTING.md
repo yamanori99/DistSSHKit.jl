@@ -277,20 +277,10 @@ not rewrite files you did not mean to touch.
 **CI weekly** (daily 06:00 JST, or Run workflow): same `Pkg.test` /
 JETLS / Aqua as a PR, including `macos-latest` (no coverage). WSL2 1.13
 runs on CI weekly and a main push, not on a pull request.
-Not a PR check. `Compile bench` measures precompile, load, CLI wall time,
-`src/**/*.jl` size, and the host OS, arch, and CPU on 1.13,
-1.14-pre, and nightly. The page opens on 1.13. A solid line marks a
-`Project.toml` version change. On the 1.13 slot, a dash-dot line marks a
-Julia patch change. CI weekly runs it, and a **main** push that changes the measured tree runs it too (`src/`, the bench measure inputs, `Project.toml`, and the compile-bench action and workflow). A docs-only push does not. A second run of the same commit on the same UTC day keeps the first sample. A **main**
-run appends that sample to the `bench-data` branch. A render job then rebuilds the README and `bench.html`, and a main run publishes that page on GitHub Pages. A **main** push of `bench/compile/report.jl` or `bench/compile/charts.jl` rebuilds them and does not measure. A pull request that changes the file renders the history into the job summary and does not push. How to read the archive
-is in
-[docs/src/developers/compile-bench.md](docs/src/developers/compile-bench.md).
-A command that exits nonzero
-is not recorded. It flags a host change, a 1.5x jump (and a 200 ms method
-that is new or doubled) but does not fail the run. Catches 1.13 / Aqua /
+Not a PR check. Catches 1.13 / Aqua /
 JETLS `@release` drift when nothing merged that day. Failure of the 1.13
-jobs opens Issue `CI weekly failed` (`alert`); 1.14-pre, nightly, and compile
-bench are omitted from that notify.
+jobs opens Issue `CI weekly failed` (`alert`); 1.14-pre and nightly
+are omitted from that notify.
 
 **Runic monthly** (1st 10:00 JST, or Run workflow): `runic --check` on
 tracked `.jl` (`version: '1'`). Not a required PR check. Catches Runic
