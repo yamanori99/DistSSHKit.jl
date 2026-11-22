@@ -156,6 +156,7 @@ makedocs(;
             "Packages" => "developers/packages.md",
             "Package split" => "developers/package-split.md",
             "Compile bench" => "developers/compile-bench.md",
+            "Julia 1.14 impact" => "developers/julia-1.14-impact.md",
         ],
         "API" => "api.md",
     ],
