@@ -70,6 +70,9 @@
             exit0 = false,
         )
         for kind in string.(DistSSHQueue.KIT_EXECUTE_KINDS)
+            # Run removed `ride`; Queue still lists it in `KIT_EXECUTE_KINDS` until
+            # a Queue lockstep PR drops `:ride` from submit kinds.
+            kind == "ride" && continue
             _test_same_page(
                 ["help", "submit", kind],
                 DistSSHQueue.main,

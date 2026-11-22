@@ -148,12 +148,12 @@ export dist_ssh_kit_version, println_kit_version
 
 const _RUN_COMMANDS = (
     "demo",
+    "doctor",
     "drive",
     "go",
     "hostinfo",
     "pool",
     "progress",
-    "ride",
     "setup",
     "up",
 )
@@ -185,10 +185,10 @@ function print_kit_root_usage(io::IO = stderr)
     print_help_section("Run"; io = io)
     print_help_lines(
         io,
-        "  setup              Clone / sync / check remotes",
-        "  up                 juliaup add / default / update / status",
+        "  setup              Clone / sync / maintain remotes",
+        "  doctor             Deploy prerequisite checks (--deploy)",
+        "  up                 Align a Julia channel with juliaup",
         "  go                 Run an as-is complete job",
-        "  ride               Experimental auto-split of map / filter",
         "  drive              Distributed workers + collect",
         "  hostinfo           Host identity / RAM / CPU / Julia",
         "  pool               Cluster cores / health (no job)",
@@ -208,9 +208,9 @@ function print_kit_root_usage(io::IO = stderr)
     print_help_lines(
         io,
         "  $(cli_m_project()) setup --check host1",
+        "  $(cli_m_project()) doctor --deploy host1",
         "  $(cli_m_project()) up host1",
         "  $(cli_m_project()) go --head-slots 1 SCRIPT.jl",
-        "  $(cli_m_project()) ride --head-workers 2 SCRIPT.jl",
         "  $(cli_m_project()) drive --head-workers 2 SCRIPT.jl",
         "  $(cli_m_project()) qhost:HOST submit drive --head-workers 4 SCRIPT.jl",
         "  $(cli_m_project()) qhost setup",
@@ -302,7 +302,7 @@ end
 
 CLI entry. Prefer Julia 1.13+ and `julia -m DistSSHKit SUBCOMMAND …`.
 
-Run commands (`setup`, `up`, `go`, `ride`, `drive`, `hostinfo`, `pool`,
+Run commands (`setup`, `doctor`, `up`, `go`, `drive`, `hostinfo`, `pool`,
 `demo`, `progress`) stay the run surface. Client commands take an optional
 `qhost:HOST`. Queue-host commands start with `qhost` (`qhost setup`,
 `qhost up`, `qhost serve`, `qhost pool`). `hostinfo` is DistSSHRun only;
