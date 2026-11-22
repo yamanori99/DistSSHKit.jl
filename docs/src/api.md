@@ -116,7 +116,7 @@ A few points that carry over from the CLI:
 [`cluster`](@ref) runs `cluster(session) do c … end`: it launches workers from a
 [`DistSSHSession`](@ref) (or `plan=`), runs the block, then removes DistSSH-started
 workers on every exit path (normal return, error, Ctrl-C). User `addprocs` workers
-stay up; DistSSH logs when teardown skips them. The block's [`LaunchReport`](@ref)
+stay up; DistSSH logs when teardown skips them. The block's `LaunchReport`
 is stored under provenance `launch`.
 
 Or call [`pipeline!`](@ref) for optional sync → [`drive!`](@ref)
@@ -142,6 +142,13 @@ SyncResult
 drive!
 DriveResult
 HostRunResult
+LaunchReport
+launch_report_planned
+launch_report_joined
+launch_report_failures
+launch_report_usable
+LaunchIncompleteError
+WorkerLaunchOutcome
 Cluster
 cluster
 collect!
